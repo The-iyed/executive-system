@@ -1,0 +1,13 @@
+node_modules
+dist
+.nx
+coverage
+.vscode
+.idea
+*.log
+.DS_Store
+packages
+.env
+.env.local
+.env.*.local
+

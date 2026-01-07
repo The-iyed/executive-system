@@ -1,0 +1,192 @@
+/**
+ * FIGMA DESIGN TOKENS TEMPLATE
+ * 
+ * Instructions:
+ * 1. Open Figma in Dev Mode
+ * 2. Select the design frame (node-id=187-30007)
+ * 3. Extract values from the Inspect panel
+ * 4. Replace the placeholder values below with actual Figma values
+ * 5. Copy this content to styles.css
+ */
+
+@layer base {
+  :root {
+    /* ============================================
+       COLORS - Extract from Figma Inspect Panel
+       ============================================ */
+    
+    /* Primary Colors - Update with Figma Primary color scale */
+    --color-primary-50: 240 249 255;  /* Replace: Select primary-50 in Figma, copy RGB */
+    --color-primary-100: 219 234 254; /* Replace: Select primary-100 in Figma, copy RGB */
+    --color-primary-200: 191 219 254; /* Replace: Select primary-200 in Figma, copy RGB */
+    --color-primary-300: 147 197 253; /* Replace: Select primary-300 in Figma, copy RGB */
+    --color-primary-400: 96 165 250;  /* Replace: Select primary-400 in Figma, copy RGB */
+    --color-primary-500: 59 130 246;  /* Replace: Select primary-500 in Figma, copy RGB */
+    --color-primary-600: 37 99 235;   /* Replace: Select primary-600 in Figma, copy RGB */
+    --color-primary-700: 29 78 216;   /* Replace: Select primary-700 in Figma, copy RGB */
+    --color-primary-800: 30 64 175;    /* Replace: Select primary-800 in Figma, copy RGB */
+    --color-primary-900: 30 58 138;   /* Replace: Select primary-900 in Figma, copy RGB */
+    --color-primary-950: 23 37 84;    /* Replace: Select primary-950 in Figma, copy RGB */
+
+    /* Secondary Colors - Update with Figma Secondary color scale */
+    --color-secondary-50: 250 250 250;
+    --color-secondary-100: 245 245 245;
+    --color-secondary-200: 229 229 229;
+    --color-secondary-300: 212 212 212;
+    --color-secondary-400: 163 163 163;
+    --color-secondary-500: 115 115 115;
+    --color-secondary-600: 82 82 82;
+    --color-secondary-700: 64 64 64;
+    --color-secondary-800: 38 38 38;
+    --color-secondary-900: 23 23 23;
+    --color-secondary-950: 10 10 10;
+
+    /* Accent Colors - Update with Figma Accent color scale */
+    --color-accent-50: 253 244 255;
+    --color-accent-100: 250 232 255;
+    --color-accent-200: 245 208 254;
+    --color-accent-300: 240 171 252;
+    --color-accent-400: 232 121 249;
+    --color-accent-500: 217 70 239;
+    --color-accent-600: 192 38 211;
+    --color-accent-700: 162 28 175;
+    --color-accent-800: 134 25 143;
+    --color-accent-900: 112 26 117;
+    --color-accent-950: 74 29 79;
+
+    /* Success Colors - Update with Figma Success color scale */
+    --color-success-50: 240 253 244;
+    --color-success-100: 220 252 231;
+    --color-success-200: 187 247 208;
+    --color-success-300: 134 239 172;
+    --color-success-400: 74 222 128;
+    --color-success-500: 34 197 94;
+    --color-success-600: 22 163 74;
+    --color-success-700: 21 128 61;
+    --color-success-800: 22 101 52;
+    --color-success-900: 20 83 45;
+    --color-success-950: 5 46 22;
+
+    /* Warning Colors - Update with Figma Warning color scale */
+    --color-warning-50: 255 251 235;
+    --color-warning-100: 254 243 199;
+    --color-warning-200: 253 230 138;
+    --color-warning-300: 252 211 77;
+    --color-warning-400: 251 191 36;
+    --color-warning-500: 245 158 11;
+    --color-warning-600: 217 119 6;
+    --color-warning-700: 180 83 9;
+    --color-warning-800: 146 64 14;
+    --color-warning-900: 120 53 15;
+    --color-warning-950: 69 26 3;
+
+    /* Error/Destructive Colors - Update with Figma Error color scale */
+    --color-error-50: 254 242 242;
+    --color-error-100: 254 226 226;
+    --color-error-200: 254 202 202;
+    --color-error-300: 252 165 165;
+    --color-error-400: 248 113 113;
+    --color-error-500: 239 68 68;
+    --color-error-600: 220 38 38;
+    --color-error-700: 185 28 28;
+    --color-error-800: 153 27 27;
+    --color-error-900: 127 29 29;
+    --color-error-950: 69 10 10;
+
+    /* Neutral/Base Colors - Extract from Figma Background, Text, Border colors */
+    --color-background: 255 255 255;      /* Replace: Select background color in Figma */
+    --color-foreground: 15 23 42;          /* Replace: Select primary text color in Figma */
+    --color-card: 255 255 255;            /* Replace: Select card background in Figma */
+    --color-card-foreground: 15 23 42;    /* Replace: Select card text color in Figma */
+    --color-popover: 255 255 255;         /* Replace: Select popover background in Figma */
+    --color-popover-foreground: 15 23 42; /* Replace: Select popover text color in Figma */
+    --color-muted: 241 245 249;           /* Replace: Select muted background in Figma */
+    --color-muted-foreground: 100 116 139; /* Replace: Select muted text color in Figma */
+    --color-border: 226 232 240;          /* Replace: Select border color in Figma */
+    --color-input: 226 232 240;           /* Replace: Select input border color in Figma */
+    --color-ring: 59 130 246;             /* Replace: Select focus ring color in Figma */
+
+    /* ============================================
+       SPACING - Extract from Figma Spacing Tokens
+       ============================================ */
+    
+    /* Update with Figma spacing scale values */
+    --spacing-xs: 0.25rem;  /* 4px - Replace with Figma spacing token */
+    --spacing-sm: 0.5rem;   /* 8px - Replace with Figma spacing token */
+    --spacing-md: 1rem;     /* 16px - Replace with Figma spacing token */
+    --spacing-lg: 1.5rem;   /* 24px - Replace with Figma spacing token */
+    --spacing-xl: 2rem;     /* 32px - Replace with Figma spacing token */
+    --spacing-2xl: 3rem;    /* 48px - Replace with Figma spacing token */
+    --spacing-3xl: 4rem;    /* 64px - Replace with Figma spacing token */
+
+    /* ============================================
+       TYPOGRAPHY - Extract from Figma Text Styles
+       ============================================ */
+    
+    /* Font Families - Update with Figma font families */
+    --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif; /* Replace with Figma font */
+    --font-family-serif: 'Georgia', serif;                            /* Replace if used in Figma */
+    --font-family-mono: 'Fira Code', 'Courier New', monospace;        /* Replace if used in Figma */
+
+    /* Font Sizes - Update with Figma text style sizes */
+    --font-size-xs: 0.75rem;   /* 12px - Replace with Figma text style size */
+    --font-size-sm: 0.875rem;  /* 14px - Replace with Figma text style size */
+    --font-size-base: 1rem;    /* 16px - Replace with Figma text style size */
+    --font-size-lg: 1.125rem;  /* 18px - Replace with Figma text style size */
+    --font-size-xl: 1.25rem;   /* 20px - Replace with Figma text style size */
+    --font-size-2xl: 1.5rem;  /* 24px - Replace with Figma text style size */
+    --font-size-3xl: 1.875rem; /* 30px - Replace with Figma text style size */
+    --font-size-4xl: 2.25rem;  /* 36px - Replace with Figma text style size */
+
+    /* Font Weights - Update with Figma text style weights */
+    --font-weight-light: 300;     /* Replace with Figma weight value */
+    --font-weight-normal: 400;    /* Replace with Figma weight value */
+    --font-weight-medium: 500;    /* Replace with Figma weight value */
+    --font-weight-semibold: 600;  /* Replace with Figma weight value */
+    --font-weight-bold: 700;      /* Replace with Figma weight value */
+
+    /* Line Heights - Update with Figma text style line heights */
+    --line-height-tight: 1.25;    /* Replace with Figma line height */
+    --line-height-normal: 1.5;    /* Replace with Figma line height */
+    --line-height-relaxed: 1.75;  /* Replace with Figma line height */
+
+    /* ============================================
+       BORDER RADIUS - Extract from Figma
+       ============================================ */
+    
+    /* Update with Figma corner radius values */
+    --radius-sm: 0.125rem;  /* 2px - Replace with Figma radius token */
+    --radius-md: 0.375rem;  /* 6px - Replace with Figma radius token */
+    --radius-lg: 0.5rem;    /* 8px - Replace with Figma radius token */
+    --radius-xl: 0.75rem;   /* 12px - Replace with Figma radius token */
+    --radius-2xl: 1rem;     /* 16px - Replace with Figma radius token */
+    --radius-full: 9999px;  /* Full circle - Usually stays the same */
+
+    /* ============================================
+       SHADOWS - Extract from Figma Effects
+       ============================================ */
+    
+    /* Update with Figma shadow/elevation values */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);                    /* Replace with Figma shadow */
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* Replace */
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* Replace */
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); /* Replace */
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);            /* Replace with Figma shadow */
+  }
+
+  /* Dark mode variables - Update with Figma dark theme colors if available */
+  .dark {
+    --color-background: 15 23 42;      /* Replace with Figma dark background */
+    --color-foreground: 248 250 252;   /* Replace with Figma dark text */
+    --color-card: 30 41 59;             /* Replace with Figma dark card */
+    --color-card-foreground: 248 250 252;
+    --color-popover: 30 41 59;
+    --color-popover-foreground: 248 250 252;
+    --color-muted: 51 65 85;
+    --color-muted-foreground: 148 163 184;
+    --color-border: 51 65 85;
+    --color-input: 51 65 85;
+    --color-ring: 59 130 246;
+  }
+}
+
