@@ -1,0 +1,78 @@
+# Sanad AI - Cursor Rules
+
+## Project Structure
+This is an Nx monorepo with the following structure:
+- **Apps**: `apps/portal` (main application), `apps/sanad-ai` (library), `apps/muhallil-ahkam` (library)
+- **Libraries**: Located in `libs/` directory
+  - `libs/ui` - UI components (shadcn/ui + AI Elements)
+  - `libs/api` - API client and React Query setup
+  - `libs/chat` - Chat functionality (domain, streaming, data-access, ui)
+  - `libs/config` - App registry and feature flags
+  - `libs/markdown` - Markdown rendering
+  - `libs/response-parser` - Response parsing utilities
+
+## TypeScript & Imports
+- Use TypeScript path aliases defined in `tsconfig.base.json`:
+  - `@sanad-ai/ui` → `libs/ui/src/index.ts`
+  - `@sanad-ai/api` → `libs/api/src/index.ts`
+  - `@sanad-ai/config` → `libs/config/src/index.ts`
+  - `@sanad-ai/chat/*` → `libs/chat/*/src/index.ts`
+  - `@sanad-ai/markdown` → `libs/markdown/src/index.ts`
+  - `@sanad-ai/response-parser` → `libs/response-parser/src/index.ts`
+- Within `libs/ui`, use `@/*` alias for relative imports (e.g., `@/lib/utils`)
+
+## Component Guidelines
+- UI components are in `libs/ui/src/components/`
+- AI Elements components are in `libs/ui/src/components/ai-elements/`
+- Use shadcn/ui components as base, extend with AI Elements when needed
+- Always use the `cn()` utility from `@/lib/utils` for className merging
+- Components should be typed with TypeScript interfaces
+
+## Code Style
+- Use React 18+ with functional components and hooks
+- Prefer named exports over default exports
+- Use TypeScript strict mode
+- Follow existing patterns in the codebase
+- Use Tailwind CSS for styling (CSS Variables mode)
+- Components should be self-contained and reusable
+
+## Build System
+- Use Nx for task running: `nx <target> <project>`
+- Use Vite for building and dev server
+- Libraries build to `dist/packages/`
+- Apps build to `dist/apps/`
+- Portal app dynamically loads other apps from `/packages/` path
+
+## Development
+- Run portal in dev mode: `nx serve portal` or `npm run dev:portal`
+- Run individual apps: `npm run dev:sanad-ai` or `npm run dev:ahkam`
+- Build libraries: `nx build <library-name>`
+- Use Nx affected commands for efficient builds
+- Hot module replacement is enabled in dev mode
+- Environment variables: Copy `.env.example` to `.env` and configure:
+  - `VITE_API_BASE_URL` - API base URL (default: `http://localhost:3000/api`)
+  - `VITE_API_BASIC_AUTH_USERNAME` - Basic auth username (optional)
+  - `VITE_API_BASIC_AUTH_PASSWORD` - Basic auth password (optional)
+  - `VITE_API_BASIC_AUTH` - Pre-encoded base64 auth string (alternative to username/password)
+
+## Testing
+- Write tests alongside code
+- Use Nx test targets: `nx test <project>`
+
+## Git & Files
+- Don't commit `node_modules/`, `dist/`, or build artifacts
+- Don't commit `.env` files (use `.env.example` as template)
+- Keep components.json and tsconfig files in sync between root and libs/ui
+
+## AI Elements
+- AI Elements components are from `https://registry.ai-sdk.dev/`
+- Components use `@ai-elements` registry in components.json
+- Don't try to install `@ai-elements/all` from npm (it's not available)
+- Use individual component imports from `libs/ui/src/components/ai-elements/`
+
+## Important Notes
+- This is a micro-frontend architecture where portal loads apps dynamically
+- Apps are built as libraries and exposed via global window objects
+- Feature flags control which apps are enabled
+- RTL (Right-to-Left) support is available in markdown renderer
+
