@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ============================================
+       FIGMA DESIGN TOKENS
+       Extract values from: https://www.figma.com/design/B7hgpC18wqDGXzts0Ho2EU/sanad-AI-V1--Copy-?node-id=187-30007&m=dev
+       
+       Instructions:
+       1. Open Figma in Dev Mode (Shift + D)
+       2. Select elements in the design
+       3. Check the Inspect panel (right sidebar) for values
+       4. Replace the values below with Figma values
+       5. Match Figma variable names when possible
+       ============================================ */
+    
+    /* Colors - Primary (Teal/Cyan from Figma design) */
+    --color-primary-50: 240 253 250;
+    --color-primary-100: 204 251 241;
+    --color-primary-200: 153 246 228;
+    --color-primary-300: 94 234 212;
+    --color-primary-400: 45 212 191;
+    --color-primary-500: 20 184 166;  /* Main teal */
+    --color-primary-600: 13 148 136;  /* Dark teal for header */
+    --color-primary-700: 15 118 110;
+    --color-primary-800: 17 94 89;
+    --color-primary-900: 19 78 74;
+    --color-primary-950: 4 47 46;
+
+    /* Colors - Secondary */
+    --color-secondary-50: 250 250 250;
+    --color-secondary-100: 245 245 245;
+    --color-secondary-200: 229 229 229;
+    --color-secondary-300: 212 212 212;
+    --color-secondary-400: 163 163 163;
+    --color-secondary-500: 115 115 115;
+    --color-secondary-600: 82 82 82;
+    --color-secondary-700: 64 64 64;
+    --color-secondary-800: 38 38 38;
+    --color-secondary-900: 23 23 23;
+    --color-secondary-950: 10 10 10;
+
+    /* Colors - Accent */
+    --color-accent-50: 253 244 255;
+    --color-accent-100: 250 232 255;
+    --color-accent-200: 245 208 254;
+    --color-accent-300: 240 171 252;
+    --color-accent-400: 232 121 249;
+    --color-accent-500: 217 70 239;
+    --color-accent-600: 192 38 211;
+    --color-accent-700: 162 28 175;
+    --color-accent-800: 134 25 143;
+    --color-accent-900: 112 26 117;
+    --color-accent-950: 74 29 79;
+
+    /* Colors - Success */
+    --color-success-50: 240 253 244;
+    --color-success-100: 220 252 231;
+    --color-success-200: 187 247 208;
+    --color-success-300: 134 239 172;
+    --color-success-400: 74 222 128;
+    --color-success-500: 34 197 94;
+    --color-success-600: 22 163 74;
+    --color-success-700: 21 128 61;
+    --color-success-800: 22 101 52;
+    --color-success-900: 20 83 45;
+    --color-success-950: 5 46 22;
+
+    /* Colors - Warning */
+    --color-warning-50: 255 251 235;
+    --color-warning-100: 254 243 199;
+    --color-warning-200: 253 230 138;
+    --color-warning-300: 252 211 77;
+    --color-warning-400: 251 191 36;
+    --color-warning-500: 245 158 11;
+    --color-warning-600: 217 119 6;
+    --color-warning-700: 180 83 9;
+    --color-warning-800: 146 64 14;
+    --color-warning-900: 120 53 15;
+    --color-warning-950: 69 26 3;
+
+    /* Colors - Error/Destructive */
+    --color-error-50: 254 242 242;
+    --color-error-100: 254 226 226;
+    --color-error-200: 254 202 202;
+    --color-error-300: 252 165 165;
+    --color-error-400: 248 113 113;
+    --color-error-500: 239 68 68;
+    --color-error-600: 220 38 38;
+    --color-error-700: 185 28 28;
+    --color-error-800: 153 27 27;
+    --color-error-900: 127 29 29;
+    --color-error-950: 69 10 10;
+
+    /* Neutral Colors - White background from Figma */
+    --color-background: 255 255 255;
+    --color-foreground: 15 23 42;
+    --color-card: 255 255 255;
+    --color-card-foreground: 15 23 42;
+    --color-popover: 255 255 255;
+    --color-popover-foreground: 15 23 42;
+    --color-muted: 241 245 249;
+    --color-muted-foreground: 100 116 139;
+    --color-border: 226 232 240;
+    --color-input: 226 232 240;
+    --color-ring: 20 184 166; /* Teal focus ring */
+    
+    /* Header Colors - Dark teal for top bar, lighter teal for nav */
+    --color-header-dark: 13 148 136;  /* Dark teal header bar */
+    --color-header-light: 20 184 166; /* Lighter teal navigation bar */
+    --color-header-text: 255 255 255; /* White text on teal */
+    --color-primary-foreground: 255 255 255; /* White text on primary */
+
+    /* Spacing - Update with Figma spacing tokens */
+    --spacing-xs: 0.25rem; /* 4px */
+    --spacing-sm: 0.5rem; /* 8px */
+    --spacing-md: 1rem; /* 16px */
+    --spacing-lg: 1.5rem; /* 24px */
+    --spacing-xl: 2rem; /* 32px */
+    --spacing-2xl: 3rem; /* 48px */
+    --spacing-3xl: 4rem; /* 64px */
+
+    /* Typography - Arabic support for RTL */
+    --font-family-sans: 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-family-serif: 'Georgia', serif;
+    --font-family-mono: 'Fira Code', 'Courier New', monospace;
+
+    --font-size-xs: 0.75rem; /* 12px */
+    --font-size-sm: 0.875rem; /* 14px */
+    --font-size-base: 1rem; /* 16px */
+    --font-size-lg: 1.125rem; /* 18px */
+    --font-size-xl: 1.25rem; /* 20px */
+    --font-size-2xl: 1.5rem; /* 24px */
+    --font-size-3xl: 1.875rem; /* 30px */
+    --font-size-4xl: 2.25rem; /* 36px */
+
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* Border Radius - Update with Figma radius tokens */
+    --radius-sm: 0.125rem; /* 2px */
+    --radius-md: 0.375rem; /* 6px */
+    --radius-lg: 0.5rem; /* 8px */
+    --radius-xl: 0.75rem; /* 12px */
+    --radius-2xl: 1rem; /* 16px */
+    --radius-full: 9999px;
+
+    /* Shadows - Update with Figma shadow tokens */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  }
+
+  .dark {
+    --color-background: 15 23 42;
+    --color-foreground: 248 250 252;
+    --color-card: 30 41 59;
+    --color-card-foreground: 248 250 252;
+    --color-popover: 30 41 59;
+    --color-popover-foreground: 248 250 252;
+    --color-muted: 51 65 85;
+    --color-muted-foreground: 148 163 184;
+    --color-border: 51 65 85;
+    --color-input: 51 65 85;
+    --color-ring: 59 130 246;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
