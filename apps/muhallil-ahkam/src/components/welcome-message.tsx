@@ -1,0 +1,46 @@
+import React from 'react';
+import WelcomeAvatar from '../assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
+
+const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
+
+interface WelcomeMessageProps {
+  userName?: string;
+}
+
+export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ 
+  userName = 'عبد الله' 
+}) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 px-4">
+      {/* Avatar Icon */}
+      <div 
+        className="flex w-[92px] h-[92px] justify-center items-centerflex-shrink-0"
+        style={{
+          borderRadius: '23.004px',
+          background: 'rgba(255, 255, 255, 0.37)',
+        }}
+      >
+        <img 
+          src={WelcomeAvatar} 
+          alt="Welcome" 
+        />
+      </div>
+
+      {/* Welcome Message */}
+      <h2
+        className="text-[32px] font-bold text-[#1A1A1A] text-center"
+        style={{ fontFamily: FONT_FAMILY }}
+      >
+        حياك الله {userName}
+      </h2>
+
+      {/* Greeting */}
+      <p
+        className="text-[18px] text-[#666666] text-center"
+        style={{ fontFamily: FONT_FAMILY }}
+      >
+        كيف أقدر أخدمك اليوم؟
+      </p>
+    </div>
+  );
+};
