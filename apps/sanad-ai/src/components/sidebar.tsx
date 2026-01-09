@@ -1,0 +1,410 @@
+import React from 'react';
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarInput,
+  Button,
+  useSidebar,
+} from '@sanad-ai/ui';
+
+import SanadAiIcon from '../assets/sanad-ai-icon.svg';
+import LayoutIcon from '../assets/layout-alt-02.svg';
+import SearchLgIcon from '../assets/search-lg.svg';
+import EditeIcon from '../assets/edit-05.svg';
+
+// Constants
+const SIDEBAR_STYLES = {
+  background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 100%), linear-gradient(90deg, rgba(5, 88, 89, 1) 0%, rgba(5, 88, 89, 1) 100%)',
+} as const;
+
+const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
+
+// Reusable Sidebar Toggle Button Component
+export interface SidebarToggleButtonProps {
+  className?: string;
+  size?: 'default' | 'small' | 'large';
+}
+
+export const SidebarToggleButton: React.FC<SidebarToggleButtonProps> = ({
+  className = '',
+  size = 'default',
+}) => {
+  const { toggleSidebar } = useSidebar();
+
+  const sizeClasses = {
+    default: 'w-[40px] h-[40px]',
+    small: 'w-[32px] h-[32px]',
+    large: 'w-[48px] h-[48px]',
+  };
+
+  const iconSizeClasses = {
+    default: 'w-4 h-4',
+    small: 'w-3 h-3',
+    large: 'w-5 h-5',
+  };
+
+  return (
+    <button
+      onClick={toggleSidebar}
+      className={`flex ${sizeClasses[size]} p-2 justify-center items-center aspect-square rounded-[6px] bg-[#00A79D] hover:bg-[#00A79D]/90 transition-colors flex-shrink-0 ${className}`}
+      aria-label="Toggle Sidebar"
+    >
+      <img 
+        src={LayoutIcon} 
+        alt="القائمة" 
+        className={iconSizeClasses[size]} 
+      />
+    </button>
+  );
+};
+
+const SidebarHeader: React.FC = () => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  if (isCollapsed) {
+    return (
+      <div 
+        className="flex w-[40px] h-[40px] justify-center items-center flex-shrink-0"
+        style={{
+          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.37)',
+        }}
+      >
+        <img 
+          src={SanadAiIcon} 
+          alt="SANAD AI" 
+          className="w-[18px] h-[18px]"
+          style={{ transform: 'scaleX(-1)' }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full flex items-center justify-between gap-2 mb-6">
+      <SidebarToggleButton />
+      
+      <h1
+        className="flex-1 text-right text-white text-[18px] font-bold leading-[24px]"
+        style={{ fontFamily: FONT_FAMILY }}
+      >
+        SANAD AI
+      </h1>
+
+      <div 
+        className="flex w-[40px] h-[40px] justify-center items-center flex-shrink-0"
+        style={{
+          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.37)',
+        }}
+      >
+        <img 
+          src={SanadAiIcon} 
+          alt="SANAD AI" 
+          className="w-[18px] h-[18px]"
+          style={{ transform: 'scaleX(-1)' }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Search Input Component
+const SearchInput: React.FC = () => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  if (isCollapsed) {
+    return null;
+  }
+
+  return (
+    <div className="w-full relative">
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10">
+        <img src={SearchLgIcon} alt="بحث" className="w-full h-full" />
+      </div>
+      <SidebarInput
+        type="text"
+        placeholder="البحث في المحادثة ..."
+        className="w-full h-[38px] pr-8 pl-2 rounded-[6px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[14px] font-bold leading-[20px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none"
+        style={{
+          fontFamily: FONT_FAMILY,
+          boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
+        }}
+      />
+    </div>
+  );
+};
+
+// Icon Button Component (for collapsed state)
+const IconButton: React.FC<{
+  icon: string;
+  alt: string;
+  onClick?: () => void;
+  bgColor?: string;
+  shape?: 'square' | 'circle' | 'rectangle';
+}> = ({ icon, alt, onClick, bgColor = '#4A8C8C', shape = 'square' }) => {
+  const shapeClasses = {
+    square: 'rounded-[6px]',
+    circle: 'rounded-full',
+    rectangle: 'rounded-[6px]',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-[40px] h-[40px] justify-center items-center hover:opacity-90 transition-opacity flex-shrink-0 ${shapeClasses[shape]}`}
+      style={{ backgroundColor: bgColor }}
+      aria-label={alt}
+    >
+      <img src={icon} alt={alt} className="w-4 h-4" />
+    </button>
+  );
+};
+
+// New Chat Button Component
+const NewChatButton: React.FC<{ onNewChat?: () => void }> = ({ onNewChat }) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  const handleNewChat = () => {
+    onNewChat?.();
+  };
+
+  if (isCollapsed) {
+    return (
+      <IconButton
+        icon={EditeIcon}
+        alt="محادثة جديدة"
+        bgColor="#4A8C8C"
+        shape="square"
+        onClick={handleNewChat}
+      />
+    );
+  }
+
+  return (
+    <Button
+      className="w-full h-[38px] flex items-center gap-2 pl-2 rounded-[6px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[14px] font-bold leading-[20px] justify-start border-0"
+      style={{
+        fontFamily: FONT_FAMILY,
+        background: 'linear-gradient(90deg, rgba(0, 167, 157, 1) 0%, rgba(0, 167, 157, 1) 100%), linear-gradient(90deg, rgba(248, 248, 248, 1) 0%, rgba(248, 248, 248, 1) 100%)',
+      }}
+      onClick={handleNewChat}
+    >
+      <div className="w-4 h-4 flex-shrink-0">
+        <img src={EditeIcon} alt="محادثة جديدة" className="w-full h-full" />
+      </div>
+      <span className="truncate">محادثة جديدة</span>
+    </Button>
+  );
+};
+
+// Conversation Item Component
+interface ConversationItemProps {
+  title: string;
+  isActive?: boolean;
+  onClick?: () => void;
+  onDelete?: () => void;
+}
+
+const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, onClick, onDelete }) => {
+  return (
+    <div
+      className={`w-full h-[42px] flex items-center gap-2 px-3 rounded-[4px] transition-colors group ${
+        isActive ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'
+      }`}
+      dir="rtl"
+    >
+      <button
+        onClick={onClick}
+        className="flex-1 flex items-center gap-2 min-w-0"
+      >
+        <div className="w-2 h-2 flex-shrink-0 flex items-center justify-center">
+          <span className="text-white text-[8px] leading-[20px]">.</span>
+        </div>
+        <div className="flex-1 text-right min-w-0">
+          <p
+            className="text-white text-[14px] font-normal leading-[20px] truncate"
+            style={{ fontFamily: FONT_FAMILY }}
+            dir="auto"
+          >
+            {title}
+          </p>
+        </div>
+      </button>
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-white/60 hover:text-white text-xs px-2"
+          aria-label="Delete conversation"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
+};
+
+// Search Icon Button (for collapsed state)
+const SearchIconButton: React.FC = () => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  if (!isCollapsed) {
+    return null;
+  }
+
+  return (
+    <IconButton
+      icon={SearchLgIcon}
+      alt="بحث"
+      bgColor="#FFFFFF"
+      shape="square"
+      onClick={() => {}}
+    />
+  );
+};
+
+// Conversations List Component
+interface ConversationsListProps {
+  conversations: Array<{ conversation_id: string; name: string }>;
+  currentConversationId?: string | null;
+  onSelectConversation?: (conversationId: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
+}
+
+const ConversationsList: React.FC<ConversationsListProps> = ({
+  conversations,
+  currentConversationId,
+  onSelectConversation,
+  onDeleteConversation,
+}) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  if (isCollapsed) {
+    return null;
+  }
+
+  if (conversations.length === 0) {
+    return (
+      <div className="w-full text-center py-4">
+        <p className="text-white/60 text-sm" style={{ fontFamily: FONT_FAMILY }}>
+          لا توجد محادثات
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-1">
+      {conversations.map((conv) => (
+        <ConversationItem
+          key={conv.conversation_id}
+          title={conv.name}
+          isActive={currentConversationId === conv.conversation_id}
+          onClick={() => onSelectConversation?.(conv.conversation_id)}
+          onDelete={onDeleteConversation ? () => onDeleteConversation(conv.conversation_id) : undefined}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Main Sidebar Component
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  conversations?: Array<{ conversation_id: string; name: string }>;
+  currentConversationId?: string | null;
+  onSelectConversation?: (conversationId: string) => void;
+  onNewConversation?: () => void;
+  onDeleteConversation?: (conversationId: string) => void;
+  onUpdateConversation?: (conversationId: string, name: string) => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({
+  conversations = [],
+  currentConversationId,
+  onSelectConversation,
+  onNewConversation,
+  onDeleteConversation,
+}) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  return (
+    <ShadcnSidebar
+      side="right"
+      variant="floating"
+      collapsible="icon"
+      className={`fixed top-[13px] right-[13px] h-[calc(100vh-26px)] rounded-[20px] border-0 transition-all duration-300 ${
+        isCollapsed ? 'w-[60px]' : 'w-[300px]'
+      }`}
+      style={{
+        ...SIDEBAR_STYLES,
+        boxShadow: '0px 4px 21.1px 0px rgba(255, 255, 255, 0.24)',
+      }}
+      dir="rtl"
+    >
+      <SidebarContent
+        className={`flex flex-col h-full ${
+          isCollapsed 
+            ? 'items-center gap-6 p-3' 
+            : 'gap-3 p-3'
+        }`}
+        style={{
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        <style>{`
+          [data-sidebar="content"]::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+        
+        <SidebarHeader />
+
+        {!isCollapsed ? (
+          <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
+            <SearchInput />
+            <NewChatButton onNewChat={onNewConversation} />
+            
+            <div className="flex-1 overflow-y-auto min-h-0" style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}>
+              <style>{`
+                .conversations-scroll::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              <div className="conversations-scroll">
+                <ConversationsList
+                  conversations={conversations}
+                  currentConversationId={currentConversationId}
+                  onSelectConversation={onSelectConversation}
+                  onDeleteConversation={onDeleteConversation}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full flex flex-col items-center gap-6">
+            <SidebarToggleButton />
+            <SearchIconButton />
+            <NewChatButton onNewChat={onNewConversation} />
+          </div>
+        )}
+      </SidebarContent>
+    </ShadcnSidebar>
+  );
+};
