@@ -23,7 +23,8 @@
       "@sanad-ai/chat/data-access": ["libs/chat/data-access/src/index.ts"],
       "@sanad-ai/chat/ui": ["libs/chat/ui/src/index.ts"],
       "@sanad-ai/markdown": ["libs/markdown/src/index.ts"],
-      "@sanad-ai/response-parser": ["libs/response-parser/src/index.ts"]
+      "@sanad-ai/response-parser": ["libs/response-parser/src/index.ts"],
+      "@/*": ["libs/ui/src/*"]
     },
     "strict": true,
     "noImplicitAny": true,

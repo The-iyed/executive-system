@@ -1,0 +1,186 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+import type { DocumentReference } from '@sanad-ai/api';
+
+export interface DocumentSourceProps {
+  document: DocumentReference;
+  onDownload?: (document: DocumentReference) => void;
+  onView?: (document: DocumentReference) => void;
+  className?: string;
+}
+
+// Simple SVG icons
+const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M8 11V1M8 11L5 8M8 11L11 8M2 13H14"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ViewIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M8 3C4.667 3 2.073 5.073 1 8C2.073 10.927 4.667 13 8 13C11.333 13 13.927 10.927 15 8C13.927 5.073 11.333 3 8 3Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+const PdfIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <rect width="32" height="32" rx="4" fill="#E53E3E" />
+    <text
+      x="16"
+      y="20"
+      textAnchor="middle"
+      fill="white"
+      fontSize="12"
+      fontWeight="bold"
+    >
+      PDF
+    </text>
+  </svg>
+);
+
+const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M6.75 13.5L11.25 9L6.75 4.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+export const DocumentSource: React.FC<DocumentSourceProps> = ({
+  document,
+  onDownload,
+  onView,
+  className,
+}) => {
+  return (
+    <div
+      className={cn(
+        'bg-white flex gap-3.5 h-14 items-center px-3 py-0 rounded-xl shadow-[0px_4px_25.3px_0px_rgba(0,0,0,0.08)]',
+        className
+      )}
+      dir="rtl"
+    >
+      {/* Action Buttons */}
+      <div className="flex gap-1.25 items-center">
+        {/* Download Button */}
+        <button
+          onClick={() => onDownload?.(document)}
+          className="bg-white border border-[#f6f6f6] border-solid overflow-hidden relative rounded-[5.143px] shadow-[0px_4px_9px_0px_rgba(0,0,0,0.08)] shrink-0 size-9 flex items-center justify-center hover:opacity-80 transition-opacity"
+          aria-label="Download document"
+        >
+          <DownloadIcon className="w-4 h-4 text-[#101828]" />
+        </button>
+
+        {/* View Button */}
+        <button
+          onClick={() => onView?.(document)}
+          className="bg-white border border-[#f6f6f6] border-solid overflow-hidden relative rounded-[5.143px] shadow-[0px_4px_9px_0px_rgba(0,0,0,0.08)] shrink-0 size-9 flex items-center justify-center hover:opacity-80 transition-opacity"
+          aria-label="View document"
+        >
+          <ViewIcon className="w-4 h-4 text-[#101828]" />
+        </button>
+      </div>
+
+      {/* Document Info */}
+      <div className="flex gap-2.75 items-center flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <p
+            className="font-normal leading-[30.428px] text-sm text-[#101828] text-right truncate"
+            style={{ fontFamily: '"Frutiger LT Arabic", sans-serif' }}
+          >
+            {document.file_name}
+          </p>
+          <ChevronRightIcon className="w-[17.75px] h-[17.75px] text-[#101828] shrink-0" />
+        </div>
+        <div className="h-8 overflow-hidden relative shrink-0 w-8">
+          <PdfIcon className="w-full h-full" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export interface DocumentSourcesProps {
+  documents: DocumentReference[];
+  onDownload?: (document: DocumentReference) => void;
+  onView?: (document: DocumentReference) => void;
+  className?: string;
+}
+
+export const DocumentSources: React.FC<DocumentSourcesProps> = ({
+  documents,
+  onDownload,
+  onView,
+  className,
+}) => {
+  if (documents.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={cn('flex flex-col gap-3 items-end', className)} dir="rtl">
+      <p
+        className="font-bold leading-[25.233px] text-base text-[#00a79d] text-right"
+        style={{ fontFamily: '"Frutiger LT Arabic", sans-serif' }}
+      >
+        المصادر :
+      </p>
+      <div className="flex gap-4 items-center flex-wrap">
+        {documents.map((doc, index) => (
+          <DocumentSource
+            key={index}
+            document={doc}
+            onDownload={onDownload}
+            onView={onView}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
