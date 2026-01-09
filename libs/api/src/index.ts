@@ -21,6 +21,28 @@ export {
   registerSharedApis,
 } from './endpoints';
 
+// Legislator API endpoints and types
+export {
+  legislatorEndpoints,
+  registerLegislatorApis,
+} from './legislator-endpoints';
+export type {
+  DocumentReference,
+  MessageMetadata,
+  LegislatorMessage,
+  Conversation as LegislatorConversation,
+  GetConversationsResponse,
+  GetMessagesResponse,
+  CreateConversationRequest,
+  CreateConversationResponse,
+  UpdateConversationRequest,
+  UpdateConversationResponse,
+  SendMessageStreamRequest,
+  StreamEvent,
+  ParsedContent,
+} from './legislator-types';
+export { sendStreamingMessage, type StreamController } from './legislator-client';
+
 // React Query utilities
 export {
   createQueryClient,

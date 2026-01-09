@@ -11,7 +11,7 @@ export default defineConfig(({ command }) => {
     return {
       plugins: [react(), viteTsconfigPaths()],
       server: {
-        port: 4201,
+        port: 4173,
         open: true,
       },
     };
@@ -20,18 +20,30 @@ export default defineConfig(({ command }) => {
   // Build mode - build as library
   return {
     plugins: [react(), viteTsconfigPaths()],
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env': '{}',
+      'global': 'globalThis',
+    },
     build: {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
         name: 'SANAD_APP',
         fileName: (format) => `sanad-ai.${format}.js`,
         formats: ['umd'],
-        // Ensure output is index.js not index.umd.js
       },
+      cssCodeSplit: false,
       rollupOptions: {
         external: ['react', 'react-dom', '@tanstack/react-query'],
         output: {
           entryFileNames: 'sanad-ai.bundle.js',
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name === 'style.css') {
+              return 'sanad-ai.bundle.css';
+            }
+            return assetInfo.name || 'asset';
+          },
+          banner: 'var process = { env: { NODE_ENV: "production" } };',
           globals: {
             react: 'React',
             'react-dom': 'ReactDOM',

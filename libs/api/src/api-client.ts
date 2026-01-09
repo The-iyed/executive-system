@@ -8,10 +8,12 @@ import { createApiClient, type ApiClientConfig } from './client';
 export class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
+  private basicAuth?: ApiClientConfig['basicAuth'];
 
   constructor(config: ApiClientConfig) {
     this.client = createApiClient(config);
     this.baseURL = config.baseURL || '';
+    this.basicAuth = config.basicAuth;
   }
 
   /**
@@ -107,6 +109,13 @@ export class ApiClient {
    */
   getBaseURL(): string {
     return this.baseURL;
+  }
+
+  /**
+   * Get the basic auth config
+   */
+  getBasicAuth(): ApiClientConfig['basicAuth'] {
+    return this.basicAuth;
   }
 }
 
