@@ -2,7 +2,20 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": "../../",
+    "paths": {
+      "@sanad-ai/api": ["libs/api/src/index.ts"],
+      "@sanad-ai/ui": ["libs/ui/src/index.ts"],
+      "@sanad-ai/config": ["libs/config/src/index.ts"],
+      "@sanad-ai/chat/domain": ["libs/chat/domain/src/index.ts"],
+      "@sanad-ai/chat/streaming": ["libs/chat/streaming/src/index.ts"],
+      "@sanad-ai/chat/data-access": ["libs/chat/data-access/src/index.ts"],
+      "@sanad-ai/chat/ui": ["libs/chat/ui/src/index.ts"],
+      "@sanad-ai/markdown": ["libs/markdown/src/index.ts"],
+      "@sanad-ai/response-parser": ["libs/response-parser/src/index.ts"],
+      "@/*": ["libs/ui/src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]

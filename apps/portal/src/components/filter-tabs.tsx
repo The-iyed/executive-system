@@ -19,9 +19,9 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
   onTabChange,
 }) => {
   return (
-    <div className="relative w-full h-[52px] flex items-center justify-end">
-      {/* Tabs */}
-      <div className="flex items-center justify-end gap-0 relative z-10">
+    <div className="relative w-full h-[52px] flex items-center justify-start overflow-x-auto" dir="rtl" style={{ fontFamily: 'Frutiger LT Arabic, sans-serif' }}>
+      {/* Tabs Container - Scrollable on mobile */}
+      <div className="flex items-center gap-0 relative z-10 h-12 min-w-max" dir="rtl">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -31,28 +31,30 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`
-                flex items-center justify-center gap-1 px-4 py-4 rounded
-                transition-colors relative
+                flex items-center justify-center gap-1 px-3 sm:px-4 py-4 rounded whitespace-nowrap
+                transition-colors relative h-12 flex-shrink-0
                 ${isActive 
-                  ? 'text-[#00a79d] font-bold' 
+                  ? 'text-[#00A79D] font-bold' 
                   : 'text-[#384250] font-normal'
                 }
               `}
+              style={{ fontSize: '14px', lineHeight: '20px', textAlign: 'right' }}
+              dir="rtl"
             >
-              <span className="text-sm leading-5" dir="rtl">{tab.label}</span>
-              {Icon && <Icon className="w-4 h-4" />}
+              <span className="text-right" style={{ textAlign: 'right' }}>{tab.label}</span>
+              {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={{ color: isActive ? '#00A79D' : '#384250', marginRight: '4px' }} />}
               
-              {/* Active indicator */}
+              {/* Active indicator - 3px height */}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00a79d] rounded-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A79D] rounded-full z-10" />
               )}
             </button>
           );
         })}
       </div>
       
-      {/* Divider */}
-      <div className="absolute bottom-[2px] left-0 right-0 h-[3px] bg-[#d2d6db] rounded-full z-0" />
+      {/* Divider - 3px height, #D2D6DB */}
+      <div className="absolute bottom-[2px] left-0 right-0 h-[3px] bg-[#D2D6DB] rounded-full z-0" />
     </div>
   );
 };
