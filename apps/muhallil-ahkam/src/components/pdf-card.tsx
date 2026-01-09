@@ -10,9 +10,10 @@ export interface PdfCardProps {
 }
 
 export const PdfCard: React.FC<PdfCardProps> = ({ name, size, className }) => {
+  const hasMaxWidth = className?.includes('max-w-');
   return (
     <div
-      className={`flex flex-row items-start flex-shrink-0 w-[195px] p-[16px] gap-[8px] rounded-[12px] border-[1px] border-[#E7E7E7] bg-[#FFF] ${className || ''}`}
+      className={`flex flex-row items-start flex-shrink-0 ${hasMaxWidth ? '' : 'w-[195px]'} p-[16px] gap-[8px] rounded-[12px] border-[1px] border-[#E7E7E7] bg-[#FFF] ${className || ''}`}
     >
       <img 
         src={PdfIcon} 
