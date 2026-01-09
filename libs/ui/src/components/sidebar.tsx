@@ -617,7 +617,7 @@ SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
 const SidebarMenuSub = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul">>(
   ({ className, ...props }, ref) => {
-    const { state } = useSidebar()
+    useSidebar()
 
     return (
       <ul

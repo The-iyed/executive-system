@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "libs/components/ui/button";
+import { Button } from "@/components/button";
 import {
   ScrollArea,
   ScrollBar,
-} from "libs/components/ui/scroll-area";
+} from "@/components/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ComponentProps } from "react";
 

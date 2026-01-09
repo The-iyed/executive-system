@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "libs/components/ui/button";
+import { Button } from "@/components/button";
 import {
   Command,
   CommandEmpty,
@@ -9,31 +9,31 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "libs/components/ui/command";
+} from "@/components/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "libs/components/ui/dropdown-menu";
+} from "@/components/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "libs/components/ui/hover-card";
+} from "@/components/hover-card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from "libs/components/ui/input-group";
+} from "@/components/input-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "libs/components/ui/select";
+} from "@/components/select";
 import { cn } from "@/lib/utils";
 import type { ChatStatus, FileUIPart } from "ai";
 import {
@@ -326,7 +326,7 @@ export function PromptInputAttachment({
             <Button
               aria-label="Remove attachment"
               className="absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 attachments.remove(data.id);
               }}
@@ -417,7 +417,7 @@ export const PromptInputActionAddAttachments = ({
   return (
     <DropdownMenuItem
       {...props}
-      onSelect={(e) => {
+      onSelect={(e: Event) => {
         e.preventDefault();
         attachments.openFileDialog();
       }}
