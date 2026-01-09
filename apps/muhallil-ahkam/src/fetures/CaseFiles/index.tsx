@@ -180,14 +180,38 @@ const CaseFiles: React.FC = () => {
         >
           ملفات القضية
         </h2>
-        <div className="flex flex-row gap-4 overflow-x-auto pb-2">
-          {mockCaseFiles.map((file, index) => (
-            <PdfCard
-              key={index}
-              name={file.name}
-              size={file.size}
-            />
-          ))}
+        <div 
+          className="flex flex-col items-end gap-[24.786px] rounded-[14.872px] border-[1.239px] border-[#EAECF0] bg-white p-[29.744px] shadow-[0_1.239px_3.718px_0_rgba(16,24,40,0.10),0_1.239px_2.479px_0_rgba(16,24,40,0.06)]"
+        >
+          <div className="flex flex-row gap-[24.786px] overflow-x-auto w-full case-files-scroll">
+            {mockCaseFiles.map((file, index) => (
+              <PdfCard
+                key={index}
+                name={file.name}
+                size={file.size}
+                className="max-w-[442px]"
+              />
+            ))}
+          </div>
+          <style>{`
+            .case-files-scroll {
+              scrollbar-gutter: stable;
+            }
+            .case-files-scroll::-webkit-scrollbar {
+              height: 8px;
+            }
+            .case-files-scroll::-webkit-scrollbar-track {
+              background: transparent;
+              border-radius: 15px;
+            }
+            .case-files-scroll::-webkit-scrollbar-thumb {
+              background: #E0E0E0;
+              border-radius: 15px;
+            }
+            .case-files-scroll::-webkit-scrollbar-thumb:hover {
+              background: #D0D0D0;
+            }
+          `}</style>
         </div>
       </div>
 
