@@ -21,7 +21,7 @@ const getBasicAuth = () => {
 
 // Default config for dev mode
 const defaultConfig = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  apiBaseUrl: import.meta.env.VITE_SANAD_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
   basicAuth: getBasicAuth(),
 };
 

@@ -18,7 +18,7 @@ const SidebarInsetWrapper: React.FC<{ children: ReactNode }> = ({ children }) =>
         isCollapsed ? 'mr-[86px]' : 'mr-[359px]'
       }`}
     >
-      <div className="h-[calc(100vh-26px)] bg-white rounded-[15px] border border-[#F0F5F3] overflow-y-auto overflow-x-hidden scroll-container">
+      <div className="h-full bg-white rounded-[15px] border border-[#F0F5F3] overflow-y-auto overflow-x-hidden scroll-container" style={{ height: '100%', maxHeight: 'calc(100vh - 26px)' }}>
         {children}
       </div>
       <style>{`
@@ -55,9 +55,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   };
   
   return (
-    <div className="ahkam-app-layout min-h-screen p-[13px]" dir="rtl">
+    <div className="ahkam-app-layout w-full h-full min-h-screen p-[13px]" dir="rtl" style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${BackgroundImage})`,
         }}
@@ -66,7 +66,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       </div>
 
       <SidebarProvider open={sidebarOpen} onOpenChange={handleSidebarToggle}>
-        <div className="relative z-10 flex w-full min-h-[calc(100vh-26px)]">
+        <div className="relative z-10 flex w-full h-full" style={{ height: '100%' }}>
           <Sidebar isOpen={sidebarOpen} onClose={handleSidebarToggle} />
 
           <SidebarInsetWrapper>

@@ -79,7 +79,7 @@ module.exports = {
         xl: 'var(--radius-xl)',
       },
       fontFamily: {
-        sans: ['Cairo', 'Tajawal', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['Georgia', 'serif'],
         mono: ['Fira Code', 'Courier New', 'monospace'],
       },

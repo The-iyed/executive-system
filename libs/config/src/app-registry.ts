@@ -8,16 +8,27 @@ export interface AppMetadata {
   globalName: keyof Window;
 }
 
+const getBundlePath = (appName: string): string => {
+  const bundleFileMap: Record<string, string> = {
+    'sanad-ai': 'sanad-ai.bundle.js',
+    'muhallil-ahkam': 'muhallil-ahkam.bundle.js',
+  };
+  
+  const bundleFileName = bundleFileMap[appName] || `${appName}.bundle.js`;
+  
+  return `/packages/${appName}/${bundleFileName}`;
+};
+
 export const APP_REGISTRY: AppMetadata[] = [
   {
     name: 'sanad-ai',
-    bundlePath: '/packages/sanad-ai/index.js',
+    bundlePath: getBundlePath('sanad-ai'),
     featureFlag: 'sanadAi',
     globalName: 'SANAD_APP',
   },
   {
     name: 'muhallil-ahkam',
-    bundlePath: '/packages/muhallil-ahkam/index.js',
+    bundlePath: getBundlePath('muhallil-ahkam'),
     featureFlag: 'muhallilAhkam',
     globalName: 'AHKAM_APP',
   },
