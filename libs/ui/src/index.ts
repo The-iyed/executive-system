@@ -9,6 +9,33 @@ export { Alert, AlertTitle, AlertDescription, type AlertProps } from './componen
 export { Badge, badgeVariants, type BadgeProps } from './components/badge';
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, type TooltipProps } from './components/tooltip';
 export { Input, type InputProps } from './components/input';
+export { Progress } from './components/progress';
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from './components/sidebar';
 
 // Export utilities
 export { cn } from './lib/utils';
