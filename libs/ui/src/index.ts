@@ -37,5 +37,29 @@ export {
   useSidebar,
 } from './components/sidebar';
 
+// Export document sources and related questions
+export {
+  DocumentSource,
+  DocumentSources,
+  type DocumentSourceProps,
+  type DocumentSourcesProps,
+} from './components/document-source';
+export {
+  RelatedQuestion,
+  RelatedQuestions,
+  type RelatedQuestionProps,
+  type RelatedQuestionsProps,
+} from './components/related-questions';
+export {
+  MessageActions,
+  type MessageActionsProps,
+} from './components/message-actions';
+
+// Export AI Elements components
+export {
+  MessageResponse,
+  type MessageResponseProps,
+} from './components/ai-elements/message';
+
 // Export utilities
 export { cn } from './lib/utils';

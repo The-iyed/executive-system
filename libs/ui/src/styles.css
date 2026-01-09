@@ -123,7 +123,7 @@
     --spacing-3xl: 4rem; /* 64px */
 
     /* Typography - Arabic support for RTL */
-    --font-family-sans: 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-family-sans: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
     --font-family-serif: 'Georgia', serif;
     --font-family-mono: 'Fira Code', 'Courier New', monospace;
 
@@ -184,5 +184,6 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
   }
 }

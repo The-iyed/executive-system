@@ -5,7 +5,7 @@ export interface ChatInterfaceProps {
   onMessage?: (message: string) => void;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiBaseUrl, onMessage }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiBaseUrl: _apiBaseUrl, onMessage: _onMessage }) => {
   return (
     <div className="chat-interface">
       <p>Chat interface using @ai-elements/all</p>
