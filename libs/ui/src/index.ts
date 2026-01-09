@@ -11,6 +11,21 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, type TooltipP
 export { Input, type InputProps } from './components/input';
 export { Progress } from './components/progress';
 export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbEllipsis,
+} from './components/breadcrumb';
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from './components/tabs';
+export {
   Sidebar,
   SidebarContent,
   SidebarFooter,
