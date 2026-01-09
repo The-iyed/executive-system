@@ -24,12 +24,13 @@ export default defineConfig(({ command }) => {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
         name: 'AHKAM_APP',
-        fileName: 'index',
+        fileName: (format) => `muhallil-ahkam.${format}.js`,
         formats: ['umd'],
       },
       rollupOptions: {
         external: ['react', 'react-dom', '@tanstack/react-query'],
         output: {
+          entryFileNames: 'muhallil-ahkam.bundle.js',
           globals: {
             react: 'React',
             'react-dom': 'ReactDOM',
