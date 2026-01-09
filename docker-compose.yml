@@ -6,4 +6,18 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
+  ahkam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4202:4202"
+    restart: unless-stopped
+  sanad-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173"
+    restart: unless-stopped
 

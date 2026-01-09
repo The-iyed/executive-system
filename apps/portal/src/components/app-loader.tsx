@@ -37,6 +37,17 @@ export const AppLoader: React.FC<AppLoaderProps> = ({ app, config = {} }) => {
     );
   }
 
-  return <div ref={containerRef} className={`app-container app-${app.name}`} />;
+  return (
+    <div 
+      ref={containerRef} 
+      className={`app-container app-${app.name} w-full h-full`}
+      style={{ 
+        height: '100%', 
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    />
+  );
 };
 
