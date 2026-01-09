@@ -1,16 +1,16 @@
 "use client";
 
-import { Button } from "libs/components/ui/button";
+import { Button } from "@/components/button";
 import {
   ButtonGroup,
   ButtonGroupText,
-} from "libs/components/ui/button-group";
+} from "@/components/button-group";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "libs/components/ui/tooltip";
+} from "@/components/tooltip";
 import { cn } from "@/lib/utils";
 import type { FileUIPart, UIMessage } from "ai";
 import {
@@ -80,7 +80,7 @@ export const MessageAction = ({
   children,
   label,
   variant = "ghost",
-  size = "icon-sm",
+  size = "icon",
   ...props
 }: MessageActionProps) => {
   const button = (
@@ -249,7 +249,7 @@ export const MessageBranchPrevious = ({
       aria-label="Previous branch"
       disabled={totalBranches <= 1}
       onClick={goToPrevious}
-      size="icon-sm"
+      size="icon"
       type="button"
       variant="ghost"
       {...props}
@@ -273,7 +273,7 @@ export const MessageBranchNext = ({
       aria-label="Next branch"
       disabled={totalBranches <= 1}
       onClick={goToNext}
-      size="icon-sm"
+      size="icon"
       type="button"
       variant="ghost"
       {...props}
@@ -360,7 +360,7 @@ export function MessageAttachment({
             <Button
               aria-label="Remove attachment"
               className="absolute top-2 right-2 size-6 rounded-full bg-background/80 p-0 opacity-0 backdrop-blur-sm transition-opacity hover:bg-background group-hover:opacity-100 [&>svg]:size-3"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 onRemove();
               }}
@@ -388,7 +388,7 @@ export function MessageAttachment({
             <Button
               aria-label="Remove attachment"
               className="size-6 shrink-0 rounded-full p-0 opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100 [&>svg]:size-3"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 onRemove();
               }}
