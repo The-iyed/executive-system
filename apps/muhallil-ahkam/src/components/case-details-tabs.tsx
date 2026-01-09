@@ -24,8 +24,12 @@ export const CaseDetailsTabs: React.FC<CaseDetailsTabsProps> = ({
   onValueChange,
   className,
 }) => {
+  const handleValueChange = (newValue: string) => {
+    onValueChange(newValue as CaseDetailsTabType);
+  };
+
   return (
-    <Tabs value={value} onValueChange={onValueChange} className={cn('w-auto', className)}>
+    <Tabs value={value} onValueChange={handleValueChange} className={cn('w-auto', className)}>
       <TabsList
         className={cn(
           'flex justify-center items-center gap-[11.602px] rounded-[11.602px] border-[1.45px] border-[#F2F4F7] bg-[#F2F4F7] p-[5.801px] h-auto',
