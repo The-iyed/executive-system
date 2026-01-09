@@ -2,7 +2,7 @@
   "name": "muhallil-ahkam",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/muhallil-ahkam/src",
-  "projectType": "library",
+  "projectType": "application",
   "tags": [],
   "targets": {
     "build": {
@@ -14,6 +14,12 @@
     },
     "serve": {
       "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "muhallil-ahkam:build"
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
       "options": {
         "buildTarget": "muhallil-ahkam:build"
       }
