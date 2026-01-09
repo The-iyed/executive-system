@@ -24,12 +24,14 @@ export default defineConfig(({ command }) => {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
         name: 'SANAD_APP',
-        fileName: 'index',
+        fileName: (format) => `sanad-ai.${format}.js`,
         formats: ['umd'],
+        // Ensure output is index.js not index.umd.js
       },
       rollupOptions: {
         external: ['react', 'react-dom', '@tanstack/react-query'],
         output: {
+          entryFileNames: 'sanad-ai.bundle.js',
           globals: {
             react: 'React',
             'react-dom': 'ReactDOM',
