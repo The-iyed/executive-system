@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import * as ReactQuery from '@tanstack/react-query';
 import { AppMetadata, AppMount, AppConfig, loadAppMount } from '@sanad-ai/config';
 
 export interface UseAppLoaderResult {
@@ -13,11 +16,27 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
   const [error, setError] = useState<Error | null>(null);
   const [appMount, setAppMount] = useState<AppMount | null>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const linkRef = useRef<HTMLLinkElement | null>(null);
   const mountedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    // Expose React, ReactDOM, and ReactQuery as globals for the bundle
+    if (typeof window !== 'undefined') {
+      (window as any).React = React;
+      (window as any).ReactDOM = ReactDOM;
+      (window as any).ReactQuery = ReactQuery;
+    }
+
     setIsLoading(true);
     setError(null);
+
+    // Load CSS file if it exists
+    const cssPath = app.bundlePath.replace('.bundle.js', '.bundle.css');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = cssPath;
+    linkRef.current = link;
+    document.head.appendChild(link);
 
     const script = document.createElement('script');
     script.src = app.bundlePath;
@@ -45,6 +64,9 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
     return () => {
       if (scriptRef.current && scriptRef.current.parentNode) {
         scriptRef.current.parentNode.removeChild(scriptRef.current);
+      }
+      if (linkRef.current && linkRef.current.parentNode) {
+        linkRef.current.parentNode.removeChild(linkRef.current);
       }
       if (appMount && mountedElementRef.current) {
         appMount.unmount();

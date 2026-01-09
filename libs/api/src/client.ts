@@ -44,6 +44,10 @@ export const createApiClient = (config: ApiClientConfig = {}): AxiosInstance => 
 
   client.interceptors.request.use(
     (requestConfig: InternalAxiosRequestConfig) => {
+      // Ensure Authorization header is always set if basicAuth is configured
+      if (basicAuthHeader && !requestConfig.headers['Authorization']) {
+        requestConfig.headers['Authorization'] = basicAuthHeader;
+      }
       return requestConfig;
     },
     (error) => {
