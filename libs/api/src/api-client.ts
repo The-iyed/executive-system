@@ -1,4 +1,4 @@
-import { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { AxiosInstance } from 'axios';
 import { ApiEndpoint, apiRegistry } from './definitions';
 import { createApiClient, type ApiClientConfig } from './client';
 
@@ -8,10 +8,12 @@ import { createApiClient, type ApiClientConfig } from './client';
 export class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
+  private basicAuth?: ApiClientConfig['basicAuth'];
 
   constructor(config: ApiClientConfig) {
     this.client = createApiClient(config);
     this.baseURL = config.baseURL || '';
+    this.basicAuth = config.basicAuth;
   }
 
   /**
@@ -21,14 +23,14 @@ export class ApiClient {
     groupName: string,
     endpointName: string,
     data?: TRequest,
-    config?: AxiosRequestConfig
+    config?: Parameters<typeof this.client.get>[1]
   ): Promise<TResponse> {
     const endpoint = apiRegistry.getSharedEndpoint(groupName, endpointName);
     if (!endpoint) {
       throw new Error(`Shared endpoint not found: ${groupName}.${endpointName}`);
     }
 
-    return this.callEndpoint<TRequest, TResponse>(endpoint, data, config);
+    return this.callEndpoint<TRequest, TResponse>(endpoint as ApiEndpoint<TRequest, TResponse>, data, config);
   }
 
   /**
@@ -39,7 +41,7 @@ export class ApiClient {
     groupName: string,
     endpointName: string,
     data?: TRequest,
-    config?: AxiosRequestConfig
+    config?: Parameters<typeof this.client.get>[1]
   ): Promise<TResponse> {
     const endpoint = apiRegistry.getAppEndpoint(appName, groupName, endpointName);
     if (!endpoint) {
@@ -48,7 +50,7 @@ export class ApiClient {
       );
     }
 
-    return this.callEndpoint<TRequest, TResponse>(endpoint, data, config);
+    return this.callEndpoint<TRequest, TResponse>(endpoint as ApiEndpoint<TRequest, TResponse>, data, config);
   }
 
   /**
@@ -57,7 +59,7 @@ export class ApiClient {
   private async callEndpoint<TRequest = unknown, TResponse = unknown>(
     endpoint: ApiEndpoint<TRequest, TResponse>,
     data?: TRequest,
-    config?: AxiosRequestConfig
+    config?: Parameters<typeof this.client.get>[1]
   ): Promise<TResponse> {
     const url = endpoint.path.startsWith('/')
       ? `${this.baseURL}${endpoint.path}`
@@ -107,6 +109,13 @@ export class ApiClient {
    */
   getBaseURL(): string {
     return this.baseURL;
+  }
+
+  /**
+   * Get the basic auth config
+   */
+  getBasicAuth(): ApiClientConfig['basicAuth'] {
+    return this.basicAuth;
   }
 }
 
