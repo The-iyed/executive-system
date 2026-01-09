@@ -118,3 +118,4 @@ export {
   DialogTitle,
   DialogDescription,
 }
+export type DialogProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>

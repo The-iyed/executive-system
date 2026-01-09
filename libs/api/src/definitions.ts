@@ -1,5 +1,3 @@
-import { AxiosInstance } from 'axios';
-
 /**
  * API Endpoint Definition
  */
@@ -24,7 +22,7 @@ export interface ApiDefinitionGroup {
   /** Base path for all endpoints in this group */
   basePath?: string;
   /** Endpoints in this group */
-  endpoints: Record<string, ApiEndpoint>;
+  endpoints: Record<string, ApiEndpoint<unknown, unknown>>;
 }
 
 /**
@@ -83,7 +81,7 @@ export class ApiRegistry {
   /**
    * Get endpoint from shared APIs
    */
-  getSharedEndpoint(groupName: string, endpointName: string): ApiEndpoint | undefined {
+  getSharedEndpoint(groupName: string, endpointName: string): ApiEndpoint<unknown, unknown> | undefined {
     const group = this.getShared(groupName);
     return group?.endpoints[endpointName];
   }
@@ -95,7 +93,7 @@ export class ApiRegistry {
     appName: string,
     groupName: string,
     endpointName: string
-  ): ApiEndpoint | undefined {
+  ): ApiEndpoint<unknown, unknown> | undefined {
     const group = this.getApp(appName, groupName);
     return group?.endpoints[endpointName];
   }
@@ -130,13 +128,13 @@ export function createEndpoint<TRequest = unknown, TResponse = unknown>(
  */
 export function createApiGroup(
   name: string,
-  endpoints: Record<string, ApiEndpoint>,
+  endpoints: Record<string, ApiEndpoint<any, any>>,
   basePath?: string
 ): ApiDefinitionGroup {
   return {
     name,
     basePath,
-    endpoints,
+    endpoints: endpoints as Record<string, ApiEndpoint<unknown, unknown>>,
   };
 }
 
