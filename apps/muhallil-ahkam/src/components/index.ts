@@ -7,6 +7,8 @@ export { PdfUploadModal } from './pdf-upload-modal';
 export { ToggleSwitch } from './toggle-switch';
 export { CourtTabs } from './court-tabs';
 export type { CourtType } from './court-tabs';
+export { CaseDetailsTabs } from './case-details-tabs';
+export type { CaseDetailsTabType } from './case-details-tabs';
 export { PdfCard } from './pdf-card';
 export type { PdfCardProps } from './pdf-card';
 export { PageTransition } from './page-transition';
