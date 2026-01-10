@@ -4,18 +4,45 @@ import { AppConfig } from '@sanad-ai/config';
 import './styles.css';
 
 const mount = createMount();
+let currentContainer: HTMLElement | null = null;
 
 // Export mount for UMD bundle (Vite will assign this to window.AHKAM_APP)
 export default mount;
 
-// Ensure it's also available on window for direct access
+// Create window API
 if (typeof window !== 'undefined') {
+  // Keep backward compatibility
   window.AHKAM_APP = mount;
   
-  // Add a window function to open the app programmatically
-  (window as any).openMuhallilAhkam = (container: HTMLElement, config?: AppConfig) => {
-    if (mount && container) {
-      mount.mount(container, config || {});
-    }
+  // New window API
+  (window as any).MuhallilAhkam = {
+    open: (container: HTMLElement, config?: AppConfig) => {
+      if (mount && container) {
+        currentContainer = container;
+        mount.mount(container, config || {});
+      }
+    },
+    toggle: (container: HTMLElement, config?: AppConfig) => {
+      if (currentContainer && currentContainer === container) {
+        // If already mounted in this container, close it
+        mount.unmount();
+        currentContainer = null;
+      } else {
+        // Otherwise, open it
+        if (mount && container) {
+          currentContainer = container;
+          mount.mount(container, config || {});
+        }
+      }
+    },
+    close: () => {
+      if (mount && currentContainer) {
+        mount.unmount();
+        currentContainer = null;
+      }
+    },
+    isOpen: () => {
+      return currentContainer !== null;
+    },
   };
 }
