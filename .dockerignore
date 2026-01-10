@@ -9,9 +9,6 @@ coverage
 *.log
 .DS_Store
 packages
-.env
-.env.local
-.env.*.local
 docker-compose.yml
 Dockerfile
 .dockerignore
