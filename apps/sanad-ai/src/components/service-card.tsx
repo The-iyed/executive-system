@@ -1,6 +1,5 @@
 import React from 'react';
 
-const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
 
 export interface ServiceCardProps {
   title: string;
@@ -48,7 +47,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             className={`text-right text-[12px] sm:text-[14px] md:text-[15px] font-semibold leading-[18px] sm:leading-[22px] flex-1 ${
               isDisabled ? 'text-[#9e9e9e]' : 'text-black'
             }`}
-            style={{ fontFamily: FONT_FAMILY }}
             dir="auto"
           >
             {title}
@@ -59,7 +57,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           className={`text-right text-[8px] sm:text-[9px] md:text-[10px] leading-[14px] sm:leading-[16px] ${
             isDisabled ? 'text-[#bfbfbf]' : 'text-[#727272]'
           }`}
-          style={{ fontFamily: FONT_FAMILY }}
           dir="auto"
         >
           {description}
@@ -71,7 +68,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <div className="absolute left-[6px] sm:left-[8px] top-[10px] sm:top-[12px] bg-[#fef9f2] flex gap-[2px] sm:gap-[3px] h-[18px] sm:h-[20px] items-center justify-end px-1.5 sm:px-2 rounded-full">
           <p
             className="text-[#b9672d] text-[9px] sm:text-[11px] leading-[16px] sm:leading-[18px]"
-            style={{ fontFamily: FONT_FAMILY }}
             dir="auto"
           >
             قريبًا
