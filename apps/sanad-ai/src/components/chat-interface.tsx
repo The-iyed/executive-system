@@ -3,7 +3,6 @@ import { ChatInput } from './chat-input';
 import { LoaderMessage } from './loader-message';
 import type { Message } from '@sanad-ai/chat/domain';
 
-const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
 
 export interface ChatInterfaceProps {
   messages: Message[];
@@ -39,7 +38,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   className={`font-normal leading-[21px] text-base text-right ${
                     message.role === 'user' ? 'text-[#101828]' : 'text-black'
                   }`}
-                  style={{ fontFamily: FONT_FAMILY }}
                   dir="auto"
                 >
                   {message.content}
@@ -62,7 +60,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Disclaimer Text */}
           <p
             className="text-[#898989] text-[8px] sm:text-[9px] md:text-[10px] leading-[14px] sm:leading-[16px] md:leading-[18.859px] text-center px-2 whitespace-pre-wrap"
-            style={{ fontFamily: FONT_FAMILY }}
             dir="auto"
           >
             هذا المنتج مُقدَّم لأغراض معلوماتية فقط، ولا نتحمّل أي مسؤولية عن أي استخدام غير صحيح أو أي نتائج قد تترتب عليه.

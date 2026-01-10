@@ -16,7 +16,6 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
   const [error, setError] = useState<Error | null>(null);
   const [appMount, setAppMount] = useState<AppMount | null>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
-  const linkRef = useRef<HTMLLinkElement | null>(null);
   const mountedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -30,27 +29,41 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
     setIsLoading(true);
     setError(null);
 
-    // Load CSS file if it exists
-    const cssPath = app.bundlePath.replace('.bundle.js', '.bundle.css');
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = cssPath;
-    linkRef.current = link;
-    document.head.appendChild(link);
-
+    // CSS is inlined in the JS bundle, no need to load separately
     const script = document.createElement('script');
     script.src = app.bundlePath;
     script.async = true;
     scriptRef.current = script;
 
     script.onload = () => {
-      const mount = loadAppMount(app.globalName);
-      if (mount) {
-        setAppMount(mount);
+      // Check if window API is available (SanadAi or MuhallilAhkam)
+      const windowApi = app.name === 'sanad-ai' 
+        ? (window as any).SanadAi 
+        : (window as any).MuhallilAhkam;
+      
+      if (windowApi) {
+        // Use window API directly - create a wrapper mount object
+        setAppMount({
+          mount: (el: HTMLElement, config: AppConfig) => {
+            mountedElementRef.current = el;
+            windowApi.open(el, config);
+          },
+          unmount: () => {
+            windowApi.close();
+            mountedElementRef.current = null;
+          },
+        });
         setIsLoading(false);
       } else {
-        setError(new Error(`Failed to load app mount for ${app.name}`));
-        setIsLoading(false);
+        // Fallback to old mount API for backward compatibility
+        const mount = loadAppMount(app.globalName);
+        if (mount) {
+          setAppMount(mount);
+          setIsLoading(false);
+        } else {
+          setError(new Error(`Failed to load app for ${app.name}. Make sure the bundle is loaded.`));
+          setIsLoading(false);
+        }
       }
     };
 
@@ -64,9 +77,6 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
     return () => {
       if (scriptRef.current && scriptRef.current.parentNode) {
         scriptRef.current.parentNode.removeChild(scriptRef.current);
-      }
-      if (linkRef.current && linkRef.current.parentNode) {
-        linkRef.current.parentNode.removeChild(linkRef.current);
       }
       if (appMount && mountedElementRef.current) {
         appMount.unmount();
