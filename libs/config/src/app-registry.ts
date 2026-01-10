@@ -10,13 +10,13 @@ export interface AppMetadata {
 
 const getBundlePath = (appName: string): string => {
   const bundleFileMap: Record<string, string> = {
-    'sanad-ai': 'sanad-ai.bundle.js',
-    'muhallil-ahkam': 'muhallil-ahkam.bundle.js',
+    'sanad-ai': 'sanad-ai.umd.js',
+    'muhallil-ahkam': 'muhallil-ahkam.umd.js',
   };
   
-  const bundleFileName = bundleFileMap[appName] || `${appName}.bundle.js`;
+  const bundleFileName = bundleFileMap[appName] || `${appName}.umd.js`;
   
-  return `/packages/${appName}/${bundleFileName}`;
+  return `/${bundleFileName}`;
 };
 
 export const APP_REGISTRY: AppMetadata[] = [

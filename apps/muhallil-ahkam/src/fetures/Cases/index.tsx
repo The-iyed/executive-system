@@ -7,7 +7,6 @@ import { mockCases } from './mockCases';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../routes/path';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 interface CaseDocument {
   name: string;
@@ -45,7 +44,7 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
           {isAnalyzing ? (
             <Badge
               className="bg-[#ECFDF3] text-[#027A48] border-0 rounded-[16px] px-3 py-1.5 text-xs font-semibold"
-              style={{ fontFamily: FONT_FAMILY }}
+              
             >
               بصدد التحليل
             </Badge>
@@ -61,14 +60,14 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
 
         <h3
           className="text-lg font-bold text-right mb-2 pr-0 mt-0 text-[#1A1A1A]"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           {caseItem.title}
         </h3>
 
         <p
           className="text-sm text-[#666] text-right mb-4 leading-relaxed"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           {caseItem.description}
         </p>
@@ -116,13 +115,13 @@ const Cases: React.FC = () => {
         <div className="flex-1">
           <h1
             className="text-3xl font-bold text-right mb-2 text-[#1A1A1A]"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           >
             القضايا
           </h1>
           <p
             className="text-base text-[#666] text-right leading-relaxed"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           >
             يمكنك الاطلاع على قائمة القضايا المحفوظة في النظام.
           </p>
@@ -141,7 +140,7 @@ const Cases: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex pr-10 pl-4 bg-white text-right text-base focus-visible:ring-2 focus-visible:ring-[#00A79D] focus-visible:ring-offset-2 search-input w-[460px] h-[46px] rounded-[10.217px] border-[1.277px] border-[#D0D5DD] box-shadow-[0_1.277px_2.554px_0_rgba(16,24,40,0.05)] placeholder:text-[#667085]"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           />
           <style>{`
             .search-input-wrapper .search-icon {

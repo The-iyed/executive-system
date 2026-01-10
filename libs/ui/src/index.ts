@@ -10,6 +10,8 @@ export { Badge, badgeVariants, type BadgeProps } from './components/badge';
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, type TooltipProps } from './components/tooltip';
 export { Input, type InputProps } from './components/input';
 export { Progress } from './components/progress';
+export { AudioPlayer, type AudioPlayerProps } from './components/audio-player';
+export { Skeleton } from './components/skeleton';
 export {
   Sidebar,
   SidebarContent,
@@ -60,6 +62,28 @@ export {
   MessageResponse,
   type MessageResponseProps,
 } from './components/ai-elements/message';
+
+// Export collapsible components
+export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './components/collapsible';
+
+// Export dropdown menu components
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './components/dropdown-menu';
 
 // Export utilities
 export { cn } from './lib/utils';
