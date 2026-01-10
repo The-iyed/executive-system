@@ -22,7 +22,6 @@ const SIDEBAR_STYLES = {
   background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.20) 100%), #055859',
 } as const;
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 // Reusable Sidebar Toggle Button Component
 export interface SidebarToggleButtonProps {
@@ -95,7 +94,7 @@ const SidebarHeader: React.FC = () => {
 
       <h1
         className="flex-1 text-right text-[#F8F8F8] text-[24px] font-bold leading-[30.428px]"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         مُحلِّل الأحكام
       </h1>
@@ -127,7 +126,7 @@ const SearchInput: React.FC = () => {
         placeholder="بحث..."
         className="w-full h-[46px] pr-[38px] pl-[13px] rounded-[8px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[16px] font-bold leading-[30.428px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none flex items-center"
         style={{
-          fontFamily: FONT_FAMILY,
+          
           boxShadow: '0 4px 14.8px 0 rgba(0, 0, 0, 0.10)',
         }}
       />
@@ -187,7 +186,7 @@ const NewAnalysisButton: React.FC = () => {
     <Button
       className="w-full h-[46px] flex items-center gap-3 pl-[13px] rounded-[8px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[16px] font-bold leading-[30.428px] justify-start"
       style={{
-        fontFamily: FONT_FAMILY,
+        
         background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
       }}
       onClick={handleNewAnalysis}
@@ -231,7 +230,7 @@ const CasesItem: React.FC = () => {
           <img src={AnalyseIcon} alt="القضايا" className="w-[21px] h-[21px]" />
           <h2
             className="text-right text-white text-[16px] font-bold leading-[30.428px]"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           >
             القضايا
           </h2>

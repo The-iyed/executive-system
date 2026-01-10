@@ -97,7 +97,7 @@ export interface SendMessageStreamRequest {
 }
 
 export interface StreamEvent {
-  event: 'message_posted' | 'run_created' | 'thinking' | 'content_chunk' | 'completed' | 'done' | 'error';
+  event: 'message_posted' | 'run_created' | 'thinking' | 'content_chunk' | 'completed' | 'done' | 'error' | 'analyzing_pdf' | 'pdf_analyzed' | 'uploading_pdf' | 'pdf_uploaded' | 'agent_message_posted' | 'agent_processing';
   run_id?: string;
   chunk?: string;
   source?: string;
@@ -116,6 +116,9 @@ export interface StreamEvent {
   conversation_id?: string;
   thread_id?: string;
   is_new_thread?: boolean;
+  filename?: string;
+  text_length?: number;
+  pdf_url?: string;
 }
 
 export interface ParsedContent {
