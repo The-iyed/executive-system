@@ -7,6 +7,7 @@ interface AppLayoutProps {
   children: ReactNode;
   conversations?: Array<{ conversation_id: string; name: string }>;
   currentConversationId?: string | null;
+  isLoadingConversations?: boolean;
   onSelectConversation?: (conversationId: string) => void;
   onNewConversation?: () => void;
   onDeleteConversation?: (conversationId: string) => void;
@@ -20,7 +21,11 @@ const SidebarInsetWrapper: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <SidebarInset
       className={`flex-1 transition-all duration-300 ${
-        isCollapsed ? 'mr-[86px]' : 'mr-[326px]'
+        // On mobile, no margin (sidebar is always visible but smaller)
+        // On larger screens, apply margin based on sidebar state
+        isCollapsed 
+          ? 'mr-0 sm:mr-[86px]' 
+          : 'mr-0 sm:mr-[326px]'
       }`}
     >
       <div 
@@ -56,6 +61,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   conversations = [],
   currentConversationId,
+  isLoadingConversations = false,
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
@@ -98,6 +104,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             onClose={handleSidebarToggle}
             conversations={conversations}
             currentConversationId={currentConversationId}
+            isLoadingConversations={isLoadingConversations}
             onSelectConversation={onSelectConversation}
             onNewConversation={onNewConversation}
             onDeleteConversation={onDeleteConversation}

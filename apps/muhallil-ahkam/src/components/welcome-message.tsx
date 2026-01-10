@@ -1,7 +1,6 @@
 import React from 'react';
 import WelcomeAvatar from '../assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 interface WelcomeMessageProps {
   userName?: string;
@@ -29,7 +28,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
       {/* Welcome Message */}
       <h2
         className="text-[32px] font-bold text-[#1A1A1A] text-center"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         حياك الله {userName}
       </h2>
@@ -37,7 +36,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
       {/* Greeting */}
       <p
         className="text-[18px] text-[#666666] text-center"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         كيف أقدر أخدمك اليوم؟
       </p>

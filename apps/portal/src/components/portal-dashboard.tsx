@@ -188,6 +188,7 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ onOpenApp }) =
             {...service}
             onStart={() => {
               if (service.appKey && onOpenApp) {
+                // Trigger app opening via parent handler
                 onOpenApp(service.appKey);
               }
             }}

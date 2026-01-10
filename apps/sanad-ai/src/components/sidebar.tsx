@@ -17,7 +17,6 @@ const SIDEBAR_STYLES = {
   background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 100%), linear-gradient(90deg, rgba(5, 88, 89, 1) 0%, rgba(5, 88, 89, 1) 100%)',
 } as const;
 
-const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
 
 // Reusable Sidebar Toggle Button Component
 export interface SidebarToggleButtonProps {
@@ -86,8 +85,7 @@ const SidebarHeader: React.FC = () => {
       <SidebarToggleButton />
       
       <h1
-        className="flex-1 text-right text-white text-[18px] font-bold leading-[24px]"
-        style={{ fontFamily: FONT_FAMILY }}
+        className="flex-1 text-left text-white text-[18px] font-bold leading-[24px]"
       >
         SANAD AI
       </h1>
@@ -129,8 +127,8 @@ const SearchInput: React.FC = () => {
         placeholder="البحث في المحادثة ..."
         className="w-full h-[38px] pr-8 pl-2 rounded-[6px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[14px] font-bold leading-[20px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none"
         style={{
-          fontFamily: FONT_FAMILY,
-          boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
+
+            boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
         }}
       />
     </div>
@@ -188,7 +186,6 @@ const NewChatButton: React.FC<{ onNewChat?: () => void }> = ({ onNewChat }) => {
     <Button
       className="w-full h-[38px] flex items-center gap-2 pl-2 rounded-[6px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[14px] font-bold leading-[20px] justify-start border-0"
       style={{
-        fontFamily: FONT_FAMILY,
         background: 'linear-gradient(90deg, rgba(0, 167, 157, 1) 0%, rgba(0, 167, 157, 1) 100%), linear-gradient(90deg, rgba(248, 248, 248, 1) 0%, rgba(248, 248, 248, 1) 100%)',
       }}
       onClick={handleNewChat}
@@ -227,7 +224,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, on
         <div className="flex-1 text-right min-w-0">
           <p
             className="text-white text-[14px] font-normal leading-[20px] truncate"
-            style={{ fontFamily: FONT_FAMILY }}
             dir="auto"
           >
             {title}
@@ -276,13 +272,25 @@ interface ConversationsListProps {
   currentConversationId?: string | null;
   onSelectConversation?: (conversationId: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
+  isLoading?: boolean;
 }
+
+const ConversationSkeleton: React.FC = () => {
+  return (
+    <div className="w-full h-[48px] rounded-lg bg-white/10 animate-pulse flex items-center gap-3 px-3">
+      <div className="w-8 h-8 rounded-full bg-white/20 flex-shrink-0" />
+      <div className="flex-1 h-4 rounded bg-white/20" />
+      <div className="w-6 h-6 rounded bg-white/20 flex-shrink-0" />
+    </div>
+  );
+};
 
 const ConversationsList: React.FC<ConversationsListProps> = ({
   conversations,
   currentConversationId,
   onSelectConversation,
   onDeleteConversation,
+  isLoading = false,
 }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
@@ -291,10 +299,20 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
     return null;
   }
 
+  if (isLoading) {
+    return (
+      <div className="w-full flex flex-col gap-1">
+        {[...Array(5)].map((_, index) => (
+          <ConversationSkeleton key={`skeleton-${index}`} />
+        ))}
+      </div>
+    );
+  }
+
   if (conversations.length === 0) {
     return (
       <div className="w-full text-center py-4">
-        <p className="text-white/60 text-sm" style={{ fontFamily: FONT_FAMILY }}>
+        <p className="text-white/60 text-sm" >
           لا توجد محادثات
         </p>
       </div>
@@ -326,6 +344,7 @@ interface SidebarProps {
   onNewConversation?: () => void;
   onDeleteConversation?: (conversationId: string) => void;
   onUpdateConversation?: (conversationId: string, name: string) => void;
+  isLoadingConversations?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -334,6 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  isLoadingConversations = false,
 }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
@@ -344,7 +364,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       variant="floating"
       collapsible="icon"
       className={`fixed top-[13px] right-[13px] h-[calc(100vh-26px)] rounded-[20px] border-0 transition-all duration-300 ${
-        isCollapsed ? 'w-[60px]' : 'w-[300px]'
+        // On mobile, always show collapsed sidebar (smaller width)
+        // On larger screens, respect the collapsed state
+        isCollapsed 
+          ? 'w-[60px] sm:w-[60px]' 
+          : 'w-[60px] sm:w-[300px]'
       }`}
       style={{
         ...SIDEBAR_STYLES,
@@ -393,6 +417,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   currentConversationId={currentConversationId}
                   onSelectConversation={onSelectConversation}
                   onDeleteConversation={onDeleteConversation}
+                  isLoading={isLoadingConversations}
                 />
               </div>
             </div>
