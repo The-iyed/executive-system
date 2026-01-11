@@ -44,7 +44,7 @@ document.head.appendChild(script);
 
 // Wait for script to load
 script.onload = () => {
-  console.log('Sanad AI loaded! window.SanadAi is now available');
+  // Sanad AI loaded! window.SanadAi is now available
 };`,
           },
           {
@@ -87,9 +87,9 @@ window.SanadAi.close();`,
             title: 'Check if App is Open',
             description: 'Check whether the app is currently mounted and open.',
             code: `if (window.SanadAi.isOpen()) {
-  console.log('Sanad AI is currently open');
+  // Sanad AI is currently open
 } else {
-  console.log('Sanad AI is closed');
+  // Sanad AI is closed
 }`,
           },
           {
@@ -224,9 +224,9 @@ window.MuhallilAhkam.close();`,
             title: 'Check if App is Open',
             description: 'Check whether the app is currently mounted and open.',
             code: `if (window.MuhallilAhkam.isOpen()) {
-  console.log('Muhallil Ahkam is currently open');
+  // Muhallil Ahkam is currently open
 } else {
-  console.log('Muhallil Ahkam is closed');
+  // Muhallil Ahkam is closed
 }`,
           },
           {
