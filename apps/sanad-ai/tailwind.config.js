@@ -8,5 +8,16 @@ module.exports = {
     path.resolve(__dirname, './index.html'),
     path.resolve(__dirname, '../../libs/ui/src/**/*.{js,ts,jsx,tsx}'),
   ],
+  theme: {
+    ...baseConfig.theme,
+    extend: {
+      ...baseConfig.theme.extend,
+      fontFamily: {
+        sans: ['Frutiger LT Pro', 'sans-serif'],
+        serif: ['Georgia', 'serif'],
+        mono: ['Fira Code', 'Courier New', 'monospace'],
+      },
+    },
+  },
 };
 

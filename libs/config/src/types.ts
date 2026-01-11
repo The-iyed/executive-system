@@ -18,6 +18,18 @@ declare global {
   interface Window {
     SANAD_APP?: AppMount;
     AHKAM_APP?: AppMount;
+    SanadAi?: {
+      open: (container: HTMLElement, config?: AppConfig) => void;
+      toggle: (container: HTMLElement, config?: AppConfig) => void;
+      close: () => void;
+      isOpen: () => boolean;
+    };
+    MuhallilAhkam?: {
+      open: (container: HTMLElement, config?: AppConfig) => void;
+      toggle: (container: HTMLElement, config?: AppConfig) => void;
+      close: () => void;
+      isOpen: () => boolean;
+    };
   }
 }
 
