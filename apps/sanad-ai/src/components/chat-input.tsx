@@ -204,8 +204,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
         
         // Process the recording when stopped
         if (recordingChunksRef.current.length > 0) {
-          const originalFileExtension = (mediaRecorderRef.current as any).fileExtension || 'webm';
-          
           // Create blob with correct MIME type
           const recordBlob = new Blob(recordingChunksRef.current, {
             type: mimeType,
@@ -221,7 +219,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           // We record in WebM (best browser playback) but name it as MP3 for API
           // The API should handle the actual format based on the MIME type
           const finalMimeType = mimeType; // Keep original MIME type (WebM) for browser playback
-          const finalExtension = 'mp3'; // Always use MP3 extension for API
           
           // Create file with MP3 extension but keep WebM MIME type for browser playback
           const recordedFile = new File([recordBlob], `recording-${Date.now()}.mp3`, {
