@@ -14,7 +14,7 @@ import LayoutIcon from '../assets/layout-alt-02.svg';
 import SearchLgIcon from '../assets/search-lg.svg';
 import ChevronDownIcon from '../assets/chevron-down.svg';
 import EditeIcon from '../assets/edit-05.svg';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { PATH } from '../routes/path';
 
 // Constants
@@ -50,13 +50,13 @@ export const SidebarToggleButton: React.FC<SidebarToggleButtonProps> = ({
   return (
     <button
       onClick={toggleSidebar}
-      className={`flex ${sizeClasses[size]} p-[13px] justify-center items-center aspect-square rounded-[8px] bg-[#00A79D] hover:bg-[#00A79D]/90 transition-colors flex-shrink-0 ${className}`}
+      className={`group flex ${sizeClasses[size]} p-[13px] justify-center items-center aspect-square rounded-[8px] bg-[#00A79D] hover:bg-[#00A79D]/90 active:bg-[#00A79D]/80 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out shadow-md hover:shadow-lg active:shadow-md flex-shrink-0 ${className}`}
       aria-label="Toggle Sidebar"
     >
       <img 
         src={LayoutIcon} 
         alt="القائمة" 
-        className={iconSizeClasses[size]} 
+        className={`${iconSizeClasses[size]} transition-transform duration-200 group-hover:rotate-90`}
       />
     </button>
   );
@@ -141,7 +141,8 @@ const IconButton: React.FC<{
   onClick?: () => void;
   bgColor?: string;
   shape?: 'square' | 'circle' | 'rectangle';
-}> = ({ icon, alt, onClick, bgColor = '#4A8C8C', shape = 'square' }) => {
+  isActive?: boolean;
+}> = ({ icon, alt, onClick, bgColor = '#4A8C8C', shape = 'square', isActive = false }) => {
   const shapeClasses = {
     square: 'rounded-[8px]',
     circle: 'rounded-full',
@@ -151,11 +152,21 @@ const IconButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`flex w-[46px] h-[46px] justify-center items-center hover:opacity-90 transition-opacity flex-shrink-0 ${shapeClasses[shape]}`}
-      style={{ backgroundColor: bgColor }}
+      className={`group flex w-[46px] h-[46px] justify-center items-center transition-all duration-200 ease-in-out flex-shrink-0 ${shapeClasses[shape]} ${
+        isActive 
+          ? 'scale-95 shadow-inner ring-2 ring-white/30' 
+          : 'hover:scale-110 active:scale-95 hover:shadow-lg active:shadow-md shadow-md'
+      }`}
+      style={{ 
+        backgroundColor: isActive ? `${bgColor}CC` : bgColor,
+      }}
       aria-label={alt}
     >
-      <img src={icon} alt={alt} className="w-5 h-5" />
+      <img 
+        src={icon} 
+        alt={alt} 
+        className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-90' : 'group-hover:scale-110'}`}
+      />
     </button>
   );
 };
@@ -163,8 +174,10 @@ const IconButton: React.FC<{
 // New Analysis Button Component
 const NewAnalysisButton: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const isActive = location.pathname === PATH.ROOT;
 
   const handleNewAnalysis = () => {
     navigate(PATH.ROOT);
@@ -175,24 +188,34 @@ const NewAnalysisButton: React.FC = () => {
       <IconButton
         icon={EditeIcon}
         alt="تحليل جديد"
-        bgColor="#4A8C8C"
+        bgColor="#00A79D"
         shape="square"
         onClick={handleNewAnalysis}
+        isActive={isActive}
       />
     );
   }
 
   return (
     <Button
-      className="w-full h-[46px] flex items-center gap-3 pl-[13px] rounded-[8px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[16px] font-bold leading-[30.428px] justify-start"
+      className={`group w-full h-[46px] flex items-center gap-3 pl-[13px] rounded-[8px] text-white text-right text-[16px] font-bold leading-[30.428px] justify-start transition-all duration-200 ease-in-out shadow-md ${
+        isActive
+          ? 'bg-[#00A79D]/80 scale-[0.98] shadow-inner ring-2 ring-white/20'
+          : 'bg-[#00A79D] hover:bg-[#00A79D]/90 active:bg-[#00A79D]/80 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg active:shadow-md'
+      }`}
       style={{
-        
-        background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
+        background: isActive 
+          ? 'linear-gradient(0deg, rgba(0, 167, 157, 0.8) 0%, rgba(0, 167, 157, 0.8) 100%), #F8F8F8'
+          : 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
       }}
       onClick={handleNewAnalysis}
     >
-      <img src={EditeIcon} alt="تحليل جديد" />
-      <span>تحليل جديد</span>
+      <img 
+        src={EditeIcon} 
+        alt="تحليل جديد" 
+        className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:rotate-12 group-hover:scale-110'}`}
+      />
+      <span className="transition-all duration-200">تحليل جديد</span>
     </Button>
   );
 };
@@ -200,8 +223,10 @@ const NewAnalysisButton: React.FC = () => {
 // Cases Item Component
 const CasesItem: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const isActive = location.pathname === PATH.CASES;
 
   const handleCases = () => {
     navigate(PATH.CASES);
@@ -212,37 +237,52 @@ const CasesItem: React.FC = () => {
       <IconButton
         icon={AnalyseIcon}
         alt="القضايا"
-        bgColor="#4A8C8C"
+        bgColor="#00A79D"
         shape="rectangle"
         onClick={handleCases}
+        isActive={isActive}
       />
     );
   }
 
   return (
     <Button 
-      className="w-full h-[46px] flex items-center pl-[10px] pr-[12px] rounded-[8px] border-[0.4px] border-white" 
+      className={`group w-full h-[46px] flex items-center pl-[10px] pr-[12px] rounded-[8px] border-[0.4px] border-white transition-all duration-200 ease-in-out ${
+        isActive 
+          ? 'bg-white/10 scale-[0.98] shadow-inner' 
+          : 'hover:bg-white/5 hover:scale-[1.01] active:scale-[0.99] hover:shadow-md active:shadow-sm'
+      }`}
       onClick={handleCases}
     >
       <div className="flex w-full h-full items-center justify-between">
         {/* Label and Icon Block */}
         <div className="flex w-[84px] justify-between items-center flex-shrink-0">
-          <img src={AnalyseIcon} alt="القضايا" className="w-[21px] h-[21px]" />
+          <img 
+            src={AnalyseIcon} 
+            alt="القضايا" 
+            className={`w-[21px] h-[21px] transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}
+          />
           <h2
-            className="text-right text-white text-[16px] font-bold leading-[30.428px]"
-            
+            className={`text-right text-white text-[16px] font-bold leading-[30.428px] transition-all duration-200 ${
+              isActive ? 'text-white' : ''
+            }`}
           >
             القضايا
           </h2>
         </div>
 
         <div
-          className="p-1.5 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+          className={`p-1.5 rounded transition-all duration-200 flex-shrink-0 ${
+            isActive
+              ? 'bg-white/20 scale-95'
+              : 'hover:bg-white/10 hover:scale-110 active:scale-95'
+          }`}
           aria-label="القائمة"
         >
           <img
             src={ChevronDownIcon}
             alt="القائمة"
+            className={`transition-transform duration-200 ${isActive ? 'rotate-180' : 'group-hover:translate-y-0.5'}`}
           />
         </div>
       </div>
@@ -263,6 +303,7 @@ const SearchIconButton: React.FC = () => {
         bgColor="#FFFFFF"
         shape="square"
         onClick={() => {}}
+        isActive={false}
       />
     );
   }
