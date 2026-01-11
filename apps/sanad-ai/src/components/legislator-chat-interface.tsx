@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { cn, AudioPlayer, Skeleton, Reasoning, ReasoningTrigger, ReasoningContent, StreamingMarkdown } from '@sanad-ai/ui';
+import { AudioPlayer, Skeleton, Reasoning, ReasoningTrigger, ReasoningContent, StreamingMarkdown } from '@sanad-ai/ui';
 import { DocumentSources, RelatedQuestions, MessageActions } from '@sanad-ai/ui';
 import { parseContent } from '@sanad-ai/response-parser';
 import { FileText } from 'lucide-react';

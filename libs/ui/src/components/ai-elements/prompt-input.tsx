@@ -1170,7 +1170,7 @@ export const PromptInputSpeechButton = ({
         }
       };
 
-      speechRecognition.onerror = (event) => {
+      speechRecognition.onerror = (_event) => {
         // Speech recognition error handled silently
         setIsListening(false);
       };
