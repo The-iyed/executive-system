@@ -1,5 +1,19 @@
-/* Import Frutiger LT Pro Font */
-@import url('https://fonts.cdnfonts.com/css/frutiger-lt-pro');
+/* Local Frutiger Font Face Declarations - Must be at the very top before any other rules */
+@font-face {
+  font-family: 'Frutiger LT Pro';
+  src: url('./assets/Font/Frutiger.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Pro';
+  src: url('./assets/Font/Frutiger_bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -78,9 +92,9 @@
     --color-destructive-foreground: 255 255 255;
 
     /* Typography */
-    --font-family-sans: 'Frutiger LT Pro', sans-serif;
-    --font-family-serif: 'Georgia', serif;
-    --font-family-mono: 'Fira Code', 'Courier New', monospace;
+    --font-family-sans: 'Frutiger LT Pro';
+    --font-family-serif: 'Frutiger LT Pro';
+    --font-family-mono: 'Frutiger LT Pro';
 
     --font-size-xs: 0.75rem; /* 12px */
     --font-size-sm: 0.875rem; /* 14px */
@@ -129,6 +143,11 @@ body, html {
 }
 
 * {
+  font-family: 'Frutiger LT Pro', sans-serif;
+}
+
+/* Ensure font is applied to all elements */
+.sanad-chat-app {
   font-family: 'Frutiger LT Pro', sans-serif;
 }
 

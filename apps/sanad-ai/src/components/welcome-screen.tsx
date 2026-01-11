@@ -4,10 +4,9 @@ import { WelcomeHeader } from './welcome-header';
 import { ServicesGrid } from './services-grid';
 import { ChatInput } from './chat-input';
 
-const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
 
 export interface WelcomeScreenProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, file?: File, audioFile?: File, letterResponse?: boolean) => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSendMessage }) => {
@@ -15,13 +14,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSendMessage }) =
   const isCollapsed = state === 'collapsed';
 
   return (
-    <div className="w-full h-full relative flex items-center justify-center p-2 sm:p-3 md:p-4 overflow-y-auto">
-      {/* Centered Content Container */}
+    <div className="w-full h-full relative flex items-center justify-center p-0 lg:p-2 xl:p-3 2xl:p-4 overflow-y-auto">
+      {/* Centered Content Container - Full width below 1020px (lg breakpoint), container above */}
       <div 
-        className={`bg-white rounded-[16px] sm:rounded-[20px] shadow-[0px_32px_64px_-12px_rgba(4,88,89,0.24)] p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col items-center gap-3 sm:gap-4 md:gap-5 w-full transition-all duration-300 ${
+        className={`w-full h-fit lg:bg-white lg:rounded-[16px] xl:rounded-[20px] lg:shadow-[0px_32px_64px_-12px_rgba(4,88,89,0.24)] p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col items-center gap-3 sm:gap-4 md:gap-5 transition-all duration-300 ${
+          // Below 1020px (lg), full width, no container
+          // Above 1020px (lg), use container with max-width
           isCollapsed 
-            ? 'max-w-[96%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[900px] xl:max-w-[950px]' 
-            : 'max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[700px] xl:max-w-[750px]'
+            ? 'lg:max-w-[96%] xl:max-w-[90%] 2xl:max-w-[85%] 3xl:max-w-[900px]' 
+            : 'lg:max-w-[95%] xl:max-w-[85%] 2xl:max-w-[75%] 3xl:max-w-[700px]'
         }`}
       >
         <WelcomeHeader />
@@ -31,7 +32,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSendMessage }) =
         {/* Disclaimer Text at Bottom */}
         <p
           className="text-[#898989] text-[8px] sm:text-[9px] md:text-[10px] leading-[14px] sm:leading-[16px] md:leading-[18.859px] text-center px-2 max-w-[95%] mt-1"
-          style={{ fontFamily: FONT_FAMILY }}
           dir="auto"
         >
           هذا المنتج مُقدَّم لأغراض معلوماتية فقط، ولا نتحمّل أي مسؤولية عن أي استخدام غير صحيح أو أي نتائج قد تترتب عليه.

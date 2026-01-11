@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { User, ChevronDown, Menu, X } from 'lucide-react';
 import mainLogo from '../assets/mainlogo.svg';
 
 export const PortalHeader: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <header className="w-full sticky top-0 z-50" dir="rtl">
@@ -23,7 +25,7 @@ export const PortalHeader: React.FC = () => {
               {/* Navigation Menu - Hidden on mobile */}
            
             </div>
-            <div className="hidden lg:flex items-center justify-center px-3 bg-[#06494A] rounded-full">
+              <div className="hidden lg:flex items-center justify-center px-3 bg-[#06494A] rounded-full">
                 <nav className="flex items-center">
                   <a
                     href="#"
@@ -37,12 +39,24 @@ export const PortalHeader: React.FC = () => {
                   >
                     تواصل معنا
                   </a>
-                  <a
-                    href="#"
-                    className="px-3 py-3 text-sm leading-6 font-normal text-white transition-colors"
+                  <Link
+                    to="/docs"
+                    className={location.pathname === '/docs' 
+                      ? "px-3 py-3 text-sm leading-6 font-normal text-white transition-colors"
+                      : "px-3 py-3 text-sm leading-6 font-normal text-white/40 hover:text-white transition-colors"
+                    }
+                  >
+                    التوثيق
+                  </Link>
+                  <Link
+                    to="/"
+                    className={location.pathname === '/' 
+                      ? "px-3 py-3 text-sm leading-6 font-normal text-white transition-colors"
+                      : "px-3 py-3 text-sm leading-6 font-normal text-white/40 hover:text-white transition-colors"
+                    }
                   >
                     الخدمات الإلكترونية
-                  </a>
+                  </Link>
                   <a
                     href="#"
                     className="px-3 py-3 text-sm leading-6 font-normal text-white/20 hover:text-white transition-colors"
@@ -112,13 +126,26 @@ export const PortalHeader: React.FC = () => {
                 >
                   تواصل معنا
                 </a>
-                <a
-                  href="#"
-                  className="px-4 py-3 text-sm leading-6 font-normal text-white hover:bg-[#06494A] rounded-lg transition-colors"
+                <Link
+                  to="/docs"
+                  className={location.pathname === '/docs'
+                    ? "px-4 py-3 text-sm leading-6 font-normal text-white hover:bg-[#06494A] rounded-lg transition-colors"
+                    : "px-4 py-3 text-sm leading-6 font-normal text-white/40 hover:text-white hover:bg-[#06494A] rounded-lg transition-colors"
+                  }
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  التوثيق
+                </Link>
+                <Link
+                  to="/"
+                  className={location.pathname === '/'
+                    ? "px-4 py-3 text-sm leading-6 font-normal text-white hover:bg-[#06494A] rounded-lg transition-colors"
+                    : "px-4 py-3 text-sm leading-6 font-normal text-white/40 hover:text-white hover:bg-[#06494A] rounded-lg transition-colors"
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   الخدمات الإلكترونية
-                </a>
+                </Link>
                 <a
                   href="#"
                   className="px-4 py-3 text-sm leading-6 font-normal text-white/20 hover:text-white hover:bg-[#06494A] rounded-lg transition-colors"

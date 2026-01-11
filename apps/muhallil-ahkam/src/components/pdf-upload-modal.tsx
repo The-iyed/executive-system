@@ -9,7 +9,6 @@ import UploadIcon from '../assets/upload.svg';
 import PdfIcon from '../assets/pdf.svg';
 import HighlightOffIcon from '../assets/highlight_off.svg';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
@@ -169,7 +168,7 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
       {/* Title */}
       <h2
         className="text-[24px] font-bold text-[#1A1A1A] mb-2 text-right"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         تحميل الأحكام القضائية
       </h2>
@@ -177,7 +176,7 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
       {/* Description */}
       <p
         className="text-[14px] text-[#666666] mb-6 text-right"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         يرجى تحميل الأحكام القضائية من هنا لتمكين النظام من تحليل محتواها وإعداد تحليل دقيق.
       </p>
@@ -227,14 +226,14 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
         {/* Instructions */}
         <p
           className="text-[16px] text-[#1A1A1A] mb-2"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           قم بسحب الملف هنا لبدء الرفع
         </p>
 
         <p
           className="text-[14px] text-[#666666] mb-4"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           او
         </p>
@@ -248,7 +247,7 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
           className={`border-[#00A79D] text-[#00A79D] hover:bg-[#00A79D] hover:text-white ${
             !canAddMoreFiles ? 'opacity-50 cursor-not-allowed' : ''
           }`}
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           تصفح الملفات
         </Button>
@@ -274,13 +273,13 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
               <div className="flex-1 min-w-0 text-right">
                 <p
                   className="text-[14px] font-medium text-[#1A1A1A] truncate"
-                  style={{ fontFamily: FONT_FAMILY }}
+                  
                 >
                   {file.name}
                 </p>
                 <p
                   className="text-[12px] text-[#666666] mt-1"
-                  style={{ fontFamily: FONT_FAMILY }}
+                  
                 >
                   {formatFileSize(file.size)}
                 </p>
@@ -326,7 +325,7 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
             : 'bg-[#D1D5DB] text-[#9CA3AF] cursor-not-allowed'
           }
         `}
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         {isLoading ? 'جاري التحليل...' : 'بدء عملية التحليل'}
       </Button>
