@@ -8,6 +8,7 @@ interface AppLayoutProps {
   conversations?: Array<{ conversation_id: string; name: string }>;
   currentConversationId?: string | null;
   isLoadingConversations?: boolean;
+  isCreatingConversation?: boolean;
   onSelectConversation?: (conversationId: string) => void;
   onNewConversation?: () => void;
   onDeleteConversation?: (conversationId: string) => void;
@@ -62,6 +63,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   conversations = [],
   currentConversationId,
   isLoadingConversations = false,
+  isCreatingConversation = false,
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
@@ -105,6 +107,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             conversations={conversations}
             currentConversationId={currentConversationId}
             isLoadingConversations={isLoadingConversations}
+            isCreatingConversation={isCreatingConversation}
             onSelectConversation={onSelectConversation}
             onNewConversation={onNewConversation}
             onDeleteConversation={onDeleteConversation}
