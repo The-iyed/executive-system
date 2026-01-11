@@ -8,7 +8,6 @@ import {
   useSidebar,
 } from '@sanad-ai/ui';
 
-import AvatarImage from '../assets/Avatar.png';
 import AnalyseIcon from '../assets/analyse 1.svg';
 import LayoutIcon from '../assets/layout-alt-02.svg';
 import SearchLgIcon from '../assets/search-lg.svg';
@@ -319,20 +318,20 @@ const UserProfile: React.FC = () => {
   return (
     <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
       <div className="relative flex-shrink-0">
-        <img
+        {/* <img
           src={AvatarImage}
           alt="سارة عبد الرحمن"
           className="w-12 h-12 rounded-full object-cover border-2 border-white/20"
-        />
+        /> */}
       </div>
       {!isCollapsed && (
         <div className="flex flex-col flex-1 min-w-0">
-          <span className="text-white font-medium text-sm truncate">
+          {/* <span className="text-white font-medium text-sm truncate">
             سارة عبد الرحمن
           </span>
           <span className="text-white/70 text-xs truncate">
             Sarra.abd@exemple.com
-          </span>
+          </span> */}
         </div>
       )}
     </div>
