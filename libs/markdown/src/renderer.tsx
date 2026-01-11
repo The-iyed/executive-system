@@ -1,6 +1,6 @@
 import React from 'react';
-import { Streamdown } from 'streamdown';
-import 'streamdown/dist/index.css';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { getTextDirection } from './rtl';
 
 export interface MarkdownRendererProps {
@@ -13,8 +13,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 
   return (
     <div className={className} dir={direction}>
-      <Streamdown>{content}</Streamdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {content}
+      </ReactMarkdown>
     </div>
   );
 };
-

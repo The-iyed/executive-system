@@ -1,6 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { DocumentReference } from '@sanad-ai/api';
+import { PdfIcon } from '@/assets/icons/pdfIcon';
+import { ChevronLeftIcon } from 'lucide-react';
 
 export interface DocumentSourceProps {
   document: DocumentReference;
@@ -49,28 +51,7 @@ const ViewIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const PdfIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    width="32"
-    height="32"
-    viewBox="0 0 32 32"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    <rect width="32" height="32" rx="4" fill="#E53E3E" />
-    <text
-      x="16"
-      y="20"
-      textAnchor="middle"
-      fill="white"
-      fontSize="12"
-      fontWeight="bold"
-    >
-      PDF
-    </text>
-  </svg>
-);
+
 
 const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
@@ -100,17 +81,32 @@ export const DocumentSource: React.FC<DocumentSourceProps> = ({
   return (
     <div
       className={cn(
-        'bg-white flex gap-3.5 h-14 items-center px-3 py-0 rounded-xl shadow-[0px_4px_25.3px_0px_rgba(0,0,0,0.08)]',
+        'bg-white flex  h-14 items-center px-3 py-0 rounded-xl shadow-[0px_4px_25.3px_0px_rgba(0,0,0,0.08)]',
         className
       )}
       dir="rtl"
     >
-      {/* Action Buttons */}
-      <div className="flex gap-1.25 items-center">
+    
+      {/* Document Info */}
+      <div className="flex gap-2 items-center flex-1 min-w-0">
+          <PdfIcon />
+          <p
+            className="font-normal leading-[30.428px] text-sm text-[#101828]  text-right truncate"
+            style={{ fontFamily: '"Frutiger LT Arabic", sans-serif' }}
+          >
+            {document.file_name}
+          </p>
+          <ChevronLeftIcon className=" text-[#98A2B3]" />
+
+      
+       
+      </div>
+        {/* Action Buttons */}
+        <div className="flex gap-1 items-center">
         {/* Download Button */}
         <button
           onClick={() => onDownload?.(document)}
-          className="bg-white border border-[#f6f6f6] border-solid overflow-hidden relative rounded-[5.143px] shadow-[0px_4px_9px_0px_rgba(0,0,0,0.08)] shrink-0 size-9 flex items-center justify-center hover:opacity-80 transition-opacity"
+          className="bg-white border flex gap-1 border-[#f6f6f6] border-solid overflow-hidden relative rounded-[5.143px] shadow-[0px_4px_9px_0px_rgba(0,0,0,0.08)] shrink-0 size-9 flex items-center justify-center hover:opacity-80 transition-opacity"
           aria-label="Download document"
         >
           <DownloadIcon className="w-4 h-4 text-[#101828]" />
@@ -126,21 +122,6 @@ export const DocumentSource: React.FC<DocumentSourceProps> = ({
         </button>
       </div>
 
-      {/* Document Info */}
-      <div className="flex gap-2.75 items-center flex-1 min-w-0">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <p
-            className="font-normal leading-[30.428px] text-sm text-[#101828] text-right truncate"
-            style={{ fontFamily: '"Frutiger LT Arabic", sans-serif' }}
-          >
-            {document.file_name}
-          </p>
-          <ChevronRightIcon className="w-[17.75px] h-[17.75px] text-[#101828] shrink-0" />
-        </div>
-        <div className="h-8 overflow-hidden relative shrink-0 w-8">
-          <PdfIcon className="w-full h-full" />
-        </div>
-      </div>
     </div>
   );
 };
@@ -163,7 +144,7 @@ export const DocumentSources: React.FC<DocumentSourcesProps> = ({
   }
 
   return (
-    <div className={cn('flex flex-col gap-3 items-end', className)} dir="rtl">
+    <div className={cn('flex flex-col gap-3 items-start', className)} dir="rtl">
       <p
         className="font-bold leading-[25.233px] text-base text-[#00a79d] text-right"
         style={{ fontFamily: '"Frutiger LT Arabic", sans-serif' }}

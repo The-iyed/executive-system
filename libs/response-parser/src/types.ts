@@ -4,3 +4,4 @@ export interface ParsedResponse<T> {
   error?: string;
 }
 
+

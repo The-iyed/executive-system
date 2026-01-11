@@ -94,6 +94,25 @@ const CopyIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M16.6667 5L7.50004 14.1667L3.33337 10"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export const MessageActions: React.FC<MessageActionsProps> = ({
   onLike,
   onDislike,
@@ -120,7 +139,11 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
           aria-label="Copy"
           title={copied ? 'Copied!' : 'Copy'}
         >
-          <CopyIcon className="w-5 h-5 text-white" />
+          {copied ? (
+            <CheckIcon className="w-5 h-5 text-white" />
+          ) : (
+            <CopyIcon className="w-5 h-5 text-white" />
+          )}
         </button>
       )}
       {onUpload && (

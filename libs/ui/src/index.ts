@@ -87,6 +87,22 @@ export {
   type MessageResponseProps,
 } from './components/ai-elements/message';
 export {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+  type ReasoningProps,
+  type ReasoningTriggerProps,
+  type ReasoningContentProps,
+} from './components/ai-elements/reasoning';
+export {
+  StreamingMarkdown,
+  type StreamingMarkdownProps,
+} from './components/streaming-markdown';
+export {
+  MarkdownRenderer,
+  type MarkdownRendererProps,
+} from './components/markdown-renderer';
+export {
   Loader,
   type LoaderProps,
 } from './components/ai-elements/loader';
