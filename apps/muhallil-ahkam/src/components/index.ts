@@ -4,9 +4,16 @@ export { ErrorBoundary } from './error-boundary'
 export { AppLayout } from './app-layout';
 export { WelcomeMessage } from './welcome-message';
 export { PdfUploadModal } from './pdf-upload-modal';
+export type { PdfUploadModalRef } from './pdf-upload-modal';
 export { ToggleSwitch } from './toggle-switch';
 export { CourtTabs } from './court-tabs';
 export type { CourtType } from './court-tabs';
+export { CaseDetailsTabs } from './case-details-tabs';
+export type { CaseDetailsTabType } from './case-details-tabs';
 export { PdfCard } from './pdf-card';
 export type { PdfCardProps } from './pdf-card';
 export { PageTransition } from './page-transition';
+export { UploadLoadingCard } from './upload-loading-card';
+export type { UploadLoadingCardProps } from './upload-loading-card';
+export { Pagination } from './pagination';
+export type { PaginationProps } from './pagination';
