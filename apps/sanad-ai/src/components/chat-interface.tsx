@@ -7,12 +7,14 @@ import type { Message } from '@sanad-ai/chat/domain';
 export interface ChatInterfaceProps {
   messages: Message[];
   isLoading: boolean;
+  thinkingContent?: string;
   onSendMessage: (message: string) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   isLoading, 
+  thinkingContent,
   onSendMessage 
 }) => {
   return (
@@ -46,7 +48,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           ))}
           
-          {isLoading && <LoaderMessage />}
+          {/* Only show loader when loading but not thinking */}
+          {isLoading && !thinkingContent && <LoaderMessage />}
         </div>
       </div>
 

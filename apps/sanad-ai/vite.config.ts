@@ -68,13 +68,49 @@ export default defineConfig(({ command }) => {
         },
         plugins: [
           {
+            name: 'copy-fonts',
+            generateBundle(_options, bundle) {
+              // Copy font files to output
+              const fontFiles = [
+                { path: resolve(__dirname, 'src/assets/Font/Frutiger.ttf'), name: 'Frutiger.ttf' },
+                { path: resolve(__dirname, 'src/assets/Font/Frutiger_bold.ttf'), name: 'Frutiger_bold.ttf' },
+              ];
+              
+              const fs = require('fs');
+              const path = require('path');
+              
+              fontFiles.forEach(({ path: fontPath, name: fontName }) => {
+                try {
+                  if (fs.existsSync(fontPath)) {
+                    const fontContent = fs.readFileSync(fontPath);
+                    this.emitFile({
+                      type: 'asset',
+                      fileName: `fonts/${fontName}`,
+                      source: fontContent,
+                    });
+                  }
+                } catch (error) {
+                  // Error copying font
+                }
+              });
+            },
+          },
+          {
             name: 'inline-css',
             generateBundle(_options, bundle) {
               // Find CSS files and inline them into JS
               for (const fileName in bundle) {
                 const file = bundle[fileName];
                 if (file.type === 'asset' && fileName.endsWith('.css')) {
-                  const cssContent = file.source as string;
+                  let cssContent = file.source as string;
+                  
+                  // Rewrite font paths to use absolute paths from portal root
+                  // Replace relative paths with absolute paths
+                  cssContent = cssContent.replace(
+                    /url\(['"]?\.\/assets\/Font\/([^'"]+)['"]?\)/g,
+                    "url('/fonts/$1')"
+                  );
+                  
                   // Find the corresponding JS file
                   const jsFileName = 'sanad-ai.umd.js';
                   const jsFile = bundle[jsFileName];

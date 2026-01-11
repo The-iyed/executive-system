@@ -94,3 +94,4 @@ const sendMessageMutation = createMutation({
 - ✅ Easy to discover available APIs
 - ✅ Consistent API structure across apps
 
+
