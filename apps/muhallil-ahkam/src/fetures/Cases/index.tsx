@@ -10,7 +10,6 @@ import { useCases } from '../../hooks/use-cases';
 import { useUrlParams } from '../../hooks/use-url-params';
 import { useDebounce } from '../../hooks/use-debounce';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
   const navigate = useNavigate();
@@ -34,7 +33,7 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
           {isAnalyzing ? (
             <Badge
               className="bg-[#ECFDF3] text-[#027A48] border-0 rounded-[16px] px-3 py-1.5 text-xs font-semibold"
-              style={{ fontFamily: FONT_FAMILY }}
+              
             >
               بصدد التحليل
             </Badge>
@@ -50,14 +49,14 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
 
         <h3
           className="text-lg font-bold text-right mb-2 pr-0 mt-0 text-[#1A1A1A]"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           {caseItem.title}
         </h3>
 
         <p
           className="text-sm text-[#666] text-right mb-4 leading-relaxed"
-          style={{ fontFamily: FONT_FAMILY }}
+          
         >
           {caseItem.description}
         </p>
@@ -158,13 +157,13 @@ const Cases: React.FC = () => {
         <div className="flex-1">
           <h1
             className="text-3xl font-bold text-right mb-2 text-[#1A1A1A]"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           >
             القضايا
           </h1>
           <p
             className="text-base text-[#666] text-right leading-relaxed"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           >
             يمكنك الاطلاع على قائمة القضايا المحفوظة في النظام.
           </p>
@@ -183,7 +182,7 @@ const Cases: React.FC = () => {
             value={searchInput}
             onChange={handleSearchChange}
             className="flex pr-10 pl-4 bg-white text-right text-base focus-visible:ring-2 focus-visible:ring-[#00A79D] focus-visible:ring-offset-2 search-input w-[460px] h-[46px] rounded-[10.217px] border-[1.277px] border-[#D0D5DD] box-shadow-[0_1.277px_2.554px_0_rgba(16,24,40,0.05)] placeholder:text-[#667085]"
-            style={{ fontFamily: FONT_FAMILY }}
+            
           />
           <style>{`
             .search-input-wrapper .search-icon {
@@ -196,7 +195,7 @@ const Cases: React.FC = () => {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 min-h-[400px]">
           <Loader size={32} className="mb-4 text-[#00A79D]" />
-          <p className="text-[#666]" style={{ fontFamily: FONT_FAMILY }}>
+          <p className="text-[#666]">
             جاري التحميل...
           </p>
         </div>
@@ -205,7 +204,7 @@ const Cases: React.FC = () => {
       {isError && (
         <div className="flex items-center justify-center py-12 min-h-[400px]">
           <div className="p-4 bg-red-50 border border-red-200 rounded-[8px] text-center max-w-md">
-            <p className="text-[14px] text-red-600" style={{ fontFamily: FONT_FAMILY }}>
+            <p className="text-[14px] text-red-600">
               خطأ: {error?.message || 'حدث خطأ أثناء تحميل القضايا'}
             </p>
           </div>
@@ -216,7 +215,7 @@ const Cases: React.FC = () => {
         <>
           {cases.length === 0 ? (
             <div className="flex items-center justify-center py-12 min-h-[400px]">
-              <p className="text-[#666] text-center" style={{ fontFamily: FONT_FAMILY }}>
+              <p className="text-[#666] text-center">
                 {debouncedSearch.trim() ? 'لا توجد نتائج للبحث' : 'لا توجد قضايا متاحة'}
               </p>
             </div>

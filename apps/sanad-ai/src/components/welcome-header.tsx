@@ -1,7 +1,6 @@
 import React from 'react';
 import WelcomeAvatar from '../assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
 
-const FONT_FAMILY = '"Frutiger LT Pro", sans-serif';
 
 export const WelcomeHeader: React.FC = () => {
   return (
@@ -25,7 +24,6 @@ export const WelcomeHeader: React.FC = () => {
       <div className="flex flex-col gap-0.5 sm:gap-1 items-center text-[#1f1f1f] w-full">
         <p
           className="text-[18px] sm:text-[22px] md:text-[28px] font-bold leading-[1.3] tracking-[-0.5px] sm:tracking-[-0.96px] text-center"
-          style={{ fontFamily: FONT_FAMILY }}
           dir="auto"
         >
           <span className="text-black">حياك الله </span>
@@ -33,7 +31,6 @@ export const WelcomeHeader: React.FC = () => {
         </p>
         <p
           className="text-[13px] sm:text-[15px] leading-[1.5] text-center max-w-full sm:max-w-[601px] px-2 whitespace-pre-wrap"
-          style={{ fontFamily: FONT_FAMILY }}
           dir="auto"
         >
           كيف أقدر أخدمك اليوم؟

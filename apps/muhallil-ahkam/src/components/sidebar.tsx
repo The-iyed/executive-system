@@ -22,7 +22,6 @@ const SIDEBAR_STYLES = {
   background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.20) 100%), #055859',
 } as const;
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 // Reusable Sidebar Toggle Button Component
 export interface SidebarToggleButtonProps {
@@ -95,7 +94,7 @@ const SidebarHeader: React.FC = () => {
 
       <h1
         className="flex-1 text-right text-[#F8F8F8] text-[24px] font-bold leading-[30.428px]"
-        style={{ fontFamily: FONT_FAMILY }}
+        
       >
         مُحلِّل الأحكام
       </h1>
@@ -127,7 +126,7 @@ const SearchInput: React.FC = () => {
         placeholder="بحث..."
         className="w-full h-[46px] pr-[38px] pl-[13px] rounded-[8px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[16px] font-bold leading-[30.428px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none flex items-center"
         style={{
-          fontFamily: FONT_FAMILY,
+          
           boxShadow: '0 4px 14.8px 0 rgba(0, 0, 0, 0.10)',
         }}
       />
@@ -205,7 +204,6 @@ const NewAnalysisButton: React.FC = () => {
           : 'bg-[#00A79D] hover:bg-[#00A79D]/90 active:bg-[#00A79D]/80 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg active:shadow-md'
       }`}
       style={{
-        fontFamily: FONT_FAMILY,
         background: isActive 
           ? 'linear-gradient(0deg, rgba(0, 167, 157, 0.8) 0%, rgba(0, 167, 157, 0.8) 100%), #F8F8F8'
           : 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
@@ -268,7 +266,6 @@ const CasesItem: React.FC = () => {
             className={`text-right text-white text-[16px] font-bold leading-[30.428px] transition-all duration-200 ${
               isActive ? 'text-white' : ''
             }`}
-            style={{ fontFamily: FONT_FAMILY }}
           >
             القضايا
           </h2>
