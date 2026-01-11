@@ -105,49 +105,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
   const handleLetterFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      console.log('Letter file selected:', {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type,
-        file: selectedFile
-      });
       // Store file in a variable to ensure it's not lost
       const fileToSend = selectedFile;
       
-      // Verify file is still available before sending
-      console.log('About to call onSendMessage with file:', {
-        hasFile: !!fileToSend,
-        fileName: fileToSend.name,
-        fileSize: fileToSend.size,
-        fileType: fileToSend.type,
-      });
-      
       // Send file directly with letter_response: true and query: "ولد خطاب"
       // Call immediately - the file is already available from the event
-      // Log the function being called to verify it's the right one
-      console.log('onSendMessage function details:', {
-        type: typeof onSendMessage,
-        name: onSendMessage.name,
-        length: onSendMessage.length,
-        toString: onSendMessage.toString().substring(0, 200),
-      });
-      
-      // Call with explicit parameters - ensure all 4 parameters are passed
       const arg1 = 'ولد خطاب';
       const arg2 = fileToSend;
       const arg3 = undefined;
       const arg4 = true;
       
-      console.log('Calling onSendMessage with args:', {
-        arg1,
-        arg2: arg2 ? { name: arg2.name, size: arg2.size, type: arg2.type } : arg2,
-        arg3,
-        arg4,
-      });
-      
-      // Call the function - if it's wrapped incorrectly, this will show in logs
-      const result = onSendMessage(arg1, arg2, arg3, arg4);
-      console.log('onSendMessage call result:', result);
+      // Call the function
+      onSendMessage(arg1, arg2, arg3, arg4);
       
       // Reset the input after a brief delay to ensure the file is processed
       // Don't reset immediately as it might clear the file reference
@@ -156,8 +125,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           letterFileInputRef.current.value = '';
         }
       }, 100);
-    } else {
-      console.warn('No file selected in handleLetterFileSelect');
     }
   };
 
@@ -200,13 +167,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
         mimeType = "audio/ogg;codecs=opus";
         fileExtension = "ogg";
       }
-      
-      console.log('Recording with audio format:', mimeType, 'extension:', fileExtension);
 
       const options = { mimeType };
       const mediaRecorder = new MediaRecorder(stream, options);
-      
-      console.log('Created MediaRecorder:', mediaRecorder, 'state:', mediaRecorder.state);
       
       // Store file extension for later use
       (mediaRecorderRef.current as any).fileExtension = fileExtension;
@@ -220,12 +183,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
       
       // Also store in a separate ref for easier access
       activeMediaRecorderRef.current = mediaRecorder;
-      
-      console.log('Stored in ref:', {
-        hasMediaRecorder: !!mediaRecorderRef.current.mediaRecorder,
-        mediaRecorderState: mediaRecorderRef.current.mediaRecorder?.state,
-        activeMediaRecorder: !!activeMediaRecorderRef.current
-      });
       
       recordingChunksRef.current = [];
 
@@ -256,7 +213,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           
           // Verify blob is valid
           if (recordBlob.size === 0) {
-            console.error('Recorded audio blob is empty');
             return;
           }
           
@@ -267,30 +223,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           const finalMimeType = mimeType; // Keep original MIME type (WebM) for browser playback
           const finalExtension = 'mp3'; // Always use MP3 extension for API
           
-          console.log('Creating audio file:', {
-            originalFormat: mimeType,
-            originalExtension: originalFileExtension,
-            finalExtension: finalExtension,
-            blobSize: recordBlob.size,
-            blobType: recordBlob.type
-          });
-          
           // Create file with MP3 extension but keep WebM MIME type for browser playback
           const recordedFile = new File([recordBlob], `recording-${Date.now()}.mp3`, {
             type: finalMimeType, // WebM MIME type for browser compatibility
           });
           
-          // Verify the file is valid
-          console.log('Created audio file:', {
-            name: recordedFile.name,
-            type: recordedFile.type,
-            size: recordedFile.size,
-            extension: finalExtension
-          });
-          
           // Test if we can create a blob URL
-          const testBlobUrl = URL.createObjectURL(recordedFile);
-          console.log('Test blob URL created:', testBlobUrl);
+          URL.createObjectURL(recordedFile);
           // Don't revoke it - we'll use it in the message
           
           setAudioFile(recordedFile);
@@ -304,17 +243,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
       
       mediaRecorder.start();
       
-      // Double-check the ref is set correctly
-      console.log('After start, ref check:', {
-        hasMediaRecorder: !!mediaRecorderRef.current.mediaRecorder,
-        mediaRecorderState: mediaRecorderRef.current.mediaRecorder?.state,
-        isSameInstance: mediaRecorderRef.current.mediaRecorder === mediaRecorder,
-        refObject: mediaRecorderRef.current
-      });
-      
       // Verify one more time before setting state
       if (!mediaRecorderRef.current.mediaRecorder) {
-        console.error('MediaRecorder was lost from ref! Re-setting...');
         mediaRecorderRef.current.mediaRecorder = currentMediaRecorder;
         mediaRecorderRef.current.stream = stream;
         mediaRecorderRef.current.analyser = analyser;
@@ -325,16 +255,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
       setRecordingTime(0);
       setShowRecordingControls(false);
       setAudioFile(null); // Clear any previous audio file
-      
-      // Final verification after state update
-      setTimeout(() => {
-        console.log('After state update, ref check:', {
-          hasMediaRecorder: !!mediaRecorderRef.current.mediaRecorder,
-          mediaRecorderState: mediaRecorderRef.current.mediaRecorder?.state
-        });
-      }, 100);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
       alert('Unable to access microphone. Please check your permissions.');
     }
   };
@@ -344,18 +265,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
     const mediaRecorder = activeMediaRecorderRef.current || mediaRecorderRef.current.mediaRecorder;
     const { stream, analyser, audioContext } = mediaRecorderRef.current;
 
-    console.log('stopRecording called, mediaRecorder:', mediaRecorder, 'isRecording:', isRecording, 'state:', mediaRecorder?.state);
-    console.log('Full ref:', mediaRecorderRef.current);
-    console.log('Active mediaRecorder ref:', activeMediaRecorderRef.current);
-
     if (mediaRecorder && isRecording) {
       try {
         // Stop the recorder - onstop handler will process the recording
         if (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused') {
           mediaRecorder.stop();
-          console.log('MediaRecorder stopped, new state:', mediaRecorder.state);
-        } else {
-          console.warn('MediaRecorder state is not recording:', mediaRecorder.state);
         }
         setIsRecording(false);
         
@@ -375,10 +289,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           audioContext.close();
         }
       } catch (error) {
-        console.error('Error stopping recording:', error);
+        // Error stopping recording
       }
-    } else {
-      console.warn('Cannot stop recording - mediaRecorder:', !!mediaRecorder, 'isRecording:', isRecording);
     }
   };
 
@@ -427,7 +339,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
 
   const handleAcceptRecording = () => {
     if (!audioFile || audioFile.size === 0) {
-      console.warn('No audio file to send or file is empty');
       resetRecording();
       return;
     }
@@ -475,13 +386,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Voice button clicked, isRecording:', isRecording);
-    
     if (isRecording) {
-      console.log('Stopping recording...');
       stopRecording();
     } else {
-      console.log('Starting recording...');
       startRecording();
     }
   };
@@ -514,7 +421,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
         try {
           mediaRecorder.stop();
         } catch (e) {
-          console.warn('Error stopping mediaRecorder in cleanup:', e);
+          // Error stopping mediaRecorder in cleanup
         }
       }
       
