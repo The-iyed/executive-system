@@ -1,12 +1,10 @@
 import type { ExtractionResult } from '../../hooks/use-cases';
 import type { CaseDetailsTabType } from '../../components/case-details-tabs';
 import type { AgentResponse } from '../../hooks/use-conversation-splits';
+import type { CaseDetail } from './types';
 
-export interface CaseDetail {
-    id: string;
-    title: string;
-    description: string;
-}
+// Re-export for backward compatibility
+export type { CaseDetail } from './types';
 export const getFieldValue = (
   result: ExtractionResult | null | undefined,
   fieldPath: string,
@@ -55,8 +53,7 @@ export const getFieldValue = (
     
     // If still an object, return fallback
     return fallback;
-  } catch (error) {
-    console.error(`[getFieldValue] Error extracting "${fieldPath}":`, error);
+  } catch {
     return fallback;
   }
 };
@@ -67,7 +64,7 @@ export const getCaseDetailsFromApi = (
   splitMetadata?: Map<string, { id?: string; result?: string; agent_response?: AgentResponse }>
 ): CaseDetail[] => {
   if (!splits || splits.length === 0) {
-    return getEmptyCaseDetails(tab);
+    return getCaseDetailsTemplate(tab);
   }
 
   // Find the appropriate result based on document_category and tab
@@ -299,39 +296,17 @@ const getDescriptionForField = (
     return 'غير متوفر';
   }
   
-  // Debug: Check what's actually in the result
-  console.log(`[getDescriptionForField] Extracting:`, {
-    fieldId,
-    tab,
-    fieldPath,
-    resultType: typeof result,
-    hasExtractedParts: result && 'extracted_parts' in result,
-    hasHukm1Fields: result && 'hukm_1_fields' in result,
-    hasPart0: result && 'part_0' in result,
-    extractedPartsKeys: result?.extracted_parts ? Object.keys(result.extracted_parts) : [],
-    hukm1FieldsKeys: result?.hukm_1_fields ? Object.keys(result.hukm_1_fields) : [],
-  });
-  
-  const extractedValue = getFieldValue(result, fieldPath);
-  
-  console.log(`[getDescriptionForField] Extracted value for "${fieldPath}":`, extractedValue);
-  
-  return extractedValue;
+  return getFieldValue(result, fieldPath);
 };
 
-const getEmptyCaseDetails = (tab: CaseDetailsTabType): CaseDetail[] => {
-  const templates = {
+const getCaseDetailsTemplate = (tab: CaseDetailsTabType): CaseDetail[] => {
+  const templates: Record<CaseDetailsTabType, CaseDetail[]> = {
     primary: CaseDetailsPrimary,
     appeal: CaseDetailsAppeal,
     supreme: CaseDetailsSupreme,
     analysis: CaseDetailsAnalysis,
   };
   return templates[tab] || [];
-};
-
-
-const getCaseDetailsTemplate = (tab: CaseDetailsTabType): CaseDetail[] => {
-  return getEmptyCaseDetails(tab);
 };
 
 export const CaseDetailsPrimary: CaseDetail[] = [
