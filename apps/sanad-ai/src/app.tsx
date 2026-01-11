@@ -6,10 +6,12 @@ import { AppLayout } from './components/app-layout';
 import { WelcomeScreen } from './components/welcome-screen';
 import { LegislatorChatInterface } from './components/legislator-chat-interface';
 import { createLegislatorQueries } from '@sanad-ai/chat/data-access';
+import { Dialog, DialogContent } from '@sanad-ai/ui';
 import type {
   LegislatorMessage,
   StreamEvent,
   SendMessageStreamRequest,
+  DocumentReference,
 } from '@sanad-ai/api';
 import type { StreamController } from '@sanad-ai/api';
 // Import app-specific APIs to register them
@@ -29,7 +31,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const streamControllerRef = useRef<StreamController | null>(null);
   const [processingSteps, setProcessingSteps] = useState<Array<{ event: string; label: string; status: 'complete' | 'active' | 'pending'; details?: string }>>([]); // Used in legislator-chat-interface
-  const [isLetterResponse, setIsLetterResponse] = useState(false);
   const streamingContentRef = useRef<string>('');
   const thinkingContentRef = useRef<string>('');
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
@@ -37,6 +38,8 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const pendingLetterResponseRef = useRef<{ message: LegislatorMessage; timestamp: number; conversationId: string } | null>(null);
   const lastPendingMessageTimestampRef = useRef<number>(0);
   const currentLetterResponseRef = useRef<boolean>(false);
+  const [viewingDocument, setViewingDocument] = useState<DocumentReference | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
   // Helper functions for URL search params
   const getConversationIdFromUrl = (): string | null => {
@@ -66,6 +69,32 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       return undefined;
     })(),
   });
+
+  // Helper function to get auth header from config
+  const getAuthHeader = (): string | undefined => {
+    const basicAuth = config.basicAuth || (() => {
+      const username = import.meta.env.VITE_API_BASIC_AUTH_USERNAME;
+      const password = import.meta.env.VITE_API_BASIC_AUTH_PASSWORD;
+      const authString = import.meta.env.VITE_API_BASIC_AUTH;
+      if (authString) return { authString };
+      if (username && password) return { username, password };
+      return undefined;
+    })();
+    
+    if (!basicAuth) return undefined;
+    
+    if (basicAuth.authString) {
+      return `Basic ${basicAuth.authString}`;
+    }
+    
+    if (basicAuth.username && basicAuth.password) {
+      const credentials = `${basicAuth.username}:${basicAuth.password}`;
+      const encoded = btoa(credentials);
+      return `Basic ${encoded}`;
+    }
+    
+    return undefined;
+  };
 
   // Initialize legislator queries
   const legislatorQueries = createLegislatorQueries({ apiClient });
@@ -139,33 +168,14 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   useEffect(() => {
     // Clear pending message if it belongs to a different conversation
     if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId !== currentConversationId) {
-      console.log('[LETTER_RESPONSE_DEBUG] Clearing pending message from different conversation', {
-        pendingConversationId: pendingLetterResponseRef.current.conversationId,
-        currentConversationId,
-      });
       pendingLetterResponseRef.current = null;
     }
     
-    const hasPending = !!pendingLetterResponseRef.current;
     const timeSinceLastPending = Date.now() - lastPendingMessageTimestampRef.current;
-    
-    console.log('[LETTER_RESPONSE_DEBUG] useEffect triggered', {
-      hasMessagesData: !!messagesData,
-      messagesCount: messagesData?.messages?.length || 0,
-      currentConversationId,
-      hasPending,
-      pendingConversationId: hasPending && pendingLetterResponseRef.current ? pendingLetterResponseRef.current.conversationId : 'none',
-      pendingContent: hasPending && pendingLetterResponseRef.current ? pendingLetterResponseRef.current.message.content.substring(0, 50) : 'none',
-      timeSinceLastPending,
-    });
     
     // Skip if we just added a pending message (within last 2 seconds) to prevent immediate overwrite
     // Increased from 500ms to 2 seconds to give more time for the message to be set
     if (timeSinceLastPending < 2000 && pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId === currentConversationId) {
-      console.log('[LETTER_RESPONSE_DEBUG] Skipping useEffect - too soon after pending message', {
-        timeSinceLastPending,
-        pendingContent: pendingLetterResponseRef.current.message.content.substring(0, 50),
-      });
       return;
     }
     
@@ -187,21 +197,9 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           return msgContentStart === pendingContentStart && msg.role === pending.message.role;
         });
         
-        // DEBUG: Log the state
-        console.log('[LETTER_RESPONSE_DEBUG] useEffect processing with pending message', {
-          hasPending: !!pendingLetterResponseRef.current,
-          isInLoadedMessages,
-          timeSinceAdded,
-          loadedMessagesCount: loadedMessages.length,
-          pendingContentStart: pending.message.content.substring(0, 50),
-        });
-        
         // If message is not in backend yet and it's been less than 30 seconds, keep it
         // Increased timeout to 30 seconds to give backend more time
         if (!isInLoadedMessages && timeSinceAdded < 30000) {
-          console.log('[LETTER_RESPONSE_DEBUG] Merging pending message - not in backend yet', {
-            timeSinceAdded,
-          });
           // Always merge: add pending message at the end if it's not already in loaded messages
           // Use functional update to ensure we're working with latest state
           setMessages((prev) => {
@@ -210,12 +208,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               const pendingContentStart = pending.message.content.substring(0, 100);
               const msgContentStart = (msg.content || '').substring(0, 100);
               return msgContentStart === pendingContentStart && msg.role === pending.message.role;
-            });
-            
-            console.log('[LETTER_RESPONSE_DEBUG] setMessages callback', {
-              alreadyInPrev,
-              prevCount: prev.length,
-              loadedMessagesCount: loadedMessages.length,
             });
             
             if (alreadyInPrev) {
@@ -229,26 +221,14 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
                 return msgContentStart === pendingContentStart && msg.role === pending.message.role;
               })) {
                 merged.push(pending.message);
-                console.log('[LETTER_RESPONSE_DEBUG] Added pending to merged array', {
-                  mergedCount: merged.length,
-                });
               }
               return merged;
             }
             
             // Merge loaded messages with pending message
-            const result = [...loadedMessages, pending.message];
-            console.log('[LETTER_RESPONSE_DEBUG] Created new merged array with pending', {
-              resultCount: result.length,
-            });
-            return result;
+            return [...loadedMessages, pending.message];
           });
         } else {
-          console.log('[LETTER_RESPONSE_DEBUG] Using loaded messages only', {
-            isInLoadedMessages,
-            timeSinceAdded,
-            reason: isInLoadedMessages ? 'found in backend' : 'timeout',
-          });
           // Message is now in backend or timeout, use loaded messages
           setMessages(loadedMessages);
           if (isInLoadedMessages || timeSinceAdded >= 30000) {
@@ -256,9 +236,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           }
         }
       } else {
-        console.log('[LETTER_RESPONSE_DEBUG] No pending message, using loaded messages', {
-          loadedMessagesCount: loadedMessages.length,
-        });
         setMessages(loadedMessages);
       }
       
@@ -296,10 +273,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const handleSelectConversation = (conversationId: string) => {
     // Clear pending message when switching conversations
     if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId !== conversationId) {
-      console.log('[LETTER_RESPONSE_DEBUG] Clearing pending message on conversation switch', {
-        oldConversationId: pendingLetterResponseRef.current.conversationId,
-        newConversationId: conversationId,
-      });
       pendingLetterResponseRef.current = null;
     }
     
@@ -430,15 +403,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     setIsLoading(true);
     setStreamingContent('');
     const isLetterResponseValue = letterResponse === true;
-    setIsLetterResponse(isLetterResponseValue);
     currentLetterResponseRef.current = isLetterResponseValue; // Capture in ref for event handler
-    
-    console.log('[LETTER_RESPONSE_DEBUG] handleSendMessage - setting letter response', {
-      letterResponse,
-      isLetterResponseValue,
-      refValue: currentLetterResponseRef.current,
-      hasFile: !!fileToUse,
-    });
     
     setProcessingSteps([]);
 
@@ -471,11 +436,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     try {
       const controller = await legislatorQueries.sendStreamingMessage(conversationId, request, {
         onEvent: (event: StreamEvent) => {
-          console.log('[LETTER_RESPONSE_DEBUG] Stream event received', {
-            eventType: event.event,
-            isLetterResponse: currentLetterResponseRef.current,
-          });
-          
           // Handle letter response processing events
           if (currentLetterResponseRef.current) {
             switch (event.event) {
@@ -565,13 +525,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
 
             case 'done':
               // Stream is complete, create assistant message
-              console.log('[LETTER_RESPONSE_DEBUG] done event received', {
-                hasStreamingContent: !!streamingContentRef.current,
-                streamingContentLength: streamingContentRef.current?.length,
-                hasAccumulatedContent: !!accumulatedContent,
-                accumulatedContentLength: accumulatedContent?.length,
-              });
-              
               // CRITICAL: Get the final content from multiple sources to ensure we capture it
               // Use the ref first (most up-to-date), then state, then accumulated
               let finalContent = streamingContentRef.current || accumulatedContent;
@@ -586,13 +539,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               // Clear processing steps when done
               // Use ref instead of state to avoid closure issues
               const isLetterResponseValue = currentLetterResponseRef.current;
-              console.log('[LETTER_RESPONSE_DEBUG] done event - checking isLetterResponse', {
-                isLetterResponseState: isLetterResponse,
-                isLetterResponseRef: isLetterResponseValue,
-                hasContent: !!finalContent,
-                contentLength: finalContent?.length,
-                finalContentStart: finalContent?.substring(0, 50),
-              });
               
               if (isLetterResponseValue) {
                 setProcessingSteps((prev) => prev.map((step) => ({ ...step, status: 'complete' as const })));
@@ -600,12 +546,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               
               // Only create message if we have content
               if (finalContent && finalContent.trim()) {
-                console.log('[LETTER_RESPONSE_DEBUG] Creating assistant message', {
-                  hasContent: true,
-                  contentLength: finalContent.length,
-                  isLetterResponseValue,
-                });
-                
                 const assistantMessage: LegislatorMessage = {
                   role: 'assistant',
                   content: finalContent,
@@ -615,18 +555,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
                   tool_used: event.tool_used || finalMetadata?.agent_type,
                 };
                 
-                console.log('[LETTER_RESPONSE_DEBUG] About to setMessages', {
-                  messageContentLength: assistantMessage.content.length,
-                  isLetterResponseValue,
-                });
-                
-                setMessages((prev) => {
-                  console.log('[LETTER_RESPONSE_DEBUG] setMessages callback - adding message', {
-                    prevCount: prev.length,
-                    willAddMessage: true,
-                  });
-                  return [...prev, assistantMessage];
-                });
+                setMessages((prev) => [...prev, assistantMessage]);
                 
                 // For letter_response, track the pending message to prevent it from being overwritten
                 if (isLetterResponseValue) {
@@ -638,34 +567,17 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
                   };
                   lastPendingMessageTimestampRef.current = now;
                   
-                  console.log('[LETTER_RESPONSE_DEBUG] Message created and pending ref set', {
-                    contentLength: assistantMessage.content.length,
-                    contentStart: assistantMessage.content.substring(0, 50),
-                    timestamp: now,
-                    messageId: assistantMessage.message_id || 'no-id',
-                    pendingRefSet: !!pendingLetterResponseRef.current,
-                  });
-                  
                   // For letter_response, don't invalidate queries at all initially
                   // Only refetch manually after a longer delay to check if backend saved it
                   // This gives the backend more time to save the message
                   setTimeout(() => {
-                    console.log('[LETTER_RESPONSE_DEBUG] About to refetch messages', {
-                      hasPending: !!pendingLetterResponseRef.current,
-                      timeSinceCreated: Date.now() - now,
-                    });
-                    
                     // Manually refetch messages to check if backend has saved it
                     refetchMessages().then(() => {
-                      console.log('[LETTER_RESPONSE_DEBUG] Refetch completed', {
-                        hasPending: !!pendingLetterResponseRef.current,
-                      });
                       // After refetch, check if message is now in backend
                       // The useEffect will handle merging
                       setTimeout(() => {
                         // If still pending after 5 more seconds, invalidate to force update
                         if (pendingLetterResponseRef.current) {
-                          console.log('[LETTER_RESPONSE_DEBUG] Still pending after 8s, invalidating queries');
                           queryClient.invalidateQueries({
                             queryKey: ['legislator', 'conversations', conversationId, 'messages'],
                           });
@@ -695,7 +607,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               const clearDelay = isLetterResponseValue ? 2500 : 300;
               setTimeout(() => {
                 setStreamingContent('');
-                setIsLetterResponse(false);
                 currentLetterResponseRef.current = false; // Clear ref too
                 setProcessingSteps([]);
                 // Don't clear thinking content - let it persist for user to review
@@ -715,23 +626,12 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               break;
           }
         },
-        onError: (error: Error) => {
-          console.log('[LETTER_RESPONSE_DEBUG] Stream error', {
-            error: error.message,
-            isLetterResponse: currentLetterResponseRef.current,
-            hasPending: !!pendingLetterResponseRef.current,
-          });
+        onError: () => {
           setIsLoading(false);
           setStreamingContent('');
           // Keep thinking content even on error
         },
         onClose: () => {
-          console.log('[LETTER_RESPONSE_DEBUG] Stream closed', {
-            isLetterResponse: currentLetterResponseRef.current,
-            hasPending: !!pendingLetterResponseRef.current,
-            hasStreamingContent: !!streamingContentRef.current,
-            streamingContentLength: streamingContentRef.current?.length,
-          });
           setIsLoading(false);
           setStreamingContent('');
           // Keep thinking content when stream closes - it persists
@@ -740,9 +640,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           if (currentLetterResponseRef.current && streamingContentRef.current && !pendingLetterResponseRef.current) {
             const finalContent = streamingContentRef.current.replace(/^markdown\s*/i, '').trim();
             if (finalContent) {
-              console.log('[LETTER_RESPONSE_DEBUG] Creating message from onClose - no done event', {
-                contentLength: finalContent.length,
-              });
               const assistantMessage: LegislatorMessage = {
                 role: 'assistant',
                 content: finalContent,
@@ -759,11 +656,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
                 conversationId: currentConvId,
               };
               lastPendingMessageTimestampRef.current = now;
-              
-              console.log('[LETTER_RESPONSE_DEBUG] Message created from onClose and pending ref set', {
-                contentLength: assistantMessage.content.length,
-                conversationId: currentConvId,
-              });
             }
           }
         },
@@ -781,12 +673,97 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     handleSendMessage(question);
   };
 
-  const handleDocumentDownload = (document: any) => {
-    // TODO: Implement document download
+  const handleDocumentDownload = (doc: DocumentReference) => {
+    if (!doc.dmsdocid_1) {
+      return;
+    }
+    
+    // Get base URL from config or API client
+    const baseURL = config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL || '';
+    const downloadUrl = `${baseURL}/pdf-viewer/view/${doc.dmsdocid_1}?download=true`;
+    
+    const authHeader = getAuthHeader();
+    
+    // Create a temporary anchor element to trigger download
+    const link = window.document.createElement('a');
+    link.download = doc.file_name || 'document.pdf';
+    
+    // Use fetch with auth header to download the file
+    if (authHeader) {
+      fetch(downloadUrl, {
+        headers: {
+          'Authorization': authHeader,
+        },
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to download');
+          return response.blob();
+        })
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          link.href = url;
+          window.document.body.appendChild(link);
+          link.click();
+          window.document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+          // Fallback: try direct link (may not work with auth)
+          link.href = downloadUrl;
+          window.document.body.appendChild(link);
+          link.click();
+          window.document.body.removeChild(link);
+        });
+    } else {
+      // No auth, use direct link
+      link.href = downloadUrl;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+    }
   };
 
-  const handleDocumentView = (document: any) => {
-    // TODO: Implement document view
+  const handleDocumentView = (doc: DocumentReference) => {
+    if (!doc.dmsdocid_1) {
+      return;
+    }
+    
+    // Clean up previous blob URL if exists
+    if (pdfBlobUrl) {
+      window.URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
+    }
+    
+    const baseURL = config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL || '';
+    const viewUrl = `${baseURL}/pdf-viewer/view/${doc.dmsdocid_1}?download=false`;
+    const authHeader = getAuthHeader();
+    
+    // Fetch PDF with auth and create blob URL for iframe
+    if (authHeader) {
+      fetch(viewUrl, {
+        headers: {
+          'Authorization': authHeader,
+        },
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load PDF');
+          return response.blob();
+        })
+        .then(blob => {
+          const blobUrl = window.URL.createObjectURL(blob);
+          setPdfBlobUrl(blobUrl);
+          setViewingDocument(doc);
+        })
+        .catch(() => {
+          // Fallback: try without auth (may not work)
+          setPdfBlobUrl(viewUrl);
+          setViewingDocument(doc);
+        });
+    } else {
+      // No auth, use direct URL
+      setPdfBlobUrl(viewUrl);
+      setViewingDocument(doc);
+    }
   };
 
   return (
@@ -839,6 +816,33 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           />
         )}
       </div>
+      
+      {/* PDF Viewer Modal */}
+      {viewingDocument && viewingDocument.dmsdocid_1 && pdfBlobUrl && (
+        <Dialog 
+          open={!!viewingDocument} 
+          onOpenChange={(open) => {
+            if (!open) {
+              // Clean up blob URL when closing
+              if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
+                window.URL.revokeObjectURL(pdfBlobUrl);
+              }
+              setPdfBlobUrl(null);
+              setViewingDocument(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] p-0 flex flex-col translate-x-[-50%] translate-y-[-50%]">
+            <div className="flex-1 w-full h-full min-h-0">
+              <iframe
+                src={pdfBlobUrl}
+                className="w-full h-full border-0 rounded-lg"
+                title={viewingDocument.file_name || 'PDF Viewer'}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </AppLayout>
   );
 };
