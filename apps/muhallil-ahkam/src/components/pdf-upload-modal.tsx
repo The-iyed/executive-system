@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@sanad-ai/ui';
-import { ToggleSwitch } from './toggle-switch';
+// Will be used when ToggleSwitch code is uncommented (line 187) - remove underscore prefix when uncommenting
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { ToggleSwitch as _ToggleSwitch } from './toggle-switch';
 import { UploadLoadingCard } from './upload-loading-card';
 import type { CourtType } from './court-tabs';
 import UploadIcon from '../assets/upload.svg';
@@ -34,7 +36,8 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
   isLoading = false,
   error,
 }, ref) => {
-  const [multipleFiles, setMultipleFiles] = useState(false);
+  // Will be used when multiple files feature is enabled (see line 189) - remove underscore prefix when uncommenting
+  const [multipleFiles, _setMultipleFiles] = useState(false);
   const [courtType] = useState<CourtType>('primary');
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -181,10 +184,10 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
 
       {/* Multiple Files Toggle */}
       {/* <div className="flex justify-start mb-6">
-        <ToggleSwitch
+        <_ToggleSwitch
         className='flex-row-reverse'
           checked={multipleFiles}
-          onCheckedChange={setMultipleFiles}
+          onCheckedChange={_setMultipleFiles}
           label="رفع ملفات متعددة"
         />
       </div> */}
