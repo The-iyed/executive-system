@@ -6,7 +6,8 @@ import { AppLayout } from './components/app-layout';
 import { WelcomeScreen } from './components/welcome-screen';
 import { LegislatorChatInterface } from './components/legislator-chat-interface';
 import { createLegislatorQueries } from '@sanad-ai/chat/data-access';
-import { Dialog, DialogContent } from '@sanad-ai/ui';
+import { Dialog, DialogContent, DialogClose, Loader } from '@sanad-ai/ui';
+import { X } from 'lucide-react';
 import type {
   LegislatorMessage,
   StreamEvent,
@@ -40,6 +41,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const currentLetterResponseRef = useRef<boolean>(false);
   const [viewingDocument, setViewingDocument] = useState<DocumentReference | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
   // Helper functions for URL search params
   const getConversationIdFromUrl = (): string | null => {
@@ -734,6 +736,10 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       setPdfBlobUrl(null);
     }
     
+    // Set loading state and show document immediately
+    setIsLoadingPdf(true);
+    setViewingDocument(doc);
+    
     const baseURL = config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL || '';
     const viewUrl = `${baseURL}/pdf-viewer/view/${doc.dmsdocid_1}?download=false`;
     const authHeader = getAuthHeader();
@@ -752,17 +758,17 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
         .then(blob => {
           const blobUrl = window.URL.createObjectURL(blob);
           setPdfBlobUrl(blobUrl);
-          setViewingDocument(doc);
+          setIsLoadingPdf(false);
         })
         .catch(() => {
           // Fallback: try without auth (may not work)
           setPdfBlobUrl(viewUrl);
-          setViewingDocument(doc);
+          setIsLoadingPdf(false);
         });
     } else {
       // No auth, use direct URL
       setPdfBlobUrl(viewUrl);
-      setViewingDocument(doc);
+      setIsLoadingPdf(false);
     }
   };
 
@@ -818,7 +824,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       </div>
       
       {/* PDF Viewer Modal */}
-      {viewingDocument && viewingDocument.dmsdocid_1 && pdfBlobUrl && (
+      {viewingDocument && viewingDocument.dmsdocid_1 && (
         <Dialog 
           open={!!viewingDocument} 
           onOpenChange={(open) => {
@@ -829,16 +835,25 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               }
               setPdfBlobUrl(null);
               setViewingDocument(null);
+              setIsLoadingPdf(false);
             }
           }}
         >
-          <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] p-0 flex flex-col translate-x-[-50%] translate-y-[-50%]">
-            <div className="flex-1 w-full h-full min-h-0">
-              <iframe
-                src={pdfBlobUrl}
-                className="w-full h-full border-0 rounded-lg"
-                title={viewingDocument.file_name || 'PDF Viewer'}
-              />
+          <DialogContent className="max-w-[80vw] max-h-[95vh] w-[80vw] h-[95vh] p-0 flex flex-col translate-x-[-50%] translate-y-[-50%] [&>button]:hidden">
+            <DialogClose className="absolute left-4 top-4 rounded-sm bg-black/50 hover:bg-black/70 opacity-90 hover:opacity-100 transition-all focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 disabled:pointer-events-none z-10 p-1.5 !text-white data-[state=open]:!text-white">
+              <X className="h-3 w-3" style={{ color: 'white', stroke: 'white' }} strokeWidth={2.5} />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+            <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center">
+              {isLoadingPdf || !pdfBlobUrl ? (
+                <Loader />
+              ) : (
+                <iframe
+                  src={pdfBlobUrl}
+                  className="w-full h-full border-0 rounded-lg"
+                  title={viewingDocument.file_name || 'PDF Viewer'}
+                />
+              )}
             </div>
           </DialogContent>
         </Dialog>
