@@ -1,6 +1,21 @@
 
+interface CaseDocument {
+  name: string;
+  size: string;
+}
+
+export interface Case {
+  id: string;
+  title: string;
+  description: string;
+  status: 'analyzing' | 'completed';
+  documents: CaseDocument[];
+  progress?: number;
+  conversation_id: string;
+}
+
 // Mock data - replace with API call later
-export const mockCases = [
+export const mockCases: Case[] = [
     {
       id: '1',
       title: 'عنوان القضية',
