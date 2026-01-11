@@ -13,12 +13,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@sanad-ai/ui';
-import { Home, ChevronLeft } from 'lucide-react';
+import { Home, ChevronLeft, Grid3x3, Table2 } from 'lucide-react';
 import { PdfCard } from '../../components';
 import { CaseDetailsTabs, type CaseDetailsTabType } from '../../components/case-details-tabs';
-// Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import _EditIcon from '../../assets/edit-03.svg';
 import { PATH } from '../../routes/path';
 import { getCaseDetailsFromApi, CaseDetail } from './mockCaseFiles';
 import { useConversationSplits } from '../../hooks/use-conversation-splits';
@@ -35,33 +32,49 @@ const formatFileSize = (bytes: number | null): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
-  const [isEditing, setIsEditing] = useState(false);
+interface DetailCardProps {
+  detail: CaseDetail;
+  selectedTab: CaseDetailsTabType;
+  editingState: { id: string; tab: CaseDetailsTabType } | null;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const DetailCard: React.FC<DetailCardProps> = ({ 
+  detail, 
+  selectedTab,
+  editingState,
+  // onEdit,
+  // onSave,
+  // onCancel
+}) => {
+  // Check if this card is being edited by comparing id and tab
+  const isEditing = editingState?.id === detail.id && editingState?.tab === selectedTab;
+  
   const [description, setDescription] = useState(detail.description);
   
-  // Update description when detail.description changes (from API)
+  // Update description when detail.description changes (from API) or when not editing
   useEffect(() => {
     if (!isEditing) {
       setDescription(detail.description);
     }
   }, [detail.description, isEditing]);
 
-  // Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
-  const _handleEditClick = () => {
-    setIsEditing(true);
-  };
+  // const handleSave = () => {
+  //   // if selectedTab is analysis, save the description to the analysis field
+  //   if (selectedTab === "analysis") {
+  //     console.log("save analysis", { detail, description });
+  //   }
+  //   // TODO: Implement actual save logic here (API call)
+  //   onSave();
+  // };
 
-  // Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
-  const _handleSave = () => {
-    setIsEditing(false);
-    // TODO: Save the updated description
-  };
+  // const handleCancel = () => {
+  //   setDescription(detail.description);
+  //   onCancel();
+  // };
 
-  // Reference functions to avoid TypeScript unused variable errors (will be removed when uncommented)
-  if (false) {
-    _handleEditClick();
-    _handleSave();
-  }
 
   return (
     <div
@@ -71,41 +84,77 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
     >
       <div className="flex items-start justify-between gap-3 mb-2 min-w-0 w-full">
         <div className="flex-1 min-w-0 overflow-hidden">
-          <h3
-            className="text-base font-bold text-right text-[#101828] overflow-hidden text-ellipsis whitespace-nowrap w-full"
-            style={{ fontFamily: FONT_FAMILY }}
-            title={detail.title}
-          >
-            {detail.title}
-          </h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <h3
+                  className="text-base font-bold text-right text-[#101828] overflow-hidden w-full cursor-default line-clamp-2"
+                  style={{ 
+                    fontFamily: FONT_FAMILY,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {detail.title}
+                </h3>
+              </TooltipTrigger>
+              <TooltipContent 
+                side="top" 
+                align="start" 
+                className="max-w-md bg-gray-900 text-white border-gray-700 shadow-lg"
+              >
+                <p className="text-right text-white" style={{ fontFamily: FONT_FAMILY }}>
+                  {detail.title}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         {/* <div className="flex-shrink-0 flex-grow-0">
           {!isEditing ? (
             <button
-              onClick={handleEditClick}
+              onClick={onEdit}
               className="flex items-center justify-center w-6 h-6 p-0 border-0 bg-transparent cursor-pointer hover:opacity-80 transition-opacity"
               aria-label="تعديل"
             >
               <img src={EditIcon} alt="تعديل" className="w-6 h-6" />
             </button>
           ) : (
-            <button
-              onClick={handleSave}
-              className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer"
-              style={{
-                background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
-              }}
-            >
-              <span
-                className="text-white text-right text-base font-bold"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer"
                 style={{
-                  fontFamily: FONT_FAMILY,
-                  lineHeight: '30.428px',
+                  background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
                 }}
               >
-                تعديل
-              </span>
-            </button>
+                <span
+                  className="text-white text-right text-base font-bold"
+                  style={{
+                    fontFamily: FONT_FAMILY,
+                    lineHeight: '30.428px',
+                  }}
+                >
+                  حفظ
+                </span>
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer bg-white"
+              >
+                <span
+                  className="text-[#666] text-right text-base font-bold"
+                  style={{
+                    fontFamily: FONT_FAMILY,
+                    lineHeight: '30.428px',
+                  }}
+                >
+                  إلغاء
+                </span>
+              </button>
+            </div>
           )}
         </div> */}
       </div>
@@ -153,10 +202,187 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
   );
 };
 
+// Table View Row Component
+interface TableRowProps {
+  detail: CaseDetail;
+  selectedTab: CaseDetailsTabType;
+  editingState: { id: string; tab: CaseDetailsTabType } | null;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const TableRow: React.FC<TableRowProps> = ({
+  detail,
+  selectedTab,
+  editingState,
+  // onEdit,
+  // onSave,
+  // onCancel
+}) => {
+  // Check if this row is being edited by comparing id and tab
+  const isEditing = editingState?.id === detail.id && editingState?.tab === selectedTab;
+  
+  const [description, setDescription] = useState(detail.description);
+  
+  // Update description when detail.description changes (from API) or when not editing
+  useEffect(() => {
+    if (!isEditing) {
+      setDescription(detail.description);
+    }
+  }, [detail.description, isEditing]);
+
+  // const handleSave = () => {
+  //   // if selectedTab is analysis, save the description to the analysis field
+  //   if (selectedTab === "analysis") {
+  //     console.log("save analysis", { detail, description });
+  //   }
+  //   // TODO: Implement actual save logic here (API call)
+  //   onSave();
+  // };
+
+  // const handleCancel = () => {
+  //   setDescription(detail.description);
+  //   onCancel();
+  // };
+
+  return (
+    <tr className="border-b border-[#EAECF0] hover:bg-gray-50 transition-colors">
+      <td className="px-4 py-3 align-top">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3
+                className="text-base font-bold text-right text-[#101828] overflow-hidden max-w-[300px] cursor-default line-clamp-2"
+                style={{ 
+                  fontFamily: FONT_FAMILY,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {detail.title}
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent 
+              side="top" 
+              align="start" 
+              className="max-w-md bg-gray-900 text-white border-gray-700 shadow-lg"
+            >
+              <p className="text-right text-white" style={{ fontFamily: FONT_FAMILY }}>
+                {detail.title}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </td>
+      <td className="px-4 py-3 align-top">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            {!isEditing ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p
+                      className="text-sm text-[#475467] text-right leading-relaxed overflow-hidden text-ellipsis whitespace-nowrap cursor-default"
+                      style={{
+                        fontFamily: FONT_FAMILY,
+                      }}
+                    >
+                      {description}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    align="start" 
+                    className="max-w-md bg-gray-900 text-white border-gray-700 shadow-lg"
+                  >
+                    <p className="text-right text-white" style={{ fontFamily: FONT_FAMILY }}>
+                      {description}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full p-2 text-sm text-right text-[#666] border border-[#D8D8D8] rounded-[5px] resize-none focus:outline-none focus:ring-2 focus:ring-[#00A79D] focus:ring-offset-1"
+                style={{
+                  fontFamily: FONT_FAMILY,
+                  minHeight: '80px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                }}
+              />
+            )}
+          </div>
+          {/* <div className="flex-shrink-0">
+            {!isEditing ? (
+              <button
+                onClick={onEdit}
+                className="flex items-center justify-center w-6 h-6 p-0 border-0 bg-transparent cursor-pointer hover:opacity-80 transition-opacity"
+                aria-label="تعديل"
+              >
+                <img src={EditIcon} alt="تعديل" className="w-6 h-6" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSave}
+                  className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
+                  }}
+                >
+                  <span
+                    className="text-white text-right text-base font-bold"
+                    style={{
+                      fontFamily: FONT_FAMILY,
+                      lineHeight: '30.428px',
+                    }}
+                  >
+                    حفظ
+                  </span>
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer bg-white"
+                >
+                  <span
+                    className="text-[#666] text-right text-base font-bold"
+                    style={{
+                      fontFamily: FONT_FAMILY,
+                      lineHeight: '30.428px',
+                    }}
+                  >
+                    إلغاء
+                  </span>
+                </button>
+              </div>
+            )}
+          </div> */}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 const CaseFiles: React.FC = () => {
   const navigate = useNavigate();
   const { conversation_id } = useParams<{ conversation_id: string }>();
-  const [selectedTab, setSelectedTab] = useState<CaseDetailsTabType>('analysis');
+  const [selectedTab, setSelectedTab] = useState<CaseDetailsTabType>("primary");
+  // Track which card is being edited: stores { id, tab }
+  const [editingState, setEditingState] = useState<{ id: string; tab: CaseDetailsTabType } | null>(null);
+  // View mode: 'table' (default) or 'grid'
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  
+  // Reset editing state when tab changes
+  useEffect(() => {
+    setEditingState(null);
+  }, [selectedTab]);
   
   // Fetch detailed splits - returns ExtractionResult[] array
   const { data: splits, isLoading, error, isFetching } = useConversationSplits(conversation_id);
@@ -205,6 +431,20 @@ const CaseFiles: React.FC = () => {
     }> | undefined;
     return getCaseDetailsFromApi(splits, selectedTab, metadata);
   }, [splits, selectedTab]);
+
+  // Handlers for card editing
+  const handleEdit = (detailId: string) => {
+    setEditingState({ id: detailId, tab: selectedTab });
+  };
+
+  const handleSave = () => {
+    // Clear editing state after save
+    setEditingState(null);
+  };
+
+  const handleCancel = () => {
+    setEditingState(null);
+  };
 
   return (
     <div className="w-full min-h-full px-12 pt-8 pb-8" dir="rtl">
@@ -323,38 +563,124 @@ const CaseFiles: React.FC = () => {
           >
             تفاصيل القضية
           </h2>
-          <div className="flex-shrink-0">
-            <CaseDetailsTabs
-              value={selectedTab}
-              onValueChange={setSelectedTab}
-            />
+          <div className="flex items-center gap-4">
+            {/* View Toggle Icons */}
+            <div className="flex items-center gap-2 border border-[#EAECF0] rounded-[8px] p-1">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center justify-center w-8 h-8 rounded-[6px] transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-[#00A79D] text-white'
+                    : 'bg-transparent text-[#666] hover:bg-gray-100'
+                }`}
+                aria-label="عرض الجدول"
+              >
+                <Table2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center justify-center w-8 h-8 rounded-[6px] transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-[#00A79D] text-white'
+                    : 'bg-transparent text-[#666] hover:bg-gray-100'
+                }`}
+                aria-label="عرض الشبكة"
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-shrink-0">
+              <CaseDetailsTabs
+                value={selectedTab}
+                onValueChange={setSelectedTab}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Detail Cards Grid */}
-      <div className="bg-[radial-gradient(ellipse_at_center,_#f4f4f4_0%,_#f4f4f4_45%,_#ffffff_100%)]
+      {/* Detail Cards Grid or Table View */}
+      {viewMode === 'table' ? (
+        <div className="bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-[#EAECF0] overflow-hidden">
+          {isDataLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader className="w-8 h-8 text-[#00A79D]" />
+            </div>
+          ) : caseDetails.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <p
+                className="text-sm text-[#666] text-right"
+                style={{ fontFamily: FONT_FAMILY }}
+              >
+                لا توجد تفاصيل متاحة
+              </p>
+            </div>
+          ) : (
+            <table className="w-full" dir="rtl">
+              <thead className="bg-[#F9FAFB] border-b border-[#EAECF0]">
+                <tr>
+                  <th
+                    className="px-4 py-3 text-right text-sm font-bold text-[#101828]"
+                    style={{ fontFamily: FONT_FAMILY }}
+                  >
+                    العنوان
+                  </th>
+                  <th
+                    className="px-4 py-3 text-right text-sm font-bold text-[#101828]"
+                    style={{ fontFamily: FONT_FAMILY }}
+                  >
+                    الوصف
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {caseDetails.map((detail) => (
+                  <TableRow
+                    key={`${detail.id}:${selectedTab}`}
+                    detail={detail}
+                    selectedTab={selectedTab}
+                    editingState={editingState}
+                    onEdit={() => handleEdit(detail.id)}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : (
+        <div className="bg-[radial-gradient(ellipse_at_center,_#f4f4f4_0%,_#f4f4f4_45%,_#ffffff_100%)]
     shadow-[0_8px_24px_rgba(0,0,0,0.04)]
     rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 min-h-[200px]">
-        {isDataLoading ? (
-          <div className="col-span-full flex items-center justify-center py-12">
-            <Loader className="w-8 h-8 text-[#00A79D]" />
-          </div>
-        ) : caseDetails.length === 0 ? (
-          <div className="col-span-full flex items-center justify-center py-12">
-            <p
-              className="text-sm text-[#666] text-right"
-              style={{ fontFamily: FONT_FAMILY }}
-            >
-              لا توجد تفاصيل متاحة
-            </p>
-          </div>
-        ) : (
-          caseDetails.map((detail) => (
-            <DetailCard key={detail.id} detail={detail} />
-          ))
-        )}
-      </div>
+          {isDataLoading ? (
+            <div className="col-span-full flex items-center justify-center py-12">
+              <Loader className="w-8 h-8 text-[#00A79D]" />
+            </div>
+          ) : caseDetails.length === 0 ? (
+            <div className="col-span-full flex items-center justify-center py-12">
+              <p
+                className="text-sm text-[#666] text-right"
+                style={{ fontFamily: FONT_FAMILY }}
+              >
+                لا توجد تفاصيل متاحة
+              </p>
+            </div>
+          ) : (
+            caseDetails.map((detail) => (
+              <DetailCard
+                key={`${detail.id}:${selectedTab}`}
+                detail={detail}
+                selectedTab={selectedTab}
+                editingState={editingState}
+                onEdit={() => handleEdit(detail.id)}
+                onSave={handleSave}
+                onCancel={handleCancel}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
