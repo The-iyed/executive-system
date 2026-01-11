@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@sanad-ai/ui';
 import { ToggleSwitch } from './toggle-switch';
+import { UploadLoadingCard } from './upload-loading-card';
 import type { CourtType } from './court-tabs';
 import UploadIcon from '../assets/upload.svg';
 import PdfIcon from '../assets/pdf.svg';
@@ -19,17 +20,35 @@ const formatFileSize = (bytes: number): string => {
 interface PdfUploadModalProps {
   onClose?: () => void;
   onStartAnalysis?: (files: File[], courtType: CourtType, multipleFiles: boolean) => void;
+  isLoading?: boolean;
+  error?: { message: string };
 }
 
-export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
+export interface PdfUploadModalRef {
+  resetFiles: () => void;
+}
+
+export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>(({
   onClose,
   onStartAnalysis,
-}) => {
+  isLoading = false,
+  error,
+}, ref) => {
   const [multipleFiles, setMultipleFiles] = useState(false);
   const [courtType] = useState<CourtType>('primary');
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Expose resetFiles function via ref
+  useImperativeHandle(ref, () => ({
+    resetFiles: () => {
+      setFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+  }));
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -95,13 +114,29 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
 
   const handleStartAnalysis = () => {
     const withinLimit = multipleFiles || files.length <= 3;
-    if (files.length >= 1 && withinLimit && onStartAnalysis) {
+    if (files.length >= 1 && withinLimit && onStartAnalysis && !isLoading) {
       onStartAnalysis(files, courtType, multipleFiles);
     }
   };
 
   const hasFiles = files.length >= 1;
   const canAddMoreFiles = multipleFiles ? true : files.length < 3;
+
+  // Show loading component when uploading
+  if (isLoading) {
+    return (
+      <div className="relative w-full max-w-4xl mx-auto">
+        <UploadLoadingCard
+          title="تحليل الأحكام القضائية"
+          description="يرجى تحميل الأحكام القضائية من هنا لتمكين النظام من تحليل محتواها وإعداد تحليل دقيق."
+          files={files.map((file) => ({
+            name: file.name,
+            size: file.size,
+          }))}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full max-w-4xl mx-auto bg-white rounded-[15px] shadow-lg p-6 md:p-8">
@@ -145,14 +180,14 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
       </p>
 
       {/* Multiple Files Toggle */}
-      <div className="flex justify-start mb-6">
+      {/* <div className="flex justify-start mb-6">
         <ToggleSwitch
         className='flex-row-reverse'
           checked={multipleFiles}
           onCheckedChange={setMultipleFiles}
           label="رفع ملفات متعددة"
         />
-      </div>
+      </div> */}
 
       {/* Court Type Tabs */}
       {/* <div className="mb-6">
@@ -265,21 +300,35 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
         </div>
       )}
 
+      {/* Error Message */}
+      {error && (
+        <div
+          className="mt-4 p-4 bg-red-50 border border-red-200 rounded-[8px] text-right"
+          style={{ fontFamily: FONT_FAMILY }}
+        >
+          <p className="text-[14px] text-red-600">
+            خطأ: {error.message || 'حدث خطأ أثناء رفع الملفات'}
+          </p>
+        </div>
+      )}
+
       <Button
         type="button"
         onClick={handleStartAnalysis}
-        disabled={!hasFiles}
+        disabled={!hasFiles || isLoading}
         className={`
           w-full h-[48px] rounded-[8px] text-[16px] font-bold transition-colors mt-[15px]
-          ${hasFiles
+          ${hasFiles && !isLoading
             ? 'bg-[#00A79D] hover:bg-[#00A79D]/90 text-white'
             : 'bg-[#D1D5DB] text-[#9CA3AF] cursor-not-allowed'
           }
         `}
         style={{ fontFamily: FONT_FAMILY }}
       >
-        بدء عملية التحليل
+        {isLoading ? 'جاري التحليل...' : 'بدء عملية التحليل'}
       </Button>
     </div>
   );
-};
+});
+
+PdfUploadModal.displayName = 'PdfUploadModal';

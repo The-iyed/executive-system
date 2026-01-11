@@ -26,6 +26,15 @@ export {
   TabsContent,
 } from './components/tabs';
 export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from './components/pagination';
+export {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -75,6 +84,25 @@ export {
   MessageResponse,
   type MessageResponseProps,
 } from './components/ai-elements/message';
+export {
+  Loader,
+  type LoaderProps,
+} from './components/ai-elements/loader';
+
+// Export toast components
+export {
+  Toast,
+  ToastAction,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+  type ToastActionElement,
+  type ToastProps,
+} from './components/toast';
+export { Toaster } from './components/toaster';
+export { useToast, toast } from './components/use-toast';
 
 // Export utilities
 export { cn } from './lib/utils';
