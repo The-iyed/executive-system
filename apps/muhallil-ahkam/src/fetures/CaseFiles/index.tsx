@@ -16,7 +16,9 @@ import {
 import { Home, ChevronLeft } from 'lucide-react';
 import { PdfCard } from '../../components';
 import { CaseDetailsTabs, type CaseDetailsTabType } from '../../components/case-details-tabs';
-import EditIcon from '../../assets/edit-03.svg';
+// Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import _EditIcon from '../../assets/edit-03.svg';
 import { PATH } from '../../routes/path';
 import { getCaseDetailsFromApi, CaseDetail } from './mockCaseFiles';
 import { useConversationSplits } from '../../hooks/use-conversation-splits';
@@ -44,14 +46,22 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
     }
   }, [detail.description, isEditing]);
 
-  const handleEditClick = () => {
+  // Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
+  const _handleEditClick = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  // Will be used when edit functionality is enabled - remove underscore prefix when uncommenting
+  const _handleSave = () => {
     setIsEditing(false);
     // TODO: Save the updated description
   };
+
+  // Reference functions to avoid TypeScript unused variable errors (will be removed when uncommented)
+  if (false) {
+    _handleEditClick();
+    _handleSave();
+  }
 
   return (
     <div
