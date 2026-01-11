@@ -181,7 +181,7 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ onOpenApp }) =
       </div>
 
       {/* Services Flex Wrap - Responsive gap */}
-      <div className="w-full max-w-[1605px] flex flex-wrap justify-start gap-4 sm:gap-6" dir="rtl">
+      <div className="w-full max-w-[1605px] flex flex-wrap justify-start gap-4 sm:gap-6" dir="rtl" style={{ alignItems: 'flex-start' }}>
         {filteredServices.map((service, index) => (
           <ServiceCard
             key={index}

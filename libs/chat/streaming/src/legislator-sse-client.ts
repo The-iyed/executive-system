@@ -82,7 +82,6 @@ export class LegislatorSSEClient {
                 this.options.onEvent(event);
               } catch (error) {
                 // Skip invalid JSON
-                console.warn('Failed to parse SSE event:', data);
               }
             }
           }
@@ -118,7 +117,7 @@ export class LegislatorSSEClient {
         const data: StreamEvent = JSON.parse(event.data);
         this.options.onEvent(data);
       } catch (error) {
-        console.warn('Failed to parse SSE event:', event.data);
+        // Skip invalid JSON
       }
     };
 
