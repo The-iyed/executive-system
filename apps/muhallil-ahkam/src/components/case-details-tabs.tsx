@@ -13,7 +13,7 @@ interface CaseDetailsTabsProps {
 }
 
 const tabs: { value: CaseDetailsTabType; label: string }[] = [
-  { value: 'analysis', label: 'تحليل الأحكام' },
+  { value: 'analysis', label: 'التحليل' },
   { value: 'supreme', label: 'المحكمة العليا' },
   { value: 'appeal', label: 'محكمة الاستئناف' },
   { value: 'primary', label: 'المحكمة الابتدائية' },
