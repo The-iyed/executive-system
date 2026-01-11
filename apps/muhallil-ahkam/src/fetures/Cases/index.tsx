@@ -96,7 +96,7 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
 
 const Cases: React.FC = () => {
   const urlParams = useUrlParams();
-  const limit = 6; // Number of cases per page
+  const limit = 4; // Number of cases per page
 
   // Get values from URL params
   const currentPage = urlParams.getNumberParam('page', 1);
