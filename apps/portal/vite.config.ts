@@ -13,7 +13,20 @@ export default defineConfig({
   build: {
     outDir: 'dist/apps/portal',
     emptyOutDir: true,
+    cssCodeSplit: false, // Ensure all CSS is in one file
+    rollupOptions: {
+      output: {
+        // Ensure CSS is properly extracted
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'assets/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
+  // PostCSS config is handled by postcss.config.js
   server: {
     port: 4200,
   },

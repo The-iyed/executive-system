@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { QuestionIcon } from '@/assets/icons/QuestionIcon';
 
 export interface RelatedQuestionProps {
   question: string;
@@ -8,35 +9,7 @@ export interface RelatedQuestionProps {
   className?: string;
 }
 
-// Question Icon SVG
-const QuestionIcon: React.FC<{ className?: string; isActive?: boolean }> = ({
-  className,
-  isActive,
-}) => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    <circle
-      cx="9"
-      cy="9"
-      r="8.5"
-      stroke={isActive ? '#00a69c' : '#101828'}
-      strokeWidth="1"
-    />
-    <path
-      d="M9 13V9.5C9 9.22386 9.22386 9 9.5 9H10C10.2761 9 10.5 8.77614 10.5 8.5V8C10.5 7.72386 10.2761 7.5 10 7.5H8.5C8.22386 7.5 8 7.72386 8 8V8.5"
-      stroke={isActive ? '#00a69c' : '#101828'}
-      strokeWidth="1"
-      strokeLinecap="round"
-    />
-    <circle cx="9" cy="13.5" r="0.5" fill={isActive ? '#00a69c' : '#101828'} />
-  </svg>
-);
+
 
 export const RelatedQuestion: React.FC<RelatedQuestionProps> = ({
   question,
@@ -56,7 +29,9 @@ export const RelatedQuestion: React.FC<RelatedQuestionProps> = ({
       )}
       dir="rtl"
     >
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
+      <QuestionIcon
+        />
         <p
           className={cn(
             'font-normal leading-[25.233px] text-base text-right',
@@ -66,10 +41,7 @@ export const RelatedQuestion: React.FC<RelatedQuestionProps> = ({
         >
           {question}
         </p>
-        <QuestionIcon
-          className="w-[18px] h-[18px] shrink-0"
-          isActive={isActive}
-        />
+      
       </div>
     </button>
   );
@@ -93,7 +65,7 @@ export const RelatedQuestions: React.FC<RelatedQuestionsProps> = ({
   }
 
   return (
-    <div className={cn('flex flex-col gap-3 items-end', className)} dir="rtl">
+    <div className={cn('flex flex-col gap-3 items-start', className)} dir="rtl">
       <p
         className="font-bold leading-[25.233px] text-base text-[#00a79d] text-right"
         style={{ fontFamily: '"Somar Sans", sans-serif' }}

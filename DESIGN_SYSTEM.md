@@ -86,3 +86,4 @@ Based on the Figma design, the primary color is teal/cyan:
 - xl: Extra large shadow
 - 2xl: Maximum shadow
 
+

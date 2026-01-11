@@ -4,7 +4,6 @@ import type { CourtType } from '../../components/court-tabs';
 
 const Chat = () => {
   const handleStartAnalysis = (files: File[], courtType: CourtType, multipleFiles: boolean) => {
-    console.log('Starting analysis with:', { files, courtType, multipleFiles });
     // TODO: Implement analysis logic
   };
   
