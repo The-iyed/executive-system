@@ -248,12 +248,12 @@ const TableRow: React.FC<TableRowProps> = ({
 
   return (
     <tr className="border-b border-[#EAECF0] hover:bg-gray-50 transition-colors">
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-top w-[30%] max-w-[300px]">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <h3
-                className="text-base font-bold text-right text-[#101828] overflow-hidden max-w-[300px] cursor-default line-clamp-2"
+                className="text-base font-bold text-right text-[#101828] overflow-hidden w-full cursor-default line-clamp-2"
                 style={{ 
                   fontFamily: FONT_FAMILY,
                   display: '-webkit-box',
@@ -277,17 +277,21 @@ const TableRow: React.FC<TableRowProps> = ({
           </Tooltip>
         </TooltipProvider>
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-top w-[70%]">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full">
             {!isEditing ? (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <p
-                      className="text-sm text-[#475467] text-right leading-relaxed overflow-hidden text-ellipsis whitespace-nowrap cursor-default"
+                      className="text-sm text-[#475467] text-right leading-relaxed overflow-hidden w-full cursor-default line-clamp-3"
                       style={{
                         fontFamily: FONT_FAMILY,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        wordBreak: 'break-word'
                       }}
                     >
                       {description}
@@ -298,7 +302,7 @@ const TableRow: React.FC<TableRowProps> = ({
                     align="start" 
                     className="max-w-md bg-gray-900 text-white border-gray-700 shadow-lg"
                   >
-                    <p className="text-right text-white" style={{ fontFamily: FONT_FAMILY }}>
+                    <p className="text-right text-white whitespace-pre-wrap" style={{ fontFamily: FONT_FAMILY }}>
                       {description}
                     </p>
                   </TooltipContent>
@@ -319,51 +323,6 @@ const TableRow: React.FC<TableRowProps> = ({
               />
             )}
           </div>
-          {/* <div className="flex-shrink-0">
-            {!isEditing ? (
-              <button
-                onClick={onEdit}
-                className="flex items-center justify-center w-6 h-6 p-0 border-0 bg-transparent cursor-pointer hover:opacity-80 transition-opacity"
-                aria-label="تعديل"
-              >
-                <img src={EditIcon} alt="تعديل" className="w-6 h-6" />
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleSave}
-                  className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(0deg, #00A79D 0%, #00A79D 100%), #F8F8F8',
-                  }}
-                >
-                  <span
-                    className="text-white text-right text-base font-bold"
-                    style={{
-                      fontFamily: FONT_FAMILY,
-                      lineHeight: '30.428px',
-                    }}
-                  >
-                    حفظ
-                  </span>
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center justify-center w-[70px] h-[35px] px-[15px] rounded-[5px] border-[0.2px] border-[#D8D8D8] hover:opacity-90 transition-opacity cursor-pointer bg-white"
-                >
-                  <span
-                    className="text-[#666] text-right text-base font-bold"
-                    style={{
-                      fontFamily: FONT_FAMILY,
-                      lineHeight: '30.428px',
-                    }}
-                  >
-                    إلغاء
-                  </span>
-                </button>
-              </div>
-            )}
-          </div> */}
         </div>
       </td>
     </tr>
@@ -616,17 +575,17 @@ const CaseFiles: React.FC = () => {
               </p>
             </div>
           ) : (
-            <table className="w-full" dir="rtl">
+            <table className="w-full table-fixed" dir="rtl">
               <thead className="bg-[#F9FAFB] border-b border-[#EAECF0]">
                 <tr>
                   <th
-                    className="px-4 py-3 text-right text-sm font-bold text-[#101828]"
+                    className="px-4 py-3 text-right text-sm font-bold text-[#101828] w-[30%] max-w-[300px]"
                     style={{ fontFamily: FONT_FAMILY }}
                   >
                     العنوان
                   </th>
                   <th
-                    className="px-4 py-3 text-right text-sm font-bold text-[#101828]"
+                    className="px-4 py-3 text-right text-sm font-bold text-[#101828] w-[70%]"
                     style={{ fontFamily: FONT_FAMILY }}
                   >
                     الوصف
