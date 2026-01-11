@@ -30,7 +30,6 @@ export interface PdfUploadModalRef {
 }
 
 export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>(({
-  onClose,
   onStartAnalysis,
   isLoading = false,
   error,
