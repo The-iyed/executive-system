@@ -69,3 +69,4 @@ Match Figma variable names when possible:
 2. Check that colors/spacing match Figma design
 3. Adjust any hardcoded values in components
 
+

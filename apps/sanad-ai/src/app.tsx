@@ -25,11 +25,18 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const [messages, setMessages] = useState<LegislatorMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [thinkingContent, setThinkingContent] = useState('');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const streamControllerRef = useRef<StreamController | null>(null);
   const [processingSteps, setProcessingSteps] = useState<Array<{ event: string; label: string; status: 'complete' | 'active' | 'pending'; details?: string }>>([]); // Used in legislator-chat-interface
   const [isLetterResponse, setIsLetterResponse] = useState(false);
   const streamingContentRef = useRef<string>('');
+  const thinkingContentRef = useRef<string>('');
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const pendingLetterResponseRef = useRef<{ message: LegislatorMessage; timestamp: number; conversationId: string } | null>(null);
+  const lastPendingMessageTimestampRef = useRef<number>(0);
+  const currentLetterResponseRef = useRef<boolean>(false);
 
   // Helper functions for URL search params
   const getConversationIdFromUrl = (): string | null => {
@@ -70,10 +77,13 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   });
 
   // Load messages for current conversation
-  const { data: messagesData, refetch: refetchMessages, isLoading: isLoadingMessages } = legislatorQueries.useMessages(
+  const { data: messagesData, refetch: refetchMessages, isLoading: isLoadingMessagesFromQuery } = legislatorQueries.useMessages(
     currentConversationId || '',
     { limit: 100 }
   );
+  
+  // Combine query loading state with manual loading state
+  const isLoadingMessagesCombined = isLoadingMessagesFromQuery || isLoadingMessages;
 
   // Create conversation mutation
   const createConversation = legislatorQueries.useCreateConversation();
@@ -118,7 +128,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       const lastConversation = conversationsData.conversations[0]; // First item is the most recent (sorted by updated_at)
       const conversationId = lastConversation.conversation_id;
       
-      console.log('Auto-selecting last conversation:', conversationId);
       setCurrentConversationId(conversationId);
       setConversationIdInUrl(conversationId);
       // Messages will be loaded automatically via the useMessages hook when currentConversationId changes
@@ -128,33 +137,186 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
 
   // Update messages when loaded
   useEffect(() => {
+    // Clear pending message if it belongs to a different conversation
+    if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId !== currentConversationId) {
+      console.log('[LETTER_RESPONSE_DEBUG] Clearing pending message from different conversation', {
+        pendingConversationId: pendingLetterResponseRef.current.conversationId,
+        currentConversationId,
+      });
+      pendingLetterResponseRef.current = null;
+    }
+    
+    const hasPending = !!pendingLetterResponseRef.current;
+    const timeSinceLastPending = Date.now() - lastPendingMessageTimestampRef.current;
+    
+    console.log('[LETTER_RESPONSE_DEBUG] useEffect triggered', {
+      hasMessagesData: !!messagesData,
+      messagesCount: messagesData?.messages?.length || 0,
+      currentConversationId,
+      hasPending,
+      pendingConversationId: hasPending && pendingLetterResponseRef.current ? pendingLetterResponseRef.current.conversationId : 'none',
+      pendingContent: hasPending && pendingLetterResponseRef.current ? pendingLetterResponseRef.current.message.content.substring(0, 50) : 'none',
+      timeSinceLastPending,
+    });
+    
+    // Skip if we just added a pending message (within last 2 seconds) to prevent immediate overwrite
+    // Increased from 500ms to 2 seconds to give more time for the message to be set
+    if (timeSinceLastPending < 2000 && pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId === currentConversationId) {
+      console.log('[LETTER_RESPONSE_DEBUG] Skipping useEffect - too soon after pending message', {
+        timeSinceLastPending,
+        pendingContent: pendingLetterResponseRef.current.message.content.substring(0, 50),
+      });
+      return;
+    }
+    
     if (messagesData?.messages && currentConversationId) {
       const loadedMessages = messagesData.messages;
-      setMessages(loadedMessages);
+      
+      // If we have a pending letter_response message that was just added locally,
+      // merge it with loaded messages instead of replacing
+      // Only merge if it belongs to the current conversation
+      if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId === currentConversationId) {
+        const pending = pendingLetterResponseRef.current;
+        const timeSinceAdded = Date.now() - pending.timestamp;
+        
+        // Check if the pending message is already in loaded messages
+        // Use a more lenient check - check if content matches (first 100 chars) and role
+        const isInLoadedMessages = loadedMessages.some((msg) => {
+          const pendingContentStart = pending.message.content.substring(0, 100);
+          const msgContentStart = (msg.content || '').substring(0, 100);
+          return msgContentStart === pendingContentStart && msg.role === pending.message.role;
+        });
+        
+        // DEBUG: Log the state
+        console.log('[LETTER_RESPONSE_DEBUG] useEffect processing with pending message', {
+          hasPending: !!pendingLetterResponseRef.current,
+          isInLoadedMessages,
+          timeSinceAdded,
+          loadedMessagesCount: loadedMessages.length,
+          pendingContentStart: pending.message.content.substring(0, 50),
+        });
+        
+        // If message is not in backend yet and it's been less than 30 seconds, keep it
+        // Increased timeout to 30 seconds to give backend more time
+        if (!isInLoadedMessages && timeSinceAdded < 30000) {
+          console.log('[LETTER_RESPONSE_DEBUG] Merging pending message - not in backend yet', {
+            timeSinceAdded,
+          });
+          // Always merge: add pending message at the end if it's not already in loaded messages
+          // Use functional update to ensure we're working with latest state
+          setMessages((prev) => {
+            // Check if pending message is already in prev (to avoid duplicates)
+            const alreadyInPrev = prev.some((msg) => {
+              const pendingContentStart = pending.message.content.substring(0, 100);
+              const msgContentStart = (msg.content || '').substring(0, 100);
+              return msgContentStart === pendingContentStart && msg.role === pending.message.role;
+            });
+            
+            console.log('[LETTER_RESPONSE_DEBUG] setMessages callback', {
+              alreadyInPrev,
+              prevCount: prev.length,
+              loadedMessagesCount: loadedMessages.length,
+            });
+            
+            if (alreadyInPrev) {
+              // Message is already in state, merge loaded messages with current state
+              // This ensures we keep the pending message even if it's in prev
+              const merged = [...loadedMessages];
+              // Only add pending if it's not already in loadedMessages
+              if (!loadedMessages.some((msg) => {
+                const pendingContentStart = pending.message.content.substring(0, 100);
+                const msgContentStart = (msg.content || '').substring(0, 100);
+                return msgContentStart === pendingContentStart && msg.role === pending.message.role;
+              })) {
+                merged.push(pending.message);
+                console.log('[LETTER_RESPONSE_DEBUG] Added pending to merged array', {
+                  mergedCount: merged.length,
+                });
+              }
+              return merged;
+            }
+            
+            // Merge loaded messages with pending message
+            const result = [...loadedMessages, pending.message];
+            console.log('[LETTER_RESPONSE_DEBUG] Created new merged array with pending', {
+              resultCount: result.length,
+            });
+            return result;
+          });
+        } else {
+          console.log('[LETTER_RESPONSE_DEBUG] Using loaded messages only', {
+            isInLoadedMessages,
+            timeSinceAdded,
+            reason: isInLoadedMessages ? 'found in backend' : 'timeout',
+          });
+          // Message is now in backend or timeout, use loaded messages
+          setMessages(loadedMessages);
+          if (isInLoadedMessages || timeSinceAdded >= 30000) {
+            pendingLetterResponseRef.current = null;
+          }
+        }
+      } else {
+        console.log('[LETTER_RESPONSE_DEBUG] No pending message, using loaded messages', {
+          loadedMessagesCount: loadedMessages.length,
+        });
+        setMessages(loadedMessages);
+      }
+      
+      setIsLoadingMessages(false); // Clear loading state when messages are loaded
       // Show welcome screen if conversation is empty
-      if (loadedMessages.length === 0) {
+      if (loadedMessages.length === 0 && !pendingLetterResponseRef.current) {
         setShowWelcome(true);
       } else {
         setShowWelcome(false);
       }
     } else if (currentConversationId && messagesData?.messages && messagesData.messages.length === 0) {
       // Conversation exists but has no messages
-      setShowWelcome(true);
+      // Keep pending message if it exists and belongs to this conversation
+      if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId === currentConversationId) {
+        const pending = pendingLetterResponseRef.current;
+        setMessages((prev) => {
+          // If we already have the pending message in state, keep it
+          const hasPending = prev.some((msg) => {
+            const pendingContentStart = pending.message.content.substring(0, 100);
+            const msgContentStart = (msg.content || '').substring(0, 100);
+            return msgContentStart === pendingContentStart && msg.role === pending.message.role;
+          });
+          return hasPending ? prev : [pending.message];
+        });
+        setShowWelcome(false);
+      } else {
+        setMessages([]);
+        setShowWelcome(true);
+      }
+      setIsLoadingMessages(false); // Clear loading state
     }
   }, [messagesData, currentConversationId]);
 
   // Handle conversation selection
   const handleSelectConversation = (conversationId: string) => {
+    // Clear pending message when switching conversations
+    if (pendingLetterResponseRef.current && pendingLetterResponseRef.current.conversationId !== conversationId) {
+      console.log('[LETTER_RESPONSE_DEBUG] Clearing pending message on conversation switch', {
+        oldConversationId: pendingLetterResponseRef.current.conversationId,
+        newConversationId: conversationId,
+      });
+      pendingLetterResponseRef.current = null;
+    }
+    
     setCurrentConversationId(conversationId);
     setMessages([]); // Clear messages while loading
+    setIsLoadingMessages(true); // Show skeletons immediately
     // Update URL search params
     setConversationIdInUrl(conversationId);
-    refetchMessages();
+    refetchMessages().finally(() => {
+      setIsLoadingMessages(false);
+    });
   };
 
   // Handle new conversation
   const handleNewConversation = async () => {
     try {
+      setIsCreatingConversation(true);
       const result = await createConversation.mutateAsync({ name: 'محادثة جديدة' });
       setCurrentConversationId(result.conversation_id);
       setMessages([]);
@@ -163,7 +325,9 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       setConversationIdInUrl(result.conversation_id);
       refetchConversations();
     } catch (error) {
-      console.error('Failed to create conversation:', error);
+      // Failed to create conversation
+    } finally {
+      setIsCreatingConversation(false);
     }
   };
 
@@ -203,7 +367,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     }
 
     // Create a new conversation - wait for it to complete
-    console.log('Creating new conversation before sending message...');
     const result = await createConversation.mutateAsync({ name: 'محادثة جديدة' });
     const conversationId = result.conversation_id;
     
@@ -218,8 +381,6 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     // Wait a tick to ensure state is fully updated before proceeding
     await new Promise(resolve => setTimeout(resolve, 0));
     
-    console.log('Conversation created successfully:', conversationId);
-    
     return conversationId;
   };
 
@@ -230,49 +391,17 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     const audioFileToUse = (audioFile instanceof File) ? audioFile : undefined;
     const letterResponseToUse = letterResponse === true;
     
-    // Debug: Log received parameters IMMEDIATELY
-    console.log('handleSendMessage called with:', {
-      content,
-      hasFile: !!file,
-      fileName: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      fileIsFileInstance: file instanceof File,
-      hasAudioFile: !!audioFile,
-      letterResponse,
-      fileObject: file,
-    });
-    
-    console.log('Captured values (IMMEDIATE):', {
-      fileToUse: !!fileToUse,
-      fileName: fileToUse?.name,
-      fileSize: fileToUse?.size,
-      audioFileToUse: !!audioFileToUse,
-      letterResponseToUse,
-    });
-    
     // CRITICAL: Get or create conversation FIRST and wait for it to complete
     // This ensures the conversation exists before we try to send the message
-    console.log('Getting or creating conversation before sending message...');
     const conversationId = await getOrCreateConversation();
     
     // Verify conversation ID is valid
     if (!conversationId) {
-      console.error('Failed to get or create conversation');
       return;
     }
     
-    console.log('Conversation ready:', conversationId);
-    
     // Hide welcome screen after conversation is ready
     setShowWelcome(false);
-    
-    // Verify file is still available after async operation
-    console.log('After getOrCreateConversation - file still available:', {
-      fileToUse: !!fileToUse,
-      fileName: fileToUse?.name,
-      conversationId,
-    });
 
     // Create user message
     // For audio files, store the File object directly so we can create blob URLs on demand
@@ -300,7 +429,17 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     setStreamingContent('');
-    setIsLetterResponse(letterResponse === true);
+    const isLetterResponseValue = letterResponse === true;
+    setIsLetterResponse(isLetterResponseValue);
+    currentLetterResponseRef.current = isLetterResponseValue; // Capture in ref for event handler
+    
+    console.log('[LETTER_RESPONSE_DEBUG] handleSendMessage - setting letter response', {
+      letterResponse,
+      isLetterResponseValue,
+      refValue: currentLetterResponseRef.current,
+      hasFile: !!fileToUse,
+    });
+    
     setProcessingSteps([]);
 
     // Prepare streaming request
@@ -313,33 +452,32 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       audio_file: audioFileToUse || undefined,
       letter_response: letterResponseToUse ? true : undefined,
     };
-    
-    // Debug log to verify request
-    console.log('Sending request:', {
-      query: request.query,
-      hasFile: !!request.file,
-      fileName: request.file?.name,
-      fileSize: request.file?.size,
-      fileType: request.file?.type,
-      letterResponse: request.letter_response,
-      originalFile: file,
-      originalFileExists: !!file,
-    });
 
     // Handle streaming events
     let accumulatedContent = '';
+    let accumulatedThinking = '';
     let finalMetadata: StreamEvent['metadata'] = undefined;
     let finalDocuments: StreamEvent['sources_documents'] = [];
     let finalQuestions: string[] = [];
     
-    // Reset the ref for this stream
+    // Capture conversationId for use in closures
+    const currentConvId = conversationId;
+    
+    // Reset the refs for this stream
     streamingContentRef.current = '';
+    thinkingContentRef.current = '';
+    setThinkingContent('');
 
     try {
       const controller = await legislatorQueries.sendStreamingMessage(conversationId, request, {
         onEvent: (event: StreamEvent) => {
+          console.log('[LETTER_RESPONSE_DEBUG] Stream event received', {
+            eventType: event.event,
+            isLetterResponse: currentLetterResponseRef.current,
+          });
+          
           // Handle letter response processing events
-          if (isLetterResponse) {
+          if (currentLetterResponseRef.current) {
             switch (event.event) {
               case 'analyzing_pdf':
                 setProcessingSteps((prev) => [
@@ -388,23 +526,37 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
               break;
 
             case 'thinking':
-              // Handle thinking events if needed (reasoning process)
+              // Handle thinking events (reasoning process)
+              if (event.chunk) {
+                accumulatedThinking += event.chunk;
+                thinkingContentRef.current = accumulatedThinking;
+                setThinkingContent(accumulatedThinking);
+              }
               break;
 
             case 'content_chunk':
               if (event.chunk) {
                 accumulatedContent += event.chunk;
-                streamingContentRef.current = accumulatedContent;
-                setStreamingContent(accumulatedContent);
+                // Remove "markdown" prefix if it appears at the start (case-insensitive)
+                let cleanedContent = accumulatedContent;
+                if (cleanedContent.toLowerCase().startsWith('markdown')) {
+                  cleanedContent = cleanedContent.replace(/^markdown\s*/i, '');
+                }
+                streamingContentRef.current = cleanedContent;
+                setStreamingContent(cleanedContent);
+                // Update accumulatedContent to the cleaned version
+                accumulatedContent = cleanedContent;
               }
               break;
 
             case 'completed':
               // The completed event contains the full content and metadata
               if (event.content) {
-                accumulatedContent = event.content;
-                streamingContentRef.current = accumulatedContent;
-                setStreamingContent(accumulatedContent);
+                // Remove "markdown" prefix if present (case-insensitive)
+                let cleanedContent = event.content.replace(/^markdown\s*/i, '').trim();
+                accumulatedContent = cleanedContent;
+                streamingContentRef.current = cleanedContent;
+                setStreamingContent(cleanedContent);
               }
               finalMetadata = event.metadata;
               finalDocuments = event.sources_documents || [];
@@ -413,27 +565,47 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
 
             case 'done':
               // Stream is complete, create assistant message
+              console.log('[LETTER_RESPONSE_DEBUG] done event received', {
+                hasStreamingContent: !!streamingContentRef.current,
+                streamingContentLength: streamingContentRef.current?.length,
+                hasAccumulatedContent: !!accumulatedContent,
+                accumulatedContentLength: accumulatedContent?.length,
+              });
+              
               // CRITICAL: Get the final content from multiple sources to ensure we capture it
               // Use the ref first (most up-to-date), then state, then accumulated
-              const finalContent = streamingContentRef.current || accumulatedContent;
+              let finalContent = streamingContentRef.current || accumulatedContent;
               
-              console.log('Done event - final content:', {
-                hasContent: !!finalContent,
-                contentLength: finalContent?.length,
-                fromRef: !!streamingContentRef.current,
-                refLength: streamingContentRef.current?.length,
-                fromAccumulated: !!accumulatedContent,
-                accumulatedLength: accumulatedContent?.length,
-              });
+              // Remove "markdown" prefix if present (case-insensitive)
+              if (finalContent) {
+                // Remove "markdown" from the beginning (case-insensitive, with optional whitespace)
+                finalContent = finalContent.replace(/^markdown\s*/i, '').trim();
+              }
               
               // Use tool_used from done event if available, otherwise from metadata
               // Clear processing steps when done
-              if (isLetterResponse) {
+              // Use ref instead of state to avoid closure issues
+              const isLetterResponseValue = currentLetterResponseRef.current;
+              console.log('[LETTER_RESPONSE_DEBUG] done event - checking isLetterResponse', {
+                isLetterResponseState: isLetterResponse,
+                isLetterResponseRef: isLetterResponseValue,
+                hasContent: !!finalContent,
+                contentLength: finalContent?.length,
+                finalContentStart: finalContent?.substring(0, 50),
+              });
+              
+              if (isLetterResponseValue) {
                 setProcessingSteps((prev) => prev.map((step) => ({ ...step, status: 'complete' as const })));
               }
               
               // Only create message if we have content
               if (finalContent && finalContent.trim()) {
+                console.log('[LETTER_RESPONSE_DEBUG] Creating assistant message', {
+                  hasContent: true,
+                  contentLength: finalContent.length,
+                  isLetterResponseValue,
+                });
+                
                 const assistantMessage: LegislatorMessage = {
                   role: 'assistant',
                   content: finalContent,
@@ -442,60 +614,166 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
                   related_questions: finalQuestions,
                   tool_used: event.tool_used || finalMetadata?.agent_type,
                 };
-                setMessages((prev) => [...prev, assistantMessage]);
-                console.log('Assistant message created with content length:', finalContent.length);
-              } else {
-                console.warn('No final content to save - content was empty or missing');
+                
+                console.log('[LETTER_RESPONSE_DEBUG] About to setMessages', {
+                  messageContentLength: assistantMessage.content.length,
+                  isLetterResponseValue,
+                });
+                
+                setMessages((prev) => {
+                  console.log('[LETTER_RESPONSE_DEBUG] setMessages callback - adding message', {
+                    prevCount: prev.length,
+                    willAddMessage: true,
+                  });
+                  return [...prev, assistantMessage];
+                });
+                
+                // For letter_response, track the pending message to prevent it from being overwritten
+                if (isLetterResponseValue) {
+                  const now = Date.now();
+                  pendingLetterResponseRef.current = {
+                    message: assistantMessage,
+                    timestamp: now,
+                    conversationId: conversationId, // Track which conversation this belongs to
+                  };
+                  lastPendingMessageTimestampRef.current = now;
+                  
+                  console.log('[LETTER_RESPONSE_DEBUG] Message created and pending ref set', {
+                    contentLength: assistantMessage.content.length,
+                    contentStart: assistantMessage.content.substring(0, 50),
+                    timestamp: now,
+                    messageId: assistantMessage.message_id || 'no-id',
+                    pendingRefSet: !!pendingLetterResponseRef.current,
+                  });
+                  
+                  // For letter_response, don't invalidate queries at all initially
+                  // Only refetch manually after a longer delay to check if backend saved it
+                  // This gives the backend more time to save the message
+                  setTimeout(() => {
+                    console.log('[LETTER_RESPONSE_DEBUG] About to refetch messages', {
+                      hasPending: !!pendingLetterResponseRef.current,
+                      timeSinceCreated: Date.now() - now,
+                    });
+                    
+                    // Manually refetch messages to check if backend has saved it
+                    refetchMessages().then(() => {
+                      console.log('[LETTER_RESPONSE_DEBUG] Refetch completed', {
+                        hasPending: !!pendingLetterResponseRef.current,
+                      });
+                      // After refetch, check if message is now in backend
+                      // The useEffect will handle merging
+                      setTimeout(() => {
+                        // If still pending after 5 more seconds, invalidate to force update
+                        if (pendingLetterResponseRef.current) {
+                          console.log('[LETTER_RESPONSE_DEBUG] Still pending after 8s, invalidating queries');
+                          queryClient.invalidateQueries({
+                            queryKey: ['legislator', 'conversations', conversationId, 'messages'],
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ['legislator', 'conversations'],
+                          });
+                        }
+                      }, 5000);
+                    });
+                  }, 5000); // Increased from 3000 to 5000 to give backend more time
+                } else {
+                  // For regular messages, invalidate immediately
+                  queryClient.invalidateQueries({
+                    queryKey: ['legislator', 'conversations', conversationId, 'messages'],
+                  });
+                  queryClient.invalidateQueries({
+                    queryKey: ['legislator', 'conversations'],
+                  });
+                }
               }
               
               setIsLoading(false);
               // Clear streaming content and processing state after a brief delay
               // This ensures the message is rendered before clearing
+              // Keep thinking content - it persists until a new message starts
+              // For letter_response, delay clearing to ensure message is visible
+              const clearDelay = isLetterResponseValue ? 2500 : 300;
               setTimeout(() => {
                 setStreamingContent('');
                 setIsLetterResponse(false);
+                currentLetterResponseRef.current = false; // Clear ref too
                 setProcessingSteps([]);
-              }, 300);
-              
-              // Invalidate queries after stream completes
-              queryClient.invalidateQueries({
-                queryKey: ['legislator', 'conversations', conversationId, 'messages'],
-              });
-              queryClient.invalidateQueries({
-                queryKey: ['legislator', 'conversations'],
-              });
-              // Invalidate queries after stream completes
-              queryClient.invalidateQueries({
-                queryKey: ['legislator', 'conversations', conversationId, 'messages'],
-              });
-              queryClient.invalidateQueries({
-                queryKey: ['legislator', 'conversations'],
-              });
+                // Don't clear thinking content - let it persist for user to review
+                // Clear pending ref after a longer delay to allow backend to save
+                if (isLetterResponseValue) {
+                  setTimeout(() => {
+                    pendingLetterResponseRef.current = null;
+                  }, 3000);
+                }
+              }, clearDelay);
               break;
 
             case 'error':
-              console.error('Stream error:', event.error, event.message);
               setIsLoading(false);
               setStreamingContent('');
+              // Keep thinking content even on error - user might want to see it
               break;
           }
         },
         onError: (error: Error) => {
-          console.error('Stream error:', error);
+          console.log('[LETTER_RESPONSE_DEBUG] Stream error', {
+            error: error.message,
+            isLetterResponse: currentLetterResponseRef.current,
+            hasPending: !!pendingLetterResponseRef.current,
+          });
           setIsLoading(false);
           setStreamingContent('');
+          // Keep thinking content even on error
         },
         onClose: () => {
+          console.log('[LETTER_RESPONSE_DEBUG] Stream closed', {
+            isLetterResponse: currentLetterResponseRef.current,
+            hasPending: !!pendingLetterResponseRef.current,
+            hasStreamingContent: !!streamingContentRef.current,
+            streamingContentLength: streamingContentRef.current?.length,
+          });
           setIsLoading(false);
           setStreamingContent('');
+          // Keep thinking content when stream closes - it persists
+          
+          // If stream closes without done event and we have content, create message manually
+          if (currentLetterResponseRef.current && streamingContentRef.current && !pendingLetterResponseRef.current) {
+            const finalContent = streamingContentRef.current.replace(/^markdown\s*/i, '').trim();
+            if (finalContent) {
+              console.log('[LETTER_RESPONSE_DEBUG] Creating message from onClose - no done event', {
+                contentLength: finalContent.length,
+              });
+              const assistantMessage: LegislatorMessage = {
+                role: 'assistant',
+                content: finalContent,
+                response_metadata: finalMetadata,
+                sources_documents: finalDocuments,
+                related_questions: finalQuestions,
+              };
+              setMessages((prev) => [...prev, assistantMessage]);
+              
+              const now = Date.now();
+              pendingLetterResponseRef.current = {
+                message: assistantMessage,
+                timestamp: now,
+                conversationId: currentConvId,
+              };
+              lastPendingMessageTimestampRef.current = now;
+              
+              console.log('[LETTER_RESPONSE_DEBUG] Message created from onClose and pending ref set', {
+                contentLength: assistantMessage.content.length,
+                conversationId: currentConvId,
+              });
+            }
+          }
         },
       });
 
       streamControllerRef.current = controller;
     } catch (error) {
-      console.error('Failed to send message:', error);
       setIsLoading(false);
       setStreamingContent('');
+      // Keep thinking content even on error - user might want to see it
     }
   };
 
@@ -505,12 +783,10 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
 
   const handleDocumentDownload = (document: any) => {
     // TODO: Implement document download
-    console.log('Download document:', document);
   };
 
   const handleDocumentView = (document: any) => {
     // TODO: Implement document view
-    console.log('View document:', document);
   };
 
   return (
@@ -518,6 +794,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       conversations={conversationsData?.conversations || []}
       currentConversationId={currentConversationId}
       isLoadingConversations={isLoadingConversations}
+      isCreatingConversation={isCreatingConversation}
       onSelectConversation={handleSelectConversation}
       onNewConversation={handleNewConversation}
       onDeleteConversation={async (id) => {
@@ -531,7 +808,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           }
           refetchConversations();
         } catch (error) {
-          console.error('Failed to delete conversation:', error);
+          // Failed to delete conversation
         }
       }}
       onUpdateConversation={async (id, name) => {
@@ -539,7 +816,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
           await updateConversation.mutateAsync({ conversation_id: id, name });
           refetchConversations();
         } catch (error) {
-          console.error('Failed to update conversation:', error);
+          // Failed to update conversation
         }
       }}
     >
@@ -551,8 +828,9 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
             key="chat"
             messages={messages}
             isLoading={isLoading}
-            isLoadingMessages={isLoadingMessages}
+            isLoadingMessages={isLoadingMessagesCombined}
             streamingContent={streamingContent}
+            thinkingContent={thinkingContent}
             processingSteps={processingSteps}
             onSendMessage={handleSendMessage}
             onQuestionClick={handleQuestionClick}
