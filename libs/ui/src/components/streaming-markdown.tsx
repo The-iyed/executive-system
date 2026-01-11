@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { MarkdownStreamParser } from '@lixpi/markdown-stream-parser';
+import React from 'react';
 import { MarkdownRenderer } from './markdown-renderer';
-import { cn } from '@/lib/utils';
 
 export interface StreamingMarkdownProps {
   content: string;
@@ -12,19 +10,6 @@ export interface StreamingMarkdownProps {
   instanceId?: string;
   dir?: 'ltr' | 'rtl' | 'auto';
 }
-
-type ParsedSegment = {
-  segment: string;
-  styles: string[];
-  type: string;
-  isBlockDefining: boolean;
-  isProcessingNewLine: boolean;
-};
-
-type ParsedOutput = {
-  status: 'STREAMING' | 'END_STREAM';
-  segment?: ParsedSegment;
-};
 
 // Fix incomplete markdown during streaming - more aggressive approach
 function fixIncompleteMarkdown(content: string): string {
@@ -164,7 +149,7 @@ export const StreamingMarkdown: React.FC<StreamingMarkdownProps> = ({
   content,
   mode = 'static',
   className,
-  instanceId = 'default',
+  instanceId: _instanceId = 'default',
   dir = 'rtl',
 }) => {
   // Preprocess content for streaming mode to fix incomplete markdown

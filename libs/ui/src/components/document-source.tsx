@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { DocumentReference } from '@sanad-ai/api';
-import { PdfIcon } from '@/assets/icons/pdfIcon';
+import { PdfIcon } from '@/assets/icons/PdfIcon';
 import { ChevronLeftIcon } from 'lucide-react';
 
 export interface DocumentSourceProps {
@@ -53,24 +53,6 @@ const ViewIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 
 
-const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    <path
-      d="M6.75 13.5L11.25 9L6.75 4.5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 export const DocumentSource: React.FC<DocumentSourceProps> = ({
   document,
