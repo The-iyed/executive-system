@@ -208,3 +208,34 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Prevent layout shifts and ensure stable card sizing */
+.portal-dashboard-container {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure service cards maintain their size */
+.service-card-container {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .service-card-container {
+    width: 302px;
+    max-width: 302px;
+    min-width: 302px;
+  }
+}
+
+/* Prevent input from stretching */
+.search-box-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 396px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
