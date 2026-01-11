@@ -13,6 +13,30 @@ export { Progress } from './components/progress';
 export { AudioPlayer, type AudioPlayerProps } from './components/audio-player';
 export { Skeleton } from './components/skeleton';
 export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbEllipsis,
+} from './components/breadcrumb';
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from './components/tabs';
+export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from './components/pagination';
+export {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -78,6 +102,25 @@ export {
   MarkdownRenderer,
   type MarkdownRendererProps,
 } from './components/markdown-renderer';
+export {
+  Loader,
+  type LoaderProps,
+} from './components/ai-elements/loader';
+
+// Export toast components
+export {
+  Toast,
+  ToastAction,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+  type ToastActionElement,
+  type ToastProps,
+} from './components/toast';
+export { Toaster } from './components/toaster';
+export { useToast, toast } from './components/use-toast';
 
 // Export collapsible components
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './components/collapsible';

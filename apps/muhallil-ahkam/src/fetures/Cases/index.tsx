@@ -1,33 +1,22 @@
-import React, { useState } from 'react';
-import { Card, CardContent, Input, Badge } from '@sanad-ai/ui';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Card, CardContent, Input, Badge, Loader } from '@sanad-ai/ui';
 import EyeIcon from '../../assets/eye.svg';
 import SearchIcon from '../../assets/search-lg.svg';
-import { PdfCard } from '../../components';
-import { mockCases } from './mockCases';
+import { PdfCard, Pagination } from '../../components';
+import { Case } from './mockCases';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../routes/path';
+import { useCases } from '../../hooks/use-cases';
+import { useUrlParams } from '../../hooks/use-url-params';
+import { useDebounce } from '../../hooks/use-debounce';
 
-
-interface CaseDocument {
-  name: string;
-  size: string;
-}
-
-interface Case {
-  id: string;
-  title: string;
-  description: string;
-  status: 'analyzing' | 'completed';
-  documents: CaseDocument[];
-  progress?: number;
-}
 
 const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
   const navigate = useNavigate();
   const isAnalyzing = caseItem.status === 'analyzing';
 
   const handleViewCaseFiles = () => {
-    navigate(PATH.CASE_FILES.replace(':caseId', caseItem.id));
+    navigate(PATH.CASE_FILES.replace(':conversation_id', caseItem.conversation_id));
   };
 
   return (
@@ -106,7 +95,60 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
 };
 
 const Cases: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const urlParams = useUrlParams();
+  const limit = 6; // Number of cases per page
+
+  // Get values from URL params
+  const currentPage = urlParams.getNumberParam('page', 1);
+  const searchQuery = urlParams.getParam('search', '');
+  const skip = (currentPage - 1) * limit;
+
+  // Local state for search input (for immediate UI feedback)
+  const [searchInput, setSearchInput] = useState(searchQuery);
+
+  // Debounce search query (500ms delay)
+  const debouncedSearch = useDebounce(searchInput, 500);
+
+  // Sync local search input with URL param on mount
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (debouncedSearch !== searchQuery) {
+      urlParams.setParams({
+        search: debouncedSearch || null,
+        page: debouncedSearch !== searchQuery ? 1 : currentPage, // Reset to page 1 when search changes
+      });
+    }
+  }, [debouncedSearch, searchQuery, currentPage, urlParams]);
+
+  // Fetch and manage cases with pagination and backend search
+  const {
+    cases,
+    pagination,
+    isLoading,
+    isError,
+    error,
+  } = useCases({
+    skip,
+    limit,
+    sort_by: 'created_at',
+    sort_order: -1,
+    search: debouncedSearch,
+  });
+
+  const handlePageChange = useCallback((page: number) => {
+    urlParams.setParam('page', page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [urlParams]);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    // Note: URL will be updated automatically via debounce effect
+  }, []);
 
   return (
     <div className="w-full min-h-full px-12 pt-8 pb-8" dir="rtl">
@@ -137,8 +179,8 @@ const Cases: React.FC = () => {
           <Input
             type="text"
             placeholder="بحث"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={handleSearchChange}
             className="flex pr-10 pl-4 bg-white text-right text-base focus-visible:ring-2 focus-visible:ring-[#00A79D] focus-visible:ring-offset-2 search-input w-[460px] h-[46px] rounded-[10.217px] border-[1.277px] border-[#D0D5DD] box-shadow-[0_1.277px_2.554px_0_rgba(16,24,40,0.05)] placeholder:text-[#667085]"
             
           />
@@ -150,11 +192,54 @@ const Cases: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {mockCases.map((caseItem) => (
-          <CaseCard key={caseItem.id} case={caseItem as Case} />
-        ))}
-      </div>
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-12 min-h-[400px]">
+          <Loader size={32} className="mb-4 text-[#00A79D]" />
+          <p className="text-[#666]">
+            جاري التحميل...
+          </p>
+        </div>
+      )}
+
+      {isError && (
+        <div className="flex items-center justify-center py-12 min-h-[400px]">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-[8px] text-center max-w-md">
+            <p className="text-[14px] text-red-600">
+              خطأ: {error?.message || 'حدث خطأ أثناء تحميل القضايا'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !isError && (
+        <>
+          {cases.length === 0 ? (
+            <div className="flex items-center justify-center py-12 min-h-[400px]">
+              <p className="text-[#666] text-center">
+                {debouncedSearch.trim() ? 'لا توجد نتائج للبحث' : 'لا توجد قضايا متاحة'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                {cases.map((caseItem: Case) => (
+                  <CaseCard key={caseItem.id} case={caseItem} />
+                ))}
+              </div>
+
+              {pagination.totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 };
