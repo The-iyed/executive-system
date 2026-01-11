@@ -11,7 +11,6 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4">
-      {/* Avatar Icon */}
       <div 
         className="flex w-[92px] h-[92px] justify-center items-centerflex-shrink-0"
         style={{
@@ -25,7 +24,6 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
         />
       </div>
 
-      {/* Welcome Message */}
       <h2
         className="text-[32px] font-bold text-[#1A1A1A] text-center"
         
@@ -33,12 +31,11 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
         حياك الله {userName}
       </h2>
 
-      {/* Greeting */}
       <p
         className="text-[18px] text-[#666666] text-center"
         
       >
-        كيف أقدر أخدمك اليوم؟
+           كيف يمكنني مساعدتك اليوم؟
       </p>
     </div>
   );
