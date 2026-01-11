@@ -7,3 +7,4 @@ export const getTextDirection = (text: string): 'ltr' | 'rtl' => {
   return isRtl(text) ? 'rtl' : 'ltr';
 };
 
+
