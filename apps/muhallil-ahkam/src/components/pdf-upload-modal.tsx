@@ -142,8 +142,7 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
 
   return (
     <div className="relative w-full max-w-4xl mx-auto bg-white rounded-[15px] shadow-lg p-6 md:p-8">
-      {/* Close Button */}
-      <button
+      {/* <button
         onClick={onClose}
         className="absolute top-6 left-6 w-8 h-8 flex items-center justify-center text-[#1A1A1A] hover:bg-gray-100 rounded-full transition-colors"
         aria-label="إغلاق"
@@ -163,9 +162,8 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
             strokeLinejoin="round"
           />
         </svg>
-      </button>
+      </button> */}
 
-      {/* Title */}
       <h2
         className="text-[24px] font-bold text-[#1A1A1A] mb-2 text-right"
         
@@ -173,7 +171,6 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
         تحميل الأحكام القضائية
       </h2>
 
-      {/* Description */}
       <p
         className="text-[14px] text-[#666666] mb-6 text-right"
         
