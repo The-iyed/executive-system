@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -7,50 +7,42 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  Loader,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@sanad-ai/ui';
 import { Home, ChevronLeft } from 'lucide-react';
 import { PdfCard } from '../../components';
 import { CaseDetailsTabs, type CaseDetailsTabType } from '../../components/case-details-tabs';
 import EditIcon from '../../assets/edit-03.svg';
 import { PATH } from '../../routes/path';
+import { getCaseDetailsFromApi, CaseDetail } from './mockCaseFiles';
+import { useConversationSplits } from '../../hooks/use-conversation-splits';
 
 const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
-interface CaseDetail {
-  id: string;
-  title: string;
-  description: string;
-}
-
-interface CaseFile {
-  name: string;
-  size: string;
-}
-
-const mockCaseFiles: CaseFile[] = [
-  { name: 'حكم المحكمة العليا', size: '5.3MB' },
-  { name: 'الحكم الابتدائي', size: '5.3MB' },
-  { name: 'حكم الاستئناف', size: '5.3MB' },
-];
-
-const mockCaseDetails: CaseDetail[] = [
-  { id: '1', title: 'إسم الجهة', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '2', title: 'الأمانة', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '3', title: 'المنطقة', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '4', title: 'المحكمة الابتدائية', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '5', title: 'المنطقة', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '6', title: 'الأمانة', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '7', title: 'رقم القضية 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '8', title: 'السنة 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '9', title: 'تاريخ قيد القضية 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '10', title: 'الصفة 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '11', title: 'تاريخ الحكم 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-  { id: '12', title: 'قيمة الحكم 1', description: 'كيف أطلع على لوائح وأنظمة الوزارة الخاصة بالموارد البشرية؟' },
-];
+/**
+ * Format file size from bytes to readable format
+ */
+const formatFileSize = (bytes: number | null): string => {
+  if (!bytes) return 'غير معروف';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [description, setDescription] = useState(detail.description);
+  
+  // Update description when detail.description changes (from API)
+  useEffect(() => {
+    if (!isEditing) {
+      setDescription(detail.description);
+    }
+  }, [detail.description, isEditing]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -77,7 +69,7 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
             {detail.title}
           </h3>
         </div>
-        <div className="flex-shrink-0 flex-grow-0">
+        {/* <div className="flex-shrink-0 flex-grow-0">
           {!isEditing ? (
             <button
               onClick={handleEditClick}
@@ -105,19 +97,33 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
               </span>
             </button>
           )}
-        </div>
+        </div> */}
       </div>
       <div className="mt-2 min-w-0">
         {!isEditing ? (
-          <p
-            className="text-sm text-[#475467] text-right leading-relaxed overflow-hidden text-ellipsis whitespace-nowrap"
-            style={{
-              fontFamily: FONT_FAMILY,
-            }}
-            title={description}
-          >
-            {description}
-          </p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p
+                  className="text-sm text-[#475467] text-right leading-relaxed overflow-hidden text-ellipsis whitespace-nowrap cursor-default"
+                  style={{
+                    fontFamily: FONT_FAMILY,
+                  }}
+                >
+                  {description}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent 
+                side="top" 
+                align="start" 
+                className="max-w-md bg-gray-900 text-white border-gray-700 shadow-lg"
+              >
+                <p className="text-right text-white" style={{ fontFamily: FONT_FAMILY }}>
+                  {description}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         ) : (
           <textarea
             value={description}
@@ -139,7 +145,56 @@ const DetailCard: React.FC<{ detail: CaseDetail }> = ({ detail }) => {
 
 const CaseFiles: React.FC = () => {
   const navigate = useNavigate();
+  const { conversation_id } = useParams<{ conversation_id: string }>();
   const [selectedTab, setSelectedTab] = useState<CaseDetailsTabType>('analysis');
+  
+  // Fetch detailed splits - returns ExtractionResult[] array
+  const { data: splits, isLoading, error, isFetching } = useConversationSplits(conversation_id);
+  
+  // Determine if we're loading (either initial load or refetching)
+  const isDataLoading = isLoading || isFetching;
+
+  // Map splits to CaseFile format for display
+  const caseFiles = useMemo(() => {
+    if (!splits || !Array.isArray(splits) || splits.length === 0) return [];
+    
+    return splits.map((split) => ({
+      id: split.split_id || '',
+      name: split.pdf_filename || 'مستند غير معروف',
+      size: formatFileSize(split.raw_text_length),
+    }));
+  }, [splits]);
+
+  // Get case details from API based on selected tab
+  const caseDetails = useMemo(() => {
+    if (!splits || !Array.isArray(splits)) {
+      return [];
+    }
+    // Extract metadata from splits if available
+    // Metadata includes agent_response with analyze and case-details fields
+    const metadata = (splits as any)._splitMetadata as Map<string, { 
+      id?: string; 
+      result?: string; 
+      agent_response?: {
+        result?: string;
+        reasoning?: string;
+        win_loss_reason_content_type?: { classification?: string; sub_classification?: string };
+        main_classification_win_loss_reason?: string;
+        sub_reason_win_loss?: string;
+        root_cause_win_loss?: string;
+        actual_description_root_cause?: string;
+        workflow_steps_description?: string;
+        proposed_solution_description?: string;
+        proposed_solution_sub_classification?: string;
+        proposed_solution_main_classification?: string;
+        case_classification?: string;
+        case_subject?: string;
+        case_value?: string;
+        actual_financial_impact?: string;
+      }
+    }> | undefined;
+    return getCaseDetailsFromApi(splits, selectedTab, metadata);
+  }, [splits, selectedTab]);
 
   return (
     <div className="w-full min-h-full px-12 pt-8 pb-8" dir="rtl">
@@ -174,25 +229,59 @@ const CaseFiles: React.FC = () => {
 
       {/* Case Files Section */}
       <div className="mb-8">
-        <h2
-          className="text-2xl font-bold text-right mb-4 text-[#1A1A1A]"
-          style={{ fontFamily: FONT_FAMILY }}
-        >
-          ملفات القضية
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="text-2xl font-bold text-right text-[#1A1A1A]"
+            style={{ fontFamily: FONT_FAMILY }}
+          >
+            ملفات القضية
+          </h2>
+          {!isDataLoading && !error && caseFiles.length > 0 && (
+            <p
+              className="text-sm text-[#666] text-right"
+              style={{ fontFamily: FONT_FAMILY }}
+            >
+              عدد الملفات: {caseFiles.length}
+            </p>
+          )}
+        </div>
         <div 
           className="flex flex-col items-end gap-[24.786px] rounded-[14.872px] border-[1.239px] border-[#EAECF0] bg-white p-[29.744px] shadow-[0_1.239px_3.718px_0_rgba(16,24,40,0.10),0_1.239px_2.479px_0_rgba(16,24,40,0.06)]"
         >
-          <div className="flex flex-row gap-[24.786px] overflow-x-auto w-full case-files-scroll">
-            {mockCaseFiles.map((file, index) => (
-              <PdfCard
-                key={index}
-                name={file.name}
-                size={file.size}
-                className="max-w-[442px]"
-              />
-            ))}
-          </div>
+          {isDataLoading ? (
+            <div className="flex items-center justify-center w-full py-8">
+              <Loader className="w-8 h-8 text-[#00A79D]" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center w-full py-8">
+              <p
+                className="text-sm text-[#DC2626] text-right"
+                style={{ fontFamily: FONT_FAMILY }}
+              >
+                حدث خطأ في تحميل الملفات: {error.message || 'خطأ غير معروف'}
+              </p>
+            </div>
+          ) : caseFiles.length === 0 ? (
+            <div className="flex items-center justify-center w-full py-8">
+              <p
+                className="text-sm text-[#666] text-right"
+                style={{ fontFamily: FONT_FAMILY }}
+              >
+                لا توجد ملفات متاحة
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-row gap-[24.786px] overflow-x-auto w-full case-files-scroll">
+              {caseFiles.map((file) => (
+                <PdfCard
+                  key={file.id}
+                  name={file.name}
+                  size={file.size}
+                  className="max-w-[442px]"
+                />
+              ))}
+            </div>
+          )}
           <style>{`
             .case-files-scroll {
               scrollbar-gutter: stable;
@@ -236,10 +325,25 @@ const CaseFiles: React.FC = () => {
       {/* Detail Cards Grid */}
       <div className="bg-[radial-gradient(ellipse_at_center,_#f4f4f4_0%,_#f4f4f4_45%,_#ffffff_100%)]
     shadow-[0_8px_24px_rgba(0,0,0,0.04)]
-    rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockCaseDetails.map((detail) => (
-          <DetailCard key={detail.id} detail={detail} />
-        ))}
+    rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 min-h-[200px]">
+        {isDataLoading ? (
+          <div className="col-span-full flex items-center justify-center py-12">
+            <Loader className="w-8 h-8 text-[#00A79D]" />
+          </div>
+        ) : caseDetails.length === 0 ? (
+          <div className="col-span-full flex items-center justify-center py-12">
+            <p
+              className="text-sm text-[#666] text-right"
+              style={{ fontFamily: FONT_FAMILY }}
+            >
+              لا توجد تفاصيل متاحة
+            </p>
+          </div>
+        ) : (
+          caseDetails.map((detail) => (
+            <DetailCard key={detail.id} detail={detail} />
+          ))
+        )}
       </div>
     </div>
   );
