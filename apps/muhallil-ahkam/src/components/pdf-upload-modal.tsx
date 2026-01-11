@@ -306,7 +306,6 @@ export const PdfUploadModal = forwardRef<PdfUploadModalRef, PdfUploadModalProps>
       {error && (
         <div
           className="mt-4 p-4 bg-red-50 border border-red-200 rounded-[8px] text-right"
-          style={{ fontFamily: FONT_FAMILY }}
         >
           <p className="text-[14px] text-red-600">
             خطأ: {error.message || 'حدث خطأ أثناء رفع الملفات'}
