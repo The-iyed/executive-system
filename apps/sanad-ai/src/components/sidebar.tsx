@@ -162,12 +162,14 @@ const IconButton: React.FC<{
 };
 
 // New Chat Button Component
-const NewChatButton: React.FC<{ onNewChat?: () => void }> = ({ onNewChat }) => {
+const NewChatButton: React.FC<{ onNewChat?: () => void; isLoading?: boolean }> = ({ onNewChat, isLoading = false }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
   const handleNewChat = () => {
-    onNewChat?.();
+    if (!isLoading) {
+      onNewChat?.();
+    }
   };
 
   if (isCollapsed) {
@@ -184,16 +186,26 @@ const NewChatButton: React.FC<{ onNewChat?: () => void }> = ({ onNewChat }) => {
 
   return (
     <Button
-      className="w-full h-[38px] flex items-center gap-2 pl-2 rounded-[6px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[14px] font-bold leading-[20px] justify-start border-0"
+      className="w-full h-[38px] flex items-center gap-2 pl-2 rounded-[6px] bg-[#00A79D] hover:bg-[#00A79D]/90 text-white text-right text-[14px] font-bold leading-[20px] justify-start border-0 disabled:opacity-70"
       style={{
         background: 'linear-gradient(90deg, rgba(0, 167, 157, 1) 0%, rgba(0, 167, 157, 1) 100%), linear-gradient(90deg, rgba(248, 248, 248, 1) 0%, rgba(248, 248, 248, 1) 100%)',
       }}
       onClick={handleNewChat}
+      disabled={isLoading}
     >
-      <div className="w-4 h-4 flex-shrink-0">
-        <img src={EditeIcon} alt="محادثة جديدة" className="w-full h-full" />
-      </div>
-      <span className="truncate">محادثة جديدة</span>
+      {isLoading ? (
+        <>
+          <div className="w-4 h-4 flex-shrink-0 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span className="truncate">جارٍ الإنشاء...</span>
+        </>
+      ) : (
+        <>
+          <div className="w-4 h-4 flex-shrink-0">
+            <img src={EditeIcon} alt="محادثة جديدة" className="w-full h-full" />
+          </div>
+          <span className="truncate">محادثة جديدة</span>
+        </>
+      )}
     </Button>
   );
 };
@@ -345,6 +357,7 @@ interface SidebarProps {
   onDeleteConversation?: (conversationId: string) => void;
   onUpdateConversation?: (conversationId: string, name: string) => void;
   isLoadingConversations?: boolean;
+  isCreatingConversation?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -354,6 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNewConversation,
   onDeleteConversation,
   isLoadingConversations = false,
+  isCreatingConversation = false,
 }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
@@ -400,7 +414,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed ? (
           <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
             <SearchInput />
-            <NewChatButton onNewChat={onNewConversation} />
+            <NewChatButton onNewChat={onNewConversation} isLoading={isCreatingConversation} />
             
             <div className="flex-1 overflow-y-auto min-h-0" style={{
               scrollbarWidth: 'none',
@@ -426,7 +440,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-full flex flex-col items-center gap-6">
             <SidebarToggleButton />
             <SearchIconButton />
-            <NewChatButton onNewChat={onNewConversation} />
+            <NewChatButton onNewChat={onNewConversation} isLoading={isCreatingConversation} />
           </div>
         )}
       </SidebarContent>
