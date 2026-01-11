@@ -1,7 +1,6 @@
 import React from 'react';
 import PdfIcon from '../assets/pdf.svg';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 export interface PdfCardProps {
   name: string;
@@ -23,14 +22,14 @@ export const PdfCard: React.FC<PdfCardProps> = ({ name, size, className }) => {
       <div className="flex flex-col flex-1 min-w-0">
         <span
           className="truncate text-[#0B0B0B] text-right text-sm font-bold leading-[18px] tracking-normal"
-          style={{ fontFamily: FONT_FAMILY }}
+          
           title={name}
         >
           {name}
         </span>
         <span
           className="truncate text-[#6D6D6D] text-sm font-normal leading-[16px] tracking-normal"
-          style={{ fontFamily: FONT_FAMILY }}
+          
           title={size}
         >
           {size}

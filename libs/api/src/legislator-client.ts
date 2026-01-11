@@ -27,17 +27,16 @@ export async function sendStreamingMessage(
 ): Promise<StreamController> {
   const formData = new FormData();
   
-  // Add query (required, defaults to "ولد خطب" if empty)
-  formData.append('query', request.query || 'ولد خطب');
+  formData.append('query', request.query || 'ولد خطاب');
   
-  // Add optional file
   if (request.file) {
     formData.append('file', request.file);
+    console.log('FormData: Added file', { name: request.file.name, size: request.file.size, type: request.file.type });
   }
   
-  // Add optional audio file
   if (request.audio_file) {
     formData.append('audio_file', request.audio_file);
+    console.log('FormData: Added audio_file', { name: request.audio_file.name, size: request.audio_file.size, type: request.audio_file.type });
   }
   
   // Add optional language
@@ -48,12 +47,21 @@ export async function sendStreamingMessage(
   // Add letter_response only if true
   if (request.letter_response === true) {
     formData.append('letter_response', 'true');
+    console.log('FormData: Added letter_response = true');
   }
   
   // Add debug flag
   if (request.debug !== undefined) {
     formData.append('debug', request.debug ? 'true' : 'false');
   }
+  
+  // Debug: Log all FormData entries
+  console.log('FormData entries:', {
+    query: request.query,
+    hasFile: !!request.file,
+    hasAudioFile: !!request.audio_file,
+    letterResponse: request.letter_response,
+  });
 
   // Get authorization header - prioritize passed basicAuth, then try to extract from client
   const getAuthHeader = (): string | undefined => {

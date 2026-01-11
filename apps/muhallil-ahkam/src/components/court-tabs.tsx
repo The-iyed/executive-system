@@ -1,7 +1,6 @@
 import React from 'react';
 import { cn } from '@sanad-ai/ui';
 
-const FONT_FAMILY = '"Frutiger LT Arabic", "Cairo", "Tajawal", sans-serif';
 
 export type CourtType = 'primary' | 'appeal' | 'supreme';
 
@@ -45,7 +44,7 @@ export const CourtTabs: React.FC<CourtTabsProps> = ({
                 ? 'bg-[#055859] text-white'
                 : 'text-[#6B7280] hover:text-[#1A1A1A]'
             )}
-            style={{ fontFamily: FONT_FAMILY }}
+           
           >
             {tab.label}
           </button>

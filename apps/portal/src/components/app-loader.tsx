@@ -22,7 +22,30 @@ export const AppLoader: React.FC<AppLoaderProps> = ({ app, config = {} }) => {
   }, [isLoading, error, mount, unmount, config]);
 
   if (isLoading) {
-    return <div className="app-loader-loading">Loading {app.name}...</div>;
+    return (
+      <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-gray-50 to-gray-100" dir="rtl">
+        <div className="flex flex-col items-center gap-6">
+          {/* Animated spinner */}
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-teal-500 rounded-full border-t-transparent animate-spin"></div>
+            <div className="absolute inset-2 border-4 border-teal-300 rounded-full border-r-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          
+          {/* Loading text with pulse animation */}
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-lg font-semibold text-gray-800 animate-pulse" style={{ fontFamily: 'Frutiger LT Arabic, sans-serif' }}>
+              جارٍ تحميل {app.name}...
+            </p>
+            <div className="flex gap-1">
+              <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+              <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
