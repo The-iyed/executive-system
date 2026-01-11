@@ -311,7 +311,7 @@ export type MessageResponseProps = {
 };
 
 export const MessageResponse = memo(
-  ({ className, children, mode = 'static', ...props }: MessageResponseProps) => (
+  ({ className, children, mode: _mode = 'static' }: MessageResponseProps) => (
     <MarkdownRenderer
       content={children}
       className={cn(
