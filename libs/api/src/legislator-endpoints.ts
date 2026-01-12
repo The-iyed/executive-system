@@ -17,7 +17,7 @@ export const legislatorEndpoints = createApiGroup(
   {
     // Get all conversations
     getConversations: createEndpoint<
-      { limit?: number; offset?: number; sort_by?: string },
+      { limit?: number; offset?: number; sort_by?: string; user_id?: string },
       GetConversationsResponse
     >('GET', '/legislator/conversations'),
 

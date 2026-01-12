@@ -27,14 +27,13 @@ export const WelcomeHeader: React.FC = () => {
           dir="auto"
         >
           <span className="text-black">حياك الله </span>
-          <span className="text-[#045556]">عبد الله</span>
         </p>
         <p
           className="text-[13px] sm:text-[15px] leading-[1.5] text-center max-w-full sm:max-w-[601px] px-2 whitespace-pre-wrap"
           dir="auto"
         >
-          كيف أقدر أخدمك اليوم؟
-        </p>
+           كيف يمكنني مساعدتك اليوم؟
+           </p>
       </div>
     </div>
   );

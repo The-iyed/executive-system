@@ -1,30 +1,38 @@
- # Build stage for portal (UMD bundles)
+# syntax=docker/dockerfile:1.4
+# Build stage for portal (UMD bundles)
 FROM node:18-alpine AS build-portal
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package*.json ./
-RUN pnpm install
+COPY package*.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+# Copy source files
 COPY . .
 # Build sequentially to avoid memory exhaustion (--parallel=1 forces sequential execution)
-RUN pnpm nx run-many --target=build --projects=portal,sanad-ai,muhallil-ahkam --parallel=1
+# Use Nx cache mount for faster builds
+RUN --mount=type=cache,target=/root/.nx/cache \
+    pnpm nx run-many --target=build --projects=portal,sanad-ai,muhallil-ahkam --parallel=1
 
 # Build stage for Sanad AI standalone
 FROM node:18-alpine AS build-sanad-ai
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package*.json ./
-RUN pnpm install
+COPY package*.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN BUILD_MODE=standalone pnpm nx build sanad-ai
+# Use Nx cache mount for faster builds
+RUN --mount=type=cache,target=/root/.nx/cache \
+    BUILD_MODE=standalone pnpm nx build sanad-ai
 
 # Build stage for Muhallil Ahkam standalone
 FROM node:18-alpine AS build-muhallil-ahkam
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package*.json ./
-RUN pnpm install
+COPY package*.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN BUILD_MODE=standalone pnpm nx build muhallil-ahkam
+# Use Nx cache mount for faster builds
+RUN --mount=type=cache,target=/root/.nx/cache \
+    BUILD_MODE=standalone pnpm nx build muhallil-ahkam
 
 # Production stage - Portal (with UMD bundles)
 FROM nginx:alpine AS production
