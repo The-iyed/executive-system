@@ -1,25 +1,24 @@
 import React, { useEffect, useRef } from 'react';
-import { AppMetadata, AppConfig } from '@sanad-ai/config';
+import { AppMetadata } from '@sanad-ai/config';
 import { useAppLoader } from '../hooks/use-app-loader';
 
 export interface AppLoaderProps {
   app: AppMetadata;
-  config?: AppConfig;
 }
 
-export const AppLoader: React.FC<AppLoaderProps> = ({ app, config = {} }) => {
+export const AppLoader: React.FC<AppLoaderProps> = ({ app }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { isLoading, error, mount, unmount } = useAppLoader(app);
 
   useEffect(() => {
     if (containerRef.current && !isLoading && !error) {
-      mount(containerRef.current, config);
+      mount(containerRef.current);
     }
 
     return () => {
       unmount();
     };
-  }, [isLoading, error, mount, unmount, config]);
+  }, [isLoading, error, mount, unmount]);
 
   if (isLoading) {
     return (

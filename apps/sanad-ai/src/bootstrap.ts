@@ -1,5 +1,4 @@
 import { createMount } from './mount';
-import { AppConfig } from '@sanad-ai/config';
 // Import styles to ensure Tailwind CSS is included in the bundle
 import './styles.css';
 
@@ -15,14 +14,14 @@ if (typeof window !== 'undefined') {
   window.SANAD_APP = mount;
   
   // New window API
-  (window as any).SanadAi = {
-    open: (container: HTMLElement, config?: AppConfig) => {
+  (window as any).SanadAiV3 = {
+    open: (container: HTMLElement) => {
       if (mount && container) {
         currentContainer = container;
-        mount.mount(container, config || {});
+        mount.mount(container);
       }
     },
-    toggle: (container: HTMLElement, config?: AppConfig) => {
+    toggle: (container: HTMLElement) => {
       if (currentContainer && currentContainer === container) {
         // If already mounted in this container, close it
         mount.unmount();
@@ -31,7 +30,7 @@ if (typeof window !== 'undefined') {
         // Otherwise, open it
         if (mount && container) {
           currentContainer = container;
-          mount.mount(container, config || {});
+          mount.mount(container);
         }
       }
     },
