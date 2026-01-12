@@ -180,16 +180,11 @@ export default defineConfig(({ command }) => {
                   const jsFileName = 'sanad-ai-v3.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
-                    // Scope CSS to only apply within the container
-                    const scopedCss = scopeCssToContainer(cssContent, '#sanad-ai-container');
-                    // Inject CSS as a style tag in the JS
+                    // Inject CSS function that will be called to inject into shadow root
                     const cssInjection = `
 (function() {
-  if (typeof document !== 'undefined') {
-    var style = document.createElement('style');
-    style.id = 'sanad-ai-scoped-styles';
-    style.textContent = ${JSON.stringify(scopedCss)};
-    document.head.appendChild(style);
+  if (typeof window !== 'undefined' && window.__SANAD_AI_CSS__) {
+    window.__SANAD_AI_CSS__(${JSON.stringify(cssContent)});
   }
 })();`;
                     jsFile.code = cssInjection + '\n' + jsFile.code;

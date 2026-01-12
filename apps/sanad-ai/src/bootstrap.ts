@@ -5,8 +5,12 @@ import './styles.css';
 const mount = createMount();
 let currentContainer: HTMLElement | null = null;
 let createdContainer: HTMLElement | null = null;
+let shadowRoot: ShadowRoot | null = null;
 
-// Helper function to add isolation styles
+// Store CSS content to inject into shadow root
+let cssContent: string | null = null;
+
+// Helper function to add isolation styles for the host container
 const addIsolationStyles = () => {
   const styleId = 'sanad-ai-isolation-styles';
   if (document.getElementById(styleId)) {
@@ -24,50 +28,95 @@ const addIsolationStyles = () => {
       width: 100% !important;
       height: 100% !important;
       z-index: 9999 !important;
-      background-color: #ffffff !important;
-      contain: layout style paint !important; /* Removed 'size' to allow content */
-      isolation: isolate !important;
-      overflow: hidden !important;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
       /* Create a new formatting context */
       display: block !important;
+      /* Prevent pointer events from leaking to parent when closed */
+      pointer-events: auto !important;
     }
     
-    /* Ensure all children are contained */
-    #sanad-ai-container *,
-    #sanad-ai-container *::before,
-    #sanad-ai-container *::after {
-      box-sizing: border-box;
+    /* Prevent any styles from leaking to parent document */
+    body:has(#sanad-ai-container) {
+      overflow: hidden !important;
     }
   `;
   document.head.appendChild(style);
 };
 
-// Helper function to create a fullscreen container
+// Helper function to inject CSS into shadow root
+const injectStylesIntoShadowRoot = (shadowRoot: ShadowRoot, css: string) => {
+  const style = document.createElement('style');
+  style.textContent = css;
+  shadowRoot.appendChild(style);
+};
+
+// Helper function to create a fullscreen container with Shadow DOM
 const createFullscreenContainer = (): HTMLElement => {
-  // Add isolation styles
+  // Add isolation styles for host container
   addIsolationStyles();
 
   // Check if container already exists
   const existingContainer = document.getElementById('sanad-ai-container');
-  if (existingContainer) {
-    return existingContainer;
+  if (existingContainer && existingContainer.shadowRoot) {
+    return existingContainer.shadowRoot as any; // Return shadow root content
   }
 
-  const container = document.createElement('div');
-  container.id = 'sanad-ai-container';
-  container.setAttribute('data-package-container', 'sanad-ai');
-  document.body.appendChild(container);
-  return container;
+  // Create host container
+  const hostContainer = document.createElement('div');
+  hostContainer.id = 'sanad-ai-container';
+  hostContainer.setAttribute('data-package-container', 'sanad-ai');
+  hostContainer.setAttribute('data-isolated', 'true');
+  hostContainer.setAttribute('data-package', 'sanad-ai');
+  
+  // Attach Shadow Root with open mode (allows external JS access if needed)
+  const shadow = hostContainer.attachShadow({ mode: 'open' });
+  shadowRoot = shadow;
+  
+  // Create inner container inside shadow root
+  const innerContainer = document.createElement('div');
+  innerContainer.style.width = '100%';
+  innerContainer.style.height = '100%';
+  innerContainer.style.position = 'relative';
+  innerContainer.style.overflow = 'hidden';
+  innerContainer.style.backgroundColor = '#ffffff';
+  shadow.appendChild(innerContainer);
+  
+  // Inject CSS into shadow root if available
+  if (cssContent) {
+    injectStylesIntoShadowRoot(shadow, cssContent);
+  }
+  
+  // Ensure host container is appended to body
+  document.body.appendChild(hostContainer);
+  
+  // Return inner container for React to mount into
+  return innerContainer;
 };
+
+// Function to set CSS content (called from vite build)
+if (typeof window !== 'undefined') {
+  (window as any).__SANAD_AI_CSS__ = (css: string) => {
+    cssContent = css;
+    // If shadow root already exists, inject styles
+    if (shadowRoot) {
+      injectStylesIntoShadowRoot(shadowRoot, css);
+    }
+  };
+}
 
 // Helper function to remove created container
 const removeCreatedContainer = () => {
   if (createdContainer && createdContainer.parentNode) {
-    document.body.removeChild(createdContainer);
+    const hostContainer = createdContainer.getRootNode() as ShadowRoot;
+    if (hostContainer && hostContainer.host) {
+      document.body.removeChild(hostContainer.host);
+    } else if (createdContainer.parentNode === document.body) {
+      document.body.removeChild(createdContainer);
+    }
     createdContainer = null;
+    shadowRoot = null;
   }
 };
 
@@ -84,11 +133,23 @@ if (typeof window !== 'undefined') {
     open: (_container?: HTMLElement) => {
       // Container parameter is ignored - package creates its own isolated container
       if (mount) {
-        // Always create our own isolated container for better isolation
-        const targetContainer = createFullscreenContainer();
-        createdContainer = targetContainer;
-        currentContainer = targetContainer;
-        mount.mount(targetContainer);
+        try {
+          // Always create our own isolated container for better isolation
+          const targetContainer = createFullscreenContainer();
+          createdContainer = targetContainer;
+          currentContainer = targetContainer;
+          
+          // Prevent body scroll when container is open
+          const originalOverflow = document.body.style.overflow;
+          document.body.style.overflow = 'hidden';
+          
+          mount.mount(targetContainer);
+          
+          // Store original overflow to restore on close
+          (targetContainer as any).__originalBodyOverflow = originalOverflow;
+        } catch (error) {
+          console.error('Error opening Sanad AI:', error);
+        }
       }
     },
     toggle: () => {
@@ -102,16 +163,36 @@ if (typeof window !== 'undefined') {
       } else {
         // Otherwise, open it
         if (mount) {
-          const targetContainer = createFullscreenContainer();
-          createdContainer = targetContainer;
-          currentContainer = targetContainer;
-          mount.mount(targetContainer);
+          try {
+            const targetContainer = createFullscreenContainer();
+            createdContainer = targetContainer;
+            currentContainer = targetContainer;
+            
+            // Prevent body scroll when container is open
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            
+            mount.mount(targetContainer);
+            
+            // Store original overflow to restore on close
+            (targetContainer as any).__originalBodyOverflow = originalOverflow;
+          } catch (error) {
+            console.error('Error opening Sanad AI:', error);
+          }
         }
       }
     },
     close: () => {
       if (mount && currentContainer) {
         mount.unmount();
+        
+        // Restore body overflow
+        if (createdContainer && (createdContainer as any).__originalBodyOverflow !== undefined) {
+          document.body.style.overflow = (createdContainer as any).__originalBodyOverflow || '';
+        } else {
+          document.body.style.overflow = '';
+        }
+        
         if (createdContainer) {
           removeCreatedContainer();
         }

@@ -160,16 +160,11 @@ export default defineConfig(({ command }) => {
                   const jsFileName = 'muhallil-ahkam.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
-                    // Scope CSS to only apply within the container
-                    const scopedCss = scopeCssToContainer(cssContent, '#muhallil-ahkam-container');
-                    // Inject CSS as a style tag in the JS
+                    // Inject CSS function that will be called to inject into shadow root
                     const cssInjection = `
 (function() {
-  if (typeof document !== 'undefined') {
-    var style = document.createElement('style');
-    style.id = 'muhallil-ahkam-scoped-styles';
-    style.textContent = ${JSON.stringify(scopedCss)};
-    document.head.appendChild(style);
+  if (typeof window !== 'undefined' && window.__MUHALLIL_AHKAM_CSS__) {
+    window.__MUHALLIL_AHKAM_CSS__(${JSON.stringify(cssContent)});
   }
 })();`;
                     jsFile.code = cssInjection + '\n' + jsFile.code;
