@@ -10,3 +10,4 @@ export const getTextDirection = (text: string): 'ltr' | 'rtl' => {
 
 
 
+
