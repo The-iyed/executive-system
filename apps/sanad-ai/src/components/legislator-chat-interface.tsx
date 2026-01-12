@@ -322,14 +322,14 @@ export const LegislatorChatInterface: React.FC<LegislatorChatInterfaceProps> = (
       const usablePageHeight = pageHeight - topPadding - bottomPadding; // Usable height per page
       
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       // Calculate how many pages we need based on usable height
       const totalPages = Math.ceil(imgHeight / usablePageHeight);
-      
+
       // Add image to each page with correct positioning and padding
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) {
-          pdf.addPage();
+        pdf.addPage();
         }
         
         // Calculate the vertical position for this page

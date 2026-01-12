@@ -105,11 +105,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
-      {/* Close Button - Top Right */}
+      {/* Close Button - Bottom Center */}
       <button
         onClick={handleClose}
         aria-label="إغلاق"
-        className="fixed top-6 right-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 text-2xl leading-none hover:scale-110 active:scale-95"
+        className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 text-2xl leading-none hover:scale-110 active:scale-95"
         style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }}
       >
         ×
