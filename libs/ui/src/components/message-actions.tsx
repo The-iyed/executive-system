@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './dropdown-menu';
 
 export interface MessageActionsProps {
   onLike?: () => void;
   onDislike?: () => void;
   onUpload?: () => void;
   onCopy?: () => void;
+  onExportDocx?: () => void;
+  onExportPdf?: () => void;
   className?: string;
 }
 
@@ -118,6 +126,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   onDislike,
   onUpload,
   onCopy,
+  onExportDocx,
+  onExportPdf,
   className,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -130,8 +140,10 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
     }
   };
 
+  const hasExportOptions = onExportDocx || onExportPdf;
+
   return (
-    <div className={cn('flex gap-3.25 items-center', className)} dir="rtl">
+    <div className={cn('flex gap-3 items-center', className)} dir="rtl">
       {onCopy && (
         <button
           onClick={handleCopy}
@@ -145,6 +157,31 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             <CopyIcon className="w-5 h-5 text-white" />
           )}
         </button>
+      )}
+      {hasExportOptions && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="bg-[#00a69c] flex items-center justify-center px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+              aria-label="Export"
+              title="تصدير"
+            >
+              <span className="text-white text-xs font-bold">تصدير</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onExportDocx && (
+              <DropdownMenuItem onClick={onExportDocx}>
+                <span className="text-sm" dir="rtl">تصدير DOCX</span>
+              </DropdownMenuItem>
+            )}
+            {onExportPdf && (
+              <DropdownMenuItem onClick={onExportPdf}>
+                <span className="text-sm" dir="rtl">تصدير PDF</span>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
       {onUpload && (
         <button
