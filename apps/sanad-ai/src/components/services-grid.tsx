@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactDOM from 'react-dom/client';
+import * as ReactQuery from '@tanstack/react-query';
 import { ServiceCard } from './service-card';
 import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
 import { BarChart3Icon } from 'lucide-react';
@@ -21,6 +23,14 @@ export const ServicesGrid: React.FC = () => {
 
   // Preload scripts on component mount
   React.useEffect(() => {
+    // Expose React, ReactDOM, and ReactQuery as globals for UMD bundles
+    // This must happen BEFORE the UMD bundles load
+    if (typeof window !== 'undefined') {
+      (window as any).React = React;
+      (window as any).ReactDOM = ReactDOM;
+      (window as any).ReactQuery = ReactQuery;
+    }
+
     // Add style isolation CSS to prevent package styles from affecting our app
     const styleId = 'sanad-ai-package-isolation';
     if (!document.getElementById(styleId)) {
@@ -28,6 +38,10 @@ export const ServicesGrid: React.FC = () => {
       isolationStyle.id = styleId;
       isolationStyle.textContent = `
       /* Packages will manage their own isolated containers */
+      /* Prevent any global styles from packages affecting Sanad AI */
+      body:not(:has(#muhallil-ahkam-container)) {
+        /* Sanad AI styles remain unaffected when packages are not open */
+      }
       `;
       document.head.appendChild(isolationStyle);
     }
@@ -57,8 +71,14 @@ export const ServicesGrid: React.FC = () => {
     if (!document.getElementById(muhallilAhkamScriptId)) {
       const muhallilAhkamScript = document.createElement('script');
       muhallilAhkamScript.id = muhallilAhkamScriptId;
-      muhallilAhkamScript.src = 'https://legal-portal.momrahai.com/muhallil-ahkam.js';
+      // Use portal base URL if available, otherwise use the external URL
+      const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || 'https://legal-portal.momrahai.com';
+      muhallilAhkamScript.src = `${portalBaseUrl}/muhallil-ahkam.js`;
       muhallilAhkamScript.async = true;
+      muhallilAhkamScript.onerror = () => {
+        console.error('Failed to load Muhallil Ahkam script from:', muhallilAhkamScript.src);
+        setIsMuhallilAhkamLoading(false);
+      };
       document.body.appendChild(muhallilAhkamScript);
     }
   }, []);
@@ -73,8 +93,13 @@ export const ServicesGrid: React.FC = () => {
     // Check if MuhallilAhkam is already available
     const muhallilAhkam = window.MuhallilAhkam;
     if (muhallilAhkam && typeof muhallilAhkam.open === 'function') {
-      // Package manages its own isolated container
-      muhallilAhkam.open();
+      try {
+        // Package manages its own isolated container
+        muhallilAhkam.open();
+      } catch (error) {
+        console.error('Error opening Muhallil Ahkam:', error);
+        setIsMuhallilAhkamLoading(false);
+      }
       return;
     }
 
@@ -85,8 +110,13 @@ export const ServicesGrid: React.FC = () => {
       const loadedMuhallilAhkam = window.MuhallilAhkam;
       if (loadedMuhallilAhkam && typeof loadedMuhallilAhkam.open === 'function') {
         setIsMuhallilAhkamLoading(false);
-        // Package manages its own isolated container
-        loadedMuhallilAhkam.open();
+        try {
+          // Package manages its own isolated container
+          loadedMuhallilAhkam.open();
+        } catch (error) {
+          console.error('Error opening Muhallil Ahkam:', error);
+          setIsMuhallilAhkamLoading(false);
+        }
         return true;
       }
       return false;
@@ -98,17 +128,18 @@ export const ServicesGrid: React.FC = () => {
     }
 
     // Wait for script to load if it's still loading
+    let attempts = 0;
+    const maxAttempts = 100; // 5 seconds at 50ms intervals
     const checkInterval = setInterval(() => {
+      attempts++;
       if (openWhenReady()) {
         clearInterval(checkInterval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        setIsMuhallilAhkamLoading(false);
+        console.error('Muhallil Ahkam failed to load after 5 seconds. Check if the script is loading correctly.');
       }
     }, 50);
-
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      setIsMuhallilAhkamLoading(false);
-    }, 5000);
   };
 
   const handleLegalStatsClick = () => {
