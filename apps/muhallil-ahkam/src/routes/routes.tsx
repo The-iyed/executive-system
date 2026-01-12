@@ -3,6 +3,7 @@ import { RouteProps } from 'react-router-dom'
 import { Fragment, lazy } from 'react'
 import { AppLayout } from '../components'
 import { PATH } from './path'
+import { DocsPage } from '../components/docs-page'
 
 type RouteConfig = {
   exact: boolean | null
@@ -13,6 +14,11 @@ type RouteConfig = {
 } & RouteProps
 
 const routes: RouteConfig[] = [
+    {
+      exact: true,
+      path: PATH.DOCS,
+      component: DocsPage,
+    },
     {
       exact: true,
       // guard: AuthGuard,

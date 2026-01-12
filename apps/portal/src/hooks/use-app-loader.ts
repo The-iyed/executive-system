@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as ReactQuery from '@tanstack/react-query';
-import { AppMetadata, AppMount, AppConfig, loadAppMount } from '@sanad-ai/config';
+import { AppMetadata, AppMount, loadAppMount } from '@sanad-ai/config';
 
 export interface UseAppLoaderResult {
   isLoading: boolean;
   error: Error | null;
-  mount: (element: HTMLElement, config: AppConfig) => void;
+  mount: (element: HTMLElement) => void;
   unmount: () => void;
 }
 
@@ -36,17 +36,17 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
     scriptRef.current = script;
 
     script.onload = () => {
-      // Check if window API is available (SanadAi or MuhallilAhkam)
+      // Check if window API is available (SanadAiV3 or MuhallilAhkam)
       const windowApi = app.name === 'sanad-ai' 
-        ? (window as any).SanadAi 
+        ? (window as any).SanadAiV3 
         : (window as any).MuhallilAhkam;
       
       if (windowApi) {
         // Use window API directly - create a wrapper mount object
         setAppMount({
-          mount: (el: HTMLElement, config: AppConfig) => {
+          mount: (el: HTMLElement) => {
             mountedElementRef.current = el;
-            windowApi.open(el, config);
+            windowApi.open(el);
           },
           unmount: () => {
             windowApi.close();
@@ -85,10 +85,10 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
     };
   }, [app.bundlePath, app.globalName, app.name]);
 
-  const mount = (element: HTMLElement, config: AppConfig): void => {
+  const mount = (element: HTMLElement): void => {
     if (appMount) {
       mountedElementRef.current = element;
-      appMount.mount(element, config);
+      appMount.mount(element);
     }
   };
 

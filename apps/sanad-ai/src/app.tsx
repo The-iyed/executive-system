@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { createQueryClient, createEnhancedApiClient } from '@sanad-ai/api';
-import { AppConfig } from '@sanad-ai/config';
 import { AppLayout } from './components/app-layout';
 import { WelcomeScreen } from './components/welcome-screen';
 import { LegislatorChatInterface } from './components/legislator-chat-interface';
+import { DocsPage } from './components/docs-page';
 import { createLegislatorQueries } from '@sanad-ai/chat/data-access';
 import { Dialog, DialogContent, DialogClose, Loader } from '@sanad-ai/ui';
 import { X } from 'lucide-react';
@@ -19,11 +20,9 @@ import { getBrowserId } from './utils/browser-id';
 // Import app-specific APIs to register them
 import './api/endpoints';
 
-export interface ChatAppProps {
-  config: AppConfig;
-}
+export interface ChatAppProps {}
 
-const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
+const ChatAppContent: React.FC = () => {
   const queryClient = useQueryClient();
   const [showWelcome, setShowWelcome] = useState(true);
   const [messages, setMessages] = useState<LegislatorMessage[]>([]);
@@ -60,10 +59,10 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     window.history.pushState({}, '', url.toString());
   };
 
-  // Initialize API client - use config from portal, fallback to env vars for dev mode
+  // Initialize API client - read from environment variables
   const apiClient = createEnhancedApiClient({
-    baseURL: config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL ,
-    basicAuth: config.basicAuth || (() => {
+    baseURL: import.meta.env.VITE_SANAD_API_BASE_URL,
+    basicAuth: (() => {
       const username = import.meta.env.VITE_API_BASIC_AUTH_USERNAME;
       const password = import.meta.env.VITE_API_BASIC_AUTH_PASSWORD;
       const authString = import.meta.env.VITE_API_BASIC_AUTH;
@@ -73,9 +72,9 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     })(),
   });
 
-  // Helper function to get auth header from config
+  // Helper function to get auth header from environment variables
   const getAuthHeader = (): string | undefined => {
-    const basicAuth = config.basicAuth || (() => {
+    const basicAuth = (() => {
       const username = import.meta.env.VITE_API_BASIC_AUTH_USERNAME;
       const password = import.meta.env.VITE_API_BASIC_AUTH_PASSWORD;
       const authString = import.meta.env.VITE_API_BASIC_AUTH;
@@ -685,8 +684,8 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
       return;
     }
     
-    // Get base URL from config or API client
-    const baseURL = config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL || '';
+    // Get base URL from environment variables
+    const baseURL = import.meta.env.VITE_SANAD_API_BASE_URL || '';
     const downloadUrl = `${baseURL}/pdf-viewer/view/${doc.dmsdocid_1}?download=true`;
     
     const authHeader = getAuthHeader();
@@ -745,7 +744,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     setIsLoadingPdf(true);
     setViewingDocument(doc);
     
-    const baseURL = config.apiBaseUrl || import.meta.env.VITE_SANAD_API_BASE_URL || '';
+    const baseURL = import.meta.env.VITE_SANAD_API_BASE_URL || '';
     const viewUrl = `${baseURL}/pdf-viewer/view/${doc.dmsdocid_1}?download=false`;
     const authHeader = getAuthHeader();
     
@@ -778,101 +777,112 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   };
 
   return (
-    <AppLayout
-      conversations={conversationsData?.conversations || []}
-      currentConversationId={currentConversationId}
-      isLoadingConversations={isLoadingConversations}
-      isCreatingConversation={isCreatingConversation}
-      onSelectConversation={handleSelectConversation}
-      onNewConversation={handleNewConversation}
-      onDeleteConversation={async (id) => {
-        try {
-          await deleteConversation.mutateAsync(id);
-          if (currentConversationId === id) {
-            setCurrentConversationId(null);
-            setMessages([]);
-            setShowWelcome(true);
-            setConversationIdInUrl(null);
-          }
-          refetchConversations();
-        } catch (error) {
-          // Failed to delete conversation
-        }
-      }}
-      onUpdateConversation={async (id, name) => {
-        try {
-          await updateConversation.mutateAsync({ conversation_id: id, name });
-          refetchConversations();
-        } catch (error) {
-          // Failed to update conversation
-        }
-      }}
-    >
-      <div className="sanad-chat-app h-full w-full">
-        {showWelcome ? (
-          <WelcomeScreen key="welcome" onSendMessage={handleSendMessage} />
-        ) : (
-          <LegislatorChatInterface
-            key="chat"
-            messages={messages}
-            isLoading={isLoading}
-            isLoadingMessages={isLoadingMessagesCombined}
-            streamingContent={streamingContent}
-            thinkingContent={thinkingContent}
-            processingSteps={processingSteps}
-            onSendMessage={handleSendMessage}
-            onQuestionClick={handleQuestionClick}
-            onDocumentDownload={handleDocumentDownload}
-            onDocumentView={handleDocumentView}
-          />
-        )}
-      </div>
-      
-      {/* PDF Viewer Modal */}
-      {viewingDocument && viewingDocument.dmsdocid_1 && (
-        <Dialog 
-          open={!!viewingDocument} 
-          onOpenChange={(open) => {
-            if (!open) {
-              // Clean up blob URL when closing
-              if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
-                window.URL.revokeObjectURL(pdfBlobUrl);
+    <Routes>
+      <Route
+        path="/docs"
+        element={<DocsPage />}
+      />
+      <Route
+        path="/*"
+        element={
+          <AppLayout
+            conversations={conversationsData?.conversations || []}
+            currentConversationId={currentConversationId}
+            isLoadingConversations={isLoadingConversations}
+            isCreatingConversation={isCreatingConversation}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={async (id) => {
+              try {
+                await deleteConversation.mutateAsync(id);
+                if (currentConversationId === id) {
+                  setCurrentConversationId(null);
+                  setMessages([]);
+                  setShowWelcome(true);
+                  setConversationIdInUrl(null);
+                }
+                refetchConversations();
+              } catch (error) {
+                // Failed to delete conversation
               }
-              setPdfBlobUrl(null);
-              setViewingDocument(null);
-              setIsLoadingPdf(false);
-            }
-          }}
-        >
-          <DialogContent className="max-w-[80vw] max-h-[95vh] w-[80vw] h-[95vh] p-0 flex flex-col translate-x-[-50%] translate-y-[-50%] [&>button]:hidden">
-            <DialogClose className="absolute left-4 top-4 rounded-sm bg-black/50 hover:bg-black/70 opacity-90 hover:opacity-100 transition-all focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 disabled:pointer-events-none z-10 p-1.5 !text-white data-[state=open]:!text-white">
-              <X className="h-3 w-3" style={{ color: 'white', stroke: 'white' }} strokeWidth={2.5} />
-              <span className="sr-only">Close</span>
-            </DialogClose>
-            <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center">
-              {isLoadingPdf || !pdfBlobUrl ? (
-                <Loader />
+            }}
+            onUpdateConversation={async (id, name) => {
+              try {
+                await updateConversation.mutateAsync({ conversation_id: id, name });
+                refetchConversations();
+              } catch (error) {
+                // Failed to update conversation
+              }
+            }}
+          >
+            <div className="sanad-chat-app h-full w-full">
+              {showWelcome ? (
+                <WelcomeScreen key="welcome" onSendMessage={handleSendMessage} />
               ) : (
-                <iframe
-                  src={pdfBlobUrl}
-                  className="w-full h-full border-0 rounded-lg"
-                  title={viewingDocument.file_name || 'PDF Viewer'}
+                <LegislatorChatInterface
+                  key="chat"
+                  messages={messages}
+                  isLoading={isLoading}
+                  isLoadingMessages={isLoadingMessagesCombined}
+                  streamingContent={streamingContent}
+                  thinkingContent={thinkingContent}
+                  processingSteps={processingSteps}
+                  onSendMessage={handleSendMessage}
+                  onQuestionClick={handleQuestionClick}
+                  onDocumentDownload={handleDocumentDownload}
+                  onDocumentView={handleDocumentView}
                 />
               )}
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </AppLayout>
+            
+            {/* PDF Viewer Modal */}
+            {viewingDocument && viewingDocument.dmsdocid_1 && (
+              <Dialog 
+                open={!!viewingDocument} 
+                onOpenChange={(open) => {
+                  if (!open) {
+                    // Clean up blob URL when closing
+                    if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
+                      window.URL.revokeObjectURL(pdfBlobUrl);
+                    }
+                    setPdfBlobUrl(null);
+                    setViewingDocument(null);
+                    setIsLoadingPdf(false);
+                  }
+                }}
+              >
+                <DialogContent className="max-w-[80vw] max-h-[95vh] w-[80vw] h-[95vh] p-0 flex flex-col translate-x-[-50%] translate-y-[-50%] [&>button]:hidden">
+                  <DialogClose className="absolute left-4 top-4 rounded-sm bg-black/50 hover:bg-black/70 opacity-90 hover:opacity-100 transition-all focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 disabled:pointer-events-none z-10 p-1.5 !text-white data-[state=open]:!text-white">
+                    <X className="h-3 w-3" style={{ color: 'white', stroke: 'white' }} strokeWidth={2.5} />
+                    <span className="sr-only">Close</span>
+                  </DialogClose>
+                  <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center">
+                    {isLoadingPdf || !pdfBlobUrl ? (
+                      <Loader />
+                    ) : (
+                      <iframe
+                        src={pdfBlobUrl}
+                        className="w-full h-full border-0 rounded-lg"
+                        title={viewingDocument.file_name || 'PDF Viewer'}
+                      />
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </AppLayout>
+        }
+      />
+    </Routes>
   );
 };
 
-export const ChatApp: React.FC<ChatAppProps> = ({ config }) => {
+export const ChatApp: React.FC<ChatAppProps> = () => {
   const queryClient = createQueryClient();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ChatAppContent config={config} />
+      <ChatAppContent />
     </QueryClientProvider>
   );
 };

@@ -4,7 +4,6 @@ import { ErrorBoundary } from './components/error-boundary';
 import { PortalLayout } from './components/portal-layout';
 import { PortalDashboard } from './components/portal-dashboard';
 import { DocsPage } from './components/docs-page';
-import { AppConfig } from '@sanad-ai/config';
 // Import types to ensure Window interface is extended
 import '@sanad-ai/config';
 
@@ -13,31 +12,14 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const appContainerRef = useRef<HTMLDivElement>(null);
 
-  // Get config from environment variables
-  const getAppConfig = (): AppConfig => {
-    const apiBaseUrl =import.meta.env.VITE_API_BASE_URL ;
-    const username = import.meta.env.VITE_API_BASIC_AUTH_USERNAME;
-    const password = import.meta.env.VITE_API_BASIC_AUTH_PASSWORD;
-    const authString = import.meta.env.VITE_API_BASIC_AUTH;
-
-    const basicAuth = authString 
-      ? { authString }
-      : (username && password ? { username, password } : undefined);
-
-    return {
-      apiBaseUrl,
-      basicAuth,
-    };
-  };
-
   const handleOpenApp = (appName: string) => {
     setActiveApp(appName);
   };
 
   const handleBackToDashboard = () => {
     // Close any open app
-    if (window.SanadAi && window.SanadAi.isOpen()) {
-      window.SanadAi.close();
+    if (window.SanadAiV3 && window.SanadAiV3.isOpen()) {
+      window.SanadAiV3.close();
     }
     if (window.MuhallilAhkam && window.MuhallilAhkam.isOpen()) {
       window.MuhallilAhkam.close();
@@ -129,20 +111,19 @@ const AppContent: React.FC = () => {
     if (!appContainerRef.current) return;
 
     const container = appContainerRef.current;
-    const config = getAppConfig();
 
     // Wait for scripts to load if needed
     const mountApp = () => {
-      if (activeApp === 'sanad-ai' && window.SanadAi) {
-        window.SanadAi.open(container, config);
+      if (activeApp === 'sanad-ai' && window.SanadAiV3) {
+        window.SanadAiV3.open(container);
       } else if (activeApp === 'muhallil-ahkam' && window.MuhallilAhkam) {
-        window.MuhallilAhkam.open(container, config);
+        window.MuhallilAhkam.open(container);
       }
     };
 
     // Check if window APIs are available
     if (
-      (activeApp === 'sanad-ai' && window.SanadAi) ||
+      (activeApp === 'sanad-ai' && window.SanadAiV3) ||
       (activeApp === 'muhallil-ahkam' && window.MuhallilAhkam)
     ) {
       mountApp();
@@ -150,7 +131,7 @@ const AppContent: React.FC = () => {
       // Wait for scripts to load
       const checkInterval = setInterval(() => {
         if (
-          (activeApp === 'sanad-ai' && window.SanadAi) ||
+          (activeApp === 'sanad-ai' && window.SanadAiV3) ||
           (activeApp === 'muhallil-ahkam' && window.MuhallilAhkam)
         ) {
           clearInterval(checkInterval);
@@ -166,8 +147,8 @@ const AppContent: React.FC = () => {
 
     // Cleanup on unmount
     return () => {
-      if (activeApp === 'sanad-ai' && window.SanadAi && window.SanadAi.isOpen()) {
-        window.SanadAi.close();
+      if (activeApp === 'sanad-ai' && window.SanadAiV3 && window.SanadAiV3.isOpen()) {
+        window.SanadAiV3.close();
       } else if (activeApp === 'muhallil-ahkam' && window.MuhallilAhkam && window.MuhallilAhkam.isOpen()) {
         window.MuhallilAhkam.close();
       }
