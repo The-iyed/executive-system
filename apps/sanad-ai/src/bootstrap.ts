@@ -1,4 +1,24 @@
+// React, ReactDOM, and ReactQuery are now bundled with the package
+// No need to check for external React dependencies
+
 import { createMount } from './mount';
+
+// Mount creation - React is now bundled, so we can create mount when needed
+let mountInstance: any = null;
+
+const getMount = () => {
+  if (!mountInstance) {
+    try {
+      // Create mount - React is bundled, so this will work
+      mountInstance = createMount();
+    } catch (error: any) {
+      console.error('[Sanad AI] Failed to create mount:', error);
+      throw error;
+    }
+  }
+  return mountInstance;
+};
+
 // Import styles to ensure Tailwind CSS is included in the bundle
 import './styles.css';
 // Import images to get their resolved paths (Vite will handle the paths correctly)
@@ -61,7 +81,7 @@ if (typeof window !== 'undefined') {
   };
 }
 
-const mount = createMount();
+// Mount is created lazily via getMount() when actually needed
 let currentContainer: HTMLElement | null = null;
 let createdContainer: HTMLElement | null = null;
 
@@ -190,173 +210,318 @@ const removeCreatedContainer = () => {
   }
 };
 
-// Export mount for UMD bundle (Vite will assign this to window.SANAD_APP)
-export default mount;
-
-// Create window API
-if (typeof window !== 'undefined') {
-  // Keep backward compatibility
-  window.SANAD_APP = mount;
+/**
+ * Internal helper to mount the app with CSS injection
+ */
+const ensureCSSAndMount = (targetContainer: HTMLElement) => {
+  // Try to get CSS from stored global if not in cssContent
+  if (!cssContent && typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
+    cssContent = (window as any).__SANAD_AI_CSS_STORED__;
+  }
   
-  // New window API - container is now optional, creates its own isolated container
-  (window as any).SanadAiV3 = {
-    open: (_container?: HTMLElement) => {
-      // Container parameter is ignored - package creates its own isolated container
-      if (mount) {
-        try {
-          // Always create our own isolated container for better isolation
-          const targetContainer = createFullscreenContainer();
-          createdContainer = targetContainer;
-          currentContainer = targetContainer;
-          
-          // CRITICAL: Ensure CSS is injected BEFORE mounting React
-          // We MUST wait for CSS to be available before mounting
-          const ensureCSSAndMount = () => {
-            // Try to get CSS from stored global if not in cssContent
-            if (!cssContent && typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
-              cssContent = (window as any).__SANAD_AI_CSS_STORED__;
-            }
-            
-            if (cssContent && shadowRoot) {
-              // Check if styles are already injected
-              const hasStyles = Array.from(shadowRoot.querySelectorAll('style')).length > 0;
-              if (!hasStyles) {
-                injectStylesIntoShadowRoot(shadowRoot, cssContent);
-              }
-              
-              // CSS is ready, now mount React
-              const originalOverflow = document.body.style.overflow;
-              document.body.style.overflow = 'hidden';
-              
-              mount.mount(targetContainer);
-              
-              // Store original overflow to restore on close
-              (targetContainer as any).__originalBodyOverflow = originalOverflow;
-            } else if (!cssContent) {
-              // CSS not loaded yet, wait and retry (max 10 attempts = 1 second)
-              let attempts = 0;
-              const maxAttempts = 10;
-              const checkInterval = setInterval(() => {
-                attempts++;
-                // Check both cssContent and stored CSS
-                if (typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
-                  cssContent = (window as any).__SANAD_AI_CSS_STORED__;
-                }
-                if (cssContent && shadowRoot) {
-                  clearInterval(checkInterval);
-                  ensureCSSAndMount();
-                } else if (attempts >= maxAttempts) {
-                  clearInterval(checkInterval);
-                  console.error('Sanad AI: CSS failed to load after 1 second, mounting without styles');
-                  // Mount anyway (styles might load later)
-                  const originalOverflow = document.body.style.overflow;
-                  document.body.style.overflow = 'hidden';
-                  mount.mount(targetContainer);
-                  (targetContainer as any).__originalBodyOverflow = originalOverflow;
-                }
-              }, 100);
-            } else {
-              // shadowRoot not available (shouldn't happen)
-              console.error('Sanad AI: Shadow root not available');
-            }
-          };
-          
-          ensureCSSAndMount();
-        } catch (error) {
-          console.error('Error opening Sanad AI:', error);
-        }
+  if (cssContent && shadowRoot) {
+    // Check if styles are already injected
+    const hasStyles = Array.from(shadowRoot.querySelectorAll('style')).length > 0;
+    if (!hasStyles) {
+      injectStylesIntoShadowRoot(shadowRoot, cssContent);
+    }
+    
+    // CSS is ready, now mount React
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    
+    getMount().mount(targetContainer);
+    
+    // Store original overflow to restore on close
+    (targetContainer as any).__originalBodyOverflow = originalOverflow;
+  } else if (!cssContent) {
+    // CSS not loaded yet, wait and retry (max 10 attempts = 1 second)
+    let attempts = 0;
+    const maxAttempts = 10;
+    const checkInterval = setInterval(() => {
+      attempts++;
+      // Check both cssContent and stored CSS
+      if (typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
+        cssContent = (window as any).__SANAD_AI_CSS_STORED__;
       }
-    },
-    toggle: () => {
-      if (currentContainer) {
-        // If already open, close it
-        mount.unmount();
-        if (createdContainer) {
-          removeCreatedContainer();
-        }
-        currentContainer = null;
-      } else {
-        // Otherwise, open it
-        if (mount) {
-          try {
-            const targetContainer = createFullscreenContainer();
-            createdContainer = targetContainer;
-            currentContainer = targetContainer;
-            
-            // CRITICAL: Ensure CSS is injected BEFORE mounting React
-            const ensureCSSAndMount = () => {
-              // Try to get CSS from stored global if not in cssContent
-              if (!cssContent && typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
-                cssContent = (window as any).__SANAD_AI_CSS_STORED__;
-              }
-              
-              if (cssContent && shadowRoot) {
-                const hasStyles = Array.from(shadowRoot.querySelectorAll('style')).length > 0;
-                if (!hasStyles) {
-                  injectStylesIntoShadowRoot(shadowRoot, cssContent);
-                }
-                
-                const originalOverflow = document.body.style.overflow;
-                document.body.style.overflow = 'hidden';
-                
-                mount.mount(targetContainer);
-                
-                (targetContainer as any).__originalBodyOverflow = originalOverflow;
-              } else if (!cssContent) {
-                // Wait for CSS (max 10 attempts = 1 second)
-                let attempts = 0;
-                const maxAttempts = 10;
-                const checkInterval = setInterval(() => {
-                  attempts++;
-                  // Check both cssContent and stored CSS
-                  if (typeof window !== 'undefined' && (window as any).__SANAD_AI_CSS_STORED__) {
-                    cssContent = (window as any).__SANAD_AI_CSS_STORED__;
-                  }
-                  if (cssContent && shadowRoot) {
-                    clearInterval(checkInterval);
-                    ensureCSSAndMount();
-                  } else if (attempts >= maxAttempts) {
-                    clearInterval(checkInterval);
-                    console.error('Sanad AI: CSS failed to load, mounting without styles');
-                    const originalOverflow = document.body.style.overflow;
-                    document.body.style.overflow = 'hidden';
-                    mount.mount(targetContainer);
-                    (targetContainer as any).__originalBodyOverflow = originalOverflow;
-                  }
-                }, 100);
-              }
-            };
-            
-            ensureCSSAndMount();
-          } catch (error) {
-            console.error('Error toggling Sanad AI:', error);
-          }
-        }
+      if (cssContent && shadowRoot) {
+        clearInterval(checkInterval);
+        ensureCSSAndMount(targetContainer);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        console.error('Sanad AI: CSS failed to load after 1 second, mounting without styles');
+        // Mount anyway (styles might load later)
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        getMount().mount(targetContainer);
+        (targetContainer as any).__originalBodyOverflow = originalOverflow;
       }
-    },
-    close: () => {
-      if (mount && currentContainer) {
-        mount.unmount();
-        
-        // Restore body overflow
-        if (createdContainer && (createdContainer as any).__originalBodyOverflow !== undefined) {
-          document.body.style.overflow = (createdContainer as any).__originalBodyOverflow || '';
-        } else {
-          document.body.style.overflow = '';
-        }
-        
-        if (createdContainer) {
-          removeCreatedContainer();
-        }
-        currentContainer = null;
+    }, 100);
+  } else {
+    // shadowRoot not available (shouldn't happen)
+    console.error('Sanad AI: Shadow root not available');
+  }
+};
+
+/**
+ * Utility to expose the SanadAiV3 API globally on the window object
+ * This allows external websites to control the SanadAi programmatically
+ * 
+ * @description This function creates and exposes the SanadAiV3 API with methods to
+ * open, close, toggle, and check the state of the Sanad AI interface.
+ * The API uses Shadow DOM for complete style isolation.
+ * 
+ * @example
+ * ```ts
+ * // After script loads, the API is automatically available:
+ * window.SanadAiV3.open();
+ * window.SanadAiV3.close();
+ * window.SanadAiV3.toggle();
+ * window.SanadAiV3.isOpen();
+ * 
+ * // Listen to events
+ * window.addEventListener('SanadAiV3:opened', (e) => {
+ *   console.log('Sanad AI opened', e.detail);
+ * });
+ * ```
+ */
+const createSanadAiV3API = () => {
+  /**
+   * Opens the Sanad AI interface
+   * @description Programmatically opens the Sanad AI interface in a Shadow DOM container.
+   * Container parameter is ignored - the package creates its own isolated container.
+   * 
+   * @param {HTMLElement} _container - Optional container (ignored, package creates its own)
+   */
+  const open = (_container?: HTMLElement): void => {
+    // Container parameter is ignored - package creates its own isolated container
+    
+    console.log('[Sanad AI] open() called');
+    
+    // React is now bundled with the package, no need to check for external dependencies
+    
+    if (currentContainer) {
+      console.warn('[Sanad AI] Already open, use close() first or toggle()');
+      return;
+    }
+
+    try {
+      console.log('[Sanad AI] Creating fullscreen container...');
+      // Always create our own isolated container for better isolation
+      const targetContainer = createFullscreenContainer();
+      createdContainer = targetContainer;
+      currentContainer = targetContainer;
+      console.log('[Sanad AI] ✓ Container created');
+      
+      // CRITICAL: Ensure CSS is injected BEFORE mounting React
+      console.log('[Sanad AI] Ensuring CSS and mounting...');
+      ensureCSSAndMount(targetContainer);
+      console.log('[Sanad AI] ✓ Mounting completed');
+      
+      // Dispatch custom event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('SanadAiV3:opened', {
+          detail: { timestamp: Date.now() }
+        }));
       }
-    },
-    isOpen: () => {
-      return currentContainer !== null;
-    },
+      
+      console.log('[Sanad AI] ✓ Opened successfully');
+    } catch (error) {
+      console.error('[Sanad AI] ✗ Error opening:', error);
+      console.error('[Sanad AI] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // Dispatch error event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('SanadAiV3:error', {
+          detail: { error, action: 'open', timestamp: Date.now() }
+        }));
+      }
+    }
   };
 
-  // Also create SanadAi alias for backward compatibility
-  (window as any).SanadAi = (window as any).SanadAiV3;
+  /**
+   * Closes the Sanad AI interface
+   * @description Programmatically closes the Sanad AI interface and removes the Shadow DOM container.
+   */
+  const close = (): void => {
+    if (!currentContainer) {
+      console.warn('[Sanad AI] Not open, nothing to close');
+      return;
+    }
+
+    try {
+      getMount().unmount();
+      
+      // Restore body overflow
+      if (createdContainer && (createdContainer as any).__originalBodyOverflow !== undefined) {
+        document.body.style.overflow = (createdContainer as any).__originalBodyOverflow || '';
+      } else {
+        document.body.style.overflow = '';
+      }
+      
+      if (createdContainer) {
+        removeCreatedContainer();
+      }
+      currentContainer = null;
+      
+      // Dispatch custom event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('SanadAiV3:closed', {
+          detail: { timestamp: Date.now() }
+        }));
+      }
+      
+      console.log('[Sanad AI] Closed programmatically');
+    } catch (error) {
+      console.error('[Sanad AI] Error closing:', error);
+      
+      // Dispatch error event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('SanadAiV3:error', {
+          detail: { error, action: 'close', timestamp: Date.now() }
+        }));
+      }
+    }
+  };
+
+  /**
+   * Toggles the Sanad AI interface state
+   * @description Opens the interface if closed, closes if open.
+   */
+  const toggle = (): void => {
+    try {
+      const wasOpen = currentContainer !== null;
+      
+      if (wasOpen) {
+        close();
+      } else {
+        open();
+      }
+      
+      // Dispatch appropriate event
+      if (typeof window !== 'undefined') {
+        const eventType = !wasOpen ? 'SanadAiV3:opened' : 'SanadAiV3:closed';
+        window.dispatchEvent(new CustomEvent(eventType, {
+          detail: { timestamp: Date.now(), toggled: true }
+        }));
+      }
+      
+      console.log(`[Sanad AI] ${!wasOpen ? 'Opened' : 'Closed'} programmatically (toggle)`);
+    } catch (error) {
+      console.error('[Sanad AI] Error toggling:', error);
+      
+      // Dispatch error event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('SanadAiV3:error', {
+          detail: { error, action: 'toggle', timestamp: Date.now() }
+        }));
+      }
+    }
+  };
+
+  /**
+   * Checks if the Sanad AI interface is currently open
+   * @returns {boolean} True if the interface is open
+   */
+  const isOpen = (): boolean => {
+    return currentContainer !== null;
+  };
+
+  return {
+    open,
+    close,
+    toggle,
+    isOpen
+  };
+};
+
+// Create SanadAiV3 API object
+const SanadAiV3 = createSanadAiV3API();
+
+// Export SanadAiV3 as default - Vite will assign this to window.SanadAiV3
+// We use ONLY default export to avoid Vite creating a namespace object
+export default SanadAiV3;
+
+/**
+ * Exposes the SanadAiV3 API globally on the window object
+ * @description This function should be called after the API is created.
+ * It ensures the API is available on window.SanadAiV3 and dispatches a ready event.
+ * 
+ * @example
+ * ```ts
+ * // The API is automatically exposed when the script loads
+ * // External websites can use:
+ * window.SanadAiV3.open();
+ * window.SanadAiV3.close();
+ * window.SanadAiV3.toggle();
+ * window.SanadAiV3.isOpen();
+ * 
+ * // Listen to events
+ * window.addEventListener('SanadAiV3:ready', () => {
+ *   console.log('Sanad AI is ready!');
+ * });
+ * ```
+ */
+const exposeSanadAiV3API = (): void => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    console.warn('[Sanad AI] exposeSanadAiV3API: window object not available (SSR environment)');
+    return;
+  }
+
+  // Attach the API to the window object
+  (window as any).SanadAiV3 = SanadAiV3;
+
+  // Dispatch ready event
+  window.dispatchEvent(new CustomEvent('SanadAiV3:ready', {
+    detail: { api: SanadAiV3, timestamp: Date.now() }
+  }));
+
+  console.log('[Sanad AI] API exposed globally on window.SanadAiV3');
+  console.log('[Sanad AI] Available methods:', Object.keys(SanadAiV3));
+};
+
+/**
+ * Checks if the SanadAiV3 API is available on the window object
+ * @returns {boolean} True if the API is available
+ */
+const isSanadAiV3APIAvailable = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return typeof (window as any).SanadAiV3 === 'object' && 
+         typeof (window as any).SanadAiV3.open === 'function';
+};
+
+// Expose the API immediately when script loads
+// Use multiple strategies to ensure it's set after Vite's UMD wrapper
+if (typeof window !== 'undefined') {
+  // Immediate assignment
+  exposeSanadAiV3API();
+  
+  // Also ensure it's set after Vite's wrapper (if it runs after)
+  Promise.resolve().then(() => {
+    if (!isSanadAiV3APIAvailable()) {
+      exposeSanadAiV3API();
+    }
+  });
+  
+  setTimeout(() => {
+    if (!isSanadAiV3APIAvailable()) {
+      exposeSanadAiV3API();
+    }
+  }, 0);
+  
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => {
+      if (!isSanadAiV3APIAvailable()) {
+        exposeSanadAiV3API();
+      }
+    });
+  }
 }
+
+// Note: mount is not exported to avoid namespace issues
+// If needed, it can be accessed via SanadAiV3 internally
 
