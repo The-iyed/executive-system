@@ -46,14 +46,14 @@ export default defineConfig(({ command }) => {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
         name: 'SANAD_APP',
-        fileName: (format) => `sanad-ai.${format}.js`,
+        fileName: () => `sanad-ai-v3.js`,
         formats: ['umd'],
       },
       cssCodeSplit: false,
       rollupOptions: {
         external: ['react', 'react-dom', '@tanstack/react-query'],
         output: {
-          entryFileNames: 'sanad-ai.umd.js',
+          entryFileNames: 'sanad-ai-v3.js',
           // Inline CSS into JS - don't extract CSS files
           assetFileNames: () => {
             // Return a name that won't be used since we're inlining
@@ -112,7 +112,7 @@ export default defineConfig(({ command }) => {
                   );
                   
                   // Find the corresponding JS file
-                  const jsFileName = 'sanad-ai.umd.js';
+                  const jsFileName = 'sanad-ai-v3.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
                     // Inject CSS as a style tag in the JS

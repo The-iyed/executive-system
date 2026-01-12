@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { AppMount, AppConfig } from '@sanad-ai/config';
+import { AppMount } from '@sanad-ai/config';
 import { createQueryClient } from '@sanad-ai/api';
 import { App } from './app';
 import { ErrorBoundary } from './components';
@@ -12,7 +12,7 @@ export const createMount = (): AppMount => {
   let container: HTMLElement | null = null;
 
   return {
-    mount: (el: HTMLElement, _config: AppConfig) => {
+    mount: (el: HTMLElement) => {
       container = el;
       root = createRoot(el);
       const queryClient = createQueryClient();

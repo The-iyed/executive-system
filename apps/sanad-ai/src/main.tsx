@@ -1,33 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import { ChatApp } from './app';
-
-// Get basic auth from environment variables
-const getBasicAuth = () => {
-  const username = import.meta.env.VITE_API_BASIC_AUTH_USERNAME;
-  const password = import.meta.env.VITE_API_BASIC_AUTH_PASSWORD;
-  const authString = import.meta.env.VITE_API_BASIC_AUTH;
-
-  if (authString) {
-    return { authString };
-  }
-
-  if (username && password) {
-    return { username, password };
-  }
-
-  return undefined;
-};
-
-// Default config for dev mode
-const defaultConfig = {
-  apiBaseUrl: import.meta.env.VITE_SANAD_API_BASE_URL,
-  basicAuth: getBasicAuth(),
-};
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <ChatApp config={defaultConfig} />
+    <BrowserRouter>
+      <ChatApp />
+    </BrowserRouter>
   </React.StrictMode>
 );
 
