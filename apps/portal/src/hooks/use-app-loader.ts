@@ -43,9 +43,12 @@ export const useAppLoader = (app: AppMetadata): UseAppLoaderResult => {
       
       if (windowApi) {
         // Use window API directly - create a wrapper mount object
+        // Container is optional - window API will create its own if not provided
         setAppMount({
-          mount: (el: HTMLElement) => {
-            mountedElementRef.current = el;
+          mount: (el?: HTMLElement) => {
+            if (el) {
+              mountedElementRef.current = el;
+            }
             windowApi.open(el);
           },
           unmount: () => {
