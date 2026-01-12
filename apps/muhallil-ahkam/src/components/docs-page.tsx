@@ -22,7 +22,7 @@ export const DocsPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">How to Integrate Muhallil Ahkam into Your Website</h1>
         </div>
         <p className="text-gray-600 text-lg">
-          This package allows you to add Muhallil Ahkam to any website with just a few steps. You can mount the application in any container element on your website.
+          This package allows you to add Muhallil Ahkam to any website with just a few steps. The package uses Shadow DOM for complete style isolation and creates its own fullscreen container automatically.
         </p>
       </div>
 
@@ -40,6 +40,8 @@ export const DocsPage: React.FC = () => {
           <ul className="list-disc list-inside text-gray-600 space-y-1 ml-4">
             <li>Initialize the Muhallil Ahkam application</li>
             <li>Expose a global <code className="bg-gray-100 px-1 rounded">window.MuhallilAhkam</code> API</li>
+            <li>Automatically inject CSS into Shadow DOM for complete style isolation</li>
+            <li>Create a fullscreen container with Shadow DOM encapsulation</li>
           </ul>
         </section>
 
@@ -60,21 +62,21 @@ export const DocsPage: React.FC = () => {
               <tbody>
                 <tr>
                   <td className="border border-gray-300 px-4 py-2">
-                    <code className="bg-gray-100 px-2 py-1 rounded">window.MuhallilAhkam.open(container)</code>
+                    <code className="bg-gray-100 px-2 py-1 rounded">window.MuhallilAhkam.open()</code>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">Opens Muhallil Ahkam in the specified container element</td>
+                  <td className="border border-gray-300 px-4 py-2">Opens Muhallil Ahkam in its own fullscreen Shadow DOM container. Container parameter is optional and ignored - the package creates its own isolated container.</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-300 px-4 py-2">
                     <code className="bg-gray-100 px-2 py-1 rounded">window.MuhallilAhkam.close()</code>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">Closes the Muhallil Ahkam application</td>
+                  <td className="border border-gray-300 px-4 py-2">Closes the Muhallil Ahkam application and removes the Shadow DOM container</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-300 px-4 py-2">
-                    <code className="bg-gray-100 px-2 py-1 rounded">window.MuhallilAhkam.toggle(container)</code>
+                    <code className="bg-gray-100 px-2 py-1 rounded">window.MuhallilAhkam.toggle()</code>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">Toggles between open/close</td>
+                  <td className="border border-gray-300 px-4 py-2">Toggles between open/close. No container parameter needed.</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-300 px-4 py-2">
@@ -89,19 +91,26 @@ export const DocsPage: React.FC = () => {
 
         {/* Example */}
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Example — Mount in Container</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Example — Opening the App</h2>
           <p className="text-gray-600 mb-4">
-            You can mount Muhallil Ahkam in any container element on your site:
+            Muhallil Ahkam creates its own fullscreen container with Shadow DOM for complete style isolation. No container element needed:
           </p>
-          <CodeBlock code={`<div id="muhallil-ahkam-container"></div>
-<button id="open-muhallil-ahkam">Open Muhallil Ahkam</button>
+          <CodeBlock code={`<button id="open-muhallil-ahkam">Open Muhallil Ahkam</button>
 
 <script>
   document.getElementById("open-muhallil-ahkam").addEventListener("click", () => {
-    const container = document.getElementById("muhallil-ahkam-container");
-    window.MuhallilAhkam.open(container);
+    // No container needed - package creates its own Shadow DOM container
+    window.MuhallilAhkam.open();
+  });
+  
+  // Close button
+  document.getElementById("close-muhallil-ahkam").addEventListener("click", () => {
+    window.MuhallilAhkam.close();
   });
 </script>`} />
+          <p className="text-gray-600 mt-4">
+            <strong>Note:</strong> The package uses Shadow DOM for complete style isolation. All CSS is automatically injected into the Shadow Root, ensuring no style conflicts with your website. The app includes a close button (×) in the top-right corner.
+          </p>
         </section>
 
         {/* TypeScript Support */}
@@ -116,9 +125,9 @@ export {};
 declare global {
   interface Window {
     MuhallilAhkam: {
-      open: (container: HTMLElement) => void;
+      open: (_container?: HTMLElement) => void; // Container is optional and ignored
       close: () => void;
-      toggle: (container: HTMLElement) => void;
+      toggle: () => void; // No container parameter
       isOpen: () => boolean;
     };
   }
