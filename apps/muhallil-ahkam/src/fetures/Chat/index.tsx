@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WelcomeMessage } from '../../components/welcome-message';
 import { PdfUploadModal, type PdfUploadModalRef } from '../../components/pdf-upload-modal';
@@ -25,7 +25,9 @@ const Chat = () => {
         pdfUploadModalRef.current?.resetFiles();
         
         if (response.conversation_id) {
-          navigate(PATH.CASE_FILES.replace(':conversation_id', response.conversation_id));
+          startTransition(() => {
+            navigate(PATH.CASE_FILES.replace(':conversation_id', response.conversation_id));
+          });
         }
       },
       onError: (error) => {
