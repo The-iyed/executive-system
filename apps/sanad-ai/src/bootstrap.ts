@@ -1,6 +1,34 @@
 import { createMount } from './mount';
 // Import styles to ensure Tailwind CSS is included in the bundle
 import './styles.css';
+// Import images to get their resolved paths (Vite will handle the paths correctly)
+import BackgroundImageUrl from './assets/bg.png';
+import WelcomeAvatarUrl from './assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
+
+// Preload critical images early for better performance
+if (typeof window !== 'undefined') {
+  const preloadImage = (src: string) => {
+    // Check if already preloaded
+    const existingLink = document.querySelector(`link[rel="preload"][href="${src}"]`);
+    if (existingLink) return;
+    
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = src;
+    document.head.appendChild(link);
+    
+    // Also preload using Image object for better browser support
+    const img = new Image();
+    img.src = src;
+  };
+  
+  // Preload background image and welcome avatar
+  // These are critical images that should load as early as possible
+  // Using imported URLs ensures Vite resolves paths correctly in both dev and production
+  preloadImage(BackgroundImageUrl);
+  preloadImage(WelcomeAvatarUrl);
+}
 
 // CRITICAL: Define CSS storage and function FIRST, before any other code
 // This ensures the function is available when CSS injection code runs
