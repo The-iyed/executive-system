@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Breadcrumb,
@@ -23,7 +23,9 @@ export const CaseFilesBreadcrumb: React.FC = () => {
             href={PATH.CASES}
             onClick={(e) => {
               e.preventDefault();
-              navigate(PATH.CASES);
+              startTransition(() => {
+                navigate(PATH.CASES);
+              });
             }}
             className="flex items-center gap-1 text-[#666] hover:text-[#1A1A1A] transition-colors"
           >
