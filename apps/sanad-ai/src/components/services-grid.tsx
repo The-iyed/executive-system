@@ -30,7 +30,7 @@ export const ServicesGrid: React.FC = () => {
       title: 'محلل الرؤى والتوقعات',
       description: 'تتيح هذه الخدمة تحليل البيانات القانونية والإحصائية، واستخراج الرؤى والتوقعات لدعم اتخاذ القرارات الاستراتيجية.',
       icon: <BarChart3Icon />,
-      url: 'https://legal-stats-app.momrahai.com/',
+      url: 'https://legal-stats.momrahai.com/',
     },
 
     {
