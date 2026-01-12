@@ -7,6 +7,7 @@ export interface ServiceCardProps {
   icon?: React.ReactNode;
   isComingSoon?: boolean;
   isDisabled?: boolean;
+  onClick?: () => void;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({ 
@@ -14,13 +15,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   description, 
   icon, 
   isComingSoon = false,
-  isDisabled = false 
+  isDisabled = false,
+  onClick
 }) => {
   return (
     <div 
+      onClick={onClick && !isDisabled ? onClick : undefined}
       className={`relative h-[120px] sm:h-[140px] md:h-[150px] rounded-[8px] sm:rounded-[10px] border border-[#efefef] overflow-hidden ${
         isDisabled ? 'bg-[#f8f8f8]' : 'bg-white'
-      }`}
+      } ${onClick && !isDisabled ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
     >
       {/* Background decoration */}
       <div className="absolute left-[-65px] top-[6px] w-[339px] h-[361px] flex items-center justify-center pointer-events-none opacity-50">

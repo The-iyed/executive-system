@@ -30,6 +30,16 @@ declare global {
       close: () => void;
       isOpen: () => boolean;
     };
+    AiStatsBot?: {
+      open: () => void;
+      close: () => void;
+      toggle: () => void;
+    };
+    LegalAssistant?: {
+      open: () => void;
+      close: () => void;
+      toggle: () => void;
+    };
   }
 }
 
