@@ -382,11 +382,11 @@ const portal = new Portal(
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            description: 'Load the bundle from the portal base URL. CSS is automatically injected into Shadow DOM for complete style isolation.',
             code: `// Portal base URL
 const portalBaseUrl = '${PORTAL_BASE_URL}';
 
-// Load Sanad AI bundle - CSS is automatically injected when the script loads
+// Load Sanad AI bundle - CSS is automatically injected into Shadow DOM
 const script = document.createElement('script');
 script.src = \`\${portalBaseUrl}/packages/sanad-ai-v3.js\`;
 document.head.appendChild(script);
@@ -394,52 +394,43 @@ document.head.appendChild(script);
 // Wait for script to load
 script.onload = () => {
   // Sanad AI loaded! window.SanadAi or window.SanadAiV3 is now available
+  // The package uses Shadow DOM for complete style isolation
 };`,
           },
           {
-            title: 'Opening the App (No Container Required)',
-            description: 'Open Sanad AI - the package will create its own fullscreen container automatically. Container parameter is optional.',
-            code: `// Simple - no container needed! Package creates its own fullscreen container
-window.SanadAi.open();
+            title: 'Opening the App (Shadow DOM)',
+            description: 'Open Sanad AI - the package creates its own fullscreen Shadow DOM container automatically. Container parameter is ignored. The app includes a close button (×) in the top-right corner.',
+            code: `// Simple - no container needed! Package creates its own Shadow DOM container
+window.SanadAiV3.open();
 
-// Or with optional container if you want to use your own
-const container = document.getElementById('sanad-ai-container');
-window.SanadAi.open(container);
-
-// Or with config (container still optional)
-window.SanadAi.open(undefined, {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: { username: 'user', password: 'pass' }
-});`,
+// Container parameter is ignored - package always creates its own isolated container
+// This ensures complete style isolation using Shadow DOM
+window.SanadAiV3.open(); // Always creates Shadow DOM container`,
           },
           {
             title: 'Toggle the App',
-            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. Container is optional.',
-            code: `// Toggle without container - package creates its own
-window.SanadAi.toggle();
-
-// Or with optional container
-const container = document.getElementById('sanad-ai-container');
-window.SanadAi.toggle(container);`,
+            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. No container parameter needed.',
+            code: `// Toggle - package manages its own Shadow DOM container
+window.SanadAiV3.toggle();`,
           },
           {
             title: 'Closing the App',
-            description: 'Close the app and unmount it from the container.',
-            code: `// Close the app
+            description: 'Close the app and remove the Shadow DOM container. The app also includes a close button (×) in the top-right corner.',
+            code: `// Close the app - removes Shadow DOM container
 window.SanadAiV3.close();`,
           },
           {
             title: 'Check if App is Open',
             description: 'Check whether the app is currently mounted and open.',
             code: `if (window.SanadAiV3.isOpen()) {
-  // Sanad AI is currently open
+  // Sanad AI is currently open in Shadow DOM
 } else {
   // Sanad AI is closed
 }`,
           },
           {
-            title: 'Complete Integration Example (No Container)',
-            description: 'Simplest integration - no container needed. The package creates its own fullscreen container.',
+            title: 'Complete Integration Example (Shadow DOM)',
+            description: 'Simplest integration - no container needed. The package creates its own fullscreen Shadow DOM container with complete style isolation.',
             code: `<!DOCTYPE html>
 <html>
 <head>
@@ -448,7 +439,7 @@ window.SanadAiV3.close();`,
 <body>
   <button id="open-btn">Open Sanad AI</button>
   <button id="close-btn">Close Sanad AI</button>
-  <!-- No container div needed! -->
+  <!-- No container div needed! Package uses Shadow DOM -->
 
   <script>
     // Portal base URL
@@ -456,77 +447,24 @@ window.SanadAiV3.close();`,
     
     // Load Sanad AI bundle
     const script = document.createElement('script');
-    script.src = \`\${portalBaseUrl}/packages/sanad-ai.umd.js\`;
+    script.src = \`\${portalBaseUrl}/packages/sanad-ai-v3.js\`;
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
       document.getElementById('open-btn').addEventListener('click', () => {
-        // No container needed - package creates its own!
-        window.SanadAi.open();
+        // No container needed - package creates its own Shadow DOM container!
+        // CSS is automatically injected into Shadow Root for complete isolation
+        window.SanadAiV3.open();
       });
 
       document.getElementById('close-btn').addEventListener('click', () => {
-        window.SanadAi.close();
+        window.SanadAiV3.close();
       });
     };
   </script>
 </body>
 </html>`,
-          },
-          {
-            title: 'Integration with Custom Container (Optional)',
-            description: 'If you want to use your own container element, you can still pass it as an optional parameter.',
-            code: `<!DOCTYPE html>
-<html>
-<head>
-  <title>My App with Sanad AI</title>
-</head>
-<body>
-  <button id="open-btn">Open Sanad AI</button>
-  <button id="close-btn">Close Sanad AI</button>
-  <div id="my-custom-container"></div>
-
-  <script>
-    const portalBaseUrl = '${PORTAL_BASE_URL}';
-    const script = document.createElement('script');
-    script.src = \`\${portalBaseUrl}/packages/sanad-ai.umd.js\`;
-    document.head.appendChild(script);
-    
-    script.onload = () => {
-      const container = document.getElementById('my-custom-container');
-      
-      document.getElementById('open-btn').addEventListener('click', () => {
-        // Use your own container (optional)
-        window.SanadAi.open(container);
-      });
-
-      document.getElementById('close-btn').addEventListener('click', () => {
-        window.SanadAi.close();
-      });
-    };
-  </script>
-</body>
-</html>`,
-          },
-          {
-            title: 'Configuration',
-            description: 'Configuration can be passed as the second parameter. Container is still optional.',
-            code: `// Open with config but no container (package creates its own)
-window.SanadAi.open(undefined, {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: {
-    username: 'your_username',
-    password: 'your_password'
-  }
-});
-
-// Or with both container and config
-const container = document.getElementById('my-container');
-window.SanadAi.open(container, {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: { username: 'user', password: 'pass' }
-});`,
           },
         ],
       },
@@ -545,11 +483,11 @@ window.SanadAi.open(container, {
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            description: 'Load the bundle from the portal base URL. CSS is automatically injected into Shadow DOM for complete style isolation.',
             code: `// Portal base URL
 const portalBaseUrl = '${PORTAL_BASE_URL}';
 
-// Load Muhallil Ahkam bundle - CSS is automatically injected when the script loads
+// Load Muhallil Ahkam bundle - CSS is automatically injected into Shadow DOM
 const script = document.createElement('script');
 script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.js\`;
 document.head.appendChild(script);
@@ -557,52 +495,43 @@ document.head.appendChild(script);
 // Wait for script to load
 script.onload = () => {
   // Muhallil Ahkam loaded! window.MuhallilAhkam is now available
+  // The package uses Shadow DOM for complete style isolation
 };`,
           },
           {
-            title: 'Opening the App (No Container Required)',
-            description: 'Open Muhallil Ahkam - the package will create its own fullscreen container automatically. Container parameter is optional.',
-            code: `// Simple - no container needed! Package creates its own fullscreen container
+            title: 'Opening the App (Shadow DOM)',
+            description: 'Open Muhallil Ahkam - the package creates its own fullscreen Shadow DOM container automatically. Container parameter is ignored. The app includes a close button (×) in the top-right corner.',
+            code: `// Simple - no container needed! Package creates its own Shadow DOM container
 window.MuhallilAhkam.open();
 
-// Or with optional container if you want to use your own
-const container = document.getElementById('muhallil-ahkam-container');
-window.MuhallilAhkam.open(container);
-
-// Or with config (container still optional)
-window.MuhallilAhkam.open(undefined, {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: { username: 'user', password: 'pass' }
-});`,
+// Container parameter is ignored - package always creates its own isolated container
+// This ensures complete style isolation using Shadow DOM
+window.MuhallilAhkam.open(); // Always creates Shadow DOM container`,
           },
           {
             title: 'Toggle the App',
-            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. Container is optional.',
-            code: `// Toggle without container - package creates its own
-window.MuhallilAhkam.toggle();
-
-// Or with optional container
-const container = document.getElementById('muhallil-ahkam-container');
-window.MuhallilAhkam.toggle(container);`,
+            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. No container parameter needed.',
+            code: `// Toggle - package manages its own Shadow DOM container
+window.MuhallilAhkam.toggle();`,
           },
           {
             title: 'Closing the App',
-            description: 'Close the app and unmount it from the container.',
-            code: `// Close the app
+            description: 'Close the app and remove the Shadow DOM container. The app also includes a close button (×) in the top-right corner.',
+            code: `// Close the app - removes Shadow DOM container
 window.MuhallilAhkam.close();`,
           },
           {
             title: 'Check if App is Open',
             description: 'Check whether the app is currently mounted and open.',
             code: `if (window.MuhallilAhkam.isOpen()) {
-  // Muhallil Ahkam is currently open
+  // Muhallil Ahkam is currently open in Shadow DOM
 } else {
   // Muhallil Ahkam is closed
 }`,
           },
           {
-            title: 'Complete Integration Example (No Container)',
-            description: 'Simplest integration - no container needed. The package creates its own fullscreen container.',
+            title: 'Complete Integration Example (Shadow DOM)',
+            description: 'Simplest integration - no container needed. The package creates its own fullscreen Shadow DOM container with complete style isolation.',
             code: `<!DOCTYPE html>
 <html>
 <head>
@@ -611,7 +540,7 @@ window.MuhallilAhkam.close();`,
 <body>
   <button id="open-btn">Open Muhallil Ahkam</button>
   <button id="close-btn">Close Muhallil Ahkam</button>
-  <!-- No container div needed! -->
+  <!-- No container div needed! Package uses Shadow DOM -->
 
   <script>
     // Portal base URL
@@ -619,13 +548,14 @@ window.MuhallilAhkam.close();`,
     
     // Load Muhallil Ahkam bundle
     const script = document.createElement('script');
-    script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.umd.js\`;
+    script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.js\`;
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
       document.getElementById('open-btn').addEventListener('click', () => {
-        // No container needed - package creates its own!
+        // No container needed - package creates its own Shadow DOM container!
+        // CSS is automatically injected into Shadow Root for complete isolation
         window.MuhallilAhkam.open();
       });
 
@@ -988,23 +918,26 @@ export const DocsPage: React.FC = () => {
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Sanad AI API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.open(container?, config?)</code> - Open the app. Container is optional - package creates its own fullscreen container if not provided.</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.toggle(container?, config?)</code> - Toggle the app open/closed. Container is optional.</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.close()</code> - Close the app</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.isOpen()</code> - Check if app is open</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.open()</code> - Open the app in Shadow DOM. Container parameter is ignored - package always creates its own fullscreen Shadow DOM container for complete style isolation.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.toggle()</code> - Toggle the app open/closed. No container parameter needed.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.close()</code> - Close the app and remove Shadow DOM container</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.isOpen()</code> - Check if app is open</li>
             </ul>
             <p className="text-xs text-teal-600 mt-2">
-              <strong>Note:</strong> <code className="bg-teal-100 px-1 py-0.5 rounded">window.SanadAiV3</code> is also available as an alias.
+              <strong>Note:</strong> <code className="bg-teal-100 px-1 py-0.5 rounded">window.SanadAi</code> is also available as an alias. The package uses Shadow DOM for complete style isolation - CSS is automatically injected into the Shadow Root.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Muhallil Ahkam API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open(container?, config?)</code> - Open the app. Container is optional - package creates its own fullscreen container if not provided.</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle(container?, config?)</code> - Toggle the app open/closed. Container is optional.</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.close()</code> - Close the app</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open()</code> - Open the app in Shadow DOM. Container parameter is ignored - package always creates its own fullscreen Shadow DOM container for complete style isolation.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle()</code> - Toggle the app open/closed. No container parameter needed.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.close()</code> - Close the app and remove Shadow DOM container</li>
               <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.isOpen()</code> - Check if app is open</li>
             </ul>
+            <p className="text-xs text-teal-600 mt-2">
+              <strong>Note:</strong> The package uses Shadow DOM for complete style isolation - CSS is automatically injected into the Shadow Root. The app includes a close button (×) in the top-right corner.
+            </p>
           </div>
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Legal Assistant API - المذكرة القانونية</h3>
