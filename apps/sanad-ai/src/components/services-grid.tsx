@@ -2,6 +2,8 @@ import React from 'react';
 import { ServiceCard } from './service-card';
 import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
 import { BarChart3Icon } from 'lucide-react';
+// Import types to ensure Window interface is extended
+import '@sanad-ai/config';
 
 export interface Service {
   title: string;
@@ -13,10 +15,180 @@ export interface Service {
 }
 
 export const ServicesGrid: React.FC = () => {
+  const [isLegalStatsLoading, setIsLegalStatsLoading] = React.useState(false);
+  const [isLegalAssistantLoading, setIsLegalAssistantLoading] = React.useState(false);
+  const [isMuhallilAhkamLoading, setIsMuhallilAhkamLoading] = React.useState(false);
+
+  // Preload scripts on component mount
+  React.useEffect(() => {
+    // Add style isolation CSS to prevent package styles from affecting our app
+    const styleId = 'sanad-ai-package-isolation';
+    if (!document.getElementById(styleId)) {
+      const isolationStyle = document.createElement('style');
+      isolationStyle.id = styleId;
+      isolationStyle.textContent = `
+      /* Packages will manage their own isolated containers */
+      `;
+      document.head.appendChild(isolationStyle);
+    }
+
+    // Load Legal Stats script
+    const legalStatsScriptId = 'legal-stats-script';
+    if (!document.getElementById(legalStatsScriptId)) {
+      const legalStatsScript = document.createElement('script');
+      legalStatsScript.id = legalStatsScriptId;
+      legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+      legalStatsScript.async = true;
+      document.body.appendChild(legalStatsScript);
+    }
+
+    // Load Legal Assistant script
+    const legalAssistantScriptId = 'legal-assistant-script';
+    if (!document.getElementById(legalAssistantScriptId)) {
+      const legalAssistantScript = document.createElement('script');
+      legalAssistantScript.id = legalAssistantScriptId;
+      legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
+      legalAssistantScript.async = true;
+      document.body.appendChild(legalAssistantScript);
+    }
+
+    // Load Muhallil Ahkam script
+    const muhallilAhkamScriptId = 'muhallil-ahkam-script';
+    if (!document.getElementById(muhallilAhkamScriptId)) {
+      const muhallilAhkamScript = document.createElement('script');
+      muhallilAhkamScript.id = muhallilAhkamScriptId;
+      muhallilAhkamScript.src = 'https://legal-portal.momrahai.com/muhallil-ahkam.js';
+      muhallilAhkamScript.async = true;
+      document.body.appendChild(muhallilAhkamScript);
+    }
+  }, []);
+
   const handleServiceClick = (url?: string) => {
     if (url) {
       window.open(url, '_blank');
     }
+  };
+
+  const handleMuhallilAhkamClick = () => {
+    // Check if MuhallilAhkam is already available
+    const muhallilAhkam = window.MuhallilAhkam;
+    if (muhallilAhkam && typeof muhallilAhkam.open === 'function') {
+      // Package manages its own isolated container
+      muhallilAhkam.open();
+      return;
+    }
+
+    // Set loading state and wait for script to be ready
+    setIsMuhallilAhkamLoading(true);
+
+    const openWhenReady = () => {
+      const loadedMuhallilAhkam = window.MuhallilAhkam;
+      if (loadedMuhallilAhkam && typeof loadedMuhallilAhkam.open === 'function') {
+        setIsMuhallilAhkamLoading(false);
+        // Package manages its own isolated container
+        loadedMuhallilAhkam.open();
+        return true;
+      }
+      return false;
+    };
+
+    // Try to open immediately
+    if (openWhenReady()) {
+      return;
+    }
+
+    // Wait for script to load if it's still loading
+    const checkInterval = setInterval(() => {
+      if (openWhenReady()) {
+        clearInterval(checkInterval);
+      }
+    }, 50);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      setIsMuhallilAhkamLoading(false);
+    }, 5000);
+  };
+
+  const handleLegalStatsClick = () => {
+    // Check if AiStatsBot is already available
+    const aiStatsBot = window.AiStatsBot;
+    if (aiStatsBot && typeof aiStatsBot.open === 'function') {
+      aiStatsBot.open();
+      return;
+    }
+
+    // Set loading state and wait for script to be ready
+    setIsLegalStatsLoading(true);
+
+    const openWhenReady = () => {
+      const loadedAiStatsBot = window.AiStatsBot;
+      if (loadedAiStatsBot && typeof loadedAiStatsBot.open === 'function') {
+        setIsLegalStatsLoading(false);
+        loadedAiStatsBot.open();
+        return true;
+      }
+      return false;
+    };
+
+    // Try to open immediately
+    if (openWhenReady()) {
+      return;
+    }
+
+    // Wait for script to load if it's still loading
+    const checkInterval = setInterval(() => {
+      if (openWhenReady()) {
+        clearInterval(checkInterval);
+      }
+    }, 50);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      setIsLegalStatsLoading(false);
+    }, 5000);
+  };
+
+  const handleLegalAssistantClick = () => {
+    // Check if LegalAssistant is already available
+    const legalAssistant = window.LegalAssistant;
+    if (legalAssistant && typeof legalAssistant.open === 'function') {
+      legalAssistant.open();
+      return;
+    }
+
+    // Set loading state and wait for script to be ready
+    setIsLegalAssistantLoading(true);
+
+    const openWhenReady = () => {
+      const loadedLegalAssistant = window.LegalAssistant;
+      if (loadedLegalAssistant && typeof loadedLegalAssistant.open === 'function') {
+        setIsLegalAssistantLoading(false);
+        loadedLegalAssistant.open();
+        return true;
+      }
+      return false;
+    };
+
+    // Try to open immediately
+    if (openWhenReady()) {
+      return;
+    }
+
+    // Wait for script to load if it's still loading
+    const checkInterval = setInterval(() => {
+      if (openWhenReady()) {
+        clearInterval(checkInterval);
+      }
+    }, 50);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      setIsLegalAssistantLoading(false);
+    }, 5000);
   };
 
   const services: Service[] = [
@@ -24,20 +196,20 @@ export const ServicesGrid: React.FC = () => {
       title: 'تحليل الأحكام',
       description: 'تقدم هذه الخدمة تحليلًا للأحكام القضائية النهائية والتنفيذية، بما يرفع كفاءة الأعمال ويحد من خسارة القضايا مستقبلًا وتعزيز فرص الكسب.',
       icon: <AnalyzerIcon />,
-      url: 'https://rulings-analyst-app.momrahai.com/',
+      // No URL - handled by handleMuhallilAhkamClick
     },
     {
       title: 'محلل الرؤى والتوقعات',
       description: 'تتيح هذه الخدمة تحليل البيانات القانونية والإحصائية، واستخراج الرؤى والتوقعات لدعم اتخاذ القرارات الاستراتيجية.',
       icon: <BarChart3Icon />,
-      url: 'https://legal-stats.momrahai.com/',
+      // No URL - handled by handleLegalStatsClick
     },
 
     {
       title: 'المذكرة القانونية',
       description: 'أداة ذكية تعتمد على منظومة وكلاء قانونيين رقميين تعمل بتقنيات الذكاء الاصطناعي لتحليل القضايا وصياغة لوائح الرد بدقة و موثوقية.',
       icon: <BalanceIcon />,
-      url: 'https://legal-assistant-v2.momrahai.com/',
+      // No URL - handled by handleLegalAssistantClick
     },
     {
       title: 'صياغة المستندات والمراسلات',
@@ -72,7 +244,26 @@ export const ServicesGrid: React.FC = () => {
             >
               <ServiceCard 
                 {...service} 
-                onClick={service.url ? () => handleServiceClick(service.url) : undefined}
+                isLoading={
+                  service.title === 'تحليل الأحكام'
+                    ? isMuhallilAhkamLoading
+                    : service.title === 'محلل الرؤى والتوقعات' 
+                      ? isLegalStatsLoading
+                      : service.title === 'المذكرة القانونية'
+                        ? isLegalAssistantLoading
+                        : false
+                }
+                onClick={
+                  service.title === 'تحليل الأحكام'
+                    ? handleMuhallilAhkamClick
+                    : service.title === 'محلل الرؤى والتوقعات' 
+                      ? handleLegalStatsClick
+                      : service.title === 'المذكرة القانونية'
+                        ? handleLegalAssistantClick
+                        : service.url 
+                          ? () => handleServiceClick(service.url) 
+                          : undefined
+                }
               />
             </div>
           ))}
@@ -86,7 +277,26 @@ export const ServicesGrid: React.FC = () => {
           <ServiceCard 
             key={startIndex + index} 
             {...service} 
-            onClick={service.url ? () => handleServiceClick(service.url) : undefined}
+            isLoading={
+              service.title === 'تحليل الأحكام'
+                ? isMuhallilAhkamLoading
+                : service.title === 'محلل الرؤى والتوقعات' 
+                  ? isLegalStatsLoading
+                  : service.title === 'المذكرة القانونية'
+                    ? isLegalAssistantLoading
+                    : false
+            }
+            onClick={
+              service.title === 'تحليل الأحكام'
+                ? handleMuhallilAhkamClick
+                : service.title === 'محلل الرؤى والتوقعات' 
+                  ? handleLegalStatsClick
+                  : service.title === 'المذكرة القانونية'
+                    ? handleLegalAssistantClick
+                    : service.url 
+                      ? () => handleServiceClick(service.url) 
+                      : undefined
+            }
           />
         ))}
       </div>
