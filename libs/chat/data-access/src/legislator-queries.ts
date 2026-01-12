@@ -22,12 +22,12 @@ export const createLegislatorQueries = (config: LegislatorQueriesConfig) => {
   /**
    * Get all conversations
    */
-  const useConversations = (params?: { limit?: number; offset?: number; sort_by?: string }) => {
+  const useConversations = (params?: { limit?: number; offset?: number; sort_by?: string; user_id?: string }) => {
     return useQuery({
       queryKey: ['legislator', 'conversations', params],
       queryFn: async () => {
         const response = await config.apiClient.callApp<
-          { limit?: number; offset?: number; sort_by?: string },
+          { limit?: number; offset?: number; sort_by?: string; user_id?: string },
           GetConversationsResponse
         >('sanad-ai', 'legislator', 'getConversations', params);
         return response;

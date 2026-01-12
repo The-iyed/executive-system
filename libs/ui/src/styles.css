@@ -1,3 +1,40 @@
+/* Frutiger LT Arabic Font Face Declarations - Must be at the very top before any other rules */
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('./assets/font/FrutigerLTArabic45Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('./assets/font/FrutigerLTArabic55Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('./assets/font/FrutigerLTArabic65Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('./assets/font/frutigerltarabic75black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -122,10 +159,10 @@
     --spacing-2xl: 3rem; /* 48px */
     --spacing-3xl: 4rem; /* 64px */
 
-    /* Typography - Arabic support for RTL */
+    /* Typography - Using Frutiger LT Arabic from local assets */
     --font-family-sans: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
-    --font-family-serif: 'Georgia', serif;
-    --font-family-mono: 'Fira Code', 'Courier New', monospace;
+    --font-family-serif: 'Frutiger LT Arabic', 'Georgia', serif;
+    --font-family-mono: 'Frutiger LT Arabic', 'Fira Code', 'Courier New', monospace;
 
     --font-size-xs: 0.75rem; /* 12px */
     --font-size-sm: 0.875rem; /* 14px */

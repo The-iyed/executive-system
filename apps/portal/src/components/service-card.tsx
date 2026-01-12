@@ -28,7 +28,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <Card 
       onClick={handleCardClick}
-      className="shadow-[0px_12px_16px_-4px_rgba(16,24,40,0.08),0px_4px_6px_-2px_rgba(16,24,40,0.03)] border-none cursor-pointer transition-all duration-300 hover:shadow-[0px_16px_24px_-4px_rgba(16,24,40,0.12),0px_8px_8px_-4px_rgba(16,24,40,0.08)] hover:-translate-y-1 w-full sm:w-[302px] flex-shrink-0"
+      className="service-card-container shadow-[0px_12px_16px_-4px_rgba(16,24,40,0.08),0px_4px_6px_-2px_rgba(16,24,40,0.03)] border-none cursor-pointer transition-all duration-300 hover:shadow-[0px_16px_24px_-4px_rgba(16,24,40,0.12),0px_8px_8px_-4px_rgba(16,24,40,0.08)] hover:-translate-y-1 flex-shrink-0"
       dir="rtl"
       style={{ 
         fontFamily: 'Frutiger LT Arabic, sans-serif',

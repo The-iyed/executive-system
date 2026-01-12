@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -109,7 +109,12 @@ const SidebarHeader: React.FC = () => {
 };
 
 // Search Input Component
-const SearchInput: React.FC = () => {
+interface SearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const SearchInput: React.FC<SearchInputProps> = ({ value, onChange }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -125,10 +130,11 @@ const SearchInput: React.FC = () => {
       <SidebarInput
         type="text"
         placeholder="البحث في المحادثة ..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full h-[38px] pr-8 pl-2 rounded-[6px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[14px] font-bold leading-[20px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none"
         style={{
-
-            boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
+          boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
         }}
       />
     </div>
@@ -371,6 +377,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter conversations based on search query
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return conversations;
+    }
+    
+    const query = searchQuery.trim().toLowerCase();
+    return conversations.filter((conv) =>
+      conv.name.toLowerCase().includes(query)
+    );
+  }, [conversations, searchQuery]);
 
   return (
     <ShadcnSidebar
@@ -413,7 +432,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {!isCollapsed ? (
           <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
-            <SearchInput />
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
             <NewChatButton onNewChat={onNewConversation} isLoading={isCreatingConversation} />
             
             <div className="flex-1 overflow-y-auto min-h-0" style={{
@@ -427,7 +446,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               `}</style>
               <div className="conversations-scroll">
                 <ConversationsList
-                  conversations={conversations}
+                  conversations={filteredConversations}
                   currentConversationId={currentConversationId}
                   onSelectConversation={onSelectConversation}
                   onDeleteConversation={onDeleteConversation}

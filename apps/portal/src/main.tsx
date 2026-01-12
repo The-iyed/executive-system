@@ -24,6 +24,18 @@ if (typeof window !== 'undefined') {
   const ahkamScript = document.createElement('script');
   ahkamScript.src = `${currentOrigin}/muhallil-ahkam.umd.js`;
   document.head.appendChild(ahkamScript);
+  
+  // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL
+  document.addEventListener('DOMContentLoaded', function () {
+    const statsBotScript = document.createElement('script');
+    statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+    document.body.appendChild(statsBotScript);
+    
+    // Load Legal Assistant (المذكرة القانونية) from external URL
+    const legalAssistantScript = document.createElement('script');
+    legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
+    document.body.appendChild(legalAssistantScript);
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
