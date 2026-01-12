@@ -5,27 +5,32 @@ import viteTsconfigPaths from 'vite-tsconfig-paths';
 
 // Helper function to scope CSS to a container
 function scopeCssToContainer(css: string, containerSelector: string): string {
-  // Extract @ rules that must be global
-  const globalAtRules: string[] = [];
-  const atRuleRegex = /@(font-face|keyframes|import|charset|namespace)\s+[^{]+\{[^}]+\}/g;
-  let match;
+  // Extract @ rules that must be global (@font-face, @keyframes)
+  const fontFaceRegex = /@font-face\s*\{[^}]+\}/g;
+  const keyframesRegex = /@keyframes\s+\w+\s*\{[^}]+\}/g;
+  const fontFaces = css.match(fontFaceRegex) || [];
+  const keyframes = css.match(keyframesRegex) || [];
   
-  // Collect global @ rules
-  while ((match = atRuleRegex.exec(css)) !== null) {
-    globalAtRules.push(match[0]);
-  }
-  
-  // Remove global @ rules from CSS
-  let scoped = css.replace(atRuleRegex, '');
+  // Remove @ rules from CSS temporarily
+  let scoped = css.replace(fontFaceRegex, '').replace(keyframesRegex, '');
   
   // Prefix keyframe names to avoid conflicts
-  scoped = scoped.replace(/@keyframes\s+(\w+)/g, '@keyframes sanad-ai-$1');
-  scoped = scoped.replace(/(animation|animation-name):\s*(\w+)/g, (match, prop, name) => {
-    // Only prefix if it's not already prefixed
-    if (!name.startsWith('sanad-ai-')) {
-      return `${prop}: sanad-ai-${name}`;
+  const prefixedKeyframes = keyframes.map(kf => {
+    return kf.replace(/@keyframes\s+(\w+)/, (_, name) => `@keyframes sanad-ai-${name}`);
+  });
+  
+  // Update animation references to use prefixed names
+  prefixedKeyframes.forEach(kf => {
+    const match = kf.match(/@keyframes\s+sanad-ai-(\w+)/);
+    if (match) {
+      const originalName = match[1];
+      const prefixedName = `sanad-ai-${originalName}`;
+      // Replace animation references
+      scoped = scoped.replace(
+        new RegExp(`(animation|animation-name):\\s*${originalName}(?![\\w-])`, 'g'),
+        `$1: ${prefixedName}`
+      );
     }
-    return match;
   });
   
   // Scope :root to container
@@ -34,31 +39,33 @@ function scopeCssToContainer(css: string, containerSelector: string): string {
   // Scope body and html selectors
   scoped = scoped.replace(/\b(body|html)\s*\{/g, `${containerSelector} $1 {`);
   
-  // Wrap everything else in container (but preserve @media, @layer, etc.)
-  // Only wrap rules that aren't already inside @ rules
-  const lines = scoped.split('\n');
-  let inAtRule = false;
-  let result: string[] = [];
+  // Scope universal selector at start of rules
+  scoped = scoped.replace(/^\s*\*\s*\{/gm, `${containerSelector} * {`);
   
-  for (const line of lines) {
-    if (line.trim().startsWith('@') && (line.includes('media') || line.includes('layer') || line.includes('supports'))) {
-      inAtRule = true;
-      result.push(line);
-    } else if (inAtRule && line.trim() === '}') {
-      inAtRule = false;
-      result.push(line);
-    } else if (!inAtRule && line.trim() && !line.trim().startsWith('@')) {
-      // Scope this line to container
-      result.push(`${containerSelector} { ${line} }`);
-    } else {
-      result.push(line);
-    }
-  }
+  // Scope @layer base - wrap its content
+  scoped = scoped.replace(/@layer\s+base\s*\{([^}]+)\}/gs, (match, content) => {
+    return `@layer base { ${containerSelector} { ${content} } }`;
+  });
   
-  scoped = result.join('\n');
+  // Scope element selectors (but not inside @ rules)
+  const elementSelectors = ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'button', 'input', 'textarea', 'select', 'label', 'li', 'ul', 'ol', 'td', 'th', 'table', 'tr', 'thead', 'tbody', 'tfoot'];
+  elementSelectors.forEach(selector => {
+    // Only scope standalone selectors (not already scoped or in @ rules)
+    const regex = new RegExp(`(^|\\n|\\r)\\s*${selector}\\s*([,{])`, 'gm');
+    scoped = scoped.replace(regex, (match, before, after) => {
+      // Don't scope if already inside container selector or in @ rules
+      if (match.includes(containerSelector) || match.includes('@')) {
+        return match;
+      }
+      return `${before}${containerSelector} ${selector}${after}`;
+    });
+  });
+  
+  // Scope class selectors (but preserve @media, @layer, etc.)
+  scoped = scoped.replace(/(^|\n|\r)\s*\.([\w-]+)(?![^{]*#sanad-ai-container)(?![^{]*@media)(?![^{]*@layer)/gm, `$1${containerSelector} .$2`);
   
   // Prepend global @ rules
-  return [...globalAtRules, scoped].join('\n');
+  return [...fontFaces, ...prefixedKeyframes, scoped].join('\n');
 }
 
 export default defineConfig(({ command }) => {
