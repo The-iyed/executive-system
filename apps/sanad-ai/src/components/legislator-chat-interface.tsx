@@ -10,6 +10,92 @@ import type {
 import { ChatInput } from './chat-input';
 import { LoaderMessage } from './loader-message';
 
+// Dynamic imports for export libraries
+let docxModule: any = null;
+let jsPDFModule: any = null;
+let html2canvasModule: any = null;
+
+const loadDocx = async () => {
+  if (!docxModule) {
+    docxModule = await import('docx');
+  }
+  return docxModule;
+};
+
+const loadJsPDF = async () => {
+  if (!jsPDFModule) {
+    jsPDFModule = await import('jspdf');
+  }
+  return jsPDFModule;
+};
+
+const loadHtml2Canvas = async () => {
+  if (!html2canvasModule) {
+    html2canvasModule = await import('html2canvas');
+  }
+  return html2canvasModule;
+};
+
+// Helper function to parse markdown and convert to plain text with formatting hints
+const parseMarkdownToText = (markdown: string): Array<{ text: string; isBold?: boolean; isItalic?: boolean; isHeading?: number; isList?: boolean; hasBold?: boolean }> => {
+  const lines = markdown.split('\n');
+  const result: Array<{ text: string; isBold?: boolean; isItalic?: boolean; isHeading?: number; isList?: boolean; hasBold?: boolean }> = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      result.push({ text: '' });
+      continue;
+    }
+    
+    // Check for headings
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      let text = headingMatch[2];
+      const hasBold = /\*\*/.test(text);
+      // Remove markdown formatting
+      text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+      result.push({ text, isHeading: level, hasBold });
+      continue;
+    }
+    
+    // Check for list items
+    const listMatch = trimmed.match(/^[-*+]\s+(.+)$/);
+    if (listMatch) {
+      let text = listMatch[1];
+      const hasBold = /\*\*/.test(text);
+      text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+      result.push({ text, isList: true, hasBold });
+      continue;
+    }
+    
+    // Check for numbered list
+    const numberedListMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+    if (numberedListMatch) {
+      let text = numberedListMatch[1];
+      const hasBold = /\*\*/.test(text);
+      text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+      result.push({ text, isList: true, hasBold });
+      continue;
+    }
+    
+    // Regular paragraph - remove markdown formatting but keep text
+    let text = trimmed;
+    const hasBold = /\*\*/.test(text);
+    // Remove markdown formatting
+    text = text.replace(/\*\*([^*]+)\*\*/g, '$1'); // Bold
+    text = text.replace(/\*([^*]+)\*/g, '$1'); // Italic
+    text = text.replace(/`([^`]+)`/g, '$1'); // Code
+    text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Links
+    text = text.replace(/^>\s+/, ''); // Blockquote markers
+    
+    result.push({ text, hasBold });
+  }
+  
+  return result;
+};
+
 
 export interface LegislatorChatInterfaceProps {
   messages: LegislatorMessage[];
@@ -48,6 +134,217 @@ export const LegislatorChatInterface: React.FC<LegislatorChatInterfaceProps> = (
 
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);
+  };
+
+  const handleExportDocx = async (content: string) => {
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await loadDocx();
+      
+      // Parse markdown to get formatted text
+      const parsedLines = parseMarkdownToText(content);
+      
+      const paragraphs = parsedLines.map((line) => {
+        if (!line.text && !line.isHeading && !line.isList) {
+          return new Paragraph({ text: '' });
+        }
+        
+        const textRun = new TextRun({
+          text: line.text,
+          bold: line.isBold || line.hasBold || (line.isHeading && line.isHeading <= 2),
+          italics: line.isItalic,
+          font: 'Arial Unicode MS', // Arabic-compatible font
+          size: line.isHeading 
+            ? (line.isHeading === 1 ? 32 : line.isHeading === 2 ? 28 : line.isHeading === 3 ? 24 : 20)
+            : 22, // 11pt in half-points
+        });
+        
+        if (line.isHeading) {
+          return new Paragraph({
+            children: [textRun],
+            heading: line.isHeading === 1 ? HeadingLevel.HEADING_1 
+                   : line.isHeading === 2 ? HeadingLevel.HEADING_2
+                   : line.isHeading === 3 ? HeadingLevel.HEADING_3
+                   : HeadingLevel.HEADING_4,
+            spacing: { after: 200, before: line.isHeading <= 2 ? 400 : 200 },
+            alignment: AlignmentType.RIGHT, // Right align headings
+          });
+        }
+        
+        if (line.isList) {
+          return new Paragraph({
+            children: [textRun],
+            bullet: { level: 0 },
+            spacing: { after: 100 },
+            alignment: AlignmentType.RIGHT, // Right align lists
+          });
+        }
+        
+        return new Paragraph({
+          children: [textRun],
+          spacing: { after: 100 },
+          alignment: AlignmentType.RIGHT, // Right align paragraphs
+        });
+      });
+
+      // If no paragraphs, create one with the full content
+      if (paragraphs.length === 0) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({
+            text: content,
+            font: 'Arial Unicode MS',
+            size: 22,
+          })],
+          alignment: AlignmentType.RIGHT,
+        }));
+      }
+
+      const doc = new Document({
+        sections: [{
+          properties: {
+            direction: 'rtl', // Right-to-left for Arabic
+          },
+          children: paragraphs,
+        }],
+        styles: {
+          default: {
+            document: {
+              run: {
+                font: 'Arial Unicode MS',
+                size: 22, // 11pt
+              },
+            },
+          },
+        },
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `document-${new Date().getTime()}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting DOCX:', error);
+      // Fallback to text export
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `document-${new Date().getTime()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleExportPdf = async (content: string) => {
+    try {
+      // Create a temporary container to render markdown
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '210mm'; // A4 width
+      tempContainer.style.padding = '20mm';
+      tempContainer.style.fontFamily = "'Frutiger LT Pro', 'Arial Unicode MS', sans-serif";
+      tempContainer.style.fontSize = '14px';
+      tempContainer.style.lineHeight = '1.6';
+      tempContainer.style.direction = 'rtl';
+      tempContainer.style.textAlign = 'right';
+      tempContainer.style.color = '#101828';
+      tempContainer.style.backgroundColor = 'white';
+      document.body.appendChild(tempContainer);
+
+      // Parse markdown and create HTML
+      const parsedLines = parseMarkdownToText(content);
+      let html = '';
+      
+      parsedLines.forEach((line) => {
+        if (!line.text && !line.isHeading && !line.isList) {
+          html += '<p style="margin: 0.5em 0;">&nbsp;</p>';
+          return;
+        }
+        
+        const fontWeight = line.isBold || line.hasBold || (line.isHeading && line.isHeading <= 2) ? 'bold' : 'normal';
+        const fontStyle = line.isItalic ? 'italic' : 'normal';
+        let fontSize = '14px';
+        let marginTop = '0.5em';
+        let marginBottom = '0.5em';
+        
+        if (line.isHeading) {
+          fontSize = line.isHeading === 1 ? '24px' 
+                   : line.isHeading === 2 ? '20px'
+                   : line.isHeading === 3 ? '18px'
+                   : '16px';
+          marginTop = line.isHeading <= 2 ? '1em' : '0.75em';
+          marginBottom = '0.5em';
+        }
+        
+        if (line.isList) {
+          html += `<p style="margin: 0.25em 0; padding-right: 1.5em; font-weight: ${fontWeight}; font-style: ${fontStyle}; font-size: ${fontSize};">• ${line.text}</p>`;
+        } else if (line.isHeading) {
+          html += `<h${line.isHeading} style="margin: ${marginTop} 0 ${marginBottom} 0; font-weight: ${fontWeight}; font-size: ${fontSize};">${line.text}</h${line.isHeading}>`;
+        } else {
+          html += `<p style="margin: 0.5em 0; font-weight: ${fontWeight}; font-style: ${fontStyle}; font-size: ${fontSize};">${line.text}</p>`;
+        }
+      });
+      
+      tempContainer.innerHTML = html;
+
+      // Use html2canvas to capture the rendered content
+      const html2canvas = await loadHtml2Canvas();
+      const canvas = await html2canvas.default(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      // Clean up temporary container
+      document.body.removeChild(tempContainer);
+
+      // Convert canvas to PDF
+      const { jsPDF } = await loadJsPDF();
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`document-${new Date().getTime()}.pdf`);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      // Fallback to text export
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `document-${new Date().getTime()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
@@ -184,6 +481,8 @@ export const LegislatorChatInterface: React.FC<LegislatorChatInterfaceProps> = (
                       <div className="">
                         <MessageActions
                           onCopy={() => handleCopy(parsed.text || content)}
+                          onExportDocx={() => handleExportDocx(parsed.text || content)}
+                          onExportPdf={() => handleExportPdf(parsed.text || content)}
                         />
                       </div>
 
