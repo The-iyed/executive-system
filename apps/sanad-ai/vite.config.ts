@@ -3,6 +3,64 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 
+// Helper function to scope CSS to a container
+function scopeCssToContainer(css: string, containerSelector: string): string {
+  // Extract @ rules that must be global
+  const globalAtRules: string[] = [];
+  const atRuleRegex = /@(font-face|keyframes|import|charset|namespace)\s+[^{]+\{[^}]+\}/g;
+  let match;
+  
+  // Collect global @ rules
+  while ((match = atRuleRegex.exec(css)) !== null) {
+    globalAtRules.push(match[0]);
+  }
+  
+  // Remove global @ rules from CSS
+  let scoped = css.replace(atRuleRegex, '');
+  
+  // Prefix keyframe names to avoid conflicts
+  scoped = scoped.replace(/@keyframes\s+(\w+)/g, '@keyframes sanad-ai-$1');
+  scoped = scoped.replace(/(animation|animation-name):\s*(\w+)/g, (match, prop, name) => {
+    // Only prefix if it's not already prefixed
+    if (!name.startsWith('sanad-ai-')) {
+      return `${prop}: sanad-ai-${name}`;
+    }
+    return match;
+  });
+  
+  // Scope :root to container
+  scoped = scoped.replace(/:root\s*\{/g, `${containerSelector} {`);
+  
+  // Scope body and html selectors
+  scoped = scoped.replace(/\b(body|html)\s*\{/g, `${containerSelector} $1 {`);
+  
+  // Wrap everything else in container (but preserve @media, @layer, etc.)
+  // Only wrap rules that aren't already inside @ rules
+  const lines = scoped.split('\n');
+  let inAtRule = false;
+  let result: string[] = [];
+  
+  for (const line of lines) {
+    if (line.trim().startsWith('@') && (line.includes('media') || line.includes('layer') || line.includes('supports'))) {
+      inAtRule = true;
+      result.push(line);
+    } else if (inAtRule && line.trim() === '}') {
+      inAtRule = false;
+      result.push(line);
+    } else if (!inAtRule && line.trim() && !line.trim().startsWith('@')) {
+      // Scope this line to container
+      result.push(`${containerSelector} { ${line} }`);
+    } else {
+      result.push(line);
+    }
+  }
+  
+  scoped = result.join('\n');
+  
+  // Prepend global @ rules
+  return [...globalAtRules, scoped].join('\n');
+}
+
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve';
   const buildMode = process.env.BUILD_MODE || 'umd'; // 'umd' or 'standalone'
@@ -115,12 +173,15 @@ export default defineConfig(({ command }) => {
                   const jsFileName = 'sanad-ai-v3.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
+                    // Scope CSS to only apply within the container
+                    const scopedCss = scopeCssToContainer(cssContent, '#sanad-ai-container');
                     // Inject CSS as a style tag in the JS
                     const cssInjection = `
 (function() {
   if (typeof document !== 'undefined') {
     var style = document.createElement('style');
-    style.textContent = ${JSON.stringify(cssContent)};
+    style.id = 'sanad-ai-scoped-styles';
+    style.textContent = ${JSON.stringify(scopedCss)};
     document.head.appendChild(style);
   }
 })();`;
