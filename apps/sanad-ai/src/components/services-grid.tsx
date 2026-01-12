@@ -1,6 +1,7 @@
 import React from 'react';
 import { ServiceCard } from './service-card';
-import { AnalyzerIcon, CompareIcon, BalanceIcon, ArticleIcon, FileIcon, DiligenceIcon } from './service-icons';
+import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
+import { BarChart3Icon } from 'lucide-react';
 
 export interface Service {
   title: string;
@@ -8,24 +9,35 @@ export interface Service {
   icon: React.ReactNode;
   isComingSoon?: boolean;
   isDisabled?: boolean;
+  url?: string;
 }
 
 export const ServicesGrid: React.FC = () => {
+  const handleServiceClick = (url?: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   const services: Service[] = [
     {
       title: 'تحليل الأحكام',
       description: 'تقدم هذه الخدمة تحليلًا للأحكام القضائية النهائية والتنفيذية، بما يرفع كفاءة الأعمال ويحد من خسارة القضايا مستقبلًا وتعزيز فرص الكسب.',
       icon: <AnalyzerIcon />,
+      url: 'https://rulings-analyst-app.momrahai.com/',
     },
     {
-      title: 'المقارنات المعيارية',
-      description: 'تهدف الخدمة إلى تمكين المعنيين من الاطلاع على الممارسات التشريعية الدولية، وتحليل ومقارنة التشريعات المعتمدة، وتقديم المستخلصات والتوصيات ذات الصلة.',
-      icon: <CompareIcon />,
+      title: 'محلل الرؤى والتوقعات',
+      description: 'تتيح هذه الخدمة تحليل البيانات القانونية والإحصائية، واستخراج الرؤى والتوقعات لدعم اتخاذ القرارات الاستراتيجية.',
+      icon: <BarChart3Icon />,
+      url: 'https://legal-stats-app.momrahai.com/',
     },
+
     {
-      title: 'المرجع القانوني',
-      description: 'تتيح هذه الخدمة تقديم البيانات للمستفيدين بناءً على استفساراتهم، مع تزويدهم بالمراجع ذات الصلة.',
+      title: 'المذكرة القانونية',
+      description: 'أداة ذكية تعتمد على منظومة وكلاء قانونيين رقميين تعمل بتقنيات الذكاء الاصطناعي لتحليل القضايا وصياغة لوائح الرد بدقة و موثوقية.',
       icon: <BalanceIcon />,
+      url: 'https://legal-assistant-v2.momrahai.com/',
     },
     {
       title: 'صياغة المستندات والمراسلات',
@@ -41,26 +53,50 @@ export const ServicesGrid: React.FC = () => {
       isComingSoon: true,
       isDisabled: true,
     },
-    {
-      title: 'دراسة الدعاوى القضائية',
-      description: 'تتيح هذه الخدمة تقديم البيانات للمستفيدين بناءً على استفساراتهم، مع تزويدهم بالمراجع ذات الصلة.',
-      icon: <DiligenceIcon />,
-    },
+
   ];
+
+  const firstRowServices = services.slice(0, 3);
+  const secondRowServices = services.slice(3, 6);
+
+  const renderServiceRow = (rowServices: Service[], startIndex: number) => {
+    const isTwoCards = rowServices.length === 2;
+    
+    if (isTwoCards) {
+      return (
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 w-full">
+          {rowServices.map((service, index) => (
+            <div 
+              key={startIndex + index} 
+              className="w-full sm:w-[calc(50%-0.25rem)] lg:w-[calc(33.333%-0.5rem)]"
+            >
+              <ServiceCard 
+                {...service} 
+                onClick={service.url ? () => handleServiceClick(service.url) : undefined}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 w-full">
+        {rowServices.map((service, index) => (
+          <ServiceCard 
+            key={startIndex + index} 
+            {...service} 
+            onClick={service.url ? () => handleServiceClick(service.url) : undefined}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="w-full flex flex-col gap-1.5 sm:gap-2">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 w-full">
-        {services.slice(0, 3).map((service, index) => (
-          <ServiceCard key={index} {...service} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 w-full">
-        {services.slice(3, 6).map((service, index) => (
-          <ServiceCard key={index + 3} {...service} />
-        ))}
-      </div>
+      {renderServiceRow(firstRowServices, 0)}
+      {renderServiceRow(secondRowServices, 3)}
     </div>
   );
 };

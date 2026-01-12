@@ -42,6 +42,12 @@ const AppContent: React.FC = () => {
     if (window.MuhallilAhkam && window.MuhallilAhkam.isOpen()) {
       window.MuhallilAhkam.close();
     }
+    if (window.AiStatsBot) {
+      window.AiStatsBot.close();
+    }
+    if (window.LegalAssistant) {
+      window.LegalAssistant.close();
+    }
     
     setActiveApp(null);
     navigate('/');
@@ -49,7 +55,78 @@ const AppContent: React.FC = () => {
 
   // Mount app when activeApp changes
   useEffect(() => {
-    if (!activeApp || !appContainerRef.current) return;
+    if (!activeApp) return;
+
+    // For legal-stats, AiStatsBot manages its own modal, so we don't need a container
+    if (activeApp === 'legal-stats') {
+      const mountAiStatsBot = () => {
+        if (window.AiStatsBot) {
+          window.AiStatsBot.open();
+        }
+      };
+
+      // Check if AiStatsBot is available
+      if (window.AiStatsBot) {
+        mountAiStatsBot();
+      } else {
+        // Wait for script to load
+        const checkInterval = setInterval(() => {
+          if (window.AiStatsBot) {
+            clearInterval(checkInterval);
+            mountAiStatsBot();
+          }
+        }, 50);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+        }, 5000);
+      }
+
+      // Cleanup on unmount
+      return () => {
+        if (window.AiStatsBot) {
+          window.AiStatsBot.close();
+        }
+      };
+    }
+
+    // For legal-assistant, LegalAssistant manages its own modal, so we don't need a container
+    if (activeApp === 'legal-assistant') {
+      const mountLegalAssistant = () => {
+        if (window.LegalAssistant) {
+          window.LegalAssistant.open();
+        }
+      };
+
+      // Check if LegalAssistant is available
+      if (window.LegalAssistant) {
+        mountLegalAssistant();
+      } else {
+        // Wait for script to load
+        const checkInterval = setInterval(() => {
+          if (window.LegalAssistant) {
+            clearInterval(checkInterval);
+            mountLegalAssistant();
+          }
+        }, 50);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+        }, 5000);
+      }
+
+      // Cleanup on unmount
+      return () => {
+        if (window.LegalAssistant) {
+          window.LegalAssistant.close();
+        }
+      };
+    }
+
+    // For other apps, we need a container
+    if (!appContainerRef.current) return;
 
     const container = appContainerRef.current;
     const config = getAppConfig();
@@ -98,7 +175,8 @@ const AppContent: React.FC = () => {
   }, [activeApp]);
 
   // If an app is active, show it
-  if (activeApp) {
+  // Note: legal-stats (AiStatsBot) and legal-assistant (LegalAssistant) manage their own modals
+  if (activeApp && activeApp !== 'legal-stats' && activeApp !== 'legal-assistant') {
     return (
       <div
         className="fixed inset-0 bg-background flex flex-col"
@@ -120,6 +198,9 @@ const AppContent: React.FC = () => {
       </div>
     );
   }
+  
+  // For legal-stats, AiStatsBot manages its own modal, so we just show the dashboard
+  // The modal will be opened by AiStatsBot.open() call
 
   // Otherwise show routes
   return (

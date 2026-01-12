@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { createQueryClient, createEnhancedApiClient } from '@sanad-ai/api';
 import { AppConfig } from '@sanad-ai/config';
@@ -15,6 +15,7 @@ import type {
   DocumentReference,
 } from '@sanad-ai/api';
 import type { StreamController } from '@sanad-ai/api';
+import { getBrowserId } from './utils/browser-id';
 // Import app-specific APIs to register them
 import './api/endpoints';
 
@@ -98,6 +99,9 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     return undefined;
   };
 
+  // Get browser ID for user_id
+  const userId = useMemo(() => getBrowserId(), []);
+
   // Initialize legislator queries
   const legislatorQueries = createLegislatorQueries({ apiClient });
 
@@ -105,6 +109,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const { data: conversationsData, refetch: refetchConversations, isLoading: isLoadingConversations } = legislatorQueries.useConversations({ // Used in Sidebar component
     limit: 50,
     sort_by: 'updated_at',
+    user_id: userId,
   });
 
   // Load messages for current conversation
@@ -292,7 +297,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
   const handleNewConversation = async () => {
     try {
       setIsCreatingConversation(true);
-      const result = await createConversation.mutateAsync({ name: 'محادثة جديدة' });
+      const result = await createConversation.mutateAsync({ name: 'محادثة جديدة', user_id: userId });
       setCurrentConversationId(result.conversation_id);
       setMessages([]);
       setShowWelcome(true); // Show welcome screen for new empty conversation
@@ -342,7 +347,7 @@ const ChatAppContent: React.FC<{ config: AppConfig }> = ({ config }) => {
     }
 
     // Create a new conversation - wait for it to complete
-    const result = await createConversation.mutateAsync({ name: 'محادثة جديدة' });
+    const result = await createConversation.mutateAsync({ name: 'محادثة جديدة', user_id: userId });
     const conversationId = result.conversation_id;
     
     // Update state synchronously
