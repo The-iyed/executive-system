@@ -53,6 +53,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  const handleClose = () => {
+    if (typeof window !== 'undefined' && (window as any).MuhallilAhkam) {
+      (window as any).MuhallilAhkam.close();
+    }
+  };
   
   return (
     <div className="ahkam-app-layout h-screen overflow-hidden p-[13px]" dir="rtl">
@@ -64,6 +70,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       >
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
+
+      {/* Close Button - Top Right */}
+      <button
+        onClick={handleClose}
+        aria-label="إغلاق"
+        className="fixed top-6 right-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 text-2xl leading-none hover:scale-110 active:scale-95"
+        style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }}
+      >
+        ×
+      </button>
 
       <SidebarProvider open={sidebarOpen} onOpenChange={handleSidebarToggle}>
         <div className="relative z-10 flex w-full h-full">
