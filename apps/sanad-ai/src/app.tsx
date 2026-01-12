@@ -19,6 +19,32 @@ import type { StreamController } from '@sanad-ai/api';
 import { getBrowserId } from './utils/browser-id';
 // Import app-specific APIs to register them
 import './api/endpoints';
+// Import images for preloading (Vite will resolve paths correctly)
+import BackgroundImageUrl from './assets/bg.png';
+import WelcomeAvatarUrl from './assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
+
+// Preload critical images as early as possible
+if (typeof window !== 'undefined') {
+  const preloadImage = (src: string) => {
+    // Check if already preloaded
+    const existingLink = document.querySelector(`link[rel="preload"][href="${src}"]`);
+    if (existingLink) return;
+    
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = src;
+    document.head.appendChild(link);
+    
+    // Also preload using Image object for better browser support
+    const img = new Image();
+    img.src = src;
+  };
+  
+  // Preload images immediately when app loads
+  preloadImage(BackgroundImageUrl);
+  preloadImage(WelcomeAvatarUrl);
+}
 
 export interface ChatAppProps {}
 
