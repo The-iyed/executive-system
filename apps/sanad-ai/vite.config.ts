@@ -169,6 +169,12 @@ export default defineConfig(({ command }) => {
                 if (file.type === 'asset' && fileName.endsWith('.css')) {
                   let cssContent = file.source as string;
                   
+                  // Verify CSS content is not empty (Tailwind generates a lot of CSS)
+                  if (!cssContent || cssContent.trim().length === 0) {
+                    console.warn(`Sanad AI: CSS file ${fileName} is empty. Tailwind CSS may not have been processed.`);
+                    continue;
+                  }
+                  
                   // Rewrite font paths to use absolute paths from portal root
                   // Replace relative paths with absolute paths
                   cssContent = cssContent.replace(
@@ -180,16 +186,32 @@ export default defineConfig(({ command }) => {
                   const jsFileName = 'sanad-ai-v3.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
-                    // Inject CSS function that will be called to inject into shadow root
+                    // Inject CSS function IMMEDIATELY when script loads
+                    // This ensures CSS is available before open() is called
+                    // Use IIFE to execute immediately and synchronously
+                    // Store CSS globally first, then call the function if it exists
                     const cssInjection = `
 (function() {
-  if (typeof window !== 'undefined' && window.__SANAD_AI_CSS__) {
-    window.__SANAD_AI_CSS__(${JSON.stringify(cssContent)});
+  try {
+    if (typeof window !== 'undefined') {
+      // Store CSS globally first (always do this)
+      // This includes all Tailwind CSS utilities, base styles, and components
+      window.__SANAD_AI_CSS_STORED__ = ${JSON.stringify(cssContent)};
+      // Then call the function if it exists
+      if (window.__SANAD_AI_CSS__) {
+        window.__SANAD_AI_CSS__(${JSON.stringify(cssContent)});
+      }
+    }
+  } catch (e) {
+    console.error('Error injecting Sanad AI CSS:', e);
   }
 })();`;
+                    // Inject CSS at the very beginning of the bundle (before any other code)
                     jsFile.code = cssInjection + '\n' + jsFile.code;
                     // Delete the CSS file
                     delete bundle[fileName];
+                  } else {
+                    console.warn(`Sanad AI: Could not find JS file ${jsFileName} to inject CSS into.`);
                   }
                 }
               }

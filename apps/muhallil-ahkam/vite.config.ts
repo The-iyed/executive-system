@@ -156,20 +156,43 @@ export default defineConfig(({ command }) => {
                 const file = bundle[fileName];
                 if (file.type === 'asset' && fileName.endsWith('.css')) {
                   const cssContent = file.source as string;
+                  
+                  // Verify CSS content is not empty (Tailwind generates a lot of CSS)
+                  if (!cssContent || cssContent.trim().length === 0) {
+                    console.warn(`Muhallil Ahkam: CSS file ${fileName} is empty. Tailwind CSS may not have been processed.`);
+                    continue;
+                  }
+                  
                   // Find the corresponding JS file
                   const jsFileName = 'muhallil-ahkam.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
-                    // Inject CSS function that will be called to inject into shadow root
+                    // Inject CSS function IMMEDIATELY when script loads
+                    // This ensures CSS is available before open() is called
+                    // Use IIFE to execute immediately and synchronously
+                    // Store CSS globally first, then call the function if it exists
                     const cssInjection = `
 (function() {
-  if (typeof window !== 'undefined' && window.__MUHALLIL_AHKAM_CSS__) {
-    window.__MUHALLIL_AHKAM_CSS__(${JSON.stringify(cssContent)});
+  try {
+    if (typeof window !== 'undefined') {
+      // Store CSS globally first (always do this)
+      // This includes all Tailwind CSS utilities, base styles, and components
+      window.__MUHALLIL_AHKAM_CSS_STORED__ = ${JSON.stringify(cssContent)};
+      // Then call the function if it exists
+      if (window.__MUHALLIL_AHKAM_CSS__) {
+        window.__MUHALLIL_AHKAM_CSS__(${JSON.stringify(cssContent)});
+      }
+    }
+  } catch (e) {
+    console.error('Error injecting Muhallil Ahkam CSS:', e);
   }
 })();`;
+                    // Inject CSS at the very beginning of the bundle (before any other code)
                     jsFile.code = cssInjection + '\n' + jsFile.code;
                     // Delete the CSS file
                     delete bundle[fileName];
+                  } else {
+                    console.warn(`Muhallil Ahkam: Could not find JS file ${jsFileName} to inject CSS into.`);
                   }
                 }
               }
