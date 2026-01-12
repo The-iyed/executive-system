@@ -5,8 +5,12 @@ import './styles.css';
 const mount = createMount();
 let currentContainer: HTMLElement | null = null;
 let createdContainer: HTMLElement | null = null;
+let shadowRoot: ShadowRoot | null = null;
 
-// Helper function to add isolation styles
+// Store CSS content to inject into shadow root
+let cssContent: string | null = null;
+
+// Helper function to add isolation styles for the host container
 const addIsolationStyles = () => {
   const styleId = 'muhallil-ahkam-isolation-styles';
   if (document.getElementById(styleId)) {
@@ -24,10 +28,6 @@ const addIsolationStyles = () => {
       width: 100% !important;
       height: 100% !important;
       z-index: 9999 !important;
-      background-color: #ffffff !important;
-      contain: layout style paint !important; /* Removed 'size' to allow content */
-      isolation: isolate !important;
-      overflow: hidden !important;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
@@ -41,56 +41,82 @@ const addIsolationStyles = () => {
     body:has(#muhallil-ahkam-container) {
       overflow: hidden !important;
     }
-    
-    /* Ensure all children are contained and don't affect parent */
-    #muhallil-ahkam-container *,
-    #muhallil-ahkam-container *::before,
-    #muhallil-ahkam-container *::after {
-      box-sizing: border-box;
-    }
-    
-    /* Prevent styles from Muhallil Ahkam affecting Sanad AI */
-    body > *:not(#muhallil-ahkam-container) {
-      /* Sanad AI elements remain unaffected */
-    }
-    
-    /* Scoped styles - only apply to container and its children */
-    #muhallil-ahkam-container {
-      /* All styles are scoped to this container */
-    }
   `;
   document.head.appendChild(style);
 };
 
-// Helper function to create a fullscreen container
+// Helper function to inject CSS into shadow root
+const injectStylesIntoShadowRoot = (shadowRoot: ShadowRoot, css: string) => {
+  const style = document.createElement('style');
+  style.textContent = css;
+  shadowRoot.appendChild(style);
+};
+
+// Helper function to create a fullscreen container with Shadow DOM
 const createFullscreenContainer = (): HTMLElement => {
-  // Add isolation styles
+  // Add isolation styles for host container
   addIsolationStyles();
 
   // Check if container already exists
   const existingContainer = document.getElementById('muhallil-ahkam-container');
-  if (existingContainer) {
-    return existingContainer;
+  if (existingContainer && existingContainer.shadowRoot) {
+    return existingContainer.shadowRoot as any; // Return shadow root content
   }
 
-  const container = document.createElement('div');
-  container.id = 'muhallil-ahkam-container';
-  container.setAttribute('data-package-container', 'muhallil-ahkam');
+  // Create host container
+  const hostContainer = document.createElement('div');
+  hostContainer.id = 'muhallil-ahkam-container';
+  hostContainer.setAttribute('data-package-container', 'muhallil-ahkam');
+  hostContainer.setAttribute('data-isolated', 'true');
+  hostContainer.setAttribute('data-package', 'muhallil-ahkam');
   
-  // Add additional isolation attributes
-  container.setAttribute('data-isolated', 'true');
-  container.setAttribute('data-package', 'muhallil-ahkam');
+  // Attach Shadow Root with open mode (allows external JS access if needed)
+  const shadow = hostContainer.attachShadow({ mode: 'open' });
+  shadowRoot = shadow;
   
-  // Ensure container is appended to body (not inside Sanad AI's DOM tree)
-  document.body.appendChild(container);
-  return container;
+  // Create inner container inside shadow root
+  const innerContainer = document.createElement('div');
+  innerContainer.style.width = '100%';
+  innerContainer.style.height = '100%';
+  innerContainer.style.position = 'relative';
+  innerContainer.style.overflow = 'hidden';
+  innerContainer.style.backgroundColor = '#ffffff';
+  shadow.appendChild(innerContainer);
+  
+  // Inject CSS into shadow root if available
+  if (cssContent) {
+    injectStylesIntoShadowRoot(shadow, cssContent);
+  }
+  
+  // Ensure host container is appended to body
+  document.body.appendChild(hostContainer);
+  
+  // Return inner container for React to mount into
+  return innerContainer;
 };
+
+// Function to set CSS content (called from vite build)
+if (typeof window !== 'undefined') {
+  (window as any).__MUHALLIL_AHKAM_CSS__ = (css: string) => {
+    cssContent = css;
+    // If shadow root already exists, inject styles
+    if (shadowRoot) {
+      injectStylesIntoShadowRoot(shadowRoot, css);
+    }
+  };
+}
 
 // Helper function to remove created container
 const removeCreatedContainer = () => {
   if (createdContainer && createdContainer.parentNode) {
-    document.body.removeChild(createdContainer);
+    const hostContainer = createdContainer.getRootNode() as ShadowRoot;
+    if (hostContainer && hostContainer.host) {
+      document.body.removeChild(hostContainer.host);
+    } else if (createdContainer.parentNode === document.body) {
+      document.body.removeChild(createdContainer);
+    }
     createdContainer = null;
+    shadowRoot = null;
   }
 };
 
