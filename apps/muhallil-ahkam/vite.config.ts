@@ -126,13 +126,15 @@ export default defineConfig(({ command }) => {
     build: {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
-        name: 'AHKAM_APP',
+        name: 'MuhallilAhkam',
         fileName: () => `muhallil-ahkam.js`,
         formats: ['umd'],
       },
       cssCodeSplit: false,
       rollupOptions: {
-        external: ['react', 'react-dom', '@tanstack/react-query'],
+        // Don't externalize React - bundle it with the package
+        // This means users don't need to load React separately
+        external: [],
         output: {
           entryFileNames: 'muhallil-ahkam.js',
           // Inline CSS into JS - don't extract CSS files
@@ -141,11 +143,8 @@ export default defineConfig(({ command }) => {
             return 'dummy.css';
           },
           banner: 'var process = { env: { NODE_ENV: "production" } };',
-          globals: {
-            react: 'React',
-            'react-dom': 'ReactDOM',
-            '@tanstack/react-query': 'ReactQuery',
-          },
+          exports: 'default', // Only export default to avoid namespace object
+          // No globals needed since we're bundling everything
         },
         plugins: [
           {
