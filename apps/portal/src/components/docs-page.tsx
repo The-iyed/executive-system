@@ -23,6 +23,9 @@ interface AppDoc {
 // Get package version from build-time environment variable
 const PACKAGE_VERSION = (import.meta.env.PACKAGE_VERSION as string) || '0.0.0';
 
+// Get portal base URL from environment variable
+const PORTAL_BASE_URL = import.meta.env.VITE_PORTAL_BASE_URL || 'https://legal-portal.momrahai.com';
+
 const appDocs: AppDoc[] = [
   {
     name: 'Portal - المنصة القانونية الموحدة',
@@ -379,36 +382,45 @@ const portal = new Portal(
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Dynamically load the bundle from the portal base URL. CSS is included in the JS bundle.',
-            code: `// Get portal base URL from environment variable
-const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
+            description: 'Load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            code: `// Portal base URL
+const portalBaseUrl = '${PORTAL_BASE_URL}';
 
 // Load Sanad AI bundle - CSS is automatically injected when the script loads
 const script = document.createElement('script');
-script.src = \`\${portalBaseUrl}/sanad-ai-v3.js\`;
+script.src = \`\${portalBaseUrl}/packages/sanad-ai-v3.js\`;
 document.head.appendChild(script);
 
 // Wait for script to load
 script.onload = () => {
-  // Sanad AI loaded! window.SanadAiV3 is now available
+  // Sanad AI loaded! window.SanadAi or window.SanadAiV3 is now available
 };`,
           },
           {
-            title: 'Opening the App',
-            description: 'Open Sanad AI in a container element. Configuration is handled automatically via environment variables.',
-            code: `// Get container element
-const container = document.getElementById('sanad-ai-container');
+            title: 'Opening the App (No Container Required)',
+            description: 'Open Sanad AI - the package will create its own fullscreen container automatically. Container parameter is optional.',
+            code: `// Simple - no container needed! Package creates its own fullscreen container
+window.SanadAi.open();
 
-// Open the app (no config needed - uses environment variables)
-window.SanadAiV3.open(container);`,
+// Or with optional container if you want to use your own
+const container = document.getElementById('sanad-ai-container');
+window.SanadAi.open(container);
+
+// Or with config (container still optional)
+window.SanadAi.open(undefined, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: { username: 'user', password: 'pass' }
+});`,
           },
           {
             title: 'Toggle the App',
-            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens.',
-            code: `const container = document.getElementById('sanad-ai-container');
+            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. Container is optional.',
+            code: `// Toggle without container - package creates its own
+window.SanadAi.toggle();
 
-// Toggle open/closed (no config needed)
-window.SanadAiV3.toggle(container);`,
+// Or with optional container
+const container = document.getElementById('sanad-ai-container');
+window.SanadAi.toggle(container);`,
           },
           {
             title: 'Closing the App',
@@ -426,8 +438,8 @@ window.SanadAiV3.close();`,
 }`,
           },
           {
-            title: 'Complete Integration Example',
-            description: 'Full example showing how to integrate Sanad AI in your application.',
+            title: 'Complete Integration Example (No Container)',
+            description: 'Simplest integration - no container needed. The package creates its own fullscreen container.',
             code: `<!DOCTYPE html>
 <html>
 <head>
@@ -436,27 +448,26 @@ window.SanadAiV3.close();`,
 <body>
   <button id="open-btn">Open Sanad AI</button>
   <button id="close-btn">Close Sanad AI</button>
-  <div id="sanad-ai-container"></div>
+  <!-- No container div needed! -->
 
   <script>
-    // Get portal base URL from environment variable
-    const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
+    // Portal base URL
+    const portalBaseUrl = '${PORTAL_BASE_URL}';
     
     // Load Sanad AI bundle
     const script = document.createElement('script');
-    script.src = \`\${portalBaseUrl}/sanad-ai-v3.js\`;
+    script.src = \`\${portalBaseUrl}/packages/sanad-ai.umd.js\`;
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
-      const container = document.getElementById('sanad-ai-container');
-
       document.getElementById('open-btn').addEventListener('click', () => {
-        window.SanadAiV3.open(container);
+        // No container needed - package creates its own!
+        window.SanadAi.open();
       });
 
       document.getElementById('close-btn').addEventListener('click', () => {
-        window.SanadAiV3.close();
+        window.SanadAi.close();
       });
     };
   </script>
@@ -464,18 +475,58 @@ window.SanadAiV3.close();`,
 </html>`,
           },
           {
-            title: 'Environment Variables',
-            description: 'Configuration is handled automatically via environment variables. No need to pass config when opening the app.',
-            code: `// Configuration is handled automatically via environment variables
-// Set these in your build environment or .env file:
-// VITE_SANAD_API_BASE_URL - API base URL
-// VITE_API_BASIC_AUTH_USERNAME - Basic auth username (optional)
-// VITE_API_BASIC_AUTH_PASSWORD - Basic auth password (optional)
-// VITE_API_BASIC_AUTH - Pre-encoded base64 auth string (optional)
+            title: 'Integration with Custom Container (Optional)',
+            description: 'If you want to use your own container element, you can still pass it as an optional parameter.',
+            code: `<!DOCTYPE html>
+<html>
+<head>
+  <title>My App with Sanad AI</title>
+</head>
+<body>
+  <button id="open-btn">Open Sanad AI</button>
+  <button id="close-btn">Close Sanad AI</button>
+  <div id="my-custom-container"></div>
 
-// Simply open the app without passing config
-const container = document.getElementById('sanad-ai-container');
-window.SanadAiV3.open(container);`,
+  <script>
+    const portalBaseUrl = '${PORTAL_BASE_URL}';
+    const script = document.createElement('script');
+    script.src = \`\${portalBaseUrl}/packages/sanad-ai.umd.js\`;
+    document.head.appendChild(script);
+    
+    script.onload = () => {
+      const container = document.getElementById('my-custom-container');
+      
+      document.getElementById('open-btn').addEventListener('click', () => {
+        // Use your own container (optional)
+        window.SanadAi.open(container);
+      });
+
+      document.getElementById('close-btn').addEventListener('click', () => {
+        window.SanadAi.close();
+      });
+    };
+  </script>
+</body>
+</html>`,
+          },
+          {
+            title: 'Configuration',
+            description: 'Configuration can be passed as the second parameter. Container is still optional.',
+            code: `// Open with config but no container (package creates its own)
+window.SanadAi.open(undefined, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: {
+    username: 'your_username',
+    password: 'your_password'
+  }
+});
+
+// Or with both container and config
+const container = document.getElementById('my-container');
+window.SanadAi.open(container, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: { username: 'user', password: 'pass' }
+});`,
           },
         ],
       },
@@ -494,13 +545,13 @@ window.SanadAiV3.open(container);`,
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Dynamically load the bundle from the portal base URL. CSS is included in the JS bundle.',
-            code: `// Get portal base URL from environment variable
-const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL ;
+            description: 'Load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            code: `// Portal base URL
+const portalBaseUrl = '${PORTAL_BASE_URL}';
 
 // Load Muhallil Ahkam bundle - CSS is automatically injected when the script loads
 const script = document.createElement('script');
-script.src = portalBaseUrl + '/muhallil-ahkam.js';
+script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.js\`;
 document.head.appendChild(script);
 
 // Wait for script to load
@@ -509,20 +560,29 @@ script.onload = () => {
 };`,
           },
           {
-            title: 'Opening the App',
-            description: 'Open Muhallil Ahkam in a container element. Configuration is handled automatically via environment variables.',
-            code: `// Get container element
-const container = document.getElementById('muhallil-ahkam-container');
+            title: 'Opening the App (No Container Required)',
+            description: 'Open Muhallil Ahkam - the package will create its own fullscreen container automatically. Container parameter is optional.',
+            code: `// Simple - no container needed! Package creates its own fullscreen container
+window.MuhallilAhkam.open();
 
-// Open the app (no config needed - uses environment variables)
-window.MuhallilAhkam.open(container);`,
+// Or with optional container if you want to use your own
+const container = document.getElementById('muhallil-ahkam-container');
+window.MuhallilAhkam.open(container);
+
+// Or with config (container still optional)
+window.MuhallilAhkam.open(undefined, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: { username: 'user', password: 'pass' }
+});`,
           },
           {
             title: 'Toggle the App',
-            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens.',
-            code: `const container = document.getElementById('muhallil-ahkam-container');
+            description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens. Container is optional.',
+            code: `// Toggle without container - package creates its own
+window.MuhallilAhkam.toggle();
 
-// Toggle open/closed (no config needed)
+// Or with optional container
+const container = document.getElementById('muhallil-ahkam-container');
 window.MuhallilAhkam.toggle(container);`,
           },
           {
@@ -541,8 +601,8 @@ window.MuhallilAhkam.close();`,
 }`,
           },
           {
-            title: 'Complete Integration Example',
-            description: 'Full example showing how to integrate Muhallil Ahkam in your application.',
+            title: 'Complete Integration Example (No Container)',
+            description: 'Simplest integration - no container needed. The package creates its own fullscreen container.',
             code: `<!DOCTYPE html>
 <html>
 <head>
@@ -551,22 +611,56 @@ window.MuhallilAhkam.close();`,
 <body>
   <button id="open-btn">Open Muhallil Ahkam</button>
   <button id="close-btn">Close Muhallil Ahkam</button>
-  <div id="muhallil-ahkam-container"></div>
+  <!-- No container div needed! -->
 
   <script>
-    // Get portal base URL from environment variable
-    const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
+    // Portal base URL
+    const portalBaseUrl = '${PORTAL_BASE_URL}';
     
     // Load Muhallil Ahkam bundle
     const script = document.createElement('script');
-    script.src = portalBaseUrl + '/muhallil-ahkam.js';
+    script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.umd.js\`;
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
-      const container = document.getElementById('muhallil-ahkam-container');
-
       document.getElementById('open-btn').addEventListener('click', () => {
+        // No container needed - package creates its own!
+        window.MuhallilAhkam.open();
+      });
+
+      document.getElementById('close-btn').addEventListener('click', () => {
+        window.MuhallilAhkam.close();
+      });
+    };
+  </script>
+</body>
+</html>`,
+          },
+          {
+            title: 'Integration with Custom Container (Optional)',
+            description: 'If you want to use your own container element, you can still pass it as an optional parameter.',
+            code: `<!DOCTYPE html>
+<html>
+<head>
+  <title>My App with Muhallil Ahkam</title>
+</head>
+<body>
+  <button id="open-btn">Open Muhallil Ahkam</button>
+  <button id="close-btn">Close Muhallil Ahkam</button>
+  <div id="my-custom-container"></div>
+
+  <script>
+    const portalBaseUrl = '${PORTAL_BASE_URL}';
+    const script = document.createElement('script');
+    script.src = \`\${portalBaseUrl}/packages/muhallil-ahkam.umd.js\`;
+    document.head.appendChild(script);
+    
+    script.onload = () => {
+      const container = document.getElementById('my-custom-container');
+      
+      document.getElementById('open-btn').addEventListener('click', () => {
+        // Use your own container (optional)
         window.MuhallilAhkam.open(container);
       });
 
@@ -579,18 +673,23 @@ window.MuhallilAhkam.close();`,
 </html>`,
           },
           {
-            title: 'Environment Variables',
-            description: 'Configuration is handled automatically via environment variables. No need to pass config when opening the app.',
-            code: `// Configuration is handled automatically via environment variables
-// Set these in your build environment or .env file:
-// VITE_API_AHKAM_BASE_URL - API base URL
-// VITE_API_BASIC_AUTH_USERNAME - Basic auth username (optional)
-// VITE_API_BASIC_AUTH_PASSWORD - Basic auth password (optional)
-// VITE_API_BASIC_AUTH - Pre-encoded base64 auth string (optional)
+            title: 'Configuration',
+            description: 'Configuration can be passed as the second parameter. Container is still optional.',
+            code: `// Open with config but no container (package creates its own)
+window.MuhallilAhkam.open(undefined, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: {
+    username: 'your_username',
+    password: 'your_password'
+  }
+});
 
-// Simply open the app without passing config
-const container = document.getElementById('muhallil-ahkam-container');
-window.MuhallilAhkam.open(container);`,
+// Or with both container and config
+const container = document.getElementById('my-container');
+window.MuhallilAhkam.open(container, {
+  apiBaseUrl: 'https://api.example.com/api',
+  basicAuth: { username: 'user', password: 'pass' }
+});`,
           },
         ],
       },
@@ -889,17 +988,20 @@ export const DocsPage: React.FC = () => {
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Sanad AI API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.open(container)</code> - Open the app in a container</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.toggle(container)</code> - Toggle the app open/closed</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.close()</code> - Close the app</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.isOpen()</code> - Check if app is open</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.open(container?, config?)</code> - Open the app. Container is optional - package creates its own fullscreen container if not provided.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.toggle(container?, config?)</code> - Toggle the app open/closed. Container is optional.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.close()</code> - Close the app</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.isOpen()</code> - Check if app is open</li>
             </ul>
+            <p className="text-xs text-teal-600 mt-2">
+              <strong>Note:</strong> <code className="bg-teal-100 px-1 py-0.5 rounded">window.SanadAiV3</code> is also available as an alias.
+            </p>
           </div>
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Muhallil Ahkam API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open(container)</code> - Open the app in a container</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle(container)</code> - Toggle the app open/closed</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open(container?, config?)</code> - Open the app. Container is optional - package creates its own fullscreen container if not provided.</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle(container?, config?)</code> - Toggle the app open/closed. Container is optional.</li>
               <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.close()</code> - Close the app</li>
               <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.isOpen()</code> - Check if app is open</li>
             </ul>
