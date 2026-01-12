@@ -73,7 +73,7 @@ export const ServicesGrid: React.FC = () => {
       muhallilAhkamScript.id = muhallilAhkamScriptId;
       // Use portal base URL if available, otherwise use the external URL
       const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || 'https://legal-portal.momrahai.com';
-      muhallilAhkamScript.src = `http://localhost:4100/muhallil-ahkam.js`;
+      muhallilAhkamScript.src = `${portalBaseUrl}/muhallil-ahkam.js`;
       muhallilAhkamScript.async = true;
       muhallilAhkamScript.onerror = () => {
         console.error('Failed to load Muhallil Ahkam script from:', muhallilAhkamScript.src);
