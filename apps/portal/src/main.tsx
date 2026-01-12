@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
   
   // Load Muhallil Ahkam bundle
   const ahkamScript = document.createElement('script');
-  ahkamScript.src = `${portalBaseUrl}/muhallil-ahkam.js`;
+  ahkamScript.src = `http://localhost:4100/muhallil-ahkam.js`;
   document.head.appendChild(ahkamScript);
   
   // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL
