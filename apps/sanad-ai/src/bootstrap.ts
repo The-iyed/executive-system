@@ -16,8 +16,9 @@ const addIsolationStyles = () => {
   const style = document.createElement('style');
   style.id = styleId;
   style.textContent = `
-    /* Strong isolation for Sanad AI container */
+    /* Strong isolation for Sanad AI container - prevents style leakage */
     #sanad-ai-container {
+      all: initial !important; /* Reset all inherited styles */
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -28,17 +29,18 @@ const addIsolationStyles = () => {
       contain: layout style paint size !important;
       isolation: isolate !important;
       overflow: hidden !important;
-    }
-    
-    /* Prevent style leakage from parent */
-    #sanad-ai-container {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      /* Create a new formatting context */
+      display: block !important;
+      /* Prevent style inheritance */
       font-family: initial !important;
       font-size: initial !important;
       line-height: initial !important;
       color: initial !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
+      direction: initial !important;
+      text-align: initial !important;
     }
     
     /* Ensure all children are contained */

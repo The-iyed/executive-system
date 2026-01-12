@@ -24,9 +24,10 @@ const Chat = () => {
         });
         pdfUploadModalRef.current?.resetFiles();
         
-        if (response.conversation_id) {
+        const conversationId = response.conversation_id;
+        if (conversationId) {
           startTransition(() => {
-            navigate(PATH.CASE_FILES.replace(':conversation_id', response.conversation_id));
+            navigate(PATH.CASE_FILES.replace(':conversation_id', conversationId));
           });
         }
       },
