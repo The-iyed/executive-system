@@ -317,18 +317,28 @@ export const LegislatorChatInterface: React.FC<LegislatorChatInterfaceProps> = (
 
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
+      const topPadding = 20; // Top padding in mm (matches container padding)
+      const bottomPadding = 20; // Bottom padding in mm (matches container padding)
+      const usablePageHeight = pageHeight - topPadding - bottomPadding; // Usable height per page
+      
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      
+      // Calculate how many pages we need based on usable height
+      const totalPages = Math.ceil(imgHeight / usablePageHeight);
+      
+      // Add image to each page with correct positioning and padding
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the vertical position for this page
+        // Start at topPadding, then shift the image up by usablePageHeight * page number
+        // This ensures each page has proper top and bottom padding
+        const position = topPadding - (page * usablePageHeight);
+        
+        // Add the full image, positioned so the correct portion shows on this page with padding
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
       }
 
       pdf.save(`document-${new Date().getTime()}.pdf`);
