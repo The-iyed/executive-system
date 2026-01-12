@@ -13,16 +13,16 @@ if (typeof window !== 'undefined') {
   (window as any).ReactQuery = ReactQuery;
   
   // Load UMD bundles after React globals are exposed
-  const currentOrigin = window.location.origin;
+  const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
   
   // Load Sanad AI bundle
   const sanadScript = document.createElement('script');
-  sanadScript.src = `${currentOrigin}/sanad-ai.umd.js`;
+  sanadScript.src = `${portalBaseUrl}/sanad-ai-v3.js`;
   document.head.appendChild(sanadScript);
   
   // Load Muhallil Ahkam bundle
   const ahkamScript = document.createElement('script');
-  ahkamScript.src = `${currentOrigin}/muhallil-ahkam.umd.js`;
+  ahkamScript.src = `${portalBaseUrl}/muhallil-ahkam.js`;
   document.head.appendChild(ahkamScript);
   
   // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL

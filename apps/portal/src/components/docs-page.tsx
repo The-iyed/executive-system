@@ -369,9 +369,9 @@ const portal = new Portal(
   {
     name: 'Sanad AI',
     description: 'AI-powered legal advisor application for providing legal consultations and document analysis.',
-    bundlePath: 'sanad-ai.umd.js',
-    globalName: 'SanadAi',
-    windowApi: 'window.SanadAi',
+    bundlePath: 'sanad-ai-v3.js',
+    globalName: 'SanadAiV3',
+    windowApi: 'window.SanadAiV3',
     languages: [
       {
         name: 'JavaScript/TypeScript',
@@ -379,60 +379,47 @@ const portal = new Portal(
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Dynamically load the bundle from your current origin. CSS is included in the JS bundle.',
-            code: `// Get current origin dynamically
-const currentOrigin = window.location.origin;
+            description: 'Dynamically load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            code: `// Get portal base URL from environment variable
+const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
 
 // Load Sanad AI bundle - CSS is automatically injected when the script loads
 const script = document.createElement('script');
-script.src = \`\${currentOrigin}/sanad-ai.umd.js\`;
+script.src = \`\${portalBaseUrl}/sanad-ai-v3.js\`;
 document.head.appendChild(script);
 
 // Wait for script to load
 script.onload = () => {
-  // Sanad AI loaded! window.SanadAi is now available
+  // Sanad AI loaded! window.SanadAiV3 is now available
 };`,
           },
           {
             title: 'Opening the App',
-            description: 'Open Sanad AI in a container element with optional configuration.',
+            description: 'Open Sanad AI in a container element. Configuration is handled automatically via environment variables.',
             code: `// Get container element
 const container = document.getElementById('sanad-ai-container');
 
-// Configure API endpoint and authentication
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: {
-    username: 'your_username',
-    password: 'your_password'
-  }
-};
-
-// Open the app
-window.SanadAi.open(container, config);`,
+// Open the app (no config needed - uses environment variables)
+window.SanadAiV3.open(container);`,
           },
           {
             title: 'Toggle the App',
             description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens.',
             code: `const container = document.getElementById('sanad-ai-container');
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: { username: 'user', password: 'pass' }
-};
 
-// Toggle open/closed
-window.SanadAi.toggle(container, config);`,
+// Toggle open/closed (no config needed)
+window.SanadAiV3.toggle(container);`,
           },
           {
             title: 'Closing the App',
             description: 'Close the app and unmount it from the container.',
             code: `// Close the app
-window.SanadAi.close();`,
+window.SanadAiV3.close();`,
           },
           {
             title: 'Check if App is Open',
             description: 'Check whether the app is currently mounted and open.',
-            code: `if (window.SanadAi.isOpen()) {
+            code: `if (window.SanadAiV3.isOpen()) {
   // Sanad AI is currently open
 } else {
   // Sanad AI is closed
@@ -452,31 +439,24 @@ window.SanadAi.close();`,
   <div id="sanad-ai-container"></div>
 
   <script>
-    // Get current origin dynamically
-    const currentOrigin = window.location.origin;
+    // Get portal base URL from environment variable
+    const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
     
     // Load Sanad AI bundle
     const script = document.createElement('script');
-    script.src = \`\${currentOrigin}/sanad-ai.umd.js\`;
+    script.src = \`\${portalBaseUrl}/sanad-ai-v3.js\`;
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
       const container = document.getElementById('sanad-ai-container');
-      const config = {
-        apiBaseUrl: 'https://api.example.com/api',
-        basicAuth: {
-          username: 'your_username',
-          password: 'your_password'
-        }
-      };
 
       document.getElementById('open-btn').addEventListener('click', () => {
-        window.SanadAi.open(container, config);
+        window.SanadAiV3.open(container);
       });
 
       document.getElementById('close-btn').addEventListener('click', () => {
-        window.SanadAi.close();
+        window.SanadAiV3.close();
       });
     };
   </script>
@@ -485,26 +465,17 @@ window.SanadAi.close();`,
           },
           {
             title: 'Environment Variables',
-            description: 'Configure API endpoint and authentication via environment variables or config object.',
-            code: `// Option 1: Pass config directly
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: {
-    username: 'user',
-    password: 'pass'
-  }
-};
-window.SanadAi.open(container, config);
+            description: 'Configuration is handled automatically via environment variables. No need to pass config when opening the app.',
+            code: `// Configuration is handled automatically via environment variables
+// Set these in your build environment or .env file:
+// VITE_SANAD_API_BASE_URL - API base URL
+// VITE_API_BASIC_AUTH_USERNAME - Basic auth username (optional)
+// VITE_API_BASIC_AUTH_PASSWORD - Basic auth password (optional)
+// VITE_API_BASIC_AUTH - Pre-encoded base64 auth string (optional)
 
-// Option 2: Use environment variables (if using a build tool)
-const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-  basicAuth: {
-    username: import.meta.env.VITE_API_BASIC_AUTH_USERNAME,
-    password: import.meta.env.VITE_API_BASIC_AUTH_PASSWORD
-  }
-};
-window.SanadAi.open(container, config);`,
+// Simply open the app without passing config
+const container = document.getElementById('sanad-ai-container');
+window.SanadAiV3.open(container);`,
           },
         ],
       },
@@ -513,7 +484,7 @@ window.SanadAi.open(container, config);`,
   {
     name: 'Muhallil Ahkam',
     description: 'Islamic legal rulings application for providing fatwas and religious consultations.',
-    bundlePath: 'muhallil-ahkam.umd.js',
+    bundlePath: 'muhallil-ahkam.js',
     globalName: 'MuhallilAhkam',
     windowApi: 'window.MuhallilAhkam',
     languages: [
@@ -523,42 +494,36 @@ window.SanadAi.open(container, config);`,
         examples: [
           {
             title: 'Loading the Bundle',
-            description: 'Simply load the bundle from your current origin. CSS is included in the JS bundle.',
-            code: `<!-- Load Muhallil Ahkam bundle from current origin -->
-<!-- CSS is automatically injected when the script loads -->
-<script src="/muhallil-ahkam.umd.js"></script>
+            description: 'Dynamically load the bundle from the portal base URL. CSS is included in the JS bundle.',
+            code: `// Get portal base URL from environment variable
+const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL ;
 
-<!-- That's it! window.MuhallilAhkam is now available -->`,
+// Load Muhallil Ahkam bundle - CSS is automatically injected when the script loads
+const script = document.createElement('script');
+script.src = portalBaseUrl + '/muhallil-ahkam.js';
+document.head.appendChild(script);
+
+// Wait for script to load
+script.onload = () => {
+  // Muhallil Ahkam loaded! window.MuhallilAhkam is now available
+};`,
           },
           {
             title: 'Opening the App',
-            description: 'Open Muhallil Ahkam in a container element with optional configuration.',
+            description: 'Open Muhallil Ahkam in a container element. Configuration is handled automatically via environment variables.',
             code: `// Get container element
 const container = document.getElementById('muhallil-ahkam-container');
 
-// Configure API endpoint and authentication
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: {
-    username: 'your_username',
-    password: 'your_password'
-  }
-};
-
-// Open the app
-window.MuhallilAhkam.open(container, config);`,
+// Open the app (no config needed - uses environment variables)
+window.MuhallilAhkam.open(container);`,
           },
           {
             title: 'Toggle the App',
             description: 'Toggle the app open/closed state. If open, it closes; if closed, it opens.',
             code: `const container = document.getElementById('muhallil-ahkam-container');
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: { username: 'user', password: 'pass' }
-};
 
-// Toggle open/closed
-window.MuhallilAhkam.toggle(container, config);`,
+// Toggle open/closed (no config needed)
+window.MuhallilAhkam.toggle(container);`,
           },
           {
             title: 'Closing the App',
@@ -589,27 +554,20 @@ window.MuhallilAhkam.close();`,
   <div id="muhallil-ahkam-container"></div>
 
   <script>
-    // Get current origin dynamically
-    const currentOrigin = window.location.origin;
+    // Get portal base URL from environment variable
+    const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
     
     // Load Muhallil Ahkam bundle
     const script = document.createElement('script');
-    script.src = \`\${currentOrigin}/muhallil-ahkam.umd.js\`;
+    script.src = portalBaseUrl + '/muhallil-ahkam.js';
     document.head.appendChild(script);
     
     // Wait for script to load
     script.onload = () => {
       const container = document.getElementById('muhallil-ahkam-container');
-      const config = {
-        apiBaseUrl: 'https://api.example.com/api',
-        basicAuth: {
-          username: 'your_username',
-          password: 'your_password'
-        }
-      };
 
       document.getElementById('open-btn').addEventListener('click', () => {
-        window.MuhallilAhkam.open(container, config);
+        window.MuhallilAhkam.open(container);
       });
 
       document.getElementById('close-btn').addEventListener('click', () => {
@@ -622,26 +580,17 @@ window.MuhallilAhkam.close();`,
           },
           {
             title: 'Environment Variables',
-            description: 'Configure API endpoint and authentication via environment variables or config object.',
-            code: `// Option 1: Pass config directly
-const config = {
-  apiBaseUrl: 'https://api.example.com/api',
-  basicAuth: {
-    username: 'user',
-    password: 'pass'
-  }
-};
-window.MuhallilAhkam.open(container, config);
+            description: 'Configuration is handled automatically via environment variables. No need to pass config when opening the app.',
+            code: `// Configuration is handled automatically via environment variables
+// Set these in your build environment or .env file:
+// VITE_API_AHKAM_BASE_URL - API base URL
+// VITE_API_BASIC_AUTH_USERNAME - Basic auth username (optional)
+// VITE_API_BASIC_AUTH_PASSWORD - Basic auth password (optional)
+// VITE_API_BASIC_AUTH - Pre-encoded base64 auth string (optional)
 
-// Option 2: Use environment variables (if using a build tool)
-const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-  basicAuth: {
-    username: import.meta.env.VITE_API_BASIC_AUTH_USERNAME,
-    password: import.meta.env.VITE_API_BASIC_AUTH_PASSWORD
-  }
-};
-window.MuhallilAhkam.open(container, config);`,
+// Simply open the app without passing config
+const container = document.getElementById('muhallil-ahkam-container');
+window.MuhallilAhkam.open(container);`,
           },
         ],
       },
@@ -940,17 +889,17 @@ export const DocsPage: React.FC = () => {
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Sanad AI API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.open(container, config?)</code> - Open the app in a container</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.toggle(container, config?)</code> - Toggle the app open/closed</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.close()</code> - Close the app</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAi.isOpen()</code> - Check if app is open</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.open(container)</code> - Open the app in a container</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.toggle(container)</code> - Toggle the app open/closed</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.close()</code> - Close the app</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.SanadAiV3.isOpen()</code> - Check if app is open</li>
             </ul>
           </div>
           <div>
             <h3 className="font-semibold text-teal-800 mb-2">Muhallil Ahkam API</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-teal-700">
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open(container, config?)</code> - Open the app in a container</li>
-              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle(container, config?)</code> - Toggle the app open/closed</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.open(container)</code> - Open the app in a container</li>
+              <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.toggle(container)</code> - Toggle the app open/closed</li>
               <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.close()</code> - Close the app</li>
               <li><code className="bg-teal-100 px-2 py-0.5 rounded">window.MuhallilAhkam.isOpen()</code> - Check if app is open</li>
             </ul>

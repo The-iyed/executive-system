@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { AppMount, AppConfig } from '@sanad-ai/config';
+import { BrowserRouter } from 'react-router-dom';
+import { AppMount } from '@sanad-ai/config';
 import { ChatApp } from './app';
 
 export const createMount = (): AppMount => {
@@ -8,12 +9,14 @@ export const createMount = (): AppMount => {
   let container: HTMLElement | null = null;
 
   return {
-    mount: (el: HTMLElement, config: AppConfig) => {
+    mount: (el: HTMLElement) => {
       container = el;
       root = createRoot(el);
       root.render(
         <React.StrictMode>
-          <ChatApp config={config} />
+          <BrowserRouter>
+            <ChatApp />
+          </BrowserRouter>
         </React.StrictMode>
       );
     },

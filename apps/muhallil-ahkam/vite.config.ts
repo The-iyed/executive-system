@@ -62,14 +62,14 @@ export default defineConfig(({ command }) => {
       lib: {
         entry: resolve(__dirname, 'src/bootstrap.ts'),
         name: 'AHKAM_APP',
-        fileName: (format) => `muhallil-ahkam.${format}.js`,
+        fileName: () => `muhallil-ahkam.js`,
         formats: ['umd'],
       },
       cssCodeSplit: false,
       rollupOptions: {
         external: ['react', 'react-dom', '@tanstack/react-query'],
         output: {
-          entryFileNames: 'muhallil-ahkam.umd.js',
+          entryFileNames: 'muhallil-ahkam.js',
           // Inline CSS into JS - don't extract CSS files
           assetFileNames: () => {
             // Return a name that won't be used since we're inlining
@@ -92,7 +92,7 @@ export default defineConfig(({ command }) => {
                 if (file.type === 'asset' && fileName.endsWith('.css')) {
                   const cssContent = file.source as string;
                   // Find the corresponding JS file
-                  const jsFileName = 'muhallil-ahkam.umd.js';
+                  const jsFileName = 'muhallil-ahkam.js';
                   const jsFile = bundle[jsFileName];
                   if (jsFile && jsFile.type === 'chunk') {
                     // Inject CSS as a style tag in the JS

@@ -37,8 +37,8 @@ RUN --mount=type=cache,target=/root/.nx/cache \
 # Production stage - Portal (with UMD bundles)
 FROM nginx:alpine AS production
 COPY --from=build-portal /app/dist/apps/portal/ /usr/share/nginx/html/
-COPY --from=build-portal /app/dist/packages/sanad-ai/sanad-ai.umd.js /usr/share/nginx/html/sanad-ai.umd.js
-COPY --from=build-portal /app/dist/packages/muhallil-ahkam/muhallil-ahkam.umd.js /usr/share/nginx/html/muhallil-ahkam.umd.js
+COPY --from=build-portal /app/dist/packages/sanad-ai/sanad-ai-v3.js /usr/share/nginx/html/sanad-ai-v3.js
+COPY --from=build-portal /app/dist/packages/muhallil-ahkam/muhallil-ahkam.js /usr/share/nginx/html/muhallil-ahkam.js
 # Copy fonts from sanad-ai package
 COPY --from=build-portal /app/dist/packages/sanad-ai/fonts/ /usr/share/nginx/html/fonts/
 COPY nginx.conf /etc/nginx/nginx.conf
