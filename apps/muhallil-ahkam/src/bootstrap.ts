@@ -18,7 +18,6 @@ const addIsolationStyles = () => {
   style.textContent = `
     /* Strong isolation for Muhallil Ahkam container - prevents style leakage */
     #muhallil-ahkam-container {
-      all: initial !important; /* Reset all inherited styles */
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -26,7 +25,7 @@ const addIsolationStyles = () => {
       height: 100% !important;
       z-index: 9999 !important;
       background-color: #ffffff !important;
-      contain: layout style paint size !important;
+      contain: layout style paint !important; /* Removed 'size' to allow content */
       isolation: isolate !important;
       overflow: hidden !important;
       margin: 0 !important;
@@ -36,13 +35,6 @@ const addIsolationStyles = () => {
       display: block !important;
       /* Prevent pointer events from leaking to parent when closed */
       pointer-events: auto !important;
-      /* Prevent style inheritance */
-      font-family: initial !important;
-      font-size: initial !important;
-      line-height: initial !important;
-      color: initial !important;
-      direction: initial !important;
-      text-align: initial !important;
     }
     
     /* Prevent any styles from leaking to parent document */
