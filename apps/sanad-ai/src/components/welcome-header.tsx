@@ -1,8 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import WelcomeAvatar from '../assets/9d53f805f9a8d5abf29c548b2ad39d3a6662b408.png';
+
+// Preload welcome avatar image (with duplicate check)
+const preloadImage = (src: string) => {
+  // Check if already preloaded
+  const existingLink = document.querySelector(`link[rel="preload"][href="${src}"]`);
+  if (existingLink) return;
+  
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = src;
+  document.head.appendChild(link);
+  
+  // Also preload using Image object for better browser support
+  const img = new Image();
+  img.src = src;
+};
 
 
 export const WelcomeHeader: React.FC = () => {
+  // Preload welcome avatar on mount
+  useEffect(() => {
+    preloadImage(WelcomeAvatar);
+  }, []);
+
   return (
     <div className="flex flex-col gap-1.5 sm:gap-2 items-center w-full">
       {/* Welcome Avatar */}

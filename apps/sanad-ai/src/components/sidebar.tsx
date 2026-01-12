@@ -5,12 +5,17 @@ import {
   SidebarInput,
   Button,
   useSidebar,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
 } from '@sanad-ai/ui';
 
 import SanadAiIcon from '../assets/sanad-ai-icon.svg';
 import LayoutIcon from '../assets/layout-alt-02.svg';
 import SearchLgIcon from '../assets/search-lg.svg';
 import EditeIcon from '../assets/edit-05.svg';
+import BackgroundImage from '../assets/bg.png';
 
 // Constants
 const SIDEBAR_STYLES = {
@@ -225,6 +230,38 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, onClick, onDelete }) => {
+  const titleRef = React.useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkTruncation = () => {
+      if (titleRef.current) {
+        const isTextTruncated = titleRef.current.scrollWidth > titleRef.current.clientWidth;
+        setIsTruncated(isTextTruncated);
+      }
+    };
+
+    // Use a small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(checkTruncation, 0);
+    
+    // Re-check on window resize
+    window.addEventListener('resize', checkTruncation);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkTruncation);
+    };
+  }, [title]);
+
+  const titleElement = (
+    <p
+      ref={titleRef}
+      className="text-white text-[14px] font-normal leading-[20px] truncate"
+      dir="auto"
+    >
+      {title}
+    </p>
+  );
+
   return (
     <div
       className={`w-full h-[42px] flex items-center gap-2 px-3 rounded-[4px] transition-colors group ${
@@ -240,12 +277,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, on
           <span className="text-white text-[8px] leading-[20px]">.</span>
         </div>
         <div className="flex-1 text-right min-w-0">
-          <p
-            className="text-white text-[14px] font-normal leading-[20px] truncate"
-            dir="auto"
-          >
-            {title}
-          </p>
+          {isTruncated ? (
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  {titleElement}
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="max-w-xs z-[10000] bg-cover bg-center bg-no-repeat"
+                  style={{
+                    backgroundImage: `url(${BackgroundImage})`,
+                  }}
+                >
+                  <p className="break-words whitespace-normal">{title}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            titleElement
+          )}
         </div>
       </button>
       {onDelete && (
