@@ -2,6 +2,7 @@
 import {RouteProps } from 'react-router-dom'
 import { Fragment, lazy } from 'react'
 import { PATH } from './paths'
+import { Layout } from '../Layout'
 
 type RouteConfig = {
   exact: boolean | null
@@ -17,7 +18,7 @@ const routes: RouteConfig[] = [
     // guard: GuestGuard,
     path: PATH.RECENT_ACTIVITY,
     component: lazy(() => import('../pages/recentActivity')),
-    // layout: GuestLayout,
+    layout: Layout,
   },
 ]
 

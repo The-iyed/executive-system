@@ -4,7 +4,7 @@ import { Logo } from './logo';
 import { LanguageSwitch } from './language-switch';
 import { SearchInput } from './search-input';
 import { UserAvatar } from './user-avatar';
-import { NavigationActions } from './navigation-actions';
+import { NavigationActions, NavItem } from './navigation-actions';
 import { WeatherCard } from './weather-card';
 import { WelcomeSection, WelcomeSectionProps } from './welcome-section';
 
@@ -14,9 +14,10 @@ export interface SharedLayoutProps {
   bgHeaderClassName?: string;
   welcomeSection: WelcomeSectionProps;
   authenticated?: boolean;
+  navigationItems?: NavItem[];
 }
 
-export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClassName, bgHeaderClassName, welcomeSection, authenticated }) => {
+export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClassName, bgHeaderClassName, welcomeSection, authenticated, navigationItems }) => {
   return (
     <div className="min-h-screen relative w-full overflow-hidden">
       <div
@@ -36,7 +37,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         <header className="flex items-center justify-between" style={{ zIndex: 2 }}>
           <div className='flex items-center gap-4'>
             <Logo />
-          {authenticated && <NavigationActions />}
+          {authenticated && <NavigationActions items={navigationItems} />}
           </div>
 
         {authenticated && (<div className='flex items-center gap-4'>
