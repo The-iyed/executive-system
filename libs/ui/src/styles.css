@@ -216,10 +216,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(var(--color-border));
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
   }
