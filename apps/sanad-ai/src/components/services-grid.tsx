@@ -164,7 +164,26 @@ export const ServicesGrid: React.FC = () => {
   };
 
   const handleLegalStatsClick = () => {
-    window.AiStatsBot?.open();
+    // Check if AiStatsBot is already available
+    if ((window as any).AiStatsBot && typeof (window as any).AiStatsBot.open === 'function') {
+      (window as any).AiStatsBot.open();
+      return;
+    }
+
+    // Wait for script to load and initialize
+    let attempts = 0;
+    const maxAttempts = 100; // 5 seconds at 50ms intervals
+    const checkInterval = setInterval(() => {
+      attempts++;
+      const aiStatsBot = (window as any).AiStatsBot;
+      if (aiStatsBot && typeof aiStatsBot.open === 'function') {
+        clearInterval(checkInterval);
+        aiStatsBot.open();
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        console.error('[Sanad AI] AiStatsBot failed to load. Make sure the script is loaded correctly.');
+      }
+    }, 50);
   };
 
   const handleLegalAssistantClick = () => {
