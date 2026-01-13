@@ -24,7 +24,8 @@
       "@sanad-ai/chat/ui": ["libs/chat/ui/src/index.ts"],
       "@sanad-ai/markdown": ["libs/markdown/src/index.ts"],
       "@sanad-ai/response-parser": ["libs/response-parser/src/index.ts"],
-      "@/*": ["libs/ui/src/*"]
+      "@/*": ["libs/ui/src/*"],
+      "@shared": ["apps/minister-mind/src/modules/shared/index.ts"]
     },
     "strict": true,
     "noImplicitAny": true,
