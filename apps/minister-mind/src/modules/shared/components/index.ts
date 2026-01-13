@@ -15,3 +15,4 @@ export { MeetingCard, type MeetingCardProps, type MeetingCardData } from './meet
 export { CardsGrid, type CardsGridProps } from './cards-grid';
 export { ViewSwitcher, type ViewSwitcherProps, type ViewType } from './view-switcher';
 export { SearchFilterBar, type SearchFilterBarProps } from './search-filter-bar';
+export { ScreenLoader } from './screen-loader';
