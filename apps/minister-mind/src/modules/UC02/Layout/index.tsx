@@ -1,9 +1,9 @@
 import React from 'react';
 import { SharedLayout, NavItem } from '@shared';
 // Using the same icons as UC01 for now - can be replaced with UC02-specific icons later
-import HomeIcon from '../../shared/assets/home-02.svg';
 import ScheduleReviewIcon from '../../shared/assets/schedule-review.svg';
 import { PATH } from '../routes/paths';
+import HomeIcon from '@shared/assets/home-02.svg';
 
 export interface LayoutProps {
   children: React.ReactNode;

@@ -25,9 +25,8 @@ export const Layout: React.FC<LayoutProps> = ({
           description: 'قم بتسجيل الدخول للوصول إلى حسابك وإدارة اجتماعاتك بكل سهولة',
         }}
       />
-      {/* Background Ellipses */}
-      {/* Background left */}
-      <div
+    
+      {/* <div
         className="fixed pointer-events-none z-[5]"
         style={{
           width: '787.27px',
@@ -38,9 +37,9 @@ export const Layout: React.FC<LayoutProps> = ({
           filter: 'blur(117.833px)',
           transform: 'rotate(90deg)',
         }}
-      />
+      /> */}
       {/* Background right */}
-      <div
+      {/* <div
         className="fixed pointer-events-none z-[5]"
         style={{
           width: '787.27px',
@@ -51,19 +50,14 @@ export const Layout: React.FC<LayoutProps> = ({
           filter: 'blur(117.833px)',
           transform: 'rotate(90deg)',
         }}
-      />
+      /> */}
       
       {/* White Card Container */}
       <div
-        className="fixed z-[6] flex items-center justify-center"
+        className="fixed bottom-[12px] left-1/2 -translate-x-1/2 rounded-[14px] bg-[#FFFFFF] h-[calc(100vh-375px)]"
         style={{
-          width: '1414px',
-          height: '613px',
-          left: 'calc(50% - 1414px/2)',
-          top: '399px',
-          background: '#FFFFFF',
           boxShadow: '0px 0px 14.2px rgba(0, 0, 0, 0.08)',
-          borderRadius: '14px',
+          width: 'calc(100% - 24px)',
         }}
       >
         {children}

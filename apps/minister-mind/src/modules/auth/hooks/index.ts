@@ -1,2 +1,1 @@
-// Auth module hooks
-export {};
+export { default as useIsMountedRef } from './useIsMountedRef' 
