@@ -7,6 +7,8 @@ export interface ServiceCardProps {
   icon?: React.ReactNode;
   isComingSoon?: boolean;
   isDisabled?: boolean;
+  onClick?: () => void;
+  isLoading?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({ 
@@ -14,13 +16,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   description, 
   icon, 
   isComingSoon = false,
-  isDisabled = false 
+  isDisabled = false,
+  onClick,
+  isLoading = false
 }) => {
   return (
     <div 
+      onClick={onClick && !isDisabled && !isLoading ? onClick : undefined}
       className={`relative h-[120px] sm:h-[140px] md:h-[150px] rounded-[8px] sm:rounded-[10px] border border-[#efefef] overflow-hidden ${
         isDisabled ? 'bg-[#f8f8f8]' : 'bg-white'
-      }`}
+      } ${onClick && !isDisabled && !isLoading ? 'cursor-pointer hover:shadow-md transition-shadow' : isLoading ? 'cursor-wait' : ''}`}
     >
       {/* Background decoration */}
       <div className="absolute left-[-65px] top-[6px] w-[339px] h-[361px] flex items-center justify-center pointer-events-none opacity-50">
@@ -73,6 +78,21 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             قريبًا
           </p>
           <div className="w-[5px] h-[5px] sm:w-[6px] sm:h-[6px] bg-[#b9672d] rounded-full" />
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative w-8 h-8">
+              <div className="absolute inset-0 border-[3px] border-[#045859]/20 rounded-full"></div>
+              <div className="absolute inset-0 border-[3px] border-[#045859] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-[10px] sm:text-[11px] text-[#045859] font-medium" dir="rtl">
+              جارٍ التحميل...
+            </p>
+          </div>
         </div>
       )}
     </div>

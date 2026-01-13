@@ -17,3 +17,4 @@ export { UploadLoadingCard } from './upload-loading-card';
 export type { UploadLoadingCardProps } from './upload-loading-card';
 export { Pagination } from './pagination';
 export type { PaginationProps } from './pagination';
+export { DocsPage } from './docs-page';
