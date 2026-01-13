@@ -1,2 +1,2 @@
 // UC02 module utilities
-export {};
+export * from './meetingMapper';
