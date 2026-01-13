@@ -1,8 +1,9 @@
 import React from 'react';
 import { SharedLayout, NavItem } from '@shared';
 // Using the same icons as UC01 for now - can be replaced with UC02-specific icons later
-import CalendarIcon from '../../shared/assets/calendar-minus-01.svg';
 import HomeIcon from '../../shared/assets/home-02.svg';
+import ScheduleReviewIcon from '../../shared/assets/schedule-review.svg';
+import { PATH } from '../routes/paths';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -12,17 +13,18 @@ export interface LayoutProps {
 const uc02NavItems: NavItem[] = [
   {
     id: 'schedule-review',
-    icon: CalendarIcon,
-    label: 'مراجعة الجدولة'
+    icon: ScheduleReviewIcon,
+    label: 'مراجعة الجدولة',
+    path: PATH.SCHEDULE_REVIEW
   },
   {
     id: 'schedule-management',
-    icon: CalendarIcon,
+    icon: ScheduleReviewIcon,
     label: 'إدارة الجدولة'
   },
   {
     id: 'schedule-approval',
-    icon: CalendarIcon,
+    icon: ScheduleReviewIcon,
     label: 'الموافقة على الجدولة'
   },
   {
@@ -41,11 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({
       welcomeSection={{
         title: 'مراجعة الجدولة',
         description: 'مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.',
-        breadcrumbs: [{ label: 'مراجعة الجدولة', onClick: () => {} }],
-        actions: [
-          { label: 'إنشاء جدولة جديدة', variant: 'primary', onClick: () => {} }, 
-          { label: 'عرض الجدول', variant: 'secondary', onClick: () => {} }
-        ]
+        breadcrumbs: [{ label: 'مراجعة الجدولة', onClick: () => {} }]
       }}
       authenticated={true}
       navigationItems={uc02NavItems}

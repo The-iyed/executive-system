@@ -7,3 +7,4 @@ export * from './context';
 export * from './store';
 export * from './utils';
 export * from './styles';
+export * from './types';
