@@ -49,9 +49,41 @@ if (typeof window !== 'undefined') {
   
   // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL
   document.addEventListener('DOMContentLoaded', function () {
-    const statsBotScript = document.createElement('script');
-    statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-    document.body.appendChild(statsBotScript);
+    try {
+      const statsBotScript = document.createElement('script');
+      statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+      statsBotScript.async = true;
+      statsBotScript.crossOrigin = 'anonymous';
+      
+      statsBotScript.onerror = (error) => {
+        console.error('[Portal] Failed to load legal-stats (AiStatsBot) script:', error);
+      };
+      
+      statsBotScript.onload = () => {
+        try {
+          // Verify that AiStatsBot or StatsBot is actually exposed on window
+          // The script might expose it as either name
+          const statsBot = window.AiStatsBot || window.StatsBot;
+          if (statsBot && typeof statsBot.open === 'function') {
+            // If it's exposed as StatsBot, also expose it as AiStatsBot for consistency
+            if (window.StatsBot && !window.AiStatsBot) {
+              (window as any).AiStatsBot = window.StatsBot;
+              console.log('[Portal] legal-stats script exposed as StatsBot, aliasing to AiStatsBot');
+            }
+            console.log('[Portal] legal-stats (AiStatsBot) script loaded successfully and API is available');
+          } else {
+            console.warn('[Portal] legal-stats script loaded but neither window.AiStatsBot nor window.StatsBot is available');
+            console.warn('[Portal] Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('stats') || k.toLowerCase().includes('bot')));
+          }
+        } catch (error) {
+          console.error('[Portal] Error during legal-stats script execution:', error);
+        }
+      };
+      
+      document.body.appendChild(statsBotScript);
+    } catch (error) {
+      console.error('[Portal] Error setting up legal-stats script:', error);
+    }
     
     // Load Legal Assistant (المذكرة القانونية) from external URL
     try {

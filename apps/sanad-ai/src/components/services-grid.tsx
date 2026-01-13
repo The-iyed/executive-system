@@ -164,9 +164,15 @@ export const ServicesGrid: React.FC = () => {
   };
 
   const handleLegalStatsClick = () => {
-    // Check if AiStatsBot is already available
-    if ((window as any).AiStatsBot && typeof (window as any).AiStatsBot.open === 'function') {
-      (window as any).AiStatsBot.open();
+    // Helper to get the stats bot API (check both names)
+    const getStatsBot = () => {
+      return (window as any).AiStatsBot || (window as any).StatsBot;
+    };
+
+    // Check if stats bot is already available
+    const statsBot = getStatsBot();
+    if (statsBot && typeof statsBot.open === 'function') {
+      statsBot.open();
       return;
     }
 
@@ -175,13 +181,15 @@ export const ServicesGrid: React.FC = () => {
     const maxAttempts = 100; // 5 seconds at 50ms intervals
     const checkInterval = setInterval(() => {
       attempts++;
-      const aiStatsBot = (window as any).AiStatsBot;
-      if (aiStatsBot && typeof aiStatsBot.open === 'function') {
+      const bot = getStatsBot();
+      if (bot && typeof bot.open === 'function') {
         clearInterval(checkInterval);
-        aiStatsBot.open();
+        bot.open();
       } else if (attempts >= maxAttempts) {
         clearInterval(checkInterval);
-        console.error('[Sanad AI] AiStatsBot failed to load. Make sure the script is loaded correctly.');
+        console.error('[Sanad AI] Stats bot failed to load. Make sure the script is loaded correctly.');
+        console.error('[Sanad AI] window.AiStatsBot:', (window as any).AiStatsBot);
+        console.error('[Sanad AI] window.StatsBot:', (window as any).StatsBot);
       }
     }, 50);
   };
