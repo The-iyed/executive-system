@@ -1,2 +1,1 @@
-// Auth module context
-export {};
+export { default as AuthProvider, useAuth } from './AuthProvider';
