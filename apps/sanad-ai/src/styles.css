@@ -5,6 +5,8 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  /* Force font loading */
+  unicode-range: U+0000-10FFFF;
 }
 
 @font-face {
@@ -13,6 +15,8 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  /* Force font loading */
+  unicode-range: U+0000-10FFFF;
 }
 
 @tailwind base;
@@ -100,10 +104,10 @@
     --color-destructive: 239 68 68;
     --color-destructive-foreground: 255 255 255;
 
-    /* Typography */
-    --font-family-sans: 'Frutiger LT Pro';
-    --font-family-serif: 'Frutiger LT Pro';
-    --font-family-mono: 'Frutiger LT Pro';
+    /* Typography - Force Frutiger LT Pro */
+    --font-family-sans: 'Frutiger LT Pro', sans-serif;
+    --font-family-serif: 'Frutiger LT Pro', sans-serif;
+    --font-family-mono: 'Frutiger LT Pro', sans-serif;
 
     --font-size-xs: 0.75rem; /* 12px */
     --font-size-sm: 0.875rem; /* 14px */
@@ -144,20 +148,85 @@
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   }
+
+  /* Override body font-family in @layer base to override UI library styles */
+  body,
+  body * {
+    font-family: 'Frutiger LT Pro', sans-serif !important;
+  }
+
+  /* Override all elements that might use CSS variables */
+  *,
+  *::before,
+  *::after {
+    font-family: 'Frutiger LT Pro', sans-serif !important;
+  }
+
+  /* Override elements using CSS variable font-family */
+  [style*="font-family"],
+  [style*="fontFamily"] {
+    font-family: 'Frutiger LT Pro', sans-serif !important;
+  }
 }
 
 /* Apply Frutiger LT Pro globally - Outside @layer to ensure it applies */
-body, html {
+/* Force Frutiger font on all elements with maximum specificity */
+*,
+*::before,
+*::after {
   font-family: 'Frutiger LT Pro', sans-serif !important;
 }
 
-* {
-  font-family: 'Frutiger LT Pro', sans-serif;
+html,
+body,
+div,
+span,
+p,
+h1, h2, h3, h4, h5, h6,
+a,
+button,
+input,
+textarea,
+select,
+label,
+li,
+ul,
+ol,
+td,
+th,
+table,
+tr,
+thead,
+tbody,
+tfoot {
+  font-family: 'Frutiger LT Pro', sans-serif !important;
 }
 
-/* Ensure font is applied to all elements */
-.sanad-chat-app {
-  font-family: 'Frutiger LT Pro', sans-serif;
+/* Override any Tailwind font utilities */
+.font-sans,
+[class*="font-"] {
+  font-family: 'Frutiger LT Pro', sans-serif !important;
+}
+
+/* Ensure font is applied to all elements and containers */
+.sanad-chat-app,
+.sanad-chat-app *,
+.sanad-chat-app *::before,
+.sanad-chat-app *::after {
+  font-family: 'Frutiger LT Pro', sans-serif !important;
+}
+
+/* Force font on common UI component classes */
+[class*="ui-"],
+[class*="component-"],
+[class*="chat-"],
+[class*="message-"],
+[class*="sidebar-"],
+[class*="header-"],
+[class*="button-"],
+[class*="input-"],
+[class*="text-"] {
+  font-family: 'Frutiger LT Pro', sans-serif !important;
 }
 
 /* Custom scrollbar styles for sidebar and content areas */

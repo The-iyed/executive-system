@@ -1,7 +1,24 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, useSidebar } from '@sanad-ai/ui';
 import { Sidebar } from './sidebar';
 import BackgroundImage from '../assets/bg.png';
+
+// Preload background image (with duplicate check)
+const preloadImage = (src: string) => {
+  // Check if already preloaded
+  const existingLink = document.querySelector(`link[rel="preload"][href="${src}"]`);
+  if (existingLink) return;
+  
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = src;
+  document.head.appendChild(link);
+  
+  // Also preload using Image object for better browser support
+  const img = new Image();
+  img.src = src;
+};
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -70,9 +87,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onUpdateConversation,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showCloseButton, setShowCloseButton] = useState(false);
+  
+  // Preload background image on mount
+  useEffect(() => {
+    preloadImage(BackgroundImage);
+  }, []);
+
+  // Check if running as package (window.SanadAiV3 exists)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).SanadAiV3) {
+      setShowCloseButton(true);
+    }
+  }, []);
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleClose = () => {
+    if (typeof window !== 'undefined' && (window as any).SanadAiV3) {
+      (window as any).SanadAiV3.close();
+    }
   };
   
   return (
@@ -98,6 +134,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       >
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
+
+      {/* Close Button - Bottom Center - Only show when running as package */}
+      {showCloseButton && (
+        <button
+          onClick={handleClose}
+          aria-label="إغلاق"
+          className="fixed bottom-6 right-[10px] transform -translate-x-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 text-2xl leading-none hover:scale-110 active:scale-95"
+          style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }}
+        >
+          ×
+        </button>
+      )}
 
       <SidebarProvider open={sidebarOpen} onOpenChange={handleSidebarToggle}>
         <div className="relative z-10 flex w-full h-full overflow-hidden" style={{ height: '100%', overflow: 'hidden' }}>

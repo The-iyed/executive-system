@@ -180,6 +180,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({
               {children}
             </blockquote>
           ),
+          // Horizontal rule - prevent rendering
+          hr: () => null,
           // Strong
           strong: ({ children, ...props }) => (
             <strong className="font-bold text-[16.221px]" {...props}>
