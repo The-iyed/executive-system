@@ -3,6 +3,7 @@ import {RouteProps } from 'react-router-dom'
 import { Fragment, lazy } from 'react'
 import { PATH } from './paths'
 import { Layout } from '../Layout'
+import { AuthGuard } from '@shared'
 
 type RouteConfig = {
   exact: boolean | null
@@ -15,7 +16,7 @@ type RouteConfig = {
 const routes: RouteConfig[] = [
   {
     exact: true,
-    // guard: GuestGuard,
+    guard: AuthGuard,
     path: PATH.RECENT_ACTIVITY,
     component: lazy(() => import('../features/RecentActivity')),
     layout: Layout,
