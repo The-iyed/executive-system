@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as ReactQuery from '@tanstack/react-query';
-import { ServiceCard } from './service-card';
-import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
+// import { ServiceCard } from './service-card';
+// import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
 // Import types to ensure Window interface is extended
 import '@sanad-ai/config';
 
@@ -16,8 +16,8 @@ export interface Service {
 }
 
 export const ServicesGrid: React.FC = () => {
-  const [isLegalAssistantLoading, setIsLegalAssistantLoading] = React.useState(false);
-  const [isMuhallilAhkamLoading, setIsMuhallilAhkamLoading] = React.useState(false);
+  const [, setIsLegalAssistantLoading] = React.useState(false);
+  const [, setIsMuhallilAhkamLoading] = React.useState(false);
 
   // Preload scripts on component mount
   React.useEffect(() => {
@@ -107,206 +107,206 @@ export const ServicesGrid: React.FC = () => {
     }
   }, []);
 
-  const handleServiceClick = (url?: string) => {
-    if (url) {
-      window.open(url, '_blank');
-    }
-  };
+  // const handleServiceClick = (url?: string) => {
+  //   if (url) {
+  //     window.open(url, '_blank');
+  //   }
+  // };
 
-  const handleMuhallilAhkamClick = () => {
-    // Check if MuhallilAhkam is already available
-    const muhallilAhkam = window.MuhallilAhkam;
-    if (muhallilAhkam && typeof muhallilAhkam.open === 'function') {
-      try {
-        // Package manages its own isolated container
-        muhallilAhkam.open();
-      } catch (error) {
-        console.error('Error opening Muhallil Ahkam:', error);
-        setIsMuhallilAhkamLoading(false);
-      }
-      return;
-    }
+  // const handleMuhallilAhkamClick = () => {
+  //   // Check if MuhallilAhkam is already available
+  //   const muhallilAhkam = window.MuhallilAhkam;
+  //   if (muhallilAhkam && typeof muhallilAhkam.open === 'function') {
+  //     try {
+  //       // Package manages its own isolated container
+  //       muhallilAhkam.open();
+  //     } catch (error) {
+  //       console.error('Error opening Muhallil Ahkam:', error);
+  //       setIsMuhallilAhkamLoading(false);
+  //     }
+  //     return;
+  //   }
 
-    // Set loading state and wait for script to be ready
-    setIsMuhallilAhkamLoading(true);
+  //   // Set loading state and wait for script to be ready
+  //   setIsMuhallilAhkamLoading(true);
 
-    const openWhenReady = () => {
-      const loadedMuhallilAhkam = window.MuhallilAhkam;
-      if (loadedMuhallilAhkam && typeof loadedMuhallilAhkam.open === 'function') {
-        setIsMuhallilAhkamLoading(false);
-        try {
-          // Package manages its own isolated container
-          loadedMuhallilAhkam.open();
-        } catch (error) {
-          console.error('Error opening Muhallil Ahkam:', error);
-          setIsMuhallilAhkamLoading(false);
-        }
-        return true;
-      }
-      return false;
-    };
+  //   const openWhenReady = () => {
+  //     const loadedMuhallilAhkam = window.MuhallilAhkam;
+  //     if (loadedMuhallilAhkam && typeof loadedMuhallilAhkam.open === 'function') {
+  //       setIsMuhallilAhkamLoading(false);
+  //       try {
+  //         // Package manages its own isolated container
+  //         loadedMuhallilAhkam.open();
+  //       } catch (error) {
+  //         console.error('Error opening Muhallil Ahkam:', error);
+  //         setIsMuhallilAhkamLoading(false);
+  //       }
+  //       return true;
+  //     }
+  //     return false;
+  //   };
 
-    // Try to open immediately
-    if (openWhenReady()) {
-      return;
-    }
+  //   // Try to open immediately
+  //   if (openWhenReady()) {
+  //     return;
+  //   }
 
-    // Wait for script to load if it's still loading
-    let attempts = 0;
-    const maxAttempts = 100; // 5 seconds at 50ms intervals
-    const checkInterval = setInterval(() => {
-      attempts++;
-      if (openWhenReady()) {
-        clearInterval(checkInterval);
-      } else if (attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-        setIsMuhallilAhkamLoading(false);
-        console.error('Muhallil Ahkam failed to load after 5 seconds. Check if the script is loading correctly.');
-      }
-    }, 50);
-  };
+  //   // Wait for script to load if it's still loading
+  //   let attempts = 0;
+  //   const maxAttempts = 100; // 5 seconds at 50ms intervals
+  //   const checkInterval = setInterval(() => {
+  //     attempts++;
+  //     if (openWhenReady()) {
+  //       clearInterval(checkInterval);
+  //     } else if (attempts >= maxAttempts) {
+  //       clearInterval(checkInterval);
+  //       setIsMuhallilAhkamLoading(false);
+  //       console.error('Muhallil Ahkam failed to load after 5 seconds. Check if the script is loading correctly.');
+  //     }
+  //   }, 50);
+  // };
 
-  const handleLegalAssistantClick = () => {
-    // Check if LegalAssistant is already available
-    const legalAssistant = window.LegalAssistant;
-    if (legalAssistant && typeof legalAssistant.open === 'function') {
-      legalAssistant.open();
-      return;
-    }
+  // const handleLegalAssistantClick = () => {
+  //   // Check if LegalAssistant is already available
+  //   const legalAssistant = window.LegalAssistant;
+  //   if (legalAssistant && typeof legalAssistant.open === 'function') {
+  //     legalAssistant.open();
+  //     return;
+  //   }
 
-    // Set loading state and wait for script to be ready
-    setIsLegalAssistantLoading(true);
+  //   // Set loading state and wait for script to be ready
+  //   setIsLegalAssistantLoading(true);
 
-    const openWhenReady = () => {
-      const loadedLegalAssistant = window.LegalAssistant;
-      if (loadedLegalAssistant && typeof loadedLegalAssistant.open === 'function') {
-        setIsLegalAssistantLoading(false);
-        loadedLegalAssistant.open();
-        return true;
-      }
-      return false;
-    };
+  //   const openWhenReady = () => {
+  //     const loadedLegalAssistant = window.LegalAssistant;
+  //     if (loadedLegalAssistant && typeof loadedLegalAssistant.open === 'function') {
+  //       setIsLegalAssistantLoading(false);
+  //       loadedLegalAssistant.open();
+  //       return true;
+  //     }
+  //     return false;
+  //   };
 
-    // Try to open immediately
-    if (openWhenReady()) {
-      return;
-    }
+  //   // Try to open immediately
+  //   if (openWhenReady()) {
+  //     return;
+  //   }
 
-    // Wait for script to load if it's still loading
-    const checkInterval = setInterval(() => {
-      if (openWhenReady()) {
-        clearInterval(checkInterval);
-      }
-    }, 50);
+  //   // Wait for script to load if it's still loading
+  //   const checkInterval = setInterval(() => {
+  //     if (openWhenReady()) {
+  //       clearInterval(checkInterval);
+  //     }
+  //   }, 50);
 
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      setIsLegalAssistantLoading(false);
-    }, 5000);
-  };
+  //   // Timeout after 5 seconds
+  //   setTimeout(() => {
+  //     clearInterval(checkInterval);
+  //     setIsLegalAssistantLoading(false);
+  //   }, 5000);
+  // };
 
-  const services: Service[] = [
-    {
-      title: 'تحليل الأحكام',
-      description: 'تقدم هذه الخدمة تحليلًا للأحكام القضائية النهائية والتنفيذية، بما يرفع كفاءة الأعمال ويحد من خسارة القضايا مستقبلًا وتعزيز فرص الكسب.',
-      icon: <AnalyzerIcon />,
-      // No URL - handled by handleMuhallilAhkamClick
-    },
-    {
-      title: 'المذكرة القانونية',
-      description: 'أداة ذكية تعتمد على منظومة وكلاء قانونيين رقميين تعمل بتقنيات الذكاء الاصطناعي لتحليل القضايا وصياغة لوائح الرد بدقة و موثوقية.',
-      icon: <BalanceIcon />,
-      // No URL - handled by handleLegalAssistantClick
-    },
-    {
-      title: 'صياغة المستندات والمراسلات',
-      description: 'يتم من خلال هذه الخدمة إعداد وصياغة المستندات والمراسلات القانونية وتدقيقها بدقة ووضوح.',
-      icon: <ArticleIcon />,
-      isComingSoon: true,
-      isDisabled: true,
-    },
-    {
-      title: 'تحليل التشريعات',
-      description: 'تساعد هذه الخدمة المستفيدين من تقديم المتطلبات اللازمة من دراسة مشاريع القوانين واللوائح التنظيمية، وتقديم المقترحات اللازمة.',
-      icon: <FileIcon />,
-      isComingSoon: true,
-      isDisabled: true,
-    },
+  // const services: Service[] = [
+  //   {
+  //     title: 'تحليل الأحكام',
+  //     description: 'تقدم هذه الخدمة تحليلًا للأحكام القضائية النهائية والتنفيذية، بما يرفع كفاءة الأعمال ويحد من خسارة القضايا مستقبلًا وتعزيز فرص الكسب.',
+  //     icon: <AnalyzerIcon />,
+  //     // No URL - handled by handleMuhallilAhkamClick
+  //   },
+  //   {
+  //     title: 'المذكرة القانونية',
+  //     description: 'أداة ذكية تعتمد على منظومة وكلاء قانونيين رقميين تعمل بتقنيات الذكاء الاصطناعي لتحليل القضايا وصياغة لوائح الرد بدقة و موثوقية.',
+  //     icon: <BalanceIcon />,
+  //     // No URL - handled by handleLegalAssistantClick
+  //   },
+  //   {
+  //     title: 'صياغة المستندات والمراسلات',
+  //     description: 'يتم من خلال هذه الخدمة إعداد وصياغة المستندات والمراسلات القانونية وتدقيقها بدقة ووضوح.',
+  //     icon: <ArticleIcon />,
+  //     isComingSoon: true,
+  //     isDisabled: true,
+  //   },
+  //   {
+  //     title: 'تحليل التشريعات',
+  //     description: 'تساعد هذه الخدمة المستفيدين من تقديم المتطلبات اللازمة من دراسة مشاريع القوانين واللوائح التنظيمية، وتقديم المقترحات اللازمة.',
+  //     icon: <FileIcon />,
+  //     isComingSoon: true,
+  //     isDisabled: true,
+  //   },
 
-  ];
+  // ];
 
-  const firstRowServices = services.slice(0, 3);
-  const secondRowServices = services.slice(3, 6);
+  // const firstRowServices = services.slice(0, 3);
+  // const secondRowServices = services.slice(3, 6);
 
-  const renderServiceRow = (rowServices: Service[], startIndex: number) => {
-    const isTwoCards = rowServices.length === 2;
+  // const renderServiceRow = (rowServices: Service[], startIndex: number) => {
+  //   const isTwoCards = rowServices.length === 2;
     
-    if (isTwoCards) {
-      return (
-        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 w-full">
-          {rowServices.map((service, index) => (
-            <div 
-              key={startIndex + index} 
-              className="w-full sm:w-[calc(50%-0.25rem)] lg:w-[calc(33.333%-0.5rem)]"
-            >
-              <ServiceCard 
-                {...service} 
-                isLoading={
-                  service.title === 'تحليل الأحكام'
-                    ? isMuhallilAhkamLoading
-                    : service.title === 'المذكرة القانونية'
-                      ? isLegalAssistantLoading
-                      : false
-                }
-                onClick={
-                  service.title === 'تحليل الأحكام'
-                    ? handleMuhallilAhkamClick
-                    : service.title === 'المذكرة القانونية'
-                      ? handleLegalAssistantClick
-                      : service.url 
-                        ? () => handleServiceClick(service.url) 
-                        : undefined
-                }
-              />
-            </div>
-          ))}
-        </div>
-      );
-    }
+  //   if (isTwoCards) {
+  //     return (
+  //       <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 w-full">
+  //         {rowServices.map((service, index) => (
+  //           <div 
+  //             key={startIndex + index} 
+  //             className="w-full sm:w-[calc(50%-0.25rem)] lg:w-[calc(33.333%-0.5rem)]"
+  //           >
+  //             <ServiceCard 
+  //               {...service} 
+  //               isLoading={
+  //                 service.title === 'تحليل الأحكام'
+  //                   ? isMuhallilAhkamLoading
+  //                   : service.title === 'المذكرة القانونية'
+  //                     ? isLegalAssistantLoading
+  //                     : false
+  //               }
+  //               onClick={
+  //                 service.title === 'تحليل الأحكام'
+  //                   ? handleMuhallilAhkamClick
+  //                   : service.title === 'المذكرة القانونية'
+  //                     ? handleLegalAssistantClick
+  //                     : service.url 
+  //                       ? () => handleServiceClick(service.url) 
+  //                       : undefined
+  //               }
+  //             />
+  //           </div>
+  //         ))}
+  //       </div>
+  //     );
+  //   }
     
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 w-full">
-        {rowServices.map((service, index) => (
-          <ServiceCard 
-            key={startIndex + index} 
-            {...service} 
-            isLoading={
-              service.title === 'تحليل الأحكام'
-                ? isMuhallilAhkamLoading
-                : service.title === 'المذكرة القانونية'
-                  ? isLegalAssistantLoading
-                  : false
-            }
-            onClick={
-              service.title === 'تحليل الأحكام'
-                ? handleMuhallilAhkamClick
-                : service.title === 'المذكرة القانونية'
-                  ? handleLegalAssistantClick
-                  : service.url 
-                    ? () => handleServiceClick(service.url) 
-                    : undefined
-            }
-          />
-        ))}
-      </div>
-    );
-  };
+  //   return (
+  //     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2 w-full">
+  //       {rowServices.map((service, index) => (
+  //         <ServiceCard 
+  //           key={startIndex + index} 
+  //           {...service} 
+  //           isLoading={
+  //             service.title === 'تحليل الأحكام'
+  //               ? isMuhallilAhkamLoading
+  //               : service.title === 'المذكرة القانونية'
+  //                 ? isLegalAssistantLoading
+  //                 : false
+  //           }
+  //           onClick={
+  //             service.title === 'تحليل الأحكام'
+  //               ? handleMuhallilAhkamClick
+  //               : service.title === 'المذكرة القانونية'
+  //                 ? handleLegalAssistantClick
+  //                 : service.url 
+  //                   ? () => handleServiceClick(service.url) 
+  //                   : undefined
+  //           }
+  //         />
+  //       ))}
+  //     </div>
+  //   );
+  // };
 
   return (
     <div className="w-full flex flex-col gap-1.5 sm:gap-2">
-      {renderServiceRow(firstRowServices, 0)}
-      {renderServiceRow(secondRowServices, 3)}
+      {/* {renderServiceRow(firstRowServices, 0)}
+      {renderServiceRow(secondRowServices, 3)} */}
     </div>
   );
 };
