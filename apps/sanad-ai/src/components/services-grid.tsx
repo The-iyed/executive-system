@@ -49,36 +49,10 @@ export const ServicesGrid: React.FC = () => {
     // Load Legal Stats script
     const legalStatsScriptId = 'legal-stats-script';
     if (!document.getElementById(legalStatsScriptId)) {
-      try {
-        const legalStatsScript = document.createElement('script');
-        legalStatsScript.id = legalStatsScriptId;
-        legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-        legalStatsScript.async = true;
-        legalStatsScript.crossOrigin = 'anonymous';
-        
-        // Add error handler to catch script loading errors
-        legalStatsScript.onerror = (error) => {
-          console.error('[Sanad AI] Failed to load legal-analyst.umd.js:', error);
-          setIsLegalStatsLoading(false);
-        };
-        
-        // Wrap script execution in error handler
-        legalStatsScript.onload = () => {
-          try {
-            // Script loaded successfully
-            console.log('[Sanad AI] legal-analyst.umd.js loaded successfully');
-            setIsLegalStatsLoading(false);
-          } catch (error) {
-            console.error('[Sanad AI] Error during legal-analyst.umd.js execution:', error);
-            setIsLegalStatsLoading(false);
-          }
-        };
-        
-        document.body.appendChild(legalStatsScript);
-      } catch (error) {
-        console.error('[Sanad AI] Error setting up legal-analyst script:', error);
-        setIsLegalStatsLoading(false);
-      }
+      const legalStatsScript = document.createElement('script');
+      legalStatsScript.id = legalStatsScriptId;
+      legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+      document.body.appendChild(legalStatsScript);
     }
 
     // Load Legal Assistant script
@@ -190,43 +164,7 @@ export const ServicesGrid: React.FC = () => {
   };
 
   const handleLegalStatsClick = () => {
-    // Check if AiStatsBot is already available
-    const aiStatsBot = window.AiStatsBot;
-    if (aiStatsBot && typeof aiStatsBot.open === 'function') {
-      aiStatsBot.open();
-      return;
-    }
-
-    // Set loading state and wait for script to be ready
-    setIsLegalStatsLoading(true);
-
-    const openWhenReady = () => {
-      const loadedAiStatsBot = window.AiStatsBot;
-      if (loadedAiStatsBot && typeof loadedAiStatsBot.open === 'function') {
-        setIsLegalStatsLoading(false);
-        loadedAiStatsBot.open();
-        return true;
-      }
-      return false;
-    };
-
-    // Try to open immediately
-    if (openWhenReady()) {
-      return;
-    }
-
-    // Wait for script to load if it's still loading
-    const checkInterval = setInterval(() => {
-      if (openWhenReady()) {
-        clearInterval(checkInterval);
-      }
-    }, 50);
-
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      setIsLegalStatsLoading(false);
-    }, 5000);
+    window.AiStatsBot?.open();
   };
 
   const handleLegalAssistantClick = () => {
