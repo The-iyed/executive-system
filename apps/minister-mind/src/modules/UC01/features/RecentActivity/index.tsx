@@ -1,8 +1,9 @@
+import React from 'react';
 
-const RecentActivity = () => {
+const RecentActivity: React.FC = () => {
   return (
     <div>RecentActivity</div>
-  )
-}
+  );
+};
 
-export default RecentActivity
+export default RecentActivity;
