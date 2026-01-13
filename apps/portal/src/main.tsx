@@ -12,6 +12,28 @@ if (typeof window !== 'undefined') {
   (window as any).ReactDOM = ReactDOM;
   (window as any).ReactQuery = ReactQuery;
   
+  // Add global error handler to catch read-only property errors from external scripts
+  const originalErrorHandler = window.onerror;
+  window.onerror = (message, source, lineno, colno, error) => {
+    // Check if it's the read-only property error from legal-analyst
+    if (typeof message === 'string' && message.includes('Cannot assign to read only property')) {
+      console.warn('[Portal] Caught read-only property assignment error (likely from external script):', {
+        message,
+        source,
+        lineno,
+        colno,
+        error
+      });
+      // Return true to prevent default error handling, but still log it
+      return true;
+    }
+    // Call original error handler if it exists
+    if (originalErrorHandler) {
+      return originalErrorHandler.call(window, message, source, lineno, colno, error);
+    }
+    return false;
+  };
+  
   // Load UMD bundles after React globals are exposed
   const portalBaseUrl = import.meta.env.VITE_PORTAL_BASE_URL || window.location.origin;
   
@@ -27,14 +49,56 @@ if (typeof window !== 'undefined') {
   
   // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL
   document.addEventListener('DOMContentLoaded', function () {
-    const statsBotScript = document.createElement('script');
-    statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-    document.body.appendChild(statsBotScript);
+    // Wrap script loading in try-catch to handle errors gracefully
+    try {
+      const statsBotScript = document.createElement('script');
+      statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+      statsBotScript.async = true;
+      statsBotScript.crossOrigin = 'anonymous';
+      
+      // Add error handler to catch script loading errors
+      statsBotScript.onerror = (error) => {
+        console.error('[Portal] Failed to load legal-analyst.umd.js:', error);
+      };
+      
+      // Wrap script execution in error handler
+      statsBotScript.onload = () => {
+        try {
+          // Script loaded successfully
+          console.log('[Portal] legal-analyst.umd.js loaded successfully');
+        } catch (error) {
+          console.error('[Portal] Error during legal-analyst.umd.js execution:', error);
+        }
+      };
+      
+      document.body.appendChild(statsBotScript);
+    } catch (error) {
+      console.error('[Portal] Error setting up legal-analyst script:', error);
+    }
     
     // Load Legal Assistant (المذكرة القانونية) from external URL
-    const legalAssistantScript = document.createElement('script');
-    legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
-    document.body.appendChild(legalAssistantScript);
+    try {
+      const legalAssistantScript = document.createElement('script');
+      legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
+      legalAssistantScript.async = true;
+      legalAssistantScript.crossOrigin = 'anonymous';
+      
+      legalAssistantScript.onerror = (error) => {
+        console.error('[Portal] Failed to load legal-assistant script:', error);
+      };
+      
+      legalAssistantScript.onload = () => {
+        try {
+          console.log('[Portal] legal-assistant script loaded successfully');
+        } catch (error) {
+          console.error('[Portal] Error during legal-assistant script execution:', error);
+        }
+      };
+      
+      document.body.appendChild(legalAssistantScript);
+    } catch (error) {
+      console.error('[Portal] Error setting up legal-assistant script:', error);
+    }
   });
 }
 

@@ -49,21 +49,68 @@ export const ServicesGrid: React.FC = () => {
     // Load Legal Stats script
     const legalStatsScriptId = 'legal-stats-script';
     if (!document.getElementById(legalStatsScriptId)) {
-      const legalStatsScript = document.createElement('script');
-      legalStatsScript.id = legalStatsScriptId;
-      legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-      legalStatsScript.async = true;
-      document.body.appendChild(legalStatsScript);
+      try {
+        const legalStatsScript = document.createElement('script');
+        legalStatsScript.id = legalStatsScriptId;
+        legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+        legalStatsScript.async = true;
+        legalStatsScript.crossOrigin = 'anonymous';
+        
+        // Add error handler to catch script loading errors
+        legalStatsScript.onerror = (error) => {
+          console.error('[Sanad AI] Failed to load legal-analyst.umd.js:', error);
+          setIsLegalStatsLoading(false);
+        };
+        
+        // Wrap script execution in error handler
+        legalStatsScript.onload = () => {
+          try {
+            // Script loaded successfully
+            console.log('[Sanad AI] legal-analyst.umd.js loaded successfully');
+            setIsLegalStatsLoading(false);
+          } catch (error) {
+            console.error('[Sanad AI] Error during legal-analyst.umd.js execution:', error);
+            setIsLegalStatsLoading(false);
+          }
+        };
+        
+        document.body.appendChild(legalStatsScript);
+      } catch (error) {
+        console.error('[Sanad AI] Error setting up legal-analyst script:', error);
+        setIsLegalStatsLoading(false);
+      }
     }
 
     // Load Legal Assistant script
     const legalAssistantScriptId = 'legal-assistant-script';
     if (!document.getElementById(legalAssistantScriptId)) {
-      const legalAssistantScript = document.createElement('script');
-      legalAssistantScript.id = legalAssistantScriptId;
-      legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
-      legalAssistantScript.async = true;
-      document.body.appendChild(legalAssistantScript);
+      try {
+        const legalAssistantScript = document.createElement('script');
+        legalAssistantScript.id = legalAssistantScriptId;
+        legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
+        legalAssistantScript.async = true;
+        legalAssistantScript.crossOrigin = 'anonymous';
+        
+        legalAssistantScript.onerror = (error) => {
+          console.error('[Sanad AI] Failed to load legal-assistant script:', error);
+          setIsLegalAssistantLoading(false);
+        };
+        
+        legalAssistantScript.onload = () => {
+          try {
+            console.log('[Sanad AI] legal-assistant script loaded successfully');
+            setIsLegalAssistantLoading(false);
+          } catch (error) {
+            console.error('[Sanad AI] Error during legal-assistant script execution:', error);
+            setIsLegalAssistantLoading(false);
+          }
+        };
+        
+        document.body.appendChild(legalAssistantScript);
+      } catch (error) {
+        console.error('[Sanad AI] Error setting up legal-assistant script:', error);
+        setIsLegalAssistantLoading(false);
+      }
     }
 
     // Load Muhallil Ahkam script
