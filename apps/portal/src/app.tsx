@@ -20,34 +20,58 @@ const AppContent: React.FC = () => {
 
     // For legal-stats, AiStatsBot manages its own modal, so we don't need a container
     if (activeApp === 'legal-stats') {
+      // Helper to get the stats bot API (check both names)
+      const getStatsBot = () => {
+        return window.AiStatsBot || window.StatsBot;
+      };
+
       const mountAiStatsBot = () => {
-        if (window.AiStatsBot) {
-          window.AiStatsBot.open();
+        const statsBot = getStatsBot();
+        if (statsBot && typeof statsBot.open === 'function') {
+          try {
+            statsBot.open();
+          } catch (error) {
+            console.error('[Portal] Error calling stats bot open():', error);
+          }
+        } else {
+          console.error('[Portal] Stats bot is not available or missing open method');
+          console.error('[Portal] window.AiStatsBot:', window.AiStatsBot);
+          console.error('[Portal] window.StatsBot:', window.StatsBot);
         }
       };
 
-      // Check if AiStatsBot is available
-      if (window.AiStatsBot) {
+      // Check if stats bot is available
+      const statsBot = getStatsBot();
+      if (statsBot && typeof statsBot.open === 'function') {
         mountAiStatsBot();
       } else {
         // Wait for script to load
+        let attempts = 0;
+        const maxAttempts = 100; // 5 seconds at 50ms intervals
         const checkInterval = setInterval(() => {
-          if (window.AiStatsBot) {
+          attempts++;
+          const bot = getStatsBot();
+          if (bot && typeof bot.open === 'function') {
             clearInterval(checkInterval);
             mountAiStatsBot();
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            console.error('[Portal] Stats bot failed to load after 5 seconds. Make sure the script is loaded correctly.');
+            console.error('[Portal] window.AiStatsBot:', window.AiStatsBot);
+            console.error('[Portal] window.StatsBot:', window.StatsBot);
           }
         }, 50);
-
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkInterval);
-        }, 5000);
       }
 
       // Cleanup on unmount
       return () => {
-        if (window.AiStatsBot) {
-          window.AiStatsBot.close();
+        const statsBot = getStatsBot();
+        if (statsBot && typeof statsBot.close === 'function') {
+          try {
+            statsBot.close();
+          } catch (error) {
+            console.error('[Portal] Error calling stats bot close():', error);
+          }
         }
       };
     }
