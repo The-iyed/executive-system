@@ -29,27 +29,24 @@ export const SearchInput: React.FC<SearchInputProps> = ({
 
   const isHeaderVariant = variant === 'header';
   
-  return (
-    <div 
-      className={`
-        relative
-        flex flex-row justify-end items-center
-        h-[42px]
-        pt-[10px] pr-[16px] pb-[10px] pl-[16px]
-        gap-[10px]
-        rounded-[73px]
-        ${isHeaderVariant 
-          ? 'bg-[rgba(255,255,255,0.08)]' 
-          : 'bg-white border border-[#EAECF0]'
-        }
-        ${className}
-      `}
-      style={{
-        width: className.includes('w-') ? undefined : '191px',
-      }}
-    >
-      {/* Cutted border effect - only for header variant */}
-      {isHeaderVariant && (
+  if (isHeaderVariant) {
+    return (
+      <div 
+        className={`
+          relative
+          flex flex-row justify-end items-center
+          h-[42px]
+          pt-[10px] pr-[16px] pb-[10px] pl-[16px]
+          gap-[10px]
+          rounded-[73px]
+          bg-[rgba(255,255,255,0.08)]
+          ${className}
+        `}
+        style={{
+          width: className.includes('w-') ? undefined : '191px',
+        }}
+      >
+        {/* Cutted border effect - only for header variant */}
         <div
           className="absolute inset-0 rounded-[73px] pointer-events-none"
           style={{
@@ -59,24 +56,57 @@ export const SearchInput: React.FC<SearchInputProps> = ({
             boxShadow: '0 -1px 2px rgba(255, 255, 255, 0.15)',
           }}
         />
-      )}
-      <img 
-        src={SearchIcon} 
-        alt="Search" 
-        className="w-5 h-5"
-      />
+        <img 
+          src={SearchIcon} 
+          alt="Search" 
+          className="w-5 h-5"
+        />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={handleChange}
+          className="w-full h-6 text-base font-normal bg-transparent border-none outline-none text-white placeholder:text-white"
+          style={{
+            fontFamily: "'Ping AR + LT', sans-serif",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Default variant - smaller size
+  return (
+    <div 
+      className={`
+        relative
+        flex flex-row justify-end items-center
+        h-[32px]
+        px-3 py-1.5
+        gap-1.5
+        rounded-lg
+        bg-white
+        border border-[#D0D5DD]
+        shadow-[0px_1px_2px_rgba(16,24,40,0.05)]
+        ${className}
+      `}
+    >
       <input
         type="text"
         placeholder={placeholder}
         value={value}
         onChange={handleChange}
-        className={`w-full h-6 text-base font-normal bg-transparent border-none outline-none ${
-          isHeaderVariant 
-            ? 'text-white placeholder:text-white' 
-            : 'text-gray-900 placeholder:text-gray-500'
-        }`}
+        className="w-full h-4 text-sm font-normal bg-transparent border-none outline-none text-gray-900 placeholder:text-[#667085]"
         style={{
           fontFamily: "'Ping AR + LT', sans-serif",
+        }}
+      />
+      <img 
+        src={SearchIcon} 
+        alt="Search" 
+        className="w-4 h-4 flex-shrink-0"
+        style={{
+          filter: 'opacity(0.7)',
         }}
       />
     </div>

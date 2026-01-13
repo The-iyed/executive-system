@@ -54,7 +54,7 @@ export const DataTable = <T extends Record<string, any>>({
               ${column.width || 'flex-1'}
             `}
           >
-            <span className="text-sm font-medium text-right text-gray-600 leading-[18px]">
+            <span className="text-sm font-medium text-gray-600 leading-[18px] w-full text-right">
               {column.header}
             </span>
           </div>
@@ -79,19 +79,22 @@ export const DataTable = <T extends Record<string, any>>({
                   gap-4
                   border-b border-gray-200
                   ${column.width || 'flex-1'}
+                  w-full
                 `}
               >
-                {column.render ? (
-                  column.render(row, rowIndex)
-                ) : column.accessor ? (
-                  <span className="text-base font-normal text-right text-gray-600 leading-5">
-                    {column.accessor(row)}
-                  </span>
-                ) : (
-                  <span className="text-base font-normal text-right text-gray-600 leading-5">
-                    {row[column.id]}
-                  </span>
-                )}
+                <div className="w-full flex justify-end items-center">
+                  {column.render ? (
+                    column.render(row, rowIndex)
+                  ) : column.accessor ? (
+                    <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+                      {column.accessor(row)}
+                    </span>
+                  ) : (
+                    <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+                      {row[column.id]}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
