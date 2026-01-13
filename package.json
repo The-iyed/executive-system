@@ -9,8 +9,9 @@
     "dev:portal": "nx serve portal",
     "dev:sanad-ai": "nx serve sanad-ai",
     "dev:ahkam": "nx serve muhallil-ahkam",
+    "dev:minister-mind": "nx serve minister-mind",
     "dev:build-all": "nx run-many --target=build --projects=sanad-ai,muhallil-ahkam --watch",
-    "build:all": "nx run-many --target=build --projects=portal,sanad-ai,muhallil-ahkam"
+    "build:all": "nx run-many --target=build --projects=portal,sanad-ai,muhallil-ahkam,minister-mind"
   },
   "private": true,
   "dependencies": {
