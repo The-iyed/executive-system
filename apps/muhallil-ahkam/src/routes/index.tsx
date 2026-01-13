@@ -1,8 +1,9 @@
 
 import { Fragment, Suspense } from 'react'
-import { Routes, Route, RouteProps } from 'react-router-dom'
+import { Routes, Route, RouteProps, Navigate } from 'react-router-dom'
 
 import pages from './routes'
+import { PATH } from './path'
 
 
 type RouteConfig = {
@@ -26,31 +27,40 @@ const LoadingFallback = () => (
   </div>
 )
 
-export const renderRoutes = (routes: RouteConfig[] = []) => (
-  <Suspense fallback={<LoadingFallback />}>
-    <Routes>
-      {routes.map((route, index) => {
-        const Component = route.component
-        const Guard = route?.guard || Fragment
-        const Layout = route?.layout || Fragment
+export const renderRoutes = (routes: RouteConfig[] = []) => {
+  // Log routes for debugging
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('[Muhallil Ahkam] Rendering routes:', routes.map(r => r.path));
+  }
 
-        return (
-          <Route
-            key={index}
-            path={route.path}
-            element={
-              <Guard>
-                <Layout>
-                  <Component />
-                </Layout>
-              </Guard>
-            }
-          />
-        )
-      })}
-    </Routes>
-  </Suspense>
-)
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        {routes.map((route, index) => {
+          const Component = route.component
+          const Guard = route?.guard || Fragment
+          const Layout = route?.layout || Fragment
+
+          return (
+            <Route
+              key={index}
+              path={route.path}
+              element={
+                <Guard>
+                  <Layout>
+                    <Component />
+                  </Layout>
+                </Guard>
+              }
+            />
+          )
+        })}
+        {/* Catch-all route: redirect unknown paths to root */}
+        <Route path="*" element={<Navigate to={PATH.ROOT} replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
 
 const routes: RouteConfig[] = [...pages]
 

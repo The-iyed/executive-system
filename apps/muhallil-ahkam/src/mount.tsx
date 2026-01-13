@@ -17,6 +17,9 @@ export const createMount = (): AppMount => {
       root = createRoot(el);
       const queryClient = createQueryClient();
       
+      console.log('[Muhallil Ahkam] Mounting app to container:', el);
+      console.log('[Muhallil Ahkam] Current location:', window.location.pathname);
+      
       root.render(
         <React.StrictMode>
           <ErrorBoundary>
