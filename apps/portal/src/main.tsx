@@ -49,32 +49,9 @@ if (typeof window !== 'undefined') {
   
   // Load Legal Stats Bot (محلل الرؤى والتوقعات) from external URL
   document.addEventListener('DOMContentLoaded', function () {
-    // Wrap script loading in try-catch to handle errors gracefully
-    try {
-      const statsBotScript = document.createElement('script');
-      statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-      statsBotScript.async = true;
-      statsBotScript.crossOrigin = 'anonymous';
-      
-      // Add error handler to catch script loading errors
-      statsBotScript.onerror = (error) => {
-        console.error('[Portal] Failed to load legal-analyst.umd.js:', error);
-      };
-      
-      // Wrap script execution in error handler
-      statsBotScript.onload = () => {
-        try {
-          // Script loaded successfully
-          console.log('[Portal] legal-analyst.umd.js loaded successfully');
-        } catch (error) {
-          console.error('[Portal] Error during legal-analyst.umd.js execution:', error);
-        }
-      };
-      
-      document.body.appendChild(statsBotScript);
-    } catch (error) {
-      console.error('[Portal] Error setting up legal-analyst script:', error);
-    }
+    const statsBotScript = document.createElement('script');
+    statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+    document.body.appendChild(statsBotScript);
     
     // Load Legal Assistant (المذكرة القانونية) from external URL
     try {
