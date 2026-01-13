@@ -1,8 +1,11 @@
 import React from 'react';
+import { StatsCards } from '../../components';
 
 const RecentActivity: React.FC = () => {
   return (
-    <div>RecentActivity</div>
+    <div>
+      <StatsCards />
+    </div>
   );
 };
 
