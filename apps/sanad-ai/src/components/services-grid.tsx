@@ -109,7 +109,8 @@ export const ServicesGrid: React.FC = () => {
         legalAssistantScript.id = legalAssistantScriptId;
         legalAssistantScript.src = 'https://legal-assistant-v2.momrahai.com/legal-assistant-v1.1.umd.js';
         legalAssistantScript.async = true;
-        legalAssistantScript.crossOrigin = 'anonymous';
+        // Note: crossOrigin is NOT set - script tags don't need CORS headers unless you're reading their content
+        // Removing crossOrigin prevents CORS errors while still allowing the script to execute
         
         // Error handler - isolated, won't affect legal-stats or other scripts
         legalAssistantScript.onerror = (error) => {
