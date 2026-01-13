@@ -13,18 +13,21 @@ if (typeof window !== 'undefined') {
   (window as any).ReactQuery = ReactQuery;
   
   // Add global error handler to catch read-only property errors from external scripts
+  // This is a known issue with legal-analyst.umd.js trying to assign to read-only properties
   const originalErrorHandler = window.onerror;
   window.onerror = (message, source, lineno, colno, error) => {
     // Check if it's the read-only property error from legal-analyst
     if (typeof message === 'string' && message.includes('Cannot assign to read only property')) {
-      console.warn('[Portal] Caught read-only property assignment error (likely from external script):', {
+      // This is a known issue with the external legal-analyst script
+      // It tries to assign to a read-only 'error' property, which fails
+      // The script still works despite this error, so we suppress it
+      console.warn('[Portal] Suppressed read-only property error from external script (legal-analyst.umd.js)', {
         message,
-        source,
-        lineno,
-        colno,
-        error
+        source: source || 'unknown',
+        line: lineno,
+        column: colno
       });
-      // Return true to prevent default error handling, but still log it
+      // Return true to prevent default error handling (red error in console)
       return true;
     }
     // Call original error handler if it exists
@@ -32,6 +35,24 @@ if (typeof window !== 'undefined') {
       return originalErrorHandler.call(window, message, source, lineno, colno, error);
     }
     return false;
+  };
+
+  // Also catch unhandled promise rejections that might be related
+  const originalUnhandledRejection = window.onunhandledrejection;
+  window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+    // Check if it's a read-only property error
+    const reason = event.reason;
+    if (reason && typeof reason === 'object' && reason.message) {
+      if (typeof reason.message === 'string' && reason.message.includes('Cannot assign to read only property')) {
+        console.warn('[Portal] Suppressed unhandled promise rejection (read-only property error from external script)');
+        event.preventDefault(); // Prevent the error from showing in console
+        return;
+      }
+    }
+    // Call original handler if it exists
+    if (originalUnhandledRejection) {
+      originalUnhandledRejection.call(window, event);
+    }
   };
   
   // Load UMD bundles after React globals are exposed
@@ -61,19 +82,30 @@ if (typeof window !== 'undefined') {
       
       statsBotScript.onload = () => {
         try {
-          // Verify that AiStatsBot or StatsBot is actually exposed on window
-          // The script might expose it as either name
-          const statsBot = window.AiStatsBot || window.StatsBot;
+          // Verify that the API is actually exposed on window
+          // The script might expose it as legalStats, StatsBot, or AiStatsBot
+          const statsBot = window.legalStats || window.AiStatsBot || window.StatsBot;
           if (statsBot && typeof statsBot.open === 'function') {
-            // If it's exposed as StatsBot, also expose it as AiStatsBot for consistency
-            if (window.StatsBot && !window.AiStatsBot) {
-              (window as any).AiStatsBot = window.StatsBot;
-              console.log('[Portal] legal-stats script exposed as StatsBot, aliasing to AiStatsBot');
+            // Alias to AiStatsBot for consistency across the codebase
+            if (!window.AiStatsBot) {
+              (window as any).AiStatsBot = statsBot;
+              if (window.legalStats) {
+                console.log('[Portal] legal-stats script exposed as legalStats, aliasing to AiStatsBot');
+              } else if (window.StatsBot) {
+                console.log('[Portal] legal-stats script exposed as StatsBot, aliasing to AiStatsBot');
+              }
             }
             console.log('[Portal] legal-stats (AiStatsBot) script loaded successfully and API is available');
           } else {
-            console.warn('[Portal] legal-stats script loaded but neither window.AiStatsBot nor window.StatsBot is available');
-            console.warn('[Portal] Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('stats') || k.toLowerCase().includes('bot')));
+            console.warn('[Portal] legal-stats script loaded but API is not available');
+            console.warn('[Portal] window.legalStats:', window.legalStats);
+            console.warn('[Portal] window.AiStatsBot:', window.AiStatsBot);
+            console.warn('[Portal] window.StatsBot:', window.StatsBot);
+            console.warn('[Portal] Available window properties:', Object.keys(window).filter(k => 
+              k.toLowerCase().includes('stats') || 
+              k.toLowerCase().includes('bot') || 
+              k.toLowerCase().includes('legal')
+            ));
           }
         } catch (error) {
           console.error('[Portal] Error during legal-stats script execution:', error);

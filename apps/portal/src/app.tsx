@@ -20,9 +20,9 @@ const AppContent: React.FC = () => {
 
     // For legal-stats, AiStatsBot manages its own modal, so we don't need a container
     if (activeApp === 'legal-stats') {
-      // Helper to get the stats bot API (check both names)
+      // Helper to get the stats bot API (check all possible names)
       const getStatsBot = () => {
-        return window.AiStatsBot || window.StatsBot;
+        return window.legalStats || window.AiStatsBot || window.StatsBot;
       };
 
       const mountAiStatsBot = () => {
@@ -57,6 +57,7 @@ const AppContent: React.FC = () => {
           } else if (attempts >= maxAttempts) {
             clearInterval(checkInterval);
             console.error('[Portal] Stats bot failed to load after 5 seconds. Make sure the script is loaded correctly.');
+            console.error('[Portal] window.legalStats:', window.legalStats);
             console.error('[Portal] window.AiStatsBot:', window.AiStatsBot);
             console.error('[Portal] window.StatsBot:', window.StatsBot);
           }

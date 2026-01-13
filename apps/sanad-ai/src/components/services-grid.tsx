@@ -46,16 +46,61 @@ export const ServicesGrid: React.FC = () => {
       document.head.appendChild(isolationStyle);
     }
 
-    // Load Legal Stats script
+    // Load Legal Stats script - ISOLATED from other scripts
+    // This script loading is completely independent and won't be affected by other script failures
     const legalStatsScriptId = 'legal-stats-script';
     if (!document.getElementById(legalStatsScriptId)) {
-      const legalStatsScript = document.createElement('script');
-      legalStatsScript.id = legalStatsScriptId;
-      legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-      document.body.appendChild(legalStatsScript);
+      try {
+        const legalStatsScript = document.createElement('script');
+        legalStatsScript.id = legalStatsScriptId;
+        legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
+        legalStatsScript.async = true;
+        legalStatsScript.crossOrigin = 'anonymous';
+        
+        // Error handler - isolated, won't affect other scripts
+        legalStatsScript.onerror = (error) => {
+          console.error('[Sanad AI] Failed to load legal-stats script:', error);
+          // Don't throw or affect other scripts - just log the error
+        };
+        
+        // Success handler - verify API is available
+        legalStatsScript.onload = () => {
+          try {
+            // Verify that the API is actually exposed on window
+            // The script might expose it as legalStats, StatsBot, or AiStatsBot
+            const statsBot = (window as any).legalStats || (window as any).AiStatsBot || (window as any).StatsBot;
+            if (statsBot && typeof statsBot.open === 'function') {
+              // Alias to AiStatsBot for consistency across the codebase
+              if (!(window as any).AiStatsBot) {
+                (window as any).AiStatsBot = statsBot;
+                if ((window as any).legalStats) {
+                  console.log('[Sanad AI] legal-stats script exposed as legalStats, aliasing to AiStatsBot');
+                } else if ((window as any).StatsBot) {
+                  console.log('[Sanad AI] legal-stats script exposed as StatsBot, aliasing to AiStatsBot');
+                }
+              }
+              console.log('[Sanad AI] legal-stats script loaded successfully and API is available');
+            } else {
+              console.warn('[Sanad AI] legal-stats script loaded but API is not available');
+              console.warn('[Sanad AI] window.legalStats:', (window as any).legalStats);
+              console.warn('[Sanad AI] window.AiStatsBot:', (window as any).AiStatsBot);
+              console.warn('[Sanad AI] window.StatsBot:', (window as any).StatsBot);
+            }
+          } catch (error) {
+            console.error('[Sanad AI] Error during legal-stats script execution:', error);
+            // Don't throw - just log the error
+          }
+        };
+        
+        document.body.appendChild(legalStatsScript);
+      } catch (error) {
+        console.error('[Sanad AI] Error setting up legal-stats script:', error);
+        // Don't throw - just log the error so it doesn't affect other scripts
+      }
     }
 
-    // Load Legal Assistant script
+    // Load Legal Assistant script - ISOLATED from legal-stats
+    // This script loading is completely independent and won't affect legal-stats
     const legalAssistantScriptId = 'legal-assistant-script';
     if (!document.getElementById(legalAssistantScriptId)) {
       try {
@@ -65,25 +110,37 @@ export const ServicesGrid: React.FC = () => {
         legalAssistantScript.async = true;
         legalAssistantScript.crossOrigin = 'anonymous';
         
+        // Error handler - isolated, won't affect legal-stats or other scripts
         legalAssistantScript.onerror = (error) => {
-          console.error('[Sanad AI] Failed to load legal-assistant script:', error);
+          // Use warn instead of error to indicate it's non-critical
+          console.warn('[Sanad AI] Legal Assistant script failed to load (this is optional):', error);
           setIsLegalAssistantLoading(false);
+          // Don't throw - just log and continue
         };
         
+        // Success handler
         legalAssistantScript.onload = () => {
           try {
-            console.log('[Sanad AI] legal-assistant script loaded successfully');
+            // Verify API is available
+            if ((window as any).LegalAssistant && typeof (window as any).LegalAssistant.open === 'function') {
+              console.log('[Sanad AI] legal-assistant script loaded successfully and API is available');
+            } else {
+              console.warn('[Sanad AI] legal-assistant script loaded but window.LegalAssistant is not available');
+            }
             setIsLegalAssistantLoading(false);
           } catch (error) {
-            console.error('[Sanad AI] Error during legal-assistant script execution:', error);
+            console.warn('[Sanad AI] Error during legal-assistant script execution:', error);
             setIsLegalAssistantLoading(false);
+            // Don't throw - just log and continue
           }
         };
         
         document.body.appendChild(legalAssistantScript);
       } catch (error) {
-        console.error('[Sanad AI] Error setting up legal-assistant script:', error);
+        // Use warn instead of error - this is optional functionality
+        console.warn('[Sanad AI] Error setting up legal-assistant script (this is optional):', error);
         setIsLegalAssistantLoading(false);
+        // Don't throw - just log and continue so it doesn't affect other scripts
       }
     }
 
@@ -164,15 +221,20 @@ export const ServicesGrid: React.FC = () => {
   };
 
   const handleLegalStatsClick = () => {
-    // Helper to get the stats bot API (check both names)
+    // Helper to get the stats bot API (check all possible names)
     const getStatsBot = () => {
-      return (window as any).AiStatsBot || (window as any).StatsBot;
+      return (window as any).legalStats || (window as any).AiStatsBot || (window as any).StatsBot;
     };
 
     // Check if stats bot is already available
     const statsBot = getStatsBot();
     if (statsBot && typeof statsBot.open === 'function') {
-      statsBot.open();
+      try {
+        statsBot.open();
+      } catch (error) {
+        console.error('[Sanad AI] Error calling legal stats bot open():', error);
+        // Don't throw - just log the error
+      }
       return;
     }
 
@@ -184,12 +246,19 @@ export const ServicesGrid: React.FC = () => {
       const bot = getStatsBot();
       if (bot && typeof bot.open === 'function') {
         clearInterval(checkInterval);
-        bot.open();
+        try {
+          bot.open();
+        } catch (error) {
+          console.error('[Sanad AI] Error calling legal stats bot open():', error);
+          // Don't throw - just log the error
+        }
       } else if (attempts >= maxAttempts) {
         clearInterval(checkInterval);
         console.error('[Sanad AI] Stats bot failed to load. Make sure the script is loaded correctly.');
+        console.error('[Sanad AI] window.legalStats:', (window as any).legalStats);
         console.error('[Sanad AI] window.AiStatsBot:', (window as any).AiStatsBot);
         console.error('[Sanad AI] window.StatsBot:', (window as any).StatsBot);
+        // Don't throw - just log the error
       }
     }, 50);
   };
