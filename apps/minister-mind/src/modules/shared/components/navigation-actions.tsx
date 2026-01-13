@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
 
@@ -6,6 +7,7 @@ export interface NavItem {
   id: string;
   icon: string;
   label: string;
+  path?: string;
 }
 
 export interface NavigationActionsProps {
@@ -22,12 +24,27 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
   onNavChange,
   items
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeId, setActiveId] = useState<string>(defaultActive);
 
-  const handleClick = (id: string) => {
+  // Update active tab based on current route
+  React.useEffect(() => {
+    const currentItem = items.find(item => item.path && location.pathname.startsWith(item.path));
+    if (currentItem) {
+      setActiveId(currentItem.id);
+    }
+  }, [location.pathname, items]);
+
+  const handleClick = (id: string, path?: string) => {
     if (id === activeId) return;
     setActiveId(id);
     onNavChange?.(id);
+    
+    // Navigate to the route if path is provided
+    if (path) {
+      navigate(path);
+    }
   };
 
   return (
@@ -81,7 +98,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => handleClick(item.id)}
+                onClick={() => handleClick(item.id, item.path)}
                 className={`
                   relative
                   flex items-center
