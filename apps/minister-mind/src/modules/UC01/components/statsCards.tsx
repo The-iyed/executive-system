@@ -1,25 +1,33 @@
 
-const statsCards = () => {
-  return (
-    <div className="grid grid-cols-4 gap-4">
-    <div className="bg-white rounded-lg p-4">
-      <p className="text-sm text-gray-600 mb-2">مسودات قيد الإعداد</p>
-      <p className="text-3xl font-bold text-[#00A991]">12</p>
-    </div>
-    <div className="bg-white rounded-lg p-4">
-      <p className="text-sm text-gray-600 mb-2">طلبات قيد المراجعة</p>
-      <p className="text-3xl font-bold text-[#00A991]">10</p>
-    </div>
-    <div className="bg-white rounded-lg p-4">
-      <p className="text-sm text-gray-600 mb-2">طلبات معادة للتعديل</p>
-      <p className="text-3xl font-bold text-[#00A991]">08</p>
-    </div>
-    <div className="bg-white rounded-lg p-4">
-      <p className="text-sm text-gray-600 mb-2">اجتماعات مجدولة</p>
-      <p className="text-3xl font-bold text-[#00A991]">14</p>
-    </div>
-  </div>
-  )
+interface StatsCard {
+  heading: string;
+  number: string;
 }
 
-export default statsCards
+const statsCards = () => {
+  const statsData: StatsCard[] = [
+    { heading: 'مسودات قيد الإعداد', number: '12' },
+    { heading: 'طلبات قيد المراجعة', number: '10' },
+    { heading: 'طلبات معادة للتعديل', number: '08' },
+    { heading: 'اجتماعات مجدولة', number: '14' },
+  ];
+
+  return (
+    <div className="flex flex-row items-start justify-center px-7 gap-6 -mt-6">
+      {statsData.map((stat, index) => (
+        <div
+          key={index}
+          className="flex flex-col items-start p-6 gap-6 w-[312px] h-[140px] bg-white border border-[#EAECF0] rounded-xl"
+          style={{
+            boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
+          }}
+        >
+          <p className="font-bold text-base text-right text-[#101828]">{stat.heading}</p>
+          <p className="font-bold text-[42px] text-right text-[#009883]">{stat.number}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default statsCards;
