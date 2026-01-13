@@ -9,7 +9,14 @@ export interface NavItem {
   label: string;
 }
 
-const navItems: NavItem[] = [
+export interface NavigationActionsProps {
+  className?: string;
+  defaultActive?: string;
+  onNavChange?: (id: string) => void;
+  items?: NavItem[];
+}
+
+const defaultNavItems: NavItem[] = [
   {
     id: 'home',
     icon: HomeIcon,
@@ -22,16 +29,11 @@ const navItems: NavItem[] = [
   }
 ];
 
-export interface NavigationActionsProps {
-  className?: string;
-  defaultActive?: string;
-  onNavChange?: (id: string) => void;
-}
-
 export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
   className = '',
   defaultActive = 'home',
-  onNavChange
+  onNavChange,
+  items = defaultNavItems
 }) => {
   const [activeId, setActiveId] = useState<string>(defaultActive);
 
@@ -85,7 +87,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
             w-auto h-[40px]
           "
         >
-          {navItems.map((item) => {
+          {items.map((item) => {
             const isActive = activeId === item.id;
             
             return (
