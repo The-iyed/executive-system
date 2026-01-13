@@ -1,18 +1,20 @@
 import React from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
+import { useAuth } from '@auth';
 import Avatar from '../assets/Avatar.svg';
 
 export interface UserAvatarProps {
   className?: string;
-  name?: string;
-  email?: string;
 }
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({ 
-  className = '',
-  name = 'حمد الشريدة',
-  email = 'Alashrjdj@exemple.com'
+  className = ''
 }) => {
+  const { user } = useAuth();
+  
+  const name =  user?.username || '';
+  const email = user?.email || '';
+  
   return (
     <TooltipProvider>
       <div className={`flex items-center gap-3 ${className}`}>
