@@ -33,6 +33,5 @@ export const Layout: React.FC<LayoutProps> = ({
       // breadcrumbs: [{ label: 'إضافة اجتماع', onClick: () => {} }],
       actions: [{ label: 'إنشاء اجتماع', variant: 'primary', onClick: () => {} }, { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }]
     }}
-    authenticated={true}
     />
 )};
