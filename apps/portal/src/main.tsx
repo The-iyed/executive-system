@@ -74,7 +74,8 @@ if (typeof window !== 'undefined') {
       const statsBotScript = document.createElement('script');
       statsBotScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
       statsBotScript.async = true;
-      statsBotScript.crossOrigin = 'anonymous';
+      // Note: crossOrigin is NOT set - script tags don't need CORS headers unless you're reading their content
+      // Removing crossOrigin prevents CORS errors while still allowing the script to execute
       
       statsBotScript.onerror = (error) => {
         console.error('[Portal] Failed to load legal-stats (AiStatsBot) script:', error);
