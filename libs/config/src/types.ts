@@ -46,6 +46,11 @@ declare global {
       close: () => void;
       toggle: () => void;
     };
+    legalStats?: {
+      open: () => void;
+      close: () => void;
+      toggle: () => void;
+    };
     LegalAssistant?: {
       open: () => void;
       close: () => void;
