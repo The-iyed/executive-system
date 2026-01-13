@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import * as ReactQuery from '@tanstack/react-query';
 import { ServiceCard } from './service-card';
 import { AnalyzerIcon, BalanceIcon, ArticleIcon, FileIcon } from './service-icons';
-import { BarChart3Icon } from 'lucide-react';
 // Import types to ensure Window interface is extended
 import '@sanad-ai/config';
 
@@ -17,7 +16,6 @@ export interface Service {
 }
 
 export const ServicesGrid: React.FC = () => {
-  const [isLegalStatsLoading] = React.useState(false);
   const [isLegalAssistantLoading, setIsLegalAssistantLoading] = React.useState(false);
   const [isMuhallilAhkamLoading, setIsMuhallilAhkamLoading] = React.useState(false);
 
@@ -46,61 +44,7 @@ export const ServicesGrid: React.FC = () => {
       document.head.appendChild(isolationStyle);
     }
 
-    // Load Legal Stats script - ISOLATED from other scripts
-    // This script loading is completely independent and won't be affected by other script failures
-    const legalStatsScriptId = 'legal-stats-script';
-    if (!document.getElementById(legalStatsScriptId)) {
-      try {
-        const legalStatsScript = document.createElement('script');
-        legalStatsScript.id = legalStatsScriptId;
-        legalStatsScript.src = 'https://legal-stats.momrahai.com/legal-analyst.umd.js';
-        legalStatsScript.async = true;
-        // Note: crossOrigin is NOT set - script tags don't need CORS headers unless you're reading their content
-        // Removing crossOrigin prevents CORS errors while still allowing the script to execute
-        
-        // Error handler - isolated, won't affect other scripts
-        legalStatsScript.onerror = (error) => {
-          console.error('[Sanad AI] Failed to load legal-stats script:', error);
-          // Don't throw or affect other scripts - just log the error
-        };
-        
-        // Success handler - verify API is available
-        legalStatsScript.onload = () => {
-          try {
-            // Verify that the API is actually exposed on window
-            // The script might expose it as legalStats, StatsBot, or AiStatsBot
-            const statsBot = (window as any).legalStats || (window as any).AiStatsBot || (window as any).StatsBot;
-            if (statsBot && typeof statsBot.open === 'function') {
-              // Alias to AiStatsBot for consistency across the codebase
-              if (!(window as any).AiStatsBot) {
-                (window as any).AiStatsBot = statsBot;
-                if ((window as any).legalStats) {
-                  console.log('[Sanad AI] legal-stats script exposed as legalStats, aliasing to AiStatsBot');
-                } else if ((window as any).StatsBot) {
-                  console.log('[Sanad AI] legal-stats script exposed as StatsBot, aliasing to AiStatsBot');
-                }
-              }
-              console.log('[Sanad AI] legal-stats script loaded successfully and API is available');
-            } else {
-              console.warn('[Sanad AI] legal-stats script loaded but API is not available');
-              console.warn('[Sanad AI] window.legalStats:', (window as any).legalStats);
-              console.warn('[Sanad AI] window.AiStatsBot:', (window as any).AiStatsBot);
-              console.warn('[Sanad AI] window.StatsBot:', (window as any).StatsBot);
-            }
-          } catch (error) {
-            console.error('[Sanad AI] Error during legal-stats script execution:', error);
-            // Don't throw - just log the error
-          }
-        };
-        
-        document.body.appendChild(legalStatsScript);
-      } catch (error) {
-        console.error('[Sanad AI] Error setting up legal-stats script:', error);
-        // Don't throw - just log the error so it doesn't affect other scripts
-      }
-    }
-
-    // Load Legal Assistant script - ISOLATED from legal-stats
+    // Load Legal Assistant script
     // This script loading is completely independent and won't affect legal-stats
     const legalAssistantScriptId = 'legal-assistant-script';
     if (!document.getElementById(legalAssistantScriptId)) {
@@ -222,49 +166,6 @@ export const ServicesGrid: React.FC = () => {
     }, 50);
   };
 
-  const handleLegalStatsClick = () => {
-    // Helper to get the stats bot API (check all possible names)
-    const getStatsBot = () => {
-      return (window as any).legalStats || (window as any).AiStatsBot || (window as any).StatsBot;
-    };
-
-    // Check if stats bot is already available
-    const statsBot = getStatsBot();
-    if (statsBot && typeof statsBot.open === 'function') {
-      try {
-        statsBot.open();
-      } catch (error) {
-        console.error('[Sanad AI] Error calling legal stats bot open():', error);
-        // Don't throw - just log the error
-      }
-      return;
-    }
-
-    // Wait for script to load and initialize
-    let attempts = 0;
-    const maxAttempts = 100; // 5 seconds at 50ms intervals
-    const checkInterval = setInterval(() => {
-      attempts++;
-      const bot = getStatsBot();
-      if (bot && typeof bot.open === 'function') {
-        clearInterval(checkInterval);
-        try {
-          bot.open();
-        } catch (error) {
-          console.error('[Sanad AI] Error calling legal stats bot open():', error);
-          // Don't throw - just log the error
-        }
-      } else if (attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-        console.error('[Sanad AI] Stats bot failed to load. Make sure the script is loaded correctly.');
-        console.error('[Sanad AI] window.legalStats:', (window as any).legalStats);
-        console.error('[Sanad AI] window.AiStatsBot:', (window as any).AiStatsBot);
-        console.error('[Sanad AI] window.StatsBot:', (window as any).StatsBot);
-        // Don't throw - just log the error
-      }
-    }, 50);
-  };
-
   const handleLegalAssistantClick = () => {
     // Check if LegalAssistant is already available
     const legalAssistant = window.LegalAssistant;
@@ -313,13 +214,6 @@ export const ServicesGrid: React.FC = () => {
       // No URL - handled by handleMuhallilAhkamClick
     },
     {
-      title: 'محلل الرؤى والتوقعات',
-      description: 'تتيح هذه الخدمة تحليل البيانات القانونية والإحصائية، واستخراج الرؤى والتوقعات لدعم اتخاذ القرارات الاستراتيجية.',
-      icon: <BarChart3Icon />,
-      // No URL - handled by handleLegalStatsClick
-    },
-
-    {
       title: 'المذكرة القانونية',
       description: 'أداة ذكية تعتمد على منظومة وكلاء قانونيين رقميين تعمل بتقنيات الذكاء الاصطناعي لتحليل القضايا وصياغة لوائح الرد بدقة و موثوقية.',
       icon: <BalanceIcon />,
@@ -361,22 +255,18 @@ export const ServicesGrid: React.FC = () => {
                 isLoading={
                   service.title === 'تحليل الأحكام'
                     ? isMuhallilAhkamLoading
-                    : service.title === 'محلل الرؤى والتوقعات' 
-                      ? isLegalStatsLoading
-                      : service.title === 'المذكرة القانونية'
-                        ? isLegalAssistantLoading
-                        : false
+                    : service.title === 'المذكرة القانونية'
+                      ? isLegalAssistantLoading
+                      : false
                 }
                 onClick={
                   service.title === 'تحليل الأحكام'
                     ? handleMuhallilAhkamClick
-                    : service.title === 'محلل الرؤى والتوقعات' 
-                      ? handleLegalStatsClick
-                      : service.title === 'المذكرة القانونية'
-                        ? handleLegalAssistantClick
-                        : service.url 
-                          ? () => handleServiceClick(service.url) 
-                          : undefined
+                    : service.title === 'المذكرة القانونية'
+                      ? handleLegalAssistantClick
+                      : service.url 
+                        ? () => handleServiceClick(service.url) 
+                        : undefined
                 }
               />
             </div>
@@ -394,22 +284,18 @@ export const ServicesGrid: React.FC = () => {
             isLoading={
               service.title === 'تحليل الأحكام'
                 ? isMuhallilAhkamLoading
-                : service.title === 'محلل الرؤى والتوقعات' 
-                  ? isLegalStatsLoading
-                  : service.title === 'المذكرة القانونية'
-                    ? isLegalAssistantLoading
-                    : false
+                : service.title === 'المذكرة القانونية'
+                  ? isLegalAssistantLoading
+                  : false
             }
             onClick={
               service.title === 'تحليل الأحكام'
                 ? handleMuhallilAhkamClick
-                : service.title === 'محلل الرؤى والتوقعات' 
-                  ? handleLegalStatsClick
-                  : service.title === 'المذكرة القانونية'
-                    ? handleLegalAssistantClick
-                    : service.url 
-                      ? () => handleServiceClick(service.url) 
-                      : undefined
+                : service.title === 'المذكرة القانونية'
+                  ? handleLegalAssistantClick
+                  : service.url 
+                    ? () => handleServiceClick(service.url) 
+                    : undefined
             }
           />
         ))}
