@@ -17,7 +17,7 @@ export interface Service {
 }
 
 export const ServicesGrid: React.FC = () => {
-  const [isLegalStatsLoading, setIsLegalStatsLoading] = React.useState(false);
+  const [isLegalStatsLoading] = React.useState(false);
   const [isLegalAssistantLoading, setIsLegalAssistantLoading] = React.useState(false);
   const [isMuhallilAhkamLoading, setIsMuhallilAhkamLoading] = React.useState(false);
 
