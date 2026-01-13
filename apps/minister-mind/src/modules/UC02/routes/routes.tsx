@@ -20,6 +20,13 @@ const routes: RouteConfig[] = [
     component: lazy(() => import('../pages/recentActivity')),
     layout: Layout,
   },
+  {
+    exact: true,
+    // guard: GuestGuard,
+    path: PATH.SCHEDULE_REVIEW,
+    component: lazy(() => import('../pages/scheduleReview')),
+    layout: Layout,
+  },
 ]
 
 export default routes
