@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarInput,
   Button,
   useSidebar,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
 } from '@sanad-ai/ui';
 
 import SanadAiIcon from '../assets/sanad-ai-icon.svg';
 import LayoutIcon from '../assets/layout-alt-02.svg';
 import SearchLgIcon from '../assets/search-lg.svg';
 import EditeIcon from '../assets/edit-05.svg';
+import BackgroundImage from '../assets/bg.png';
 
 // Constants
 const SIDEBAR_STYLES = {
@@ -109,7 +114,12 @@ const SidebarHeader: React.FC = () => {
 };
 
 // Search Input Component
-const SearchInput: React.FC = () => {
+interface SearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const SearchInput: React.FC<SearchInputProps> = ({ value, onChange }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -125,10 +135,11 @@ const SearchInput: React.FC = () => {
       <SidebarInput
         type="text"
         placeholder="البحث في المحادثة ..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full h-[38px] pr-8 pl-2 rounded-[6px] border-[0.2px] border-[#D8D8D8] bg-white text-right text-[14px] font-bold leading-[20px] placeholder:text-[#BBB] focus-visible:ring-0 focus-visible:outline-none"
         style={{
-
-            boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
+          boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.08)',
         }}
       />
     </div>
@@ -219,6 +230,38 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, onClick, onDelete }) => {
+  const titleRef = React.useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkTruncation = () => {
+      if (titleRef.current) {
+        const isTextTruncated = titleRef.current.scrollWidth > titleRef.current.clientWidth;
+        setIsTruncated(isTextTruncated);
+      }
+    };
+
+    // Use a small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(checkTruncation, 0);
+    
+    // Re-check on window resize
+    window.addEventListener('resize', checkTruncation);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkTruncation);
+    };
+  }, [title]);
+
+  const titleElement = (
+    <p
+      ref={titleRef}
+      className="text-white text-[14px] font-normal leading-[20px] truncate"
+      dir="auto"
+    >
+      {title}
+    </p>
+  );
+
   return (
     <div
       className={`w-full h-[42px] flex items-center gap-2 px-3 rounded-[4px] transition-colors group ${
@@ -234,12 +277,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ title, isActive, on
           <span className="text-white text-[8px] leading-[20px]">.</span>
         </div>
         <div className="flex-1 text-right min-w-0">
-          <p
-            className="text-white text-[14px] font-normal leading-[20px] truncate"
-            dir="auto"
-          >
-            {title}
-          </p>
+          {isTruncated ? (
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  {titleElement}
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="max-w-xs z-[10000] bg-cover bg-center bg-no-repeat"
+                  style={{
+                    backgroundImage: `url(${BackgroundImage})`,
+                  }}
+                >
+                  <p className="break-words whitespace-normal">{title}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            titleElement
+          )}
         </div>
       </button>
       {onDelete && (
@@ -371,6 +428,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter conversations based on search query
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return conversations;
+    }
+    
+    const query = searchQuery.trim().toLowerCase();
+    return conversations.filter((conv) =>
+      conv.name.toLowerCase().includes(query)
+    );
+  }, [conversations, searchQuery]);
 
   return (
     <ShadcnSidebar
@@ -413,7 +483,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {!isCollapsed ? (
           <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
-            <SearchInput />
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
             <NewChatButton onNewChat={onNewConversation} isLoading={isCreatingConversation} />
             
             <div className="flex-1 overflow-y-auto min-h-0" style={{
@@ -427,7 +497,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               `}</style>
               <div className="conversations-scroll">
                 <ConversationsList
-                  conversations={conversations}
+                  conversations={filteredConversations}
                   currentConversationId={currentConversationId}
                   onSelectConversation={onSelectConversation}
                   onDeleteConversation={onDeleteConversation}
