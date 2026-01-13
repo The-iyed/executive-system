@@ -6,6 +6,8 @@ import {
   Brain,
   ClipboardList,
   CircleDot,
+  BarChart3,
+  MessageSquare,
 } from 'lucide-react';
 import { ServiceCard, ServiceCardProps } from './service-card';
 import { FilterTabs, FilterTab } from './filter-tabs';
@@ -91,6 +93,22 @@ export const services: ServiceCardProps[] = [
       'تتيح هذه الخدمة للمعنيين تحليل ومراجعة الأحكام القضائية، واستخلاص الأنماط والنتائج لدعم اتخاذ القرار القانوني.',
     appKey: 'muhallil-ahkam',
   },
+  {
+    icon: BarChart3,
+    category: 'محلل الرؤى والتوقعات',
+    title: 'محلل الرؤى والتوقعات',
+    description:
+      'تتيح هذه الخدمة تحليل البيانات القانونية والإحصائية، واستخراج الرؤى والتوقعات لدعم اتخاذ القرارات الاستراتيجية.',
+    appKey: 'legal-stats',
+  },
+  {
+    icon: MessageSquare,
+    category: 'المذكرة القانونية',
+    title: 'المذكرة القانونية',
+    description:
+      'تتيح هذه الخدمة المساعدة القانونية الذكية من خلال محادثة تفاعلية، حيث يمكن للمستخدمين الحصول على إجابات فورية على استفساراتهم القانونية.',
+    appKey: 'legal-assistant',
+  },
 ];
 
 const filterTabs: FilterTab[] = [
@@ -123,6 +141,8 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ onOpenApp }) =
       consultations: 'الاستشارات القانونية',
       committees: 'لجان هيئة الخبراء',
       'sanad-ai': 'سند AI',
+      'legal-stats': 'محلل الرؤى والتوقعات',
+      'legal-assistant': 'المذكرة القانونية',
     };
     
     return availableCategories.has(categoryMap[tab.id]);
@@ -137,6 +157,7 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ onOpenApp }) =
         consultations: 'الاستشارات القانونية',
         committees: 'لجان هيئة الخبراء',
         'sanad-ai': 'سند AI',
+        'legal-stats': 'محلل الرؤى والتوقعات',
       };
       if (service.category !== categoryMap[activeTab]) {
         return false;
@@ -165,8 +186,8 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ onOpenApp }) =
           الخدمات الإلكترونية
         </h1>
 
-        {/* Search Box - Full width on mobile */}
-        <div className="flex justify-end w-full sm:w-auto">
+        {/* Search Box - Full width on mobile, fixed max-width on desktop */}
+        <div className="flex justify-end w-full search-box-container">
           <SearchBox value={searchQuery} onChange={setSearchQuery} />
         </div>
       </div>

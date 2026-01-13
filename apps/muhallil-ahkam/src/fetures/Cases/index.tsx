@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, startTransition } from 'react';
 import { Card, CardContent, Input, Badge, Loader } from '@sanad-ai/ui';
 import EyeIcon from '../../assets/eye.svg';
 import SearchIcon from '../../assets/search-lg.svg';
@@ -16,7 +16,9 @@ const CaseCard: React.FC<{ case: Case }> = ({ case: caseItem }) => {
   const isAnalyzing = caseItem.status === 'analyzing';
 
   const handleViewCaseFiles = () => {
-    navigate(PATH.CASE_FILES.replace(':conversation_id', caseItem.conversation_id));
+    startTransition(() => {
+      navigate(PATH.CASE_FILES.replace(':conversation_id', caseItem.conversation_id));
+    });
   };
 
   return (

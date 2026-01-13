@@ -70,6 +70,7 @@ export interface GetMessagesResponse {
 
 export interface CreateConversationRequest {
   name?: string;
+  user_id?: string;
 }
 
 export interface CreateConversationResponse {

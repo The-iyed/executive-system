@@ -7,7 +7,6 @@ interface WelcomeMessageProps {
 }
 
 export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ 
-  userName = 'عبد الله' 
 }) => {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4">
@@ -28,7 +27,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
         className="text-[32px] font-bold text-[#1A1A1A] text-center"
         
       >
-        حياك الله {userName}
+        حياك الله 
       </h2>
 
       <p
