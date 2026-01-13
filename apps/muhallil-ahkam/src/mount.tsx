@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppMount } from '@sanad-ai/config';
 import { createQueryClient } from '@sanad-ai/api';
@@ -17,16 +17,16 @@ export const createMount = (): AppMount => {
       root = createRoot(el);
       const queryClient = createQueryClient();
       
-      console.log('[Muhallil Ahkam] Mounting app to container:', el);
-      console.log('[Muhallil Ahkam] Current location:', window.location.pathname);
-      
+      // Use MemoryRouter with initial location "/" to ensure routes always match
+      // This prevents issues when the package is loaded in another platform
+      // where the BrowserRouter might use the host's URL
       root.render(
         <React.StrictMode>
           <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
-              <BrowserRouter>
+              <MemoryRouter initialEntries={['/']} initialIndex={0}>
                 <App />
-              </BrowserRouter>
+              </MemoryRouter>
             </QueryClientProvider>
           </ErrorBoundary>
         </React.StrictMode>
