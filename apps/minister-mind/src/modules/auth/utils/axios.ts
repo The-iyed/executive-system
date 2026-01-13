@@ -39,11 +39,17 @@ axiosInstance.interceptors.response.use(
       previousRequest.sent = true
       try {
         const { refresh_token } = getTokens()
-        const response = await axios.get(baseURL + '/api/auth/refresh', {
-          headers: {
-            Authorization: `Bearer ${refresh_token}`,
+        const response = await axios.post(
+          baseURL + '/api/auth/refresh',
+          {
+            refresh_token: refresh_token,
           },
-        })
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
         const { token } = response.data.payload
         setTokens(token)
         previousRequest.headers['Authorization'] = `Bearer ${token}`

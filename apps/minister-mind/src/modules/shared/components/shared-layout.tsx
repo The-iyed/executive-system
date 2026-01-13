@@ -53,7 +53,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         {/* welcom component */}
         <WelcomeSection {...welcomeSection} />
         <div 
-          className="children-container fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-[31px] bg-[#FFF] h-[calc(100vh-365px)]"
+          className="children-container fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-[31px] bg-[#FFF] h-[calc(100vh-375px)]"
           style={{
             width: 'calc(100% - 54px)',
           }}
