@@ -47,7 +47,6 @@ export const Layout: React.FC<LayoutProps> = ({
           { label: 'عرض الجدول', variant: 'secondary', onClick: () => {} }
         ]
       }}
-      authenticated={true}
       navigationItems={uc02NavItems}
     />
   );
