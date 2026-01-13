@@ -1,2 +1,1 @@
-// Auth module data access layer
-export {};
+export * from './authApi';
