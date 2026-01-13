@@ -1,3 +1,40 @@
+/* Frutiger LT Arabic Font Face Declarations - Must be at the very top before any other rules */
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('/fonts/FrutigerLTArabic45Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('/fonts/FrutigerLTArabic55Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('/fonts/FrutigerLTArabic65Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Frutiger LT Arabic';
+  src: url('/fonts/frutigerltarabic75black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-10FFFF;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -164,7 +201,7 @@
   body {
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
-    font-family: var(--font-family-ping-ar);
+    font-family: 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
   }
 }
 

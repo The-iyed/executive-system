@@ -8,3 +8,4 @@ export { WelcomeSection } from './welcome-section';
 export { NavigationActions, type NavItem } from './navigation-actions';
 export { WeatherCard, type WeatherCardProps } from './weather-card';
 export { SharedLayout, type SharedLayoutProps  } from './shared-layout';
+export { ScreenLoader } from './screen-loader';

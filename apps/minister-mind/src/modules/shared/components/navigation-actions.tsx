@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
-import HomeIcon from '../assets/home-02.svg';
-import CalendarIcon from '../assets/calendar-minus-01.svg';
+
 
 export interface NavItem {
   id: string;
@@ -16,24 +15,12 @@ export interface NavigationActionsProps {
   items?: NavItem[];
 }
 
-const defaultNavItems: NavItem[] = [
-  {
-    id: 'home',
-    icon: HomeIcon,
-    label: 'الصفحة الرئيسية'
-  },
-  {
-    id: 'calendar',
-    icon: CalendarIcon,
-    label: 'الاجتماعات'
-  }
-];
 
 export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
   className = '',
   defaultActive = 'home',
   onNavChange,
-  items = defaultNavItems
+  items
 }) => {
   const [activeId, setActiveId] = useState<string>(defaultActive);
 
@@ -69,7 +56,8 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
         }
       `}</style>
       <TooltipProvider>
-      <div 
+    {items && items?.length > 0 && (
+    <div 
         className={`
           flex flex-col items-start
           p-[10px]
@@ -87,7 +75,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
             w-auto h-[40px]
           "
         >
-          {items.map((item) => {
+          {items?.map((item) => {
             const isActive = activeId === item.id;
             
             return (
@@ -173,6 +161,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
           })}
         </div>
       </div>
+    )}
     </TooltipProvider>
     </>
   );

@@ -1,8 +1,9 @@
 
-import { RouteProps } from 'react-router-dom'
-import { Fragment, lazy } from 'react'
-import { PATH } from './paths'
-import { Layout } from '../Layout'
+import { RouteProps } from 'react-router-dom';
+import { Fragment, lazy } from 'react';
+import { PATH } from './paths';
+import { Layout } from '../Layout';
+import { GuestGuard } from '@shared/guards';
 
 type RouteConfig = {
   exact: boolean | null
@@ -15,7 +16,7 @@ type RouteConfig = {
 const routes: RouteConfig[] = [
   {
     exact: true,
-    // guard: GuestGuard,
+    guard: GuestGuard,
     path: PATH.LOGIN,
     component: lazy(() => import('../features/Login')),
     layout: Layout,

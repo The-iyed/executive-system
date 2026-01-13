@@ -1,5 +1,6 @@
-import { Fragment } from 'react';
+import { Fragment, Suspense } from 'react';
 import { Routes, Route, RouteProps } from 'react-router-dom';
+import { ScreenLoader } from '../components';
 import pages from './routes';
 
 type RouteConfig = {
@@ -24,7 +25,9 @@ export const renderRoutes = (routes: RouteConfig[] = []) => (
           element={
             <Guard>
               <Layout>
-                <Component />
+                <Suspense fallback={<ScreenLoader />}>
+                  <Component />
+                </Suspense>
               </Layout>
             </Guard>
           }
