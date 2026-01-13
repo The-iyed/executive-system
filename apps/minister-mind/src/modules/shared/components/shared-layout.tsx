@@ -1,4 +1,5 @@
 import React from 'react';
+import { twMerge } from 'tailwind-merge';
 import BgSvg from '../assets/bg.svg';
 import { Logo } from './logo';
 import { LanguageSwitch } from './language-switch';
@@ -21,7 +22,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
   return (
     <div className="min-h-screen relative w-full overflow-hidden">
       <div
-        className={`absolute z-0 bg-cover bg-center bg-no-repeat pointer-events-none ${bgHeaderClassName}`}
+        className={twMerge('absolute z-0 bg-cover bg-center bg-no-repeat pointer-events-none', bgHeaderClassName)}
         style={{
           width: 'calc(100% - 24px)',
           height: '398px',
@@ -32,7 +33,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         }}
       />
       <div 
-        className={`relative h-[310px] z-10 my-[50px] mx-[60px] ${headerClassName}`}
+        className={twMerge('relative h-[310px] z-10 my-[50px] mx-[60px]', headerClassName)}
       >
         <header className="flex items-center justify-between" style={{ zIndex: 2 }}>
           <div className='flex items-center gap-4'>
