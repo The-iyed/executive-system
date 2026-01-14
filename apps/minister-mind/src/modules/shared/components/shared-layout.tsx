@@ -42,11 +42,13 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
           {isAuthenticated && <NavigationActions items={navigationItems} />}
           </div>
 
-        {isAuthenticated && (<div className='flex items-center gap-4'>
+        {isAuthenticated && (
+          <div className='flex items-center gap-4'>
             <SearchInput />
             <LanguageSwitch />
             <UserAvatar />
-          </div>)}
+          </div>
+        )}
         </header>
 
         {/* whether component */}
