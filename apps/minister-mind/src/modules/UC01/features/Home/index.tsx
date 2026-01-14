@@ -1,7 +1,7 @@
 import React from 'react';
 import { StatsCards } from '../../components';
 
-const RecentActivity: React.FC = () => {
+const Home: React.FC = () => {
   return (
     <div>
       <StatsCards />
@@ -9,4 +9,4 @@ const RecentActivity: React.FC = () => {
   );
 };
 
-export default RecentActivity;
+export default Home;
