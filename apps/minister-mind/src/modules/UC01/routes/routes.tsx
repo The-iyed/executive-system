@@ -17,11 +17,24 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
-    path: PATH.RECENT_ACTIVITY,
-    component: lazy(() => import('../features/RecentActivity')),
+    path: PATH.HOME,
+    component: lazy(() => import('../features/Home')),
     layout: Layout,
   },
-  
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.MEETINGS,
+    component: lazy(() => import('../features/Meeting')),
+    layout: Layout,
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.NEW_MEETING,
+    component: lazy(() => import('../features/NewMeeting')),
+    layout: Layout,
+  },
 ]
 
 export default routes

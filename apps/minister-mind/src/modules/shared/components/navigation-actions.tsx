@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
+
+import { ActionButton } from './welcome-section';
 
 export interface NavItem {
   id: string;
   icon: string;
   label: string;
   path?: string;
+  actions?: ActionButton[];
 }
 
 export interface NavigationActionsProps {
@@ -17,6 +20,12 @@ export interface NavigationActionsProps {
   items?: NavItem[];
 }
 
+const isRouteActive = (itemPath?: string, pathname?: string) => {
+  if (!itemPath || !pathname) return false;
+  if (itemPath === '/') return pathname === '/';
+
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+};
 
 export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
   className = '',
@@ -25,24 +34,24 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
   items
 }) => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation();  
   const [activeId, setActiveId] = useState<string>(defaultActive);
 
-  // Update active tab based on current route
-  React.useEffect(() => {
-    const currentItem = items.find(item => item.path && location.pathname.startsWith(item.path));
-    if (currentItem) {
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const currentItem = items.find(item =>
+      isRouteActive(item.path, location.pathname)
+    );
+  
+    if (currentItem && currentItem.id !== activeId) {
       setActiveId(currentItem.id);
     }
   }, [location.pathname, items]);
 
   const handleClick = (id: string, path?: string) => {
-    if (id === activeId) return;
-    setActiveId(id);
     onNavChange?.(id);
-    
-    // Navigate to the route if path is provided
-    if (path) {
+  
+    if (path && location.pathname !== path) {
       navigate(path);
     }
   };
@@ -158,7 +167,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span 
-                          className="w-auto h-5 text-base font-bold leading-6 text-white whitespace-nowrap cursor-default"
+                          className="w-auto h-5 text-base font-bold leading-6 text-white whitespace-nowrap cursor-pointer"
                           style={{
                             animation: 'fadeInSlide 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
                             opacity: 0,
