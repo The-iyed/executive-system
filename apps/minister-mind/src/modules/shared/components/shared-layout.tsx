@@ -1,5 +1,6 @@
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
+import { useAuth } from '@auth';
 import BgSvg from '../assets/bg.svg';
 import { Logo } from './logo';
 import { LanguageSwitch } from './language-switch';
@@ -14,11 +15,11 @@ export interface SharedLayoutProps {
   headerClassName?: string;
   bgHeaderClassName?: string;
   welcomeSection: WelcomeSectionProps;
-  authenticated?: boolean;
   navigationItems?: NavItem[];
 }
 
-export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClassName, bgHeaderClassName, welcomeSection, authenticated, navigationItems }) => {
+export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClassName, bgHeaderClassName, welcomeSection, navigationItems }) => {
+  const { isAuthenticated } = useAuth();
   return (
     <div className="min-h-screen relative w-full overflow-hidden">
       <div
@@ -38,14 +39,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         <header className="flex items-center justify-between" style={{ zIndex: 2 }}>
           <div className='flex items-center gap-4'>
             <Logo />
-          {authenticated && <NavigationActions items={navigationItems} />}
+          {isAuthenticated && <NavigationActions items={navigationItems} />}
           </div>
 
-        {authenticated && (<div className='flex items-center gap-4'>
+        {isAuthenticated && (
+          <div className='flex items-center gap-4'>
             <SearchInput />
             <LanguageSwitch />
             <UserAvatar />
-          </div>)}
+          </div>
+        )}
         </header>
 
         {/* whether component */}
