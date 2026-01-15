@@ -1,3 +1,32 @@
+/* Global Scrollbar Styles - transparent track, only bar visible */
+/* Apply to all elements with scrollbars */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+  border: none;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Firefox scrollbar - apply globally */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
 /* Custom Scrollbar Styles */
 .schedule-review-scroll::-webkit-scrollbar {
   width: 8px;
@@ -21,4 +50,5 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f1f1;
 }
+
 
