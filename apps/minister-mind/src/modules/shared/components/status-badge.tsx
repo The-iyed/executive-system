@@ -42,10 +42,21 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
   },
+  'UNDER_CONSULTATION_SCHEDULING': {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
+  'UNDER_GUIDANCE': {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, className = '' }) => {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || {
+    bgClass: 'bg-[rgba(89,146,255,0.12)]',
+    textClass: 'text-[#3C6FD1]',
+  };
 
   return (
     <div

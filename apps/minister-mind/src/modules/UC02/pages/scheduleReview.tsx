@@ -5,7 +5,7 @@ import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardD
 import { MeetingStatus } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye, Calendar } from 'lucide-react';
-import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
+import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 
 const ITEMS_PER_PAGE = 10;
@@ -75,6 +75,16 @@ const ScheduleReview: React.FC = () => {
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
+      // Use assigned scheduling endpoint for work-basket tab
+      if (activeTab === 'work-basket') {
+        return getAssignedSchedulingRequests(params);
+      }
+      // For scheduled meetings fetch meetings filtered by status and owner_type
+      if (activeTab === 'scheduled-meetings') {
+        params.status = MeetingStatus.SCHEDULED;
+        params.owner_type = 'SCHEDULING';
+        return getMeetings(params);
+      }
       return getMeetings(params);
     },
     enabled: !!apiStatus, // Only fetch when we have a status
@@ -110,6 +120,7 @@ const ScheduleReview: React.FC = () => {
       id: 'requestNumber',
       header: 'رقم الطلب',
       width: 'w-48', // Fixed width for request number - rightmost in RTL
+      align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
@@ -122,6 +133,7 @@ const ScheduleReview: React.FC = () => {
       id: 'subject',
       header: 'الموضوع',
       width: 'flex-1', // Flexible width for subject
+      align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
@@ -134,6 +146,7 @@ const ScheduleReview: React.FC = () => {
       id: 'coordinator',
       header: 'مقدم الطلب',
       width: 'w-56', // Fixed width for coordinator
+      align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
@@ -145,10 +158,11 @@ const ScheduleReview: React.FC = () => {
     {
       id: 'date',
       header: 'تاريخ الإرسال',
-      width: 'w-60', // Fixed width for date
+      width: 'w-72', // Fixed width for date - increased to accommodate full Arabic date
+      align: 'end',
       render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
+        <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0 overflow-visible">
+          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
             {row.date}
           </span>
           <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
@@ -161,6 +175,7 @@ const ScheduleReview: React.FC = () => {
       id: 'status',
       header: 'الحالة',
       width: 'w-52', // Fixed width for status
+      align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <StatusBadge status={row.status} label={row.statusLabel} />
@@ -171,6 +186,7 @@ const ScheduleReview: React.FC = () => {
       id: 'actions',
       header: '',
       width: 'w-28', // Fixed width for actions - leftmost in RTL
+      align: 'center',
       render: (row) => (
         <div className="w-full flex justify-center">
           <button
