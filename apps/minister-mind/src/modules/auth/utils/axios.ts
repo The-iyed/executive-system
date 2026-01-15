@@ -50,9 +50,10 @@ axiosInstance.interceptors.response.use(
             },
           }
         )
-        const { token } = response.data.payload
-        setTokens(token)
-        previousRequest.headers['Authorization'] = `Bearer ${token}`
+        const { access_token: newAccessToken, refresh_token: newRefreshToken } = response.data;
+        // Store new tokens
+        setTokens(newAccessToken, newRefreshToken);
+        previousRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
         return axiosInstance(previousRequest)
       } catch (err) {
         clearTokens()

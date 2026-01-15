@@ -34,7 +34,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         }}
       />
       <div 
-        className={twMerge('relative h-[310px] z-10 my-[50px] mx-[60px]', headerClassName)}
+        className={twMerge('relative h-[280px] z-10 my-[50px] mx-[60px]', headerClassName)}
       >
         <header className="flex items-center justify-between" style={{ zIndex: 2 }}>
           <div className='flex items-center gap-4'>
@@ -56,7 +56,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         {/* welcom component */}
         <WelcomeSection {...welcomeSection} />
         <div 
-          className="children-container fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-[31px] bg-[#FFF] h-[calc(100vh-375px)]"
+          className="children-container fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-[31px] bg-[#FFF] h-[calc(100vh-340px)]"
           style={{
             width: 'calc(100% - 54px)',
           }}
@@ -65,7 +65,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         </div>
       </div>
         <div 
-          className="children-background fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-[14px] bg-[#F0F0F0] h-[calc(100vh-420px)]"
+          className="children-background fixed bottom-[12px] left-1/2 -translate-x-1/2 rounded-[14px] bg-[#F0F0F0] h-[calc(100vh-432px)]"
           style={{
             width: 'calc(100% - 24px)',
           }}
