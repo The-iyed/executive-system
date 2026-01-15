@@ -1,0 +1,115 @@
+import * as React from "react"
+import { Calendar as CalendarIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/button"
+import { Calendar } from "@/components/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/popover"
+
+export interface DatePickerProps {
+  date?: Date
+  onDateChange?: (date: Date | undefined) => void
+  placeholder?: string
+  className?: string
+  error?: boolean
+  value?: string
+  onChange?: (value: string) => void
+  onBlur?: () => void
+}
+
+const formatDate = (date: Date | undefined): string => {
+  if (!date) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}:${month}:${year}`;
+};
+
+export function DatePicker({
+  date,
+  onDateChange,
+  placeholder = "dd:mm:yyyy",
+  className,
+  error,
+  value,
+  onChange,
+  onBlur,
+}: DatePickerProps) {
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
+    date || (value ? new Date(value) : undefined)
+  );
+
+  React.useEffect(() => {
+    if (date !== undefined) {
+      setSelectedDate(date);
+    } else if (value) {
+      const parsedDate = new Date(value);
+      if (!isNaN(parsedDate.getTime())) {
+        setSelectedDate(parsedDate);
+      } else {
+        setSelectedDate(undefined);
+      }
+    } else {
+      setSelectedDate(undefined);
+    }
+  }, [date, value]);
+
+  const handleDateSelect = (newDate: Date | undefined) => {
+    setSelectedDate(newDate);
+    onDateChange?.(newDate);
+    if (onChange) {
+      if (newDate) {
+        // Format as YYYY-MM-DD for HTML5 date input compatibility
+        const year = newDate.getFullYear();
+        const month = String(newDate.getMonth() + 1).padStart(2, '0');
+        const day = String(newDate.getDate()).padStart(2, '0');
+        onChange(`${year}-${month}-${day}`);
+      } else {
+        onChange('');
+      }
+    }
+  };
+
+  const displayValue = selectedDate ? formatDate(selectedDate) : '';
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            "w-[534.5px] h-[44px] px-[14px] py-[10px] pr-[40px] flex items-center justify-center gap-2 bg-white border border-[#D0D5DD] rounded-lg text-[#667085] font-normal text-[16px] leading-[24px]",
+            "focus:outline-none focus:border-[#008774]",
+            !selectedDate && "text-muted-foreground",
+            error && "border-[#D13C3C]",
+            !error && "focus:border-[#008774]",
+            className
+          )}
+          style={{
+            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+            color: selectedDate ? '#344054' : '#667085',
+          }}
+          onBlur={onBlur}
+        >
+          <CalendarIcon className="text-[#667085] mt-[4px]" />
+          <span className="text-[#667085]">
+            {displayValue || placeholder}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleDateSelect}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
