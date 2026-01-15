@@ -1,20 +1,38 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardStats, StatsCard } from '../data';
+import { ScreenLoader } from '@shared';
 
-interface StatsCard {
-  heading: string;
-  number: string;
-}
+const StatsCards: React.FC = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: getDashboardStats,
+  });
 
-const statsCards = () => {
-  const statsData: StatsCard[] = [
-    { heading: 'مسودات قيد الإعداد', number: '12' },
-    { heading: 'طلبات قيد المراجعة', number: '10' },
-    { heading: 'طلبات معادة للتعديل', number: '08' },
-    { heading: 'اجتماعات مجدولة', number: '14' },
-  ];
+  const statsData: StatsCard[] = data
+  ? [
+      { heading: 'مسودات قيد الإعداد', number: data.drafts_in_preparation.toString() },
+      { heading: 'طلبات قيد المراجعة', number: data.under_review.toString() },
+      { heading: 'طلبات معادة للتعديل', number: data.returned_for_modification.toString() },
+      { heading: 'اجتماعات مجدولة', number: data.scheduled_meetings.toString() },
+    ]
+  : [];
+
+  if (isLoading) {
+    return <ScreenLoader />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <p className="text-red-500">حدث خطأ في تحميل البيانات</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-row items-start justify-center px-7 gap-6 -mt-6">
-      {statsData.map((stat, index) => (
+      { statsData.length > 0 && statsData?.map((stat, index) => (
         <div
           key={index}
           className="flex flex-col items-start p-6 gap-6 w-[312px] h-[140px] bg-white border border-[#EAECF0] rounded-xl"
@@ -30,4 +48,4 @@ const statsCards = () => {
   );
 };
 
-export default statsCards;
+export default StatsCards;
