@@ -16,7 +16,7 @@ export interface WeeklyCalendarGridProps {
   weekStart: Date;
   events: CalendarEventData[];
   onEventClick?: (event: CalendarEventData) => void;
-  onEventHover?: (event: CalendarEventData | null, position?: { x: number; y: number }) => void;
+  onEventBook?: (event: CalendarEventData) => void;
   onTimeSlotClick?: (date: Date, time: string) => void;
 }
 
@@ -53,16 +53,16 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   weekStart,
   events,
   onEventClick,
-  onEventHover,
+  onEventBook,
   onTimeSlotClick,
 }) => {
   const weekDates = getWeekDates(weekStart);
 
   return (
-    <div className="w-full border-[0.6px] border-[#B6C1CA] rounded-lg overflow-hidden bg-white">
+    <div className="w-full border-[0.6px] border-b-0 border-[#B6C1CA] rounded-[2px] overflow-hidden bg-white">
       {/* Header Row - Days */}
       <div className="grid grid-cols-[60px_repeat(7,minmax(0,1fr))] border-b-[0.6px] border-[#B6C1CA] bg-[#FFFFFF]">
-        <div className="p-3 border-r-[0.6px] border-[#B6C1CA]"></div>
+        <div className="p-3 border-[#B6C1CA] bg-[#F9FAFB]"></div>
         {weekDates.map((date, index) => {
           const dayName = dayNamesShort[date.getDay()];
           const dayNumber = date.getDate();
@@ -90,8 +90,8 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
         {timeSlots.map((time) => (
           <React.Fragment key={time}>
             {/* Time Label */}
-            <div className="p-3 border-r-[0px] border-b-[0.6px] border-[#B6C1CA] bg-[#F9FAFB] text-right w-[60px]">
-              <span className="text-[14px] font-medium text-[#344054]">
+            <div className="p-3 border-r-[0px] border-b-[0.6px] last:border-r-0 border-[#B6C1CA] bg-[#F9FAFB] text-right w-[60px]">
+              <span className="text-[14px] font-weight-400 text-[#344054]">
                 {time}
               </span>
             </div>
@@ -103,39 +103,18 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
               return (
                 <div
                   key={dayIndex}
-                  className="p-2 border-r-[0.6px] border-b-[0.6px] border-[#B6C1CA] h-[50px] cursor-pointer hover:bg-[#F9FAFB] transition-colors"
+                  className="border-r-[0.6px] border-b-[0.6px] border-[#B6C1CA] h-[50px] cursor-pointer hover:bg-[#F9FAFB] transition-colors"
                   onClick={() => onTimeSlotClick?.(date, time)}
-                  onMouseMove={(e) => {
-                    if (slotEvents.length > 0) {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      onEventHover?.(slotEvents[0], {
-                        x: rect.right + 10,
-                        y: rect.top,
-                      });
-                    }
-                  }}
-                  onMouseLeave={() => onEventHover?.(null)}
                 >
                   {slotEvents.map((event) => (
                     <CalendarEvent
                       key={event.id}
-                      type={event.type}
-                      label={event.label}
-                      startTime={event.startTime}
-                      endTime={event.endTime}
-                      date={event.date}
+                      event={event}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick?.(event);
                       }}
-                      onHover={(e) => {
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        onEventHover?.(event, {
-                          x: rect.right + 10,
-                          y: rect.top,
-                        });
-                      }}
+                      onBook={onEventBook}
                     />
                   ))}
                 </div>
