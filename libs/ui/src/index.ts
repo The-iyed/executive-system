@@ -9,6 +9,7 @@ export { Alert, AlertTitle, AlertDescription, type AlertProps } from './componen
 export { Badge, badgeVariants, type BadgeProps } from './components/badge';
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, type TooltipProps } from './components/tooltip';
 export { Input, type InputProps } from './components/input';
+export { Textarea } from './components/textarea';
 export { Progress } from './components/progress';
 export { AudioPlayer, type AudioPlayerProps } from './components/audio-player';
 export { Skeleton } from './components/skeleton';
@@ -157,6 +158,17 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 } from './components/select';
+
+// Export popover components
+export {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from './components/popover';
+
+// Export calendar and date picker
+export { Calendar, type CalendarProps } from './components/calendar';
+export { DatePicker, type DatePickerProps } from './components/date-picker';
 
 // Export utilities
 export { cn } from './lib/utils';
