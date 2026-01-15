@@ -6,6 +6,8 @@ export interface TableColumn<T = any> {
   width?: string; // Use Tailwind width classes like 'w-48', 'w-64', etc.
   render?: (row: T, index: number) => React.ReactNode;
   accessor?: (row: T) => any;
+
+  align?: 'start' | 'center' | 'end';
 }
 
 export interface DataTableProps<T = any> {
@@ -24,6 +26,18 @@ export const DataTable = <T extends Record<string, any>>({
   // Don't reverse - columns should be in the order they're defined
   // The RTL direction on the container will handle the layout
 
+  const getJustifyClass = (align: TableColumn['align']) => {
+    if (align === 'center') return 'justify-center';
+    if (align === 'start') return 'justify-start';
+    return 'justify-end';
+  };
+
+  const getTextAlignClass = (align: TableColumn['align']) => {
+    if (align === 'center') return 'text-center';
+    if (align === 'start') return 'text-left';
+    return 'text-right';
+  };
+
   return (
     <div
       className={`
@@ -41,64 +55,114 @@ export const DataTable = <T extends Record<string, any>>({
     >
       {/* Table Header */}
       <div className="flex flex-row w-full">
-        {columns.map((column) => (
-          <div
-            key={column.id}
-            className={`
-              box-border
-              flex flex-row justify-end items-center
-              px-6 py-3
-              gap-3
-              bg-gray-50
-              border-b border-gray-200
-              ${column.width || 'flex-1'}
-            `}
-          >
-            <span className="text-sm font-medium text-gray-600 leading-[18px] w-full text-right">
-              {column.header}
-            </span>
-          </div>
-        ))}
+        {columns.map((column) => {
+          const align = column.align ?? 'end';
+          return (
+            <div
+              key={column.id}
+              className={`
+                box-border
+                flex flex-row items-center
+                ${getJustifyClass(align)}
+                px-6 py-3
+                gap-3
+                bg-gray-50
+                border-b border-gray-200
+                ${column.width || 'flex-1'}
+                min-w-0
+              `}
+            >
+              <span
+                className={`
+                  text-sm font-medium text-gray-600 leading-[18px]
+                  ${getTextAlignClass(align)}
+                  block truncate w-full
+                `}
+              >
+                {column.header}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Table Body */}
       <div className="flex flex-col w-full">
-        {data.map((row, rowIndex) => (
-          <div
-            key={rowIndex}
-            className="flex flex-row w-full cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => onRowClick?.(row, rowIndex)}
-          >
-            {columns.map((column) => (
-              <div
-                key={column.id}
-                className={`
-                  box-border
-                  flex flex-row justify-end items-center
-                  px-6 py-4
-                  gap-4
-                  border-b border-gray-200
-                  ${column.width || 'flex-1'}
-                  w-full
-                `}
-              >
-                <div className="w-full flex justify-end items-center">
-                  {column.render ? (
-                    column.render(row, rowIndex)
-                  ) : column.accessor ? (
-                    <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-                      {column.accessor(row)}
-                    </span>
-                  ) : (
-                    <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-                      {row[column.id]}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+        {data.length === 0 ? (
+          <div className="flex flex-row w-full">
+            <div
+              className={`
+                box-border
+                flex flex-row items-center justify-center
+                px-6 py-6
+                gap-4
+                border-b border-gray-200
+                w-full
+              `}
+            >
+              <span className="text-sm font-normal text-gray-500 leading-5">
+                لا توجد بيانات لعرضها
+              </span>
+            </div>
           </div>
-        ))}
+        ) : (
+          data.map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              className="flex flex-row w-full cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => onRowClick?.(row, rowIndex)}
+            >
+              {columns.map((column) => {
+                const align = column.align ?? 'end';
+                return (
+                  <div
+                    key={column.id}
+                    className={`
+                      box-border
+                      flex flex-row items-center
+                      ${getJustifyClass(align)}
+                      px-6 py-4
+                      gap-4
+                      border-b border-gray-200
+                      ${column.width || 'flex-1'}
+                      min-w-0
+                    `}
+                  >
+                    {column.render ? (
+                      <div className="w-full min-w-0 overflow-hidden">
+                        {column.render(row, rowIndex)}
+                      </div>
+                    ) : (
+                      <div className={`w-full min-w-0 overflow-hidden ${getTextAlignClass(align)}`}>
+                        {column.accessor ? (
+                          <span
+                            className={`
+                              text-base font-normal text-gray-600 leading-5
+                              ${getTextAlignClass(align)}
+                              block truncate
+                            `}
+                          >
+                            {column.accessor(row)}
+                          </span>
+                        ) : (
+                          <span
+                            className={`
+                              text-base font-normal text-gray-600 leading-5
+                              ${getTextAlignClass(align)}
+                              block truncate
+                            `}
+                          >
+                            {row[column.id]}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
