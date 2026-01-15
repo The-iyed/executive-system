@@ -3,7 +3,6 @@ import { ActionButtons } from '@shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
-  EventDetailPopup,
   type CalendarEventData,
 } from './components';
 
@@ -23,8 +22,6 @@ const getWeekStart = (date: Date): Date => {
 
 const Step4: React.FC<Step4Props> = ({ onNext, onPrevious, onCancel, onSaveDraft }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [hoveredEvent, setHoveredEvent] = useState<CalendarEventData | null>(null);
-  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
   const weekStart = getWeekStart(currentDate);
 
@@ -133,17 +130,6 @@ const Step4: React.FC<Step4Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
     // TODO: Handle event click
   }, []);
 
-  const handleEventHover = useCallback((event: CalendarEventData | null, mouseEvent?: React.MouseEvent) => {
-    setHoveredEvent(event);
-    if (event && mouseEvent) {
-      setPopupPosition({
-        x: mouseEvent.clientX + 10,
-        y: mouseEvent.clientY + 10,
-      });
-    } else {
-      setPopupPosition(null);
-    }
-  }, []);
 
   const handleTimeSlotClick = useCallback((date: Date, time: string) => {
     console.log('Time slot clicked:', date, time);
@@ -168,29 +154,13 @@ const Step4: React.FC<Step4Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
           />
 
           {/* Calendar Grid */}
-          <div className="relative">
-            <WeeklyCalendarGrid
-              weekStart={weekStart}
-              events={events}
-              onEventClick={handleEventClick}
-              onEventHover={(event, position) => {
-                setHoveredEvent(event);
-                if (position) {
-                  setPopupPosition(position);
-                }
-              }}
-              onTimeSlotClick={handleTimeSlotClick}
-            />
-
-            {/* Event Detail Popup */}
-            {hoveredEvent && (
-              <EventDetailPopup
-                event={hoveredEvent}
-                position={popupPosition || { x: 0, y: 0 }}
-                onBook={handleBookEvent}
-              />
-            )}
-          </div>
+          <WeeklyCalendarGrid
+            weekStart={weekStart}
+            events={events}
+            onEventClick={handleEventClick}
+            onEventBook={handleBookEvent}
+            onTimeSlotClick={handleTimeSlotClick}
+          />
 
           {/* Action Buttons */}
           <ActionButtons

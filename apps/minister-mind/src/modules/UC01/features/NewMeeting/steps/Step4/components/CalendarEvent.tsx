@@ -1,43 +1,53 @@
 import React from 'react';
-import { cn } from '@sanad-ai/ui';
+import { cn, Popover, PopoverTrigger, PopoverContent } from '@sanad-ai/ui';
+import type { CalendarEventData } from './WeeklyCalendarGrid';
 
 export type EventType = 'reserved' | 'optional' | 'compulsory' | 'available';
 
 export interface CalendarEventProps {
-  type: EventType;
-  label: string;
-  startTime: string;
-  endTime: string;
-  date: Date;
+  event: CalendarEventData;
   onClick?: (e: React.MouseEvent) => void;
-  onHover?: (e: React.MouseEvent) => void;
+  onBook?: (event: CalendarEventData) => void;
   className?: string;
 }
 
-const eventTypeStyles: Record<EventType, { bg: string; border: string; text: string; borderStyle: string }> = {
+const eventTypeStyles: Record<EventType, { bg: string; border: string; text: string; borderStyle?: string; borderRight?: string, contentStyle?: { text: string; bg: string; } }> = {
   reserved: {
-    bg: 'bg-[#F2F4F7]',
+    bg: 'bg-[#EAECF0]',
     border: 'border-[#D0D5DD]',
-    text: 'text-[#344054]',
+    text: 'text-[#98A2B3]',
     borderStyle: 'border-solid',
+    borderRight: 'border-r-[#344054] border-r-[2px]',
+    contentStyle: {
+      text: 'text-[#008774]',
+      bg: 'bg-[#009883]',
+      // border: 'border-[1px] border-[#009883]',
+    },
   },
   optional: {
-    bg: 'bg-[#FFF4ED]',
-    border: 'border-[#FEDF89]',
-    text: 'text-[#B93815]',
-    borderStyle: 'border-dashed',
+    bg: 'bg-[#FFFCF5]',
+    text: 'text-[#B54708]',
+    border: 'border-[1px] border-dashed border-[#B54708]',
+    contentStyle: {
+      text: 'text-[#B54708]',
+      bg: 'bg-[#B54708]',
+      // border: 'border-[1px] border-[#B54708]',
+    },
   },
   compulsory: {
-    bg: 'bg-[#ECFDF3]',
-    border: 'border-[#32D583]',
-    text: 'text-[#027A48]',
-    borderStyle: 'border-solid',
+    bg: 'bg-[#E6F6F4]',
+    text: 'text-[#008774]',
+    border: 'border-[1px] border-dashed border-[#008774]',
+    contentStyle: {
+      text: 'text-[#0E6F90]',
+      bg: 'bg-[#0E6F90]',
+      // border: 'border-[1px] border-[#0E6F90]',
+    },
   },
   available: {
-    bg: 'bg-white',
-    border: 'border-[#D0D5DD]',
-    text: 'text-[#344054]',
-    borderStyle: 'border-dashed',
+    bg: 'bg-[#F5FEFF]',
+    text: 'text-[#0E6F90]',
+    border: 'border-[1px] border-dashed border-[#0E7090]',
   },
 };
 
@@ -48,36 +58,86 @@ const eventTypeLabels: Record<EventType, string> = {
   available: 'متاح',
 };
 
+const monthNames = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+
+const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+const formatDate = (date: Date): string => {
+  const dayName = dayNames[date.getDay()];
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  return `${dayName} ${day} ${month}`;
+};
+
 export const CalendarEvent: React.FC<CalendarEventProps> = ({
-  type,
-  label,
-  startTime,
-  endTime,
-  date,
+  event,
   onClick,
-  onHover,
+  onBook,
   className,
 }) => {
-  const styles = eventTypeStyles[type];
-  const typeLabel = eventTypeLabels[type];
+  const [open, setOpen] = React.useState(false);
+  const styles = eventTypeStyles[event.type];
+  const typeLabel = eventTypeLabels[event.type];
 
   return (
-    <div
-      className={cn(
-        'relative rounded-lg border-[0.6px] p-2 cursor-pointer transition-all',
-        styles.bg,
-        styles.border,
-        styles.borderStyle,
-        'hover:shadow-md',
-        className
-      )}
-      onClick={onClick}
-      onMouseEnter={onHover}
-      onMouseMove={onHover}
-    >
-      <span className={cn('text-[12px] font-medium', styles.text)}>
-        {typeLabel}
-      </span>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          className={cn(
+            'relative cursor-pointer transition-all',
+            'w-full h-full',
+            'flex items-center justify-center',
+            styles?.bg,
+            styles?.border,
+            styles?.borderStyle,
+            styles?.borderRight,
+            'hover:shadow-md',
+            className
+          )}
+          onClick={onClick}
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <span className={cn('text-[14px] font-weight-700', styles?.text)}>
+            {typeLabel}
+          </span>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        className=" min-w-[180px] max-w-[180px] rounded-[8px] bg-white p-4 flex flex-col items-start gap-2"
+        align="center"
+        side="top"
+        sideOffset={8}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <h3 className={cn('text-[12px] font-weight-700 font-bold text-[#101828]', styles?.contentStyle?.text)}>
+          {event.title || 'موعد الاجتماع'}
+        </h3>
+        <p className="text-[12px] font-weight-500 font-bold text-[#000000]">
+          {formatDate(event.date)}، من الساعة {event.startTime} إلى {event.endTime}
+        </p>
+        {event.description && (
+          <p className="text-[14px] text-[#344054] mb-4">
+            {event.description}
+          </p>
+        )}
+        {onBook && (
+          <button
+            type="button"
+            onClick={() => onBook(event)}
+            className={cn(
+              'w-full px-4 py-2 text-white transition-colors font-weight-700 text-[14px] rounded-[8px] border-none box-shadow-[0px_1px_2px_rgba(16,24,40,0.05)]',
+              styles?.contentStyle?.bg,
+            )}
+          >
+            حجز الموعد
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 };
