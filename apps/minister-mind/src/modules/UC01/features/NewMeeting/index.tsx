@@ -3,17 +3,16 @@ import { Stepper } from '@shared';
 import Step1 from './steps/Step1';
 import Step2 from './steps/Step2';
 import Step3 from './steps/Step3';
-import Step4 from './steps/Step4';
 import '@shared/styles';
 
 const STEPS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
-  { id: 'step2', label: 'المحتوى' },
-  { id: 'step3', label: 'قائمة المدعوين' },
-  { id: 'step4', label: 'موعد الاجتماع' },
+  { id: 'step2', label: 'قائمة المدعوين' },
+  { id: 'step3', label: 'موعد الاجتماع' },
 ];
 
 const STORAGE_KEY = 'newMeeting_currentStep';
+const DRAFT_ID_KEY = 'newMeeting_draftId';
 
 const NewMeeting: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +34,16 @@ const NewMeeting: React.FC = () => {
     return 0;
   });
 
+  // Initialize draft ID from localStorage
+  const [draftId, setDraftId] = useState<string | undefined>(() => {
+    try {
+      return localStorage.getItem(DRAFT_ID_KEY) || undefined;
+    } catch (error) {
+      console.error('Error reading draft ID from localStorage:', error);
+      return undefined;
+    }
+  });
+
   // Save step to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -43,6 +52,19 @@ const NewMeeting: React.FC = () => {
       console.error('Error saving step to localStorage:', error);
     }
   }, [currentStep]);
+
+  // Save draft ID to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (draftId) {
+        localStorage.setItem(DRAFT_ID_KEY, draftId);
+      } else {
+        localStorage.removeItem(DRAFT_ID_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving draft ID to localStorage:', error);
+    }
+  }, [draftId]);
 
   // Scroll to top when step changes
   useEffect(() => {
@@ -53,14 +75,18 @@ const NewMeeting: React.FC = () => {
     }
   }, [currentStep]);
 
-  const handleNext = () => {
+  const handleNext = (newDraftId?: string) => {
+    if (newDraftId) {
+      setDraftId(newDraftId);
+    }
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Last step - meeting creation completed
-      // Clear saved step
+      // Clear saved step and draft ID
       try {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(DRAFT_ID_KEY);
       } catch (error) {
         console.error('Error clearing step from localStorage:', error);
       }
@@ -77,19 +103,23 @@ const NewMeeting: React.FC = () => {
 
   const handleCancel = () => {
     console.log('Cancel');
-    // Clear saved step on cancel
+    // Clear saved step and draft ID on cancel
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(DRAFT_ID_KEY);
     } catch (error) {
       console.error('Error clearing step from localStorage:', error);
     }
     // Add cancel logic here (e.g., navigate away)
   };
 
-  const handleSaveDraft = () => {
-    console.log('Save Draft');
+  const handleSaveDraft = (newDraftId?: string) => {
+    if (newDraftId) {
+      setDraftId(newDraftId);
+    }
     // Step is already saved via useEffect
-    // Add save draft logic here (e.g., save form data)
+    // Draft ID is saved via useEffect
+    console.log('Save Draft', newDraftId);
   };
 
   const renderStepContent = () => {
@@ -102,15 +132,13 @@ const NewMeeting: React.FC = () => {
 
     switch (currentStep) {
       case 0:
-        return <Step1 {...stepProps} />;
+        return <Step1 {...stepProps} draftId={draftId} />;
       case 1:
-        return <Step2 {...stepProps} />;
+        return draftId ? <Step2 {...stepProps} draftId={draftId} /> : null;
       case 2:
-        return <Step3 {...stepProps} />;
-      case 3:
-        return <Step4 {...stepProps} />;
+        return draftId ? <Step3 {...stepProps} draftId={draftId} /> : null;
       default:
-        return <Step1 {...stepProps} />;
+        return <Step1 {...stepProps} draftId={draftId} />;
     }
   };
 

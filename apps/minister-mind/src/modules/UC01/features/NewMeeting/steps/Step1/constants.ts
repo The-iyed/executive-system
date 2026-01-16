@@ -1,36 +1,58 @@
 // Dropdown options - These should be fetched from API in production
 export const MEETING_CATEGORY_OPTIONS = [
-  { value: 'category1', label: 'فئة 1' },
-  { value: 'category2', label: 'فئة 2' },
-  { value: 'category3', label: 'فئة 3' },
-];
-
-export const MEETING_REASON_OPTIONS = [
-  { value: 'reason1', label: 'سبب 1' },
-  { value: 'reason2', label: 'سبب 2' },
-  { value: 'reason3', label: 'سبب 3' },
-];
-
-export const RELATED_TOPIC_OPTIONS = [
-  { value: 'topic1', label: 'موضوع 1' },
-  { value: 'topic2', label: 'موضوع 2' },
-  { value: 'topic3', label: 'موضوع 3' },
+  { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
+  { value: 'EVENTS_AND_VISITS', label: 'الفعاليات والزيارات' },
+  { value: 'BILATERAL_MEETING', label: 'لقاء ثنائي' },
+  { value: 'PRIVATE_MEETING', label: 'لقاء خاص' },
+  { value: 'BUSINESS', label: 'أعمال' },
+  { value: 'GOVERNMENT_CENTER_TOPICS', label: 'مواضيع مركز الحكومة' },
 ];
 
 export const MEETING_CLASSIFICATION_OPTIONS = [
-  { value: 'class1', label: 'تصنيف 1' },
-  { value: 'class2', label: 'تصنيف 2' },
-  { value: 'class3', label: 'تصنيف 3' },
+  { value: 'STRATEGIC', label: 'استراتيجي' },
+  { value: 'OPERATIONAL', label: 'تشغيلي' },
+  { value: 'SPECIAL', label: 'خاص' },
 ];
 
 export const CONFIDENTIALITY_OPTIONS = [
-  { value: 'public', label: 'عام' },
-  { value: 'confidential', label: 'سري' },
-  { value: 'top-secret', label: 'سري للغاية' },
+  { value: 'CONFIDENTIAL', label: 'سرّي' },
+  { value: 'NORMAL', label: 'عادي' },
 ];
 
-export const SECTOR_OPTIONS = [
-  { value: 'sector1', label: 'قطاع 1' },
-  { value: 'sector2', label: 'قطاع 2' },
-  { value: 'sector3', label: 'قطاع 3' },
+export const MEETING_TYPE_OPTIONS = [
+  { value: 'INTERNAL', label: 'داخلي' },
+  { value: 'EXTERNAL', label: 'خارجي' },
+];
+
+// Table Column Definitions
+import type { FormTableColumn } from './components/FormTable';
+
+export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------' },
+  { id: 'action', header: 'إجراء', width: 'w-20' },
+];
+
+export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: '-------' },
+  { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------' },
+  { id: 'action', header: 'إجراء', width: 'w-20' },
+];
+
+export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------' },
+  { id: 'action', header: 'إجراء', width: 'w-20' },
+];
+
+export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------' },
+  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------' },
+  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
+  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------' },
+  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
+  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------' },
+  { id: 'action', header: 'إجراء', width: 'w-20' },
 ];

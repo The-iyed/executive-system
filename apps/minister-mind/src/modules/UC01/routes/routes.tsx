@@ -35,6 +35,13 @@ const routes: RouteConfig[] = [
     component: lazy(() => import('../features/NewMeeting')),
     layout: Layout,
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.MEETING_PREVIEW,
+    component: lazy(() => import('../features/PreviewMeeting')),
+    layout: Layout,
+  },
 ]
 
 export default routes
