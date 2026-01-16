@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { StatusType } from './status-badge';
 import { Eye, ChevronLeft } from 'lucide-react';
 import { MeetingStatus } from '../types';
@@ -28,14 +27,10 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   onDetails,
   className = '',
 }) => {
-  const navigate = useNavigate();
-
   const handleCardClick = () => {
     if (onDetails) {
       onDetails();
-    } else {
-      navigate(`/meeting/${meeting.id}`);
-    }
+    } 
   };
 
   return (
