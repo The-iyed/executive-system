@@ -1,25 +1,4 @@
 services:
-  portal:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "4100:80"
-  sanad-ai:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: sanad-ai-standalone
-    ports:
-      - "4173:80"
-  muhallil-ahkam:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: muhallil-ahkam-standalone
-    ports:
-      - "4202:80"
   minister-mind:
     build:
       context: .
