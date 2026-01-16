@@ -1,60 +1,75 @@
 import { TabItem } from '@shared/components/tabs';
-import { MeetingStatus } from '@shared/types';
+import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 
-/**
- * Pagination configuration
- */
+export enum MeetingOwnerType {
+  SUBMITTER = 'SUBMITTER',
+  SCHEDULING = 'SCHEDULING',
+  CONTENT = 'CONTENT',
+}
+
+export const MeetingOwnerTypeLabels: Record<MeetingOwnerType, string> = {
+  [MeetingOwnerType.SUBMITTER]: 'مقدم الطلب',
+  [MeetingOwnerType.SCHEDULING]: 'مسؤول الجدولة',
+  [MeetingOwnerType.CONTENT]: 'مسؤول المحتوى',
+};
+
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
-  ITEMS_PER_PAGE: 5,
-  DEBOUNCE_DELAY: 300, // milliseconds
+  ITEMS_PER_PAGE: 6,
+  DEBOUNCE_DELAY: 500,
 } as const;
 
-/**
- * Tab configuration for meetings list
- */
 export const MEETING_TABS: TabItem[] = [
   {
-    id: 'draft',
-    label: 'مسودة',
+    id: MeetingStatus.DRAFT,
+    label: MeetingStatusLabels[MeetingStatus.DRAFT],
   },
   {
-    id: 'under-review',
-    label: 'قيد المراجعة',
+    id: MeetingStatus.UNDER_REVIEW,
+    label: MeetingStatusLabels[MeetingStatus.UNDER_REVIEW],
   },
   {
-    id: 'scheduled',
-    label: 'مجدول',
+    id: MeetingStatus.SCHEDULED,
+    label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
   },
   {
-    id: 'returned-scheduling',
-    label: 'معاد من مسؤول الجدولة',
+    id: MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER],
   },
   {
-    id: 'returned-content',
-    label: 'معاد من مسؤول المحتوى',
+    id: MeetingStatus.RETURNED_FROM_CONTENT_MANAGER,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_CONTENT_MANAGER],
   },
 ];
 
-/**
- * Map tab ID to API status
- */
-export const TAB_STATUS_MAP: Record<string, MeetingStatus | string | undefined> = {
-  'draft': MeetingStatus.DRAFT,
-  'under-review': MeetingStatus.UNDER_REVIEW,
-  'scheduled': MeetingStatus.SCHEDULED,
-  'returned-scheduling': 'RETURNED_FROM_SCHEDULING_MANAGER',
-  'returned-content': 'RETURNED_FROM_CONTENT_MANAGER',
+export interface TabFilterConfig {
+  status: MeetingStatus;
+  owner_type: MeetingOwnerType;
+}
+
+ export const TAB_FILTER_MAP: Partial<Record<MeetingStatus, TabFilterConfig>> = {
+  [MeetingStatus.DRAFT]: {
+    status: MeetingStatus.DRAFT,
+    owner_type: MeetingOwnerType.SUBMITTER,
+  },
+  [MeetingStatus.UNDER_REVIEW]: {
+    status: MeetingStatus.UNDER_REVIEW,
+    owner_type: MeetingOwnerType.SCHEDULING,
+  },
+  [MeetingStatus.SCHEDULED]: {
+    status: MeetingStatus.SCHEDULED,
+    owner_type: MeetingOwnerType.SUBMITTER,
+  },
+  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: {
+    status: MeetingStatus.UNDER_REVIEW,
+    owner_type: MeetingOwnerType.SUBMITTER,
+  },
+  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: {
+    status: MeetingStatus.UNDER_REVIEW,
+    owner_type: MeetingOwnerType.SUBMITTER,
+  },
 };
 
-/**
- * Default tab ID
- */
-export const DEFAULT_TAB = 'draft';
-
-/**
- * Page title and description
- */
 export const PAGE_INFO = {
   title: 'قائمة الاجتماعات',
   description: 'يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.',
