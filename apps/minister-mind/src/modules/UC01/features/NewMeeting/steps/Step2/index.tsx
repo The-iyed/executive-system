@@ -1,7 +1,14 @@
 import React, { useCallback } from 'react';
-import { FormTable, type FormTableColumn } from '../Step1/components';
-import { ActionButtons, AIGenerateButton } from '@shared';
+import { FormTable } from '../Step1/components';
+import { ActionButtons } from '@shared';
 import { useStep2 } from './useStep2';
+import { useDeleteDraft } from '../../hooks/useDeleteDraft';
+import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import {
+  INVITEES_TABLE_COLUMNS,
+  INVITEES_TABLE_TITLE,
+  ADD_INVITEE_BUTTON_LABEL,
+} from './constants';
 
 interface Step2Props {
   draftId: string;
@@ -11,21 +18,40 @@ interface Step2Props {
   onSaveDraft?: () => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
-  const handleSuccess = useCallback(() => {
-    // Success is handled by parent component
-  }, []);
+const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
+  const handleSuccess = useCallback(
+    (isDraft: boolean) => {
+      if (isDraft) {
+        onSaveDraft?.();
+      } else {
+        onNext?.();
+      }
+    },
+    [onNext, onSaveDraft]
+  );
 
   const handleError = useCallback((error: Error) => {
     console.error('Step2 error:', error);
     // TODO: Show error toast/notification
   }, []);
 
+  // Delete draft hook with confirmation modal
+  const {
+    isConfirmOpen,
+    isDeleting,
+    openConfirm,
+    closeConfirm,
+    confirmDelete,
+  } = useDeleteDraft({
+    draftId,
+    onError: handleError,
+  });
+
   const {
     formData,
     errors,
     touched,
-    // isSubmitting,
+    isSubmitting,
     handleAddAttendee,
     handleDeleteAttendee,
     handleUpdateAttendee,
@@ -36,64 +62,34 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     onError: handleError,
   });
 
-  const handleNextClick = useCallback(async () => {
-    await submitStep(false);
-    onNext?.();
-  }, [submitStep, onNext]);
+  /**
+   * Handle Next button click - validates before submitting
+   */
+  const handleNextClick = useCallback(() => {
+    submitStep(false);
+  }, [submitStep]);
 
-  const handleSaveDraftClick = useCallback(async () => {
-    await submitStep(true);
-    onSaveDraft?.();
-  }, [submitStep, onSaveDraft]);
+  /**
+   * Handle Save Draft button click - no validation required
+   */
+  const handleSaveDraftClick = useCallback(() => {
+    submitStep(true);
+  }, [submitStep]);
 
-  const columns: FormTableColumn[] = [
-    {
-      id: 'itemNumber',
-      header: 'رقم البند',
-      width: 'w-[70px]',
-    },
-    {
-      id: 'name',
-      header: 'الإسم',
-      type: 'text',
-      placeholder: '-------',
-    },
-    {
-      id: 'position',
-      header: 'المنصب',
-      type: 'text',
-      placeholder: '-------',
-    },
-    {
-      id: 'mobile',
-      header: 'الجوال',
-      type: 'text',
-      placeholder: '-------',
-    },
-    {
-      id: 'email',
-      header: 'البريد الإلكتروني',
-      type: 'text',
-      placeholder: '-------',
-    },
-    {
-      id: 'isMainAttendee',
-      header: 'الحضور أساسي',
-      type: 'switch',
-      label: false,
-      width: 'w-[110px]',
-    },
-    {
-      id: 'action',
-      header: 'إجراء',
-      width: 'w-[60px]',
-    },
-  ];
+  /**
+   * Handle Cancel button click - show confirmation modal
+   */
+  const handleCancelClick = useCallback(() => {
+    openConfirm();
+  }, [openConfirm]);
 
-  const handleAIGenerate = () => {
-    console.log('AI Generate clicked');
-    // TODO: Implement AI generation logic
-  };
+  /**
+   * Handle AI Generate button click
+   */
+  // const handleAIGenerate = useCallback(() => {
+  //   console.log('AI Generate clicked');
+  //   // TODO: Implement AI generation logic
+  // }, []);
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -101,32 +97,41 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onCancel, onSaveDraft })
         <div className="w-[1085px] flex flex-col gap-6">
           {/* Table */}
           <div className="relative">
-          <FormTable
-            title=" قائمة المدعوين"
-            columns={columns}
-            rows={formData.invitees || []}
-            onAddRow={handleAddAttendee}
-            onDeleteRow={handleDeleteAttendee}
-            onUpdateRow={handleUpdateAttendee}
-            addButtonLabel="إضافة مدعو جديد"
-            errors={errors}
-            touched={touched}
+            <FormTable
+              title={INVITEES_TABLE_TITLE}
+              columns={INVITEES_TABLE_COLUMNS}
+              rows={formData.invitees || []}
+              onAddRow={handleAddAttendee}
+              onDeleteRow={handleDeleteAttendee}
+              onUpdateRow={handleUpdateAttendee}
+              addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
+              errors={errors}
+              touched={touched}
             />
 
-          {/* AI Generate Button */}
-          <div className="absolute -bottom-[4px] right-[175px]">
-            <AIGenerateButton onClick={handleAIGenerate} />
+            {/* AI Generate Button */}
+            {/* <div className="absolute -bottom-[4px] right-[175px]">
+              <AIGenerateButton onClick={handleAIGenerate} />
+            </div> */}
           </div>
-         </div>
 
           {/* Action Buttons */}
           <ActionButtons
-            onCancel={onCancel}
+            onCancel={handleCancelClick}
             onSaveDraft={handleSaveDraftClick}
             onNext={handleNextClick}
+            disabled={isSubmitting || isDeleting}
           />
         </div>
       </div>
+
+      {/* Delete Draft Confirmation Modal */}
+      <DeleteDraftConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 };
