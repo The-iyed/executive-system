@@ -78,7 +78,6 @@ export const Tabs: React.FC<TabsProps> = ({
                   ${isActive ? 'text-white' : 'text-[#585858]'}
                 `}
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
                   fontWeight: 700,
                   fontSize: '16px',
                   lineHeight: '24px',
