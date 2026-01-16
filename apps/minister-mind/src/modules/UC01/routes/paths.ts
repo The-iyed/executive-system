@@ -4,4 +4,5 @@ export const PATH = {
   MEETINGS: '/meetings',
   NEW_MEETING: '/meetings/new',
   MEETING_DETAIL: '/meeting/:id',
+  MEETING_PREVIEW: '/meeting/:id/preview',
 }
