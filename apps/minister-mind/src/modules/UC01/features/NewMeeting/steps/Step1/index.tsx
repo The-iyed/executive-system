@@ -1,36 +1,98 @@
-import React, { useState } from 'react';
-import { nanoid } from 'nanoid';
-import { step1Schema, type Step1FormData } from './schema';
-import { FormField, FormInput, FormSelect, FormDatePicker, FormTable, FormTextArea, FormSwitch } from './components';
+import React, { useCallback } from 'react';
+import { FormField, FormInput, FormSelect, FormDatePicker, FormTable, FormTextArea, FormSwitch, FileUpload } from './components';
 import { ActionButtons } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
-  MEETING_REASON_OPTIONS,
-  RELATED_TOPIC_OPTIONS,
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
-  SECTOR_OPTIONS,
+  MEETING_TYPE_OPTIONS,
+  MEETING_GOALS_COLUMNS,
+  MEETING_AGENDA_COLUMNS,
+  MINISTER_SUPPORT_COLUMNS,
+  RELATED_DIRECTIVES_COLUMNS,
 } from './constants';
+import { useStep1 } from './useStep1';
 
 interface Step1Props {
-  onNext?: () => void;
+  draftId?: string;
+  onNext?: (draftId: string) => void;
   onPrevious?: () => void;
   onCancel?: () => void;
-  onSaveDraft?: () => void;
+  onSaveDraft?: (draftId: string) => void;
 }
 
-const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft }) => {
-  const [formData, setFormData] = useState<Partial<Step1FormData>>({
-    meetingGoals: [],
-    meetingAgenda: [],
-    ministerSupport: [],
-    relatedDirectives: [],
-    wasDiscussedPreviously: false,
+const Step1: React.FC<Step1Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
+  const handleSuccess = useCallback((newDraftId: string) => {
+    // Draft ID is handled by the hook, parent component will receive it via callbacks
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('Step1 error:', error);
+    // TODO: Show error toast/notification
+  }, []);
+
+  const {
+    formData,
+    errors,
+    touched,
+    tableErrors,
+    tableTouched,
+    isSubmitting,
+    isLoading,
+    isError,
+    isSuccess,
+    error: submitError,
+    isFieldRequired,
+    handleChange,
+    handleBlur,
+    handleFileSelect,
+    handleAddGoal,
+    handleDeleteGoal,
+    handleUpdateGoal,
+    handleAddAgenda,
+    handleDeleteAgenda,
+    handleUpdateAgenda,
+    handleAddSupport,
+    handleDeleteSupport,
+    handleUpdateSupport,
+    handleAddDirective,
+    handleDeleteDirective,
+    handleUpdateDirective,
+    validateAll,
+    submitStep,
+  } = useStep1({
+    draftId,
+    onSuccess: handleSuccess,
+    onError: handleError,
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof Step1FormData, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof Step1FormData, boolean>>>({});
-  const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
-  const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
+
+  const handleNextClick = useCallback(async () => {
+    try {
+      const newDraftId = await submitStep(false);
+      if (newDraftId) {
+        onNext?.(newDraftId);
+      }
+      // If validation fails, submitStep returns null and errors are already displayed
+    } catch (error) {
+      // Error handling is done in the hook
+      console.error('Error submitting step 1:', error);
+    }
+  }, [submitStep, onNext]);
+
+  const handleSaveDraftClick = useCallback(async () => {
+    try {
+      // Always validate and show errors, but don't block submission for drafts
+      const newDraftId = await submitStep(true);
+      if (newDraftId) {
+        onSaveDraft?.(newDraftId);
+      }
+      // Even if validation fails, we still try to save as draft
+      // Errors are displayed but don't block the save
+    } catch (error) {
+      // Error handling is done in the hook
+      console.error('Error saving draft:', error);
+    }
+  }, [submitStep, onSaveDraft]);
 
   // Placeholder styling
   React.useEffect(() => {
@@ -51,194 +113,11 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
     };
   }, []);
 
-  const validateField = (field: keyof Step1FormData, value: any) => {
-    const fieldSchema = step1Schema.shape[field];
-    if (!fieldSchema) return;
-
-    const result = fieldSchema.safeParse(value);
-
-    if (result.success) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    } else {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: result.error.errors[0]?.message || '',
-      }));
-    }
-  };
-
-  const handleBlur = (field: keyof Step1FormData) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    validateField(field, formData[field]);
-  };
-
-  const handleChange = (field: keyof Step1FormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (touched[field]) {
-      validateField(field, value);
-    }
-  };
-
-  // Table handlers
-  const handleAddGoal = () => {
-    const newGoal = { id: nanoid(), goal: '' };
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: [...(prev.meetingGoals || []), newGoal],
-    }));
-  };
-
-  const handleDeleteGoal = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).filter((g) => g.id !== id),
-    }));
-    setTableErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  };
-
-  const handleUpdateGoal = (id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).map((g) =>
-        g.id === id ? { ...g, [field]: value } : g
-      ),
-    }));
-    // Validate
-    if (field === 'goal' && value === '') {
-      setTableErrors((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], [field]: 'الهدف مطلوب' },
-      }));
-    } else {
-      setTableErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
-      });
-    }
-  };
-
-  const handleAddAgenda = () => {
-    const newAgenda = { id: nanoid(), agenda: '', duration: '' };
-    setFormData((prev) => ({
-      ...prev,
-      meetingAgenda: [...(prev.meetingAgenda || []), newAgenda],
-    }));
-  };
-
-  const handleDeleteAgenda = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingAgenda: (prev.meetingAgenda || []).filter((a) => a.id !== id),
-    }));
-  };
-
-  const handleUpdateAgenda = (id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingAgenda: (prev.meetingAgenda || []).map((a) =>
-        a.id === id ? { ...a, [field]: value } : a
-      ),
-    }));
-  };
-
-  const handleAddSupport = () => {
-    const newSupport = { id: nanoid(), support: '' };
-    setFormData((prev) => ({
-      ...prev,
-      ministerSupport: [...(prev.ministerSupport || []), newSupport],
-    }));
-  };
-
-  const handleDeleteSupport = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      ministerSupport: (prev.ministerSupport || []).filter((s) => s.id !== id),
-    }));
-    setTableErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  };
-
-  const handleUpdateSupport = (id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      ministerSupport: (prev.ministerSupport || []).map((s) =>
-        s.id === id ? { ...s, [field]: value } : s
-      ),
-    }));
-    // Validate
-    if (field === 'support' && value === '') {
-      setTableErrors((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], [field]: 'الدعم مطلوب' },
-      }));
-    } else {
-      setTableErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
-      });
-    }
-  };
-
-  const handleAddDirective = () => {
-    const newDirective = {
-      id: nanoid(),
-      directive: '',
-      previousMeeting: '',
-      directiveDate: '',
-      directiveStatus: '',
-      dueDate: '',
-      responsible: '',
-    };
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: [...(prev.relatedDirectives || []), newDirective],
-    }));
-  };
-
-  const handleDeleteDirective = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).filter((d) => d.id !== id),
-    }));
-  };
-
-  const handleUpdateDirective = (id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).map((d) =>
-        d.id === id ? { ...d, [field]: value } : d
-      ),
-    }));
-  };
-
   return (
-    <div className="w-full flex flex-col gap-8">
+    <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
         {/* Existing form fields */}
-        <div className="w-full flex flex-col items-center gap-4">
+        <div className="w-full flex flex-col items-center gap-8">
           {/* Row 1 */}
           <div
             className="w-[1085px] h-[70px] flex flex-row-reverse items-start gap-4"
@@ -248,10 +127,10 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               required
               error={touched.meetingType ? errors.meetingType : undefined}
             >
-              <FormInput
-                value={formData.meetingType || ''}
-                onChange={(e) => handleChange('meetingType', e.target.value)}
-                onBlur={() => handleBlur('meetingType')}
+              <FormSelect
+                value={formData.meetingType}
+                onValueChange={(value) => handleChange('meetingType', value)}
+                options={MEETING_TYPE_OPTIONS}
                 placeholder="-------"
                 error={!!(touched.meetingType && errors.meetingType)}
               />
@@ -282,12 +161,13 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
           >
             <FormField
               label="مبرر اللقاء"
+              required={isFieldRequired('meetingReason')}
               error={touched.meetingReason ? errors.meetingReason : undefined}
             >
-              <FormSelect
-                value={formData.meetingReason}
-                onValueChange={(value) => handleChange('meetingReason', value)}
-                options={MEETING_REASON_OPTIONS}
+              <FormInput
+                value={formData.meetingReason || ''}
+                onChange={(e) => handleChange('meetingReason', e.target.value)}
+                onBlur={() => handleBlur('meetingReason')}
                 placeholder="-------"
                 error={!!(touched.meetingReason && errors.meetingReason)}
               />
@@ -318,6 +198,7 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
           >
             <FormField
               label="تاريخ الاستحقاق"
+              required={isFieldRequired('dueDate')}
               error={touched.dueDate ? errors.dueDate : undefined}
             >
               <FormDatePicker
@@ -330,12 +211,13 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
             </FormField>
             <FormField
               label="الموضوع المرتبط"
+              required={isFieldRequired('relatedTopic')}
               error={touched.relatedTopic ? errors.relatedTopic : undefined}
             >
-              <FormSelect
-                value={formData.relatedTopic}
-                onValueChange={(value) => handleChange('relatedTopic', value)}
-                options={RELATED_TOPIC_OPTIONS}
+              <FormInput
+                value={formData.relatedTopic || ''}
+                onChange={(e) => handleChange('relatedTopic', e.target.value)}
+                onBlur={() => handleBlur('relatedTopic')}
                 placeholder="-------"
                 error={!!(touched.relatedTopic && errors.relatedTopic)}
               />
@@ -351,17 +233,17 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               gap: '16px',
             }}
           >
-            <FormField
-              label="تصنيف الاجتماع"
+          <FormField
+              label="سرية الاجتماع"
               required
-              error={touched.meetingClassification2 ? errors.meetingClassification2 : undefined}
+              error={touched.meetingConfidentiality ? errors.meetingConfidentiality : undefined}
             >
               <FormSelect
-                value={formData.meetingClassification2}
-                onValueChange={(value) => handleChange('meetingClassification2', value)}
-                options={MEETING_CLASSIFICATION_OPTIONS}
+                value={formData.meetingConfidentiality}
+                onValueChange={(value) => handleChange('meetingConfidentiality', value)}
+                options={CONFIDENTIALITY_OPTIONS}
                 placeholder="تصنيف الاجتماع"
-                error={!!(touched.meetingClassification2 && errors.meetingClassification2)}
+                error={!!(touched.meetingConfidentiality && errors.meetingConfidentiality)}
               />
             </FormField>
             <FormField
@@ -381,7 +263,7 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
 
           {/* Row 5 */}
           <div
-            className="flex flex-row-reverse items-start"
+            // className="flex flex-row-reverse items-start"
             style={{
               width: '1085px',
               height: '70px',
@@ -392,29 +274,24 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               label="القطاع"
               error={touched.sector ? errors.sector : undefined}
             >
-              <FormSelect
-                value={formData.sector}
-                onValueChange={(value) => handleChange('sector', value)}
-                options={SECTOR_OPTIONS}
-                placeholder="تصنيف الاجتماع"
+              <FormInput
+                value={formData.sector || ''}
+                onChange={(e) => handleChange('sector', e.target.value)}
+                onBlur={() => handleBlur('sector')}
+                placeholder="-------"
                 error={!!(touched.sector && errors.sector)}
-              />
-            </FormField>
-            <FormField
-              label="سرية الاجتماع"
-              required
-              error={touched.meetingConfidentiality ? errors.meetingConfidentiality : undefined}
-            >
-              <FormSelect
-                value={formData.meetingConfidentiality}
-                onValueChange={(value) => handleChange('meetingConfidentiality', value)}
-                options={CONFIDENTIALITY_OPTIONS}
-                placeholder="تصنيف الاجتماع"
-                error={!!(touched.meetingConfidentiality && errors.meetingConfidentiality)}
               />
             </FormField>
           </div>
         </div>
+
+        {/* File Upload */}
+        <FileUpload
+          file={formData.file}
+          error={errors.file}
+          onFileSelect={handleFileSelect}
+          required={isFieldRequired('file')}
+        />
 
         {/* Table 1: Meeting Goals */}
         <div className="w-full flex justify-center">
@@ -422,11 +299,7 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
             <FormTable
               title="الهدف من الاجتماع"
               required
-              columns={[
-                { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-                { id: 'goal', header: 'الهدف', type: 'text', placeholder: 'ملخص مختصر يوضح الهدف والنتائج المتوقعة' },
-                { id: 'action', header: 'إجراء', width: 'w-20' },
-              ]}
+              columns={MEETING_GOALS_COLUMNS}
               rows={formData.meetingGoals || []}
               onAddRow={handleAddGoal}
               onDeleteRow={handleDeleteGoal}
@@ -434,6 +307,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               addButtonLabel="إضافة هدف"
               errors={tableErrors}
               touched={tableTouched}
+              hasError={!!(errors.meetingGoals || Object.keys(tableErrors).length > 0)}
+              errorMessage={errors.meetingGoals || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة هدف واحد على الأقل' : undefined)}
             />
           </div>
         </div>
@@ -443,17 +318,17 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
           <div style={{ width: '1085px' }}>
             <FormTable
               title="أجندة الاجتماع"
-              columns={[
-                { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-                { id: 'agenda', header: 'الأجندة', type: 'text', placeholder: '' },
-                { id: 'duration', header: 'مدة العرض', type: 'text', placeholder: '' },
-                { id: 'action', header: 'إجراء', width: 'w-20' },
-              ]}
+              required={isFieldRequired('meetingAgenda')}
+              columns={MEETING_AGENDA_COLUMNS}
               rows={formData.meetingAgenda || []}
               onAddRow={handleAddAgenda}
               onDeleteRow={handleDeleteAgenda}
               onUpdateRow={handleUpdateAgenda}
               addButtonLabel="إضافة أجندة"
+              errors={tableErrors}
+              touched={tableTouched}
+              hasError={!!(errors.meetingAgenda || Object.keys(tableErrors).length > 0)}
+              errorMessage={errors.meetingAgenda || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي' : undefined)}
             />
           </div>
         </div>
@@ -464,11 +339,7 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
             <FormTable
               title="الدعم المطلوب من الوزير"
               required
-              columns={[
-                { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-                { id: 'support', header: 'الدعم', type: 'text', placeholder: '' },
-                { id: 'action', header: 'إجراء', width: 'w-20' },
-              ]}
+              columns={MINISTER_SUPPORT_COLUMNS}
               rows={formData.ministerSupport || []}
               onAddRow={handleAddSupport}
               onDeleteRow={handleDeleteSupport}
@@ -476,6 +347,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               addButtonLabel="إضافة دعم"
               errors={tableErrors}
               touched={tableTouched}
+              hasError={!!(errors.ministerSupport || Object.keys(tableErrors).length > 0)}
+              errorMessage={errors.ministerSupport || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة دعم واحد على الأقل' : undefined)}
             />
           </div>
         </div>
@@ -494,6 +367,7 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
               {formData.wasDiscussedPreviously && (
                 <FormField
                   label="تاريخ الاجتماع السابق"
+                  required={isFieldRequired('previousMeetingDate')}
                   error={touched.previousMeetingDate ? errors.previousMeetingDate : undefined}
                 >
                   <FormDatePicker
@@ -509,29 +383,22 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
           </div>
         </div>
 
-        {/* Table 4: Related Directives */}
-        <div className="w-full flex justify-center">
-          <div style={{ width: '1085px' }}>
-            <FormTable
-              title="التوجيه المرتبط"
-              columns={[
-                { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-                { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '' },
-                { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '' },
-                { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', placeholder: 'dd:mm:yyyy' },
-                { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '' },
-                { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', placeholder: 'dd:mm:yyyy' },
-                { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '' },
-                { id: 'action', header: 'إجراء', width: 'w-20' },
-              ]}
-              rows={formData.relatedDirectives || []}
-              onAddRow={handleAddDirective}
-              onDeleteRow={handleDeleteDirective}
-              onUpdateRow={handleUpdateDirective}
-              addButtonLabel="إضافة توجيه مرتبط"
-            />
+        {/* Table 4: Related Directives - Only show when wasDiscussedPreviously is checked */}
+        {formData.wasDiscussedPreviously && (
+          <div className="w-full flex justify-center">
+            <div style={{ width: '1085px' }}>
+              <FormTable
+                title="التوجيه المرتبط"
+                columns={RELATED_DIRECTIVES_COLUMNS}
+                rows={formData.relatedDirectives || []}
+                onAddRow={handleAddDirective}
+                onDeleteRow={handleDeleteDirective}
+                onUpdateRow={handleUpdateDirective}
+                addButtonLabel="إضافة توجيه مرتبط"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Notes TextArea */}
         <div className="w-full flex justify-center">
@@ -553,8 +420,9 @@ const Step1: React.FC<Step1Props> = ({ onNext, onPrevious, onCancel, onSaveDraft
         </div>
             <ActionButtons
               onCancel={onCancel}
-              onSaveDraft={onSaveDraft}
-              onNext={onNext}
+              onSaveDraft={handleSaveDraftClick}
+              onNext={handleNextClick}
+              disabled={isSubmitting}
             />
       </form>
     </div>

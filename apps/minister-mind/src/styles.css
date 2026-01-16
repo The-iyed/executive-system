@@ -35,6 +35,8 @@
   unicode-range: U+0000-10FFFF;
 }
 
+@import './modules/shared/styles/scrollbar.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
