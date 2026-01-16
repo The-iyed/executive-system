@@ -34,6 +34,17 @@ COPY . .
 RUN --mount=type=cache,target=/root/.nx/cache \
     BUILD_MODE=standalone pnpm nx build muhallil-ahkam
 
+# Build stage for Minister Mind standalone
+FROM node:18-alpine AS build-minister-mind
+WORKDIR /app
+RUN npm install -g pnpm
+COPY package*.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+# Use Nx cache mount for faster builds - use standalone configuration
+RUN --mount=type=cache,target=/root/.nx/cache \
+    BUILD_MODE=standalone pnpm nx build minister-mind --configuration=standalone
+
 # Production stage - Portal (with UMD bundles)
 FROM nginx:alpine AS production
 COPY --from=build-portal /app/dist/apps/portal/ /usr/share/nginx/html/
@@ -57,6 +68,14 @@ CMD ["nginx", "-g", "daemon off;"]
 # Production stage - Muhallil Ahkam standalone
 FROM nginx:alpine AS muhallil-ahkam-standalone
 COPY --from=build-muhallil-ahkam /app/dist/packages/muhallil-ahkam/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/nginx.conf
+RUN rm -f /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+
+# Production stage - Minister Mind standalone
+FROM nginx:alpine AS minister-mind-standalone
+COPY --from=build-minister-mind /app/dist/packages/minister-mind/ /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN rm -f /etc/nginx/conf.d/default.conf
 EXPOSE 80
