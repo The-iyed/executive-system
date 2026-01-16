@@ -1,4 +1,4 @@
 // UC01 module utilities
 export * from './meetingMapper';
 export * from './constants';
-export * from './tableColumns';
+export * from '../features/Meeting/constants';

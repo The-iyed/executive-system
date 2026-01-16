@@ -43,6 +43,7 @@ export const FormField: React.FC<FormFieldProps> = ({
         {children}
         {error && (
           <p
+            data-error-field={label}
             className="text-right mt-2 mb-4"
             style={{
               fontStyle: 'normal',

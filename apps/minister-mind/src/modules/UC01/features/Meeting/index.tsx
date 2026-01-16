@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination } from '@shared';
-import { MeetingStatus } from '@shared';
+import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
 import { MEETING_TABS, PAGE_INFO, PAGINATION, createTableColumns } from '../../utils';
 import { useMeetings } from '../../hooks';
 import '@shared/styles';
+import { PATH } from '../../routes/paths';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
@@ -84,13 +84,13 @@ const Meeting: React.FC = () => {
                 <DataTable
                   columns={tableColumns}
                   data={meetings}
-                  onRowClick={(row) => navigate(`/meeting/${row.id}`)}
+                  onRowClick={(row) => navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))}
                 />
               ) : (
                 <CardsGrid
                   meetings={meetings}
-                  onView={(meeting) => navigate(`/meeting/${meeting.id}`)}
-                  onDetails={(meeting) => navigate(`/meeting/${meeting.id}`)}
+                  onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                 />
               )}
               {totalPages > 1 && (
