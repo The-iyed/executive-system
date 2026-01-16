@@ -135,11 +135,9 @@ const ScheduleReview: React.FC = () => {
       width: 'flex-1', // Flexible width for subject
       align: 'end',
       render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.title}
-          </span>
-        </div>
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          {row.title}
+        </span>
       ),
     },
     {
@@ -148,21 +146,19 @@ const ScheduleReview: React.FC = () => {
       width: 'w-56', // Fixed width for coordinator
       align: 'end',
       render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.coordinator || 'أحمد محمد'}
-          </span>
-        </div>
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          {row.coordinator || 'أحمد محمد'}
+        </span>
       ),
     },
     {
       id: 'date',
       header: 'تاريخ الإرسال',
-      width: 'w-72', // Fixed width for date - increased to accommodate full Arabic date
+      width: 'w-80', // Fixed width for date - increased to accommodate full Arabic date
       align: 'end',
       render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0 overflow-visible">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
+        <div className="flex flex-row justify-end items-center gap-3 w-full">
+          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
             {row.date}
           </span>
           <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
@@ -177,7 +173,7 @@ const ScheduleReview: React.FC = () => {
       width: 'w-52', // Fixed width for status
       align: 'end',
       render: (row) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-start items-center">
           <StatusBadge status={row.status} label={row.statusLabel} />
         </div>
       ),
