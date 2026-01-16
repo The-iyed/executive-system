@@ -5,13 +5,10 @@
   "scripts": {
     "build": "nx build",
     "test": "nx test",
-    "dev": "nx serve portal",
-    "dev:portal": "nx serve portal",
-    "dev:sanad-ai": "nx serve sanad-ai",
-    "dev:ahkam": "nx serve muhallil-ahkam",
+    "dev": "nx serve minister-mind",
     "dev:minister-mind": "nx serve minister-mind",
-    "dev:build-all": "nx run-many --target=build --projects=sanad-ai,muhallil-ahkam,minister-mind --watch",
-    "build:all": "nx run-many --target=build --projects=portal,sanad-ai,muhallil-ahkam,minister-mind"
+    "dev:build-all": "nx run-many --target=build --projects=minister-mind --watch",
+    "build:all": "nx run-many --target=build --projects=minister-mind"
   },
   "private": true,
   "dependencies": {
