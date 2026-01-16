@@ -20,7 +20,7 @@ export const useStep3 = ({
     ...initialData,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof Step3FormData, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof Step3FormData, boolean>>>({});
+  const [touched, _setTouched] = useState<Partial<Record<keyof Step3FormData, boolean>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateAll = useCallback((): boolean => {

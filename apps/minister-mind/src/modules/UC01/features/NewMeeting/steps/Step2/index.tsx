@@ -11,7 +11,7 @@ interface Step2Props {
   onSaveDraft?: () => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
+const Step2: React.FC<Step2Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
   const handleSuccess = useCallback(() => {
     // Success is handled by parent component
   }, []);
@@ -25,7 +25,7 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onPrevious, onCancel, on
     formData,
     errors,
     touched,
-    isSubmitting,
+    // isSubmitting,
     handleAddAttendee,
     handleDeleteAttendee,
     handleUpdateAttendee,
