@@ -186,3 +186,27 @@ export const saveConsultationAsDraft = async (
   );
 };
 
+export interface PendingConsultation {
+  id: string;
+  meeting_request_id: string;
+  consultation_type: string;
+  consultant_user_id: string;
+  status: string;
+  feasibility_answer: boolean | null;
+  recommendation: string | null;
+  consultation_notes: string | null;
+  requested_at: string;
+  responded_at: string | null;
+  content_exception: string | null;
+  duration_granted: number | null;
+}
+
+export const getPendingConsultations = async (
+  meetingId: string
+): Promise<PendingConsultation> => {
+  const response = await axiosInstance.get<PendingConsultation>(
+    `/api/meeting-requests/${meetingId}/consultations/pending`
+  );
+  return response.data;
+};
+
