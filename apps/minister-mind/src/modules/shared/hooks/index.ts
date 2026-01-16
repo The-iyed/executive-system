@@ -1,2 +1,2 @@
 // Shared hooks
-export {};
+export { useUserNavigation } from './useUserNavigation';

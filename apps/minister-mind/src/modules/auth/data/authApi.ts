@@ -24,6 +24,7 @@ export interface User {
     code: string;
     name: string;
   }>;
+  use_cases?: string[];
   is_active: boolean;
 }
 
