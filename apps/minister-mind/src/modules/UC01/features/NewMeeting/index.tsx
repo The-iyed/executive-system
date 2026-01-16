@@ -1,8 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Stepper } from '@shared';
 import Step1 from './steps/Step1';
 import Step2 from './steps/Step2';
 import Step3 from './steps/Step3';
+import { PATH } from '../../routes/paths';
+import {
+  clearDraftData,
+  getCurrentStep,
+  saveCurrentStep,
+  getDraftId,
+  saveDraftId,
+} from './utils/storage';
 import '@shared/styles';
 
 const STEPS = [
@@ -11,59 +20,44 @@ const STEPS = [
   { id: 'step3', label: 'موعد الاجتماع' },
 ];
 
-const STORAGE_KEY = 'newMeeting_currentStep';
-const DRAFT_ID_KEY = 'newMeeting_draftId';
-
 const NewMeeting: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check if this is a new meeting request (via query param or state)
+  const isNewMeeting = new URLSearchParams(location.search).get('new') === 'true' || 
+                       location.state?.isNewMeeting === true;
+
+  // Clear old data when creating a new meeting
+  useEffect(() => {
+    if (isNewMeeting) {
+      clearDraftData();
+    }
+  }, [isNewMeeting]);
 
   // Initialize from localStorage or default to 0
   const [currentStep, setCurrentStep] = useState<number>(() => {
-    try {
-      const savedStep = localStorage.getItem(STORAGE_KEY);
-      if (savedStep !== null) {
-        const step = parseInt(savedStep, 10);
-        // Validate step is within bounds
-        if (step >= 0 && step < STEPS.length) {
-          return step;
-        }
-      }
-    } catch (error) {
-      console.error('Error reading step from localStorage:', error);
-    }
-    return 0;
+    // Don't load if creating new meeting
+    if (isNewMeeting) return 0;
+    return getCurrentStep();
   });
 
   // Initialize draft ID from localStorage
   const [draftId, setDraftId] = useState<string | undefined>(() => {
-    try {
-      return localStorage.getItem(DRAFT_ID_KEY) || undefined;
-    } catch (error) {
-      console.error('Error reading draft ID from localStorage:', error);
-      return undefined;
-    }
+    // Don't load if creating new meeting
+    if (isNewMeeting) return undefined;
+    return getDraftId();
   });
 
   // Save step to localStorage whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, currentStep.toString());
-    } catch (error) {
-      console.error('Error saving step to localStorage:', error);
-    }
+    saveCurrentStep(currentStep);
   }, [currentStep]);
 
   // Save draft ID to localStorage whenever it changes
   useEffect(() => {
-    try {
-      if (draftId) {
-        localStorage.setItem(DRAFT_ID_KEY, draftId);
-      } else {
-        localStorage.removeItem(DRAFT_ID_KEY);
-      }
-    } catch (error) {
-      console.error('Error saving draft ID to localStorage:', error);
-    }
+    saveDraftId(draftId);
   }, [draftId]);
 
   // Scroll to top when step changes
@@ -83,13 +77,8 @@ const NewMeeting: React.FC = () => {
       setCurrentStep(currentStep + 1);
     } else {
       // Last step - meeting creation completed
-      // Clear saved step and draft ID
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(DRAFT_ID_KEY);
-      } catch (error) {
-        console.error('Error clearing step from localStorage:', error);
-      }
+      // Clear all draft data
+      clearDraftData();
       // Add completion logic here (e.g., navigate to success page)
       console.log('Meeting creation completed');
     }
@@ -102,24 +91,18 @@ const NewMeeting: React.FC = () => {
   };
 
   const handleCancel = () => {
-    console.log('Cancel');
-    // Clear saved step and draft ID on cancel
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(DRAFT_ID_KEY);
-    } catch (error) {
-      console.error('Error clearing step from localStorage:', error);
-    }
-    // Add cancel logic here (e.g., navigate away)
+    // Cancel logic is handled by each step using useDeleteDraft hook
+    // This is just a placeholder - steps will handle the actual cancel with confirmation
   };
 
   const handleSaveDraft = (newDraftId?: string) => {
     if (newDraftId) {
       setDraftId(newDraftId);
     }
-    // Step is already saved via useEffect
-    // Draft ID is saved via useEffect
-    console.log('Save Draft', newDraftId);
+    // Clear all draft data and navigate to meetings list
+    clearDraftData();
+    // Navigate to meetings list page
+    navigate(PATH.MEETINGS);
   };
 
   const renderStepContent = () => {
