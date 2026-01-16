@@ -6,6 +6,8 @@ import {
   type CalendarEventData,
 } from './components';
 import { useStep3 } from './useStep3';
+import { useDeleteDraft } from '../../hooks/useDeleteDraft';
+import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 
 interface Step3Props {
   draftId: string;
@@ -35,6 +37,18 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
     console.error('Step3 error:', error);
     // TODO: Show error toast/notification
   }, []);
+
+  // Delete draft hook with confirmation modal
+  const {
+    isConfirmOpen,
+    isDeleting,
+    openConfirm,
+    closeConfirm,
+    confirmDelete,
+  } = useDeleteDraft({
+    draftId,
+    onError: handleError,
+  });
 
   const {
     // formData,
@@ -173,6 +187,13 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
     onSaveDraft?.();
   }, [submitStep, onSaveDraft]);
 
+  /**
+   * Handle Cancel button click - show confirmation modal
+   */
+  const handleCancelClick = useCallback(() => {
+    openConfirm();
+  }, [openConfirm]);
+
   return (
     <div className="w-full flex flex-col items-center mt-12">
       <div className="w-full flex justify-center">
@@ -196,13 +217,22 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
 
           {/* Action Buttons */}
           <ActionButtons
-            onCancel={onCancel}
+            onCancel={handleCancelClick}
             onSaveDraft={handleSaveDraftClick}
             onNext={handleNextClick}
             nextLabel="أنشئ اجتماعك الآن"
+            disabled={isDeleting}
           />
         </div>
       </div>
+
+      {/* Delete Draft Confirmation Modal */}
+      <DeleteDraftConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 };
