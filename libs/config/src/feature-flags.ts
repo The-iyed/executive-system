@@ -2,10 +2,7 @@ export interface FeatureFlags {
   [key: string]: boolean;
 }
 
-const defaultFeatureFlags: FeatureFlags = {
-  sanadAi: true,
-  muhallilAhkam: true,
-};
+const defaultFeatureFlags: FeatureFlags = {};
 
 let featureFlags: FeatureFlags = { ...defaultFeatureFlags };
 

@@ -50,11 +50,9 @@ export const legislatorEndpoints = createApiGroup(
 
 /**
  * Register legislator APIs
+ * Note: This should be called by the app that needs these endpoints
  */
-export function registerLegislatorApis(): void {
-  apiRegistry.registerApp('sanad-ai', legislatorEndpoints);
+export function registerLegislatorApis(appName: string): void {
+  apiRegistry.registerApp(appName, legislatorEndpoints);
 }
-
-// Auto-register when module loads
-registerLegislatorApis();
 
