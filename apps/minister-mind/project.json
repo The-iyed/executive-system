@@ -10,6 +10,11 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/packages/minister-mind"
+      },
+      "configurations": {
+        "standalone": {
+          "skipTypeCheck": true
+        }
       }
     },
     "serve": {

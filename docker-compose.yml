@@ -20,4 +20,11 @@ services:
       target: muhallil-ahkam-standalone
     ports:
       - "4202:80"
+  minister-mind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: minister-mind-standalone
+    ports:
+      - "4404:80"
 
