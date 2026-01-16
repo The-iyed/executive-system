@@ -11,6 +11,7 @@ type RouteConfig = {
   component: React.ComponentType<any>
   guard?: React.ComponentType<any> | typeof Fragment | any
   layout?: React.ComponentType<any> | typeof Fragment
+  useCase?: string
 } & RouteProps
 
 const routes: RouteConfig[] = [
@@ -20,6 +21,7 @@ const routes: RouteConfig[] = [
     path: PATH.RECENT_ACTIVITY,
     component: lazy(() => import('../pages/recentActivity')),
     layout: Layout,
+    useCase: 'UC-02',
   },
   {
     exact: true,
@@ -27,6 +29,7 @@ const routes: RouteConfig[] = [
     path: PATH.SCHEDULE_REVIEW,
     component: lazy(() => import('../pages/scheduleReview')),
     layout: Layout,
+    useCase: 'UC-02',
   },
   {
     exact: true,
@@ -34,6 +37,7 @@ const routes: RouteConfig[] = [
     path: PATH.MEETING_DETAIL,
     component: lazy(() => import('../pages/meetingDetail')),
     layout: Layout,
+    useCase: 'UC-02',
   },
 ]
 

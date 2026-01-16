@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@auth';
+import { getDefaultRouteForUser } from '@shared';
 
 const loginSchema = z.object({
   email: z
@@ -86,8 +87,9 @@ const Login = () => {
       const userData = await login(result.data);
       // Ensure user data is loaded before navigation
       if (userData) {
-        // Navigate to UC01 root after successful login
-        navigate('/', { replace: true });
+        // Navigate to user's default route based on use cases
+        const defaultRoute = getDefaultRouteForUser(userData.use_cases);
+        navigate(defaultRoute, { replace: true });
       }
     } catch (error: any) {
       setSubmitError(

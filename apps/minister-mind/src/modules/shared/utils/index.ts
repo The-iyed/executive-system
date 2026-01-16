@@ -1,2 +1,2 @@
 // Shared utilities
-export {};
+export * from './useCaseConfig';
