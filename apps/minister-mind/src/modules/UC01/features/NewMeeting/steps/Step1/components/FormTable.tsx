@@ -32,6 +32,8 @@ export interface FormTableProps {
   addButtonLabel: string;
   errors?: Record<string, Record<string, string>>;
   touched?: Record<string, Record<string, boolean>>;
+  hasError?: boolean; // For table border error when required and touched
+  errorMessage?: string; // Error message to display below table title
 }
 
 export const FormTable: React.FC<FormTableProps> = ({
@@ -45,19 +47,43 @@ export const FormTable: React.FC<FormTableProps> = ({
   addButtonLabel,
   errors = {},
   touched = {},
+  hasError = false,
+  errorMessage,
 }) => {
+  // Check if table has errors when required and touched
+  // hasError should be true if: table is required, validation ran (touched), and there are errors
+  const hasTableError = required && hasError;
+  
   return (
     <div className="w-full flex flex-col gap-4">
-      <div className="flex items-center gap-1">
-        <h3
-          className="text-right text-[22px] font-bold text-[#101828]"
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1">
+          <h3
+            className="text-right text-[22px] font-bold text-[#101828]"
+            >
+            {title}
+          </h3>
+          {required && <span className="text-red-500">*</span>}
+        </div>
+        {errorMessage && hasTableError && (
+          <p
+            className="text-right text-[14px] text-[#D13C3C]"
+            style={{
+              fontStyle: 'normal',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+            }}
           >
-          {title}
-        </h3>
-        {required && <span className="text-red-500">*</span>}
+            {errorMessage}
+          </p>
+        )}
       </div>
 
-      <div className="w-full border border-[#D0D5DD] rounded-lg overflow-hidden">
+      <div className={cn(
+        "w-full border rounded-lg overflow-hidden",
+        hasTableError ? "border-[#D13C3C]" : "border-[#D0D5DD]"
+      )}>
         {/* Table Header */}
         <div className="flex flex-row w-full bg-[#F9FAFB] border-b border-[#D0D5DD]">
           {columns.map((column) => (
@@ -112,14 +138,15 @@ export const FormTable: React.FC<FormTableProps> = ({
                         {rowIndex + 1}
                       </span>
                     ) : column.type === 'date' ? (
-                      <div className="w-full flex justify-end">
+                      <div className="w-full flex justify-end min-w-0">
                         <FormDatePicker
                           value={row[column.id] || ''}
                           onChange={(value) => onUpdateRow(row.id, column.id, value)}
-                          placeholder={column.placeholder || 'dd:mm:yyyy'}
+                          placeholder={row[column.id] ? (column.placeholder || 'dd:mm:yyyy') : '-------'}
                           error={
                             !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
                           }
+                          className="w-full"
                         />
                       </div>
                     ) : column.type === 'select' ? (

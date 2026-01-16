@@ -169,6 +169,7 @@ export {
 // Export calendar and date picker
 export { Calendar, type CalendarProps } from './components/calendar';
 export { DatePicker, type DatePickerProps } from './components/date-picker';
+export { DateTimePicker } from './components/date-time-picker';
 
 // Export utilities
 export { cn } from './lib/utils';

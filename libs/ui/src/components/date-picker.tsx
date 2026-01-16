@@ -83,7 +83,7 @@ export function DatePicker({
           type="button"
           variant="outline"
           className={cn(
-            "w-[534.5px] h-[44px] px-[14px] py-[10px] pr-[40px] flex items-center justify-center gap-2 bg-white border border-[#D0D5DD] rounded-lg text-[#667085] font-normal text-[16px] leading-[24px]",
+            "w-full max-w-full h-[44px] px-[14px] py-[10px] pr-[40px] flex items-center justify-center gap-2 bg-white border border-[#D0D5DD] rounded-lg text-[#667085] font-normal text-[16px] leading-[24px]",
             "focus:outline-none focus:border-[#008774]",
             !selectedDate && "text-muted-foreground",
             error && "border-[#D13C3C]",

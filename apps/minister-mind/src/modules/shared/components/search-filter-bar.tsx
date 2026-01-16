@@ -9,7 +9,6 @@ import {
 } from '@sanad-ai/ui';
 import {
   MeetingStatus,
-  MeetingStatusLabels,
   getMeetingStatusLabel,
 } from '../types';
 

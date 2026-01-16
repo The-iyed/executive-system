@@ -65,11 +65,11 @@ axiosInstance.interceptors.response.use(
       window.location.href = '/500'
     }
 
-    if ((!error.response || error.code === 'ERR_NETWORK') && currentPath !== '/network-error') {
-      // Possible CORS or connectivity issue
-      clearTokens()
-      window.location.href = '/network-error'
-    }
+    // if ((!error.response || error.code === 'ERR_NETWORK') && currentPath !== '/network-error') {
+    //   // Possible CORS or connectivity issue
+    //   clearTokens()
+    //   window.location.href = '/network-error'
+    // }
 
     return Promise.reject((error.response && error.response.data) || 'Something went wrong!')
   }

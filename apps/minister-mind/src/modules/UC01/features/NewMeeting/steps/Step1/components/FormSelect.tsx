@@ -63,7 +63,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
           }}
         />
       </SelectTrigger>
-      <SelectContent className="text-right">
+      <SelectContent className="text-right" dir="rtl">
         {options.map((option) => (
           <SelectItem
             key={option.value}
