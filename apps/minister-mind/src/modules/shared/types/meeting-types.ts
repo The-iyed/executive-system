@@ -1,27 +1,26 @@
-/**
- * Meeting Status (حالة الاجتماع)
- * Status of the meeting
- */
+
 export enum MeetingStatus {
   DRAFT = 'DRAFT',
   UNDER_REVIEW = 'UNDER_REVIEW',
   SCHEDULED = 'SCHEDULED',
+  SCHEDULED_ADDITIONAL_INFO = 'SCHEDULED_ADDITIONAL_INFO',
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED',
-  // Additional status variations can be added here
+  RETURNED_FROM_SCHEDULING_MANAGER = 'RETURNED_FROM_SCHEDULING_MANAGER',
+  RETURNED_FROM_CONTENT_MANAGER = 'RETURNED_FROM_CONTENT_MANAGER',
 }
 
-/**
- * Meeting Status Labels (Arabic)
- */
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
-  [MeetingStatus.DRAFT]: 'جديد',
+  [MeetingStatus.DRAFT]: 'مسودة',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
   [MeetingStatus.SCHEDULED]: 'مجدول',
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.CLOSED]: 'مغلق',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
 };
 
 /**
