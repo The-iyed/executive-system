@@ -37,9 +37,9 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
   }, []);
 
   const {
-    formData,
-    errors,
-    isSubmitting,
+    // formData,
+    // errors,
+    // isSubmitting,
     handleSelectEvent,
     submitStep,
   } = useStep3({
