@@ -45,7 +45,7 @@ export const Layout: React.FC<LayoutProps> = ({
         description: 'مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.',
         breadcrumbs: [{ label: 'مراجعة الجدولة', onClick: () => {} }]
       }}
-      navigationItems={uc02NavItems}
+      useDynamicNavigation={true}
     />
   );
 };

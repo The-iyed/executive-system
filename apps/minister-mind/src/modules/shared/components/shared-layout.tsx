@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '@auth';
 import BgSvg from '../assets/bg.svg';
@@ -9,17 +9,35 @@ import { UserAvatar } from './user-avatar';
 import { NavigationActions, NavItem } from './navigation-actions';
 import { WeatherCard } from './weather-card';
 import { WelcomeSection, WelcomeSectionProps } from './welcome-section';
+import { useUserNavigation } from '../hooks/useUserNavigation';
 
 export interface SharedLayoutProps {
   children: React.ReactNode;
   headerClassName?: string;
   bgHeaderClassName?: string;
   welcomeSection: WelcomeSectionProps;
-  navigationItems?: NavItem[];
+  navigationItems?: NavItem[]; // If not provided, will use dynamic navigation based on user's use cases
+  useDynamicNavigation?: boolean; // If true, always use dynamic navigation even if navigationItems is provided
 }
 
-export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClassName, bgHeaderClassName, welcomeSection, navigationItems }) => {
+export const SharedLayout: React.FC<SharedLayoutProps> = ({ 
+  children, 
+  headerClassName, 
+  bgHeaderClassName, 
+  welcomeSection, 
+  navigationItems,
+  useDynamicNavigation = false,
+}) => {
   const { isAuthenticated } = useAuth();
+  const { navigationItems: dynamicNavItems } = useUserNavigation();
+
+  // Use dynamic navigation if explicitly requested or if navigationItems is not provided
+  const finalNavigationItems = useMemo(() => {
+    if (useDynamicNavigation || !navigationItems) {
+      return dynamicNavItems;
+    }
+    return navigationItems;
+  }, [navigationItems, dynamicNavItems, useDynamicNavigation]);
   return (
     <div className="min-h-screen relative w-full overflow-hidden">
       <div
@@ -39,7 +57,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({ children, headerClas
         <header className="flex items-center justify-between" style={{ zIndex: 2 }}>
           <div className='flex items-center gap-4'>
             <Logo />
-          {isAuthenticated && <NavigationActions items={navigationItems} />}
+          {isAuthenticated && <NavigationActions items={finalNavigationItems} />}
           </div>
 
         {isAuthenticated && (
