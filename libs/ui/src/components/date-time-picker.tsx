@@ -79,9 +79,9 @@ export function DateTimePicker({
     }
   }
 
-  const displayValue = selectedDate
-    ? `${format(selectedDate, "yyyy-MM-dd", { locale: ar })} ${timeValue || ""}`
-    : ""
+  // const displayValue = selectedDate
+  //   ? `${format(selectedDate, "yyyy-MM-dd", { locale: ar })} ${timeValue || ""}`
+  //   : ""
 
   return (
     <div className={cn("flex gap-2", className)} dir="rtl">

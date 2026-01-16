@@ -21,8 +21,9 @@ interface Step1Props {
   onSaveDraft?: (draftId: string) => void;
 }
 
-const Step1: React.FC<Step1Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
+const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
   const handleSuccess = useCallback((newDraftId: string) => {
+    console.log('newDraftId', newDraftId);
     // Draft ID is handled by the hook, parent component will receive it via callbacks
   }, []);
 
@@ -38,10 +39,10 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onPrevious, onCancel, on
     tableErrors,
     tableTouched,
     isSubmitting,
-    isLoading,
-    isError,
-    isSuccess,
-    error: submitError,
+    // isLoading,
+    // isError,
+    // isSuccess,
+    // error: submitError,
     isFieldRequired,
     handleChange,
     handleBlur,
