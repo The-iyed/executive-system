@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@shared/types';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
-import { PAGINATION, TAB_STATUS_MAP } from '../utils/constants';
+import { PAGINATION, TAB_FILTER_MAP } from '../utils/constants';
 
 interface UseMeetingsOptions {
-  activeTab: string;
+  activeTab: MeetingStatus;
   searchValue: string;
   statusFilter: MeetingStatus | 'all';
   currentPage: number;
@@ -21,9 +21,6 @@ interface UseMeetingsReturn {
   totalPages: number;
 }
 
-/**
- * Custom hook for fetching and managing meetings list
- */
 export const useMeetings = ({
   activeTab,
   searchValue,
@@ -33,7 +30,6 @@ export const useMeetings = ({
 }: UseMeetingsOptions): UseMeetingsReturn => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchValue);
@@ -42,30 +38,38 @@ export const useMeetings = ({
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Determine API status based on active tab
-  const apiStatus = useMemo(() => {
-    return TAB_STATUS_MAP[activeTab];
+  // Get tab filter configuration (status and owner_type)
+  const tabFilter = useMemo(() => {
+    return TAB_FILTER_MAP[activeTab];
   }, [activeTab]);
 
-  // Determine the status to use for API call
+  // Determine the status and owner_type to use for API call
   // If statusFilter is set and not 'all', use it; otherwise use the tab status
-  const apiStatusToUse = useMemo(() => {
-    if (statusFilter && statusFilter !== 'all') {
-      return statusFilter;
-    }
-    return apiStatus;
-  }, [apiStatus, statusFilter]);
+  // Always use the tab's owner_type
+  // Note: TypeScript string enums are already strings at runtime
+  const apiFilters = useMemo(() => {
+    const status = statusFilter && statusFilter !== 'all' 
+      ? statusFilter 
+      : tabFilter?.status;
+    
+    const owner_type = tabFilter?.owner_type;
+
+    return {
+      status: status as string | undefined,
+      owner_type: owner_type as string | undefined,
+    };
+  }, [tabFilter, statusFilter]);
 
   // Calculate pagination values
   const skip = (currentPage - 1) * itemsPerPage;
 
   // Fetch meetings from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['meetings', 'uc01', apiStatusToUse, debouncedSearch.trim(), currentPage],
+    queryKey: ['meetings', 'uc01', apiFilters.status, apiFilters.owner_type, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        status: apiStatusToUse,
-        owner_type: 'SCHEDULING',
+        status: apiFilters.status,
+        owner_type: apiFilters.owner_type,
         skip: skip,
         limit: itemsPerPage,
       };
@@ -74,7 +78,7 @@ export const useMeetings = ({
       }
       return getMeetings(params);
     },
-    enabled: !!apiStatusToUse,
+    enabled: !!apiFilters.status && !!apiFilters.owner_type,
   });
 
   // Map API response to MeetingDisplayData
