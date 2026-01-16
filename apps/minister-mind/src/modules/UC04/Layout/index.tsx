@@ -27,8 +27,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         description: 'يمكنك الاطلاع على الطلبات التي تتطلب تقديم توجيه',
         breadcrumbs: [{ label: 'طلبات تقديم توجيه', onClick: () => {} }],
       }}
-      authenticated={true}
-      navigationItems={uc04NavItems}
+      useDynamicNavigation={true}
     />
   );
 };

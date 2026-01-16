@@ -22,11 +22,7 @@ const routes: RouteConfig[] = [
     path: PATH.ERROR_NETWORK,
     component: lazy(() => import('../features/error/ErrorNetwork')),
   },
-  {
-    exact: true,
-    path: PATH.NOT_FOUND,
-    component: lazy(() => import('../features/error/NotFound')),
-  },
+  // Removed NotFound route - unmatched routes are now handled by redirect to user's default route
 ]
 
 export default routes

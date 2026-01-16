@@ -27,8 +27,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         description: 'يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها',
         breadcrumbs: [{ label: 'طلبات الاستشارات', onClick: () => {} }],
       }}
-      authenticated={true}
-      navigationItems={uc03NavItems}
+      useDynamicNavigation={true}
     />
   );
 };
