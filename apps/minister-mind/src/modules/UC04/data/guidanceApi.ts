@@ -161,3 +161,18 @@ export const getGuidanceRequestById = async (
   return response.data;
 };
 
+export interface ProvideGuidanceRequest {
+  guidance_notes: string;
+  feasibility_answer: boolean;
+}
+
+export const provideGuidance = async (
+  meetingRequestId: string,
+  data: ProvideGuidanceRequest
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/guidance/${meetingRequestId}/provide`,
+    data
+  );
+};
+
