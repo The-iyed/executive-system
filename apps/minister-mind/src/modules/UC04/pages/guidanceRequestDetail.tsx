@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
-import { getGuidanceRequestById } from '../data/guidanceApi';
+import { getGuidanceRequestById, provideGuidance } from '../data/guidanceApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
+import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
 
 // Translate response status to Arabic
@@ -41,12 +42,13 @@ const GuidanceRequestDetail: React.FC = () => {
   const [guidanceResponse, setGuidanceResponse] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [isSuitableForScheduling, setIsSuitableForScheduling] = useState<boolean>(false);
+  const [queriesDisabled, setQueriesDisabled] = useState<boolean>(false);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
     queryKey: ['guidance-request', id],
     queryFn: () => getGuidanceRequestById(id!),
-    enabled: !!id,
+    enabled: !!id && !queriesDisabled,
   });
 
   const meetingRequest = guidanceData?.meeting_request;
@@ -63,29 +65,59 @@ const GuidanceRequestDetail: React.FC = () => {
     },
   ];
 
+  const queryClient = useQueryClient();
+
+  // Submit guidance mutation
+  const submitMutation = useMutation({
+    mutationFn: (data: { guidance_notes: string; feasibility_answer: boolean }) => {
+      if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
+      return provideGuidance(meetingRequest.id, data);
+    },
+    onSuccess: () => {
+      // Disable queries first to prevent any new requests
+      setQueriesDisabled(true);
+      
+      // Cancel any in-flight queries
+      queryClient.cancelQueries({ queryKey: ['guidance-request', id] });
+      
+      // Remove queries from cache since we're navigating away
+      queryClient.removeQueries({ queryKey: ['guidance-request', id] });
+      
+      // Invalidate guidance requests list to remove the responded request
+      queryClient.invalidateQueries({ queryKey: ['guidance-requests'] });
+      
+      setIsSubmitModalOpen(false);
+      setGuidanceResponse('');
+      setIsSuitableForScheduling(false);
+      
+      // Navigate back to guidance requests list
+      navigate(PATH.GUIDANCE_REQUESTS);
+    },
+    onError: (error) => {
+      console.error('Error submitting guidance:', error);
+      // TODO: Show error toast/notification
+    },
+  });
+
   const handleOpenSubmitModal = () => {
     setIsSubmitModalOpen(true);
   };
 
   const handleSubmitGuidance = () => {
-    // TODO: Implement submit guidance API call
-    console.log('Submitting guidance:', {
-      response: guidanceResponse,
-      is_suitable_for_scheduling: isSuitableForScheduling,
-    });
-    setIsSubmitModalOpen(false);
-    setGuidanceResponse('');
-    setIsSuitableForScheduling(false);
-  };
+    if (!guidanceResponse.trim()) {
+      // TODO: Show validation error
+      return;
+    }
 
-  const handleSaveAsDraft = () => {
-    // TODO: Implement save as draft API call
-    console.log('Saving as draft:', {
-      response: guidanceResponse,
-      is_suitable_for_scheduling: isSuitableForScheduling,
+    if (!meetingRequest?.id) {
+      console.error('Meeting request ID is required');
+      return;
+    }
+
+    submitMutation.mutate({
+      guidance_notes: guidanceResponse,
+      feasibility_answer: isSuitableForScheduling,
     });
-    setIsSubmitModalOpen(false);
-    // Don't clear the form when saving as draft
   };
 
   // Loading state
@@ -892,7 +924,8 @@ const GuidanceRequestDetail: React.FC = () => {
             <button
               type="button"
               onClick={handleSubmitGuidance}
-              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 w-full h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors"
+              disabled={submitMutation.isPending || !guidanceResponse.trim() || !meetingRequest?.id}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 w-full h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 fontFamily: "'Ping AR + LT', sans-serif",
                 fontWeight: 700,
@@ -900,20 +933,9 @@ const GuidanceRequestDetail: React.FC = () => {
                 lineHeight: '24px',
               }}
             >
-              <span className="text-white">تقديم توجيه</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveAsDraft}
-              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 w-full h-11 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
-              style={{
-                fontFamily: "'Ping AR + LT', sans-serif",
-                fontWeight: 700,
-                fontSize: '16px',
-                lineHeight: '24px',
-              }}
-            >
-              <span className="text-gray-700">حفظ كمسودة</span>
+              <span className="text-white">
+                {submitMutation.isPending ? 'جاري الإرسال...' : 'تقديم توجيه'}
+              </span>
             </button>
           </DialogFooter>
         </DialogContent>

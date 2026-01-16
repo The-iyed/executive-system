@@ -5,8 +5,9 @@ import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
-import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft } from '../data/consultationsApi';
+import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
+import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
 
 // Translate response status to Arabic
@@ -41,12 +42,20 @@ const ConsultationRequestDetail: React.FC = () => {
   const [consultationResponse, setConsultationResponse] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [isSuitableForScheduling, setIsSuitableForScheduling] = useState<boolean>(false);
+  const [queriesDisabled, setQueriesDisabled] = useState<boolean>(false);
 
   // Fetch consultation request data from API
   const { data: consultationData, isLoading, error } = useQuery({
     queryKey: ['consultation-request', id],
     queryFn: () => getConsultationRequestById(id!),
-    enabled: !!id,
+    enabled: !!id && !queriesDisabled,
+  });
+
+  // Fetch pending consultation data
+  const { data: pendingConsultation, isLoading: isLoadingConsultation } = useQuery({
+    queryKey: ['pending-consultation', id],
+    queryFn: () => getPendingConsultations(id!),
+    enabled: !!id && !queriesDisabled,
   });
 
   const meetingRequest = consultationData?.meeting_request;
@@ -68,15 +77,30 @@ const ConsultationRequestDetail: React.FC = () => {
   // Submit consultation mutation
   const submitMutation = useMutation({
     mutationFn: (data: { feasibility_answer: boolean; consultation_notes: string }) => {
-      if (!meetingRequest?.id) throw new Error('Consultation ID is required');
-      return submitConsultationResponse(meetingRequest.id, data);
+      if (!pendingConsultation?.id) throw new Error('Consultation ID is required');
+      return submitConsultationResponse(pendingConsultation.id, data);
     },
     onSuccess: () => {
-      // Invalidate and refetch consultation request data
-      queryClient.invalidateQueries({ queryKey: ['consultation-request', id] });
+      // Disable queries first to prevent any new requests
+      setQueriesDisabled(true);
+      
+      // Cancel any in-flight queries
+      queryClient.cancelQueries({ queryKey: ['consultation-request', id] });
+      queryClient.cancelQueries({ queryKey: ['pending-consultation', id] });
+      
+      // Remove queries from cache since we're navigating away
+      queryClient.removeQueries({ queryKey: ['consultation-request', id] });
+      queryClient.removeQueries({ queryKey: ['pending-consultation', id] });
+      
+      // Invalidate consultation requests list to remove the responded request
+      queryClient.invalidateQueries({ queryKey: ['consultation-requests'] });
+      
       setIsSubmitModalOpen(false);
       setConsultationResponse('');
       setIsSuitableForScheduling(false);
+      
+      // Navigate back to consultation requests list
+      navigate(PATH.CONSULTATION_REQUESTS);
     },
     onError: (error) => {
       console.error('Error submitting consultation:', error);
@@ -87,12 +111,13 @@ const ConsultationRequestDetail: React.FC = () => {
   // Save as draft mutation
   const saveDraftMutation = useMutation({
     mutationFn: (data: { feasibility_answer: boolean; consultation_notes: string }) => {
-      if (!meetingRequest?.id) throw new Error('Consultation ID is required');
-      return saveConsultationAsDraft(meetingRequest.id, data);
+      if (!pendingConsultation?.id) throw new Error('Consultation ID is required');
+      return saveConsultationAsDraft(pendingConsultation.id, data);
     },
     onSuccess: () => {
-      // Invalidate and refetch consultation request data
+      // Invalidate and refetch consultation request data and pending consultation
       queryClient.invalidateQueries({ queryKey: ['consultation-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['pending-consultation', id] });
       setIsSubmitModalOpen(false);
       // Don't clear the form when saving as draft
     },
@@ -109,6 +134,12 @@ const ConsultationRequestDetail: React.FC = () => {
   const handleSubmitConsultation = () => {
     if (!consultationResponse.trim()) {
       // TODO: Show validation error
+      return;
+    }
+
+    if (!pendingConsultation?.id) {
+      // TODO: Show error that consultation ID is missing
+      console.error('Consultation ID is required');
       return;
     }
 
@@ -227,7 +258,8 @@ const ConsultationRequestDetail: React.FC = () => {
                   {/* Submit Button */}
                   <button
                     onClick={handleOpenSubmitModal}
-                    className="flex flex-row items-center px-3 py-2 gap-2 w-[158px] h-10 bg-[#29615C] rounded-[85px] flex-none"
+                    disabled={!pendingConsultation?.id || isLoadingConsultation}
+                    className="flex flex-row items-center px-3 py-2 gap-2 w-[158px] h-10 bg-[#29615C] rounded-[85px] flex-none disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                   >
                     <div className="flex flex-row justify-end items-center p-0 gap-3 w-[134px] h-6">
@@ -248,6 +280,204 @@ const ConsultationRequestDetail: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Pending Consultation Section */}
+              {isLoadingConsultation ? (
+                <div className="flex items-center justify-center p-6">
+                  <div className="text-gray-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    جاري تحميل بيانات الاستشارة...
+                  </div>
+                </div>
+              ) : pendingConsultation ? (
+                <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+                  <h2
+                    className="text-xl font-bold text-right text-[#101828]"
+                    style={{
+                      fontFamily: "'Ping AR + LT', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '20px',
+                      lineHeight: '28px',
+                    }}
+                  >
+                    بيانات الاستشارة المعلقة
+                  </h2>
+                  
+                  <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          معرف الاستشارة
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.id}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          نوع الاستشارة
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.consultation_type === 'SCHEDULING' ? 'جدولة' : pendingConsultation.consultation_type}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          الحالة
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {translateResponseStatus(pendingConsultation.status)}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          معرف المستشار
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.consultant_user_id}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          تاريخ الطلب
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.requested_at ? new Date(pendingConsultation.requested_at).toLocaleString('ar-SA') : '-'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          تاريخ الرد
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.responded_at ? new Date(pendingConsultation.responded_at).toLocaleString('ar-SA') : '-'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          إجابة الجدوى
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.feasibility_answer === null ? '-' : pendingConsultation.feasibility_answer ? 'نعم' : 'لا'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          المدة الممنوحة
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.duration_granted ? `${pendingConsultation.duration_granted} دقيقة` : '-'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {pendingConsultation.recommendation && (
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          التوصية
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.recommendation}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {pendingConsultation.consultation_notes && (
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          ملاحظات الاستشارة
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.consultation_notes}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {pendingConsultation.content_exception && (
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          استثناء المحتوى
+                        </label>
+                        <p
+                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {pendingConsultation.content_exception}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -927,7 +1157,7 @@ const ConsultationRequestDetail: React.FC = () => {
             <button
               type="button"
               onClick={handleSubmitConsultation}
-              disabled={submitMutation.isPending || !consultationResponse.trim()}
+              disabled={submitMutation.isPending || !consultationResponse.trim() || !pendingConsultation?.id}
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 fontFamily: "'Ping AR + LT', sans-serif",
@@ -937,13 +1167,13 @@ const ConsultationRequestDetail: React.FC = () => {
               }}
             >
               <span className="text-white">
-                {submitMutation.isPending ? 'جاري الإرسال...' : 'تقديم توجيه'}
+                {submitMutation.isPending ? 'جاري الإرسال...' : 'تقديم استشارة'}
               </span>
             </button>
             <button
               type="button"
               onClick={handleSaveAsDraft}
-              disabled={saveDraftMutation.isPending}
+              disabled={saveDraftMutation.isPending || !pendingConsultation?.id}
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 fontFamily: "'Ping AR + LT', sans-serif",
