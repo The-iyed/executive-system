@@ -59,7 +59,7 @@ const welcome = welcomeByPath[pathname];
   return (
     <SharedLayout
     children={children}
-    navigationItems={uc01NavItems}
+    useDynamicNavigation={true}
     welcomeSection={{
       title: welcome?.title ?? 'مرحباً بك',
       description: welcome?.description,
