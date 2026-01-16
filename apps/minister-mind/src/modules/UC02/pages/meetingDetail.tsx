@@ -710,7 +710,6 @@ const MeetingDetail: React.FC = () => {
     { id: 'content', label: 'المحتوى' },
     { id: 'scheduling', label: 'الجدولة' },
     { id: 'attachments', label: 'المرفقات' },
-    { id: 'history', label: 'السجل' },
   ];
 
   // Loading state
