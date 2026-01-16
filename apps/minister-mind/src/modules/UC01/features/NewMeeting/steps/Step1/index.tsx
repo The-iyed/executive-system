@@ -12,6 +12,8 @@ import {
   RELATED_DIRECTIVES_COLUMNS,
 } from './constants';
 import { useStep1 } from './useStep1';
+import { useDeleteDraft } from '../../hooks/useDeleteDraft';
+import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 
 interface Step1Props {
   draftId?: string;
@@ -31,6 +33,18 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     console.error('Step1 error:', error);
     // TODO: Show error toast/notification
   }, []);
+
+  // Delete draft hook with confirmation modal
+  const {
+    isConfirmOpen,
+    isDeleting,
+    openConfirm,
+    closeConfirm,
+    confirmDelete,
+  } = useDeleteDraft({
+    draftId,
+    onError: handleError,
+  });
 
   const {
     formData,
@@ -94,6 +108,13 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
       console.error('Error saving draft:', error);
     }
   }, [submitStep, onSaveDraft]);
+
+  /**
+   * Handle Cancel button click - show confirmation modal
+   */
+  const handleCancelClick = useCallback(() => {
+    openConfirm();
+  }, [openConfirm]);
 
   // Placeholder styling
   React.useEffect(() => {
@@ -420,12 +441,20 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
           </div>
         </div>
             <ActionButtons
-              onCancel={onCancel}
+              onCancel={handleCancelClick}
               onSaveDraft={handleSaveDraftClick}
               onNext={handleNextClick}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isDeleting}
             />
       </form>
+
+      {/* Delete Draft Confirmation Modal */}
+      <DeleteDraftConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 };

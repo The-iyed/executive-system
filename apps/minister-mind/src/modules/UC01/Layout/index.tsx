@@ -13,7 +13,11 @@ export const Layout: React.FC<LayoutProps> = ({
   const { pathname } = useLocation();
 
 const defaultActions: WelcomeConfig['actions'] = [
-  { label: 'إنشاء اجتماع', variant: 'primary',  onClick: () => navigate(PATH.NEW_MEETING), }, 
+  { 
+    label: 'إنشاء اجتماع', 
+    variant: 'primary',  
+    onClick: () => navigate(`${PATH.NEW_MEETING}?new=true`, { state: { isNewMeeting: true } }), 
+  }, 
   { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }
 ]
 
