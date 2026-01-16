@@ -39,6 +39,13 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-01',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.MEETING_PREVIEW,
+    component: lazy(() => import('../features/PreviewMeeting')),
+    layout: Layout,
+  },
 ]
 
 export default routes
