@@ -1,6 +1,7 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { ContentRequestApiResponse } from '../data/contentApi';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { ContentRequestCardData } from '../components/content-request-card';
 
 /**
  * Format date to Arabic format
@@ -88,5 +89,29 @@ export const mapContentRequestToCardData = (
     location: request.meeting_channel,
   };
 };
+
+/**
+ * Map API content request response to ContentRequestCardData (for card view)
+ */
+export const mapContentRequestToCardViewData = (
+  request: ContentRequestApiResponse
+): ContentRequestCardData => {
+  const status = mapStatus(request.status);
+  const statusLabel = getStatusLabel(status);
+
+  // Use submitted_at for date, fallback to created_at
+  const dateToUse = request.submitted_at || request.created_at;
+
+  return {
+    id: request.id,
+    requestNumber: request.request_number,
+    title: request.meeting_title || request.meeting_subject,
+    date: formatDate(dateToUse),
+    submitter: request.submitter_name,
+    status: status,
+    statusLabel: statusLabel,
+  };
+};
+
 
 
