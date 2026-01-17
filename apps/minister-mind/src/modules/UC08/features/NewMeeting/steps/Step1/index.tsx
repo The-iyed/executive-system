@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { FormField, FormInput, FormSelect, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow } from './components';
+import { FormField, FormSelect, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow } from './components';
 import { FormCheckbox } from '@shared';
 import { ActionButtons } from '@shared';
 import {
@@ -62,7 +62,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     handleAddDirective,
     handleDeleteDirective,
     handleUpdateDirective,
-    validateAll,
     submitStep,
   } = useStep1({
     draftId,

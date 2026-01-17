@@ -338,7 +338,7 @@ export const extractValidationErrors = (
 ) => {
   const formErrors: Partial<Record<keyof Step1FormData, string>> = {};
   const tableErrors: Record<string, Record<string, string>> = {};
-  const data = inputData || (validationResult.error.input as Partial<Step1FormData>);
+  const data = inputData || {};
 
   validationResult.error.errors.forEach((err) => {
     const path = err.path;
