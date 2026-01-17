@@ -44,6 +44,13 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         label: 'مراجعة الجدولة',
         path: UC02_PATH.SCHEDULE_REVIEW,
       },
+      {
+        id: 'directives',
+        icon: ScheduleReviewIcon,
+        label: 'التوجيهات',
+        path: UC02_PATH.DIRECTIVES,
+        requiresUseCase: 'UC-07', // Only show if user has UC-07 access
+      },
     ],
   },
   'UC-03': {
@@ -119,6 +126,7 @@ export const getDefaultRouteForUser = (useCases?: string[]): string => {
 /**
  * Get all navigation items for a user based on their use cases
  * Merges navigation items from all allowed use cases
+ * Filters items that require specific use case access
  */
 export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
   if (!useCases || useCases.length === 0) {
@@ -133,9 +141,19 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
     const config = USE_CASE_CONFIGS[useCase];
     if (config) {
       for (const item of config.navigationItems) {
+        // Check if item requires a specific use case
+        if ((item as any).requiresUseCase) {
+          const requiredUseCase = (item as any).requiresUseCase;
+          if (!useCases.includes(requiredUseCase)) {
+            continue; // Skip this item if user doesn't have required use case
+          }
+        }
+        
         // Avoid duplicates by checking id
         if (!seenIds.has(item.id)) {
-          navItems.push(item);
+          // Remove the requiresUseCase property before adding to navItems
+          const { requiresUseCase, ...cleanItem } = item as any;
+          navItems.push(cleanItem);
           seenIds.add(item.id);
         }
       }
