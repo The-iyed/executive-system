@@ -15,6 +15,7 @@ export interface DataTableProps<T = any> {
   data: T[];
   onRowClick?: (row: T, index: number) => void;
   className?: string;
+  rowPadding?: 'py-2' | 'py-3' | 'py-4';
 }
 
 export const DataTable = <T extends Record<string, any>>({
@@ -22,6 +23,7 @@ export const DataTable = <T extends Record<string, any>>({
   data,
   onRowClick,
   className = '',
+  rowPadding = 'py-4',
 }: DataTableProps<T>) => {
   // Don't reverse - columns should be in the order they're defined
   // The RTL direction on the container will handle the layout
@@ -109,7 +111,7 @@ export const DataTable = <T extends Record<string, any>>({
           data.map((row, rowIndex) => (
             <div
               key={rowIndex}
-              className="flex flex-row w-full cursor-pointer hover:bg-gray-50 transition-colors"
+              className="flex flex-row w-full cursor-pointer h-20 hover:bg-gray-50 transition-colors"
               onClick={() => onRowClick?.(row, rowIndex)}
             >
               {columns.map((column) => {
@@ -121,7 +123,7 @@ export const DataTable = <T extends Record<string, any>>({
                       box-border
                       flex flex-row items-center
                       ${getJustifyClass(align)}
-                      px-6 py-4
+                      px-6 ${rowPadding}
                       gap-4
                       border-b border-gray-200
                       ${column.width || 'flex-1'}
