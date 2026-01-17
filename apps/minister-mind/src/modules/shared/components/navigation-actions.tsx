@@ -11,6 +11,7 @@ export interface NavItem {
   label: string;
   path?: string;
   actions?: ActionButton[];
+  requiresUseCase?: string; // Optional: Only show this item if user has the specified use case
 }
 
 export interface NavigationActionsProps {

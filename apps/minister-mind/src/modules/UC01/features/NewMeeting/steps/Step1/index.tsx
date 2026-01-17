@@ -16,16 +16,18 @@ import { useDeleteDraft } from '../../hooks/useDeleteDraft';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormRow } from './components/FormRow';
 import { cn } from '@sanad-ai/ui';
-
 interface Step1Props {
   draftId?: string;
   onNext?: (draftId: string) => void;
   onPrevious?: () => void;
   onCancel?: () => void;
   onSaveDraft?: (draftId: string) => void;
+  isEditMode?: boolean;
+  initialData?: Partial<import('./schema').Step1FormData>;
 }
 
-const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft }) => {
+const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft, isEditMode = false, initialData: propInitialData }) => {
+
   const handleSuccess = useCallback((newDraftId: string) => {
     console.log('newDraftId', newDraftId);
     // Draft ID is handled by the hook, parent component will receive it via callbacks
@@ -78,8 +80,10 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft }) => {
     submitStep,
   } = useStep1({
     draftId,
+    initialData: propInitialData,
     onSuccess: handleSuccess,
     onError: handleError,
+    isEditMode,
   });
 
   const handleNextClick = useCallback(async () => {
