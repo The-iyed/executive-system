@@ -131,14 +131,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
 
   return (
     <div className="w-full flex justify-center">
-      <div className="w-[1085px] flex flex-col gap-4">
+     <div className="w-full max-w-[1085px] flex flex-col gap-4">
         <label
-          className="text-right"
-          style={{
-            fontWeight: 500,
-            fontSize: '14px',
-            color: '#344054',
-          }}
+          className="text-right text-[14px] font-medium text-[#344054]"
         >
           العرض التقديمي
           {required && <span className="text-red-500 mr-1">*</span>}
@@ -152,10 +147,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
           className={cn(
             'relative border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer',
             isDragging
-              ? 'border-[#009883] bg-[#009883]/5'
-              : file
-              ? 'border-[#009883] bg-[#009883]/5'
-              : 'border-[#D0D5DD] bg-white hover:border-[#009883] hover:bg-[#009883]/5'
+            ? 'border-[#009883] bg-[#009883]/5'
+            : file
+            ? 'border-[#009883] bg-[#009883]/5'
+            : 'border-[#D0D5DD] bg-white hover:border-[#009883] hover:bg-[#009883]/5',
+            error && !file && "border-[#D13C3C]"
           )}
           onClick={handleBrowseClick}
         >
@@ -169,11 +165,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
 
           {/* Upload Icon */}
           <div className="flex justify-center mb-4">
-            <UploadIcon className="w-[60px] h-[60px] text-[#667085]" />
+            {/* <UploadIcon className="w-[60px] h-[60px] text-[#667085]" /> */}
+            <UploadIcon className="w-10 h-10 sm:w-[60px] sm:h-[60px] text-[#667085]" />
           </div>
 
           {/* Instructions */}
-          <p className="text-[16px] text-[#344054] mb-2">
+          <p className="text-[16px] text-[#344054] mb-2 leading-relaxed">
             <span className="text-[#009883] font-medium">اضغط للرفع</span> او اسحب الملف هنا
           </p>
 
@@ -185,24 +182,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
 
         {/* Error Message */}
         {error && (
-          <p className="text-[14px] text-red-500 mt-4">{error}</p>
+          <p className="text-[14px] text-red-500 -mt-[10px]">{error}</p>
         )}
 
         {/* File Info */}
         {file && (
           <div
-            className="p-4 rounded-xl"
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #009883',
-              borderRadius: '12px',
-            }}
+            className="p-4 rounded-xl bg-[#FFFFFF] border border-[#009883] border-radius-[12px]"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 {getFileTypeIcon(file.name)}
                 <div className="text-right">
-                  <p className="text-[14px] font-medium text-[#344054]">{file.name}</p>
+                  <p className="text-[14px] font-medium text-[#344054] break-all">
+                    {file.name}
+                  </p>
                   <p className="text-[12px] text-[#667085]">{formatFileSize(file.size)}</p>
                 </div>
               </div>
@@ -235,11 +229,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
             <div className="flex items-center gap-3">
               <div className="flex-1 h-[6px] rounded-full bg-[#E4E7EC] overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${uploadProgress}%`,
-                    background: '#009883',
-                  }}
+                  className="h-full rounded-full transition-all duration-300 bg-[#009883]"
+                  style={{ width: `${uploadProgress}%` }}
                 />
               </div>
               <span className="text-[14px] text-[#344054] font-medium min-w-[40px]">{uploadProgress}%</span>

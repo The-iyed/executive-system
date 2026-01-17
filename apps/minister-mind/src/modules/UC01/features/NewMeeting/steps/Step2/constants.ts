@@ -31,7 +31,7 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     placeholder: '-------',
   },
   {
-    id: 'isMainAttendee',
+    id: 'is_required',
     header: 'الحضور أساسي',
     type: 'switch',
     label: false,

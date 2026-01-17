@@ -55,8 +55,9 @@ export const FormTable: React.FC<FormTableProps> = ({
   const hasTableError = required && hasError;
   
   return (
-    <div className="w-full flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
+      <div
+  className="w-full flex flex-col gap-4 mx-auto max-w-[1085px]"
+>
         <div className="flex items-center gap-1">
           <h3
             className="text-right text-[22px] font-bold text-[#101828]"
@@ -65,42 +66,31 @@ export const FormTable: React.FC<FormTableProps> = ({
           </h3>
           {required && <span className="text-red-500">*</span>}
         </div>
-        {errorMessage && hasTableError && (
-          <p
-            className="text-right text-[14px] text-[#D13C3C]"
-            style={{
-              fontStyle: 'normal',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-            }}
-          >
-            {errorMessage}
-          </p>
-        )}
-      </div>
 
       <div className={cn(
         "w-full border rounded-lg overflow-hidden",
         hasTableError ? "border-[#D13C3C]" : "border-[#D0D5DD]"
       )}>
+          <div className="w-full overflow-x-auto">
+          <div className="min-w-max">
         {/* Table Header */}
-        <div className="flex flex-row w-full bg-[#F9FAFB] border-b border-[#D0D5DD]">
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              className={cn(
-                'text-[14px] font-medium text-[#475467] flex items-center justify-start px-4 py-3 whitespace-nowrap',
-                column.width || 'flex-1'
-              )}
-            >
-              {column.header}
-            </div>
-          ))}
-        </div>
+      <div className="flex w-full bg-[#F9FAFB] border-b border-[#D0D5DD] min-w-max">
+        {columns.map((column) => (
+          <div
+            key={column.id}
+            className={cn(
+              "text-[14px] font-medium text-[#475467] flex items-center px-4 py-3 whitespace-nowrap",
+              column.width || "min-w-[180px]"
+            )}
+          >
+            {column.header}
+          </div>
+        ))}
+      </div>
 
         {/* Table Body */}
-        <div className="flex flex-col w-full bg-white">
+        {/* <div className="flex flex-col w-full bg-white"> */}
+        <div className="flex flex-col bg-white max-h-[220px] overflow-y-auto">
           {rows.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-[#667085]">
               لا توجد بيانات
@@ -110,7 +100,7 @@ export const FormTable: React.FC<FormTableProps> = ({
               <div
                 key={row.id}
                 className={cn(
-                  'flex flex-row w-full border-b border-[#EAECF0]',
+                  'flex w-full border-b border-[#EAECF0] min-w-max',
                   rowIndex === rows.length - 1 && 'border-b-0'
                 )}
               >
@@ -193,8 +183,17 @@ export const FormTable: React.FC<FormTableProps> = ({
             ))
           )}
         </div>
-      </div>
 
+        </div>
+        </div>
+      </div>
+      {errorMessage && hasTableError && (
+          <p
+            className="text-right text-[14px] text-[#D13C3C] -mt-[10px]"
+          >
+            {errorMessage}
+          </p>
+        )}
       {/* Add Button */}
       <button
         type="button"
