@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
-import { MEETING_TABS, PAGE_INFO, PAGINATION, createTableColumns } from '../../utils';
+import { MEETING_TABS, PAGE_INFO, PAGINATION } from '../../utils';
 import { useMeetings } from '../../hooks';
 import '@shared/styles';
 import { PATH } from '../../routes/paths';
+import { createTableColumns } from '../../utils/createTableColumns';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +32,10 @@ const Meeting: React.FC = () => {
     currentPage,
   });
 
-  const tableColumns = useMemo(() => createTableColumns(navigate), [navigate]);
+  const tableColumns = useMemo(
+    () => createTableColumns(navigate, currentPage, PAGINATION.ITEMS_PER_PAGE),
+    [navigate, currentPage]
+  );
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">

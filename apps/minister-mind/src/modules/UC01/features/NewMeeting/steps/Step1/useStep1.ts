@@ -194,7 +194,6 @@ const submitStep1Data = async (payload: SubmitStep1Payload): Promise<string> => 
 };
 
 export const useStep1 = ({
-  draftId,
   initialData,
   onSuccess,
   onError,
