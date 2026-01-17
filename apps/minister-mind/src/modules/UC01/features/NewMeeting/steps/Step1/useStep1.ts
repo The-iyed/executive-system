@@ -106,13 +106,44 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     }
   }
 
-  // Related directives
+  // Related directives - format according to backend payload structure
   if (formData.relatedDirectives && formData.relatedDirectives.length > 0) {
-    const directiveIds = formData.relatedDirectives
-      .map((d) => d.id || d.directive)
+    const directives = formData.relatedDirectives
+      .map((d) => {
+        const directive: any = {};
+        
+        if (d.directive && d.directive.trim() !== '') {
+          directive.directive_text = d.directive;
+        }
+        if (d.previousMeeting && d.previousMeeting.trim() !== '') {
+          directive.related_meeting = d.previousMeeting;
+        }
+        if (d.directiveDate && d.directiveDate !== '') {
+          const directiveDate = new Date(d.directiveDate + 'T00:00:00');
+          if (!isNaN(directiveDate.getTime())) {
+            directive.directive_date = directiveDate.toISOString();
+          }
+        }
+        if (d.directiveStatus && d.directiveStatus.trim() !== '') {
+          directive.directive_status = d.directiveStatus;
+        }
+        if (d.dueDate && d.dueDate !== '') {
+          const deadlineDate = new Date(d.dueDate + 'T00:00:00');
+          if (!isNaN(deadlineDate.getTime())) {
+            directive.deadline = deadlineDate.toISOString();
+          }
+        }
+        if (d.responsible && d.responsible.trim() !== '') {
+          directive.responsible_persons = d.responsible;
+        }
+        
+        // Only include directive if it has at least one field
+        return Object.keys(directive).length > 0 ? directive : null;
+      })
       .filter(Boolean);
-    if (directiveIds.length > 0) {
-      formDataToSend.append('related_directive_ids', JSON.stringify(directiveIds));
+    
+    if (directives.length > 0) {
+      formDataToSend.append('related_directives', JSON.stringify(directives));
     }
   }
 
@@ -163,7 +194,6 @@ const submitStep1Data = async (payload: SubmitStep1Payload): Promise<string> => 
 };
 
 export const useStep1 = ({
-  draftId,
   initialData,
   onSuccess,
   onError,
@@ -305,14 +335,27 @@ export const useStep1 = ({
     (field: keyof Step1FormData, value: any) => {
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
-        // Clear previousMeetingDate when wasDiscussedPreviously is set to false
+        // Clear previousMeetingDate and relatedDirectives when wasDiscussedPreviously is set to false
         if (field === 'wasDiscussedPreviously' && value === false) {
           newData.previousMeetingDate = '';
-          // Clear errors for previousMeetingDate
+          // Get directive IDs before clearing
+          const directiveIds = prev.relatedDirectives?.map((d) => d.id) || [];
+          newData.relatedDirectives = [];
+          // Clear errors for previousMeetingDate and relatedDirectives
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.previousMeetingDate;
+            delete newErrors.relatedDirectives;
             return newErrors;
+          });
+          // Clear table errors for relatedDirectives
+          setTableErrors((prevTableErrors) => {
+            const newTableErrors = { ...prevTableErrors };
+            // Remove all errors for relatedDirectives rows using the IDs we collected
+            directiveIds.forEach((id) => {
+              delete newTableErrors[id];
+            });
+            return newTableErrors;
           });
         }
         return newData;
@@ -346,7 +389,7 @@ export const useStep1 = ({
     const newGoal = { id: nanoid(), objective: '' };
     setFormData((prev) => ({
       ...prev,
-      meetingGoals: [...(prev.meetingGoals || []), newGoal],
+      meetingGoals: [newGoal, ...(prev.meetingGoals || [])],
     }));
   }, []);
 
@@ -389,7 +432,7 @@ export const useStep1 = ({
     const newAgenda = { id: nanoid(), agenda_item: '', presentation_duration_minutes: '' };
     setFormData((prev) => ({
       ...prev,
-      meetingAgenda: [...(prev.meetingAgenda || []), newAgenda],
+      meetingAgenda: [newAgenda,...(prev.meetingAgenda || [])],
     }));
   }, []);
 
@@ -414,7 +457,7 @@ export const useStep1 = ({
     const newSupport = { id: nanoid(), support_description: '' };
     setFormData((prev) => ({
       ...prev,
-      ministerSupport: [...(prev.ministerSupport || []), newSupport],
+      ministerSupport: [newSupport,...(prev.ministerSupport || [])],
     }));
   }, []);
 
@@ -465,7 +508,7 @@ export const useStep1 = ({
     };
     setFormData((prev) => ({
       ...prev,
-      relatedDirectives: [...(prev.relatedDirectives || []), newDirective],
+      relatedDirectives: [newDirective, ...(prev.relatedDirectives || [])],
     }));
   }, []);
 

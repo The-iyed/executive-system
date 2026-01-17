@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@sanad-ai/ui';
 
 export interface FormFieldProps {
-  label: string;
+  label?: string;
   required?: boolean;
   error?: string;
   children: React.ReactNode;
@@ -24,38 +24,26 @@ export const FormField: React.FC<FormFieldProps> = ({
         className
       )}
     >
-      <label
-        className="text-right"
-        style={{
-          fontStyle: 'normal',
-          fontWeight: 500,
-          fontSize: '14px',
-          lineHeight: '20px',
-          color: '#344054',
-          width: 'auto',
+      {label && <label
+        className="text-right text-[14px] font-medium text-[#344054] width: 'auto',
           height: '20px',
-        }}
+        "
       >
         {label}
         {required && <span className="text-red-500 mr-1">*</span>}
-      </label>
+      </label>}
       <div className="w-full">
         {children}
-        {error && (
           <p
             data-error-field={label}
-            className="text-right mt-2 mb-4"
-            style={{
-              fontStyle: 'normal',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-              color: '#D13C3C',
-            }}
+            className={cn(
+              'text-right mt-1 mb-4 text-[14px] font-normal',
+              error ? 'text-[#D13C3C] visible' : 'invisible'
+            )}
+            style={{ minHeight: '20px' }}
           >
-            {error}
+            {error || ' '}
           </p>
-        )}
       </div>
     </div>
   );
