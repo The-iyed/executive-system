@@ -12,10 +12,7 @@ export default defineConfig(({ command }) => {
   const config: any = {
     plugins: [
       react(), 
-      viteTsconfigPaths({
-        // Skip TypeScript errors in standalone builds
-        skipTsErrors: buildMode === 'standalone'
-      }), 
+      viteTsconfigPaths(), 
       svgr(),
       // Plugin to rewrite font paths in CSS from UI library
       {

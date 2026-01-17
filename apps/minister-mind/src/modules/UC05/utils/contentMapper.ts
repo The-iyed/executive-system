@@ -82,7 +82,7 @@ export const mapContentRequestToCardData = (
     id: request.id,
     title: request.meeting_title || request.meeting_subject,
     date: formatDate(dateToUse),
-    coordinator: request.submitter_name,
+    coordinator: request.submitter_name ?? undefined,
     coordinatorAvatar: undefined, // API doesn't provide avatar
     status: status,
     statusLabel: statusLabel,
@@ -107,7 +107,7 @@ export const mapContentRequestToCardViewData = (
     requestNumber: request.request_number,
     title: request.meeting_title || request.meeting_subject,
     date: formatDate(dateToUse),
-    submitter: request.submitter_name,
+    submitter: request.submitter_name ?? undefined,
     status: status,
     statusLabel: statusLabel,
   };

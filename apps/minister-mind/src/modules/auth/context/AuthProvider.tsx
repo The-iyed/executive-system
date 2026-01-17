@@ -5,6 +5,7 @@ import { clearTokens, getTokens, setTokens } from '../utils/token';
 import { useIsMountedRef } from '../hooks';
 import { ScreenLoader } from '@shared';
 import { User, LoginPayload } from '../data/authApi';
+import { PATH } from '../routes/paths';
 
 interface AuthContextType {
   user: User | null;
@@ -101,6 +102,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     clearTokens();
     setUser(null);
+    // Navigate to login page
+    window.location.href = PATH.LOGIN;
   };
 
   if (!isInitialised || isLoading) {

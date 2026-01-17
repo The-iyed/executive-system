@@ -56,6 +56,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.16(react@18.3.1)
+      '@tanstack/react-table':
+        specifier: ^8.21.3
+        version: 8.21.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@xyflow/react':
         specifier: ^12.10.0
         version: 12.10.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2093,6 +2096,17 @@ packages:
     resolution: {integrity: sha512-bpMGOmV4OPmif7TNMteU/Ehf/hoC0Kf98PDc0F4BZkFrEapRMEqI/V6YS0lyzwSV6PQpY1y4xxArUIfBW5LVxQ==}
     peerDependencies:
       react: ^18 || ^19
+
+  '@tanstack/react-table@8.21.3':
+    resolution: {integrity: sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+
+  '@tanstack/table-core@8.21.3':
+    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
+    engines: {node: '>=12'}
 
   '@tokenlens/core@1.3.0':
     resolution: {integrity: sha512-d8YNHNC+q10bVpi95fELJwJyPVf1HfvBEI18eFQxRSZTdByXrP+f/ZtlhSzkx0Jl0aEmYVeBA5tPeeYRioLViQ==}
@@ -6405,12 +6419,6 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@nrwl/devkit@19.8.14(nx@19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18)))':
-    dependencies:
-      '@nx/devkit': 19.8.14(nx@19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18)))
-    transitivePeerDependencies:
-      - nx
-
   '@nrwl/devkit@19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))':
     dependencies:
       '@nx/devkit': 19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))
@@ -6420,21 +6428,6 @@ snapshots:
   '@nrwl/js@19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)':
     dependencies:
       '@nx/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)
-    transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@swc-node/register'
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - debug
-      - nx
-      - supports-color
-      - typescript
-      - verdaccio
-
-  '@nrwl/js@19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)':
-    dependencies:
-      '@nx/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)
     transitivePeerDependencies:
       - '@babel/traverse'
       - '@swc-node/register'
@@ -6521,7 +6514,7 @@ snapshots:
 
   '@nx/devkit@19.8.14(nx@19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18)))':
     dependencies:
-      '@nrwl/devkit': 19.8.14(nx@19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18)))
+      '@nrwl/devkit': 19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))
       ejs: 3.1.10
       enquirer: 2.3.6
       ignore: 5.3.2
@@ -6619,7 +6612,7 @@ snapshots:
       '@babel/preset-env': 7.28.5(@babel/core@7.28.5)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.28.5)
       '@babel/runtime': 7.28.4
-      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)
+      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)
       '@nx/devkit': 19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))
       '@nx/workspace': 19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18))
       babel-plugin-const-enum: 1.2.0(@babel/core@7.28.5)
@@ -7589,6 +7582,14 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.90.16
       react: 18.3.1
+
+  '@tanstack/react-table@8.21.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tanstack/table-core': 8.21.3
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
+  '@tanstack/table-core@8.21.3': {}
 
   '@tokenlens/core@1.3.0': {}
 
