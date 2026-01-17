@@ -85,7 +85,7 @@ export const mapContentConsultationRequestToCardData = (
     id: request.id,
     title: request.meeting_title || request.meeting_subject,
     date: formatDate(dateToUse),
-    coordinator: request.submitter_name,
+    coordinator: request.submitter_name ?? undefined,
     coordinatorAvatar: undefined, // API doesn't provide avatar
     status: status,
     statusLabel: statusLabel,
