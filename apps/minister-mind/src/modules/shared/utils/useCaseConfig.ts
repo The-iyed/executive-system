@@ -5,6 +5,7 @@ import { PATH as UC03_PATH } from '../../UC03/routes/paths';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
 import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
+import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 import HomeIcon from '../assets/home-02.svg';
 import CalendarIcon from '../assets/calendar-minus-01.svg';
 import ScheduleReviewIcon from '../assets/schedule-review.svg';
@@ -91,6 +92,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: ScheduleReviewIcon,
         label: 'تقديم استشارة المحتوى',
         path: UC06_PATH.CONTENT_CONSULTATION_REQUESTS,
+      },
+    ],
+  },
+  'UC-08': {
+    code: 'UC-08',
+    defaultRoute: UC08_PATH.MEETINGS,
+    navigationItems: [
+      {
+        id: 'meetings',
+        icon: ScheduleReviewIcon,
+        label: 'الاجتماعات',
+        path: UC08_PATH.MEETINGS,
       },
     ],
   },
