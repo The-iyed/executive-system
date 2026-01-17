@@ -86,6 +86,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft, isEditMode 
     isEditMode,
   });
 
+
   const handleNextClick = useCallback(async () => {
     try {
       const newDraftId = await submitStep(false);
@@ -270,6 +271,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft, isEditMode 
               error={errors.file}
               onFileSelect={handleFileSelect}
               required={isFieldRequired('file')}
+              existingFiles={formData.existingFiles}
             />
 
         {/* Table 1: Meeting Goals */}
