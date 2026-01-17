@@ -710,6 +710,8 @@ const MeetingDetail: React.FC = () => {
     { id: 'content', label: 'المحتوى' },
     { id: 'scheduling', label: 'الجدولة' },
     { id: 'attachments', label: 'المرفقات' },
+    { id: 'consultations-log', label: 'سجل الإستشارات' },
+    { id: 'directives-log', label: 'سجل التوجيهات' },
   ];
 
   // Loading state
@@ -1789,8 +1791,32 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
+          {/* Consultations Log Tab */}
+          {activeTab === 'consultations-log' && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <p className="text-gray-600 text-lg mb-2">سجل الإستشارات</p>
+                  <p className="text-gray-500 text-sm">سيتم عرض سجل جميع الاستشارات المتعلقة بهذا الاجتماع هنا</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Directives Log Tab */}
+          {activeTab === 'directives-log' && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <p className="text-gray-600 text-lg mb-2">سجل التوجيهات</p>
+                  <p className="text-gray-500 text-sm">سيتم عرض سجل جميع التوجيهات المتعلقة بهذا الاجتماع هنا</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Other Tab Content */}
-          {activeTab !== 'basic-info' && activeTab !== 'content' && activeTab !== 'scheduling' && activeTab !== 'attachments' && (
+          {activeTab !== 'basic-info' && activeTab !== 'content' && activeTab !== 'scheduling' && activeTab !== 'attachments' && activeTab !== 'consultations-log' && activeTab !== 'directives-log' && (
             <div className="flex items-center justify-center py-12">
               <p className="text-gray-600">محتويات {tabs.find(t => t.id === activeTab)?.label} قريباً</p>
             </div>
