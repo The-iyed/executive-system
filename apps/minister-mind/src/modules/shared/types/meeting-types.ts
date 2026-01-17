@@ -1,26 +1,62 @@
 
 export enum MeetingStatus {
+  // Draft/Initial States
   DRAFT = 'DRAFT',
+  NEW = 'NEW',
+  // Review States
   UNDER_REVIEW = 'UNDER_REVIEW',
+  UNDER_CONSULTATION_SCHEDULING = 'UNDER_CONSULTATION_SCHEDULING',
+  UNDER_GUIDANCE = 'UNDER_GUIDANCE',
+  UNDER_CONTENT_REVIEW = 'UNDER_CONTENT_REVIEW',
+  UNDER_CONTENT_CONSULTATION = 'UNDER_CONTENT_CONSULTATION',
+  // Scheduled States
   SCHEDULED = 'SCHEDULED',
+  SCHEDULED_SCHEDULING = 'SCHEDULED_SCHEDULING',
+  SCHEDULED_CONTENT = 'SCHEDULED_CONTENT',
+  SCHEDULED_CONTENT_CONSULTATION = 'SCHEDULED_CONTENT_CONSULTATION',
+  SCHEDULED_UPDATE_CONTENT = 'SCHEDULED_UPDATE_CONTENT',
   SCHEDULED_ADDITIONAL_INFO = 'SCHEDULED_ADDITIONAL_INFO',
+  SCHEDULED_DELAYED = 'SCHEDULED_DELAYED',
+  // Returned States
+  RETURNED_FROM_SCHEDULING = 'RETURNED_FROM_SCHEDULING',
+  RETURNED_FROM_CONTENT = 'RETURNED_FROM_CONTENT',
+  // Legacy returned states (kept for backward compatibility)
+  RETURNED_FROM_SCHEDULING_MANAGER = 'RETURNED_FROM_SCHEDULING_MANAGER',
+  RETURNED_FROM_CONTENT_MANAGER = 'RETURNED_FROM_CONTENT_MANAGER',
+  // Final States
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED',
-  RETURNED_FROM_SCHEDULING_MANAGER = 'RETURNED_FROM_SCHEDULING_MANAGER',
-  RETURNED_FROM_CONTENT_MANAGER = 'RETURNED_FROM_CONTENT_MANAGER',
 }
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
-  [MeetingStatus.DRAFT]: 'مسودة',
+  // Draft/Initial States
+  [MeetingStatus.DRAFT]: 'جديد',
+  [MeetingStatus.NEW]: 'جديد',
+  // Review States
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
+  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
+  [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',
+  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
+  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد المراجعة - استشارة المحتوى',
+  // Scheduled States
   [MeetingStatus.SCHEDULED]: 'مجدول',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
+  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
+  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة المحتوى',
+  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث المحتوى',
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
+  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
+  // Returned States
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من مسؤول الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من مسؤول المحتوى',
+  // Legacy returned states (kept for backward compatibility)
+  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
+  // Final States
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.CLOSED]: 'مغلق',
-  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
 };
 
 /**
