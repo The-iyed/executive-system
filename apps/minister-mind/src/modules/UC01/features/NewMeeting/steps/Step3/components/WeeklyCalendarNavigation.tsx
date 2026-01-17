@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { AIGenerateButton } from '@shared';
 
 export interface WeeklyCalendarNavigationProps {
   currentDate: Date;
@@ -18,16 +17,16 @@ export const WeeklyCalendarNavigation: React.FC<WeeklyCalendarNavigationProps> =
   currentDate,
   onPreviousWeek,
   onNextWeek,
-  onAIGenerate,
+  // onAIGenerate,
 }) => {
   const month = monthNames[currentDate.getMonth()];
   const year = currentDate.getFullYear();
 
   return (
     <div className="flex items-center justify-between w-full mb-6">
-      {onAIGenerate && (
+      {/* {onAIGenerate && (
         <AIGenerateButton onClick={onAIGenerate} />
-      )}
+      )} */}
       
       <div className="flex items-center gap-12">
         <button

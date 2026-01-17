@@ -81,28 +81,32 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   const [open, setOpen] = React.useState(false);
   const styles = eventTypeStyles[event.type];
   const typeLabel = eventTypeLabels[event.type];
+  // Use event.label if provided, otherwise use the default typeLabel
+  const displayLabel = event.label || typeLabel;
+  // Check if event is disabled (for unavailable slots that can't be selected)
+  const isDisabled = !event.is_available;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div
           className={cn(
-            'relative cursor-pointer transition-all',
+            'relative transition-all',
             'w-full h-full',
             'flex items-center justify-center',
             styles?.bg,
             styles?.border,
             styles?.borderStyle,
             styles?.borderRight,
-            'hover:shadow-md',
+            isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:shadow-md',
             className
           )}
-          onClick={onClick}
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          onClick={isDisabled ? undefined : onClick}
+          onMouseEnter={() => !isDisabled && setOpen(true)}
+          onMouseLeave={() => !isDisabled && setOpen(false)}
         >
           <span className={cn('text-[14px] font-weight-700', styles?.text)}>
-            {typeLabel}
+            {displayLabel}
           </span>
         </div>
       </PopoverTrigger>
@@ -125,16 +129,19 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
             {event.description}
           </p>
         )}
-        {onBook && (
+        {onBook && !isDisabled && (
           <button
             type="button"
-            onClick={() => onBook(event)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBook(event);
+            }}
             className={cn(
               'w-full px-4 py-2 text-white transition-colors font-weight-700 text-[14px] rounded-[8px] border-none box-shadow-[0px_1px_2px_rgba(16,24,40,0.05)]',
               styles?.contentStyle?.bg,
             )}
           >
-            حجز الموعد
+            {event.is_selected ? 'إلغاء الحجز' : 'حجز الموعد'}
           </button>
         )}
       </PopoverContent>

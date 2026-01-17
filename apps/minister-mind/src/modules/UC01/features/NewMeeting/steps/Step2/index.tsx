@@ -90,13 +90,13 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
   //   console.log('AI Generate clicked');
   //   // TODO: Implement AI generation logic
   // }, []);
+console.log(errors)
+console.log(formData.invitees)
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="w-full flex justify-center">
-        <div className="w-[1085px] flex flex-col gap-6">
+        <div className="relative w-full flex flex-col gap-6">
           {/* Table */}
-          <div className="relative">
             <FormTable
               title={INVITEES_TABLE_TITLE}
               columns={INVITEES_TABLE_COLUMNS}
@@ -108,12 +108,10 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
               errors={errors}
               touched={touched}
             />
-
             {/* AI Generate Button */}
             {/* <div className="absolute -bottom-[4px] right-[175px]">
               <AIGenerateButton onClick={handleAIGenerate} />
             </div> */}
-          </div>
 
           {/* Action Buttons */}
           <ActionButtons
@@ -122,7 +120,6 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
             onNext={handleNextClick}
             disabled={isSubmitting || isDeleting}
           />
-        </div>
       </div>
 
       {/* Delete Draft Confirmation Modal */}
