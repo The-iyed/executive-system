@@ -14,6 +14,8 @@ import {
 import { useStep1 } from './useStep1';
 import { useDeleteDraft } from '../../hooks/useDeleteDraft';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import { FormRow } from './components/FormRow';
+import { cn } from '@sanad-ai/ui';
 
 interface Step1Props {
   draftId?: string;
@@ -23,7 +25,7 @@ interface Step1Props {
   onSaveDraft?: (draftId: string) => void;
 }
 
-const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
+const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft }) => {
   const handleSuccess = useCallback((newDraftId: string) => {
     console.log('newDraftId', newDraftId);
     // Draft ID is handled by the hook, parent component will receive it via callbacks
@@ -73,7 +75,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     handleAddDirective,
     handleDeleteDirective,
     handleUpdateDirective,
-    validateAll,
     submitStep,
   } = useStep1({
     draftId,
@@ -116,34 +117,13 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     openConfirm();
   }, [openConfirm]);
 
-  // Placeholder styling
-  React.useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      input::placeholder,
-      input[data-placeholder],
-      textarea::placeholder {
-        font-style: normal !important;
-        font-weight: 400 !important;
-        font-size: 16px !important;
-        color: #667085 !important;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
         {/* Existing form fields */}
-        <div className="w-full flex flex-col items-center gap-8">
+        <div className="w-full flex flex-col items-center gap-4 sm:gap-7">
           {/* Row 1 */}
-          <div
-            className="w-[1085px] h-[70px] flex flex-row-reverse items-start gap-4"
-          >
+          <FormRow>
             <FormField
               label="نوع الاجتماع"
               required
@@ -170,17 +150,10 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.meetingSubject && errors.meetingSubject)}
               />
             </FormField>
-          </div>
+          </FormRow>
 
           {/* Row 2 */}
-          <div
-            className="flex flex-row-reverse items-start"
-            style={{
-              width: '1085px',
-              height: '70px',
-              gap: '16px',
-            }}
-          >
+          <FormRow>
             <FormField
               label="مبرر اللقاء"
               required={isFieldRequired('meetingReason')}
@@ -207,18 +180,11 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.meetingCategory && errors.meetingCategory)}
               />
             </FormField>
-          </div>
+          </FormRow>
 
           {/* Row 3 */}
-          <div
-            className="flex flex-row-reverse items-start"
-            style={{
-              width: '1085px',
-              height: '70px',
-              gap: '16px',
-            }}
-          >
-            <FormField
+          <FormRow>
+          <FormField
               label="تاريخ الاستحقاق"
               required={isFieldRequired('dueDate')}
               error={touched.dueDate ? errors.dueDate : undefined}
@@ -244,18 +210,11 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.relatedTopic && errors.relatedTopic)}
               />
             </FormField>
-          </div>
+          </FormRow>
 
           {/* Row 4 */}
-          <div
-            className="flex flex-row-reverse items-start"
-            style={{
-              width: '1085px',
-              height: '70px',
-              gap: '16px',
-            }}
-          >
-          <FormField
+          <FormRow>
+            <FormField
               label="سرية الاجتماع"
               required
               error={touched.meetingConfidentiality ? errors.meetingConfidentiality : undefined}
@@ -281,19 +240,13 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.meetingClassification1 && errors.meetingClassification1)}
               />
             </FormField>
-          </div>
+          </FormRow>
 
           {/* Row 5 */}
-          <div
-            // className="flex flex-row-reverse items-start"
-            style={{
-              width: '1085px',
-              height: '70px',
-              gap: '16px',
-            }}
-          >
+          <FormRow className='sm:justify-end'>
             <FormField
               label="القطاع"
+              required={isFieldRequired('sector')}
               error={touched.sector ? errors.sector : undefined}
             >
               <FormInput
@@ -304,20 +257,18 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.sector && errors.sector)}
               />
             </FormField>
-          </div>
+          </FormRow>
         </div>
 
         {/* File Upload */}
-        <FileUpload
-          file={formData.file}
-          error={errors.file}
-          onFileSelect={handleFileSelect}
-          required={isFieldRequired('file')}
-        />
+            <FileUpload
+              file={formData.file}
+              error={errors.file}
+              onFileSelect={handleFileSelect}
+              required={isFieldRequired('file')}
+            />
 
         {/* Table 1: Meeting Goals */}
-        <div className="w-full flex justify-center">
-          <div style={{ width: '1085px' }}>
             <FormTable
               title="الهدف من الاجتماع"
               required
@@ -332,12 +283,8 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               hasError={!!(errors.meetingGoals || Object.keys(tableErrors).length > 0)}
               errorMessage={errors.meetingGoals || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة هدف واحد على الأقل' : undefined)}
             />
-          </div>
-        </div>
 
         {/* Table 2: Meeting Agenda */}
-        <div className="w-full flex justify-center">
-          <div style={{ width: '1085px' }}>
             <FormTable
               title="أجندة الاجتماع"
               required={isFieldRequired('meetingAgenda')}
@@ -352,12 +299,8 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               hasError={!!(errors.meetingAgenda || Object.keys(tableErrors).length > 0)}
               errorMessage={errors.meetingAgenda || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي' : undefined)}
             />
-          </div>
-        </div>
 
         {/* Table 3: Minister Support */}
-        <div className="w-full flex justify-center">
-          <div style={{ width: '1085px' }}>
             <FormTable
               title="الدعم المطلوب من الوزير"
               required
@@ -372,20 +315,12 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               hasError={!!(errors.ministerSupport || Object.keys(tableErrors).length > 0)}
               errorMessage={errors.ministerSupport || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة دعم واحد على الأقل' : undefined)}
             />
-          </div>
-        </div>
-
-        {/* Toggle Switch and Date Picker */}
-        <div className="w-full flex justify-center">
-          <div
-            className="w-[1085px] h-[70px] flex flex-col gap-4"
-          >
-            <div className="flex items-center justify-between gap-6 w-full h-full">
-              <FormSwitch
-                checked={formData.wasDiscussedPreviously || false}
-                onCheckedChange={(checked) => handleChange('wasDiscussedPreviously', checked)}
-                label="هل تمت مناقشة الموضوع سابقاً؟"
-              />
+            
+             <FormRow 
+             className={cn(
+              'flex-wrap-reverse sm:flex-nowrap',
+              formData.wasDiscussedPreviously ? 'sm:justify-between' : 'sm:justify-end')}
+             >
               {formData.wasDiscussedPreviously && (
                 <FormField
                   label="تاريخ الاجتماع السابق"
@@ -401,14 +336,15 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                   />
                 </FormField>
               )}
-            </div>
-          </div>
-        </div>
+                <FormSwitch
+                 checked={formData.wasDiscussedPreviously || false}
+                 onCheckedChange={(checked) => handleChange('wasDiscussedPreviously', checked)}
+                 label="هل تمت مناقشة الموضوع سابقاً؟"
+               />
+            </FormRow>
 
         {/* Table 4: Related Directives - Only show when wasDiscussedPreviously is checked */}
         {formData.wasDiscussedPreviously && (
-          <div className="w-full flex justify-center">
-            <div style={{ width: '1085px' }}>
               <FormTable
                 title="التوجيه المرتبط"
                 columns={RELATED_DIRECTIVES_COLUMNS}
@@ -418,28 +354,16 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 onUpdateRow={handleUpdateDirective}
                 addButtonLabel="إضافة توجيه مرتبط"
               />
-            </div>
-          </div>
         )}
 
         {/* Notes TextArea */}
-        <div className="w-full flex justify-center">
-          <div
-            className="flex flex-col gap-2"
-            style={{ width: '1085px' }}
-          >
-            <label
-              className="text-right text-[14px] font-medium text-[#344054]"
-            >
-              ملاحظات
-            </label>
             <FormTextArea
+            label="ملاحظات"
               value={formData.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
               placeholder="ملاحظات...."
             />
-          </div>
-        </div>
+
             <ActionButtons
               onCancel={handleCancelClick}
               onSaveDraft={handleSaveDraftClick}

@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { Directive } from '../data/meetingsApi';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus } from '@shared/types';
 
 /**
  * Format date to Arabic format
