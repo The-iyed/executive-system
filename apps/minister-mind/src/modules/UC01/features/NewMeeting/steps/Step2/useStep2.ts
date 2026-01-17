@@ -38,12 +38,13 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
   }
 
   const body = {
-    invitees: formData.invitees?.map((invitee) => ({
+    invitees: formData.invitees?.map((invitee, index) => ({
       name: invitee.name,
       position: invitee.position || undefined,
       mobile: invitee.mobile || undefined,
       email: invitee.email || undefined,
-      isMainAttendee: invitee.isMainAttendee || false,
+      item_number: index + 1,
+      is_required: invitee.is_required || false,
     })) || [],
   };
 
@@ -123,11 +124,11 @@ export const useStep2 = ({
       position: '',
       mobile: '',
       email: '',
-      isMainAttendee: false,
+      is_required: false,
     };
     setFormData((prev) => ({
       ...prev,
-      invitees: [...(prev.invitees || []), newAttendee],
+      invitees: [newAttendee, ...(prev.invitees || [])],
     }));
   }, []);
 
@@ -188,8 +189,17 @@ export const useStep2 = ({
 
   /**
    * Submit step 2 data (with validation if not draft)
+   * If no invitees exist, skips API call and directly calls onSuccess
    */
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
+    const hasInvitees = formData.invitees && formData.invitees.length > 0;
+
+    // If no invitees, skip API call and directly proceed
+    if (!hasInvitees) {
+      onSuccess?.(isDraft);
+      return;
+    }
+
     // Validate before submitting if not draft
     if (!isDraft && !validateAll()) {
       return;
@@ -199,7 +209,7 @@ export const useStep2 = ({
       formData,
       isDraft,
     });
-  }, [formData, validateAll, submitMutation]);
+  }, [formData, validateAll, submitMutation, onSuccess]);
 
   return {
     formData,

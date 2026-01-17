@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@sanad-ai/ui';
 import { CalendarEvent, type EventType } from './CalendarEvent';
 
 export interface CalendarEventData {
@@ -10,6 +11,8 @@ export interface CalendarEventData {
   date: Date;
   title?: string;
   description?: string;
+  is_available?: boolean; // Track if slot is available for selection
+  is_selected?: boolean; // Track if slot is selected by user
 }
 
 export interface WeeklyCalendarGridProps {
@@ -99,12 +102,19 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
             {/* Day Columns */}
             {weekDates.map((date, dayIndex) => {
               const slotEvents = getEventsForSlot(date, time, events);
+              // Check if this time slot has any available events
+              const hasAvailableSlot = slotEvents.some(event => event.is_available);
+              // Check if this time slot is completely blocked (all events are unavailable)
+              const isBlocked = slotEvents.length > 0 && !hasAvailableSlot;
               
               return (
                 <div
                   key={dayIndex}
-                  className="border-r-[0.6px] border-b-[0.6px] border-[#B6C1CA] h-[50px] cursor-pointer hover:bg-[#F9FAFB] transition-colors"
-                  onClick={() => onTimeSlotClick?.(date, time)}
+                  className={cn(
+                    "border-r-[0.6px] border-b-[0.6px] border-[#B6C1CA] h-[50px] transition-colors",
+                    isBlocked ? "cursor-not-allowed bg-[#F5F5F5]" : "cursor-pointer hover:bg-[#F9FAFB]"
+                  )}
+                  onClick={isBlocked ? undefined : () => onTimeSlotClick?.(date, time)}
                 >
                   {slotEvents.map((event) => (
                     <CalendarEvent

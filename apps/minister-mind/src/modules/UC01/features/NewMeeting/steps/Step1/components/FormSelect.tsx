@@ -29,7 +29,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger
         className={cn(
-          'text-right',
+          'text-right h-[44px] p-[10px_14px] bg-[#FFFFFF] border border-[#D0D5DD] box-shadow-[0px_1px_2px_rgba(16,24,40,0.05)] rounded-[8px] font-style-normal font-weight-400 font-size-16 line-height-24 color-[#667085]',
           'flex-row-reverse',
           'justify-between',
           'focus:outline-none focus:border-[#008774]',
@@ -37,38 +37,17 @@ export const FormSelect: React.FC<FormSelectProps> = ({
           !error && 'focus:border-[#008774]',
           className
         )}
-        style={{
-          width: '534.5px',
-          height: '44px',
-          padding: '10px 14px',
-          background: '#FFFFFF',
-          border: error ? '1px solid #D13C3C' : '1px solid #D0D5DD',
-          boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-          borderRadius: '8px',
-          fontStyle: 'normal',
-          fontWeight: 400,
-          fontSize: '16px',
-          lineHeight: '24px',
-          color: value ? '#344054' : '#667085',
-        }}
       >
         <SelectValue 
           placeholder={placeholder} 
-          className="text-right"
-          style={{
-            fontStyle: 'normal',
-            fontWeight: 400,
-            fontSize: '16px',
-            color: '#667085',
-          }}
+          className="text-right font-style-normal font-weight-400 font-size-16 line-height-24 color-[#667085]"
         />
       </SelectTrigger>
-      <SelectContent className="text-right" dir="rtl">
+      <SelectContent dir="rtl">
         {options.map((option) => (
           <SelectItem
             key={option.value}
             value={option.value}
-            className="text-right"
           >
             {option.label}
           </SelectItem>

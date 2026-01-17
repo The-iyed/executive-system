@@ -29,12 +29,21 @@ const NewMeeting: React.FC = () => {
   const isNewMeeting = new URLSearchParams(location.search).get('new') === 'true' || 
                        location.state?.isNewMeeting === true;
 
-  // Clear old data when creating a new meeting
+  // Clear old data when creating a new meeting and remove query/state
   useEffect(() => {
     if (isNewMeeting) {
       clearDraftData();
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.delete('new');
+      const newSearch = searchParams.toString();
+      const newPath = newSearch ? `${location.pathname}?${newSearch}` : location.pathname;
+      
+      navigate(newPath, { 
+        replace: true, 
+        state: undefined 
+      });
     }
-  }, [isNewMeeting]);
+  }, [isNewMeeting, location.search, location.pathname, navigate]);
 
   // Initialize from localStorage or default to 0
   const [currentStep, setCurrentStep] = useState<number>(() => {
@@ -130,24 +139,12 @@ const NewMeeting: React.FC = () => {
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         {/* Page Title */}
         <h1
-          className="text-[28px] font-bold text-center mb-2"
-          style={{
-            fontWeight: 700,
-            fontSize: '28px',
-            textAlign: 'center',
-            color: '#101828',
-          }}
+          className="text-[28px] text-[#101828] font-bold text-center mb-2"
         >
           قم بإضافة معلومات الاجتماع
         </h1>
         <p
-          className="text-base mb-8"
-          style={{
-            fontWeight: 400,
-            fontSize: '16px',
-            textAlign: 'center',
-            color: '#475467',
-          }}
+          className="text-[16px] text-[#475467] font-normal text-center mb-8"
         >
           يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع
         </p>
