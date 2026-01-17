@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '@auth';
-import BgSvg from '../assets/bg.svg';
 import { Logo } from './logo';
 import { LanguageSwitch } from './language-switch';
 import { SearchInput } from './search-input';
@@ -48,7 +47,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
           left: '12px',
           top: '12px',
           borderRadius: '14px',
-          backgroundImage: `url(${BgSvg})`
+          // backgroundImage: `url(${BgSvg})`
+           backgroundImage: `url(/assets/bg.svg)`
         }}
       />
       <div 

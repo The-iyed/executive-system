@@ -13,42 +13,65 @@ interface NoteCard {
   tag: string;
 }
 
-const normalizeNotes = (notesValue: string | string[] | null | undefined): string[] => {
-  if (!notesValue) return [];
-  if (Array.isArray(notesValue)) {
-    return notesValue.filter((note) => note && note.trim().length > 0);
-  }
-  return [notesValue];
+interface NoteItem {
+  text: string;
+}
+
+const normalizeNotes = (
+  notesArray: NoteItem[] | null | undefined
+): string[] => {
+  if (!Array.isArray(notesArray)) return [];
+  return notesArray
+    .filter((note) => note != null && note.text != null)
+    .map((note) => String(note.text))
+    .filter((text) => text.trim().length > 0);
 };
+
+const createNoteCard = (
+  note: string,
+  index: number,
+  prefix: string,
+  title: string,
+  tag: string
+): NoteCard => ({
+  id: `${prefix}_${index}`,
+  title,
+  description: note,
+  tag,
+});
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
   const notes: NoteCard[] = [];
 
-  // Handle general_notes - can be string or array
-  const generalNotes = normalizeNotes(meeting.general_notes);
-  if (generalNotes.length > 0) {
-    generalNotes.forEach((note, index) => {
-      notes.push({
-        id: `general_notes_${index}`,
-        title: 'الملاحظات العامة',
-        description: note,
-        tag: 'ملاحظات مسؤول الجدولة',
-      });
-    });
-  }
+  const generalNotes = normalizeNotes(
+    meeting.general_notes as NoteItem[] | null
+  );
+  generalNotes.forEach((note, index) => {
+    notes.push(
+      createNoteCard(
+        note,
+        index,
+        'general_notes',
+        'الملاحظات العامة',
+        'ملاحظات مسؤول الجدولة'
+      )
+    );
+  });
 
-  // Handle content_officer_notes - can be string or array
-  const contentOfficerNotes = normalizeNotes(meeting.content_officer_notes);
-  if (contentOfficerNotes.length > 0) {
-    contentOfficerNotes.forEach((note, index) => {
-      notes.push({
-        id: `content_officer_notes_${index}`,
-        title: 'ملاحظات مسؤول المحتوى',
-        description: note,
-        tag: 'ملاحظات مسؤول المحتوى',
-      });
-    });
-  }
+  const contentOfficerNotes = normalizeNotes(
+    meeting.content_officer_notes as NoteItem[] | null
+  );
+  contentOfficerNotes.forEach((note, index) => {
+    notes.push(
+      createNoteCard(
+        note,
+        index,
+        'content_officer_notes',
+        'ملاحظات مسؤول المحتوى',
+        'ملاحظات مسؤول المحتوى'
+      )
+    );
+  });
 
   if (notes.length === 0) {
     return (

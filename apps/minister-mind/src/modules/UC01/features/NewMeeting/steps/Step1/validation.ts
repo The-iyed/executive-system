@@ -17,6 +17,9 @@ const CATEGORIES_MAKING_FILE_OPTIONAL = [
 // Confidentiality value that makes file optional
 const CONFIDENTIALITY_MAKING_FILE_OPTIONAL = 'CONFIDENTIAL' as const;
 
+// Meeting type that requires sector
+const MEETING_TYPE_REQUIRING_SECTOR = 'INTERNAL' as const;
+
 /**
  * Creates a conditional schema based on form data
  */
@@ -290,6 +293,23 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     ? fileValidationBase.optional()
     : fileValidationBase;
 
+  // Conditional: sector - required if meetingType is INTERNAL
+  const requiresSector = data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
+
+  const sectorSchema = requiresSector
+    ? z
+        .string({
+          required_error: 'القطاع مطلوب',
+          invalid_type_error: 'القطاع يجب أن يكون نصاً',
+        })
+        .min(1, 'القطاع مطلوب')
+    : z
+        .string({
+          invalid_type_error: 'القطاع يجب أن يكون نصاً',
+        })
+        .optional()
+        .or(z.literal(''));
+
   return baseSchema.extend({
     meetingReason: meetingReasonSchema,
     relatedTopic: relatedTopicSchema,
@@ -297,6 +317,7 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     meetingAgenda: meetingAgendaSchema,
     previousMeetingDate: previousMeetingDateSchema,
     file: fileSchema,
+    sector: sectorSchema,
   });
 };
 
@@ -317,7 +338,7 @@ export const extractValidationErrors = (
 ) => {
   const formErrors: Partial<Record<keyof Step1FormData, string>> = {};
   const tableErrors: Record<string, Record<string, string>> = {};
-  const data = inputData || (validationResult.error.input as Partial<Step1FormData>);
+  const data = inputData || {};
 
   validationResult.error.errors.forEach((err) => {
     const path = err.path;
@@ -391,6 +412,9 @@ export const isFieldRequired = (
     case 'meetingGoals':
     case 'ministerSupport':
       return true; // Always required
+
+    case 'sector':
+      return data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
 
     default:
       return false;
