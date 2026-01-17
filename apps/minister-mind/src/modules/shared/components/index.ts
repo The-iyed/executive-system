@@ -20,3 +20,4 @@ export { ScreenLoader } from './screen-loader';
 export { Stepper, type StepperProps, type StepperStep } from './stepper';
 export { ActionButtons, type ActionButtonsProps } from './action-buttons';
 export { AIGenerateButton, type AIGenerateButtonProps } from './ai-generate-button';
+export { FormCheckbox, type FormCheckboxProps } from './FormCheckbox';
