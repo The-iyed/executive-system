@@ -7,17 +7,26 @@ import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye, Calendar } from 'lucide-react';
 import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
+import { useAuth } from '../../auth/context/AuthProvider';
+import { PATH } from '../routes/paths';
+import { hasUseCaseAccess } from '../../shared/utils/useCaseConfig';
 
 const ITEMS_PER_PAGE = 10;
 
 const ScheduleReview: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('work-basket');
   const [view, setView] = useState<ViewType>('table');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Check if user has UC-07 use case
+  const hasUc07Access = useMemo(() => {
+    return hasUseCaseAccess(user?.use_cases, 'UC-07');
+  }, [user?.use_cases]);
 
   // Debounce search input
   useEffect(() => {
@@ -205,8 +214,21 @@ const ScheduleReview: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Tabs and View Switcher */}
         <div className="flex flex-row items-center justify-between mb-8" dir="ltr">
-          <div className="pl-4">
+          <div className="pl-4 flex items-center gap-10">
+            
             <ViewSwitcher view={view} onViewChange={setView} />
+            {hasUc07Access && (
+              <button
+                onClick={() => navigate(PATH.DIRECTIVES)}
+                className="flex items-center rounded-full justify-center px-4 py-2 h-[44px] whitespace-nowrap text-sm font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)',
+                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+                }}
+              >
+                التوجيهات
+              </button>
+            )}
           </div>
           <Tabs
             items={tabs}
