@@ -4,9 +4,12 @@ export const step2Schema = z.object({
   invitees: z.array(z.object({
     id: z.string(), // Internal ID for tracking, not sent to API
     name: z.string().min(1, 'الاسم مطلوب'),
-    position: z.string().optional(),
-    mobile: z.string().optional(),
-    email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
+    position: z.string().min(1, 'المنصب مطلوب'),
+    mobile: z.string().min(1, 'رقم الجوال مطلوب'),
+    email: z
+    .string()
+    .min(1, 'البريد الإلكتروني مطلوب')
+    .email('البريد الإلكتروني غير صحيح'),
     is_required: z.boolean().optional().default(false),
   })).optional().default([]),
 });
