@@ -93,6 +93,9 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
     }
   };
 
+  // Get all attachments - no filtering
+  const allAttachments = draft.attachments || [];
+
   return {
     meetingSubject: draft.meeting_subject || '',
     meetingType: draft.meeting_type || '',
@@ -128,8 +131,14 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
     wasDiscussedPreviously: draft.topic_discussed_before || false,
     previousMeetingDate: formatDate(draft.previous_meeting_date),
     notes: draft.general_notes || '',
-    // File is not included as it's a File object, not a URL
-    // User will need to re-upload if they want to change it
+    // Store all attachments for display in edit mode - no filtering
+    existingFiles: allAttachments.map(att => ({
+      id: att.id,
+      file_name: att.file_name,
+      blob_url: att.blob_url,
+      file_size: att.file_size,
+      file_type: att.file_type,
+    })),
   };
 };
 

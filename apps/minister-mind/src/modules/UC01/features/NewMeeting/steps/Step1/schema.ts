@@ -61,6 +61,13 @@ export const step1BaseSchema = z.object({
   previousMeetingDate: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
   file: z.instanceof(File).optional(),
+  existingFiles: z.array(z.object({
+    id: z.string(),
+    file_name: z.string(),
+    blob_url: z.string(),
+    file_size: z.number().optional(),
+    file_type: z.string().optional(),
+  })).optional().default([]),
 });
 
 export type Step1FormData = z.infer<typeof step1BaseSchema>;
