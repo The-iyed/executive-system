@@ -39,6 +39,14 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-02',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.DIRECTIVES,
+    component: lazy(() => import('../pages/directives')),
+    layout: Layout,
+    useCase: 'UC-02',
+  },
 ]
 
 export default routes

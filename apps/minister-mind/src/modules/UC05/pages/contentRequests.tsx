@@ -19,7 +19,9 @@ import {
 } from '../data/contentApi';
 import {
   mapContentRequestToCardData,
+  mapContentRequestToCardViewData,
 } from '../utils/contentMapper';
+import { ContentRequestsGrid, ContentRequestCardData } from '../components';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -70,6 +72,12 @@ const ContentRequests: React.FC = () => {
   const requests: MeetingCardData[] = useMemo(() => {
     if (!requestsResponse?.items) return [];
     return requestsResponse.items.map(mapContentRequestToCardData);
+  }, [requestsResponse]);
+
+  // Map API response to ContentRequestCardData (for card view)
+  const cardViewRequests: ContentRequestCardData[] = useMemo(() => {
+    if (!requestsResponse?.items) return [];
+    return requestsResponse.items.map(mapContentRequestToCardViewData);
   }, [requestsResponse]);
 
   // Calculate total pages from API response
@@ -246,9 +254,11 @@ const ContentRequests: React.FC = () => {
                   }}
                 />
               ) : (
-                <div className="text-center py-12">
-                  <div className="text-gray-600">عرض البطاقات غير متاح حالياً</div>
-                </div>
+                <ContentRequestsGrid
+                  requests={cardViewRequests}
+                  onView={(request) => navigate(`/content-request/${request.id}`)}
+                  onDetails={(request) => navigate(`/content-request/${request.id}`)}
+                />
               )}
 
               {/* Pagination */}
