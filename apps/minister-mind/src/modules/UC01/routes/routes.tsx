@@ -42,9 +42,18 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
+    path: PATH.EDIT_MEETING,
+    component: lazy(() => import('../features/EditMeeting')),
+    layout: Layout,
+    useCase: 'UC-01',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
     path: PATH.MEETING_PREVIEW,
     component: lazy(() => import('../features/PreviewMeeting')),
     layout: Layout,
+    useCase: 'UC-01',
   },
 ]
 
