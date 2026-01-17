@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { cn } from '@sanad-ai/ui';
 import { FormInput } from './FormInput';
 import { FormDatePicker } from './FormDatePicker';
 import { FormSelect } from './FormSelect';
 import { FormSwitch } from './FormSwitch';
+import { getTableErrorList } from '@shared/utils/buildTableErrorList';
 
 export interface FormTableColumn {
   id: string;
@@ -53,7 +54,11 @@ export const FormTable: React.FC<FormTableProps> = ({
   // Check if table has errors when required and touched
   // hasError should be true if: table is required, validation ran (touched), and there are errors
   const hasTableError = required && hasError;
-  
+  const tableErrorList = useMemo(
+    () => getTableErrorList(errors, rows),
+    [errors, rows]
+  );
+
   return (
       <div
   className="w-full flex flex-col gap-4 mx-auto max-w-[1085px]"
@@ -187,13 +192,25 @@ export const FormTable: React.FC<FormTableProps> = ({
         </div>
         </div>
       </div>
-      {errorMessage && hasTableError && (
-          <p
-            className="text-right text-[14px] text-[#D13C3C] -mt-[10px]"
-          >
+      <div>
+
+        {errorMessage && hasTableError && (
+        <p
+        className="text-right text-[14px] text-[#D13C3C] -mt-[10px]"
+        >
             {errorMessage}
           </p>
         )}
+        {Object.keys(tableErrorList).length > 0 && (
+           <ul className="text-right text-[14px] text-[#D13C3C] space-y-1">
+             {Object.entries(tableErrorList).map(([message, rows]) => (
+               <li key={message}>
+                 {message} ({rows.join(', ')})
+               </li>
+             ))}
+           </ul>
+        )}
+      </div>
       {/* Add Button */}
       <button
         type="button"
