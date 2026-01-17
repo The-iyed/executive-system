@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import type { Step1FormData } from './schema';
 
@@ -28,8 +28,8 @@ export const useStep1 = ({
 
   const [errors, setErrors] = useState<Partial<Record<keyof Step1FormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Step1FormData, boolean>>>({});
-  const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
-  const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
+  const [tableErrors, _setTableErrors] = useState<Record<string, Record<string, string>>>({});
+  const [tableTouched, _setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form field handlers
