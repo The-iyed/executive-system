@@ -342,3 +342,48 @@ export const scheduleMeeting = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/schedule`, payload);
 };
 
+// Directives API
+export interface Directive {
+  id: string;
+  directive_number: string;
+  directive_date: string;
+  directive_text: string;
+  related_meeting: string;
+  deadline: string | null;
+  responsible_persons: string[];
+  directive_status: string;
+  related_meeting_request_id: string | null;
+}
+
+export interface DirectivesListResponse {
+  items: Directive[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface GetDirectivesParams {
+  skip?: number;
+  limit?: number;
+}
+
+export const getDirectives = async (params: GetDirectivesParams = {}): Promise<DirectivesListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+
+  const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/current?${queryParams.toString()}`);
+  return response.data;
+};
+
+export const closeDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/scheduling/directives/${directiveId}/close`);
+};
+
