@@ -7,6 +7,7 @@
     "test": "nx test",
     "dev": "nx serve minister-mind",
     "dev:minister-mind": "nx serve minister-mind",
+    "dev:build": "nx run-many --target=build --projects=minister-mind --watch",
     "dev:build-all": "nx run-many --target=build --projects=minister-mind --watch",
     "build:all": "nx run-many --target=build --projects=minister-mind"
   },
@@ -28,6 +29,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-table": "^8.21.3",
     "@xyflow/react": "^12.10.0",
     "ai": "^6.0.19",
     "axios": "^1.6.0",
