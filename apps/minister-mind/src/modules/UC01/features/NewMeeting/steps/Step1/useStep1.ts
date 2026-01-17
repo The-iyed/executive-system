@@ -220,16 +220,23 @@ export const useStep1 = ({
     ministerSupport: [],
     relatedDirectives: [],
     wasDiscussedPreviously: false,
+    existingFiles: [],
     ...initialData,
   });
 
   // Update form data when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && isEditMode) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+      setFormData((prev) => {
+        // Merge initialData, ensuring arrays and objects are properly merged
+        const merged = {
+          ...prev,
+          ...initialData,
+          // Preserve existingFiles from initialData if present
+          existingFiles: initialData.existingFiles || prev.existingFiles || [],
+        };
+        return merged;
+      });
     }
   }, [initialData, isEditMode]);
 
