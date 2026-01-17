@@ -387,3 +387,58 @@ export const closeDirective = async (directiveId: string): Promise<void> => {
   await axiosInstance.post(`/api/scheduling/directives/${directiveId}/close`);
 };
 
+// Consultation Records API
+export interface ConsultationRecord {
+  consultation_id: string;
+  consultation_type: string;
+  consultation_question: string;
+  consultation_answer: string | null;
+  consultant_user_id: string;
+  consultant_name: string;
+  requested_at: string;
+  responded_at: string | null;
+  status: string;
+}
+
+export interface ConsultationRecordsResponse {
+  items: ConsultationRecord[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export const getConsultationRecords = async (meetingId: string): Promise<ConsultationRecordsResponse> => {
+  const response = await axiosInstance.get<ConsultationRecordsResponse>(`/api/meeting-requests/${meetingId}/consultation-record`);
+  return response.data;
+};
+
+// Guidance Records API
+export interface GuidanceRecord {
+  guidance_id: string;
+  guidance_question: string;
+  guidance_answer: string | null;
+  requested_by_user_id: string;
+  requested_by_name: string;
+  responded_by_user_id: string | null;
+  responded_by_name: string | null;
+  requested_at: string;
+  responded_at: string | null;
+  status: string;
+}
+
+export interface GuidanceRecordsResponse {
+  items: GuidanceRecord[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export const getGuidanceRecords = async (meetingId: string): Promise<GuidanceRecordsResponse> => {
+  const response = await axiosInstance.get<GuidanceRecordsResponse>(`/api/meeting-requests/${meetingId}/guidance-record`);
+  return response.data;
+};
+
