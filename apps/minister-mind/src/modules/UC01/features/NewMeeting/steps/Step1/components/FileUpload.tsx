@@ -2,14 +2,23 @@ import React, { useState, useRef, useCallback } from 'react';
 import UploadIcon from '@shared/assets/upload.svg?react';
 import { cn } from '@sanad-ai/ui';
 
+export interface ExistingFile {
+  id: string;
+  file_name: string;
+  blob_url: string;
+  file_size?: number;
+  file_type?: string;
+}
+
 export interface FileUploadProps {
   file: File | null | undefined;
   error?: string;
   onFileSelect: (file: File | null) => void;
   required?: boolean;
+  existingFiles?: ExistingFile[]; // For edit mode - existing uploaded files
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelect, required = false }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelect, required = false, existingFiles = [] }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -185,7 +194,41 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
           <p className="text-[14px] text-red-500 -mt-[10px]">{error}</p>
         )}
 
-        {/* File Info */}
+        {/* Existing Files (Edit Mode) */}
+        {existingFiles && existingFiles.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {existingFiles.map((existingFile) => (
+              <div
+                key={existingFile.id}
+                className="p-4 rounded-xl bg-[#FFFFFF] border border-[#009883] border-radius-[12px]"
+              >
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                    {getFileTypeIcon(existingFile.file_name)}
+                    <div className="text-right">
+                      <a
+                        href={existingFile.blob_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[14px] font-medium text-[#009883] hover:text-[#007a6e] break-all underline"
+                      >
+                        {existingFile.file_name}
+                      </a>
+                      {existingFile.file_size && (
+                        <p className="text-[12px] text-[#667085]">{formatFileSize(existingFile.file_size)}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
+                    ملف موجود
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* File Info (New File) */}
         {file && (
           <div
             className="p-4 rounded-xl bg-[#FFFFFF] border border-[#009883] border-radius-[12px]"
