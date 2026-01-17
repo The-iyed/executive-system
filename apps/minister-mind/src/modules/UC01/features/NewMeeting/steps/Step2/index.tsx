@@ -16,9 +16,11 @@ interface Step2Props {
   onPrevious?: () => void;
   onCancel?: () => void;
   onSaveDraft?: () => void;
+  isEditMode?: boolean;
+  initialData?: Partial<import('./schema').Step2FormData>;
 }
 
-const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
+const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft, isEditMode = false, initialData: propInitialData }) => {
   const handleSuccess = useCallback(
     (isDraft: boolean) => {
       if (isDraft) {
@@ -58,8 +60,10 @@ const Step2: React.FC<Step2Props> = ({ draftId, onNext, onSaveDraft }) => {
     submitStep,
   } = useStep2({
     draftId,
+    initialData: propInitialData,
     onSuccess: handleSuccess,
     onError: handleError,
+    isEditMode,
   });
 
   /**

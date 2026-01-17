@@ -6,6 +6,7 @@ interface UseStep3Props {
   draftId: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  initialSlots?: string[];
 }
 
 interface SchedulingPayload {
@@ -18,8 +19,9 @@ export const useStep3 = ({
   draftId,
   onSuccess,
   onError,
+  initialSlots = [],
 }: UseStep3Props) => {
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
 
   // React Query mutation for submitting scheduling
   const submitMutation = useMutation({
@@ -91,5 +93,6 @@ export const useStep3 = ({
     toggleSlotSelection,
     submitStep,
     isSubmitting: submitMutation.isPending,
+    setSelectedSlots,
   };
 };
