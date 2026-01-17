@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import { step2Schema, type Step2FormData } from './schema';
@@ -9,6 +9,7 @@ interface UseStep2Props {
   initialData?: Partial<Step2FormData>;
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
+  isEditMode?: boolean;
 }
 
 interface SubmitStep2Payload {
@@ -48,6 +49,7 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
     })) || [],
   };
 
+  // Use PATCH for both create and update (same endpoint)
   await axiosInstance.patch(
     `/api/meeting-requests/drafts/${draftId}/invitees`,
     body
@@ -61,6 +63,7 @@ export const useStep2 = ({
   initialData,
   onSuccess,
   onError,
+  isEditMode = false,
 }: UseStep2Props) => {
   const [formData, setFormData] = useState<Partial<Step2FormData>>({
     invitees: [],
@@ -68,6 +71,16 @@ export const useStep2 = ({
   });
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
   const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData && isEditMode) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData, isEditMode]);
 
   // React Query mutation for submitting step 2
   const submitMutation = useMutation({
