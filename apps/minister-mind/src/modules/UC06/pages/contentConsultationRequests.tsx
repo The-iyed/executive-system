@@ -444,7 +444,7 @@ const ContentConsultationRequests: React.FC = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              // Navigate to detail page when implemented
+              navigate(`/content-consultation-request/${row.id}`);
             }}
             className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
           >
@@ -506,7 +506,7 @@ const ContentConsultationRequests: React.FC = () => {
                   columns={tableColumns}
                   data={requests}
                   onRowClick={(row) => {
-                    // Navigate to detail page when implemented
+                    navigate(`/content-consultation-request/${row.id}`);
                   }}
                 />
               ) : (
@@ -516,10 +516,10 @@ const ContentConsultationRequests: React.FC = () => {
                       <ContentConsultationCard
                         request={request}
                         onView={() => {
-                          // Navigate to detail page when implemented
+                          navigate(`/content-consultation-request/${request.id}`);
                         }}
                         onDetails={() => {
-                          // Navigate to detail page when implemented
+                          navigate(`/content-consultation-request/${request.id}`);
                         }}
                       />
                     </div>
