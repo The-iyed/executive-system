@@ -166,6 +166,13 @@ export {
   PopoverContent,
 } from './components/popover';
 
+// Export hover card components
+export {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from './components/hover-card';
+
 // Export calendar and date picker
 export { Calendar, type CalendarProps } from './components/calendar';
 export { DatePicker, type DatePickerProps } from './components/date-picker';
