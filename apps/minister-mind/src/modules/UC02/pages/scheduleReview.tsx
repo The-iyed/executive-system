@@ -49,28 +49,34 @@ const ScheduleReview: React.FC = () => {
     setCurrentPage(1); // Reset to first page when tab changes
   };
 
-  // Determine API status based on active tab
+  // Determine API status based on statusFilter and active tab
+  // When statusFilter is 'all', don't send status to API (undefined)
+  // When statusFilter is a specific status, use that status
+  // Otherwise, use tab's default status
   const apiStatus = useMemo(() => {
-    if (activeTab === 'work-basket') {
-      return MeetingStatus.UNDER_REVIEW;
-    } else if (activeTab === 'scheduled-meetings') {
-      return MeetingStatus.SCHEDULED;
+    if (statusFilter !== 'all') {
+      // Use the selected status filter
+      return statusFilter;
     }
+    // When 'all' is selected, don't filter by status (return undefined)
     return undefined;
-  }, [activeTab]);
+  }, [statusFilter]);
 
   // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   // Fetch meetings from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['meetings', apiStatus, debouncedSearch.trim(), currentPage],
+    queryKey: ['meetings', activeTab, apiStatus, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        status: apiStatus,
         skip: skip,
         limit: ITEMS_PER_PAGE,
       };
+      // Only add status if it's defined (not 'all')
+      if (apiStatus) {
+        params.status = apiStatus;
+      }
       // Only add search if it's not empty
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
@@ -79,15 +85,14 @@ const ScheduleReview: React.FC = () => {
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by status and owner_type
+      // For scheduled meetings fetch meetings filtered by owner_type
       if (activeTab === 'scheduled-meetings') {
-        params.status = MeetingStatus.SCHEDULED;
         params.owner_type = 'SCHEDULING';
         return getMeetings(params);
       }
       return getMeetings(params);
     },
-    enabled: !!apiStatus, // Only fetch when we have a status
+    enabled: true, // Always enabled, status is optional
   });
 
   // Map API response to MeetingCardData
@@ -95,16 +100,6 @@ const ScheduleReview: React.FC = () => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
-
-  // Filter meetings based on status filter (client-side filtering for additional statuses)
-  const filteredMeetings = useMemo(() => {
-    if (!meetings) return [];
-    
-    return meetings.filter((meeting) => {
-      const matchesStatus = statusFilter === 'all' || meeting.status === statusFilter;
-      return matchesStatus;
-    });
-  }, [meetings, statusFilter]);
 
   // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
@@ -250,7 +245,7 @@ const ScheduleReview: React.FC = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
             </div>
-          ) : filteredMeetings.length === 0 ? (
+          ) : meetings.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">لا توجد بيانات</div>
             </div>
@@ -259,12 +254,12 @@ const ScheduleReview: React.FC = () => {
               {view === 'table' ? (
                 <DataTable
                   columns={tableColumns}
-                  data={filteredMeetings}
+                  data={meetings}
                   onRowClick={(row) => navigate(`/meeting/${row.id}`)}
                 />
               ) : (
                 <CardsGrid
-                  meetings={filteredMeetings}
+                  meetings={meetings}
                   onView={(meeting) => navigate(`/meeting/${meeting.id}`)}
                   onDetails={(meeting) => navigate(`/meeting/${meeting.id}`)}
                 />
