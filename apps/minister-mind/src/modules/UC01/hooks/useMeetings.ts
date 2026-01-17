@@ -47,9 +47,10 @@ export const useMeetings = ({
   const mapStatusToApi = (status: MeetingStatus | string | undefined): string | undefined => {
     if (!status) return undefined;
     
-    if (status === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER) {
+    // Map both new and legacy returned statuses to API values
+    if (status === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || status === MeetingStatus.RETURNED_FROM_CONTENT) {
       return 'RETURNED_FROM_CONTENT';
-    } else if (status === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER) {
+    } else if (status === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
       return 'RETURNED_FROM_SCHEDULING';
     }
     return status as string;
@@ -69,9 +70,9 @@ export const useMeetings = ({
     } else {
       // When statusFilter is 'all', check if activeTab is a returned status
       // If activeTab is a returned status, map it; otherwise use tabFilter status
-      if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER) {
+      if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_CONTENT) {
         status = 'RETURNED_FROM_CONTENT';
-      } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER) {
+      } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING) {
         status = 'RETURNED_FROM_SCHEDULING';
       } else {
         status = tabFilter?.status;
