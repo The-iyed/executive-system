@@ -15,17 +15,10 @@ export const FormSwitch: React.FC<FormSwitchProps> = ({
   className,
 }) => {
   return (
-    <div className={cn('flex items-start flex-col gap-3', className)}>
+    <div className={cn('flex items-start flex-col gap-3 ml-4 sm:ml-0', className)}>
       {label && (
         <span
-          className="text-right"
-          style={{
-            fontStyle: 'normal',
-            fontWeight: 500,
-            fontSize: '14px',
-            lineHeight: '20px',
-            color: '#344054',
-          }}
+          className="text-right text-[14px] font-medium text-[#344054] whitespace-nowrap"
         >
           {label}
         </span>

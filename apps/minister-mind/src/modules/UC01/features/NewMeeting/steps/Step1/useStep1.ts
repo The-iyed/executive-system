@@ -346,7 +346,7 @@ export const useStep1 = ({
     const newGoal = { id: nanoid(), objective: '' };
     setFormData((prev) => ({
       ...prev,
-      meetingGoals: [...(prev.meetingGoals || []), newGoal],
+      meetingGoals: [newGoal, ...(prev.meetingGoals || [])],
     }));
   }, []);
 
@@ -389,7 +389,7 @@ export const useStep1 = ({
     const newAgenda = { id: nanoid(), agenda_item: '', presentation_duration_minutes: '' };
     setFormData((prev) => ({
       ...prev,
-      meetingAgenda: [...(prev.meetingAgenda || []), newAgenda],
+      meetingAgenda: [newAgenda,...(prev.meetingAgenda || [])],
     }));
   }, []);
 
@@ -414,7 +414,7 @@ export const useStep1 = ({
     const newSupport = { id: nanoid(), support_description: '' };
     setFormData((prev) => ({
       ...prev,
-      ministerSupport: [...(prev.ministerSupport || []), newSupport],
+      ministerSupport: [newSupport,...(prev.ministerSupport || [])],
     }));
   }, []);
 
@@ -465,7 +465,7 @@ export const useStep1 = ({
     };
     setFormData((prev) => ({
       ...prev,
-      relatedDirectives: [...(prev.relatedDirectives || []), newDirective],
+      relatedDirectives: [newDirective, ...(prev.relatedDirectives || [])],
     }));
   }, []);
 

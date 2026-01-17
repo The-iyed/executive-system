@@ -1,115 +1,95 @@
 import { useState, useCallback } from 'react';
-import { step3Schema, type Step3FormData } from './schema';
+import { useMutation } from '@tanstack/react-query';
 import axiosInstance from '@auth/utils/axios';
-import type { CalendarEventData } from './components';
 
 interface UseStep3Props {
   draftId: string;
-  initialData?: Partial<Step3FormData>;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
 }
 
+interface SchedulingPayload {
+  selected_time_slot_id?: string;
+  alternative_time_slot_id_1?: string;
+  alternative_time_slot_id_2?: string;
+}
+
 export const useStep3 = ({
   draftId,
-  initialData,
   onSuccess,
   onError,
 }: UseStep3Props) => {
-  const [formData, setFormData] = useState<Partial<Step3FormData>>({
-    ...initialData,
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+
+  // React Query mutation for submitting scheduling
+  const submitMutation = useMutation({
+    mutationFn: async (payload: SchedulingPayload) => {
+      const response = await axiosInstance.patch(
+        `/api/meeting-requests/drafts/${draftId}/scheduling`,
+        payload
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      const err = error instanceof Error ? error : new Error('حدث خطأ أثناء الحفظ');
+      onError?.(err);
+    },
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof Step3FormData, string>>>({});
-  const [touched, _setTouched] = useState<Partial<Record<keyof Step3FormData, boolean>>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validateAll = useCallback((): boolean => {
-    const result = step3Schema.safeParse(formData);
-    
-    if (!result.success) {
-      const newErrors: Partial<Record<keyof Step3FormData, string>> = {};
-      result.error.errors.forEach((err) => {
-        const path = err.path[0] as keyof Step3FormData;
-        if (path) {
-          newErrors[path] = err.message;
-        }
-      });
-      setErrors(newErrors);
-      return false;
-    }
-    
-    return true;
-  }, [formData]);
-
-  const handleSelectEvent = useCallback((event: CalendarEventData | null) => {
-    if (event) {
-      setFormData((prev) => ({
-        ...prev,
-        selectedEvent: {
-          id: event.id,
-          type: event.type,
-          label: event.label,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          date: event.date,
-          title: event.title,
-        },
-      }));
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors.selectedEvent;
-        return newErrors;
-      });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        selectedEvent: undefined,
-      }));
-    }
+  const toggleSlotSelection = useCallback((slotId: string) => {
+    setSelectedSlots((prev) => {
+      // If slot is already selected, remove it
+      if (prev.includes(slotId)) {
+        return prev.filter((id) => id !== slotId);
+      }
+      // If we already have 3 slots, don't add more
+      if (prev.length >= 3) {
+        return prev;
+      }
+      // Add the slot
+      return [...prev, slotId];
+    });
   }, []);
 
-  const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
-    if (!isDraft && !validateAll()) {
+  const submitStep = useCallback(async (
+    isDraft: boolean,
+    selectedSlotIds: string[]
+  ): Promise<void> => {
+    // Validate: need at least 1 slot if not draft
+    if (!isDraft && selectedSlotIds.length === 0) {
+      const err = new Error('يرجى اختيار موعد واحد على الأقل');
+      onError?.(err);
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const body = {
-        selectedEvent: formData.selectedEvent
-          ? {
-              id: formData.selectedEvent.id,
-              type: formData.selectedEvent.type,
-              startTime: formData.selectedEvent.startTime,
-              endTime: formData.selectedEvent.endTime,
-              date: formData.selectedEvent.date.toISOString(),
-              title: formData.selectedEvent.title,
-            }
-          : undefined,
-      };
-
-      await axiosInstance.patch(
-        `/api/meeting-requests/drafts/${draftId}/scheduling`,
-        body
-      );
-
+    // If draft and no slots, skip API call
+    if (isDraft && selectedSlotIds.length === 0) {
       onSuccess?.();
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('حدث خطأ أثناء الحفظ');
-      onError?.(err);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
-  }, [draftId, formData, validateAll, onSuccess, onError]);
+
+    // Build payload
+    const payload: SchedulingPayload = {};
+    if (selectedSlotIds.length > 0) {
+      payload.selected_time_slot_id = selectedSlotIds[0];
+    }
+    if (selectedSlotIds.length > 1) {
+      payload.alternative_time_slot_id_1 = selectedSlotIds[1];
+    }
+    if (selectedSlotIds.length > 2) {
+      payload.alternative_time_slot_id_2 = selectedSlotIds[2];
+    }
+
+    submitMutation.mutate(payload);
+  }, [submitMutation, onSuccess, onError]);
 
   return {
-    formData,
-    errors,
-    touched,
-    isSubmitting,
-    handleSelectEvent,
-    validateAll,
+    selectedSlots,
+    toggleSlotSelection,
     submitStep,
+    isSubmitting: submitMutation.isPending,
   };
 };

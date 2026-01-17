@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { ActionButtons } from '@shared';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ActionButtons, ScreenLoader } from '@shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
@@ -8,6 +9,8 @@ import {
 import { useStep3 } from './useStep3';
 import { useDeleteDraft } from '../../hooks/useDeleteDraft';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import { useCalendarEvents } from './hooks/useCalendarEvents';
+import { PATH } from '../../../../routes/paths';
 
 interface Step3Props {
   draftId: string;
@@ -19,23 +22,38 @@ interface Step3Props {
 
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
+  d.setHours(0, 0, 0, 0); // Reset to start of day
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday as first day
   return new Date(d.setDate(diff));
 };
 
-const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+const getWeekEnd = (weekStart: Date): Date => {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6); // Add 6 days to get Sunday
+  weekEnd.setHours(23, 59, 59, 999); // Set to end of day
+  return weekEnd;
+};
 
-  const weekStart = getWeekStart(currentDate);
+const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
+  const navigate = useNavigate();
+  // Set default week to current date
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
+  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
 
   const handleSuccess = useCallback(() => {
-    // Success is handled by parent component
-  }, []);
+    // Navigate to meetings list on success
+    navigate(PATH.MEETINGS);
+  }, [navigate]);
 
   const handleError = useCallback((error: Error) => {
     console.error('Step3 error:', error);
-    // TODO: Show error toast/notification
+    setValidationError(error.message);
+    // Clear error after 5 seconds
+    setTimeout(() => setValidationError(null), 5000);
   }, []);
 
   // Delete draft hook with confirmation modal
@@ -51,95 +69,45 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
   });
 
   const {
-    // formData,
-    // errors,
-    // isSubmitting,
-    handleSelectEvent,
+    selectedSlots,
+    toggleSlotSelection,
     submitStep,
+    isSubmitting,
   } = useStep3({
     draftId,
     onSuccess: handleSuccess,
     onError: handleError,
   });
 
-  // Sample events data - replace with actual data
-  const [events] = useState<CalendarEventData[]>([
-    {
-      id: '1',
-      type: 'reserved',
-      label: 'محجوز',
-      startTime: '07:00',
-      endTime: '08:00',
-      date: new Date(weekStart.getTime() + 0 * 24 * 60 * 60 * 1000), // Monday
-      title: 'موعد الاجتماع : الاقتراح الأول',
-    },
-    {
-      id: '2',
-      type: 'optional',
-      label: 'اختياري',
-      startTime: '16:00',
-      endTime: '17:00',
-      date: new Date(weekStart.getTime() + 0 * 24 * 60 * 60 * 1000), // Monday
-      title: 'موعد الاجتماع : الاقتراح الثاني',
-    },
-    {
-      id: '3',
-      type: 'compulsory',
-      label: 'إجباري',
-      startTime: '16:00',
-      endTime: '17:00',
-      date: new Date(weekStart.getTime() + 2 * 24 * 60 * 60 * 1000), // Wednesday
-      title: 'موعد الاجتماع : الاقتراح الثاني',
-    },
-    {
-      id: '4',
-      type: 'reserved',
-      label: 'محجوز',
-      startTime: '10:00',
-      endTime: '11:00',
-      date: new Date(weekStart.getTime() + 2 * 24 * 60 * 60 * 1000), // Wednesday
-    },
-    {
-      id: '5',
-      type: 'compulsory',
-      label: 'إجباري',
-      startTime: '14:00',
-      endTime: '15:00',
-      date: new Date(weekStart.getTime() + 4 * 24 * 60 * 60 * 1000), // Friday
-    },
-    {
-      id: '6',
-      type: 'reserved',
-      label: 'محجوز',
-      startTime: '09:00',
-      endTime: '10:00',
-      date: new Date(weekStart.getTime() + 4 * 24 * 60 * 60 * 1000), // Friday
-    },
-    {
-      id: '7',
-      type: 'optional',
-      label: 'اختياري',
-      startTime: '13:00',
-      endTime: '14:00',
-      date: new Date(weekStart.getTime() + 1 * 24 * 60 * 60 * 1000), // Tuesday
-    },
-    {
-      id: '8',
-      type: 'optional',
-      label: 'اختياري',
-      startTime: '17:00',
-      endTime: '18:00',
-      date: new Date(weekStart.getTime() + 5 * 24 * 60 * 60 * 1000), // Saturday
-    },
-    {
-      id: '9',
-      type: 'optional',
-      label: 'اختياري',
-      startTime: '11:00',
-      endTime: '12:00',
-      date: new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), // Sunday
-    },
-  ]);
+  // Fetch calendar events for the current week
+  const { events: fetchedEvents, isLoading: isLoadingEvents, error: eventsError } = useCalendarEvents({
+    startDate: weekStart,
+    endDate: weekEnd,
+    durationMinutes: 60,
+    enabled: true,
+  });
+
+  // Map events with selected state and update UI for selected slots
+  const events = useMemo(() => {
+    return fetchedEvents.map((event) => {
+      const isSelected = selectedSlots.includes(event.id);
+      
+      if (isSelected) {
+        // Change to optional type with "تم الحجز" label when selected
+        return {
+          ...event,
+          type: 'optional' as const,
+          label: 'تم الحجز',
+          is_selected: true,
+        };
+      }
+      
+      return {
+        ...event,
+        is_selected: false,
+      };
+    });
+  }, [fetchedEvents, selectedSlots]);
 
   const handlePreviousWeek = useCallback(() => {
     setCurrentDate((prev) => {
@@ -163,29 +131,59 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
   }, []);
 
   const handleEventClick = useCallback((event: CalendarEventData) => {
-    console.log('Event clicked:', event);
-    // TODO: Handle event click
-  }, []);
-
+    // Only allow clicking on available events
+    if (event.is_available && !event.is_selected) {
+      toggleSlotSelection(event.id);
+      setValidationError(null); // Clear validation error when selecting
+    } else if (event.is_selected) {
+      // Allow deselecting
+      toggleSlotSelection(event.id);
+    }
+  }, [toggleSlotSelection]);
 
   const handleTimeSlotClick = useCallback((date: Date, time: string) => {
-    console.log('Time slot clicked:', date, time);
-    // TODO: Handle time slot click
-  }, []);
+    // Find the first available event at this time slot
+    const availableEvent = events.find(
+      (e) =>
+        e.date.toDateString() === date.toDateString() &&
+        e.startTime === time &&
+        e.is_available &&
+        !e.is_selected
+    );
+    
+    if (availableEvent) {
+      toggleSlotSelection(availableEvent.id);
+      setValidationError(null); // Clear validation error when selecting
+    }
+  }, [events, toggleSlotSelection]);
 
   const handleBookEvent = useCallback((event: CalendarEventData) => {
-    handleSelectEvent(event);
-  }, [handleSelectEvent]);
+    // Reserve or unreserve the slot when clicking the button
+    if (event.is_available) {
+      toggleSlotSelection(event.id);
+      setValidationError(null); // Clear validation error when selecting/deselecting
+    }
+  }, [toggleSlotSelection]);
 
   const handleNextClick = useCallback(async () => {
-    await submitStep(false);
-    onNext?.();
-  }, [submitStep, onNext]);
+    // Validate: need at least 1 slot selected
+    if (selectedSlots.length === 0) {
+      setValidationError('يرجى اختيار موعد واحد على الأقل');
+      return;
+    }
+    
+    setValidationError(null);
+    await submitStep(false, selectedSlots);
+  }, [submitStep, selectedSlots]);
 
   const handleSaveDraftClick = useCallback(async () => {
-    await submitStep(true);
-    onSaveDraft?.();
-  }, [submitStep, onSaveDraft]);
+    setValidationError(null);
+    await submitStep(true, selectedSlots);
+    // If no slots selected, navigate to meetings list directly
+    if (selectedSlots.length === 0) {
+      navigate(PATH.MEETINGS);
+    }
+  }, [submitStep, selectedSlots, navigate]);
 
   /**
    * Handle Cancel button click - show confirmation modal
@@ -193,6 +191,26 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
   const handleCancelClick = useCallback(() => {
     openConfirm();
   }, [openConfirm]);
+
+  // Show loader while fetching events
+  if (isLoadingEvents) {
+    return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." />;
+  }
+
+  // Show error state if fetch failed
+  if (eventsError) {
+    return (
+      <div className="w-full flex flex-col items-center mt-12">
+        <div className="w-full flex justify-center">
+          <div className="w-[1085px] flex flex-col gap-6">
+            <div className="text-center text-red-600 p-4">
+              حدث خطأ أثناء تحميل المواعيد. يرجى المحاولة مرة أخرى.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center mt-12">
@@ -215,13 +233,27 @@ const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, on
             onTimeSlotClick={handleTimeSlotClick}
           />
 
+          {/* Validation Error Message */}
+          {validationError && (
+            <div className="text-center text-red-600 p-3 bg-red-50 rounded-md border border-red-200">
+              {validationError}
+            </div>
+          )}
+
+          {/* Selected Slots Info */}
+          {selectedSlots.length > 0 && (
+            <div className="text-center text-sm text-gray-600">
+              تم اختيار {selectedSlots.length} من 3 مواعيد
+            </div>
+          )}
+
           {/* Action Buttons */}
           <ActionButtons
             onCancel={handleCancelClick}
             onSaveDraft={handleSaveDraftClick}
             onNext={handleNextClick}
             nextLabel="أنشئ اجتماعك الآن"
-            disabled={isDeleting}
+            disabled={isDeleting || isSubmitting}
           />
         </div>
       </div>
