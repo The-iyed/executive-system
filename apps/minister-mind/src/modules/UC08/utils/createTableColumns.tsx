@@ -1,78 +1,95 @@
-import { ColumnDef } from '@tanstack/react-table';
+import { TableColumn } from '@shared/components/data-table';
 import { MeetingDisplayData } from './meetingMapper';
 import { Eye } from 'lucide-react';
 import { Badge } from '@sanad-ai/ui';
+import { PAGINATION } from './constants';
 
 export const createTableColumns = (
-  navigate: (path: string) => void
-): ColumnDef<MeetingDisplayData>[] => [
+  navigate: (path: string) => void,
+  currentPage: number = PAGINATION.DEFAULT_PAGE,
+  pageSize: number = PAGINATION.ITEMS_PER_PAGE
+): TableColumn<MeetingDisplayData>[] => [
   {
     id: 'action',
     header: '',
-    cell: ({ row }) => (
+    width: 'w-16',
+    render: (row) => (
       <button
-        onClick={() => navigate(`/uc08/meeting/${row.original.id}/preview`)}
+        onClick={(e) => {
+          e.stopPropagation();
+          navigate(`/uc08/meeting/${row.id}/preview`);
+        }}
         className="flex items-center justify-center w-8 h-8 text-[#008774] hover:bg-[#F0FDF4] rounded-lg transition-colors"
         aria-label="عرض التفاصيل"
       >
         <Eye className="w-4 h-4" />
       </button>
     ),
-    size: 60,
   },
   {
     id: 'itemNumber',
     header: 'رقم البند',
-    cell: ({ row, table }) => {
-      const pageIndex = table.getState().pagination.pageIndex;
-      const pageSize = table.getState().pagination.pageSize;
-      return pageIndex * pageSize + row.index + 1;
+    width: 'w-24',
+    render: (_row, index) => {
+      const itemNumber = (currentPage - 1) * pageSize + index + 1;
+      return (
+        <span className="text-base font-normal text-gray-600 leading-5">
+          {itemNumber}
+        </span>
+      );
     },
-    size: 100,
   },
   {
-    accessorKey: 'requestNumber',
+    id: 'requestNumber',
     header: 'رقم الطلب',
-    size: 150,
+    width: 'w-40',
+    accessor: (row) => row.requestNumber,
   },
   {
-    accessorKey: 'title',
+    id: 'title',
     header: 'عنوان الاجتماع',
-    size: 200,
+    render: (row) => (
+      <span className="text-base font-normal text-gray-600 leading-5">
+        {row.title || '-'}
+      </span>
+    ),
   },
   {
-    accessorKey: 'coordinator',
+    id: 'coordinator',
     header: 'مقدم الطلب',
-    cell: ({ row }) => (
+    width: 'w-48',
+    render: (row) => (
       <div className="flex items-center gap-2">
-        {row.original.coordinatorAvatar && (
+        {row.coordinatorAvatar && (
           <img
-            src={row.original.coordinatorAvatar}
-            alt={row.original.coordinator}
+            src={row.coordinatorAvatar}
+            alt={row.coordinator || ''}
             className="w-6 h-6 rounded-full"
           />
         )}
-        <span>{row.original.coordinator}</span>
+        <span className="text-base font-normal text-gray-600 leading-5">
+          {row.coordinator || '-'}
+        </span>
       </div>
     ),
-    size: 150,
   },
   {
-    accessorKey: 'date',
+    id: 'date',
     header: 'تاريخ الإرسال',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <span>{row.original.date}</span>
-      </div>
+    width: 'w-40',
+    render: (row) => (
+      <span className="text-base font-normal text-gray-600 leading-5">
+        {row.date || '-'}
+      </span>
     ),
-    size: 150,
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'الحالة',
-    cell: ({ row }) => {
-      const status = row.original.status;
-      const statusLabel = row.original.statusLabel;
+    width: 'w-40',
+    render: (row) => {
+      const status = row.status;
+      const statusLabel = row.statusLabel;
       
       const statusColors: Record<string, string> = {
         [status]: status === 'UNDER_REVIEW' 
@@ -88,6 +105,5 @@ export const createTableColumns = (
         </Badge>
       );
     },
-    size: 150,
   },
 ];

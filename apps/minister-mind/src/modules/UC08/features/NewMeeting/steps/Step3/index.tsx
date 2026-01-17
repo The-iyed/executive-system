@@ -35,7 +35,7 @@ const getWeekEnd = (weekStart: Date): Date => {
   return weekEnd;
 };
 
-const Step3: React.FC<Step3Props> = ({ draftId, onNext, onPrevious, onCancel, onSaveDraft }) => {
+const Step3: React.FC<Step3Props> = ({ draftId }) => {
   const navigate = useNavigate();
   // Set default week to current date
   const [currentDate, setCurrentDate] = useState(new Date());

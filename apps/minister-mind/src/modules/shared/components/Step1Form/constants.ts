@@ -1,3 +1,5 @@
+import { FormTableColumn } from "../../../UC01/features/NewMeeting/steps/Step1/components";
+
 // Dropdown options - These should be fetched from API in production
 export const MEETING_CATEGORY_OPTIONS = [
   { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
@@ -35,7 +37,6 @@ export const SECTOR_OPTIONS = [
 ];
 
 // Table Column Definitions
-import type { FormTableColumn } from '../FormTable';
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
