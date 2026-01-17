@@ -29,30 +29,30 @@ import type { FormTableColumn } from './components/FormTable';
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------' },
+  { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: '-------' },
-  { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------' },
+  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------' },
+  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------' },
-  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------' },
-  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
-  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------' },
-  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
-  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------' },
-  { id: 'action', header: 'إجراء', width: 'w-20' },
+  { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
+  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
+  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
+  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];

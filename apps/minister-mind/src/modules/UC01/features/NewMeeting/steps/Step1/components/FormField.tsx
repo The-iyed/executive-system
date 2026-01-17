@@ -34,14 +34,16 @@ export const FormField: React.FC<FormFieldProps> = ({
       </label>}
       <div className="w-full">
         {children}
-        {error && (
           <p
             data-error-field={label}
-            className="text-right mt-1 mb-4 text-[#D13C3C] text-[14px] font-normal"
+            className={cn(
+              'text-right mt-1 mb-4 text-[14px] font-normal',
+              error ? 'text-[#D13C3C] visible' : 'invisible'
+            )}
+            style={{ minHeight: '20px' }}
           >
-            {error}
+            {error || ' '}
           </p>
-        )}
       </div>
     </div>
   );
