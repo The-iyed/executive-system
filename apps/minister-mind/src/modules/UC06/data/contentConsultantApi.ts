@@ -83,4 +83,76 @@ export const getAssignedContentConsultationRequests = async (
   return response.data;
 };
 
+// Extended types for detail response
+export interface ContentConsultationRequestDetailResponse {
+  meeting_request: ContentConsultationRequestApiResponse & {
+    objectives?: Array<{
+      id: string;
+      objective: string;
+    }>;
+    agenda_items?: Array<{
+      id: string;
+      agenda_item: string;
+      presentation_duration_minutes: number;
+    }>;
+    minister_support?: Array<{
+      id: string;
+      support_description: string;
+    }>;
+    invitees?: Array<{
+      id: string;
+      user_id: string | null;
+      external_email: string | null;
+      external_name: string | null;
+      is_required: boolean;
+      response_status: string;
+      attendee_source: string;
+      justification: string | null;
+      access_permission: string | null;
+    }>;
+    selected_time_slot_id?: string | null;
+    alternative_time_slot_id_1?: string | null;
+    alternative_time_slot_id_2?: string | null;
+    selected_time_slot?: any;
+    alternative_time_slot_1?: any;
+    alternative_time_slot_2?: any;
+    related_directive_ids?: string[];
+    related_guidance?: any;
+    general_notes?: string | null;
+    content_officer_notes?: string | null;
+    meeting_justification?: string;
+    related_topic?: string;
+    deadline?: string | null;
+    meeting_classification_type?: string;
+    meeting_confidentiality?: string;
+    sector?: string;
+  };
+  consultation_question: string;
+  consultation_id: string;
+}
+
+export const getContentConsultationRequestById = async (
+  meetingRequestId: string
+): Promise<ContentConsultationRequestDetailResponse> => {
+  const response = await axiosInstance.get<ContentConsultationRequestDetailResponse>(
+    `/api/content-consultant/assigned-requests/${meetingRequestId}`
+  );
+  return response.data;
+};
+
+export interface SubmitConsultationRequest {
+  feasibility_answer: boolean;
+  consultation_notes: string;
+}
+
+export const submitConsultation = async (
+  consultationId: string,
+  data: SubmitConsultationRequest
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/content-consultant/consultations/${consultationId}/respond`,
+    data
+  );
+};
+
 

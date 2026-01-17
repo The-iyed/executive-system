@@ -1,14 +1,14 @@
 import React from 'react';
-import { GuidanceRequestCard, GuidanceRequestCardData } from './guidance-request-card';
+import { ContentRequestCard, ContentRequestCardData } from './content-request-card';
 
-export interface GuidanceRequestsGridProps {
-  requests: GuidanceRequestCardData[];
-  onView?: (request: GuidanceRequestCardData) => void;
-  onDetails?: (request: GuidanceRequestCardData) => void;
+export interface ContentRequestsGridProps {
+  requests: ContentRequestCardData[];
+  onView?: (request: ContentRequestCardData) => void;
+  onDetails?: (request: ContentRequestCardData) => void;
   className?: string;
 }
 
-export const GuidanceRequestsGrid: React.FC<GuidanceRequestsGridProps> = ({
+export const ContentRequestsGrid: React.FC<ContentRequestsGridProps> = ({
   requests,
   onView,
   onDetails,
@@ -20,7 +20,7 @@ export const GuidanceRequestsGrid: React.FC<GuidanceRequestsGridProps> = ({
       dir="rtl"
     >
       {requests.map((request) => (
-        <GuidanceRequestCard
+        <ContentRequestCard
           key={request.id}
           request={request}
           onView={() => onView?.(request)}
@@ -30,6 +30,4 @@ export const GuidanceRequestsGrid: React.FC<GuidanceRequestsGridProps> = ({
     </div>
   );
 };
-
-
 

@@ -4,7 +4,7 @@ import { StatusType } from '@shared/components/status-badge';
 import { MeetingStatus } from '@shared/types';
 import { Eye, ChevronLeft } from 'lucide-react';
 
-export interface GuidanceRequestCardData {
+export interface ContentRequestCardData {
   id: string;
   requestNumber: string;
   title: string;
@@ -14,14 +14,14 @@ export interface GuidanceRequestCardData {
   statusLabel: string;
 }
 
-export interface GuidanceRequestCardProps {
-  request: GuidanceRequestCardData;
+export interface ContentRequestCardProps {
+  request: ContentRequestCardData;
   onView?: () => void;
   onDetails?: () => void;
   className?: string;
 }
 
-export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
+export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
   request,
   onView,
   onDetails,
@@ -33,7 +33,7 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
     if (onDetails) {
       onDetails();
     } else {
-      navigate(`/guidance-request/${request.id}`);
+      navigate(`/content-request/${request.id}`);
     }
   };
 
@@ -178,6 +178,4 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
     </div>
   );
 };
-
-
 

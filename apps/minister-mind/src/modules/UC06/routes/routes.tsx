@@ -22,6 +22,14 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-06',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.CONTENT_CONSULTATION_REQUEST_DETAIL,
+    component: lazy(() => import('../pages/contentConsultationRequestDetail')),
+    layout: Layout,
+    useCase: 'UC-06',
+  },
 ];
 
 export default routes;
