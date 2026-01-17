@@ -47,7 +47,7 @@ const PreviewMeeting: React.FC = () => {
 
   // Handle edit button click
   const handleEdit = () => {
-    navigate(PATH.MEETING_DETAIL.replace(':id', id!));
+    navigate(PATH.EDIT_MEETING.replace(':id', id!));
   };
 
   const handleTabChange = (tabId: string) => {

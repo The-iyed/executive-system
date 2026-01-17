@@ -155,8 +155,8 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
     if (config) {
       for (const item of config.navigationItems) {
         // Check if item requires a specific use case
-        if ((item as any).requiresUseCase) {
-          const requiredUseCase = (item as any).requiresUseCase;
+        if (item.requiresUseCase) {
+          const requiredUseCase = item.requiresUseCase;
           if (!useCases.includes(requiredUseCase)) {
             continue; // Skip this item if user doesn't have required use case
           }
@@ -165,7 +165,7 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
         // Avoid duplicates by checking id
         if (!seenIds.has(item.id)) {
           // Remove the requiresUseCase property before adding to navItems
-          const { requiresUseCase, ...cleanItem } = item as any;
+          const { requiresUseCase, ...cleanItem } = item;
           navItems.push(cleanItem);
           seenIds.add(item.id);
         }
