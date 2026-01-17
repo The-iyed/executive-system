@@ -17,7 +17,6 @@ import {
   getAssignedContentConsultationRequests,
   GetContentConsultationRequestsParams,
   ContentConsultationRequestApiResponse,
-  Attachment,
 } from '../data/contentConsultantApi';
 import {
   mapContentConsultationRequestToCardData,
@@ -45,7 +44,6 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
   onView,
   onDetails,
 }) => {
-  const navigate = useNavigate();
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
   const attachments = request.attachments || [];
 

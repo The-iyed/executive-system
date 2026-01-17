@@ -1,21 +1,9 @@
 import React from 'react';
-import { SharedLayout, NavItem } from '@shared';
-import ScheduleReviewIcon from '../../shared/assets/schedule-review.svg';
-import { PATH } from '../routes/paths';
+import { SharedLayout } from '@shared';
 
 export interface LayoutProps {
   children: React.ReactNode;
 }
-
-// UC05 Navigation Items
-const uc05NavItems: NavItem[] = [
-  {
-    id: 'content-requests',
-    icon: ScheduleReviewIcon,
-    label: 'تقييم المحتوى وإضافة التوجيهات',
-    path: PATH.CONTENT_REQUESTS,
-  },
-];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
