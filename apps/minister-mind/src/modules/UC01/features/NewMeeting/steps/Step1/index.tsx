@@ -25,7 +25,7 @@ interface Step1Props {
   onSaveDraft?: (draftId: string) => void;
 }
 
-const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
+const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft }) => {
   const handleSuccess = useCallback((newDraftId: string) => {
     console.log('newDraftId', newDraftId);
     // Draft ID is handled by the hook, parent component will receive it via callbacks
@@ -75,7 +75,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     handleAddDirective,
     handleDeleteDirective,
     handleUpdateDirective,
-    validateAll,
     submitStep,
   } = useStep1({
     draftId,
