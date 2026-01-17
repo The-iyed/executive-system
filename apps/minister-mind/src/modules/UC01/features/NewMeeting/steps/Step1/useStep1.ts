@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { useMutation } from '@tanstack/react-query';
 import type { Step1FormData } from './schema';
@@ -10,11 +10,13 @@ interface UseStep1Props {
   initialData?: Partial<Step1FormData>;
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
+  isEditMode?: boolean;
 }
 
 interface SubmitStep1Payload {
   formData: Partial<Step1FormData>;
   isDraft: boolean;
+  draftId?: string;
 }
 
 interface SubmitStep1Response {
@@ -163,8 +165,11 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
 /**
  * Submits basic info and file (if exists) to API
  */
-const submitStep1Data = async (payload: SubmitStep1Payload): Promise<string> => {
-  const { formData, isDraft } = payload;
+const submitStep1Data = async (
+  payload: SubmitStep1Payload,
+  isEditMode: boolean = false
+): Promise<string> => {
+  const { formData, isDraft, draftId } = payload;
 
   // Validate if not draft
   if (!isDraft) {
@@ -179,13 +184,22 @@ const submitStep1Data = async (payload: SubmitStep1Payload): Promise<string> => 
 
   const formDataToSend = prepareFormData(formData);
 
-  // Submit basic info with file (if exists) in FormData
-  const response = await axiosInstance.post<SubmitStep1Response>(
-    '/api/meeting-requests/drafts/basic-info',
-    formDataToSend
-  );
+  let response;
+  if (isEditMode && draftId) {
+    // Update existing draft using PATCH
+    response = await axiosInstance.patch<SubmitStep1Response>(
+      `/api/meeting-requests/drafts/${draftId}/basic-info`,
+      formDataToSend
+    );
+  } else {
+    // Create new draft using POST
+    response = await axiosInstance.post<SubmitStep1Response>(
+      '/api/meeting-requests/drafts/basic-info',
+      formDataToSend
+    );
+  }
 
-  const newDraftId = response.data?.id;
+  const newDraftId = response.data?.id || draftId;
   if (!newDraftId) {
     throw new Error('Invalid response format: missing draft ID');
   }
@@ -194,9 +208,11 @@ const submitStep1Data = async (payload: SubmitStep1Payload): Promise<string> => 
 };
 
 export const useStep1 = ({
+  draftId,
   initialData,
   onSuccess,
   onError,
+  isEditMode = false,
 }: UseStep1Props = {}) => {
   const [formData, setFormData] = useState<Partial<Step1FormData>>({
     meetingGoals: [],
@@ -207,6 +223,16 @@ export const useStep1 = ({
     ...initialData,
   });
 
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData && isEditMode) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData, isEditMode]);
+
   const [errors, setErrors] = useState<Partial<Record<keyof Step1FormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Step1FormData, boolean>>>({});
   const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
@@ -214,7 +240,7 @@ export const useStep1 = ({
 
   // React Query mutation for submitting step 1
   const submitMutation = useMutation({
-    mutationFn: submitStep1Data,
+    mutationFn: (payload: SubmitStep1Payload) => submitStep1Data(payload, isEditMode),
     onSuccess: (newDraftId) => {
       onSuccess?.(newDraftId);
     },
@@ -540,6 +566,7 @@ export const useStep1 = ({
         const newDraftId = await submitMutation.mutateAsync({
           formData,
           isDraft,
+          draftId,
         });
         return newDraftId;
       } catch (error: any) {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ActionButtons, ScreenLoader } from '@shared';
 import {
@@ -18,6 +18,8 @@ interface Step3Props {
   onPrevious?: () => void;
   onCancel?: () => void;
   onSaveDraft?: () => void;
+  isEditMode?: boolean;
+  initialSlots?: string[];
 }
 
 const getWeekStart = (date: Date): Date => {
@@ -35,7 +37,7 @@ const getWeekEnd = (weekStart: Date): Date => {
   return weekEnd;
 };
 
-const Step3: React.FC<Step3Props> = ({ draftId }) => {
+const Step3: React.FC<Step3Props> = ({ draftId, isEditMode = false, initialSlots: propInitialSlots = [] }) => {
   const navigate = useNavigate();
   // Set default week to current date
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -73,11 +75,20 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
     toggleSlotSelection,
     submitStep,
     isSubmitting,
+    setSelectedSlots,
   } = useStep3({
     draftId,
     onSuccess: handleSuccess,
     onError: handleError,
+    initialSlots: propInitialSlots,
   });
+
+  // Set initial slots when prop changes (for edit mode)
+  useEffect(() => {
+    if (isEditMode && propInitialSlots.length > 0 && setSelectedSlots) {
+      setSelectedSlots(propInitialSlots);
+    }
+  }, [isEditMode, propInitialSlots, setSelectedSlots]);
 
   // Fetch calendar events for the current week
   const { events: fetchedEvents, isLoading: isLoadingEvents, error: eventsError } = useCalendarEvents({
