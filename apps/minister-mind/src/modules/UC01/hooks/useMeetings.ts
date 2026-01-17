@@ -43,14 +43,40 @@ export const useMeetings = ({
     return TAB_FILTER_MAP[activeTab];
   }, [activeTab]);
 
+  // Helper function to map returned statuses to API values
+  const mapStatusToApi = (status: MeetingStatus | string | undefined): string | undefined => {
+    if (!status) return undefined;
+    
+    if (status === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER) {
+      return 'RETURNED_FROM_CONTENT';
+    } else if (status === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER) {
+      return 'RETURNED_FROM_SCHEDULING';
+    }
+    return status as string;
+  };
+
   // Determine the status and owner_type to use for API call
   // If statusFilter is set and not 'all', use it; otherwise use the tab status
   // Always use the tab's owner_type
+  // Map returned statuses to API values for both tabs and filters
   // Note: TypeScript string enums are already strings at runtime
   const apiFilters = useMemo(() => {
-    const status = statusFilter && statusFilter !== 'all' 
-      ? statusFilter 
-      : tabFilter?.status;
+    let status: string | undefined;
+    
+    if (statusFilter && statusFilter !== 'all') {
+      // Map returned statuses to API values when used as filters
+      status = mapStatusToApi(statusFilter);
+    } else {
+      // When statusFilter is 'all', check if activeTab is a returned status
+      // If activeTab is a returned status, map it; otherwise use tabFilter status
+      if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER) {
+        status = 'RETURNED_FROM_CONTENT';
+      } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER) {
+        status = 'RETURNED_FROM_SCHEDULING';
+      } else {
+        status = tabFilter?.status;
+      }
+    }
     
     const owner_type = tabFilter?.owner_type;
 
@@ -58,7 +84,7 @@ export const useMeetings = ({
       status: status as string | undefined,
       owner_type: owner_type as string | undefined,
     };
-  }, [tabFilter, statusFilter]);
+  }, [tabFilter, statusFilter, activeTab]);
 
   // Calculate pagination values
   const skip = (currentPage - 1) * itemsPerPage;
