@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
 
@@ -105,6 +106,10 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
           {items?.map((item) => {
             const isActive = activeId === item.id;
             
+            if (!item.icon) {
+              console.warn(`Navigation item ${item.id} is missing an icon`);
+            }
+            
             return (
               <button
                 key={item.id}
@@ -154,13 +159,35 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                     style={{
                       transform: isActive ? 'scale(1.1)' : 'scale(1)',
                       transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 24,
+                      height: 24,
+                      flexShrink: 0,
                     }}
                   >
-                    <img 
-                      src={item.icon} 
-                      alt={item.label}
-                      className="w-6 h-6 flex-none"
-                    />
+                    {item.icon ? (
+                      <Icon 
+                        icon={item.icon} 
+                        width={24}
+                        height={24}
+                        style={{ 
+                          color: isActive ? 'white' : 'rgba(255, 255, 255, 0.9)',
+                          display: 'block',
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                          borderRadius: '4px',
+                        }}
+                      />
+                    )}
                   </div>
                   
                   {/* Label with smooth reveal */}
