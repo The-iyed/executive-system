@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput } from '@shared';
 import { MeetingStatus } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye, Calendar } from 'lucide-react';
@@ -49,18 +49,23 @@ const ScheduleReview: React.FC = () => {
     setCurrentPage(1); // Reset to first page when tab changes
   };
 
-  // Determine API status based on statusFilter and active tab
-  // When statusFilter is 'all', don't send status to API (undefined)
-  // When statusFilter is a specific status, use that status
-  // Otherwise, use tab's default status
+  // Determine API status based on active tab
+  // For scheduled-meetings tab, always use SCHEDULED status
+  // For work-basket tab, use statusFilter or default to UNDER_REVIEW
   const apiStatus = useMemo(() => {
-    if (statusFilter !== 'all') {
-      // Use the selected status filter
-      return statusFilter;
+    if (activeTab === 'scheduled-meetings') {
+      // Always use SCHEDULED for scheduled meetings tab
+      return MeetingStatus.SCHEDULED;
     }
-    // When 'all' is selected, don't filter by status (return undefined)
+    // For work-basket tab, use statusFilter or default to UNDER_REVIEW
+    if (activeTab === 'work-basket') {
+      if (statusFilter !== 'all') {
+        return statusFilter;
+      }
+      return MeetingStatus.UNDER_REVIEW;
+    }
     return undefined;
-  }, [statusFilter]);
+  }, [activeTab, statusFilter]);
 
   // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -73,7 +78,7 @@ const ScheduleReview: React.FC = () => {
         skip: skip,
         limit: ITEMS_PER_PAGE,
       };
-      // Only add status if it's defined (not 'all')
+      // Always add status (apiStatus is always defined based on tab)
       if (apiStatus) {
         params.status = apiStatus;
       }
@@ -85,8 +90,9 @@ const ScheduleReview: React.FC = () => {
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by owner_type
+      // For scheduled meetings fetch meetings filtered by status SCHEDULED and owner_type
       if (activeTab === 'scheduled-meetings') {
+        params.status = MeetingStatus.SCHEDULED;
         params.owner_type = 'SCHEDULING';
         return getMeetings(params);
       }
@@ -226,12 +232,26 @@ const ScheduleReview: React.FC = () => {
 
           {/* Right side - Search and Filter Bar */}
           <div className="flex-shrink-0">
-            <SearchFilterBar
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+            {activeTab === 'scheduled-meetings' ? (
+              // For scheduled meetings, only show search input (no status filter)
+              <div className="w-[240px] h-[32px]">
+                <SearchInput
+                  value={searchValue}
+                  onChange={setSearchValue}
+                  placeholder="ادخل البحث"
+                  variant="default"
+                  className="w-full h-[32px]"
+                />
+              </div>
+            ) : (
+              // For work-basket, show full SearchFilterBar with status filter
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+              />
+            )}
           </div>
         </div>
 
