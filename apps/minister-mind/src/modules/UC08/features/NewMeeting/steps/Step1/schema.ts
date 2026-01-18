@@ -71,6 +71,8 @@ export const step1BaseSchema = z.object({
     .default([]),
   notes: z.string().optional().or(z.literal('')),
   isComplete: z.boolean().optional().default(false),
+  presentationFile: z.instanceof(File).optional().nullable(),
+  additionalAttachments: z.instanceof(File).optional().nullable(),
 });
 
 export type Step1FormData = z.infer<typeof step1BaseSchema>;

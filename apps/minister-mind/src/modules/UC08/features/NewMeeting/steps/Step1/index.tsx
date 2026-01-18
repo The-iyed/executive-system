@@ -1,12 +1,12 @@
-import React, { useCallback } from 'react';
-import { FormField, FormSelect, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow } from './components';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
+import { nanoid } from 'nanoid';
+import { FormField, FormSelect, FormAsyncSelect, FormInput, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow, FileUpload } from './components';
 import { FormCheckbox } from '@shared';
 import { ActionButtons } from '@shared';
 import {
-  REQUESTER_OPTIONS,
-  RELATED_DIRECTIVE_OPTIONS,
   MEETING_NATURE_OPTIONS,
-  PREVIOUS_MEETING_OPTIONS,
   MEETING_CATEGORY_OPTIONS,
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
@@ -20,6 +20,8 @@ import {
 } from './constants';
 import { useStep1 } from './useStep1';
 import { cn } from '@sanad-ai/ui';
+import { getUsers, getDirectivesPaginated, getDirectiveById, type UserApiResponse, type DirectiveApiResponse } from '../../../../data/meetingsApi';
+import { AsyncSelectOption } from '@/components/async-select-v2';
 
 interface Step1Props {
   draftId?: string;
@@ -30,6 +32,30 @@ interface Step1Props {
 }
 
 const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
+  const location = useLocation();
+  const [directiveIdFromQuery, setDirectiveIdFromQuery] = useState<string | null>(null);
+
+  // Get directive_id from query params
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const directiveId = searchParams.get('directive_id');
+    if (directiveId) {
+      setDirectiveIdFromQuery(directiveId);
+    }
+  }, [location.search]);
+
+  // Fetch users (submitters) - this will be used by AsyncSelect's internal query
+  // We'll create a separate query for the async select
+
+  // Fetch single directive if directive_id is in query params
+  const { data: defaultDirective, 
+    // isLoading: isLoadingDefaultDirective 
+  } = useQuery({
+    queryKey: ['scheduling-directives', directiveIdFromQuery],
+    queryFn: () => getDirectiveById(directiveIdFromQuery!),
+    enabled: !!directiveIdFromQuery,
+  });
+
   const handleSuccess = useCallback((newDraftId: string) => {
     console.log('newDraftId', newDraftId);
   }, []);
@@ -69,16 +95,142 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     onError: handleError,
   });
 
+  // Set default directive when loaded from query param
+  useEffect(() => {
+    if (defaultDirective && !formData.relatedDirective) {
+      handleChange('relatedDirective', defaultDirective.id);
+      // Also set the previous meeting from the default directive
+      if (defaultDirective.related_meeting) {
+        handleChange('previousMeeting', defaultDirective.related_meeting);
+      }
+    }
+  }, [defaultDirective, formData.relatedDirective, handleChange]);
+
+  // Store selected directive data to get related_meeting
+  const [selectedDirectiveData, setSelectedDirectiveData] = useState<DirectiveApiResponse | null>(null);
+
+  // Set previousMeeting value based on selected directive
+  useEffect(() => {
+    // First check if we have a default directive from query param
+    const directiveToUse = defaultDirective && defaultDirective.id === formData.relatedDirective
+      ? defaultDirective
+      : selectedDirectiveData;
+
+    if (directiveToUse?.related_meeting) {
+      handleChange('previousMeeting', directiveToUse.related_meeting);
+    } else if (!formData.relatedDirective) {
+      // Clear previous meeting if no directive is selected
+      handleChange('previousMeeting', '');
+      setSelectedDirectiveData(null);
+    }
+  }, [formData.relatedDirective, selectedDirectiveData, defaultDirective, handleChange]);
+
+  // Load users options - this function will be called by AsyncSelect
+  const loadUsersOptions = useCallback(async (search?: string): Promise<AsyncSelectOption<string>[]> => {
+    try {
+      const response = await getUsers({
+        search: search || '',
+        role_code: 'SUBMITTER',
+        skip: 0,
+        limit: 50,
+      });
+      return response.items.map((user: UserApiResponse) => ({
+        value: user.id,
+        label: user.name || user.email || user.id,
+      }));
+    } catch (error) {
+      console.error('Error loading users:', error);
+      return [];
+    }
+  }, []);
+
+  // Load directives options with search and pagination support
+  const loadDirectivesOptions = useCallback(async (search?: string, skip?: number, limit?: number): Promise<any> => {
+    try {
+      const paginatedResponse = await getDirectivesPaginated({
+        search: search || '',
+        skip: skip || 0,
+        limit: limit || 3, // Short limit for testing
+      });
+      
+      const options = paginatedResponse.items.map((directive: DirectiveApiResponse) => ({
+        value: directive.id,
+        label: directive.directive_text || directive.directive_number || directive.id,
+      }));
+      
+      // Add default directive if it exists and is not already in the options (only on first load)
+      if (skip === 0 && defaultDirective && !options.find((opt: any) => opt.value === defaultDirective.id)) {
+        options.unshift({
+          value: defaultDirective.id,
+          label: defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id,
+        });
+      }
+      
+      // Return paginated response
+      return {
+        items: options,
+        total: paginatedResponse.total,
+        skip: paginatedResponse.skip,
+        limit: paginatedResponse.limit,
+        has_next: paginatedResponse.has_next,
+        has_previous: paginatedResponse.has_previous,
+      };
+    } catch (error) {
+      console.error('Error loading directives:', error);
+      return {
+        items: [],
+        total: 0,
+        skip: skip || 0,
+        limit: limit || 3,
+        has_next: false,
+        has_previous: false,
+      };
+    }
+  }, [defaultDirective]);
+
+  // Handle directive selection to fetch full directive data for related_meeting
+  const handleDirectiveChange = useCallback(async (directiveId: string) => {
+    handleChange('relatedDirective', directiveId);
+    
+    // If it's the default directive, use that data
+    if (defaultDirective && defaultDirective.id === directiveId) {
+      setSelectedDirectiveData(defaultDirective);
+      return;
+    }
+    
+    // Otherwise fetch the directive to get related_meeting
+    try {
+      const directive = await getDirectiveById(directiveId);
+      setSelectedDirectiveData(directive);
+    } catch (error) {
+      console.error('Error fetching directive:', error);
+    }
+  }, [defaultDirective, handleChange]);
+
   const handleNextClick = useCallback(async () => {
     try {
+      // Try to submit, but proceed to next step regardless
       const newDraftId = await submitStep(false);
-      if (newDraftId) {
-        onNext?.(newDraftId);
+      // Always proceed to next step, using newDraftId if available, otherwise use existing draftId
+      const finalDraftId = newDraftId || draftId;
+      if (finalDraftId) {
+        onNext?.(finalDraftId);
+      } else {
+        // If no draftId exists, create one and proceed
+        const createdDraftId = nanoid();
+        onNext?.(createdDraftId);
       }
     } catch (error) {
       console.error('Error submitting step 1:', error);
+      // On error, still proceed to next step
+      if (draftId) {
+        onNext?.(draftId);
+      } else {
+        const createdDraftId = nanoid();
+        onNext?.(createdDraftId);
+      }
     }
-  }, [submitStep, onNext]);
+  }, [submitStep, onNext, draftId]);
 
   const handleSaveDraftClick = useCallback(async () => {
     try {
@@ -98,33 +250,55 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
           {/* Row 1 */}
           <FormRow>
             <FormField
-              label="مقدّم الطلب"
-              error={touched.requester ? errors.requester : undefined}
-            >
-              <FormSelect
-                value={formData.requester}
-                onValueChange={(value) => handleChange('requester', value)}
-                options={REQUESTER_OPTIONS}
-                placeholder="-------"
-                error={!!(touched.requester && errors.requester)}
-              />
-            </FormField>
-            <FormField
               label="التوجيه المرتبط"
               error={touched.relatedDirective ? errors.relatedDirective : undefined}
             >
-              <FormSelect
+              <FormAsyncSelect
                 value={formData.relatedDirective}
-                onValueChange={(value) => handleChange('relatedDirective', value)}
-                options={RELATED_DIRECTIVE_OPTIONS}
+                onValueChange={handleDirectiveChange}
+                loadOptions={loadDirectivesOptions}
                 placeholder="-------"
                 error={!!(touched.relatedDirective && errors.relatedDirective)}
+                searchable={true}
+                enablePagination={true}
+                limit={3}
+                selectedLabel={
+                  defaultDirective && defaultDirective.id === formData.relatedDirective
+                    ? defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id
+                    : selectedDirectiveData?.directive_text || selectedDirectiveData?.directive_number
+                }
+              />
+            </FormField>
+            <FormField
+              label="مقدّم الطلب"
+              error={touched.requester ? errors.requester : undefined}
+            >
+              <FormAsyncSelect
+                value={formData.requester}
+                onValueChange={(value) => handleChange('requester', value)}
+                loadOptions={loadUsersOptions}
+                placeholder="-------"
+                error={!!(touched.requester && errors.requester)}
+                searchable={true}
               />
             </FormField>
           </FormRow>
 
           {/* Row 2 */}
           <FormRow>
+            <FormField
+              label="الاجتماع السابق"
+              error={touched.previousMeeting ? errors.previousMeeting : undefined}
+            >
+              <FormInput
+                value={formData.previousMeeting || ''}
+                onChange={(e) => handleChange('previousMeeting', e.target.value)}
+                placeholder="-------"
+                error={!!(touched.previousMeeting && errors.previousMeeting)}
+                disabled={true}
+                readOnly={true}
+              />
+            </FormField>
             <FormField
               label="طبيعة الاجتماع"
               required
@@ -138,34 +312,44 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 error={!!(touched.meetingNature && errors.meetingNature)}
               />
             </FormField>
-            <FormField
-              label="الاجتماع السابق"
-              error={touched.previousMeeting ? errors.previousMeeting : undefined}
-            >
-              <FormSelect
-                value={formData.previousMeeting}
-                onValueChange={(value) => handleChange('previousMeeting', value)}
-                options={PREVIOUS_MEETING_OPTIONS}
-                placeholder="-------"
-                error={!!(touched.previousMeeting && errors.previousMeeting)}
-              />
-            </FormField>
           </FormRow>
 
-          {/* Row 3 */}
-          <FormRow>
-            <FormField
-              label="موضوع الاجتماع"
-              required
-              error={touched.meetingSubject ? errors.meetingSubject : undefined}
-            >
-              <FormTextArea
+          {/* File Upload Forms */}
+          <FileUpload
+            title="العرض التقديمي"
+            file={formData.presentationFile || null}
+            onFileSelect={(file) => handleChange('presentationFile', file)}
+            error={touched.presentationFile ? errors.presentationFile : undefined}
+          />
+          
+          <FileUpload
+            title="مرفقات إضافية"
+            file={formData.additionalAttachments || null}
+            onFileSelect={(file) => handleChange('additionalAttachments', file)}
+            error={touched.additionalAttachments ? errors.additionalAttachments : undefined}
+          />
+
+          <FormTextArea
                 value={formData.meetingSubject || ''}
                 onChange={(e) => handleChange('meetingSubject', e.target.value)}
                 onBlur={() => handleBlur('meetingSubject')}
                 placeholder="-------"
                 error={!!(touched.meetingSubject && errors.meetingSubject)}
-                label=""
+                label="موضوع الاجتماع"
+              />
+          {/* Row 3 */}
+          <FormRow>
+          <FormField
+              label="فئة الاجتماع"
+              required
+              error={touched.meetingCategory ? errors.meetingCategory : undefined}
+            >
+              <FormSelect
+                value={formData.meetingCategory}
+                onValueChange={(value) => handleChange('meetingCategory', value)}
+                options={MEETING_CATEGORY_OPTIONS}
+                placeholder="-------"
+                error={!!(touched.meetingCategory && errors.meetingCategory)}
               />
             </FormField>
             <FormField
@@ -184,48 +368,34 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
           </FormRow>
 
           {/* Row 4 */}
-          <FormRow>
-            <FormField
-              label="فئة الاجتماع"
-              required
-              error={touched.meetingCategory ? errors.meetingCategory : undefined}
-            >
-              <FormSelect
-                value={formData.meetingCategory}
-                onValueChange={(value) => handleChange('meetingCategory', value)}
-                options={MEETING_CATEGORY_OPTIONS}
-                placeholder="-------"
-                error={!!(touched.meetingCategory && errors.meetingCategory)}
-              />
-            </FormField>
-            <FormField
-              label="مبرّر اللقاء"
-              error={touched.meetingReason ? errors.meetingReason : undefined}
-            >
               <FormTextArea
                 value={formData.meetingReason || ''}
                 onChange={(e) => handleChange('meetingReason', e.target.value)}
                 onBlur={() => handleBlur('meetingReason')}
                 placeholder="-------"
                 error={!!(touched.meetingReason && errors.meetingReason)}
-                label=""
+                label="مبرّر اللقاء"
               />
-            </FormField>
-          </FormRow>
-
-          {/* Row 5 */}
-          <FormRow>
-            <FormField
-              label="الموضوع المرتبط"
-              error={touched.relatedTopic ? errors.relatedTopic : undefined}
-            >
               <FormTextArea
                 value={formData.relatedTopic || ''}
                 onChange={(e) => handleChange('relatedTopic', e.target.value)}
                 onBlur={() => handleBlur('relatedTopic')}
                 placeholder="-------"
                 error={!!(touched.relatedTopic && errors.relatedTopic)}
-                label=""
+                label="الموضوع المرتبط"
+              />
+
+          <FormRow>
+            <FormField
+              label="تصنيف الاجتماع"
+              error={touched.meetingClassification ? errors.meetingClassification : undefined}
+            >
+              <FormSelect
+                value={formData.meetingClassification}
+                onValueChange={(value) => handleChange('meetingClassification', value)}
+                options={MEETING_CLASSIFICATION_OPTIONS}
+                placeholder="-------"
+                error={!!(touched.meetingClassification && errors.meetingClassification)}
               />
             </FormField>
             <FormField
@@ -241,19 +411,20 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               />
             </FormField>
           </FormRow>
+          {/* </FormRow> */}
 
           {/* Row 6 */}
           <FormRow>
-            <FormField
-              label="تصنيف الاجتماع"
-              error={touched.meetingClassification ? errors.meetingClassification : undefined}
+          <FormField
+              label="القطاع"
+              error={touched.sector ? errors.sector : undefined}
             >
               <FormSelect
-                value={formData.meetingClassification}
-                onValueChange={(value) => handleChange('meetingClassification', value)}
-                options={MEETING_CLASSIFICATION_OPTIONS}
+                value={formData.sector}
+                onValueChange={(value) => handleChange('sector', value)}
+                options={SECTOR_OPTIONS}
                 placeholder="-------"
-                error={!!(touched.meetingClassification && errors.meetingClassification)}
+                error={!!(touched.sector && errors.sector)}
               />
             </FormField>
             <FormField
@@ -266,22 +437,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 options={CONFIDENTIALITY_OPTIONS}
                 placeholder="-------"
                 error={!!(touched.meetingConfidentiality && errors.meetingConfidentiality)}
-              />
-            </FormField>
-          </FormRow>
-
-          {/* Row 7 */}
-          <FormRow className="sm:justify-end">
-            <FormField
-              label="القطاع"
-              error={touched.sector ? errors.sector : undefined}
-            >
-              <FormSelect
-                value={formData.sector}
-                onValueChange={(value) => handleChange('sector', value)}
-                options={SECTOR_OPTIONS}
-                placeholder="-------"
-                error={!!(touched.sector && errors.sector)}
               />
             </FormField>
           </FormRow>
