@@ -301,7 +301,7 @@ const ContentRequestDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 pb-32">
         {/* Main Container */}
-        <div className="max-w-5xl mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
+        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
           <div className="flex flex-row items-center justify-between gap-6">
             {/* Back Button */}
@@ -508,7 +508,7 @@ const ContentRequestDetail: React.FC = () => {
       </div>
 
       {/* Sticky Action Buttons - Fixed at bottom */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-5xl px-4">
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full  px-4">
         <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center">
           <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
             {/* Send to Scheduling Officer Button */}

@@ -442,3 +442,47 @@ export const getGuidanceRecords = async (meetingId: string): Promise<GuidanceRec
   return response.data;
 };
 
+// Content Officer Notes Records API
+export interface ContentOfficerNoteRecord {
+  note_id: string;
+  note_question: string | null;
+  note_answer: string;
+  author_user_id: string;
+  author_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentOfficerNotesRecordsResponse {
+  items: ContentOfficerNoteRecord[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface GetContentOfficerNotesParams {
+  skip?: number;
+  limit?: number;
+}
+
+export const getContentOfficerNotesRecords = async (
+  meetingId: string,
+  params: GetContentOfficerNotesParams = {}
+): Promise<ContentOfficerNotesRecordsResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+
+  const response = await axiosInstance.get<ContentOfficerNotesRecordsResponse>(
+    `/api/meeting-requests/${meetingId}/content-officer-notes-record?${queryParams.toString()}`
+  );
+  return response.data;
+};
+

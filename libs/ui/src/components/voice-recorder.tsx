@@ -270,7 +270,7 @@ const theme="light";
   return (
     <div
       className={cn(
-        "flex h-16 rounded-md relative w-full items-center justify-center gap-2 max-w-5xl",
+        "flex h-16 rounded-md relative w-full items-center justify-center gap-2 ",
         {
           "border p-1": isRecording,
           "border-none p-0": !isRecording,

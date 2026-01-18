@@ -4,7 +4,7 @@ export { Logo } from './logo';
 export { LanguageSwitch } from './language-switch';
 export { SearchInput } from './search-input';
 export { UserAvatar } from './user-avatar';
-export { WelcomeSection } from './welcome-section';
+export { WelcomeSection, type WelcomeSectionProps, type ActionButton } from './welcome-section';
 export { NavigationActions, type NavItem } from './navigation-actions';
 export { WeatherCard, type WeatherCardProps } from './weather-card';
 export { SharedLayout, type SharedLayoutProps  } from './shared-layout';

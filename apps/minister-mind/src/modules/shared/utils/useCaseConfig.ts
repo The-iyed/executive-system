@@ -6,9 +6,6 @@ import { PATH as UC04_PATH } from '../../UC04/routes/paths';
 import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
-import HomeIcon from '../assets/home-02.svg';
-import CalendarIcon from '../assets/calendar-minus-01.svg';
-import ScheduleReviewIcon from '../assets/schedule-review.svg';
 
 export interface UseCaseConfig {
   code: string;
@@ -23,13 +20,13 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'home',
-        icon: HomeIcon,
+        icon: 'solar:home-2-outline',
         label: 'الصفحة الرئيسية',
         path: UC01_PATH.HOME,
       },
       {
         id: 'calendar',
-        icon: CalendarIcon,
+        icon: 'solar:calendar-outline',
         label: 'الاجتماعات',
         path: UC01_PATH.MEETINGS,
       },
@@ -37,17 +34,29 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-02': {
     code: 'UC-02',
-    defaultRoute: UC02_PATH.SCHEDULE_REVIEW,
+    defaultRoute: UC02_PATH.SCHEDULED_MEETINGS,
     navigationItems: [
       {
-        id: 'schedule-review',
-        icon: ScheduleReviewIcon,
-        label: 'مراجعة الجدولة',
-        path: UC02_PATH.SCHEDULE_REVIEW,
+        id: 'scheduled-meetings',
+        icon: 'solar:calendar-mark-outline',
+        label: 'الاجتماعات المجدولة',
+        path: UC02_PATH.SCHEDULED_MEETINGS,
+      },
+      {
+        id: 'work-basket',
+        icon: 'solar:folder-with-files-outline',
+        label: 'سلة العمل',
+        path: UC02_PATH.WORK_BASKET,
+      },
+      {
+        id: 'calendar',
+        icon: 'solar:calendar-outline',
+        label: 'التقويم',
+        path: UC02_PATH.CALENDAR,
       },
       {
         id: 'directives',
-        icon: ScheduleReviewIcon,
+        icon: 'solar:document-text-outline',
         label: 'التوجيهات',
         path: UC02_PATH.DIRECTIVES,
         requiresUseCase: 'UC-07', // Only show if user has UC-07 access
@@ -60,7 +69,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'consultation-requests',
-        icon: ScheduleReviewIcon,
+        icon: 'solar:question-circle-outline',
         label: 'طلبات الاستشارات',
         path: UC03_PATH.CONSULTATION_REQUESTS,
       },
@@ -72,7 +81,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'guidance-requests',
-        icon: ScheduleReviewIcon,
+        icon: 'solar:hand-stars-outline',
         label: 'طلبات تقديم توجيه',
         path: UC04_PATH.GUIDANCE_REQUESTS,
       },
@@ -84,7 +93,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'content-requests',
-        icon: ScheduleReviewIcon,
+        icon: 'solar:document-text-outline',
         label: 'تقييم المحتوى وإضافة التوجيهات',
         path: UC05_PATH.CONTENT_REQUESTS,
       },
@@ -96,7 +105,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'content-consultation-requests',
-        icon: ScheduleReviewIcon,
+        icon: 'solar:notes-outline',
         label: 'تقديم استشارة المحتوى',
         path: UC06_PATH.CONTENT_CONSULTATION_REQUESTS,
       },
@@ -108,7 +117,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'meetings',
-        icon: HomeIcon,
+        icon: 'solar:calendar-outline',
         label: 'الاجتماعات',
         path: UC08_PATH.MEETINGS,
       },

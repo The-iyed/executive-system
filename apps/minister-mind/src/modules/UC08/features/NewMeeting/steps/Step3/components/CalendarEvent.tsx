@@ -122,7 +122,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
           {event.title || 'موعد الاجتماع'}
         </h3>
         <p className="text-[12px] font-weight-500 font-bold text-[#000000]">
-          {formatDate(event.date)}، من الساعة {event.startTime} إلى {event.endTime}
+          {formatDate(event.date)}، من الساعة {event.exactStartTime || event.startTime} إلى {event.exactEndTime || event.endTime}
         </p>
         {event.description && (
           <p className="text-[14px] text-[#344054] mb-4">
