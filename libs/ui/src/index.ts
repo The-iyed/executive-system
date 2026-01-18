@@ -159,6 +159,13 @@ export {
   SelectScrollDownButton,
 } from './components/select';
 
+// Export improved async select component (v2)
+export {
+  AsyncSelectV2,
+  type AsyncSelectProps as AsyncSelectV2Props,
+  type AsyncSelectOption as AsyncSelectV2Option,
+} from './components/async-select-v2';
+
 // Export popover components
 export {
   Popover,
