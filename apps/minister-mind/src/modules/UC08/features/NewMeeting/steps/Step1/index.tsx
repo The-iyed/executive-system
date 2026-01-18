@@ -19,9 +19,8 @@ import {
   RELATED_DIRECTIVES_COLUMNS,
 } from './constants';
 import { useStep1 } from './useStep1';
-import { cn } from '@sanad-ai/ui';
+import { cn, AsyncSelect, type PaginatedResponse, type AsyncSelectOption } from '@sanad-ai/ui';
 import { getUsers, getDirectivesPaginated, getDirectiveById, type UserApiResponse, type DirectiveApiResponse } from '../../../../data/meetingsApi';
-import { AsyncSelectOption } from '@/components/async-select-v2';
 
 interface Step1Props {
   draftId?: string;
@@ -30,6 +29,8 @@ interface Step1Props {
   onCancel?: () => void;
   onSaveDraft?: (draftId: string) => void;
 }
+
+const DEFAULT_PAGE_SIZE = 20;
 
 const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft }) => {
   const location = useLocation();
@@ -95,19 +96,24 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
     onError: handleError,
   });
 
+  // Store selected directive data to get related_meeting
+  const [selectedDirectiveData, setSelectedDirectiveData] = useState<DirectiveApiResponse | null>(null);
+
   // Set default directive when loaded from query param
   useEffect(() => {
-    if (defaultDirective && !formData.relatedDirective) {
-      handleChange('relatedDirective', defaultDirective.id);
+    if (defaultDirective) {
+      // Set the directive value if not already set
+      if (!formData.relatedDirective || formData.relatedDirective !== defaultDirective.id) {
+        handleChange('relatedDirective', defaultDirective.id);
+      }
+      // Store the directive data for display
+      setSelectedDirectiveData(defaultDirective);
       // Also set the previous meeting from the default directive
       if (defaultDirective.related_meeting) {
         handleChange('previousMeeting', defaultDirective.related_meeting);
       }
     }
   }, [defaultDirective, formData.relatedDirective, handleChange]);
-
-  // Store selected directive data to get related_meeting
-  const [selectedDirectiveData, setSelectedDirectiveData] = useState<DirectiveApiResponse | null>(null);
 
   // Set previousMeeting value based on selected directive
   useEffect(() => {
@@ -132,10 +138,10 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
         search: search || '',
         role_code: 'SUBMITTER',
         skip: 0,
-        limit: 50,
+        limit: DEFAULT_PAGE_SIZE,
       });
       return response.items.map((user: UserApiResponse) => ({
-        value: user.id,
+        id: user.id,
         label: user.name || user.email || user.id,
       }));
     } catch (error) {
@@ -145,51 +151,81 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
   }, []);
 
   // Load directives options with search and pagination support
-  const loadDirectivesOptions = useCallback(async (search?: string, skip?: number, limit?: number): Promise<any> => {
+  // Adapter function to transform API response to AsyncSelect format
+  const loadDirectivesOptions = useCallback(async (
+    search?: string,
+    page?: number,
+    pageSize?: number
+  ): Promise<PaginatedResponse<AsyncSelectOption<string>>> => {
     try {
+      // Convert page to skip (page is 0-indexed)
+      const skip = (page || 0) * (pageSize || 8);
+      const limit = pageSize || 8;
+
       const paginatedResponse = await getDirectivesPaginated({
         search: search || '',
-        skip: skip || 0,
-        limit: limit || 3, // Short limit for testing
+        skip,
+        limit,
       });
       
-      const options = paginatedResponse.items.map((directive: DirectiveApiResponse) => ({
-        value: directive.id,
+      // Transform to AsyncSelectOption format
+      let options: AsyncSelectOption<string>[] = paginatedResponse.items.map((directive: DirectiveApiResponse) => ({
+        id: directive.id,
         label: directive.directive_text || directive.directive_number || directive.id,
+        description: directive.directive_number,
       }));
       
-      // Add default directive if it exists and is not already in the options (only on first load)
-      if (skip === 0 && defaultDirective && !options.find((opt: any) => opt.value === defaultDirective.id)) {
+      // Add default directive if it exists and is not already in the options (only on first page and no search)
+      if (page === 0 && !search && defaultDirective && !options.find((opt) => opt.id === defaultDirective.id)) {
         options.unshift({
-          value: defaultDirective.id,
+          id: defaultDirective.id,
           label: defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id,
+          description: defaultDirective.directive_number,
         });
       }
       
-      // Return paginated response
+      // Transform to AsyncSelect expected format
       return {
-        items: options,
+        data: options,
+        page: page || 0,
+        pageSize: limit,
         total: paginatedResponse.total,
-        skip: paginatedResponse.skip,
-        limit: paginatedResponse.limit,
-        has_next: paginatedResponse.has_next,
-        has_previous: paginatedResponse.has_previous,
+        hasMore: paginatedResponse.has_next,
       };
     } catch (error) {
       console.error('Error loading directives:', error);
+      // If there's an error but we have a default directive, return it
+      if (page === 0 && !search && defaultDirective) {
+        return {
+          data: [{
+            id: defaultDirective.id,
+            label: defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id,
+            description: defaultDirective.directive_number,
+          }],
+          page: 0,
+          pageSize: pageSize || DEFAULT_PAGE_SIZE,
+          total: 1,
+          hasMore: false,
+        };
+      }
       return {
-        items: [],
+        data: [],
+        page: page || 0,
+        pageSize: pageSize || DEFAULT_PAGE_SIZE,
         total: 0,
-        skip: skip || 0,
-        limit: limit || 3,
-        has_next: false,
-        has_previous: false,
+        hasMore: false,
       };
     }
   }, [defaultDirective]);
 
   // Handle directive selection to fetch full directive data for related_meeting
-  const handleDirectiveChange = useCallback(async (directiveId: string) => {
+  const handleDirectiveChange = useCallback(async (directiveId: string | undefined) => {
+    if (!directiveId) {
+      handleChange('relatedDirective', '');
+      setSelectedDirectiveData(null);
+      return;
+    }
+
     handleChange('relatedDirective', directiveId);
     
     // If it's the default directive, use that data
@@ -253,20 +289,47 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               label="التوجيه المرتبط"
               error={touched.relatedDirective ? errors.relatedDirective : undefined}
             >
-              <FormAsyncSelect
+              <AsyncSelect
+                fetchOptions={loadDirectivesOptions}
                 value={formData.relatedDirective}
                 onValueChange={handleDirectiveChange}
-                loadOptions={loadDirectivesOptions}
                 placeholder="-------"
-                error={!!(touched.relatedDirective && errors.relatedDirective)}
                 searchable={true}
-                enablePagination={true}
-                limit={3}
-                selectedLabel={
-                  defaultDirective && defaultDirective.id === formData.relatedDirective
-                    ? defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id
-                    : selectedDirectiveData?.directive_text || selectedDirectiveData?.directive_number
-                }
+                pageSize={DEFAULT_PAGE_SIZE}
+                clearable={false}
+                disabled={false}
+                errorMessage={touched.relatedDirective ? errors.relatedDirective : null}
+                searchPlaceholder="البحث..."
+                emptyMessage="لم يتم العثور على نتائج."
+                className={cn(
+                  'w-full text-right h-[44px] p-[10px_14px] bg-[#FFFFFF] border border-[#D0D5DD] rounded-[8px]',
+                  'font-normal text-base leading-6 text-[#667085]',
+                  'flex-row-reverse justify-between',
+                  'focus:outline-none focus:border-[#008774]',
+                  'shadow-[0px_1px_2px_rgba(16,24,40,0.05)]',
+                  touched.relatedDirective && errors.relatedDirective && 'border-[#D13C3C]',
+                  !(touched.relatedDirective && errors.relatedDirective) && 'focus:border-[#008774]'
+                )}
+                popoverClassName="rtl"
+                width="100%"
+                renderSelected={(option) => {
+                  // If option is found in the list, use it
+                  if (option) {
+                    return option.label;
+                  }
+                  // Fallback: if we have directive data but option not yet loaded
+                  if (formData.relatedDirective) {
+                    // Check if it's the default directive
+                    if (defaultDirective && defaultDirective.id === formData.relatedDirective) {
+                      return defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id;
+                    }
+                    // Check if we have selected directive data
+                    if (selectedDirectiveData && selectedDirectiveData.id === formData.relatedDirective) {
+                      return selectedDirectiveData.directive_text || selectedDirectiveData.directive_number || selectedDirectiveData.id;
+                    }
+                  }
+                  return null;
+                }}
               />
             </FormField>
             <FormField
