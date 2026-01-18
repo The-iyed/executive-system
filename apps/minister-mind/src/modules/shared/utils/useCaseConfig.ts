@@ -108,7 +108,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     navigationItems: [
       {
         id: 'meetings',
-        icon: ScheduleReviewIcon,
+        icon: HomeIcon,
         label: 'الاجتماعات',
         path: UC08_PATH.MEETINGS,
       },
