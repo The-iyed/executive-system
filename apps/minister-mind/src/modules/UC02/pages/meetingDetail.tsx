@@ -29,6 +29,8 @@ import {
   type ConsultationRecord,
   getGuidanceRecords,
   type GuidanceRecord,
+  getContentOfficerNotesRecords,
+  type ContentOfficerNoteRecord,
 } from '../data/meetingsApi';
 import {
   Select,
@@ -89,6 +91,13 @@ const MeetingDetail: React.FC = () => {
     queryKey: ['guidance-records', id],
     queryFn: () => getGuidanceRecords(id!),
     enabled: !!id && activeTab === 'directives-log',
+  });
+
+  // Fetch content officer notes records
+  const { data: contentOfficerNotesRecords, isLoading: isLoadingContentOfficerNotes } = useQuery({
+    queryKey: ['content-officer-notes-records', id],
+    queryFn: () => getContentOfficerNotesRecords(id!, { skip: 0, limit: 100 }),
+    enabled: !!id && activeTab === 'content-officer-notes',
   });
 
   // Form state
@@ -730,6 +739,7 @@ const MeetingDetail: React.FC = () => {
     { id: 'attachments', label: 'المرفقات' },
     { id: 'consultations-log', label: 'سجل الإستشارات' },
     { id: 'directives-log', label: 'سجل التوجيهات' },
+    { id: 'content-officer-notes', label: 'ملاحظات مسؤول المحتوى' },
   ];
 
   // Loading state
@@ -754,7 +764,7 @@ const MeetingDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
     <div className="flex-1 overflow-y-auto p-6 pb-28">
         {/* Main Container */}
-        <div className="max-w-5xl mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
+        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
           <div className="flex flex-row items-center justify-between gap-6">
             {/* Back Button */}
@@ -1293,24 +1303,65 @@ const MeetingDetail: React.FC = () => {
                       <DataTable
                         columns={[
                           {
-                            id: 'action',
-                            header: 'إجراء',
+                            id: 'index',
+                            header: 'رقم البند',
                             width: 'w-[120px]',
                             align: 'center',
-                            render: (row: any) => (
+                            render: (_row: any, index: number) => (
                               <div className="flex items-center justify-center w-full">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteInviteeId(row.id);
-                                  }}
-                                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                </button>
+                                <span className="text-sm text-[#475467]">{index + 1}</span>
                               </div>
                             ),
+                          },
+                          {
+                            id: 'name',
+                            header: 'الاسم',
+                            width: 'flex-1',
+                            align: 'end',
+                            render: (row: any) => {
+                              if (row.isLocal) {
+                                return (
+                                  <Input
+                                    type="text"
+                                    value={row.external_name || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateLocalInvitee(row.id, 'external_name', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="أدخل الاسم"
+                                    className="h-9 text-right w-full"
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                );
+                              }
+                              return <span className="text-sm text-[#475467]">{row.external_name || row.user_id || '--------------'}</span>;
+                            },
+                          },
+                          {
+                            id: 'email',
+                            header: 'البريد الإلكتروني',
+                            width: 'w-[250px]',
+                            align: 'end',
+                            render: (row: any) => {
+                              if (row.isLocal) {
+                                return (
+                                  <Input
+                                    type="email"
+                                    value={row.external_email || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateLocalInvitee(row.id, 'external_email', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="أدخل البريد الإلكتروني"
+                                    className="h-9 text-right w-full"
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                );
+                              }
+                              return <span className="text-sm text-[#475467]">{row.external_email || '--------------'}</span>;
+                            },
                           },
                           {
                             id: 'is_required',
@@ -1342,63 +1393,22 @@ const MeetingDetail: React.FC = () => {
                             },
                           },
                           {
-                            id: 'email',
-                            header: 'البريد الإلكتروني',
-                            width: 'w-[250px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                return (
-                                  <Input
-                                    type="email"
-                                    value={row.external_email || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateLocalInvitee(row.id, 'external_email', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="أدخل البريد الإلكتروني"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.external_email || '--------------'}</span>;
-                            },
-                          },
-                          {
-                            id: 'name',
-                            header: 'الاسم',
-                            width: 'w-[300px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                return (
-                                  <Input
-                                    type="text"
-                                    value={row.external_name || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateLocalInvitee(row.id, 'external_name', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="أدخل الاسم"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.external_name || row.user_id || '--------------'}</span>;
-                            },
-                          },
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
+                            id: 'action',
+                            header: 'إجراء',
                             width: 'w-[120px]',
                             align: 'center',
-                            render: (_row: any, index: number) => (
+                            render: (row: any) => (
                               <div className="flex items-center justify-center w-full">
-                                <span className="text-sm text-[#475467]">{index + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteInviteeId(row.id);
+                                  }}
+                                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                </button>
                               </div>
                             ),
                           },
@@ -1453,7 +1463,7 @@ const MeetingDetail: React.FC = () => {
                           {
                             id: 'username',
                             header: 'اسم المستخدم',
-                            width: 'w-[227px]',
+                            width: 'flex-1',
                             align: 'end',
                             render: (row: MinisterAttendee, index: number) => (
                               <Input
@@ -1832,6 +1842,7 @@ const MeetingDetail: React.FC = () => {
                     {
                       id: 'consultation_question',
                       header: 'السؤال',
+                      width: 'flex-1',
                       render: (row: ConsultationRecord) => (
                         <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.consultation_question}
@@ -1841,6 +1852,7 @@ const MeetingDetail: React.FC = () => {
                     {
                       id: 'consultation_answer',
                       header: 'الإجابة',
+                      width: 'flex-1',
                       render: (row: ConsultationRecord) => (
                         <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.consultation_answer || '-'}
@@ -1951,6 +1963,7 @@ const MeetingDetail: React.FC = () => {
                     {
                       id: 'guidance_question',
                       header: 'السؤال',
+                      width: 'flex-1',
                       render: (row: GuidanceRecord) => (
                         <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.guidance_question}
@@ -1960,6 +1973,7 @@ const MeetingDetail: React.FC = () => {
                     {
                       id: 'guidance_answer',
                       header: 'الإجابة',
+                      width: 'flex-1',
                       render: (row: GuidanceRecord) => (
                         <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.guidance_answer || '-'}
@@ -2067,8 +2081,103 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
+          {/* Content Officer Notes Tab */}
+          {activeTab === 'content-officer-notes' && (
+            <div className="flex flex-col gap-4">
+              {isLoadingContentOfficerNotes ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">جاري التحميل...</div>
+                </div>
+              ) : contentOfficerNotesRecords && contentOfficerNotesRecords.items.length > 0 ? (
+                <DataTable
+                  columns={[
+                    {
+                      id: 'note_question',
+                      header: 'السؤال',
+                      width: 'flex-1',
+                      render: (row: ContentOfficerNoteRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.note_question || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'note_answer',
+                      header: 'الملاحظة',
+                      width: 'flex-1',
+                      render: (row: ContentOfficerNoteRecord) => (
+                        <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.note_answer}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'author_name',
+                      header: 'المؤلف',
+                      width: 'w-40',
+                      render: (row: ContentOfficerNoteRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.author_name}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'created_at',
+                      header: 'تاريخ الإنشاء',
+                      width: 'w-40',
+                      render: (row: ContentOfficerNoteRecord) => {
+                        const date = new Date(row.created_at);
+                        const formattedDate = date.toLocaleDateString('ar-SA', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {formattedDate}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      id: 'updated_at',
+                      header: 'تاريخ التحديث',
+                      width: 'w-40',
+                      render: (row: ContentOfficerNoteRecord) => {
+                        const date = new Date(row.updated_at);
+                        const formattedDate = date.toLocaleDateString('ar-SA', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {formattedDate}
+                          </span>
+                        );
+                      },
+                    },
+                  ]}
+                  data={contentOfficerNotesRecords.items}
+                  rowPadding="py-3"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-600 text-lg mb-2">ملاحظات مسؤول المحتوى</p>
+                    <p className="text-gray-500 text-sm">لا توجد ملاحظات مسجلة</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Other Tab Content */}
-          {activeTab !== 'basic-info' && activeTab !== 'content' && activeTab !== 'scheduling' && activeTab !== 'attachments' && activeTab !== 'consultations-log' && activeTab !== 'directives-log' && (
+          {activeTab !== 'basic-info' && activeTab !== 'content' && activeTab !== 'scheduling' && activeTab !== 'attachments' && activeTab !== 'consultations-log' && activeTab !== 'directives-log' && activeTab !== 'content-officer-notes' && (
             <div className="flex items-center justify-center py-12">
               <p className="text-gray-600">محتويات {tabs.find(t => t.id === activeTab)?.label} قريباً</p>
             </div>
@@ -2078,7 +2187,7 @@ const MeetingDetail: React.FC = () => {
         {/* Action Buttons - Fixed at bottom */}
         {/* Sticky action bar - Hidden when status is UNDER_CONSULTATION_SCHEDULING or UNDER_CONTENT_CONSULTATION */}
         {meeting && meeting.status !== MeetingStatus.UNDER_CONSULTATION_SCHEDULING && meeting.status !== MeetingStatus.UNDER_CONTENT_CONSULTATION && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-5xl px-4">
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full  px-4">
             <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center">
             <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
               {/* Schedule Button */}

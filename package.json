@@ -13,6 +13,7 @@
   },
   "private": true,
   "dependencies": {
+    "@iconify/react": "^6.0.2",
     "@lixpi/markdown-stream-parser": "0.0.3-34",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
