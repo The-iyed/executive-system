@@ -7,9 +7,10 @@ export interface FileUploadProps {
   error?: string;
   onFileSelect: (file: File | null) => void;
   required?: boolean;
+  title?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelect, required = false }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelect, required = false, title = "العرض التقديمي" }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +136,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ file, error, onFileSelec
         <label
           className="text-right text-[14px] font-medium text-[#344054]"
         >
-          العرض التقديمي
+          {title}
           {required && <span className="text-red-500 mr-1">*</span>}
         </label>
 
