@@ -45,6 +45,8 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
       email: invitee.email || undefined,
       item_number: index + 1,
       is_required: invitee.is_required || false,
+      justification: invitee.justification || undefined,
+      can_view: invitee.can_view || false,
     })) || [],
   };
 
@@ -125,6 +127,8 @@ export const useStep2 = ({
       mobile: '',
       email: '',
       is_required: false,
+      justification: '',
+      can_view: false,
     };
     setFormData((prev) => ({
       ...prev,

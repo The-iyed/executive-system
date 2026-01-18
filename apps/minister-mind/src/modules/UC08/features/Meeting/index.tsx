@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
+import { createTableColumns } from '../../utils/createTableColumns';
 import { MEETING_TABS, PAGE_INFO, PAGINATION } from '../../utils';
 import { useMeetings } from '../../hooks';
-import '@shared/styles';
 import { PATH } from '../../routes/paths';
-import { createTableColumns } from '../../utils/createTableColumns';
+import '@shared/styles';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
@@ -33,8 +33,8 @@ const Meeting: React.FC = () => {
   });
 
   const tableColumns = useMemo(
-    () => createTableColumns(navigate, currentPage, PAGINATION.ITEMS_PER_PAGE),
-    [navigate, currentPage]
+    () => createTableColumns(navigate),
+    [navigate]
   );
 
   return (
