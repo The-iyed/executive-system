@@ -11,6 +11,14 @@ import { useDeleteDraft } from '../../hooks/useDeleteDraft';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { useCalendarEvents } from './hooks/useCalendarEvents';
 import { PATH } from '../../../../routes/paths';
+import { FormSelect, FormSwitch, FormTextArea, FormField, FormRow } from '../Step1/components';
+
+// Meeting channel options
+const MEETING_CHANNEL_OPTIONS = [
+  { value: 'ONLINE', label: 'أونلاين' },
+  { value: 'IN_PERSON', label: 'حضوري' },
+  { value: 'HYBRID', label: 'مختلط' },
+];
 
 interface Step3Props {
   draftId: string;
@@ -73,6 +81,8 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
     toggleSlotSelection,
     submitStep,
     isSubmitting,
+    formData,
+    handleChange,
   } = useStep3({
     draftId,
     onSuccess: handleSuccess,
@@ -232,18 +242,43 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
             onEventBook={handleBookEvent}
             onTimeSlotClick={handleTimeSlotClick}
           />
+          {selectedSlots.length > 0 && (
+            <div className="text-center text-sm text-gray-600">
+              تم اختيار {selectedSlots.length} من 3 مواعيد
+            </div>
+          )}
+
+          <FormRow className=''>
+            <FormField
+              label="قناة الاجتماع"
+              error={undefined}
+            >
+            <FormSelect
+                value={formData.meetingChannel || ''}
+                onValueChange={(value) => handleChange('meetingChannel', value)}
+                options={MEETING_CHANNEL_OPTIONS}
+                placeholder="-------"
+                error={false}
+              />
+            </FormField>
+            <FormSwitch
+              checked={formData.requiresProtocol || false}
+              onCheckedChange={(value) => handleChange('requiresProtocol', value)}
+              label=" هل يتطلب بروتوكول؟"
+            />
+          </FormRow>
+            {/* Protocol Switch and Notes */}
+            <FormTextArea
+              label="ملاحظات"
+              value={formData.notes || ''}
+              onChange={(e) => handleChange('notes', e.target.value)}
+              placeholder="-------"
+            />
 
           {/* Validation Error Message */}
           {validationError && (
             <div className="text-center text-red-600 p-3 bg-red-50 rounded-md border border-red-200">
               {validationError}
-            </div>
-          )}
-
-          {/* Selected Slots Info */}
-          {selectedSlots.length > 0 && (
-            <div className="text-center text-sm text-gray-600">
-              تم اختيار {selectedSlots.length} من 3 مواعيد
             </div>
           )}
 

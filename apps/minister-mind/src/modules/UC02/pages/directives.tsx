@@ -506,8 +506,8 @@ const Directives: React.FC = () => {
                   if (openDropdownId) {
                     const originalDirective = originalDirectives.find((d) => d.id === openDropdownId);
                     if (originalDirective) {
-                      const directiveText = encodeURIComponent(originalDirective.directive_text);
-                      navigate(`/uc08/meetings/new?directive_text=${directiveText}`);
+                      // const directiveText = encodeURIComponent(originalDirective.directive_text);
+                      navigate(`/uc08/meetings/new?directive_id=${originalDirective?.id}`);
                     }
                   }
                   setOpenDropdownId(null);
