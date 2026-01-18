@@ -12,6 +12,9 @@ export const step3Schema = z.object({
       title: z.string().optional(),
     })
     .optional(),
+  meetingChannel: z.string().optional(),
+  requiresProtocol: z.boolean().optional().default(false),
+  notes: z.string().optional().or(z.literal('')),
 });
 
 export type Step3FormData = z.infer<typeof step3Schema>;
