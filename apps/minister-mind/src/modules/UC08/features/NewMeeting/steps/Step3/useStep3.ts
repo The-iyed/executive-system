@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axiosInstance from '@auth/utils/axios';
+import type { Step3FormData } from './schema';
 
 interface UseStep3Props {
   draftId: string;
+  initialData?: Partial<Step3FormData>;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
 }
@@ -12,14 +14,24 @@ interface SchedulingPayload {
   selected_time_slot_id?: string;
   alternative_time_slot_id_1?: string;
   alternative_time_slot_id_2?: string;
+  meeting_channel?: string;
+  requires_protocol?: boolean;
+  notes?: string;
 }
 
 export const useStep3 = ({
   draftId,
+  initialData,
   onSuccess,
   onError,
 }: UseStep3Props) => {
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [formData, setFormData] = useState<Partial<Step3FormData>>({
+    meetingChannel: '',
+    requiresProtocol: false,
+    notes: '',
+    ...initialData,
+  });
 
   // React Query mutation for submitting scheduling
   const submitMutation = useMutation({
@@ -54,6 +66,10 @@ export const useStep3 = ({
     });
   }, []);
 
+  const handleChange = useCallback((field: keyof Step3FormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
   const submitStep = useCallback(async (
     isDraft: boolean,
     selectedSlotIds: string[]
@@ -82,14 +98,27 @@ export const useStep3 = ({
     if (selectedSlotIds.length > 2) {
       payload.alternative_time_slot_id_2 = selectedSlotIds[2];
     }
+    
+    // Add form fields
+    if (formData.meetingChannel) {
+      payload.meeting_channel = formData.meetingChannel;
+    }
+    if (formData.requiresProtocol !== undefined) {
+      payload.requires_protocol = formData.requiresProtocol;
+    }
+    if (formData.notes) {
+      payload.notes = formData.notes;
+    }
 
     submitMutation.mutate(payload);
-  }, [submitMutation, onSuccess, onError]);
+  }, [submitMutation, onSuccess, onError, formData]);
 
   return {
     selectedSlots,
     toggleSlotSelection,
     submitStep,
     isSubmitting: submitMutation.isPending,
+    formData,
+    handleChange,
   };
 };
