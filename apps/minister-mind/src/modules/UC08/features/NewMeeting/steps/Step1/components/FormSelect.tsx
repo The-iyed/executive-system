@@ -15,6 +15,7 @@ export interface FormSelectProps {
   options: { value: string; label: string }[];
   error?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export const FormSelect: React.FC<FormSelectProps> = ({
@@ -24,9 +25,10 @@ export const FormSelect: React.FC<FormSelectProps> = ({
   options,
   error,
   className,
+  disabled,
 }) => {
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger
         className={cn(
           'text-right h-[44px] p-[10px_14px] bg-[#FFFFFF] border border-[#D0D5DD] box-shadow-[0px_1px_2px_rgba(16,24,40,0.05)] rounded-[8px] font-style-normal font-weight-400 font-size-16 line-height-24 color-[#667085]',

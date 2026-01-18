@@ -8,6 +8,8 @@ export const step2Schema = z.object({
     mobile: z.string().optional(),
     email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
     is_required: z.boolean().optional().default(false),
+    justification: z.string().optional(), // تبرير الاضافة
+    can_view: z.boolean().optional().default(false), // يمكن الاطلاع
   })).optional().default([]),
 });
 
