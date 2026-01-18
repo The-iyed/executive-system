@@ -2076,7 +2076,8 @@ const MeetingDetail: React.FC = () => {
         </div>
 
         {/* Action Buttons - Fixed at bottom */}
-        {/* Sticky action bar */}
+        {/* Sticky action bar - Hidden when status is UNDER_CONSULTATION_SCHEDULING or UNDER_CONTENT_CONSULTATION */}
+        {meeting && meeting.status !== MeetingStatus.UNDER_CONSULTATION_SCHEDULING && meeting.status !== MeetingStatus.UNDER_CONTENT_CONSULTATION && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-5xl px-4">
             <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center">
             <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
@@ -2169,6 +2170,7 @@ const MeetingDetail: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Reject Meeting Modal */}
