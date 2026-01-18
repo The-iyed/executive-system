@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput } from '@shared';
 import { MeetingStatus } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye, Calendar } from 'lucide-react';
@@ -50,27 +50,38 @@ const ScheduleReview: React.FC = () => {
   };
 
   // Determine API status based on active tab
+  // For scheduled-meetings tab, always use SCHEDULED status
+  // For work-basket tab, use statusFilter or default to UNDER_REVIEW
   const apiStatus = useMemo(() => {
-    if (activeTab === 'work-basket') {
-      return MeetingStatus.UNDER_REVIEW;
-    } else if (activeTab === 'scheduled-meetings') {
+    if (activeTab === 'scheduled-meetings') {
+      // Always use SCHEDULED for scheduled meetings tab
       return MeetingStatus.SCHEDULED;
     }
+    // For work-basket tab, use statusFilter or default to UNDER_REVIEW
+    if (activeTab === 'work-basket') {
+      if (statusFilter !== 'all') {
+        return statusFilter;
+      }
+      return MeetingStatus.UNDER_REVIEW;
+    }
     return undefined;
-  }, [activeTab]);
+  }, [activeTab, statusFilter]);
 
   // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   // Fetch meetings from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['meetings', apiStatus, debouncedSearch.trim(), currentPage],
+    queryKey: ['meetings', activeTab, apiStatus, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        status: apiStatus,
         skip: skip,
         limit: ITEMS_PER_PAGE,
       };
+      // Always add status (apiStatus is always defined based on tab)
+      if (apiStatus) {
+        params.status = apiStatus;
+      }
       // Only add search if it's not empty
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
@@ -79,7 +90,7 @@ const ScheduleReview: React.FC = () => {
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by status and owner_type
+      // For scheduled meetings fetch meetings filtered by status SCHEDULED and owner_type
       if (activeTab === 'scheduled-meetings') {
         params.status = MeetingStatus.SCHEDULED;
         params.owner_type = 'SCHEDULING';
@@ -87,7 +98,7 @@ const ScheduleReview: React.FC = () => {
       }
       return getMeetings(params);
     },
-    enabled: !!apiStatus, // Only fetch when we have a status
+    enabled: true, // Always enabled, status is optional
   });
 
   // Map API response to MeetingCardData
@@ -95,16 +106,6 @@ const ScheduleReview: React.FC = () => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
-
-  // Filter meetings based on status filter (client-side filtering for additional statuses)
-  const filteredMeetings = useMemo(() => {
-    if (!meetings) return [];
-    
-    return meetings.filter((meeting) => {
-      const matchesStatus = statusFilter === 'all' || meeting.status === statusFilter;
-      return matchesStatus;
-    });
-  }, [meetings, statusFilter]);
 
   // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
@@ -231,12 +232,26 @@ const ScheduleReview: React.FC = () => {
 
           {/* Right side - Search and Filter Bar */}
           <div className="flex-shrink-0">
-            <SearchFilterBar
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+            {activeTab === 'scheduled-meetings' ? (
+              // For scheduled meetings, only show search input (no status filter)
+              <div className="w-[240px] h-[32px]">
+                <SearchInput
+                  value={searchValue}
+                  onChange={setSearchValue}
+                  placeholder="ادخل البحث"
+                  variant="default"
+                  className="w-full h-[32px]"
+                />
+              </div>
+            ) : (
+              // For work-basket, show full SearchFilterBar with status filter
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+              />
+            )}
           </div>
         </div>
 
@@ -250,7 +265,7 @@ const ScheduleReview: React.FC = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
             </div>
-          ) : filteredMeetings.length === 0 ? (
+          ) : meetings.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">لا توجد بيانات</div>
             </div>
@@ -259,12 +274,12 @@ const ScheduleReview: React.FC = () => {
               {view === 'table' ? (
                 <DataTable
                   columns={tableColumns}
-                  data={filteredMeetings}
+                  data={meetings}
                   onRowClick={(row) => navigate(`/meeting/${row.id}`)}
                 />
               ) : (
                 <CardsGrid
-                  meetings={filteredMeetings}
+                  meetings={meetings}
                   onView={(meeting) => navigate(`/meeting/${meeting.id}`)}
                   onDetails={(meeting) => navigate(`/meeting/${meeting.id}`)}
                 />

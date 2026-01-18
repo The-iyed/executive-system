@@ -6,6 +6,7 @@ import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
+import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
@@ -58,6 +59,13 @@ const ConsultationRequestDetail: React.FC = () => {
     enabled: !!id && !queriesDisabled,
   });
 
+  // Fetch consultation records
+  const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
+    queryKey: ['consultation-records', id],
+    queryFn: () => getConsultationRecords(id!),
+    enabled: !!id && activeTab === 'consultations-log',
+  });
+
   const meetingRequest = consultationData?.meeting_request;
   const consultationQuestion = consultationData?.consultation_question || '';
 
@@ -69,6 +77,10 @@ const ConsultationRequestDetail: React.FC = () => {
     {
       id: 'meeting-info',
       label: 'معلومات الاجتماع',
+    },
+    {
+      id: 'consultations-log',
+      label: 'سجل الإستشارات',
     },
   ];
 
@@ -1092,6 +1104,136 @@ const ConsultationRequestDetail: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Consultations Log Tab */}
+          {activeTab === 'consultations-log' && (
+            <div className="flex flex-col gap-4">
+              {isLoadingConsultationRecords ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">جاري التحميل...</div>
+                </div>
+              ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                <DataTable
+                  columns={[
+                    {
+                      id: 'consultation_type',
+                      header: 'نوع الاستشارة',
+                      width: 'w-32',
+                      render: (row: ConsultationRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_question',
+                      header: 'السؤال',
+                      render: (row: ConsultationRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.consultation_question}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_answer',
+                      header: 'الإجابة',
+                      render: (row: ConsultationRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.consultation_answer || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultant_name',
+                      header: 'المستشار',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => (
+                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {row.consultant_name}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'requested_at',
+                      header: 'تاريخ الطلب',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => {
+                        const date = new Date(row.requested_at);
+                        const formattedDate = date.toLocaleDateString('ar-SA', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {formattedDate}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      id: 'responded_at',
+                      header: 'تاريخ الرد',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => {
+                        if (!row.responded_at) {
+                          return (
+                            <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              -
+                            </span>
+                          );
+                        }
+                        const date = new Date(row.responded_at);
+                        const formattedDate = date.toLocaleDateString('ar-SA', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {formattedDate}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      id: 'status',
+                      header: 'الحالة',
+                      width: 'w-32',
+                      align: 'center',
+                      render: (row: ConsultationRecord) => {
+                        const statusLabels: Record<string, string> = {
+                          PENDING: 'قيد الانتظار',
+                          RESPONDED: 'تم الرد',
+                          CANCELLED: 'ملغاة',
+                        };
+                        const statusLabel = statusLabels[row.status] || row.status;
+                        return (
+                          <div className="flex justify-center">
+                            <StatusBadge status={row.status} label={statusLabel} />
+                          </div>
+                        );
+                      },
+                    },
+                  ]}
+                  data={consultationRecords.items}
+                  rowPadding="py-3"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-600 text-lg mb-2">سجل الإستشارات</p>
+                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 
