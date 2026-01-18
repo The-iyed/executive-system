@@ -6,13 +6,15 @@ export interface CalendarEventData {
   id: string;
   type: EventType;
   label: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // Hour slot for grid positioning (e.g., "14:00")
+  endTime: string; // Hour slot for grid positioning (e.g., "15:00")
   date: Date;
   title?: string;
   description?: string;
   is_available?: boolean; // Track if slot is available for selection
   is_selected?: boolean; // Track if slot is selected by user
+  exactStartTime?: string; // Exact time with minutes for display (e.g., "14:31")
+  exactEndTime?: string; // Exact time with minutes for display (e.g., "15:01")
 }
 
 export interface WeeklyCalendarGridProps {
@@ -23,8 +25,8 @@ export interface WeeklyCalendarGridProps {
   onTimeSlotClick?: (date: Date, time: string) => void;
 }
 
-const timeSlots = Array.from({ length: 15 }, (_, i) => {
-  const hour = 7 + i;
+const timeSlots = Array.from({ length: 24 }, (_, i) => {
+  const hour = i;
   return `${hour.toString().padStart(2, '0')}:00`;
 });
 
