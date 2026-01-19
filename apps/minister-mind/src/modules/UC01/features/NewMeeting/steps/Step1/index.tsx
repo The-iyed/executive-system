@@ -292,18 +292,18 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onSaveDraft, isEditMode 
 
         {/* Table 2: Meeting Agenda */}
             <FormTable
-              title="أجندة الاجتماع"
+              title="جدول أعمال الاجتماع"
               required={isFieldRequired('meetingAgenda')}
               columns={MEETING_AGENDA_COLUMNS}
               rows={formData.meetingAgenda || []}
               onAddRow={handleAddAgenda}
               onDeleteRow={handleDeleteAgenda}
               onUpdateRow={handleUpdateAgenda}
-              addButtonLabel="إضافة أجندة"
+              addButtonLabel="إضافة جدول أعمال الاجتماع"
               errors={tableErrors}
               touched={tableTouched}
               hasError={!!(errors.meetingAgenda || Object.keys(tableErrors).length > 0)}
-              errorMessage={errors.meetingAgenda || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي' : undefined)}
+              errorMessage={errors.meetingAgenda || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة عنصر جدول أعمال الاجتماع واحد على الأقل عند وجود ملف عرض تقديمي' : undefined)}
             />
 
         {/* Table 3: Minister Support */}
