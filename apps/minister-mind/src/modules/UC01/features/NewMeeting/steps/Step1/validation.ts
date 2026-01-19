@@ -142,120 +142,120 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
 
   const meetingReasonSchema = requiresReason
     ? z
-        .string({
-          required_error: 'مبرر اللقاء مطلوب',
-          invalid_type_error: 'مبرر اللقاء يجب أن يكون نصاً',
-        })
-        .min(1, 'مبرر اللقاء مطلوب')
+      .string({
+        required_error: 'مبرر اللقاء مطلوب',
+        invalid_type_error: 'مبرر اللقاء يجب أن يكون نصاً',
+      })
+      .min(1, 'مبرر اللقاء مطلوب')
     : z
-        .string({
-          invalid_type_error: 'مبرر اللقاء يجب أن يكون نصاً',
-        })
-        .optional()
-        .or(z.literal(''));
+      .string({
+        invalid_type_error: 'مبرر اللقاء يجب أن يكون نصاً',
+      })
+      .optional()
+      .or(z.literal(''));
 
   // Conditional: relatedTopic - required if category is GOVERNMENT_CENTER_TOPICS
   const requiresRelatedTopic = data.meetingCategory === CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE;
 
   const relatedTopicSchema = requiresRelatedTopic
     ? z
-        .string({
-          required_error: 'الموضوع المرتبط مطلوب',
-          invalid_type_error: 'الموضوع المرتبط يجب أن يكون نصاً',
-        })
-        .min(1, 'الموضوع المرتبط مطلوب')
+      .string({
+        required_error: 'الموضوع المرتبط مطلوب',
+        invalid_type_error: 'الموضوع المرتبط يجب أن يكون نصاً',
+      })
+      .min(1, 'الموضوع المرتبط مطلوب')
     : z
-        .string({
-          invalid_type_error: 'الموضوع المرتبط يجب أن يكون نصاً',
-        })
-        .optional()
-        .or(z.literal(''));
+      .string({
+        invalid_type_error: 'الموضوع المرتبط يجب أن يكون نصاً',
+      })
+      .optional()
+      .or(z.literal(''));
 
   // Conditional: dueDate - required if category is GOVERNMENT_CENTER_TOPICS
   const dueDateSchema = requiresRelatedTopic
     ? z
-        .string({
-          required_error: 'تاريخ الاستحقاق مطلوب',
-          invalid_type_error: 'تاريخ الاستحقاق يجب أن يكون نصاً',
-        })
-        .min(1, 'تاريخ الاستحقاق مطلوب')
-        .refine(
-          (val) => {
-            if (!val || val === '') return false;
-            return /^\d{4}-\d{2}-\d{2}$/.test(val);
-          },
-          'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-        )
+      .string({
+        required_error: 'تاريخ الاستحقاق مطلوب',
+        invalid_type_error: 'تاريخ الاستحقاق يجب أن يكون نصاً',
+      })
+      .min(1, 'تاريخ الاستحقاق مطلوب')
+      .refine(
+        (val) => {
+          if (!val || val === '') return false;
+          return /^\d{4}-\d{2}-\d{2}$/.test(val);
+        },
+        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+      )
     : z
-        .string({
-          invalid_type_error: 'تاريخ الاستحقاق يجب أن يكون نصاً',
-        })
-        .optional()
-        .or(z.literal(''))
-        .refine(
-          (val) => {
-            if (!val || val === '') return true;
-            return /^\d{4}-\d{2}-\d{2}$/.test(val);
-          },
-          'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-        );
+      .string({
+        invalid_type_error: 'تاريخ الاستحقاق يجب أن يكون نصاً',
+      })
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        (val) => {
+          if (!val || val === '') return true;
+          return /^\d{4}-\d{2}-\d{2}$/.test(val);
+        },
+        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+      );
 
   // Conditional: meetingAgenda - required if file exists
   const requiresAgenda = !!data.file;
 
   const meetingAgendaSchema = requiresAgenda
     ? z
-        .array(
-          z.object({
-            id: z.string(),
-            agenda_item: z.string().min(1, 'عنصر الأجندة مطلوب'),
-            presentation_duration_minutes: z.string().optional(),
-          })
-        )
-        .min(1, 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي')
-        .optional()
-        .default([])
+      .array(
+        z.object({
+          id: z.string(),
+          agenda_item: z.string().min(1, 'عنصر جدول أعمال الاجتماع مطلوب'),
+          presentation_duration_minutes: z.string().optional(),
+        })
+      )
+      .min(1, 'يجب إضافة عنصر جدول أعمال الاجتماع واحد على الأقل عند وجود ملف عرض تقديمي')
+      .optional()
+      .default([])
     : z
-        .array(
-          z.object({
-            id: z.string(),
-            agenda_item: z.string().optional(),
-            presentation_duration_minutes: z.string().optional(),
-          })
-        )
-        .optional()
-        .default([]);
+      .array(
+        z.object({
+          id: z.string(),
+          agenda_item: z.string().optional(),
+          presentation_duration_minutes: z.string().optional(),
+        })
+      )
+      .optional()
+      .default([]);
 
   // Conditional: previousMeetingDate - required if wasDiscussedPreviously is true
   const requiresPreviousDate = data.wasDiscussedPreviously === true;
 
   const previousMeetingDateSchema = requiresPreviousDate
     ? z
-        .string({
-          required_error: 'تاريخ الاجتماع السابق مطلوب',
-          invalid_type_error: 'تاريخ الاجتماع السابق يجب أن يكون نصاً',
-        })
-        .min(1, 'تاريخ الاجتماع السابق مطلوب')
-        .refine(
-          (val) => {
-            if (!val || val === '') return false;
-            return /^\d{4}-\d{2}-\d{2}$/.test(val);
-          },
-          'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-        )
+      .string({
+        required_error: 'تاريخ الاجتماع السابق مطلوب',
+        invalid_type_error: 'تاريخ الاجتماع السابق يجب أن يكون نصاً',
+      })
+      .min(1, 'تاريخ الاجتماع السابق مطلوب')
+      .refine(
+        (val) => {
+          if (!val || val === '') return false;
+          return /^\d{4}-\d{2}-\d{2}$/.test(val);
+        },
+        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+      )
     : z
-        .string({
-          invalid_type_error: 'تاريخ الاجتماع السابق يجب أن يكون نصاً',
-        })
-        .optional()
-        .or(z.literal(''))
-        .refine(
-          (val) => {
-            if (!val || val === '') return true;
-            return /^\d{4}-\d{2}-\d{2}$/.test(val);
-          },
-          'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-        );
+      .string({
+        invalid_type_error: 'تاريخ الاجتماع السابق يجب أن يكون نصاً',
+      })
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        (val) => {
+          if (!val || val === '') return true;
+          return /^\d{4}-\d{2}-\d{2}$/.test(val);
+        },
+        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+      );
 
   // Conditional: file - required by default, optional if category is BILATERAL_MEETING, PRIVATE_MEETING, GOVERNMENT_CENTER_TOPICS, or confidentiality is CONFIDENTIAL
   const isFileOptional =
@@ -298,17 +298,17 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
 
   const sectorSchema = requiresSector
     ? z
-        .string({
-          required_error: 'القطاع مطلوب',
-          invalid_type_error: 'القطاع يجب أن يكون نصاً',
-        })
-        .min(1, 'القطاع مطلوب')
+      .string({
+        required_error: 'القطاع مطلوب',
+        invalid_type_error: 'القطاع يجب أن يكون نصاً',
+      })
+      .min(1, 'القطاع مطلوب')
     : z
-        .string({
-          invalid_type_error: 'القطاع يجب أن يكون نصاً',
-        })
-        .optional()
-        .or(z.literal(''));
+      .string({
+        invalid_type_error: 'القطاع يجب أن يكون نصاً',
+      })
+      .optional()
+      .or(z.literal(''));
 
   return baseSchema.extend({
     meetingReason: meetingReasonSchema,

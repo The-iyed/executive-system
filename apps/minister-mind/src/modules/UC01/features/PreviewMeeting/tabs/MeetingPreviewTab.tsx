@@ -48,7 +48,7 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
           )}
         </MeetingPreviewCard>
         
-        <MeetingPreviewCard title="بنود الأجندة:">
+        <MeetingPreviewCard title="بنود جدول أعمال الاجتماع:">
           {meeting.agenda_items && meeting.agenda_items.length > 0 ? (
             <ul className="list-none space-y-1">
               {meeting.agenda_items.map((item, index) => (
