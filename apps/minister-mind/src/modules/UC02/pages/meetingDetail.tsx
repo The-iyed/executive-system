@@ -56,7 +56,7 @@ const fieldLabels: Record<string, string> = {
   meeting_subject: 'موضوع الاجتماع',
   meeting_classification: 'تصنيف الاجتماع',
   objectives: 'الأهداف',
-  agenda_items: 'بنود الأجندة',
+  agenda_items: 'بنود جدول أعمال الاجتماع',
   meeting_channel: 'قناة الاجتماع',
   requires_protocol: 'يتطلب بروتوكول',
   protocol_type: 'نوع البروتوكول',
@@ -1064,7 +1064,7 @@ const MeetingDetail: React.FC = () => {
                             lineHeight: '28px',
                           }}
                         >
-                          بنود الأجندة:
+                          بنود جدول أعمال الاجتماع:
                         </h3>
                         <div className="w-full text-right max-h-[300px] overflow-y-auto">
                           {contentForm.agendaItems.length > 0 ? (
@@ -1139,7 +1139,7 @@ const MeetingDetail: React.FC = () => {
                                 className="text-[#667085] text-sm"
                                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                               >
-                                لا توجد بنود أجندة
+                                لا توجد بنود جدول أعمال الاجتماع
                               </p>
                             </div>
                           )}
