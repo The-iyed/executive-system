@@ -50,7 +50,7 @@ export const SECTOR_OPTIONS = [
 ];
 
 // Table Column Definitions
-import type { FormTableColumn } from './components/FormTable';
+import type { FormTableColumn } from '@shared';
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },

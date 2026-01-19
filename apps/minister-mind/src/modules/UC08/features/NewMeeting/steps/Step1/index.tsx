@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-import { FormField, FormSelect, FormAsyncSelect, FormInput, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow, FileUpload } from './components';
+import { FormField, FormSelect, FormInput, FormDatePicker, FormTable, FormTextArea, FormSwitch, FormRow, FileUpload, FormAsyncSelect } from '@shared';
 import { FormCheckbox } from '@shared';
 import { ActionButtons } from '@shared';
 import {
@@ -379,14 +379,14 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
 
           {/* File Upload Forms */}
           <FileUpload
-            title="العرض التقديمي"
+            label="العرض التقديمي"
             file={formData.presentationFile || null}
             onFileSelect={(file) => handleChange('presentationFile', file)}
             error={touched.presentationFile ? errors.presentationFile : undefined}
           />
           
           <FileUpload
-            title="مرفقات إضافية"
+            label="مرفقات إضافية"
             file={formData.additionalAttachments || null}
             onFileSelect={(file) => handleChange('additionalAttachments', file)}
             error={touched.additionalAttachments ? errors.additionalAttachments : undefined}

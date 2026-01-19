@@ -204,7 +204,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
 
   // Show loader while fetching events
   if (isLoadingEvents) {
-    return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." />;
+    return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." className='rounded-t-[30px]' />;
   }
 
   // Show error state if fetch failed
