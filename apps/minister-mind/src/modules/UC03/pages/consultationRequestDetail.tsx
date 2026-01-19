@@ -194,7 +194,7 @@ const ConsultationRequestDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 pb-28">
         {/* Main Container */}
-        <div className="max-w-5xl mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
+        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
           <div className="flex flex-row items-center justify-between gap-6">
             {/* Back Button */}
@@ -658,7 +658,7 @@ const ConsultationRequestDetail: React.FC = () => {
                               lineHeight: '28px',
                             }}
                           >
-                            بنود الأجندة:
+                            بنود جدول أعمال الاجتماع:
                           </h3>
                           <div className="w-full text-right max-h-[300px] overflow-y-auto">
                             {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
@@ -695,7 +695,7 @@ const ConsultationRequestDetail: React.FC = () => {
                                   className="text-[#667085] text-sm"
                                   style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                                 >
-                                  لا توجد بنود أجندة
+                                  لا توجد بنود جدول أعمال الاجتماع
                                 </p>
                               </div>
                             )}
@@ -1128,6 +1128,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     {
                       id: 'consultation_question',
                       header: 'السؤال',
+                      width: 'flex-1',
                       render: (row: ConsultationRecord) => (
                         <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.consultation_question}
@@ -1137,6 +1138,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     {
                       id: 'consultation_answer',
                       header: 'الإجابة',
+                      width: 'flex-1',
                       render: (row: ConsultationRecord) => (
                         <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.consultation_answer || '-'}

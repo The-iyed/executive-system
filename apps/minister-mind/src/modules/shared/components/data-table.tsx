@@ -70,8 +70,8 @@ export const DataTable = <T extends Record<string, any>>({
                 gap-3
                 bg-gray-50
                 border-b border-gray-200
-                ${column.width || 'flex-1'}
                 min-w-0
+                ${column.width || 'flex-1'}
               `}
             >
               <span
@@ -126,8 +126,8 @@ export const DataTable = <T extends Record<string, any>>({
                       px-6 ${rowPadding}
                       gap-4
                       border-b border-gray-200
-                      ${column.width || 'flex-1'}
                       min-w-0
+                      ${column.width || 'flex-1'}
                     `}
                   >
                     {column.render ? (
