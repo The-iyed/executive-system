@@ -55,6 +55,22 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-01',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.SCHEDULED_MEETINGS,
+    component: lazy(() => import('../pages/scheduledMeetings')),
+    layout: Layout,
+    useCase: 'UC-01',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.WORK_BASKET,
+    component: lazy(() => import('../pages/workBasket')),
+    layout: Layout,
+    useCase: 'UC-01',
+  },
 ]
 
 export default routes

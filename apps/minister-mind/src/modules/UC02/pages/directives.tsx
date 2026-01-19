@@ -491,7 +491,7 @@ const Directives: React.FC = () => {
           const pos = dropdownPosition;
           return createPortal(
             <div 
-              className="fixed bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[160px]" 
+              className="fixed bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[130px]" 
               dir="rtl" 
               onClick={(e) => e.stopPropagation()}
               style={{ 

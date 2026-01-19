@@ -52,3 +52,24 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings?${queryParams.toString()}`);
   return response.data;
 };
+
+// Fetch assigned scheduling requests (for "سلة العمل" view)
+export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.status) {
+    queryParams.append('status', params.status);
+  }
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search) {
+    queryParams.append('search', params.search);
+  }
+
+  const response = await axiosInstance.get<MeetingsListResponse>(`/api/scheduling/assigned-requests?${queryParams.toString()}`);
+  return response.data;
+};

@@ -2,14 +2,34 @@ import { MeetingCardData } from '@shared/components/meeting-card';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 import { MeetingApiResponse } from '../data/meetingsApi';
 
+/**
+ * Format date to Arabic format
+ */
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return '';
   
   try {
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
+    // Format as: "الاثنين، 23 شعبان 1447 هـ"
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      calendar: 'islamic',
+      numberingSystem: 'arab',
+    };
+    
+    const formatted = new Intl.DateTimeFormat('ar-SA', options).format(date);
+    return formatted;
   } catch (error) {
-    return dateString;
+    // Fallback to simple date format
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-SA');
+    } catch {
+      return dateString;
+    }
   }
 };
 

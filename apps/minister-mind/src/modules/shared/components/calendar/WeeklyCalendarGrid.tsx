@@ -6,20 +6,15 @@ export interface CalendarEventData {
   id: string;
   type: EventType;
   label: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // Hour slot for grid positioning (e.g., "14:00")
+  endTime: string; // Hour slot for grid positioning (e.g., "15:00")
   date: Date;
   title?: string;
   description?: string;
-  /**
-   * Whether this slot is available for selection.
-   * When false, the slot is rendered as disabled.
-   */
-  is_available?: boolean;
-  /**
-   * Whether this slot is currently selected by the user.
-   */
   is_selected?: boolean;
+  is_available?: boolean;
+  exactStartTime?: string;
+  exactEndTime?: string;
 }
 
 export interface WeeklyCalendarGridProps {

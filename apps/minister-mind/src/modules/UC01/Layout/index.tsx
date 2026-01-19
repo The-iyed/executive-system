@@ -35,6 +35,16 @@ const welcomeByPath: Record<string, WelcomeConfig> = {
     description:"أدخل البيانات اللازمة بعناية لإضافة اجتماع جديد.", 
     breadcrumbs:[{ label: 'إضافة اجتماع', onClick: () => {} }]
   },
+  [PATH.SCHEDULED_MEETINGS]: {
+    title: 'الاجتماعات المجدولة',
+    description: 'الاطلاع على الاجتماعات المجدولة',
+    actions: defaultActions
+  },
+  [PATH.WORK_BASKET]: {
+    title: 'سلة العمل - طلبات قيد المراجعة',
+    description: 'الاطلاع على الطلبات قيد المراجعة',
+    actions: defaultActions
+  },
 };
 
 const welcome = welcomeByPath[pathname];
