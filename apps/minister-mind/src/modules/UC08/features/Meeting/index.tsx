@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
 import { createTableColumns } from '../../utils/createTableColumns';
-import { MEETING_TABS, PAGE_INFO, PAGINATION } from '../../utils';
+import { MEETING_TABS, PAGINATION } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
@@ -56,10 +56,10 @@ const Meeting: React.FC = () => {
           {/* Left side - Title and Description */}
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
-              {PAGE_INFO.title}
+            سلة العمل - طلبات قيد المراجعة'
             </h1>
             <p className="text-base text-gray-600 text-right">
-              {PAGE_INFO.description}
+            يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
           <SearchInput

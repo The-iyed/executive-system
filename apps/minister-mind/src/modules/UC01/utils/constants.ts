@@ -28,10 +28,10 @@ export const MEETING_TABS: TabItem[] = [
     id: MeetingStatus.UNDER_REVIEW,
     label: MeetingStatusLabels[MeetingStatus.UNDER_REVIEW],
   },
-  {
-    id: MeetingStatus.SCHEDULED,
-    label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
-  },
+  // {
+  //   id: MeetingStatus.SCHEDULED,
+  //   label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
+  // },
   {
     id: MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER,
     label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER],
@@ -56,10 +56,10 @@ export interface TabFilterConfig {
     status: MeetingStatus.UNDER_REVIEW,
     owner_type: MeetingOwnerType.SCHEDULING,
   },
-  [MeetingStatus.SCHEDULED]: {
-    status: MeetingStatus.SCHEDULED,
-    owner_type: MeetingOwnerType.SUBMITTER,
-  },
+  // [MeetingStatus.SCHEDULED]: {
+  //   status: MeetingStatus.SCHEDULED,
+  //   owner_type: MeetingOwnerType.SUBMITTER,
+  // },
   [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: {
     status: MeetingStatus.UNDER_REVIEW,
     owner_type: MeetingOwnerType.SUBMITTER,
@@ -69,8 +69,3 @@ export interface TabFilterConfig {
     owner_type: MeetingOwnerType.SUBMITTER,
   },
 };
-
-export const PAGE_INFO = {
-  title: 'قائمة الاجتماعات',
-  description: 'يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.',
-} as const;
