@@ -945,223 +945,240 @@ const MeetingDetail: React.FC = () => {
 
           {/* Content Tab */}
           {activeTab === 'content' && (
-            <div className="flex flex-row items-start gap-[26px] w-full" dir="rtl">
-              {/* Objectives Card */}
-              <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[530px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
-                <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
-                  <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
-                    {/* Background Blur Effect */}
-                    <div
-                      className="absolute rounded-full bg-[#A6D8C1]"
-                      style={{
-                        width: '227.75px',
-                        height: '213.87px',
-                        left: '-41.02px',
-                        top: '4.66px',
-                        filter: 'blur(63.26px)',
-                        transform: 'rotate(-90deg)',
-                      }}
-                    />
-                    {/* Content */}
-                    <div className="relative flex flex-col items-end p-4 gap-[21px] w-full min-h-[85px]">
-                      <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                        <h3
-                          className="w-full font-semibold text-black text-right"
-                          style={{
-                            fontFamily: "'Somar Sans', sans-serif",
-                            fontSize: '21.1px',
-                            lineHeight: '28px',
-                          }}
-                        >
-                          الأهداف:
-                        </h3>
-                        <div className="w-full text-right max-h-[200px] overflow-y-auto">
-                          {contentForm.objectives.length > 0 ? (
-                            <ul className="list-none p-0 m-0 space-y-1">
-                              {contentForm.objectives.map((obj, index) => (
-                                <li key={obj.id} className="flex items-center gap-2">
-                                  <span className="text-[#2C2C2C] text-base leading-[26px]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    •
-                                  </span>
-                                  <input
-                                    type="text"
-                                    value={obj.objective}
-                                    onChange={(e) => {
-                                      const newObjectives = [...contentForm.objectives];
-                                      newObjectives[index] = { ...obj, objective: e.target.value };
-                                      setContentForm((prev) => ({ ...prev, objectives: newObjectives }));
-                                    }}
-                                    className="flex-1 bg-transparent border-none outline-none text-[#2C2C2C] text-base leading-[26px] focus:bg-white focus:border-b focus:border-gray-300 px-1"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      setContentForm((prev) => ({
-                                        ...prev,
-                                        objectives: prev.objectives.filter((_, i) => i !== index),
-                                      }));
-                                    }}
-                                    className="text-red-500 hover:text-red-700 text-sm px-1"
-                                  >
-                                    ×
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p
-                              className="text-[#2C2C2C] text-base leading-[26px]"
-                              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                            >
-                              لا توجد أهداف
-                            </p>
-                          )}
-                          <button
-                            onClick={() => {
-                              const newId = `obj-${Date.now()}-${Math.random()}`;
-                              setContentForm((prev) => ({
-                                ...prev,
-                                objectives: [...prev.objectives, { id: newId, objective: '' }],
-                              }));
-                            }}
-                            className="mt-2 text-[#048F86] hover:text-[#048F86]/80 text-sm flex items-center gap-1"
-                            style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                          >
-                            <Plus className="w-4 h-4" />
-                            إضافة هدف
-                          </button>
-                        </div>
-                      </div>
+            <div className="flex flex-col gap-10 w-full" dir="rtl">
+              {/* Objectives Section */}
+              <div className="flex flex-col items-start gap-4 w-full">
+                <h3
+                  className="w-full font-semibold text-black text-right"
+                  style={{
+                    fontFamily: "'Somar Sans', sans-serif",
+                    fontSize: '21.1px',
+                    lineHeight: '28px',
+                  }}
+                >
+                  الأهداف:
+                </h3>
+                <div className="w-full text-right overflow-y-auto">
+                  {contentForm.objectives.length > 0 ? (
+                    <div className="w-full overflow-x-auto table-scroll">
+                      <DataTable
+                        columns={[
+                          {
+                            id: 'index',
+                            header: 'رقم',
+                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
+                            align: 'center',
+                            render: (_row: any, index: number) => (
+                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold mx-auto">
+                                {index + 1}
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'objective',
+                            header: 'الهدف',
+                            width: 'flex-[3] min-w-[200px]',
+                            align: 'end',
+                            render: (obj: any, index: number) => (
+                              <input
+                                type="text"
+                                value={obj.objective}
+                                onChange={(e) => {
+                                  const newObjectives = [...contentForm.objectives];
+                                  newObjectives[index] = { ...obj, objective: e.target.value };
+                                  setContentForm((prev) => ({ ...prev, objectives: newObjectives }));
+                                }}
+                                className="w-full h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86] px-3"
+                                style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
+                                placeholder="أدخل الهدف"
+                              />
+                            ),
+                          },
+                          {
+                            id: 'action',
+                            header: '',
+                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
+                            align: 'center',
+                            render: (_item: any, index: number) => (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setContentForm((prev) => ({
+                                    ...prev,
+                                    objectives: prev.objectives.filter((_, i) => i !== index),
+                                  }));
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors mx-auto"
+                                title="حذف الهدف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            ),
+                          },
+                        ] as TableColumn<any>[]}
+                        data={contentForm.objectives}
+                        className="border-none shadow-none min-w-[700px]"
+                      />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p
+                        className="text-[#667085] text-sm"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        لا توجد أهداف
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `obj-${Date.now()}-${Math.random()}`;
+                      setContentForm((prev) => ({
+                        ...prev,
+                        objectives: [...prev.objectives, { id: newId, objective: '' }],
+                      }));
+                    }}
+                    className="mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors font-medium"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة هدف جديد
+                  </button>
                 </div>
               </div>
 
-              {/* Agenda Items Card */}
-              <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[529px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
-                <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
-                  <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
-                    {/* Background Blur Effect */}
-                    <div
-                      className="absolute rounded-full bg-[#A6D8C1]"
-                      style={{
-                        width: '227.75px',
-                        height: '213.87px',
-                        left: '-41.02px',
-                        top: '4.66px',
-                        filter: 'blur(63.26px)',
-                        transform: 'rotate(-90deg)',
-                      }}
-                    />
-                    {/* Content */}
-                    <div className="relative flex flex-col items-end p-4 gap-[21px] w-full min-h-[85px]">
-                      <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                        <h3
-                          className="w-full font-semibold text-black text-right"
-                          style={{
-                            fontFamily: "'Somar Sans', sans-serif",
-                            fontSize: '21.1px',
-                            lineHeight: '28px',
-                          }}
-                        >
-                          بنود جدول أعمال الاجتماع:
-                        </h3>
-                        <div className="w-full text-right max-h-[300px] overflow-y-auto">
-                          {contentForm.agendaItems.length > 0 ? (
-                            <div className="flex flex-col gap-3">
-                              {contentForm.agendaItems.map((item, index) => (
-                                <div
-                                  key={item.id}
-                                  className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#048F86] transition-colors"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold flex-shrink-0 mt-1">
-                                      {index + 1}
-                                    </div>
-                                    <div className="flex-1 flex flex-col gap-2">
-                                      <Input
-                                        type="text"
-                                        value={item.agenda_item}
-                                        onChange={(e) => {
-                                          const newAgendaItems = [...contentForm.agendaItems];
-                                          newAgendaItems[index] = {
-                                            ...item,
-                                            agenda_item: e.target.value,
-                                          };
-                                          setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
-                                        }}
-                                        className="w-full h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
-                                        style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                                        placeholder="أدخل عنوان البند"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={item.presentation_duration_minutes || ''}
-                                          onChange={(e) => {
-                                            const newAgendaItems = [...contentForm.agendaItems];
-                                            newAgendaItems[index] = {
-                                              ...item,
-                                              presentation_duration_minutes: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                                            };
-                                            setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
-                                          }}
-                                          className="w-32 h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
-                                          style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                                          placeholder="المدة"
-                                        />
-                                        <span className="text-[#475467] text-sm font-medium" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                          دقيقة
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setContentForm((prev) => ({
-                                          ...prev,
-                                          agendaItems: prev.agendaItems.filter((_, i) => i !== index),
-                                        }));
-                                      }}
-                                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex-shrink-0 mt-1"
-                                      title="حذف البند"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6">
-                              <p
-                                className="text-[#667085] text-sm"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              {/* Agenda Items Section */}
+              <div className="flex flex-col items-start gap-4 w-full">
+                <h3
+                  className="w-full font-semibold text-black text-right"
+                  style={{
+                    fontFamily: "'Somar Sans', sans-serif",
+                    fontSize: '21.1px',
+                    lineHeight: '28px',
+                  }}
+                >
+                  بنود جدول أعمال الاجتماع:
+                </h3>
+                <div className="w-full text-right overflow-y-auto">
+                  {contentForm.agendaItems.length > 0 ? (
+                    <div className="w-full overflow-x-auto table-scroll">
+                      <DataTable
+                        columns={[
+                          {
+                            id: 'index',
+                            header: 'رقم',
+                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
+                            align: 'center',
+                            render: (_row: any, index: number) => (
+                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold mx-auto">
+                                {index + 1}
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'agenda_item',
+                            header: 'عنوان البند',
+                            width: 'flex-[3] min-w-[250px]',
+                            align: 'end',
+                            render: (item: any, index: number) => (
+                              <Input
+                                type="text"
+                                value={item.agenda_item}
+                                onChange={(e) => {
+                                  const newAgendaItems = [...contentForm.agendaItems];
+                                  newAgendaItems[index] = {
+                                    ...item,
+                                    agenda_item: e.target.value,
+                                  };
+                                  setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
+                                }}
+                                className="w-full h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
+                                style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
+                                placeholder="أدخل عنوان البند"
+                              />
+                            ),
+                          },
+                          {
+                            id: 'duration',
+                            header: 'المدة',
+                            width: 'w-[140px] min-w-[140px] flex-shrink-0',
+                            align: 'end',
+                            render: (item: any, index: number) => (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={item.presentation_duration_minutes || ''}
+                                  onChange={(e) => {
+                                    const newAgendaItems = [...contentForm.agendaItems];
+                                    newAgendaItems[index] = {
+                                      ...item,
+                                      presentation_duration_minutes: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                                    };
+                                    setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
+                                  }}
+                                  className="w-20 h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
+                                  style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
+                                  placeholder="المدة"
+                                />
+                                <span className="text-[#475467] text-xs font-medium" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  دقيقة
+                                </span>
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'action',
+                            header: '',
+                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
+                            align: 'center',
+                            render: (_item: any, index: number) => (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setContentForm((prev) => ({
+                                    ...prev,
+                                    agendaItems: prev.agendaItems.filter((_, i) => i !== index),
+                                  }));
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors mx-auto"
+                                title="حذف البند"
                               >
-                                لا توجد بنود جدول أعمال الاجتماع
-                              </p>
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newId = `agenda-${Date.now()}-${Math.random()}`;
-                              setContentForm((prev) => ({
-                                ...prev,
-                                agendaItems: [...prev.agendaItems, { id: newId, agenda_item: '', presentation_duration_minutes: undefined }],
-                              }));
-                            }}
-                            className="mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors font-medium"
-                            style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                          >
-                            <Plus className="w-4 h-4" />
-                            إضافة بند جديد
-                          </button>
-                        </div>
-                      </div>
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            ),
+                          },
+                        ] as TableColumn<any>[]}
+                        data={contentForm.agendaItems}
+                        className="border-none shadow-none min-w-[900px]"
+                      />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p
+                        className="text-[#667085] text-sm"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        لا توجد بنود جدول أعمال الاجتماع
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `agenda-${Date.now()}-${Math.random()}`;
+                      setContentForm((prev) => ({
+                        ...prev,
+                        agendaItems: [...prev.agendaItems, { id: newId, agenda_item: '', presentation_duration_minutes: undefined }],
+                      }));
+                    }}
+                    className="mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors font-medium"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة بند جديد
+                  </button>
                 </div>
               </div>
             </div>
