@@ -658,7 +658,7 @@ const ConsultationRequestDetail: React.FC = () => {
                               lineHeight: '28px',
                             }}
                           >
-                            بنود الأجندة:
+                            بنود جدول أعمال الاجتماع:
                           </h3>
                           <div className="w-full text-right max-h-[300px] overflow-y-auto">
                             {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
@@ -695,7 +695,7 @@ const ConsultationRequestDetail: React.FC = () => {
                                   className="text-[#667085] text-sm"
                                   style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                                 >
-                                  لا توجد بنود أجندة
+                                  لا توجد بنود جدول أعمال الاجتماع
                                 </p>
                               </div>
                             )}

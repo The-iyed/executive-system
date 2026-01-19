@@ -46,7 +46,7 @@ export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: '-------' },
+  { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];

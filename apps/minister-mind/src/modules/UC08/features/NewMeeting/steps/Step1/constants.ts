@@ -60,7 +60,7 @@ export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
@@ -80,10 +80,10 @@ export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
-  { id: 'previous_meeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------' , width: 'w-full'},
+  { id: 'previous_meeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'directive_date', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
-  { id: 'directive_status', header: 'حالة التوجيه', type: 'text', placeholder: '-------' , width: 'w-full'},
+  { id: 'directive_status', header: 'حالة التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'due_date', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
-  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------' , width: 'w-full'},
+  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
