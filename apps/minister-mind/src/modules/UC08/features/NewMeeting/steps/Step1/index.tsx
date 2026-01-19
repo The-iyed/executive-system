@@ -523,13 +523,13 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
 
         {/* Table 2: Meeting Agenda */}
         <FormTable
-          title="أجندة الاجتماع"
+          title="جدول أعمال الاجتماع"
           columns={MEETING_AGENDA_COLUMNS}
           rows={formData.meetingAgenda || []}
           onAddRow={handleAddAgenda}
           onDeleteRow={handleDeleteAgenda}
           onUpdateRow={handleUpdateAgenda}
-          addButtonLabel="إضافة أجندة"
+          addButtonLabel="إضافة جدول أعمال الاجتماع"
           errors={tableErrors}
           touched={tableTouched}
         />
