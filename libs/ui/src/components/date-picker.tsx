@@ -2,6 +2,7 @@ import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { formatDateToISO } from "@/lib/dateUtils"
 import { Button } from "@/components/button"
 import { Calendar } from "@/components/calendar"
 import {
@@ -64,10 +65,7 @@ export function DatePicker({
     if (onChange) {
       if (newDate) {
         // Format as YYYY-MM-DD for HTML5 date input compatibility
-        const year = newDate.getFullYear();
-        const month = String(newDate.getMonth() + 1).padStart(2, '0');
-        const day = String(newDate.getDate()).padStart(2, '0');
-        onChange(`${year}-${month}-${day}`);
+        onChange(formatDateToISO(newDate));
       } else {
         onChange('');
       }

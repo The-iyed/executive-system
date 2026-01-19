@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { formatDateToISO } from '@shared/utils';
 import { getCalendarEvents, type GetCalendarEventsParams } from '../data/calendarApi';
 import type { CalendarEventData } from '../components';
 
@@ -42,15 +43,8 @@ export const useCalendarEvents = ({
   enabled = true,
 }: UseCalendarEventsOptions) => {
   // Format dates as ISO strings (YYYY-MM-DD) using local timezone
-  const formatLocalDate = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  
-  const startDateStr = formatLocalDate(startDate);
-  const endDateStr = formatLocalDate(endDate);
+  const startDateStr = formatDateToISO(startDate);
+  const endDateStr = formatDateToISO(endDate);
   
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['calendar-events', startDateStr, endDateStr, durationMinutes],
