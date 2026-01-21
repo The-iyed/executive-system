@@ -54,13 +54,13 @@ export const useCreateMeeting = () => {
     onStep1Success: (newDraftId) => {
       setDraftId(newDraftId);
     },
-    onStep2Success: (isDraft) => {
-      if (isDraft) {
-        handleSaveDraft();
-      } else {
-        handleNext();
-      }
-    },
+    // onStep2Success: (isDraft) => {
+    //   if (isDraft) {
+    //     handleSaveDraft();
+    //   } else {
+    //     handleNext();
+    //   }
+    // },
   });
 
   const handleCancel = useCallback(() => {

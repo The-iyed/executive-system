@@ -51,10 +51,12 @@ export const useMeetingSteps = ({
   const step2Hook = useStep2({
     draftId: draftId || '',
     initialData: initialData?.step2,
-    onSuccess: onStep2Success || ((isDraft) => {
-      if (isDraft) {
-        navigate(PATH.MEETINGS);
-      }
+    onSuccess: onStep2Success || ((_isDraft) => {
+      clearDraftData();
+      navigate(PATH.MEETINGS);
+      // if (isDraft) {
+      //   navigate(PATH.MEETINGS);
+      // }
     }),
     onError: (error) => {
       console.error('Step2 error:', error);

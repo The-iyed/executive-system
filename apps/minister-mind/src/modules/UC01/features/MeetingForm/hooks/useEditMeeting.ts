@@ -45,13 +45,13 @@ export const useEditMeeting = () => {
     draftId: id!,
     isEditMode: true,
     initialData,
-    onStep2Success: (isDraft) => {
-      if (isDraft) {
-        handleSaveDraft();
-      } else {
-        handleNext();
-      }
-    },
+    // onStep2Success: (isDraft) => {
+    //   if (isDraft) {
+    //     handleSaveDraft();
+    //   } else {
+    //     handleNext();
+    //   }
+    // },
     // onStep3Success: () => {
     //   clearDraftData();
     // },

@@ -24,13 +24,9 @@ interface SubmitStep2Response {
   success: boolean;
 }
 
-/**
- * API function to submit Step 2 data
- */
 const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2Response> => {
   const { formData, isDraft, draftId } = payload;
 
-  // Validate if not draft
   if (!isDraft) {
     const validationResult = step2Schema.safeParse(formData);
     if (!validationResult.success) {
@@ -42,7 +38,6 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
 
   const body = {
     invitees: formData.invitees?.map((invitee, index) => {
-      // If user exists in system (has user_id), send only user_id and is_required
       if (invitee.user_id) {
         return {
           user_id: invitee.user_id,
@@ -50,7 +45,6 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
         };
       }
       
-      // If external user (no user_id), send all fields
       return {
         name: invitee.name || '',
         position: invitee.position || '',
@@ -62,7 +56,6 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
     }) || [],
   };
 
-  // Use PATCH for both create and update (same endpoint)
   await axiosInstance.patch(
     `/api/meeting-requests/drafts/${draftId}/invitees`,
     body
@@ -85,7 +78,6 @@ export const useStep2 = ({
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
   const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
 
-  // Update form data when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && isEditMode) {
       setFormData((prev) => ({
@@ -95,7 +87,6 @@ export const useStep2 = ({
     }
   }, [initialData, isEditMode]);
 
-  // React Query mutation for submitting step 2
   const submitMutation = useMutation({
     mutationFn: (payload: { formData: Partial<Step2FormData>; isDraft: boolean }) =>
       submitStep2Data({ ...payload, draftId }),
@@ -113,10 +104,6 @@ export const useStep2 = ({
     return step2Schema.safeParse(formData);
   }, [formData]);
 
-  /**
-   * Validate all form data
-   * Skip validation for name, position, mobile when user_id exists
-   */
   const validateAll = useCallback((): boolean => {
     if (!validationResult.success) {
       const newErrors: Record<string, Record<string, string>> = {};
@@ -265,13 +252,11 @@ export const useStep2 = ({
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
     const hasInvitees = formData.invitees && formData.invitees.length > 0;
 
-    // If no invitees, skip API call and directly proceed
     if (!hasInvitees) {
       onSuccess?.(isDraft);
       return;
     }
 
-    // Validate before submitting if not draft
     if (!isDraft && !validateAll()) {
       return;
     }
