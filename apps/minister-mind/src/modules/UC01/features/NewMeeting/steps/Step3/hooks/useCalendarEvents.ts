@@ -8,20 +8,26 @@ import type { CalendarEventData } from '../components';
 const mapSlotToEvent = (slot: { id: string; slot_start: string; slot_end: string; is_available: boolean }): CalendarEventData => {
   const startDate = new Date(slot.slot_start);
   const endDate = new Date(slot.slot_end);
-  
-  // Format time as HH:MM
-  const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
-  const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-  
+
+  // Format time for grid positioning (must match HH:00 slots)
+  const startTime = `${startDate.getHours().toString().padStart(2, '0')}:00`;
+  const endTime = `${endDate.getHours().toString().padStart(2, '0')}:00`;
+
+  // Format exact time for display
+  const exactStartTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+  const exactEndTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
   return {
     id: slot.id,
-    type: slot.is_available ? 'compulsory' : 'reserved', // Use 'compulsory' type for available (UI styling), 'reserved' for unavailable
-    label: slot.is_available ? 'متاح' : 'محجوز', // Override label to show "متاح" for available slots
+    type: slot.is_available ? 'compulsory' : 'reserved',
+    label: slot.is_available ? 'متاح' : 'محجوز',
     startTime,
     endTime,
     date: startDate,
-    title: slot.is_available ? undefined : 'محجوز',
-    is_available: slot.is_available, // Track availability for disabled state
+    title: slot.is_available ? 'موعد متاح' : 'محجوز',
+    is_available: slot.is_available,
+    exactStartTime,
+    exactEndTime,
   };
 };
 
@@ -48,10 +54,10 @@ export const useCalendarEvents = ({
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   const startDateStr = formatLocalDate(startDate);
   const endDateStr = formatLocalDate(endDate);
-  
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['calendar-events', startDateStr, endDateStr, durationMinutes],
     queryFn: () => {
@@ -64,10 +70,10 @@ export const useCalendarEvents = ({
     },
     enabled: enabled && !!startDate && !!endDate,
   });
-  
+
   // Map API response to CalendarEventData
   const events: CalendarEventData[] = data?.map(mapSlotToEvent) || [];
-  
+
   return {
     events,
     isLoading,

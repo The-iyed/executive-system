@@ -48,6 +48,7 @@ import {
   DateTimePicker,
 } from '@sanad-ai/ui';
 import { updateMeetingRequest } from '../data/meetingsApi';
+import { MinisterCalendarView } from '../components';
 
 // Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
@@ -260,6 +261,9 @@ const MeetingDetail: React.FC = () => {
   
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
+
+  // Minister Calendar Modal state
+  const [isMinisterCalendarOpen, setIsMinisterCalendarOpen] = useState(false);
 
   // Initialize invitees state when meeting data loads
   useEffect(() => {
@@ -1239,18 +1243,21 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full max-w-[1085px]">
                 {/* Suggested Times Section */}
                 <div className="flex flex-col gap-3 w-full">
-                  <h2
-                    className="text-right"
-                    style={{
-                      fontFamily: "'Ping AR + LT', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '22px',
-                      lineHeight: '38px',
-                      color: '#101828',
-                    }}
-                  >
-                    الوقت المقترح
-                  </h2>
+                  <div className="flex flex-row items-center justify-between w-full">
+                   
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      الوقت المقترح
+                    </h2>
+                  </div>
                   <div className="flex flex-row gap-4 flex-wrap">
                     {suggestedTimes.length === 0 ? (
                       <div className="w-full text-center py-6 text-gray-500">لا توجد أوقات متاحة</div>
@@ -1297,8 +1304,39 @@ const MeetingDetail: React.FC = () => {
                         </div>
                       ))
                     )}
+                     <button
+                      onClick={() => setIsMinisterCalendarOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 text-[#048F86] bg-[#048F86]/5 border border-[#048F86] rounded-lg hover:bg-[#048F86]/10 transition-colors"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px', fontWeight: 600 }}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      إطلع على جدول الوزير
+                    </button>
                   </div>
                 </div>
+
+                {/* Minister Calendar Modal */}
+                <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
+                  <DialogContent className="max-w-[1240px] w-[95vw] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-right text-2xl font-bold mb-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        جدول الوزير
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <MinisterCalendarView />
+                    </div>
+                    <DialogFooter className="sm:justify-start">
+                      <button
+                        onClick={() => setIsMinisterCalendarOpen(false)}
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        إغلاق
+                      </button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 {/* Invitees table - shared DataTable, read-only from meeting.invitees */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
