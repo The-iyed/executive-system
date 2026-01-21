@@ -96,7 +96,11 @@ const mapMeetingToEvent = (meeting: MeetingApiResponse): CalendarEventData | nul
   };
 };
 
-export const MinisterCalendarView: React.FC = () => {
+export interface MinisterCalendarViewProps {
+  extraEvents?: CalendarEventData[];
+}
+
+export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({ extraEvents = [] }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
@@ -129,13 +133,15 @@ export const MinisterCalendarView: React.FC = () => {
     weekEndDate.setHours(23, 59, 59, 999);
     const weekEndTime = weekEndDate.getTime();
     
-    return allMappedEvents.filter((event) => {
+    const filtered = allMappedEvents.filter((event) => {
       const eventDateOnly = new Date(event.date);
       eventDateOnly.setHours(0, 0, 0, 0);
       const eventTime = eventDateOnly.getTime();
       return eventTime >= weekStartTime && eventTime <= weekEndTime;
     });
-  }, [meetingsResponse, weekStart, weekEnd]);
+
+    return [...filtered, ...extraEvents];
+  }, [meetingsResponse, weekStart, weekEnd, extraEvents]);
 
   const handlePreviousWeek = useCallback(() => {
     setCurrentDate((prev) => {

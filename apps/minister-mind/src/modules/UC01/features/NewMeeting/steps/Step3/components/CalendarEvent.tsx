@@ -24,12 +24,12 @@ const eventTypeStyles: Record<string, { bg: string; border: string; text: string
     },
   },
   optional: {
-    bg: 'bg-[#FFFCF5]',
-    text: 'text-[#B54708]',
-    border: 'border-[1px] border-dashed border-[#B54708]',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-[2px] border-solid border-amber-400',
     contentStyle: {
-      text: 'text-[#B54708]',
-      bg: 'bg-[#B54708]',
+      text: 'text-amber-800',
+      bg: 'bg-amber-500',
     },
   },
   compulsory: {
@@ -146,10 +146,10 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
             styles?.border,
             styles?.borderStyle,
             styles?.borderRight,
-            isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]',
+            isDisabled ? 'cursor-not-allowed opacity-60' : (event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'),
             className
           )}
-          onClick={onClick}
+          onClick={event.id === 'highlighted-slot' ? undefined : onClick}
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
         >
@@ -167,9 +167,14 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         onMouseLeave={() => setOpen(false)}
       >
         <div className="w-full flex justify-between items-start mb-1">
-          <h3 className={cn('text-[14px] font-weight-700 font-bold', styles?.contentStyle?.text)}>
-            {event.title || 'موعد الاجتماع'}
-          </h3>
+          <div className="flex flex-col gap-0.5">
+            <h3 className={cn('text-[14px] font-weight-700 font-bold', styles?.contentStyle?.text)}>
+              {event.title || 'موعد الاجتماع'}
+            </h3>
+            {event.is_selected && (
+              <span className="text-[10px] text-amber-600 font-bold">الموعد المختار لهذا الاجتماع</span>
+            )}
+          </div>
           <span className={cn('text-[10px] px-2 py-0.5 rounded-full bg-opacity-10', styles?.contentStyle?.bg, styles?.contentStyle?.text)}>
             {typeLabel}
           </span>
@@ -200,7 +205,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
             {event.is_selected ? 'إلغاء الحجز' : 'حجز الموعد'}
           </button>
         )}
-        {onClick && !onBook && (
+        {onClick && !onBook && event.id !== 'highlighted-slot' && (
           <button
             type="button"
             onClick={(e) => {
