@@ -7,7 +7,7 @@ import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
   type CalendarEventData,
-} from '../../UC01/features/NewMeeting/steps/Step3/components';
+} from '../components/calendar';
 import { getMeetings, type MeetingApiResponse } from '../data/meetingsApi';
 import { PATH } from '../routes/paths';
 
