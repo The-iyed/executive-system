@@ -49,6 +49,7 @@ import {
 } from '@sanad-ai/ui';
 import { updateMeetingRequest } from '../data/meetingsApi';
 import { MinisterCalendarView } from '../components';
+import { type CalendarEventData } from '../../UC01/features/NewMeeting/steps/Step3/components';
 
 // Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
@@ -361,6 +362,56 @@ const MeetingDetail: React.FC = () => {
     }));
     return [...apiInvitees, ...localInviteesMapped];
   }, [meeting?.invitees, localInvitees]);
+
+  // Create highlighted event for the calendar from selected time slot
+  const highlightedEvents = React.useMemo(() => {
+    if (!scheduleForm.selected_time_slot_id || !meeting) return [];
+    
+    // Find the slot object
+    let selectedSlot = null;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot
+    ];
+    
+    for (const s of allSlots) {
+      if (s?.id === scheduleForm.selected_time_slot_id) {
+        selectedSlot = s;
+        break;
+      }
+    }
+    
+    if (!selectedSlot || !selectedSlot.slot_start) return [];
+    
+    const startDate = new Date(selectedSlot.slot_start);
+    const endDate = selectedSlot.slot_end ? new Date(selectedSlot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    const formatTimeToSlot = (date: Date): string => {
+      return `${date.getHours().toString().padStart(2, '0')}:00`;
+    };
+    
+    const formatExactTime = (date: Date): string => {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
+    return [{
+      id: 'highlighted-slot',
+      type: 'optional', // Uses the highlighted amber style
+      label: `الموعد المختار (${formatExactTime(startDate)})`,
+      startTime: formatTimeToSlot(startDate),
+      endTime: formatTimeToSlot(endDate),
+      date: startDate,
+      title: 'موعد هذا الاجتماع',
+      is_available: false,
+      is_selected: true,
+      exactStartTime: formatExactTime(startDate),
+      exactEndTime: formatExactTime(endDate),
+    }] as CalendarEventData[];
+  }, [scheduleForm.selected_time_slot_id, meeting]);
+
 
   const queryClient = useQueryClient();
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
@@ -1317,14 +1368,14 @@ const MeetingDetail: React.FC = () => {
 
                 {/* Minister Calendar Modal */}
                 <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
-                  <DialogContent className="max-w-[1240px] w-[95vw] overflow-y-auto">
+                  <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-right text-2xl font-bold mb-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                         جدول الوزير
                       </DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
-                      <MinisterCalendarView />
+                      <MinisterCalendarView extraEvents={highlightedEvents} />
                     </div>
                     <DialogFooter className="sm:justify-start">
                       <button
@@ -3157,4 +3208,3 @@ const MeetingDetail: React.FC = () => {
 };
 
 export default MeetingDetail;
-
