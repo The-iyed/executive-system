@@ -6,6 +6,7 @@ export interface CalendarEventData {
   id: string;
   type: EventType;
   label: string;
+  variant?: string; // Add variant for custom coloring
   startTime: string; // Hour slot for grid positioning (e.g., "14:00")
   endTime: string; // Hour slot for grid positioning (e.g., "15:00")
   date: Date;
@@ -23,13 +24,9 @@ export interface WeeklyCalendarGridProps {
   onEventClick?: (event: CalendarEventData) => void;
   onEventBook?: (event: CalendarEventData) => void;
   onTimeSlotClick?: (date: Date, time: string) => void;
+  startHour?: number;
+  endHour?: number;
 }
-
-// 7:00 → 21:00 (15 slots)
-const timeSlots = Array.from({ length: 15 }, (_, i) => {
-  const hour = 7 + i;
-  return `${hour.toString().padStart(2, '0')}:00`;
-});
 
 const dayNamesShort = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 const monthNamesShort = [
@@ -72,8 +69,18 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   onEventClick,
   onEventBook,
   onTimeSlotClick,
+  startHour = 8,
+  endHour = 18,
 }) => {
   const weekDates = getWeekDates(weekStart);
+
+  const timeSlots = React.useMemo(() => {
+    const slots = [];
+    for (let i = startHour; i <= endHour; i++) {
+      slots.push(`${i.toString().padStart(2, '0')}:00`);
+    }
+    return slots;
+  }, [startHour, endHour]);
 
   return (
     <div className="w-full border-[0.6px] border-b-0 border-[#B6C1CA] rounded-[2px] overflow-hidden bg-white">
