@@ -10,3 +10,4 @@ export { FormRow, type FormRowProps } from './FormRow';
 export { FileUpload, type FileUploadProps, type ExistingFile } from './FileUpload';
 export { FormAsyncSelect, type FormAsyncSelectProps } from './FormAsyncSelect';
 export { FormAsyncSelectV2, type FormAsyncSelectV2Props } from './FormAsyncSelectV2';
+export type { OptionType } from '../AsyncSelectV2/types';

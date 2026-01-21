@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { AsyncPaginate, LoadOptions } from 'react-select-async-paginate';
 import { GroupBase, SingleValue, ActionMeta, OptionsOrGroups } from 'react-select';
 import { cn } from '@sanad-ai/ui';
-import type { SelectOption, PaginatedResponse, AdditionalOptions, AsyncSelectV2Props } from './types';
+import type { SelectOption, PaginatedResponse, AdditionalOptions, AsyncSelectV2Props, OptionType } from './types';
 
 const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   value,
@@ -236,29 +236,34 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   ) => {
     if (!onChange) return;
 
-    const singleValue = (newValue && 'value' in newValue)
-      ? newValue.value
-      : null;
-    onChange(singleValue, actionMeta);
+    if (!newValue || !('value' in newValue)) {
+      onChange(null, actionMeta);
+      return;
+    }
+
+    // Return as OptionType object
+    const optionValue: OptionType = {
+      value: newValue.value,
+      label: newValue.label,
+      description: newValue.description,
+    };
+    onChange(optionValue, actionMeta);
   }, [onChange]);
 
   // Convert value to option
   const selectedOption = useMemo(() => {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined) {
       return null;
     }
 
-    // Try to find in cache first
-    const cachedOption = optionsCacheRef.current.find(opt => opt.value === value);
+    // Value is now an OptionType object, try to find in cache first
+    const cachedOption = optionsCacheRef.current.find(opt => opt.value === value.value);
     if (cachedOption) {
       return cachedOption;
     }
 
-    // If not in cache, create a temporary option (will be replaced when loaded)
-    return {
-      value: value,
-      label: String(value),
-    };
+    // If not in cache, use the provided value object directly
+    return value as SelectOption;
   }, [value]);
 
   return (
@@ -283,10 +288,12 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
               return option.label;
             }
             return (
-              <div style={{ color: 'inherit' }}>
-                <div style={{ color: 'inherit', fontWeight: 400 }}>{option.label}</div>
+              <div className="flex flex-col">
+                <div className="text-inherit font-normal text-sm">
+                  {option.label}
+                </div>
                 {option.description && (
-                  <div style={{ color: '#667085', fontSize: '12px', marginTop: '2px' }}>
+                  <div className="text-base-gray-500 text-xs">
                     {option.description}
                   </div>
                 )}

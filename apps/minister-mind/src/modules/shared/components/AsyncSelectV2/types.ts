@@ -1,8 +1,12 @@
 import { ActionMeta } from 'react-select';
 
-export interface SelectOption {
-  value: string | number;
+export type OptionType = {
+  value: string;
   label: string;
+  description?: string;
+};
+
+export interface SelectOption extends OptionType {
   [key: string]: any;
 }
 
@@ -28,8 +32,8 @@ export interface AdditionalOptions {
 }
 
 export interface AsyncSelectV2Props {
-  value?: string | number | null;
-  onChange?: (value: string | number | null, actionMeta?: ActionMeta<SelectOption>) => void;
+  value?: OptionType | null;
+  onChange?: (value: OptionType | null, actionMeta?: ActionMeta<SelectOption>) => void;
   placeholder?: string;
   loadOptions: (search: string, skip: number, limit: number) => Promise<PaginatedResponse<SelectOption>>;
   isLoading?: boolean;
