@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { FormTable, ActionButtons, FormAsyncSelectV2 } from '@shared';
+import { useToast } from '@sanad-ai/ui';
+import { FormTable, ActionButtons, FormAsyncSelectV2, OptionType } from '@shared';
 import {
   INVITEES_TABLE_COLUMNS,
   INVITEES_TABLE_TITLE,
@@ -9,14 +10,11 @@ import type { Step2FormData } from '../../schemas/step2.schema';
 import { getUsers, UserApiResponse } from '../../../../data';
 
 export interface Step2Props {
-  // Form data and state
   formData: Partial<Step2FormData>;
   errors: Record<string, Record<string, string>>;
   touched: Record<string, Record<string, boolean>>;
   isSubmitting: boolean;
   isDeleting: boolean;
-  
-  // Handlers
   handleAddAttendee: () => void;
   handleDeleteAttendee: (id: string) => void;
   handleUpdateAttendee: (id: string, field: string, value: any) => void;
@@ -29,7 +27,7 @@ export interface Step2Props {
     phone_number?: string;
     first_name?: string;
     last_name?: string;
-  }) => void;
+  }) => boolean;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -50,7 +48,7 @@ export const Step2: React.FC<Step2Props> = ({
   handleCancelClick,
 }) => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  // Use a ref to store all loaded options (Map for O(1) lookup)
+  const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { 
     value: string; 
     label: string; 
@@ -62,29 +60,35 @@ export const Step2: React.FC<Step2Props> = ({
     last_name?: string;
   }>>(new Map());
 
-  // Handle user selection from async select
-  const handleUserSelect = useCallback((userId: string | number | null) => {
-    if (!userId) {
+  const handleUserSelect = useCallback((value: OptionType | null) => {
+    if (!value) {
       setSelectedUserId(null);
       return;
     }
     
-    // Convert to string for lookup
-    const userIdString = String(userId);
-    
-    // Find the selected user option from the map
-    const selectedOption = userOptionsMapRef.current.get(userIdString);
+    const selectedOption = userOptionsMapRef.current.get(value.value);
     if (selectedOption) {
-      handleAddUserFromSelect(selectedOption);
-      // Clear selection after adding
+      const added = handleAddUserFromSelect(selectedOption);
+      if (!added) {
+        toast({
+          title: 'المستخدم موجود مسبقاً',
+          description: 'تم إضافة هذا المستخدم إلى القائمة مسبقاً',
+          variant: 'destructive',
+        });
+        setSelectedUserId(null);
+        return;
+      }
+      
+      toast({
+        title: 'تمت الإضافة بنجاح',
+        description: `تم إضافة ${selectedOption.label} إلى قائمة المدعوين`,
+      });
       setSelectedUserId(null);
     } else {
-      // If option not found, just clear selection
       setSelectedUserId(null);
     }
   }, [handleAddUserFromSelect]);
 
-  // Load options function for FormAsyncSelectV2
   const handleLoadOptions = useCallback(async (
     search: string,
     skip: number,
@@ -97,20 +101,17 @@ export const Step2: React.FC<Step2Props> = ({
         limit,
       });
 
-      // Map users to options format
       const items = response.items.map((user: UserApiResponse) => {
-        // Construct name from first_name and last_name
         const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
-        
         return {
           value: user.id,
           label: fullName,
           description: user.email,
-          username: user.username || fullName, // Store username for display
+          username: user.username || fullName,
           position: user.position || '',
           phone_number: user.phone_number || '',
-          first_name: user.first_name || '', // Store first_name for mapper
-          last_name: user.last_name || '', // Store last_name for mapper
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
         };
       });
 
