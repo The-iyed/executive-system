@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getUsers, type UserApiResponse } from '../../../data/usersApi';
 import type { AsyncSelectOption } from '@sanad-ai/ui';
+import { getUsers, UserApiResponse } from '../../../data/usersApi';
 
 // PaginatedResponse type (will be exported from @sanad-ai/ui in future)
 interface PaginatedResponse<T> {

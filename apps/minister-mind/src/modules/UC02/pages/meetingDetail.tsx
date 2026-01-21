@@ -1614,7 +1614,6 @@ const MeetingDetail: React.FC = () => {
                       onClick={addMinisterAttendee}
                       className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054]"
                       style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
                         fontWeight: 700,
                         fontSize: '16px',
                         lineHeight: '24px',
@@ -1624,6 +1623,7 @@ const MeetingDetail: React.FC = () => {
                       إضافة مدعو جديد
                     </button>
                     <AIGenerateButton 
+                    className='mr-4'
                     label='	إضافة مدعوين آليًا'
                     onClick={() => {
                       console.log('AI Generate clicked');
