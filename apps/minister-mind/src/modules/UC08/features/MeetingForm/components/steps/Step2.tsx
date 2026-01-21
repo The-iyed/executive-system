@@ -1,14 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { useToast } from '@sanad-ai/ui';
-import { FormTable, ActionButtons, FormAsyncSelectV2, OptionType } from '@shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2 } from '@shared';
 import {
   INVITEES_TABLE_COLUMNS,
   INVITEES_TABLE_TITLE,
   ADD_INVITEE_BUTTON_LABEL,
 } from '../../utils/constants';
 import type { Step2FormData } from '../../schemas/step2.schema';
-import { getUsers } from '../../../../data/usersApi';
-import type { UserApiResponse } from '../../../../data/usersApi';
+import { getUsers, UserApiResponse } from '../../../../data';
 
 export interface Step2Props {
   // Form data and state
@@ -31,7 +29,7 @@ export interface Step2Props {
     phone_number?: string;
     first_name?: string;
     last_name?: string;
-  }) => boolean;
+  }) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -51,8 +49,8 @@ export const Step2: React.FC<Step2Props> = ({
   handleSaveDraftClick,
   handleCancelClick,
 }) => {
-  const [selectedUserId, setSelectedUserId] = useState<OptionType | null>(null);
-  const { toast } = useToast();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  // Use a ref to store all loaded options (Map for O(1) lookup)
   const userOptionsMapRef = useRef<Map<string, { 
     value: string; 
     label: string; 
@@ -64,35 +62,29 @@ export const Step2: React.FC<Step2Props> = ({
     last_name?: string;
   }>>(new Map());
 
-  const handleUserSelect = useCallback((value: OptionType | null) => {
-    if (!value) {
+  // Handle user selection from async select
+  const handleUserSelect = useCallback((userId: string | number | null) => {
+    if (!userId) {
       setSelectedUserId(null);
       return;
     }
     
-    const selectedOption = userOptionsMapRef.current.get(value.value);
+    // Convert to string for lookup
+    const userIdString = String(userId);
+    
+    // Find the selected user option from the map
+    const selectedOption = userOptionsMapRef.current.get(userIdString);
     if (selectedOption) {
-      const added = handleAddUserFromSelect(selectedOption);
-      if (!added) {
-        toast({
-          title: 'المستخدم موجود مسبقاً',
-          description: 'تم إضافة هذا المستخدم إلى القائمة مسبقاً',
-          variant: 'destructive',
-        });
-        setSelectedUserId(null);
-        return;
-      }
-      
-      toast({
-        title: 'تمت الإضافة بنجاح',
-        description: `تم إضافة ${selectedOption.label} إلى قائمة المدعوين`,
-      });
+      handleAddUserFromSelect(selectedOption);
+      // Clear selection after adding
       setSelectedUserId(null);
     } else {
+      // If option not found, just clear selection
       setSelectedUserId(null);
     }
   }, [handleAddUserFromSelect]);
 
+  // Load options function for FormAsyncSelectV2
   const handleLoadOptions = useCallback(async (
     search: string,
     skip: number,
@@ -105,24 +97,29 @@ export const Step2: React.FC<Step2Props> = ({
         limit,
       });
 
+      // Map users to options format
       const items = response.items.map((user: UserApiResponse) => {
+        // Construct name from first_name and last_name
         const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
+        
         return {
           value: user.id,
           label: fullName,
           description: user.email,
-          username: user.username || fullName, 
+          username: user.username || fullName, // Store username for display
           position: user.position || '',
           phone_number: user.phone_number || '',
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
+          first_name: user.first_name || '', // Store first_name for mapper
+          last_name: user.last_name || '', // Store last_name for mapper
         };
       });
 
+      // Store all options in the map for quick lookup
       items.forEach((option) => {
         userOptionsMapRef.current.set(option.value, option);
       });
 
+      // Return paginated response matching the API format
       return {
         items,
         total: response.total,
