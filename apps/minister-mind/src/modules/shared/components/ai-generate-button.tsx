@@ -8,6 +8,7 @@ export interface AIGenerateButtonProps {
   label?: string;
   className?: string;
   disabled?: boolean;
+  variant?: 'primary' | 'secondary';
 }
 
 export const AIGenerateButton: React.FC<AIGenerateButtonProps> = ({
@@ -15,7 +16,9 @@ export const AIGenerateButton: React.FC<AIGenerateButtonProps> = ({
   label = 'توليد بالذكاء الاصطناعي',
   className,
   disabled = false,
+  variant = 'primary',
 }) => {
+  const isSecondary = variant === 'secondary';
   return (
     <>
       <style>{`
@@ -54,33 +57,75 @@ export const AIGenerateButton: React.FC<AIGenerateButtonProps> = ({
         onClick={onClick}
         disabled={disabled}
         className={cn(
-          'w-[190px] h-[44px]',
-          'p-[12px_14px]',
-          'rounded-[74px]',
+          // Primary variant styles (default)
+          !isSecondary && [
+            'w-[190px] h-[44px]',
+            'p-[12px_14px]',
+            'rounded-[74px]',
+          ],
+          // Secondary variant styles
+          isSecondary && [
+            'w-[150px] h-[47px]',
+            'p-[12px_14px]',
+            'rounded-[30px]',
+            'bg-[#34C3BA]',
+          ],
           'relative flex items-center justify-center gap-2',
           'overflow-hidden transition-all duration-300',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           'hover:scale-[1.02] active:scale-[0.98]',
-          'box-shadow: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03), inset 0px 0px 8.8px rgba(0, 135, 116, 0.24)',
+          // Primary variant shadow
+          !isSecondary && 'box-shadow: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03), inset 0px 0px 8.8px rgba(0, 135, 116, 0.24)',
           className
         )}
+        style={
+          isSecondary
+            ? {
+                boxShadow: 'inset 0px 0.305164px 13.4577px rgba(51, 51, 51, 0.8)',
+                filter: 'drop-shadow(0px 1.22066px 13.885px rgba(4, 143, 134, 0.3))',
+              }
+            : undefined
+        }
       >
-        {/* SVG Background */}
-        <AiGeneratorButtonBg 
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
+        {/* Blurred background layer for secondary variant */}
+        {isSecondary && (
+          <div
+            className="absolute inset-0 bg-[#87F8F8] pointer-events-none z-0"
+            style={{
+              filter: 'blur(12.5728px)',
+            }}
+          />
+        )}
+
+        {/* SVG Background (primary variant only) */}
+        {!isSecondary && (
+          <AiGeneratorButtonBg 
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          />
+        )}
         
         {/* Content Layer */}
         <div className="relative z-10 flex items-center justify-center gap-2">
           <Sparkles 
-            className="w-4 h-4 text-[#009883]"
+            className={cn(
+              'w-4 h-4',
+              !isSecondary && 'text-[#009883]',
+              isSecondary && 'text-white'
+            )}
             style={{
               animation: 'ai-button-sparkle 2s ease-in-out infinite',
-              color: 'linear-gradient(90deg, #009883 0%, #00BBA1 100%)',
             }}
           />
           <span
-            className="font-medium text-[14px] leading-[20px] font-normal text-[#009883]"
+            className={cn(
+              'font-medium leading-[20px]',
+              !isSecondary && [
+                'text-[14px] font-normal text-[#009883]',
+              ],
+              isSecondary && [
+                'text-[12px] font-medium text-white',
+              ]
+            )}
           >
             {label}
           </span>
