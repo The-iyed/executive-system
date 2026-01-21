@@ -19,7 +19,6 @@ export const FormDatePicker: React.FC<FormDatePickerProps> = ({
   placeholder = 'dd:mm:yyyy',
   error,
   className,
-  disabled,
   fullWidth = false,
 }) => {
   return (
@@ -29,9 +28,7 @@ export const FormDatePicker: React.FC<FormDatePickerProps> = ({
       onBlur={onBlur}
       placeholder={placeholder}
       error={error}
-      disabled={disabled}
-      className={className}
-      style={fullWidth ? { width: '100%' } : undefined}
+      className={fullWidth ? `${className || ''} w-full`.trim() : className}
     />
   );
 };

@@ -141,7 +141,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
         limit: DEFAULT_PAGE_SIZE,
       });
       return response.items.map((user: UserApiResponse) => ({
-        id: user.id,
+        value: user.id,
         label: user.name || user.email || user.id,
       }));
     } catch (error) {
@@ -170,15 +170,15 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
       
       // Transform to AsyncSelectOption format
       let options: AsyncSelectOption<string>[] = paginatedResponse.items.map((directive: DirectiveApiResponse) => ({
-        id: directive.id,
+        value: directive.id,
         label: directive.directive_text || directive.directive_number || directive.id,
         description: directive.directive_number,
       }));
       
       // Add default directive if it exists and is not already in the options (only on first page and no search)
-      if (page === 0 && !search && defaultDirective && !options.find((opt) => opt.id === defaultDirective.id)) {
+      if (page === 0 && !search && defaultDirective && !options.find((opt) => opt.value === defaultDirective.id)) {
         options.unshift({
-          id: defaultDirective.id,
+          value: defaultDirective.id,
           label: defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id,
           description: defaultDirective.directive_number,
         });
@@ -186,34 +186,32 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
       
       // Transform to AsyncSelect expected format
       return {
-        data: options,
-        page: page || 0,
-        pageSize: limit,
+        items: options,
+        skip: skip,
+        limit: limit,
         total: paginatedResponse.total,
-        hasMore: paginatedResponse.has_next,
+        has_next: paginatedResponse.has_next,
       };
     } catch (error) {
       console.error('Error loading directives:', error);
       // If there's an error but we have a default directive, return it
       if (page === 0 && !search && defaultDirective) {
         return {
-          data: [{
-            id: defaultDirective.id,
+          items: [{
+            value: defaultDirective.id,
             label: defaultDirective.directive_text || defaultDirective.directive_number || defaultDirective.id,
             description: defaultDirective.directive_number,
           }],
-          page: 0,
-          pageSize: pageSize || DEFAULT_PAGE_SIZE,
+          skip: 0,
+          limit: pageSize || DEFAULT_PAGE_SIZE,
           total: 1,
-          hasMore: false,
         };
       }
       return {
-        data: [],
-        page: page || 0,
-        pageSize: pageSize || DEFAULT_PAGE_SIZE,
+        items: [],
+        skip: (page || 0) * (pageSize || DEFAULT_PAGE_SIZE),
+        limit: pageSize || DEFAULT_PAGE_SIZE,
         total: 0,
-        hasMore: false,
       };
     }
   }, [defaultDirective]);
@@ -290,12 +288,11 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
               error={touched.relatedDirective ? errors.relatedDirective : undefined}
             >
               <AsyncSelect
-                fetchOptions={loadDirectivesOptions}
+                loadOptions={loadDirectivesOptions}
                 value={formData.relatedDirective}
                 onValueChange={handleDirectiveChange}
                 placeholder="-------"
                 searchable={true}
-                pageSize={DEFAULT_PAGE_SIZE}
                 clearable={false}
                 disabled={false}
                 errorMessage={touched.relatedDirective ? errors.relatedDirective : null}
@@ -310,7 +307,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                   touched.relatedDirective && errors.relatedDirective && 'border-[#D13C3C]',
                   !(touched.relatedDirective && errors.relatedDirective) && 'focus:border-[#008774]'
                 )}
-                popoverClassName="rtl"
                 width="100%"
                 renderSelected={(option) => {
                   // If option is found in the list, use it
@@ -397,7 +393,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 onChange={(e) => handleChange('meetingSubject', e.target.value)}
                 onBlur={() => handleBlur('meetingSubject')}
                 placeholder="-------"
-                error={!!(touched.meetingSubject && errors.meetingSubject)}
+                error={touched.meetingSubject && errors.meetingSubject ? errors.meetingSubject : undefined}
                 label="موضوع الاجتماع"
               />
           {/* Row 3 */}
@@ -436,7 +432,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 onChange={(e) => handleChange('meetingReason', e.target.value)}
                 onBlur={() => handleBlur('meetingReason')}
                 placeholder="-------"
-                error={!!(touched.meetingReason && errors.meetingReason)}
+                error={touched.meetingReason && errors.meetingReason ? errors.meetingReason : undefined}
                 label="مبرّر اللقاء"
               />
               <FormTextArea
@@ -444,7 +440,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 onChange={(e) => handleChange('relatedTopic', e.target.value)}
                 onBlur={() => handleBlur('relatedTopic')}
                 placeholder="-------"
-                error={!!(touched.relatedTopic && errors.relatedTopic)}
+                error={touched.relatedTopic && errors.relatedTopic ? errors.relatedTopic : undefined}
                 label="الموضوع المرتبط"
               />
 
@@ -517,7 +513,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
           addButtonLabel="إضافة هدف"
           errors={tableErrors}
           touched={tableTouched}
-          hasError={!!(errors.meetingGoals || Object.keys(tableErrors).length > 0)}
           errorMessage={errors.meetingGoals || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة هدف واحد على الأقل' : undefined)}
         />
 
@@ -546,7 +541,6 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
           addButtonLabel="إضافة دعم"
           errors={tableErrors}
           touched={tableTouched}
-          hasError={!!(errors.ministerSupport || Object.keys(tableErrors).length > 0)}
           errorMessage={errors.ministerSupport || (Object.keys(tableErrors).length > 0 ? 'يجب إضافة دعم واحد على الأقل' : undefined)}
         />
 

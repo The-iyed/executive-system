@@ -47,7 +47,7 @@ export const Step2: React.FC<Step2Props> = ({
   handleSaveDraftClick,
   handleCancelClick,
 }) => {
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<OptionType | null>(null);
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { 
     value: string; 
@@ -87,7 +87,7 @@ export const Step2: React.FC<Step2Props> = ({
     } else {
       setSelectedUserId(null);
     }
-  }, [handleAddUserFromSelect]);
+  }, [handleAddUserFromSelect, toast]);
 
   const handleLoadOptions = useCallback(async (
     search: string,

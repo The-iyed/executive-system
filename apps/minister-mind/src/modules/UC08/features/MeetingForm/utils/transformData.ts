@@ -18,19 +18,19 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
       sector: draft.sector || '',
-      relatedDirective: draft.related_directive_id || '',
+      relatedDirective: draft.related_directive_id ? { value: draft.related_directive_id, label: draft.related_directive_id } : null,
       meetingNature: draft.is_sequential === true ? 'FORMAL' : 'INFORMAL',
       previousMeeting: draft.previous_meeting_id || '',
-      meetingGoals: draft.objectives?.map((obj) => ({
+      meetingGoals: draft.objectives?.map((obj: { id: string; objective: string }) => ({
         id: obj.id,
         objective: obj.objective,
       })) || [],
-      meetingAgenda: draft.agenda_items?.map((item) => ({
+      meetingAgenda: draft.agenda_items?.map((item: { id: string; agenda_item: string; presentation_duration_minutes: number }) => ({
         id: item.id,
         agenda_item: item.agenda_item || '',
         presentation_duration_minutes: String(item.presentation_duration_minutes || ''),
       })) || [],
-      ministerSupport: draft.minister_support?.map((support) => ({
+      ministerSupport: draft.minister_support?.map((support: { id: string; support_description: string }) => ({
         id: support.id,
         support_description: support.support_description,
       })) || [],
@@ -45,9 +45,11 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       })) || [],
       wasDiscussedPreviously: draft.topic_discussed_before || false,
       previousMeetingDate: formatDateStringToISO(draft.previous_meeting_date),
-      notes: draft.general_notes || draft.general_note || '',
+      notes: Array.isArray(draft.general_notes) 
+        ? draft.general_notes.join('\n') 
+        : (draft.general_notes || draft.general_note || ''),
       isComplete: draft.is_data_complete ?? false,
-      existingFiles: allAttachments.map(att => ({
+      existingFiles: allAttachments.map((att: { id: string; file_name: string; blob_url: string; file_size?: number; file_type?: string }) => ({
         id: att.id,
         file_name: att.file_name,
         blob_url: att.blob_url,
