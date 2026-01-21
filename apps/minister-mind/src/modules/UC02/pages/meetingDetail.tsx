@@ -412,6 +412,14 @@ const MeetingDetail: React.FC = () => {
     }] as CalendarEventData[];
   }, [scheduleForm.selected_time_slot_id, meeting]);
 
+  // Extract the date of the selected slot to open the calendar at the correct week
+  const selectedSlotDate = React.useMemo(() => {
+    if (highlightedEvents.length > 0) {
+      return highlightedEvents[0].date;
+    }
+    return undefined;
+  }, [highlightedEvents]);
+
 
   const queryClient = useQueryClient();
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
@@ -1375,7 +1383,10 @@ const MeetingDetail: React.FC = () => {
                       </DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
-                      <MinisterCalendarView extraEvents={highlightedEvents} />
+                      <MinisterCalendarView 
+                        extraEvents={highlightedEvents} 
+                        initialDate={selectedSlotDate}
+                      />
                     </div>
                     <DialogFooter className="sm:justify-start">
                       <button
