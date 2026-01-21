@@ -1,4 +1,4 @@
-import type { FormTableColumn } from '../Step1/components';
+import type { FormTableColumn } from '@shared';
 
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   {
