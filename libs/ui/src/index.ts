@@ -159,27 +159,13 @@ export {
   SelectScrollDownButton,
 } from './components/select';
 
-// Export improved async select component (v2)
-export {
-  AsyncSelectV2,
-  type AsyncSelectProps as AsyncSelectV2Props,
-  type AsyncSelectOption as AsyncSelectV2Option,
-} from './components/async-select-v2';
-
-// Export new async select component with pagination and infinite scroll
 export {
   AsyncSelect,
-  AsyncSelectQuery,
-  useDebounce,
-  useInfinitePagination,
-  useAsyncSelect,
   type AsyncSelectProps,
   type AsyncSelectOption,
   type PaginatedResponse,
-  type FetchOptionsFn,
 } from './components/async-select';
 
-// Export popover components
 export {
   Popover,
   PopoverTrigger,
@@ -200,3 +186,4 @@ export { DateTimePicker } from './components/date-time-picker';
 
 // Export utilities
 export { cn } from './lib/utils';
+export { formatDateToISO, formatDateStringToISO } from './lib/dateUtils';

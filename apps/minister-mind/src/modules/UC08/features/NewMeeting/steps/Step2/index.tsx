@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { FormTable } from '../Step1/components';
+import { FormTable } from '@shared';
 import { ActionButtons } from '@shared';
 import { useStep2 } from './useStep2';
 import { useDeleteDraft } from '../../hooks/useDeleteDraft';

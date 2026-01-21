@@ -486,3 +486,16 @@ export const getContentOfficerNotesRecords = async (
   return response.data;
 };
 
+// Evaluate Readiness API
+export interface EvaluateReadinessResponse {
+  readiness: string;
+  reasoning: string[];
+}
+
+export const evaluateReadiness = async (meetingId: string): Promise<EvaluateReadinessResponse> => {
+  const response = await axiosInstance.post<EvaluateReadinessResponse>(
+    `/api/meetings/${meetingId}/evaluate-readiness`
+  );
+  return response.data;
+};
+

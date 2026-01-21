@@ -11,7 +11,7 @@ import { useDeleteDraft } from '../../hooks/useDeleteDraft';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { useCalendarEvents } from './hooks/useCalendarEvents';
 import { PATH } from '../../../../routes/paths';
-import { FormSelect, FormSwitch, FormTextArea, FormField, FormRow } from '../Step1/components';
+import { FormSelect, FormSwitch, FormTextArea, FormField, FormRow } from '@shared';
 
 // Meeting channel options
 const MEETING_CHANNEL_OPTIONS = [
@@ -204,7 +204,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
 
   // Show loader while fetching events
   if (isLoadingEvents) {
-    return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." />;
+    return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." className='rounded-t-[30px]' />;
   }
 
   // Show error state if fetch failed
@@ -255,7 +255,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
             >
             <FormSelect
                 value={formData.meetingChannel || ''}
-                onValueChange={(value) => handleChange('meetingChannel', value)}
+                onValueChange={(value: string) => handleChange('meetingChannel', value)}
                 options={MEETING_CHANNEL_OPTIONS}
                 placeholder="-------"
                 error={false}
@@ -263,7 +263,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
             </FormField>
             <FormSwitch
               checked={formData.requiresProtocol || false}
-              onCheckedChange={(value) => handleChange('requiresProtocol', value)}
+              onCheckedChange={(value: boolean) => handleChange('requiresProtocol', value)}
               label=" هل يتطلب بروتوكول؟"
             />
           </FormRow>
@@ -271,7 +271,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
             <FormTextArea
               label="ملاحظات"
               value={formData.notes || ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('notes', e.target.value)}
               placeholder="-------"
             />
 
