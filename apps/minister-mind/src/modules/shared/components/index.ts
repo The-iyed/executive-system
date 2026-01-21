@@ -61,3 +61,6 @@ export {
   FormAsyncSelectV2,
   type FormAsyncSelectV2Props,
 } from './form';
+
+
+export type { OptionType } from './AsyncSelectV2/types';

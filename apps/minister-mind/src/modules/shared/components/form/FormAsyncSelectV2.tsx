@@ -2,12 +2,14 @@ import React from 'react';
 import AsyncSelectV2 from '../AsyncSelectV2';
 import { cn } from '@sanad-ai/ui';
 
+import type { OptionType } from '../AsyncSelectV2/types';
+
 export interface FormAsyncSelectV2Props {
-  value?: string | number | null;
-  onValueChange?: (value: string | number | null) => void;
+  value?: OptionType | null;
+  onValueChange?: (value: OptionType | null) => void;
   placeholder?: string;
   loadOptions: (search: string, skip: number, limit: number) => Promise<{
-    items: Array<{ value: string | number; label: string; [key: string]: any }>;
+    items: Array<OptionType & { [key: string]: any }>;
     total: number;
     skip: number;
     limit: number;
