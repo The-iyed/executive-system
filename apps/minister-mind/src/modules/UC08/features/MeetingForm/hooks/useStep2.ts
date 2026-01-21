@@ -235,9 +235,15 @@ export const useStep2 = ({
     last_name?: string;
   }) => {
     const userId = userOption.value;
-    const existingUser = formData.invitees?.find((inv) => inv.user_id === userId);
-    if (existingUser) return false;
 
+    // Check if user is already in the list
+    const existingUser = formData.invitees?.find((inv) => inv.user_id === userId);
+    if (existingUser) {
+      console.warn('User already added to invitees');
+      return;
+    }
+
+    // Map user option to UserApiResponse format for the mapper
     const userData: UserApiResponse = {
       id: userId,
       username: userOption.username,
@@ -248,8 +254,10 @@ export const useStep2 = ({
       phone_number: userOption.phone_number || null,
     };
 
+    // Use mapper to create form data
     const mappedUser = mapUserToFormData(userData);
 
+    // Create new invitee with generated ID
     const newInvitee = {
       ...mappedUser,
       id: nanoid(),
@@ -259,9 +267,12 @@ export const useStep2 = ({
       ...prev,
       invitees: [newInvitee, ...(prev.invitees || [])],
     }));
-    return true;
   }, [formData.invitees]);
 
+  /**
+   * Submit step 2 data (with validation if not draft)
+   * If no invitees exist, skips API call and directly calls onSuccess
+   */
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
     const hasInvitees = formData.invitees && formData.invitees.length > 0;
 
