@@ -1,2 +1,7 @@
 // UC02 module hooks
-export {};
+export { useSuggestMeetingAttendees } from './useSuggestMeetingAttendees';
+export type { 
+  UseSuggestMeetingAttendeesParams,
+  SuggestMeetingAttendeesResponse,
+  SuggestedAttendee,
+} from './useSuggestMeetingAttendees';
