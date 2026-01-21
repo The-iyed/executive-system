@@ -1,6 +1,6 @@
 import type { Step2FormData } from '../schemas/step2.schema';
-import type { DraftApiResponse } from '../../../data/draftApi';
-import type { UserApiResponse } from '../../../data/usersApi';
+import { UserApiResponse } from '../../../data/usersApi';
+import { DraftApiResponse } from '../../../data';
 
 /**
  * Form data structure for an invitee

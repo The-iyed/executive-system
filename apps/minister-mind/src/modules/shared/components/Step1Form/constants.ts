@@ -1,4 +1,5 @@
-import { FormTableColumn } from "../../../UC01/features/NewMeeting/steps/Step1/components";
+
+import { FormTableColumn } from "../form";
 
 // Dropdown options - These should be fetched from API in production
 export const MEETING_CATEGORY_OPTIONS = [
