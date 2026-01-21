@@ -98,10 +98,21 @@ const mapMeetingToEvent = (meeting: MeetingApiResponse): CalendarEventData | nul
 
 export interface MinisterCalendarViewProps {
   extraEvents?: CalendarEventData[];
+  initialDate?: Date;
 }
 
-export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({ extraEvents = [] }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({ 
+  extraEvents = [],
+  initialDate
+}) => {
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+
+  // Sync currentDate if initialDate changes (e.g. when opening modal with a new selection)
+  React.useEffect(() => {
+    if (initialDate) {
+      setCurrentDate(initialDate);
+    }
+  }, [initialDate]);
 
   const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
   const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
