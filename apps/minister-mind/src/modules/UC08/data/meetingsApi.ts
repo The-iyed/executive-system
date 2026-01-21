@@ -74,6 +74,8 @@ export interface UsersListResponse {
   total: number;
   skip: number;
   limit: number;
+  has_next: boolean;
+  has_previous: boolean;
 }
 
 export const getUsers = async (params: GetUsersParams = {}): Promise<UsersListResponse> => {
