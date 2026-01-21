@@ -51,6 +51,8 @@ import {
 } from '@sanad-ai/ui';
 import { updateMeetingRequest } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
+import { MinisterCalendarView } from '../components';
+import { type CalendarEventData } from '@shared';
 
 // Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
@@ -265,6 +267,9 @@ const MeetingDetail: React.FC = () => {
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
 
+  // Minister Calendar Modal state
+  const [isMinisterCalendarOpen, setIsMinisterCalendarOpen] = useState(false);
+
   // Initialize invitees state when meeting data loads
   useEffect(() => {
     if (meeting?.invitees) {
@@ -361,6 +366,56 @@ const MeetingDetail: React.FC = () => {
     }));
     return [...apiInvitees, ...localInviteesMapped];
   }, [meeting?.invitees, localInvitees]);
+
+  // Create highlighted event for the calendar from selected time slot
+  const highlightedEvents = React.useMemo(() => {
+    if (!scheduleForm.selected_time_slot_id || !meeting) return [];
+    
+    // Find the slot object
+    let selectedSlot = null;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot
+    ];
+    
+    for (const s of allSlots) {
+      if (s?.id === scheduleForm.selected_time_slot_id) {
+        selectedSlot = s;
+        break;
+      }
+    }
+    
+    if (!selectedSlot || !selectedSlot.slot_start) return [];
+    
+    const startDate = new Date(selectedSlot.slot_start);
+    const endDate = selectedSlot.slot_end ? new Date(selectedSlot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    const formatTimeToSlot = (date: Date): string => {
+      return `${date.getHours().toString().padStart(2, '0')}:00`;
+    };
+    
+    const formatExactTime = (date: Date): string => {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
+    return [{
+      id: 'highlighted-slot',
+      type: 'optional', // Uses the highlighted amber style
+      label: `الموعد المختار (${formatExactTime(startDate)})`,
+      startTime: formatTimeToSlot(startDate),
+      endTime: formatTimeToSlot(endDate),
+      date: startDate,
+      title: 'موعد هذا الاجتماع',
+      is_available: false,
+      is_selected: true,
+      exactStartTime: formatExactTime(startDate),
+      exactEndTime: formatExactTime(endDate),
+    }] as CalendarEventData[];
+  }, [scheduleForm.selected_time_slot_id, meeting]);
+
 
   const queryClient = useQueryClient();
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
@@ -1251,18 +1306,21 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full max-w-[1085px]">
                 {/* Suggested Times Section */}
                 <div className="flex flex-col gap-3 w-full">
-                  <h2
-                    className="text-right"
-                    style={{
-                      fontFamily: "'Ping AR + LT', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '22px',
-                      lineHeight: '38px',
-                      color: '#101828',
-                    }}
-                  >
-                    الوقت المقترح
-                  </h2>
+                  <div className="flex flex-row items-center justify-between w-full">
+                   
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      الوقت المقترح
+                    </h2>
+                  </div>
                   <div className="flex flex-row gap-4 flex-wrap">
                     {suggestedTimes.length === 0 ? (
                       <div className="w-full text-center py-6 text-gray-500">لا توجد أوقات متاحة</div>
@@ -1309,8 +1367,39 @@ const MeetingDetail: React.FC = () => {
                         </div>
                       ))
                     )}
+                     <button
+                      onClick={() => setIsMinisterCalendarOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 text-[#048F86] bg-[#048F86]/5 border border-[#048F86] rounded-lg hover:bg-[#048F86]/10 transition-colors"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px', fontWeight: 600 }}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      إطلع على جدول الوزير
+                    </button>
                   </div>
                 </div>
+
+                {/* Minister Calendar Modal */}
+                <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
+                  <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-right text-2xl font-bold mb-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        جدول الوزير
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <MinisterCalendarView extraEvents={highlightedEvents} />
+                    </div>
+                    <DialogFooter className="sm:justify-start">
+                      <button
+                        onClick={() => setIsMinisterCalendarOpen(false)}
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        إغلاق
+                      </button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 {/* Invitees table - shared DataTable, read-only from meeting.invitees */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
@@ -3144,4 +3233,3 @@ const MeetingDetail: React.FC = () => {
 };
 
 export default MeetingDetail;
-

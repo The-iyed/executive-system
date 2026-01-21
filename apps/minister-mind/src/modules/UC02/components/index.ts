@@ -1,2 +1,2 @@
 // UC02 module components
-export {};
+export * from './MinisterCalendarView';
