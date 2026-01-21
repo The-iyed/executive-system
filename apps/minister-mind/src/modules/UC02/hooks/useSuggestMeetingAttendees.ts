@@ -85,7 +85,7 @@ export const useSuggestMeetingAttendees = () => {
 
       // Make API call - using fetch directly without base URL as requested
       // Pass max_suggestions as a query parameter
-      const url = new URL('http://172.203.226.137/meeting-suggestions/suggest');
+      const url = new URL('https://invitee.builtop.com/meeting-suggestions/suggest');
       url.searchParams.append('max_suggestions', numberOfAttendees.toString());
 
       const response = await fetch(url.toString(), {

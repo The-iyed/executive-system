@@ -106,7 +106,6 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
           <div className="flex flex-col gap-2">
             <label
               className="text-sm font-medium text-[#344054] text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
             >
               عدد المدعوين المطلوب
             </label>
@@ -120,7 +119,7 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
               onChange={handleNumberChange}
               placeholder={`أدخل عدد المدعوين (${MIN_ATTENDEES}-${MAX_ATTENDEES})`}
               className="h-[44px] text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '16px', lineHeight: '24px' }}
+              style={{ fontSize: '16px', lineHeight: '24px' }}
               disabled={isLoading}
             />
             {validationError && (
