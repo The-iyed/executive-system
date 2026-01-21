@@ -1,7 +1,7 @@
 
 export const STORAGE_KEYS = {
-  CURRENT_STEP: 'meeting_currentStep',
-  DRAFT_ID: 'meeting_draftId',
+  CURRENT_STEP: 'meeting_uc01_currentStep',
+  DRAFT_ID: 'meeting_uc01_draftId',
 } as const;
 
 export const clearDraftData = (): void => {

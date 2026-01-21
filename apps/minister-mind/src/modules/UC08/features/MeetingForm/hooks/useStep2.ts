@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { step2Schema, type Step2FormData } from '../schemas/step2.schema';
 import axiosInstance from '@auth/utils/axios';
 import { mapUserToFormData } from '../utils/inviteeMappers';
-import type { UserApiResponse } from '../../../data/usersApi';
+import { UserApiResponse } from 'apps/minister-mind/src/modules/UC01/data/usersApi';
 
 interface UseStep2Props {
   draftId: string;
@@ -24,9 +24,6 @@ interface SubmitStep2Response {
   success: boolean;
 }
 
-/**
- * API function to submit Step 2 data
- */
 const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2Response> => {
   const { formData, isDraft, draftId } = payload;
 
@@ -85,7 +82,6 @@ export const useStep2 = ({
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
   const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
 
-  // Update form data when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && isEditMode) {
       setFormData((prev) => ({
@@ -95,7 +91,6 @@ export const useStep2 = ({
     }
   }, [initialData, isEditMode]);
 
-  // React Query mutation for submitting step 2
   const submitMutation = useMutation({
     mutationFn: (payload: { formData: Partial<Step2FormData>; isDraft: boolean }) =>
       submitStep2Data({ ...payload, draftId }),
@@ -108,15 +103,10 @@ export const useStep2 = ({
     },
   });
 
-  // Validation result memoized
   const validationResult = useMemo(() => {
     return step2Schema.safeParse(formData);
   }, [formData]);
 
-  /**
-   * Validate all form data
-   * Skip validation for name, position, mobile when user_id exists
-   */
   const validateAll = useCallback((): boolean => {
     if (!validationResult.success) {
       const newErrors: Record<string, Record<string, string>> = {};
@@ -147,9 +137,6 @@ export const useStep2 = ({
     return true;
   }, [formData, validationResult]);
 
-  /**
-   * Add a new attendee to the list
-   */
   const handleAddAttendee = useCallback(() => {
     const newAttendee = {
       id: nanoid(),
@@ -165,9 +152,6 @@ export const useStep2 = ({
     }));
   }, []);
 
-  /**
-   * Delete an attendee from the list
-   */
   const handleDeleteAttendee = useCallback((id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -185,9 +169,6 @@ export const useStep2 = ({
     });
   }, []);
 
-  /**
-   * Update an attendee field
-   */
   const handleUpdateAttendee = useCallback((id: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
@@ -220,10 +201,6 @@ export const useStep2 = ({
     }
   }, []);
 
-  /**
-   * Add a user from async select to the invitees list
-   * Accepts user option with user details and adds them with user_id set
-   */
   const handleAddUserFromSelect = useCallback((userOption: { 
     value: string; 
     label: string; 
@@ -235,15 +212,9 @@ export const useStep2 = ({
     last_name?: string;
   }) => {
     const userId = userOption.value;
-
-    // Check if user is already in the list
     const existingUser = formData.invitees?.find((inv) => inv.user_id === userId);
-    if (existingUser) {
-      console.warn('User already added to invitees');
-      return;
-    }
+    if (existingUser) return false;
 
-    // Map user option to UserApiResponse format for the mapper
     const userData: UserApiResponse = {
       id: userId,
       username: userOption.username,
@@ -254,10 +225,8 @@ export const useStep2 = ({
       phone_number: userOption.phone_number || null,
     };
 
-    // Use mapper to create form data
     const mappedUser = mapUserToFormData(userData);
 
-    // Create new invitee with generated ID
     const newInvitee = {
       ...mappedUser,
       id: nanoid(),
@@ -267,22 +236,17 @@ export const useStep2 = ({
       ...prev,
       invitees: [newInvitee, ...(prev.invitees || [])],
     }));
+    return true;
   }, [formData.invitees]);
 
-  /**
-   * Submit step 2 data (with validation if not draft)
-   * If no invitees exist, skips API call and directly calls onSuccess
-   */
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
     const hasInvitees = formData.invitees && formData.invitees.length > 0;
 
-    // If no invitees, skip API call and directly proceed
     if (!hasInvitees) {
       onSuccess?.(isDraft);
       return;
     }
 
-    // Validate before submitting if not draft
     if (!isDraft && !validateAll()) {
       return;
     }
