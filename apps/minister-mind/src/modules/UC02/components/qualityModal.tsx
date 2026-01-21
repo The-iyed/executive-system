@@ -102,7 +102,7 @@ const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) =>
                     className="absolute top-[15%] -translate-y-1/2 flex flex-col items-center gap-1"
                     style={{ left: statusConfig.position }}
                   >
-                    <div className="bg-[#000000] px-4 py-1 pb-2 text-xs font-medium text-[#FFFFFF] bg-white rounded-[38px] shadow-[0_4px_4px_rgba(0,0,0,0.25)] whitespace-nowrap">
+                    <div className="bg-[#000000] px-4 py-1 pb-2 text-xs font-medium text-[#FFFFFF] rounded-[38px] shadow-[0_4px_4px_rgba(0,0,0,0.25)] whitespace-nowrap">
                       {statusConfig.label}
                     </div>
                     <div className="w-[4px] h-8 bg-white rounded-full" />
