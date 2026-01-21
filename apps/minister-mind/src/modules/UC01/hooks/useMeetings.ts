@@ -38,16 +38,13 @@ export const useMeetings = ({
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Get tab filter configuration (status and owner_type)
   const tabFilter = useMemo(() => {
     return TAB_FILTER_MAP[activeTab];
   }, [activeTab]);
 
-  // Helper function to map returned statuses to API values
   const mapStatusToApi = (status: MeetingStatus | string | undefined): string | undefined => {
     if (!status) return undefined;
     
-    // Map both new and legacy returned statuses to API values
     if (status === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || status === MeetingStatus.RETURNED_FROM_CONTENT) {
       return 'RETURNED_FROM_CONTENT';
     } else if (status === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
@@ -56,20 +53,12 @@ export const useMeetings = ({
     return status as string;
   };
 
-  // Determine the status and owner_type to use for API call
-  // If statusFilter is set and not 'all', use it; otherwise use the tab status
-  // Always use the tab's owner_type
-  // Map returned statuses to API values for both tabs and filters
-  // Note: TypeScript string enums are already strings at runtime
   const apiFilters = useMemo(() => {
     let status: string | undefined;
     
     if (statusFilter && statusFilter !== 'all') {
-      // Map returned statuses to API values when used as filters
       status = mapStatusToApi(statusFilter);
     } else {
-      // When statusFilter is 'all', check if activeTab is a returned status
-      // If activeTab is a returned status, map it; otherwise use tabFilter status
       if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_CONTENT) {
         status = 'RETURNED_FROM_CONTENT';
       } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING) {
