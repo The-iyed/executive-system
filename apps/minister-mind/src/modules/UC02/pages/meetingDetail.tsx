@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye, Sparkles } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -48,11 +48,16 @@ import {
   DialogFooter,
   Textarea,
   DateTimePicker,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
 } from '@sanad-ai/ui';
 import { updateMeetingRequest } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
-import { MinisterCalendarView } from '../components';
+import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { type CalendarEventData } from '@shared';
+import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 
 // Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
@@ -77,6 +82,7 @@ const MeetingDetail: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('basic-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
+  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -1686,6 +1692,59 @@ const MeetingDetail: React.FC = () => {
                             ),
                           },
                           {
+                            id: 'justification',
+                            header: 'التبرير',
+                            width: 'w-[100px]',
+                            align: 'center',
+                            render: (row: MinisterAttendee, _index: number) => {
+                              if (!row.justification || row.justification.trim() === '') {
+                                return null;
+                              }
+                              return (
+                                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="relative group">
+                                          <Sparkles 
+                                            className="w-5 h-5 text-[#048F86] cursor-pointer transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 animate-pulse"
+                                            style={{
+                                              animation: 'sparkle 2s ease-in-out infinite',
+                                            }}
+                                          />
+                                          <style>{`
+                                            @keyframes sparkle {
+                                              0%, 100% {
+                                                opacity: 1;
+                                                filter: brightness(1);
+                                              }
+                                              50% {
+                                                opacity: 0.8;
+                                                filter: brightness(1.3);
+                                              }
+                                            }
+                                          `}</style>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent 
+                                        side="left" 
+                                        className="max-w-[400px] p-3 text-right"
+                                        dir="rtl"
+                                      >
+                                        <p 
+                                          className="text-sm text-[#475467] whitespace-pre-wrap"
+                                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                        >
+                                          {row.justification}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              );
+                            },
+                          },
+                          {
                             id: 'action',
                             header: 'إجراء',
                             width: 'w-[114px]',
@@ -1726,7 +1785,7 @@ const MeetingDetail: React.FC = () => {
                     className='mr-4'
                     label='	إضافة مدعوين آليًا'
                     onClick={() => {
-                      console.log('AI Generate clicked');
+                      setIsSuggestAttendeesModalOpen(true);
                     }} 
                     />
                   </div>
@@ -2423,6 +2482,45 @@ const MeetingDetail: React.FC = () => {
        onOpenChange={setIsQualityModalOpen} 
        meetingId={id || ''}
      />
+
+      {/* Suggest Attendees Modal */}
+      {meeting && (
+        <SuggestAttendeesModal
+          isOpen={isSuggestAttendeesModalOpen}
+          onOpenChange={setIsSuggestAttendeesModalOpen}
+          meetingParams={{
+            meeting: {
+              meeting_subject: formData.meeting_subject || meeting.meeting_subject || '',
+              meeting_type: formData.meeting_type || meeting.meeting_type || '',
+              meeting_classification: formData.meeting_classification || meeting.meeting_classification || '',
+              meeting_justification: meeting.meeting_justification || '',
+              related_topic: meeting.related_topic || null,
+              objectives: contentForm.objectives.map((obj) => ({ objective: obj.objective })),
+              agenda_items: contentForm.agendaItems.map((item) => ({ agenda_item: item.agenda_item })),
+              minister_support: meeting.minister_support || [],
+            },
+          }}
+          onSuccess={(data) => {
+            // Map suggested attendees to MinisterAttendee format and add to the table
+            if (data?.suggestions && Array.isArray(data.suggestions)) {
+              const mappedAttendees: MinisterAttendee[] = data.suggestions.map((suggestion: SuggestedAttendee) => ({
+                username:`${suggestion.first_name} ${suggestion.last_name}`, // Extract username from email
+                external_email: suggestion.email,
+                external_name: `${suggestion.first_name} ${suggestion.last_name}`,
+                is_required: suggestion.importance_level === 'مناسب جدا', // Set as required if highly suitable
+                justification: suggestion.suggestion_reason,
+                access_permission: 'FULL', // Default to full access
+              }));
+
+              // Add the mapped attendees to the existing list
+              setScheduleForm((prev) => ({
+                ...prev,
+                minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
+              }));
+            }
+          }}
+        />
+      )}
 
       {/* Reject Meeting Modal */}
       <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
