@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
-import { StatusBadge, DataTable } from '@shared/components';
-import type { TableColumn } from '@shared';
 import { 
   MeetingStatus, 
   MeetingStatusLabels, 
@@ -12,8 +10,12 @@ import {
   MeetingTypeLabels,
   MeetingClassification,
   MeetingClassificationLabels,
-} from '@shared/types'; 
-import { Tabs } from '@shared/components';
+  StatusBadge,
+  DataTable,
+  Tabs,
+  type TableColumn,
+  AIGenerateButton,
+} from '@shared'; 
 import {
   getMeetingById,
   rejectMeeting,
@@ -48,6 +50,7 @@ import {
   DateTimePicker,
 } from '@sanad-ai/ui';
 import { updateMeetingRequest } from '../data/meetingsApi';
+import QualityModal from '../components/qualityModal';
 
 // Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
@@ -71,6 +74,7 @@ const MeetingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('basic-info');
+  const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -793,6 +797,14 @@ const MeetingDetail: React.FC = () => {
                 <StatusBadge status={meetingStatus} label={statusLabel} />
               </div>
             </div>
+
+            <AIGenerateButton
+              variant="secondary"
+              onClick={() => {
+                setIsQualityModalOpen(true);
+              }}
+              label="تقييم جودة الاجتماع"
+            />
           </div>
 
           {/* Tabs */}
@@ -1611,6 +1623,12 @@ const MeetingDetail: React.FC = () => {
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
+                    <AIGenerateButton 
+                    label='	إضافة مدعوين آليًا'
+                    onClick={() => {
+                      console.log('AI Generate clicked');
+                    }} 
+                    />
                   </div>
                
                 </div>
@@ -2298,6 +2316,13 @@ const MeetingDetail: React.FC = () => {
         </div>
         )}
       </div>
+
+      {/* Meeting Quality Modal */}
+     <QualityModal 
+       isOpen={isQualityModalOpen} 
+       onOpenChange={setIsQualityModalOpen} 
+       meetingId={id || ''}
+     />
 
       {/* Reject Meeting Modal */}
       <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
