@@ -172,7 +172,7 @@ const submitStep1Data = async (
     );
   } else {
     response = await axiosInstance.post<SubmitStep1Response>(
-      '/api/meeting-requests/drafts/basic-info',
+      '/api/meeting-requests/direct-schedule/step1',
       formDataToSend
     );
   }

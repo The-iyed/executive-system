@@ -122,5 +122,5 @@ export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو جديد';
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
   { id: 'step2', label: 'قائمة المدعوين' },
-  { id: 'step3', label: 'موعد الاجتماع' },
+  // { id: 'step3', label: 'موعد الاجتماع' },
 ];
