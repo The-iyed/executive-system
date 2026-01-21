@@ -6,7 +6,7 @@ import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
   type CalendarEventData,
-} from '../../UC01/features/NewMeeting/steps/Step3/components';
+} from '@shared';
 import { getMeetings, type MeetingApiResponse } from '../data/meetingsApi';
 
 const getWeekStart = (date: Date): Date => {

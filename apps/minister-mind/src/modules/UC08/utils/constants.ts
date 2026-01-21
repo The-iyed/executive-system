@@ -54,7 +54,3 @@ export const TAB_FILTER_MAP: Partial<Record<MeetingStatus, TabFilterConfig>> = {
   },
 };
 
-export const PAGE_INFO = {
-  title: 'سلة العمل - طلبات قيد المراجعة',
-  description: 'يمكنك الاطلاع على الطلبات قيد المراجعة',
-} as const;
