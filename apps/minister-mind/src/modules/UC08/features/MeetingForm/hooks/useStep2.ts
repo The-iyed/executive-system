@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { step2Schema, type Step2FormData } from '../schemas/step2.schema';
-import axiosInstance from '@auth/utils/axios';
-import { mapUserToFormData } from '../utils/inviteeMappers';
 import { UserApiResponse } from 'apps/minister-mind/src/modules/UC01/data/usersApi';
+import axiosInstance from '@auth/utils/axios';
+import { step2Schema, type Step2FormData } from '../schemas/step2.schema';
+import { mapUserToFormData } from '../utils/inviteeMappers';
 
 interface UseStep2Props {
   draftId: string;
@@ -60,8 +60,8 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
   };
 
   // Use PATCH for both create and update (same endpoint)
-  await axiosInstance.patch(
-    `/api/meeting-requests/drafts/${draftId}/invitees`,
+  await axiosInstance.put(
+    `/api/meeting-requests/direct-schedule/${draftId}/step2`,
     body
   );
 
