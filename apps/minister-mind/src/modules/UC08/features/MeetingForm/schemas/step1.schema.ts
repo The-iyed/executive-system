@@ -4,7 +4,10 @@ const CATEGORIES_REQUIRING_REASON = ['PRIVATE_MEETING', 'BILATERAL_MEETING'] as 
 const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as const;
 const CATEGORIES_MAKING_FILE_OPTIONAL = ['BILATERAL_MEETING', 'PRIVATE_MEETING', 'GOVERNMENT_CENTER_TOPICS'] as const;
 const CONFIDENTIALITY_MAKING_FILE_OPTIONAL = 'CONFIDENTIAL' as const;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+// ISO 8601 date pattern - supports YYYY-MM-DD and full ISO 8601 format
+const ISO_8601_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:\d{2})?)?$/;
+const SIMPLE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [
   'application/pdf',
@@ -14,6 +17,25 @@ const ACCEPTED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
 const ACCEPTED_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+
+// Helper to validate ISO 8601 date format
+const isValidISO8601Date = (dateString: string): boolean => {
+  if (!dateString) return false;
+  
+  // Check if it matches simple date pattern (YYYY-MM-DD)
+  if (SIMPLE_DATE_PATTERN.test(dateString)) {
+    const date = new Date(dateString + 'T00:00:00');
+    return !isNaN(date.getTime());
+  }
+  
+  // Check if it matches full ISO 8601 pattern
+  if (ISO_8601_DATE_PATTERN.test(dateString)) {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  }
+  
+  return false;
+};
 
 const requiredString = (message: string, minLength = 1, maxLength?: number) => {
   const schema = z.string({
@@ -29,12 +51,12 @@ const optionalString = (invalidTypeMessage: string) =>
 const dateSchema = (required: boolean, fieldName: string) => {
   const base = required
     ? requiredString(fieldName).refine(
-        (val) => val && DATE_PATTERN.test(val),
-        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+        (val) => val && isValidISO8601Date(val),
+        'تاريخ غير صحيح. يرجى إدخال تاريخ بصيغة (YYYY-MM-DD)'
       )
     : optionalString(`${fieldName} يجب أن يكون نصاً`).refine(
-        (val) => !val || val === '' || DATE_PATTERN.test(val),
-        'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+        (val) => !val || val === '' || isValidISO8601Date(val),
+        'تاريخ غير صحيح. يرجى إدخال تاريخ بصيغة (YYYY-MM-DD)'
       );
   return base;
 };
@@ -47,6 +69,15 @@ const fileSchema = z
       ACCEPTED_FILE_TYPES.includes(file.type) ||
       ACCEPTED_FILE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext)),
     'نوع الملف غير مدعوم. يرجى رفع ملف PDF أو WORD أو EXCEL'
+  );
+
+const fileArraySchema = z
+  .array(fileSchema)
+  .optional()
+  .default([])
+  .refine(
+    (files) => files.every((file) => file.size <= MAX_FILE_SIZE),
+    'يجب أن يكون حجم جميع الملفات أقل من 20 ميجابايت'
   );
 
 const meetingGoalItemSchema = z.object({ id: z.string(), objective: z.string() });
@@ -88,6 +119,18 @@ const previousMeetingItemSchema = z.object({
   id: z.string(),
   meeting_subject: z.string().optional(),
   meeting_date: z.string().optional(),
+});
+
+const previousMeetingItemValidationSchema = z.object({
+  id: z.string(),
+  meeting_subject: z.string().optional(),
+  meeting_date: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || val === '' || isValidISO8601Date(val),
+      'تاريخ الاجتماع السابق غير صحيح. يرجى إدخال تاريخ بصيغة ISO 8601 (YYYY-MM-DD)'
+    ),
 });
 
 // OptionType schema for relatedDirective and requester
@@ -153,24 +196,24 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: optionalString('سرية الاجتماع يجب أن تكون نصاً'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
-    meetingGoals: z
-      .array(meetingGoalItemValidationSchema)
-      .min(1, 'يجب إضافة هدف واحد على الأقل')
-      .optional()
-      .default([]),
+    // meetingGoals is optional (JSON string array) - no minimum required
+    meetingGoals: z.array(meetingGoalItemValidationSchema).optional().default([]),
     meetingAgenda: requiresAgenda
       ? z.array(agendaItemSchema(true)).min(1, 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي').optional().default([])
       : z.array(agendaItemSchema(false)).optional().default([]),
-    ministerSupport: z
-      .array(ministerSupportItemValidationSchema)
-      .min(1, 'يجب إضافة دعم واحد على الأقل')
-      .optional()
-      .default([]),
+    // ministerSupport is optional (JSON string array) - no minimum required
+    ministerSupport: z.array(ministerSupportItemValidationSchema).optional().default([]),
     relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
     wasDiscussedPreviously: z.boolean().optional().default(false),
+    // previousMeetings is optional (JSON string array)
+    previousMeetings: z.array(previousMeetingItemValidationSchema).optional().default([]),
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
     meetingNature: z.string().optional().or(z.literal('')),
-    isComplete: z.boolean().refine((val) => val === true || val === false, 'يجب تحديد ما إذا كان الطلب مكتملاً'),
+    // isComplete is required and must be boolean (true/false)
+    isComplete: z.boolean({
+      required_error: 'يجب تحديد ما إذا كان الطلب مكتملاً',
+      invalid_type_error: 'يجب تحديد ما إذا كان الطلب مكتملاً (نعم/لا)',
+    }),
   });
 
   return baseSchema.extend({
@@ -181,16 +224,33 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
       ? requiredString('الموضوع المرتبط مطلوب')
       : optionalString('الموضوع المرتبط يجب أن يكون نصاً'),
     dueDate: dateSchema(requiresRelatedTopic, 'تاريخ الاستحقاق مطلوب'),
+    // previousMeetingDate is deprecated - still validate if provided but prefer previousMeetings
     previousMeetingDate: dateSchema(requiresPreviousDate, 'تاريخ الاجتماع السابق مطلوب'),
+    // previousMeeting is required if is_sequential=true (meetingNature === 'FORMAL')
     previousMeeting: requiresPreviousMeeting
-      ? requiredString('الاجتماع السابق مطلوب')
+      ? requiredString('الاجتماع السابق مطلوب عند اختيار طبيعة الاجتماع كرسمي')
       : optionalString('الاجتماع السابق يجب أن يكون نصاً'),
-    presentation_files: isFileOptional
-      ? z.array(fileSchema).optional().default([])
-      : z.array(fileSchema).optional().default([]),
+    // presentation_files is optional file array
+    presentation_files: fileArraySchema,
     presentationFile: isFileOptional
       ? z.instanceof(File, { message: 'الملف مطلوب' }).optional().nullable()
       : z.instanceof(File, { message: 'الملف مطلوب' }).optional().nullable(),
+    // additionalAttachments is optional file array
+    additionalAttachments: z
+      .instanceof(File, { message: 'الملف مطلوب' })
+      .optional()
+      .nullable()
+      .refine(
+        (file) => !file || file.size <= MAX_FILE_SIZE,
+        'حجم الملف يتجاوز 20 ميجابايت'
+      )
+      .refine(
+        (file) =>
+          !file ||
+          ACCEPTED_FILE_TYPES.includes(file.type) ||
+          ACCEPTED_FILE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext)),
+        'نوع الملف غير مدعوم. يرجى رفع ملف PDF أو WORD أو EXCEL'
+      ),
   }).refine(
     (data) => {
       if (!isFileOptional) {
@@ -251,6 +311,7 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
     case 'previousMeetingDate':
       return data.wasDiscussedPreviously === true;
     case 'previousMeeting':
+      // Required if is_sequential=true (meetingNature === 'FORMAL')
       return data.meetingNature === 'FORMAL';
     case 'presentation_files':
     case 'presentationFile':
@@ -260,9 +321,10 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
       );
     case 'meetingAgenda':
       return !!(data.presentation_files && data.presentation_files.length > 0) || !!data.presentationFile;
+    // meetingGoals and ministerSupport are now optional (no minimum required)
     case 'meetingGoals':
     case 'ministerSupport':
-      return true;
+      return false;
     default:
       return false;
   }
