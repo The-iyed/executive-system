@@ -187,7 +187,10 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
               <span className="text-[10px] text-amber-600 font-bold">الموعد المختار لهذا الاجتماع</span>
             )}
           </div>
-          <span className={cn('text-[10px] px-2 py-0.5 rounded-full bg-opacity-10', styles?.contentStyle?.bg, styles?.contentStyle?.text)}>
+          <span className={cn('text-[10px] px-2 py-0.5 rounded-full bg-opacity-10', styles?.contentStyle?.bg, 
+          //styles?.contentStyle?.text
+          'text-white'
+          )}>
             {typeLabel}
           </span>
         </div>

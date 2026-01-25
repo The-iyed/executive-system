@@ -78,6 +78,22 @@ export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
 ];
 
 // ============================================================================
+// STEP 3 CONSTANTS
+// ============================================================================
+
+export enum MeetingChannel {
+  PHYSICAL = 'PHYSICAL',
+  VIRTUAL = 'VIRTUAL',
+  HYBRID = 'HYBRID',
+}
+
+export const MEETING_CHANNEL_OPTIONS = [
+  { value: MeetingChannel.PHYSICAL, label: 'حضوري' },
+  { value: MeetingChannel.VIRTUAL, label: 'افتراضي' },
+  { value: MeetingChannel.HYBRID, label: 'مختلط' },
+];
+
+// ============================================================================
 // STEP 2 CONSTANTS
 // ============================================================================
 
