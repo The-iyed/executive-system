@@ -27,13 +27,13 @@ const formatDate = (date: Date | undefined): string => {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day}:${month}:${year}`;
+  return `${day}/${month}/${year}`;
 };
 
 export function DatePicker({
   date,
   onDateChange,
-  placeholder = "dd:mm:yyyy",
+  placeholder = "dd/mm/yyyy",
   className,
   error,
   value,
@@ -43,6 +43,7 @@ export function DatePicker({
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     date || (value ? new Date(value) : undefined)
   );
+  const [open, setOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (date !== undefined) {
@@ -70,37 +71,40 @@ export function DatePicker({
         onChange('');
       }
     }
+    // Close the popover when a date is selected
+    setOpen(false);
   };
 
   const displayValue = selectedDate ? formatDate(selectedDate) : '';
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           type="button"
           variant="outline"
           className={cn(
-            "w-full max-w-full h-[44px] px-[14px] py-[10px] pr-[40px] flex items-center justify-center gap-2 bg-white border border-[#D0D5DD] rounded-lg text-[#667085] font-normal text-[16px] leading-[24px]",
+            "w-full max-w-full h-[44px] px-[14px] py-[10px]",
+            "flex items-center justify-start gap-2 bg-white", 
+            "border border-[#D0D5DD] rounded-lg text-[#667085]", 
+            "font-normal text-[16px] leading-[24px]",
             "focus:outline-none focus:border-[#008774]",
             !selectedDate && "text-muted-foreground",
+            "box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05)",
+            selectedDate && "text-[#344054]",
             error && "border-[#D13C3C]",
             !error && "focus:border-[#008774]",
             className
           )}
-          style={{
-            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-            color: selectedDate ? '#344054' : '#667085',
-          }}
           onBlur={onBlur}
         >
-          <CalendarIcon className="text-[#667085] mt-[4px]" />
+          <CalendarIcon className="text-[#667085] mt-[1px] w-4 h-4" />
           <span className="text-[#667085]">
             {displayValue || placeholder}
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 rounded-[20px]" align="start">
         <Calendar
           mode="single"
           selected={selectedDate}
