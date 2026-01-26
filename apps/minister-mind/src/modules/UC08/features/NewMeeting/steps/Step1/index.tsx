@@ -465,7 +465,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 value={formData.dueDate}
                 onChange={(value) => handleChange('dueDate', value)}
                 onBlur={() => handleBlur('dueDate')}
-                placeholder="dd:mm:yyyy"
+                placeholder="dd/mm/yyyy"
                 error={!!(touched.dueDate && errors.dueDate)}
               />
             </FormField>
@@ -503,7 +503,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
 
         {/* Table 1: Meeting Goals */}
         <FormTable
-          title="الهدف من الاجتماع"
+          title="أهداف الاجتماع"
           required
           columns={MEETING_GOALS_COLUMNS}
           rows={formData.meetingGoals || []}
