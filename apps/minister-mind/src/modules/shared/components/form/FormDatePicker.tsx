@@ -16,7 +16,7 @@ export const FormDatePicker: React.FC<FormDatePickerProps> = ({
   value,
   onChange,
   onBlur,
-  placeholder = 'dd:mm:yyyy',
+  placeholder = "dd/mm/yyyy",
   error,
   className,
   fullWidth = false,

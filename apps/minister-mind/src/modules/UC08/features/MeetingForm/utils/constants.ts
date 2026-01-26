@@ -42,7 +42,7 @@ export const SECTOR_OPTIONS = [
 export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
+  { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
@@ -70,9 +70,9 @@ export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
   { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
+  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
   { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd:mm:yyyy' },
+  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
   { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];

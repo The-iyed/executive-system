@@ -234,7 +234,7 @@ export const Step1: React.FC<Step1Props> = ({
                 value={formData.dueDate}
                 onChange={(value) => handleChange('dueDate', value)}
                 onBlur={() => handleBlur('dueDate')}
-                placeholder="dd:mm:yyyy"
+                placeholder="dd/mm/yyyy"
                 error={!!(touched.dueDate && errors.dueDate)}
               />
             </FormField>
@@ -485,7 +485,7 @@ export const Step1: React.FC<Step1Props> = ({
                 value={formData.previousMeetingDate}
                 onChange={(value) => handleChange('previousMeetingDate', value)}
                 onBlur={() => handleBlur('previousMeetingDate')}
-                placeholder="dd:mm:yyyy"
+                placeholder="dd/mm/yyyy"
                 error={!!(touched.previousMeetingDate && errors.previousMeetingDate)}
               />
             </FormField>

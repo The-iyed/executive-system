@@ -140,7 +140,7 @@ export const Step3: React.FC<Step3Props> = ({
               value={formData?.scheduled_at || ''}
               onChange={(value: string) => handleChange('scheduled_at', value)}
               onBlur={() => handleBlur('scheduled_at')}
-              placeholder="dd:mm:yyyy"
+              placeholder="dd/mm/yyyy"
               error={!!(touched?.scheduled_at && errors?.scheduled_at)}
             />
           </FormField>
