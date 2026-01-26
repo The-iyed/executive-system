@@ -81,7 +81,7 @@ const ScheduledMeetings: React.FC = () => {
     {
       id: 'subject',
       header: 'الموضوع',
-      width: 'flex-1',
+      width: 'w-96',
       align: 'end',
       render: (row) => (
         <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -103,16 +103,13 @@ const ScheduledMeetings: React.FC = () => {
     {
       id: 'date',
       header: 'تاريخ الإرسال',
-      width: 'w-80',
+      width: 'w-72',
       align: 'end',
       render: (row) => (
         <div className="flex flex-row justify-end items-center gap-3 w-full">
           <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
             {row.date}
           </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
-          </div>
         </div>
       ),
     },

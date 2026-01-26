@@ -46,6 +46,10 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(184,60,120,0.04)]',
     textClass: 'text-[#B83C78]',
   },
+  [MeetingStatus.WAITING]: {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
   'redirected': {
     bgClass: 'bg-[rgba(255,211,89,0.12)]',
     textClass: 'text-[#BE8E0B]',

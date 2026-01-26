@@ -27,6 +27,8 @@ export enum MeetingStatus {
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED',
+  // Waiting State
+  WAITING = 'WAITING',
 }
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
@@ -57,6 +59,8 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.CLOSED]: 'مغلق',
+  // Waiting State
+  [MeetingStatus.WAITING]: 'في الانتظار',
 };
 
 /**

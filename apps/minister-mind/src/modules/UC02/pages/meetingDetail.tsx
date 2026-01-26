@@ -33,6 +33,7 @@ import {
   type GuidanceRecord,
   getContentOfficerNotesRecords,
   type ContentOfficerNoteRecord,
+  moveToWaitingList,
 } from '../data/meetingsApi';
 import {
   Select,
@@ -503,6 +504,15 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
+  // Move to waiting list mutation
+  const moveToWaitingListMutation = useMutation({
+    mutationFn: () => moveToWaitingList(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      navigate(-1); // Navigate back after successful move
+    },
+  });
+
   // Reject meeting mutation
   const rejectMutation = useMutation({
     mutationFn: (payload: { reason: string; notes: string }) => rejectMeeting(id!, payload),
@@ -868,7 +878,6 @@ const MeetingDetail: React.FC = () => {
             </div>
 
             <AIGenerateButton
-              variant="secondary"
               onClick={() => {
                 setIsQualityModalOpen(true);
               }}
@@ -2379,21 +2388,23 @@ const MeetingDetail: React.FC = () => {
         </div>
 
         {/* Action Buttons - Fixed at bottom */}
-        {/* Sticky action bar - Hidden when status is UNDER_CONSULTATION_SCHEDULING or UNDER_CONTENT_CONSULTATION */}
-        {meeting && meeting.status !== MeetingStatus.UNDER_CONSULTATION_SCHEDULING && meeting.status !== MeetingStatus.UNDER_CONTENT_CONSULTATION && (
+        {/* Sticky action bar - Hidden when status is UNDER_CONSULTATION_SCHEDULING, UNDER_CONTENT_CONSULTATION, or WAITING */}
+        {meeting && meeting.status !== MeetingStatus.UNDER_CONSULTATION_SCHEDULING && meeting.status !== MeetingStatus.UNDER_CONTENT_CONSULTATION && meeting.status !== MeetingStatus.WAITING && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full  px-4">
-            <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center">
+            <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center w-max ">
             <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
-              {/* Schedule Button */}
-              <button
-                onClick={() => setIsScheduleModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  جدولة
-                </span>
-                <Calendar className="w-5 h-5" />
-              </button>
+              {/* Schedule Button - Hide when status is WAITING */}
+              {meetingStatus !== MeetingStatus.WAITING && (
+                <button
+                  onClick={() => setIsScheduleModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
+                >
+                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    جدولة
+                  </span>
+                  <Calendar className="w-5 h-5" />
+                </button>
+              )}
               {/* Edit/Save Button - shown when there are changes */}
               <button
                 onClick={() => setIsEditConfirmOpen(true)}
@@ -2410,57 +2421,81 @@ const MeetingDetail: React.FC = () => {
                   تعديل
                 </span>
               </button>
-                      {/* Return to Request Button */}
-                      <button
-                onClick={() => setIsReturnForInfoModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  إعادة للطلب
-                </span>
-                <RotateCcw className="w-5 h-5" />
-              </button>
-                {/* Request Consultation Button */}
-                <button
-                onClick={() => setIsConsultationModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  طلب استشارة
-                </span>
-                <ClipboardCheck className="w-5 h-5" />
-              </button>
-                     {/* Request Guidance Button */}
-                     <button
-                onClick={() => setIsRequestGuidanceModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  طلب توجيه
-                </span>
-                <FileCheck className="w-5 h-5" />
-              </button>
-               {/* Send to Content Button */}
-               <button
-                onClick={() => setIsSendToContentModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  إرسال للمحتوى
-                </span>
-                <Send className="w-5 h-5" />
-              </button>
+                      {/* Return to Request Button - Hide when status is WAITING */}
+                      {meetingStatus !== MeetingStatus.WAITING && (
+                        <button
+                          onClick={() => setIsReturnForInfoModalOpen(true)}
+                          className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
+                        >
+                          <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            إعادة للطلب
+                          </span>
+                          <RotateCcw className="w-5 h-5" />
+                        </button>
+                      )}
+                {/* Request Consultation Button - Hide when status is WAITING */}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    onClick={() => setIsConsultationModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
+                  >
+                    <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      طلب استشارة
+                    </span>
+                    <ClipboardCheck className="w-5 h-5" />
+                  </button>
+                )}
+                     {/* Request Guidance Button - Hide when status is WAITING */}
+                     {meetingStatus !== MeetingStatus.WAITING && (
+                       <button
+                         onClick={() => setIsRequestGuidanceModalOpen(true)}
+                         className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
+                       >
+                         <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                           طلب توجيه
+                         </span>
+                         <FileCheck className="w-5 h-5" />
+                       </button>
+                     )}
+               {/* Send to Content Button - Hide when status is WAITING */}
+               {meetingStatus !== MeetingStatus.WAITING && (
+                 <button
+                   onClick={() => setIsSendToContentModalOpen(true)}
+                   className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
+                 >
+                   <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                     إرسال للمحتوى
+                   </span>
+                   <Send className="w-5 h-5" />
+                 </button>
+               )}
 
-              {/* Reject Button */}
-              <button
-                onClick={() => setIsRejectModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  رفض
-                </span>
-                <X className="w-5 h-5" />
-              </button>
+              {/* Add to Waiting List Button - Only show when status is UNDER_REVIEW */}
+              {meetingStatus === MeetingStatus.UNDER_REVIEW && (
+                <button
+                  onClick={() => moveToWaitingListMutation.mutate()}
+                  disabled={moveToWaitingListMutation.isPending}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافته إلى قائمة الانتظار'}
+                  </span>
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Reject Button - Hide when status is WAITING */}
+              {meetingStatus !== MeetingStatus.WAITING && (
+                <button
+                  onClick={() => setIsRejectModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
+                >
+                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    رفض
+                  </span>
+                  <X className="w-5 h-5" />
+                </button>
+              )}
 
              
        
