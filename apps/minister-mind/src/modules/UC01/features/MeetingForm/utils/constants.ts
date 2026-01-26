@@ -29,6 +29,11 @@ export const MEETING_TYPE_OPTIONS = [
   { value: 'EXTERNAL', label: 'خارجي' },
 ];
 
+export const DIRECTIVE_METHOD_OPTIONS = [
+  { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
+  { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
+];
+
 // Table Column Definitions for Step 1
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },

@@ -108,6 +108,14 @@ export const step1BaseSchema = z.object({
   notes: z.string({invalid_type_error: 'القيمة المُدخلة غير صحيحة'}).optional().or(z.literal('')),
   presentation_files: z.array(z.instanceof(File)).optional().default([]),
   existingFiles: z.array(existingFileSchema).optional().default([]),
+  is_urgent: z.boolean().optional().default(false),
+  urgent_reason: z.string().optional().or(z.literal('')),
+  presentation_attachment_timing: z.string().optional().or(z.literal('')),
+  is_on_behalf_of: z.boolean().optional().default(false),
+  meeting_manager_id: z.string().optional().or(z.literal('')),
+  is_based_on_directive: z.boolean().optional().default(false),
+  directive_method: z.string().optional().or(z.literal('')),
+  previous_meeting_minutes_id: z.string().optional().or(z.literal('')),
 });
 
 export type Step1FormData = z.infer<typeof step1BaseSchema>;
@@ -128,6 +136,12 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
   const isFileOptional =
     (data.meetingCategory && (CATEGORIES_MAKING_FILE_OPTIONAL as readonly string[]).includes(data.meetingCategory)) ||
     data.meetingConfidentiality === CONFIDENTIALITY_MAKING_FILE_OPTIONAL;
+
+  const requiresUrgentReason = data.is_urgent === true;
+  const requiresPresentationTiming = data.is_urgent === true;
+  const requiresMeetingManager = data.is_on_behalf_of === true;
+  const requiresDirectiveMethod = data.is_based_on_directive === true;
+  const requiresPreviousMeetingMinutes = data.directive_method === 'PREVIOUS_MEETING';
 
   const baseSchema = z.object({
     meetingSubject: requiredString('موضوع الاجتماع مطلوب', 1, 200),
@@ -153,6 +167,9 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
     wasDiscussedPreviously: z.boolean().optional().default(false),
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
+    is_urgent: z.boolean().optional().default(false),
+    is_on_behalf_of: z.boolean().optional().default(false),
+    is_based_on_directive: z.boolean().optional().default(false),
   });
 
   return baseSchema.extend({
@@ -168,6 +185,21 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
       ? z.array(fileSchema).optional().default([])
       : z.array(fileSchema).min(1, 'يجب رفع ملف عرض تقديمي واحد على الأقل'),
     sector: requiresSector ? requiredString('القطاع مطلوب') : optionalString('القطاع يجب أن يكون نصاً'),
+    urgent_reason: requiresUrgentReason
+      ? requiredString('السبب مطلوب')
+      : optionalString('السبب يجب أن يكون نصاً'),
+    presentation_attachment_timing: requiresPresentationTiming
+      ? requiredString('متى سيتم إرفاق العرض؟ مطلوب')
+      : optionalString('متى سيتم إرفاق العرض؟ يجب أن يكون نصاً'),
+    meeting_manager_id: requiresMeetingManager
+      ? requiredString('مسير الاجتماع مطلوب')
+      : optionalString('مسير الاجتماع يجب أن يكون نصاً'),
+    directive_method: requiresDirectiveMethod
+      ? requiredString('طريقة التوجيه مطلوبة')
+      : optionalString('طريقة التوجيه يجب أن تكون نصاً'),
+    previous_meeting_minutes_id: requiresPreviousMeetingMinutes
+      ? requiredString('محضر الاجتماع مطلوب')
+      : optionalString('محضر الاجتماع يجب أن يكون نصاً'),
   });
 };
 
@@ -227,6 +259,15 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
       return !!(data.presentation_files && data.presentation_files.length > 0);
     case 'sector':
       return data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
+    case 'urgent_reason':
+    case 'presentation_attachment_timing':
+      return data.is_urgent === true;
+    case 'meeting_manager_id':
+      return data.is_on_behalf_of === true;
+    case 'directive_method':
+      return data.is_based_on_directive === true;
+    case 'previous_meeting_minutes_id':
+      return data.directive_method === 'PREVIOUS_MEETING';
     default:
       return false;
   }
