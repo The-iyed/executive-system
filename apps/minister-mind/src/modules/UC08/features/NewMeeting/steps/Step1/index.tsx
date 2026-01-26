@@ -465,7 +465,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
                 value={formData.dueDate}
                 onChange={(value) => handleChange('dueDate', value)}
                 onBlur={() => handleBlur('dueDate')}
-                placeholder="dd:mm:yyyy"
+                placeholder="dd/mm/yyyy"
                 error={!!(touched.dueDate && errors.dueDate)}
               />
             </FormField>
