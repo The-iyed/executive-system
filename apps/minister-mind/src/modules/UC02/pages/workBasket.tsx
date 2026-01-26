@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
 import { MeetingStatus } from '@shared';
 import '@shared/styles';
-import { Eye, Calendar } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { getAssignedSchedulingRequests, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
