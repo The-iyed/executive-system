@@ -103,16 +103,13 @@ const ScheduledMeetings: React.FC = () => {
     {
       id: 'date',
       header: 'تاريخ الإرسال',
-      width: 'w-80',
+      width: 'w-72',
       align: 'end',
       render: (row) => (
         <div className="flex flex-row justify-end items-center gap-3 w-full">
           <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
             {row.date}
           </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
-          </div>
         </div>
       ),
     },
@@ -153,7 +150,7 @@ const ScheduledMeetings: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Page Title, Description, Search Bar and View Switcher */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          <div className="flex-1">
+          <div>
             <h1 className="text-3xl font-bold mb-2 text-right">الاجتماعات المجدولة</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات المجدولة</p>
           </div>

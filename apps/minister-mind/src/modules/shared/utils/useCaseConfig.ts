@@ -49,6 +49,12 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         path: UC02_PATH.WORK_BASKET,
       },
       {
+        id: 'waiting-list',
+        icon: 'solar:clock-circle-outline',
+        label: 'قائمة الانتظار',
+        path: UC02_PATH.WAITING_LIST,
+      },
+      {
         id: 'calendar',
         icon: 'solar:calendar-outline',
         label: 'التقويم',
