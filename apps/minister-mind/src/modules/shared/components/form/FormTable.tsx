@@ -145,7 +145,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                             <FormDatePicker
                               value={row[column.id] || ''}
                               onChange={(value) => onUpdateRow(row.id, column.id, value)}
-                              placeholder={row[column.id] ? (column.placeholder || 'dd:mm:yyyy') : '-------'}
+                              placeholder={row[column.id] ? (column.placeholder || 'dd/mm/yyyy') : '-------'}
                               error={
                                 !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
                               }
