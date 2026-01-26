@@ -34,6 +34,14 @@ export const Layout: React.FC<LayoutProps> = ({
         actions: undefined,
       };
     }
+    if (pathname === PATH.WAITING_LIST) {
+      return {
+        title: 'قائمة الانتظار',
+        description: 'الاطلاع على طلبات قائمة الانتظار',
+        breadcrumbs: undefined,
+        actions: undefined,
+      };
+    }
     if (pathname === PATH.CALENDAR) {
       return {
         title: 'التقويم',
