@@ -45,6 +45,7 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
     'REJECTED': MeetingStatus.REJECTED,
     'CANCELLED': MeetingStatus.CANCELLED,
     'CLOSED': MeetingStatus.CLOSED,
+    'WAITING': MeetingStatus.WAITING,
   };
 
   return statusMap[apiStatus] || apiStatus;

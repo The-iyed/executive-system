@@ -6,4 +6,5 @@ export const PATH = {
   SCHEDULED_MEETINGS: '/scheduled-meetings',
   WORK_BASKET: '/work-basket',
   CALENDAR: '/calendar',
+  WAITING_LIST: '/waiting-list',
 }
