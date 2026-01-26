@@ -152,7 +152,7 @@ const ScheduleReview: React.FC = () => {
     {
       id: 'subject',
       header: 'الموضوع',
-      width: 'w-96', // Fixed wider width for subject
+      width: 'flex-1', // Flexible width to fill remaining space
       align: 'end',
       render: (row) => (
         <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -235,7 +235,7 @@ const ScheduleReview: React.FC = () => {
         {/* Page Title, Description, and Search/Filter Bar */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           {/* Left side - Title and Description */}
-          <div className="flex-1">
+          <div>
             <h1 className="text-3xl font-bold mb-2 text-right">
               {activeTab === 'work-basket' ? 'سلة العمل - طلبات قيد المراجعة' : 'الاجتماعات المجدولة'}
             </h1>
