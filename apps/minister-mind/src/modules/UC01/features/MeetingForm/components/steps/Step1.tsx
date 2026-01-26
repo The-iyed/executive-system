@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { 
   FormField, 
   FormInput, 
@@ -9,7 +9,8 @@ import {
   FormSwitch, 
   FileUpload,
   FormRow,
-  ActionButtons 
+  ActionButtons,
+  FormAsyncSelectV2,
 } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
@@ -20,7 +21,10 @@ import {
   MEETING_AGENDA_COLUMNS,
   MINISTER_SUPPORT_COLUMNS,
   RELATED_DIRECTIVES_COLUMNS,
+  DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
+import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
+import { getMeetings, type MeetingApiResponse } from '../../../../data/meetingsApi';
 import { cn } from '@sanad-ai/ui';
 import type { Step1FormData } from '../../schemas/step1.schema';
 
@@ -86,6 +90,77 @@ export const Step1: React.FC<Step1Props> = ({
   handleCancelClick,
   isFieldRequired,
 }) => {
+  // Load users options for meeting manager
+  const loadMeetingManagerOptions = useCallback(async (
+    search: string,
+    skip: number,
+    limit: number
+  ) => {
+    try {
+      const response = await getUsers({
+        search: search.trim() || undefined,
+        skip,
+        limit,
+      });
+
+      const items = response?.items.map((user: UserApiResponse) => {
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') 
+          || user?.username 
+          || user?.email 
+          || 'غير محدد';
+        
+        return {
+          label: fullName,
+          value: user?.id || '',
+        };
+      });
+
+      return {
+        items,
+        total: response?.total,
+        skip: response?.skip,
+        limit: response?.limit,
+        has_next: response?.has_next || false,
+        has_previous: response?.has_previous || false,
+      };
+    } catch (error) {
+      console.error('Error loading meeting managers:', error);
+      throw error;
+    }
+  }, []);
+
+  // Load previous meeting minutes options
+  const loadPreviousMeetingMinutesOptions = useCallback(async (
+    search: string,
+    skip: number,
+    limit: number
+  ) => {
+    try {
+      const response = await getMeetings({
+        search: search.trim() || undefined,
+        skip,
+        limit,
+      });
+
+      const items = response?.items.map((meeting: MeetingApiResponse) => ({
+        label: meeting.meeting_subject || meeting.meeting_title || 'غير محدد',
+        value: meeting.id || '',
+      }));
+
+      return {
+        items,
+        total: response?.total,
+        skip: response?.skip,
+        limit: response?.limit,
+        has_next: false,
+        has_previous: false,
+      };
+    } catch (error) {
+      console.error('Error loading previous meeting minutes:', error);
+      throw error;
+    }
+  }, []);
+
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
@@ -222,6 +297,126 @@ export const Step1: React.FC<Step1Props> = ({
               />
             </FormField>
           </FormRow>
+
+          {/* Urgent Meeting Section */}
+          <FormRow className='sm:justify-end'>
+            <FormSwitch
+              checked={formData.is_urgent || false}
+              onCheckedChange={(checked) => handleChange('is_urgent', checked)}
+              label="اجتماع عاجل؟"
+            />
+          </FormRow>
+
+          {formData.is_urgent && (
+            <>
+              <FormRow>
+                <FormField
+                  label="السبب"
+                  required={isFieldRequired('urgent_reason')}
+                  error={touched.urgent_reason ? errors.urgent_reason : undefined}
+                >
+                  <FormInput
+                    value={formData.urgent_reason || ''}
+                    onChange={(e) => handleChange('urgent_reason', e.target.value)}
+                    onBlur={() => handleBlur('urgent_reason')}
+                    placeholder="-------"
+                    error={!!(touched.urgent_reason && errors.urgent_reason)}
+                  />
+                </FormField>
+                <FormField
+                  label="متى سيتم إرفاق العرض؟"
+                  required={isFieldRequired('presentation_attachment_timing')}
+                  error={touched.presentation_attachment_timing ? errors.presentation_attachment_timing : undefined}
+                >
+                  <FormInput
+                    value={formData.presentation_attachment_timing || ''}
+                    onChange={(e) => handleChange('presentation_attachment_timing', e.target.value)}
+                    onBlur={() => handleBlur('presentation_attachment_timing')}
+                    placeholder="-------"
+                    error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
+                  />
+                </FormField>
+              </FormRow>
+            </>
+          )}
+
+          {/* On Behalf Of Section */}
+          <FormRow className='sm:justify-end'>
+            <FormSwitch
+              checked={formData.is_on_behalf_of || false}
+              onCheckedChange={(checked) => handleChange('is_on_behalf_of', checked)}
+              label="هل تطلب الاجتماع نيابة عن غيرك؟"
+            />
+          </FormRow>
+
+          {formData.is_on_behalf_of && (
+            <FormRow className='sm:justify-end'>
+              <FormField
+                label="مسير الاجتماع"
+                required={isFieldRequired('meeting_manager_id')}
+                error={touched.meeting_manager_id ? errors.meeting_manager_id : undefined}
+              >
+                <FormAsyncSelectV2
+                  value={formData.meeting_manager_id ? { label: formData.meeting_manager_id, value: formData.meeting_manager_id } : null}
+                  onValueChange={(option) => handleChange('meeting_manager_id', option?.value || '')}
+                  loadOptions={loadMeetingManagerOptions}
+                  placeholder="-------"
+                  error={!!(touched.meeting_manager_id && errors.meeting_manager_id)}
+                  errorMessage={touched.meeting_manager_id ? errors.meeting_manager_id : undefined}
+                  fullWidth
+                />
+              </FormField>
+            </FormRow>
+          )}
+
+          {/* Based on Directive Section */}
+          <FormRow className='sm:justify-end'>
+            <FormSwitch
+              checked={formData.is_based_on_directive || false}
+              onCheckedChange={(checked) => handleChange('is_based_on_directive', checked)}
+              label="هل طلب الاجتماع بناءً على توجيه من معالي الوزير"
+            />
+          </FormRow>
+
+          {formData.is_based_on_directive && (
+            <>
+              <FormRow className='sm:justify-end'>
+                <FormField
+                  label="طريقة التوجيه"
+                  required={isFieldRequired('directive_method')}
+                  error={touched.directive_method ? errors.directive_method : undefined}
+                >
+                  <FormSelect
+                    value={formData.directive_method}
+                    onValueChange={(value) => handleChange('directive_method', value)}
+                    options={DIRECTIVE_METHOD_OPTIONS}
+                    placeholder="-------"
+                    error={!!(touched.directive_method && errors.directive_method)}
+                  />
+                </FormField>
+              </FormRow>
+
+              {formData.directive_method === 'PREVIOUS_MEETING' && (
+                <FormRow className='sm:justify-end'>
+                  <FormField
+                    label="محضر الاجتماع"
+                    required={isFieldRequired('previous_meeting_minutes_id')}
+                    error={touched.previous_meeting_minutes_id ? errors.previous_meeting_minutes_id : undefined}
+                  >
+                    <FormAsyncSelectV2
+                      value={formData.previous_meeting_minutes_id ? { label: formData.previous_meeting_minutes_id, value: formData.previous_meeting_minutes_id } : null}
+                      onValueChange={(option) => handleChange('previous_meeting_minutes_id', option?.value || '')}
+                      loadOptions={loadPreviousMeetingMinutesOptions}
+                      placeholder="-------"
+                      error={!!(touched.previous_meeting_minutes_id && errors.previous_meeting_minutes_id)}
+                      errorMessage={touched.previous_meeting_minutes_id ? errors.previous_meeting_minutes_id : undefined}
+                      fullWidth
+                    />
+                  </FormField>
+                </FormRow>
+              )}
+            </>
+          )}
         </div>
 
         <FileUpload
@@ -234,7 +429,7 @@ export const Step1: React.FC<Step1Props> = ({
         />
 
         <FormTable
-          title="الهدف من الاجتماع"
+          title="أهداف الاجتماع"
           required
           columns={MEETING_GOALS_COLUMNS}
           rows={formData.meetingGoals || []}
