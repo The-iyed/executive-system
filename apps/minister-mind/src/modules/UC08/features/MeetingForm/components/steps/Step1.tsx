@@ -394,7 +394,7 @@ export const Step1: React.FC<Step1Props> = ({
           />
 
         <FormTable
-          title="الهدف من الاجتماع"
+          title="أهداف الاجتماع"
           required
           columns={MEETING_GOALS_COLUMNS}
           rows={formData.meetingGoals || []}
