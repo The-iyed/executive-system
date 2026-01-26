@@ -181,6 +181,27 @@ export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = 
   return response.data;
 };
 
+// Fetch waiting list items (for "قائمة الانتظار" view)
+export const getWaitingList = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.status) {
+    queryParams.append('status', params.status);
+  }
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search) {
+    queryParams.append('search', params.search);
+  }
+
+  const response = await axiosInstance.get<MeetingsListResponse>(`/api/scheduling/waiting-list?${queryParams.toString()}`);
+  return response.data;
+};
+
 export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
   const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);
   return response.data;
@@ -193,6 +214,10 @@ export interface RejectMeetingRequest {
 
 export const rejectMeeting = async (meetingId: string, payload: RejectMeetingRequest): Promise<void> => {
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/reject`, payload);
+};
+
+export const moveToWaitingList = async (meetingId: string): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/add-to-waiting-list`);
 };
 
 export interface SendToContentRequest {

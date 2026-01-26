@@ -71,6 +71,14 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-02',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.WAITING_LIST,
+    component: lazy(() => import('../pages/waitingList')),
+    layout: Layout,
+    useCase: 'UC-02',
+  },
 ]
 
 export default routes
