@@ -61,16 +61,16 @@ export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
 export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: '-------' },
-  { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
+  { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'w-40', placeholder: 'dd/mm/yyyy' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'previous_meeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------' },
-  { id: 'directive_date', header: 'تاريخ التوجيه', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
+  { id: 'directive_date', header: 'تاريخ التوجيه', type: 'date', width: 'w-40', placeholder: 'dd/mm/yyyy' },
   { id: 'directive_status', header: 'حالة التوجيه', type: 'text', placeholder: '-------' },
-  { id: 'due_date', header: 'تاريخ الاستحقاق', type: 'date', width: 'w-40', placeholder: 'dd:mm:yyyy' },
+  { id: 'due_date', header: 'تاريخ الاستحقاق', type: 'date', width: 'w-40', placeholder: 'dd/mm/yyyy' },
   { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];

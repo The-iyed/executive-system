@@ -4,6 +4,8 @@ import axiosInstance from '@auth/utils/axios';
 import { useCalendarEvents } from './useCalendarEvents';
 import type { CalendarEventData } from '@shared';
 import { getWeekStart, getWeekEnd } from '../utils';
+import type { Step3FormData } from '../schemas/step3.schema';
+import { step3Schema } from '../schemas/step3.schema';
 
 interface UseStep3Props {
   draftId: string;
@@ -13,9 +15,11 @@ interface UseStep3Props {
 }
 
 interface SchedulingPayload {
-  selected_time_slot_id?: string;
-  alternative_time_slot_id_1?: string;
-  alternative_time_slot_id_2?: string;
+  selected_time_slot_id: string; // Required
+  meeting_channel?: string; // Required for final submission, optional for draft
+  scheduled_at?: string; // Required - ISO 8601 datetime string
+  requires_protocol?: boolean;
+  notes?: string;
 }
 
 export interface Step3Hook {
@@ -43,6 +47,15 @@ export interface Step3Hook {
   submitStep: (isDraft: boolean, selectedSlotIds: string[]) => Promise<void>;
   isSubmitting: boolean;
   setSelectedSlots: (slots: string[]) => void;
+
+  // form data
+  formData: Partial<Step3FormData>;
+  handleChange: (field: keyof Step3FormData, value: any) => void;
+  handleBlur: (field: keyof Step3FormData) => void;
+  
+  // validation
+  errors: Partial<Record<keyof Step3FormData, string>>;
+  touched: Partial<Record<keyof Step3FormData, boolean>>;
 }
 
 export const useStep3 = ({
@@ -54,6 +67,14 @@ export const useStep3 = ({
   const [currentDate, setCurrentDate] = useState<Date>(() => getWeekStart(new Date()));
   const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Step3FormData>>({
+    meeting_channel: undefined,
+    scheduled_at: undefined,
+    requires_protocol: false,
+    notes: '',
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof Step3FormData, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof Step3FormData, boolean>>>({});
 
   useEffect(() => {
     if (initialSlots.length > 0) {
@@ -100,8 +121,8 @@ export const useStep3 = ({
   // React Query mutation for submitting scheduling
   const submitMutation = useMutation({
     mutationFn: async (payload: SchedulingPayload) => {
-      const response = await axiosInstance.patch(
-        `/api/meeting-requests/drafts/${draftId}/scheduling`,
+      const response = await axiosInstance.put(
+        `/api/meeting-requests/direct-schedule/${draftId}/step3`,
         payload
       );
       return response.data;
@@ -117,16 +138,12 @@ export const useStep3 = ({
 
   const toggleSlotSelection = useCallback((slotId: string) => {
     setSelectedSlots((prev) => {
-      // If slot is already selected, remove it
+      // If slot is already selected, remove it (allow deselection)
       if (prev.includes(slotId)) {
-        return prev.filter((id) => id !== slotId);
+        return [];
       }
-      // If we already have 3 slots, don't add more
-      if (prev.length >= 3) {
-        return prev;
-      }
-      // Add the slot
-      return [...prev, slotId];
+      // Only allow one selection - replace any existing selection
+      return [slotId];
     });
     setValidationError(null);
   }, []);
@@ -196,18 +213,58 @@ export const useStep3 = ({
     // TODO: Implement AI generation logic
   }, []);
 
+  const handleChange = useCallback((field: keyof Step3FormData, value: any) => {
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+      
+      // Validate field on change
+      const result = step3Schema.safeParse(updated);
+      if (result.success) {
+        setErrors((prevErrors) => {
+          const newErrors = { ...prevErrors };
+          delete newErrors[field];
+          return newErrors;
+        });
+      } else {
+        const fieldError = result.error.errors.find((err) => err.path[0] === field);
+        if (fieldError) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            [field]: fieldError.message,
+          }));
+        }
+      }
+      
+      return updated;
+    });
+  }, []);
+
+  const handleBlur = useCallback((field: keyof Step3FormData) => {
+    setTouched((prev) => ({
+      ...prev,
+      [field]: true,
+    }));
+    
+    // Validate field on blur
+    const result = step3Schema.safeParse(formData);
+    if (!result.success) {
+      const fieldError = result.error.errors.find((err) => err.path[0] === field);
+      if (fieldError) {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [field]: fieldError.message,
+        }));
+      }
+    }
+  }, [formData]);
+
   const submitStep = useCallback(async (
     isDraft: boolean,
     selectedSlotIds: string[]
   ): Promise<void> => {
-    // Validate: need at least 1 slot if not draft
-    if (!isDraft && selectedSlotIds.length === 0) {
-      const err = new Error('يرجى اختيار موعد واحد على الأقل');
-      onError?.(err);
-      setValidationError(err.message);
-      return;
-    }
-
     // If draft and no slots, skip API call
     if (isDraft && selectedSlotIds.length === 0) {
       clearValidationError();
@@ -215,21 +272,76 @@ export const useStep3 = ({
       return;
     }
 
-    // Build payload
-    const payload: SchedulingPayload = {};
-    if (selectedSlotIds.length > 0) {
-      payload.selected_time_slot_id = selectedSlotIds[0];
+    // Validate: need exactly 1 slot if not draft
+    if (!isDraft && selectedSlotIds.length === 0) {
+      const err = new Error('يرجى اختيار موعد الاجتماع');
+      onError?.(err);
+      setValidationError(err.message);
+      return;
     }
-    if (selectedSlotIds.length > 1) {
-      payload.alternative_time_slot_id_1 = selectedSlotIds[1];
+
+    // Validate form data using schema
+    const validationResult = step3Schema.safeParse(formData);
+    if (!isDraft && !validationResult.success) {
+      const formErrors: Partial<Record<keyof Step3FormData, string>> = {};
+      validationResult.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof Step3FormData;
+        formErrors[field] = err.message;
+      });
+      setErrors(formErrors);
+      setTouched({
+        meeting_channel: true,
+        scheduled_at: true,
+      });
+      const firstError = validationResult.error.errors[0];
+      const err = new Error(firstError.message);
+      onError?.(err);
+      return;
     }
-    if (selectedSlotIds.length > 2) {
-      payload.alternative_time_slot_id_2 = selectedSlotIds[2];
+
+    // Build payload - always include selected_time_slot_id if we have a selection
+    const payload: SchedulingPayload = {
+      selected_time_slot_id: selectedSlotIds[0],
+    };
+
+    // meeting_channel is required only for final submission (not draft)
+    if (!isDraft) {
+      if (!formData.meeting_channel) {
+        const err = new Error('قناة الاجتماع مطلوبة');
+        onError?.(err);
+        return;
+      }
+      payload.meeting_channel = formData.meeting_channel;
+    } else if (formData.meeting_channel) {
+      // Include meeting_channel in draft if provided, but don't require it
+      payload.meeting_channel = formData.meeting_channel;
+    }
+
+    // scheduled_at is required for final submission (date only, no time)
+    if (!isDraft) {
+      if (!formData.scheduled_at) {
+        const err = new Error('تاريخ الاجتماع مطلوب');
+        onError?.(err);
+        setValidationError(err.message);
+        return;
+      }
+      payload.scheduled_at = formData.scheduled_at;
+    } else if (formData.scheduled_at) {
+      // Include scheduled_at in draft if provided
+      payload.scheduled_at = formData.scheduled_at;
+    }
+    
+    // Add optional form fields to payload
+    if (formData.requires_protocol !== undefined) {
+      payload.requires_protocol = formData.requires_protocol;
+    }
+    if (formData.notes && formData.notes.trim() !== '') {
+      payload.notes = formData.notes;
     }
 
     clearValidationError();
     submitMutation.mutate(payload);
-  }, [submitMutation, onSuccess, onError]);
+  }, [submitMutation, onSuccess, onError, formData]);
 
   return {
     // calendar state
@@ -256,5 +368,14 @@ export const useStep3 = ({
     submitStep,
     isSubmitting: submitMutation.isPending,
     setSelectedSlots,
+
+    // form data
+    formData,
+    handleChange,
+    handleBlur,
+    
+    // validation
+    errors,
+    touched,
   };
 };
