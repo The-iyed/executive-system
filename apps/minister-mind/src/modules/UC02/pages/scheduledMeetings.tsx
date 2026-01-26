@@ -81,7 +81,7 @@ const ScheduledMeetings: React.FC = () => {
     {
       id: 'subject',
       header: 'الموضوع',
-      width: 'w-96',
+      width: 'flex-1',
       align: 'end',
       render: (row) => (
         <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -150,7 +150,7 @@ const ScheduledMeetings: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Page Title, Description, Search Bar and View Switcher */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          <div className="flex-1">
+          <div>
             <h1 className="text-3xl font-bold mb-2 text-right">الاجتماعات المجدولة</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات المجدولة</p>
           </div>
