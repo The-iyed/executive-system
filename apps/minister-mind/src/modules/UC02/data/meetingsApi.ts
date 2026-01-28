@@ -160,7 +160,7 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   return response.data;
 };
 
-// Fetch assigned scheduling requests (for "الاجتماعات المجدولة" view)
+// Fetch assigned scheduling requests (for "الاجتماعات السابقة" view)
 export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();
   
