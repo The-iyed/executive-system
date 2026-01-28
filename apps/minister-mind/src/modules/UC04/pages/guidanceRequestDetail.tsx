@@ -1028,7 +1028,7 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
 
               {/* Scheduling Section - Invitees and Minister Attendees */}
-              <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+              {/* <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
                 <div className="flex flex-col gap-6 w-full max-w-[1085px]">
                   <div className="flex flex-col gap-2">
                     <h2
@@ -1214,6 +1214,7 @@ const GuidanceRequestDetail: React.FC = () => {
                     )}
                   </div>
 
+
                   <div className="flex flex-col gap-2">
                     <h2
                       className="text-right"
@@ -1260,9 +1261,9 @@ const GuidanceRequestDetail: React.FC = () => {
                         لا يوجد دعم من الوزير
                       </p>
                     )}
-                  </div>
+                  </div> 
                 </div>
-              </div>
+              </div> */}
 
               {/* Attachments Section */}
               {meetingRequest.attachments && meetingRequest.attachments.length > 0 && (
@@ -1442,66 +1443,153 @@ const GuidanceRequestDetail: React.FC = () => {
                 >
                   المحتوى
                 </h3>
-                <div className="flex flex-col gap-4">
-                  {/* Row 1 */}
-                  <div className="flex flex-row gap-4">
-                    {/* العرض التقديمي */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        العرض التقديمي
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        {meetingRequest.attachments &&
-                        meetingRequest.attachments.some((a) => a.is_presentation)
-                          ? `${meetingRequest.attachments.filter((a) => a.is_presentation).length} ملف`
-                          : '-'}
-                      </p>
-                    </div>
+                <div className="flex flex-col gap-6">
+                  {/* العرض التقديمي */}
+                  <div className="flex flex-col gap-4">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      العرض التقديمي
+                    </label>
+                    {meetingRequest.attachments && meetingRequest.attachments.filter((a) => a.is_presentation).length > 0 ? (
+                      <div className="flex flex-row gap-4 flex-wrap">
+                        {meetingRequest.attachments
+                          .filter((a) => a.is_presentation)
+                          .map((att) => (
+                            <div
+                              key={att.id}
+                              className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
+                            >
+                              <div className="flex flex-row items-center justify-between">
+                                {att.file_type?.toLowerCase() === 'pdf' ? (
+                                  <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                  <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
+                                    {att.file_type?.toUpperCase() || ''}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {att.file_name}
+                                </span>
+                                <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {Math.round((att.file_size || 0) / 1024)} KB
+                                </span>
+                              </div>
 
-                    {/* متى سيتم إرفاق العرض؟ */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        متى سيتم إرفاق العرض؟
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        -
+                              <div className="flex flex-row items-center self-end gap-2 ml-auto">
+                                {att.blob_url && (
+                                  <>
+                                    <a
+                                      href={att.blob_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
+                                    >
+                                      <Download className="w-5 h-5 text-[#009883]" />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                                    >
+                                      <Eye className="w-5 h-5 text-[#475467]" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-500 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا توجد مرفقات
                       </p>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Row 2 */}
-                  <div className="flex flex-row gap-4">
-                    {/* مرفقات اختيارية */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        مرفقات اختيارية
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        {meetingRequest.attachments &&
-                        meetingRequest.attachments.some((a) => a.is_additional)
-                          ? `${meetingRequest.attachments.filter((a) => a.is_additional).length} ملف`
-                          : '-'}
+                  {/* متى سيتم إرفاق العرض؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      متى سيتم إرفاق العرض؟
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      -
+                    </p>
+                  </div>
+
+                  {/* مرفقات اختيارية */}
+                  <div className="flex flex-col gap-4">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      مرفقات اختيارية
+                    </label>
+                    {meetingRequest.attachments && meetingRequest.attachments.filter((a) => a.is_additional).length > 0 ? (
+                      <div className="flex flex-row gap-4 flex-wrap">
+                        {meetingRequest.attachments
+                          .filter((a) => a.is_additional)
+                          .map((att) => (
+                            <div
+                              key={att.id}
+                              className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
+                            >
+                              <div className="flex flex-row items-center justify-between">
+                                {att.file_type?.toLowerCase() === 'pdf' ? (
+                                  <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                  <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
+                                    {att.file_type?.toUpperCase() || ''}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {att.file_name}
+                                </span>
+                                <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {Math.round((att.file_size || 0) / 1024)} KB
+                                </span>
+                              </div>
+
+                              <div className="flex flex-row items-center self-end gap-2 ml-auto">
+                                {att.blob_url && (
+                                  <>
+                                    <a
+                                      href={att.blob_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
+                                    >
+                                      <Download className="w-5 h-5 text-[#009883]" />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                                    >
+                                      <Eye className="w-5 h-5 text-[#475467]" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-500 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا توجد مرفقات
                       </p>
-                    </div>
-                    <div className="flex-1" />
+                    )}
                   </div>
                 </div>
               </div>
