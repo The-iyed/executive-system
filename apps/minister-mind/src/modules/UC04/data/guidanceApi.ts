@@ -165,6 +165,7 @@ export const getGuidanceRequestById = async (
 export interface ProvideGuidanceRequest {
   guidance_notes: string;
   feasibility_answer: boolean;
+  is_draft: boolean;
 }
 
 export const provideGuidance = async (
