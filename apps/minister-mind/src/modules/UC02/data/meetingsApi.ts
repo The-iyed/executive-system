@@ -421,6 +421,7 @@ export interface ConsultationRecord {
   consultant_user_id: string;
   consultant_name: string;
   requested_at: string;
+  is_draft: boolean;
   responded_at: string | null;
   status: string;
 }
@@ -434,8 +435,8 @@ export interface ConsultationRecordsResponse {
   has_previous: boolean;
 }
 
-export const getConsultationRecords = async (meetingId: string): Promise<ConsultationRecordsResponse> => {
-  const response = await axiosInstance.get<ConsultationRecordsResponse>(`/api/meeting-requests/${meetingId}/consultation-record`);
+export const getConsultationRecords = async (meetingId: string, withDrafts: boolean = false): Promise<ConsultationRecordsResponse> => {
+  const response = await axiosInstance.get<ConsultationRecordsResponse>(`/api/meeting-requests/${meetingId}/consultation-record?with_drafts=${withDrafts}`);
   return response.data;
 };
 
@@ -451,6 +452,7 @@ export interface GuidanceRecord {
   requested_at: string;
   responded_at: string | null;
   status: string;
+  is_draft: boolean;
 }
 
 export interface GuidanceRecordsResponse {
