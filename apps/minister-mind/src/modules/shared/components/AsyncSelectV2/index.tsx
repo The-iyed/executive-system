@@ -21,7 +21,6 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   className,
   fullWidth = false,
 }) => {
-  // Refs
   const currentPageRef = useRef(1);
   const currentSearchRef = useRef('');
   const previousSearchRef = useRef('');
@@ -314,10 +313,12 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
               textAlign: 'right',
               direction: 'rtl',
               minHeight: '44px',
+              cursor: 'pointer',
+              borderRadius: '8px',
               borderColor: error ? '#D13C3C' : state.isFocused ? '#008774' : '#D0D5DD',
               boxShadow: state.isFocused ? '0 0 0 1px #008774' : 'none',
               '&:hover': {
-                borderColor: error ? '#D13C3C' : '#008774',
+                borderColor: error ? '#D13C3C' : state.isFocused ? '#008774' : '#D0D5DD',
               },
             }),
             placeholder: (base) => ({
