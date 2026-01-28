@@ -111,6 +111,7 @@ export interface ConsultationRequestApiResponse {
   meeting_classification_type?: string;
   meeting_confidentiality?: string;
   sector?: string;
+  presentation_attachment_timing?: string | null;
 }
 
 export interface ConsultationsListResponse {
