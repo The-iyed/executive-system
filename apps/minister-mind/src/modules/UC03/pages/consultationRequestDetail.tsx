@@ -1,38 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import {
+  MeetingStatus,
+  getMeetingStatusLabel,
+  getMeetingTypeLabel,
+  getMeetingClassificationLabel,
+  getMeetingClassificationTypeLabel,
+  getMeetingConfidentialityLabel,
+  getMeetingChannelLabel,
+  getDirectiveMethodLabel,
+  getInviteeResponseStatusLabel,
+} from '@shared/types';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
 
-// Translate response status to Arabic
-const translateResponseStatus = (status: string | null | undefined): string => {
-  if (!status) return '-';
-  
-  const statusMap: Record<string, string> = {
-    PENDING: 'قيد الانتظار',
-    ACCEPTED: 'مقبول',
-    DECLINED: 'مرفوض',
-  };
-  
-  return statusMap[status.toUpperCase()] || status;
+const formatTextValue = (value: unknown): string => {
+  if (value == null) return '-';
+  if (Array.isArray(value)) {
+    const lines = value
+      .map((v) => (v == null ? '' : String(v)).trim())
+      .filter(Boolean);
+    return lines.length > 0 ? lines.join('\n') : '-';
+  }
+  const text = String(value).trim();
+  return text.length > 0 ? text : '-';
 };
 
-// Get status label with support for custom statuses
-const getStatusLabel = (status: MeetingStatus | string): string => {
-  if (status in MeetingStatusLabels) {
-    return MeetingStatusLabels[status as MeetingStatus];
+const normalizeTextLines = (value: unknown): string[] => {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => (v == null ? '' : String(v)).trim())
+      .filter(Boolean);
   }
-  // Handle custom statuses
-  if (status === 'UNDER_CONSULTATION_SCHEDULING') {
-    return 'قيد استشارة الجدولة';
-  }
-  return status as string;
+
+  const text = String(value).trim();
+  if (!text) return [];
+
+  // Support already-joined strings that contain newlines
+  return text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 };
 
 const ConsultationRequestDetail: React.FC = () => {
@@ -174,13 +189,6 @@ const ConsultationRequestDetail: React.FC = () => {
     });
   };
 
-  // Open submit consultation modal automatically when its tab is selected
-  useEffect(() => {
-    if (activeTab === 'submit-consultation') {
-      setIsSubmitModalOpen(true);
-    }
-  }, [activeTab]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -201,7 +209,7 @@ const ConsultationRequestDetail: React.FC = () => {
 
   // Map status to MeetingStatus enum
   const meetingStatus = (meetingRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
-  const statusLabel = getStatusLabel(meetingStatus);
+  const statusLabel = getMeetingStatusLabel(meetingStatus);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
@@ -246,7 +254,7 @@ const ConsultationRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-6">
               {/* Consultation Question Section */}
               <div
-                className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
+                className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
                 
               >
                 <div className="flex flex-col items-start p-0 gap-[10px] w-full">
@@ -255,7 +263,6 @@ const ConsultationRequestDetail: React.FC = () => {
                     <h2
                       className="w-full h-[38px] font-bold text-lg leading-[38px] text-right text-[#101828]"
                       style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
                         fontWeight: 700,
                         fontSize: '18px',
                         lineHeight: '38px',
@@ -265,11 +272,10 @@ const ConsultationRequestDetail: React.FC = () => {
                     </h2>
 
                     {/* Question Content */}
-                    <div className="flex flex-col items-start p-0 gap-4 w-full h-[136px]">
+                    <div className="flex flex-col items-start p-0 gap-4 w-full">
                       <p
                         className="w-full text-base leading-6 text-right text-[#475467]"
                         style={{
-                          fontFamily: "'Ping AR + LT', sans-serif",
                           fontWeight: 400,
                           fontSize: '16px',
                           lineHeight: '24px',
@@ -305,221 +311,17 @@ const ConsultationRequestDetail: React.FC = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Pending Consultation Section */}
-              {isLoadingConsultation ? (
-                <div className="flex items-center justify-center p-6">
-                  <div className="text-gray-600" >
-                    جاري تحميل بيانات الاستشارة...
-                  </div>
-                </div>
-              ) : pendingConsultation ? (
-                <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-                  <h2
-                    className="text-xl font-bold text-right text-[#101828]"
-                    style={{
-                      fontFamily: "'Ping AR + LT', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '20px',
-                      lineHeight: '28px',
-                    }}
-                  >
-                    بيانات الاستشارة المعلقة
-                  </h2>
-                  
-                  <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          معرف الاستشارة
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.id}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          نوع الاستشارة
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.consultation_type === 'SCHEDULING' ? 'جدولة' : pendingConsultation.consultation_type}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          الحالة
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {translateResponseStatus(pendingConsultation.status)}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          معرف المستشار
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.consultant_user_id}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          تاريخ الطلب
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.requested_at ? new Date(pendingConsultation.requested_at).toLocaleString('ar-SA') : '-'}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          تاريخ الرد
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.responded_at ? new Date(pendingConsultation.responded_at).toLocaleString('ar-SA') : '-'}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          إجابة الجدوى
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.feasibility_answer === null ? '-' : pendingConsultation.feasibility_answer ? 'نعم' : 'لا'}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          المدة الممنوحة
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right"
-                          
-                        >
-                          {pendingConsultation.duration_granted ? `${pendingConsultation.duration_granted} دقيقة` : '-'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {pendingConsultation.recommendation && (
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          التوصية
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200"
-                          
-                        >
-                          {pendingConsultation.recommendation}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {pendingConsultation.consultation_notes && (
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          ملاحظات الاستشارة
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap"
-                          
-                        >
-                          {pendingConsultation.consultation_notes}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {pendingConsultation.content_exception && (
-                      <div className="flex flex-col gap-2">
-                        <label
-                          className="text-sm font-medium text-gray-700 text-right"
-                          
-                        >
-                          استثناء المحتوى
-                        </label>
-                        <p
-                          className="text-base text-gray-900 text-right p-3 bg-gray-50 rounded-lg border border-gray-200"
-                          
-                        >
-                          {pendingConsultation.content_exception}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
             </div>
           )}
 
           {/* Request Info Tab */}
           {activeTab === 'request-info' && (
             <div className="flex flex-col gap-4">
-              <h3
-                className="text-lg font-semibold text-gray-900 text-right"
-                
-              >
-                معلومات الطلب
-              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* رقم الطلب */}
                 <div className="flex flex-col gap-2">
                   <label
-                    className="text-sm font-medium text-gray-700 text-right"
+                    className="text-lg font-semibold text-gray-900 text-right"
                     
                   >
                     رقم الطلب
@@ -534,7 +336,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 {/* حالة الطلب */}
                 <div className="flex flex-col gap-2">
                   <label
-                    className="text-sm font-medium text-gray-700 text-right"
+                    className="text-lg font-semibold text-gray-900 text-right"
                   >
                     حالة الطلب
                   </label>
@@ -549,7 +351,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 {/* مالك الاجتماع */}
                 <div className="flex flex-col gap-2">
                   <label
-                    className="text-sm font-medium text-gray-700 text-right"
+                    className="text-lg font-semibold text-gray-900 text-right"
                   >
                     مالك الاجتماع
                   </label>
@@ -564,7 +366,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 {/* مقدم الطلب */}
                 <div className="flex flex-col gap-2">
                   <label
-                    className="text-sm font-medium text-gray-700 text-right"
+                    className="text-lg font-semibold text-gray-900 text-right"
                     
                   >
                     مقدم الطلب
@@ -583,219 +385,300 @@ const ConsultationRequestDetail: React.FC = () => {
           {/* Meeting Information Tab */}
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-6">
-              {/* Basic Information */}
               <div className="flex flex-col gap-4">
-                <h3
-                  className="text-lg font-semibold text-gray-900 text-right"
-                  
-                >
-                  معلومات الاجتماع
-                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* هل تطلب الاجتماع نيابة عن غيرك؟ */}
                   <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      هل تطلب الاجتماع نيابة عن غيرك؟
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.is_on_behalf_of === true
+                        ? 'نعم'
+                        : meetingRequest.is_on_behalf_of === false
+                          ? 'لا'
+                          : '-'}
+                    </p>
+                  </div>
+                  {/* مالك الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      مالك الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.current_owner_user
+                        ? `${meetingRequest.current_owner_user.first_name ?? ''} ${meetingRequest.current_owner_user.last_name ?? ''}`.trim()
+                        : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.submitter_name ?? '-'}
+                    </p>
+                  </div>
+                  {/* عنوان الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
                       عنوان الاجتماع
                     </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
+                    <p className="text-base text-gray-900 text-right">
                       {meetingRequest.meeting_title || '-'}
                     </p>
                   </div>
+                  {/* القطاع */}
                   <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
-                      موضوع الاجتماع
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.meeting_subject || '-'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
-                      فئة الاجتماع
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.meeting_classification || '-'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
-                      نوع الاجتماع
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.meeting_type || '-'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
-                      آلية انعقاد الاجتماع
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.meeting_channel || '-'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
+                    <label className="text-lg font-semibold text-gray-900 text-right">
                       القطاع
                     </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
+                    <p className="text-base text-gray-900 text-right">
                       {meetingRequest.sector || '-'}
                     </p>
                   </div>
+                  {/* نوع الاجتماع */}
                   <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      نوع الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
+                    </p>
+                  </div>
+                  {/* وصف الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      وصف الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.meeting_subject || '-'}
+                    </p>
+                  </div>
+                  {/* اجتماع عاجل؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      اجتماع عاجل؟
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.is_urgent === true
+                        ? 'نعم'
+                        : meetingRequest.is_urgent === false
+                          ? 'لا'
+                          : meetingRequest.is_direct_schedule === true
+                            ? 'نعم'
+                            : meetingRequest.is_direct_schedule === false
+                              ? 'لا'
+                              : '-'}
+                    </p>
+                  </div>
+                  {/* السبب */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      السبب
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.urgent_reason || '-'}
+                    </p>
+                  </div>
+                  {/* موعد الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      موعد الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.scheduled_at
+                        ? new Date(meetingRequest.scheduled_at).toLocaleString('ar-SA')
+                        : '-'}
+                    </p>
+                  </div>
+                  {/* آلية انعقاد الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      آلية انعقاد الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
+                    </p>
+                  </div>
+                  {/* الموقع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      الموقع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.location ?? (meetingRequest.selected_time_slot?.location ?? '-')}
+                    </p>
+                  </div>
+                  {/* هل يتطلب بروتوكول؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
                       هل يتطلب بروتوكول؟
                     </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.requires_protocol ? 'نعم' : 'لا'}
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.requires_protocol === true
+                        ? 'نعم'
+                        : meetingRequest.requires_protocol === false
+                          ? 'لا'
+                          : '-'}
                     </p>
                   </div>
+                  {/* فئة الاجتماع */}
                   <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      
-                    >
-                      مدة العرض التقديمي (دقيقة)
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      فئة الاجتماع
                     </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      
-                    >
-                      {meetingRequest.presentation_duration || '-'}
+                    <p className="text-base text-gray-900 text-right">
+                      {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
                     </p>
                   </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              <div className="flex flex-col gap-4">
-                <h3
-                  className="text-lg font-semibold text-gray-900 text-right"
-                  
-                >
-                  معلومات إضافية
-                </h3>
-                <div className="flex flex-col gap-4">
-                  {meetingRequest.meeting_justification && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        
-                      >
-                        مبرر الاجتماع
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right leading-relaxed"
-                        
-                      >
-                        {meetingRequest.meeting_justification}
+                  {/* مبرّر اللقاء */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      مبرّر اللقاء
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.meeting_justification || '-'}
+                    </p>
+                  </div>
+                  {/* موضوع التكليف المرتبط */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      موضوع التكليف المرتبط
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.related_topic || '-'}
+                    </p>
+                  </div>
+                  {/* تاريخ الاستحقاق */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      تاريخ الاستحقاق
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.deadline
+                        ? new Date(meetingRequest.deadline).toLocaleDateString('ar-SA')
+                        : '-'}
+                    </p>
+                  </div>
+                  {/* تصنيف الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      تصنيف الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) || '-'}
+                    </p>
+                  </div>
+                  {/* سريّة الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      سريّة الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
+                    </p>
+                  </div>
+                  {/* اجتماع متسلسل؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      اجتماع متسلسل؟
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.is_sequential === true
+                        ? 'نعم'
+                        : meetingRequest.is_sequential === false
+                          ? 'لا'
+                          : '-'}
+                    </p>
+                  </div>
+                  {/* الاجتماع السابق */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      الاجتماع السابق
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.previous_meeting_id || '-'}
+                    </p>
+                  </div>
+                  {/* الرقم التسلسلي */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      الرقم التسلسلي
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.sequential_number != null
+                        ? String(meetingRequest.sequential_number)
+                        : '-'}
+                    </p>
+                  </div>
+                  {/* أجندة الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      أجندة الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right flex flex-col gap-2">
+                      {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0
+                        ? meetingRequest.agenda_items.map((item) =>
+                          <span key={item.id}>{`• ${item.agenda_item}`} </span>
+                        )
+                        : '-'}
+                    </p>
+                  </div>
+                  {/* هل طلب الاجتماع بناءً على توجيه من معالي الوزير */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      هل طلب الاجتماع بناءً على توجيه من معالي الوزير
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0
+                        ? 'نعم'
+                        : meetingRequest.is_direct_schedule === true
+                          ? 'نعم'
+                          : meetingRequest.is_direct_schedule === false
+                            ? 'لا'
+                            : '-'}
+                    </p>
+                  </div>
+                  {/* طريقة التوجيه */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      طريقة التوجيه
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {getDirectiveMethodLabel(meetingRequest.directive_method) || '-'}
+                    </p>
+                  </div>
+                  {/* محضر الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      محضر الاجتماع
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.protocol_type || '-'}
+                    </p>
+                  </div>
+                  {/* التوجيه */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      التوجيه
+                    </label>
+                    <p className="text-base text-gray-900 text-right">
+                      {meetingRequest.related_guidance || '-'}
+                    </p>
+                  </div>
+                  {/* ملاحظات */}
+                  <div className="flex flex-col gap-2 md:col-span-2">
+                    <label className="text-lg font-semibold text-gray-900 text-right">
+                      ملاحظات
+                    </label>
+                    {normalizeTextLines(meetingRequest.general_notes).length > 0 ? (
+                      <ul className="text-base text-gray-900 text-right space-y-1">
+                        {normalizeTextLines(meetingRequest.general_notes).map((line, idx) => (
+                          <li key={idx} className="flex gap-2">
+                            <span className="mt-1 select-none">-</span>
+                            <span className="whitespace-pre-wrap">{line}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-base text-gray-900 text-right whitespace-pre-wrap">
+                        {formatTextValue(meetingRequest.general_notes)}
                       </p>
-                    </div>
-                  )}
-                  {meetingRequest.related_topic && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        
-                      >
-                        الموضوع المرتبط
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right leading-relaxed"
-                        
-                      >
-                        {meetingRequest.related_topic}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.general_notes && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        
-                      >
-                        ملاحظات عامة
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
-                        
-                      >
-                        {meetingRequest.general_notes}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.content_officer_notes && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        
-                      >
-                        ملاحظات مسؤول المحتوى
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
-                        
-                      >
-                        {meetingRequest.content_officer_notes}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.related_guidance && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        
-                      >
-                        التوجيهات المرتبطة
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right leading-relaxed"
-                        
-                      >
-                        {meetingRequest.related_guidance}
-                      </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -943,7 +826,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 {/* Presentation Attachment Timing */}
                 <div className="flex flex-col gap-2 max-w-sm">
                   <label
-                    className="text-sm font-medium text-gray-700 text-right"
+                    className="text-lg font-semibold text-gray-900 text-right"
                     style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                   >
                     متى سيتم إرفاق العرض؟
@@ -1058,7 +941,7 @@ const ConsultationRequestDetail: React.FC = () => {
                                   className="text-sm text-[#475467]"
                                   
                                 >
-                                  {translateResponseStatus(row.response_status)}
+                                  {getInviteeResponseStatusLabel(row.response_status)}
                                 </span>
                               ),
                             },
@@ -1196,7 +1079,7 @@ const ConsultationRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-4 py-4">
               <div className="flex flex-col gap-2">
                 <label
-                  className="text-sm font-medium text-gray-700 text-right"
+                  className="text-lg font-semibold text-gray-900 text-right"
                   
                 >
                  محتوى الاستشارة
