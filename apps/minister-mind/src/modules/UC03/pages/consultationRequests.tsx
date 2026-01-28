@@ -85,14 +85,11 @@ const ConsultationRequests: React.FC = () => {
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Define table columns - order is from right to left (RTL)
-  // Columns: بند، رقم الطلب، تاريخ الطلب، اسم مقدم الطلب، موضوع الاجتماع، فئة الاجتماع، تاريخ الاجتماع، حالة الطلب، البيانات مكتملة؟
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
       id: 'sequentialNumber',
       header: 'بند',
-      width: 'w-32',
-      align: 'end',
+      width: 'w-[100px]',
       render: (row) => {
         // Get sequential number from original data
         const originalRequest = originalRequests.find((r) => r.id === row.id);
@@ -100,8 +97,8 @@ const ConsultationRequests: React.FC = () => {
           ? originalRequest.sequential_number.toString()
           : '-';
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
               {sequentialNumber}
             </span>
           </div>
@@ -111,15 +108,13 @@ const ConsultationRequests: React.FC = () => {
     {
       id: 'requestNumber',
       header: 'رقم الطلب',
-      width: 'w-48',
-      align: 'end',
+      width: 'w-[300px]',
       render: (row) => {
-        // Get request number from original data
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const requestNumber = originalRequest?.request_number || row.id;
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
               {requestNumber}
             </span>
           </div>
@@ -129,51 +124,51 @@ const ConsultationRequests: React.FC = () => {
     {
       id: 'requestDate',
       header: 'تاريخ الطلب',
-      width: 'w-60',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.date}
-          </span>
-        </div>
-      ),
-    },
-    {
-      id: 'submitterName',
-      header: 'اسم مقدم الطلب',
-      width: 'w-56',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.coordinator || '-'}
-          </span>
-        </div>
-      ),
-    },
-    {
-      id: 'meetingSubject',
-      header: 'موضوع الاجتماع',
-      width: 'flex-1',
-      align: 'end',
+      width: 'w-[250px]',
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
-        const subject = originalRequest?.meeting_subject || originalRequest?.meeting_title || row.title;
+        const submittedAt = originalRequest?.submitted_at;
+        const requestDate = submittedAt
+          ? new Date(submittedAt).toLocaleDateString('ar-SA')
+          : '';
+
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {subject || '-'}
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+              {requestDate || '-'}
             </span>
           </div>
         );
       },
     },
     {
+      id: 'submitterName',
+      header: 'اسم مقدم الطلب',
+      width: 'w-[300px]',
+      render: (row) => (
+          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            {row.coordinator || '-'}
+          </span>
+      ),
+    },
+    {
+      id: 'meetingSubject',
+      header: 'موضوع الاجتماع',
+      width: 'w-[320px]',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const subject = originalRequest?.meeting_subject;
+        return (
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+              {subject || '-'}
+            </span>
+        );
+      },
+    },
+    {
       id: 'meetingCategory',
       header: 'فئة الاجتماع',
-      width: 'w-60',
-      align: 'end',
+      width: 'w-[240px]',
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const classification = originalRequest?.meeting_classification as MeetingClassification | undefined;
@@ -182,19 +177,16 @@ const ConsultationRequests: React.FC = () => {
           : '-';
 
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
               {classificationLabel}
             </span>
-          </div>
         );
       },
     },
     {
       id: 'meetingDate',
       header: 'تاريخ الاجتماع',
-      width: 'w-72',
-      align: 'end',
+      width: 'w-[300px]',     
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const meetingDate = originalRequest?.scheduled_at
@@ -202,8 +194,8 @@ const ConsultationRequests: React.FC = () => {
           : '';
 
         return (
-          <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0">
-            <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
+          <div className="flex flex-row justify-start items-center gap-3 w-full min-w-0">
+            <span className="block max-w-full text-base font-medium text-right text-gray-900 leading-5 truncate">
               {meetingDate || '-'}
             </span>
             <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
@@ -216,30 +208,22 @@ const ConsultationRequests: React.FC = () => {
     {
       id: 'status',
       header: 'حالة الطلب',
-      width: 'w-52',
-      align: 'end',
+      width: 'w-[208px]',
       render: (row) => (
-        <div className="w-full flex justify-end">
           <StatusBadge status={row.status} label={row.statusLabel} />
-        </div>
       ),
     },
     {
       id: 'isDataComplete',
       header: 'البيانات مكتملة؟',
-      width: 'w-40',
-      align: 'end',
+      width: 'w-[220px]',
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const isComplete = originalRequest?.is_data_complete;
-
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right leading-5 whitespace-nowrap
-              text-gray-600">
+            <span className="block max-w-full text-base font-normal text-right leading-5 truncate text-gray-600">
               {isComplete === true ? 'نعم' : isComplete === false ? 'لا' : '-'}
             </span>
-          </div>
         );
       },
     },
