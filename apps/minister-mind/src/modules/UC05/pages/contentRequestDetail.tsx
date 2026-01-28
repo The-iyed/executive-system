@@ -18,6 +18,7 @@ import {
   getContentRequestById,
   submitContentReturn,
   submitContentConsultation,
+  completeContentConsultation,
   getContentConsultants,
   approveContent,
   type Attachment,
@@ -102,6 +103,7 @@ const ContentRequestDetail: React.FC = () => {
   // Modal states
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+  const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
   const [returnNotes, setReturnNotes] = useState<string>('');
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
@@ -120,6 +122,15 @@ const ContentRequestDetail: React.FC = () => {
     queryFn: () => getConsultationRecords(id!, false),
     enabled: !!id && activeTab === 'directives-log',
   });
+
+  // Fetch consultation records with drafts for drafts modal
+  const { data: consultationRecordsWithDrafts, isLoading: isLoadingConsultationRecordsWithDrafts } = useQuery({
+    queryKey: ['consultation-records-with-drafts', id],
+    queryFn: () => getConsultationRecords(id!, true),
+    enabled: !!id,
+  });
+
+  const draftsRecords = consultationRecordsWithDrafts?.items?.filter((item) => !!item.is_draft) || [];
 
   const queryClient = useQueryClient();
 
@@ -241,23 +252,51 @@ const ContentRequestDetail: React.FC = () => {
 
   // Submit consultation mutation (طلب استشارة)
   const submitConsultationMutation = useMutation({
-    mutationFn: (data: { consultant_user_id: string; consultation_question: string }) => {
+    mutationFn: (data: { consultant_user_id: string; consultation_question: string; is_draft?: boolean }) => {
       if (!id) throw new Error('Meeting request ID is required');
       return submitContentConsultation(id, data);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['content-request', id] });
       queryClient.invalidateQueries({ queryKey: ['content-requests'] });
-      setConsultationNotes('');
-      setSelectedConsultantId('');
-      setConsultantSearch('');
-      setIsConsultationModalOpen(false);
-      navigate(PATH.CONTENT_REQUESTS);
+      queryClient.invalidateQueries({ queryKey: ['consultation-records-with-drafts', id] });
+      if (!variables.is_draft) {
+        setConsultationNotes('');
+        setSelectedConsultantId('');
+        setConsultantSearch('');
+        setIsConsultationModalOpen(false);
+        navigate(PATH.CONTENT_REQUESTS);
+      } else {
+        setIsConsultationModalOpen(false);
+      }
     },
     onError: (error) => {
       console.error('Error submitting consultation:', error);
     },
   });
+
+  // Publish draft mutation
+  const publishDraftMutation = useMutation({
+    mutationFn: (consultationId: string) => {
+      if (!id) throw new Error('Meeting request ID is required');
+      return completeContentConsultation(id, consultationId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['content-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['consultation-records-with-drafts', id] });
+      queryClient.invalidateQueries({ queryKey: ['consultation-records', id] });
+      setIsDraftsModalOpen(false);
+      navigate(PATH.CONTENT_REQUESTS);
+    },
+    onError: (error) => {
+      console.error('Error publishing draft:', error);
+    },
+  });
+
+  const handlePublishDraft = (consultationId: string) => {
+    publishDraftMutation.mutate(consultationId);
+  };
 
 
   // Send to scheduling officer mutation (إرسال إلى مسؤول الجدولة)
@@ -308,7 +347,7 @@ const ContentRequestDetail: React.FC = () => {
     setIsConsultationModalOpen(true);
   };
 
-  const handleSubmitConsultation = () => {
+  const handleSubmitConsultation = (type: 'draft' | 'submit') => {
     if (!consultationNotes.trim()) {
       // TODO: Show validation error
       return;
@@ -320,6 +359,7 @@ const ContentRequestDetail: React.FC = () => {
     submitConsultationMutation.mutate({
       consultant_user_id: selectedConsultantId,
       consultation_question: consultationNotes.trim(),
+      is_draft: type === 'draft',
     });
   };
 
@@ -1381,6 +1421,18 @@ const ContentRequestDetail: React.FC = () => {
               <RotateCcw className="w-5 h-5" />
             </button>
 
+            {/* Drafts Button */}
+            {draftsRecords && draftsRecords.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsDraftsModalOpen(true)}
+                className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                مسودات ({draftsRecords.length})
+              </button>
+            )}
+
             {/* Request Consultation Button */}
             <button
               onClick={handleRequestConsultation}
@@ -1519,22 +1571,138 @@ const ContentRequestDetail: React.FC = () => {
               />
             </div>
           </div>
-          <DialogFooter className="flex-row-reverse gap-2">
+          <DialogFooter className="flex flex-row justify-between gap-2 sm:justify-between">
             <button
-              onClick={handleSubmitConsultation}
-              disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
-              className="px-4 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              {submitConsultationMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
-            </button>
-            <button
+              type="button"
               onClick={() => setIsConsultationModalOpen(false)}
-              disabled={submitConsultationMutation.isPending}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              disabled={submitConsultationMutation.isPending}
             >
               إلغاء
+            </button>
+            <div className="flex flex-row justify-between items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleSubmitConsultation('draft')}
+                disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
+                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                {submitConsultationMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSubmitConsultation('submit')}
+                disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
+                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                {submitConsultationMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
+              </button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Drafts Modal */}
+      <Dialog open={isDraftsModalOpen} onOpenChange={setIsDraftsModalOpen}>
+        <DialogContent className="sm:max-w-[700px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle
+              className="text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              مسودات الاستشارات
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto">
+            {isLoadingConsultationRecordsWithDrafts ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-600">جاري التحميل...</div>
+              </div>
+            ) : consultationRecordsWithDrafts && consultationRecordsWithDrafts.items.filter((item) => item.status === 'DRAFT' || !item.responded_at).length > 0 ? (
+              consultationRecordsWithDrafts.items
+                .filter((item) => item.status === 'DRAFT' || !item.responded_at)
+                .map((draft) => (
+                <div
+                  key={draft.consultation_id}
+                  className="flex flex-col gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg"
+                >
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row items-center justify-between">
+                      <span
+                        className="text-sm font-medium text-gray-700 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        سؤال الاستشارة:
+                      </span>
+                      <span
+                        className="text-xs text-gray-500"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                      </span>
+                    </div>
+                    <p
+                      className="text-sm text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {draft.consultation_question}
+                    </p>
+                  </div>
+
+                  {draft.consultation_answer && (
+                    <div className="flex flex-col gap-2">
+                      <span
+                        className="text-sm font-medium text-gray-700 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        الإجابة:
+                      </span>
+                      <p
+                        className="text-sm text-gray-900 text-right whitespace-pre-wrap bg-white p-3 rounded border border-gray-200"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {draft.consultation_answer}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-row justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePublishDraft(draft.consultation_id)}
+                      disabled={publishDraftMutation.isPending}
+                      className="flex flex-row justify-center items-center px-4 py-2 gap-2 h-9 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {publishDraftMutation.isPending ? 'جاري النشر...' : 'نشر'}
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <p
+                  className="text-gray-500 text-right"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  لا توجد مسودات
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-row justify-start gap-2 sm:justify-start">
+            <button
+              type="button"
+              onClick={() => setIsDraftsModalOpen(false)}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              إغلاق
             </button>
           </DialogFooter>
         </DialogContent>
