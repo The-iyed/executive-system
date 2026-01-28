@@ -14,7 +14,7 @@ import {
   getMeetingChannelLabel,
   getInviteeResponseStatusLabel,
 } from '@shared/types';
-import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft } from '../data/guidanceApi';
+import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance } from '../data/guidanceApi';
 import { getGuidanceRecords, type GuidanceRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
@@ -28,6 +28,7 @@ const GuidanceRequestDetail: React.FC = () => {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [isSuitableForScheduling, setIsSuitableForScheduling] = useState<boolean>(false);
   const [queriesDisabled, setQueriesDisabled] = useState<boolean>(false);
+  const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
@@ -41,6 +42,13 @@ const GuidanceRequestDetail: React.FC = () => {
     queryKey: ['guidance-records', id],
     queryFn: () => getGuidanceRecords(id!),
     enabled: !!id && activeTab === 'directives-log',
+  });
+
+  // Fetch guidance records with drafts for request-info tab
+  const { data: guidanceRecordsWithDrafts, isLoading: isLoadingGuidanceRecordsWithDrafts } = useQuery({
+    queryKey: ['guidance-records-with-drafts', id],
+    queryFn: () => getGuidanceRecords(id!),
+    enabled: !!id && activeTab === 'guidance-request',
   });
 
   const meetingRequest = guidanceData?.meeting_request;
@@ -138,6 +146,24 @@ const GuidanceRequestDetail: React.FC = () => {
       guidance_notes: guidanceResponse,
       feasibility_answer: isSuitableForScheduling,
     });
+  };
+
+  // Publish draft mutation
+  const publishDraftMutation = useMutation({
+    mutationFn: (guidanceId: string) => {
+      return completeGuidance(guidanceId);
+    },
+    onSuccess: () => {
+      navigate(PATH.GUIDANCE_REQUESTS);
+    },
+    onError: (error) => {
+      console.error('Error publishing draft:', error);
+      // TODO: Show error toast/notification
+    },
+  });
+
+  const handlePublishDraft = (guidanceId: string) => {
+    publishDraftMutation.mutate(guidanceId);
   };
 
   const handleSaveAsDraft = () => {
@@ -277,17 +303,32 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
                   {/* Request Info Section */}
                   <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  معلومات الطلب
-                </h2>
+                <div className="flex flex-row items-center justify-between gap-4">
+                  <h2
+                    className="text-xl font-bold text-right text-[#101828]"
+                    style={{
+                      fontFamily: "'Ping AR + LT', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '20px',
+                      lineHeight: '28px',
+                    }}
+                  >
+                    معلومات الطلب
+                  </h2>
+
+                  <div className="flex flex-row justify-start items-center gap-2">
+                    {guidanceRecordsWithDrafts && guidanceRecordsWithDrafts?.items?.filter((item) => !!item.is_draft)?.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsDraftsModalOpen(true)}
+                        className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        مسودات ({guidanceRecordsWithDrafts.items.filter((item) => item.status === 'DRAFT' || !item.responded_at).length})
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* رقم الطلب */}
@@ -1938,6 +1979,109 @@ const GuidanceRequestDetail: React.FC = () => {
               <span className="text-white">
                 {submitMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
               </span>
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Drafts Modal */}
+      <Dialog open={isDraftsModalOpen} onOpenChange={setIsDraftsModalOpen}>
+        <DialogContent className="sm:max-w-[700px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle
+              className="text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              مسودات التوجيهات
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto">
+            {isLoadingGuidanceRecordsWithDrafts ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-600">جاري التحميل...</div>
+              </div>
+            ) : guidanceRecordsWithDrafts && guidanceRecordsWithDrafts.items.filter((item) => !!item.is_draft).length > 0 ? (
+              guidanceRecordsWithDrafts.items
+                .filter((item) => item.status === 'DRAFT' || !item.responded_at)
+                .map((draft) => (
+                  <div
+                    key={draft.guidance_id}
+                    className="flex flex-col gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-row items-center justify-between">
+                        <span
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          سؤال التوجيه:
+                        </span>
+                        <span
+                          className="text-xs text-gray-500"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                        </span>
+                      </div>
+                      <p
+                        className="text-sm text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {draft.guidance_question}
+                      </p>
+                    </div>
+
+                    {draft.guidance_answer && (
+                      <div className="flex flex-col gap-2">
+                        <span
+                          className="text-sm font-medium text-gray-700 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          الإجابة:
+                        </span>
+                        <p
+                          className="text-sm text-gray-900 text-right whitespace-pre-wrap bg-white p-3 rounded border border-gray-200"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {draft.guidance_answer}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-row justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePublishDraft(draft.guidance_id)}
+                        disabled={publishDraftMutation.isPending}
+                        className="flex flex-row justify-center items-center px-4 py-2 gap-2 h-9 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {publishDraftMutation.isPending ? 'جاري النشر...' : 'نشر'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <p
+                  className="text-gray-500 text-right"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  لا توجد مسودات
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-row justify-start gap-2 sm:justify-start">
+            <button
+              type="button"
+              onClick={() => setIsDraftsModalOpen(false)}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              إغلاق
             </button>
           </DialogFooter>
         </DialogContent>

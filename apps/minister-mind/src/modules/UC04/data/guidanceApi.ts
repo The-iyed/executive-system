@@ -181,9 +181,20 @@ export const saveGuidanceAsDraft = async (
   meetingRequestId: string,
   data: ProvideGuidanceRequest
 ): Promise<void> => {
-  await axiosInstance.put(
+  await axiosInstance.post(
     `/api/guidance/${meetingRequestId}/provide`,
-    data
+    {
+      ...data,
+      is_draft: true,
+    }
+  );
+};
+
+export const completeGuidance = async (
+  guidanceId: string
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/guidance/${guidanceId}/complete`
   );
 };
 
