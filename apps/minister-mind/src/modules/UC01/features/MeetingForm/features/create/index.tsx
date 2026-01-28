@@ -41,15 +41,13 @@ export const CreateMeeting: React.FC = () => {
             handleChange={step1Hook.handleChange}
             handleBlur={step1Hook.handleBlur}
             handleFilesSelect={step1Hook.handleFilesSelect}
+            handleAdditionalFilesSelect={step1Hook.handleAdditionalFilesSelect}
             handleAddGoal={step1Hook.handleAddGoal}
             handleDeleteGoal={step1Hook.handleDeleteGoal}
             handleUpdateGoal={step1Hook.handleUpdateGoal}
             handleAddAgenda={step1Hook.handleAddAgenda}
             handleDeleteAgenda={step1Hook.handleDeleteAgenda}
             handleUpdateAgenda={step1Hook.handleUpdateAgenda}
-            handleAddSupport={step1Hook.handleAddSupport}
-            handleDeleteSupport={step1Hook.handleDeleteSupport}
-            handleUpdateSupport={step1Hook.handleUpdateSupport}
             handleAddDirective={step1Hook.handleAddDirective}
             handleDeleteDirective={step1Hook.handleDeleteDirective}
             handleUpdateDirective={step1Hook.handleUpdateDirective}
@@ -66,6 +64,8 @@ export const CreateMeeting: React.FC = () => {
             formData={step2Hook.formData}
             errors={step2Hook.errors}
             touched={step2Hook.touched}
+            inviteesRequired={step2Hook.inviteesRequired}
+            tableErrorMessage={step2Hook.tableErrorMessage}
             isSubmitting={step2Hook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
             handleAddAttendee={step2Hook.handleAddAttendee}
