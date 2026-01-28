@@ -188,9 +188,10 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     urgent_reason: requiresUrgentReason
       ? requiredString('السبب مطلوب')
       : optionalString('السبب يجب أن يكون نصاً'),
-    presentation_attachment_timing: requiresPresentationTiming
-      ? requiredString('متى سيتم إرفاق العرض؟ مطلوب')
-      : optionalString('متى سيتم إرفاق العرض؟ يجب أن يكون نصاً'),
+    presentation_attachment_timing: dateSchema(
+      requiresPresentationTiming,
+      'متى سيتم إرفاق العرض؟ مطلوب'
+    ),
     meeting_manager_id: requiresMeetingManager
       ? requiredString('مسير الاجتماع مطلوب')
       : optionalString('مسير الاجتماع يجب أن يكون نصاً'),
