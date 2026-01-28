@@ -20,6 +20,8 @@ export interface DateTimePickerProps {
   className?: string
   required?: boolean
   disabled?: boolean
+  /** Disable dates before this (e.g. start of today to prevent past dates). */
+  minDate?: Date
 }
 
 export function DateTimePicker({
@@ -29,6 +31,7 @@ export function DateTimePicker({
   className,
   required,
   disabled,
+  minDate,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -110,6 +113,7 @@ export function DateTimePicker({
             onSelect={handleDateSelect}
             initialFocus
             dir="rtl"
+            disabled={minDate != null ? { before: minDate } : undefined}
           />
         </PopoverContent>
       </Popover>

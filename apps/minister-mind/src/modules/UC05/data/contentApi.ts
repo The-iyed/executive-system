@@ -1,6 +1,23 @@
 // Import axios instance
 import axiosInstance from '../../auth/utils/axios';
 
+export interface Attachment {
+  id: string;
+  file_name: string;
+  blob_name: string;
+  blob_url: string;
+  file_size: number;
+  file_type: string;
+  content_type: string;
+  uploaded_by: string;
+  uploaded_at: string;
+  is_presentation: boolean;
+  is_additional: boolean;
+  is_executive_summary: boolean;
+  version: number;
+  is_latest: boolean;
+}
+
 export interface ContentRequestApiResponse {
   id: string;
   request_number: string;
@@ -29,6 +46,7 @@ export interface ContentRequestApiResponse {
   sequential_number: number | null;
   previous_meeting_id: string | null;
   is_direct_schedule: boolean;
+  attachments?: Attachment[];
 }
 
 export interface ContentRequestsListResponse {
@@ -80,23 +98,6 @@ export interface AgendaItem {
 export interface MinisterSupport {
   id: string;
   support_description: string;
-}
-
-export interface Attachment {
-  id: string;
-  file_name: string;
-  blob_name: string;
-  blob_url: string;
-  file_size: number;
-  file_type: string;
-  content_type: string;
-  uploaded_by: string;
-  uploaded_at: string;
-  is_presentation: boolean;
-  is_additional: boolean;
-  is_executive_summary: boolean;
-  version: number;
-  is_latest: boolean;
 }
 
 export interface Invitee {
