@@ -15,6 +15,8 @@ export interface Step2Props {
   formData: Partial<Step2FormData>;
   errors: Record<string, Record<string, string>>;
   touched: Record<string, Record<string, boolean>>;
+  inviteesRequired?: boolean;
+  tableErrorMessage?: string;
   isSubmitting: boolean;
   isDeleting: boolean;
   
@@ -41,6 +43,8 @@ export const Step2: React.FC<Step2Props> = ({
   formData,
   errors,
   touched,
+  inviteesRequired = false,
+  tableErrorMessage,
   isSubmitting,
   isDeleting,
   handleAddAttendee,
@@ -157,6 +161,7 @@ export const Step2: React.FC<Step2Props> = ({
         <FormTable
           title={INVITEES_TABLE_TITLE}
           columns={INVITEES_TABLE_COLUMNS}
+          required={inviteesRequired}
           rows={formData.invitees || []}
           onAddRow={handleAddAttendee}
           onDeleteRow={handleDeleteAttendee}
@@ -164,6 +169,7 @@ export const Step2: React.FC<Step2Props> = ({
           addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
           errors={errors}
           touched={touched}
+          errorMessage={tableErrorMessage}
         />
 
         {/* Action Buttons */}

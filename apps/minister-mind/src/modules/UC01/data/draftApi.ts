@@ -23,13 +23,15 @@ export interface DraftApiResponse {
   related_topic?: string | null;
   deadline?: string | null;
   meeting_justification?: string | null;
+  meeting_location?: string | null;
   objectives?: Array<{ id: string; objective: string }>;
   agenda_items?: Array<{
     id: string;
     agenda_item: string;
     presentation_duration_minutes: number;
+    minister_support_type?: string | null;
+    minister_support_other?: string | null;
   }>;
-  minister_support?: Array<{ id: string; support_description: string }>;
   related_directive_ids?: string[];
   related_directives?: Array<any>;
   topic_discussed_before?: boolean;
@@ -60,6 +62,7 @@ export interface DraftApiResponse {
     external_name?: string | null;
     position?: string | null;
     mobile?: string | null;
+    attendance_mechanism?: string | null;
     item_number?: number | null;
     is_required: boolean;
     response_status?: string;

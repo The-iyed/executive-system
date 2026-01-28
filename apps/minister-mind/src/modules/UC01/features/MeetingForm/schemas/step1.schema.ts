@@ -55,19 +55,32 @@ const fileSchema = z
 const meetingGoalItemSchema = z.object({ id: z.string(), objective: z.string() });
 const meetingGoalItemValidationSchema = z.object({ id: z.string(), objective: z.string().min(1, 'الهدف مطلوب') });
 
+// Minister support type values per requirement: إحاطة|تحديث|قرار|توجيه|اعتماد|أخرى
+const MINISTER_SUPPORT_TYPE_OTHER = 'أخرى';
+
 const agendaItemBaseSchema = z.object({
   id: z.string(),
   agenda_item: z.string().optional(),
   presentation_duration_minutes: z.string().optional(),
+  minister_support_type: z.string().optional().or(z.literal('')),
+  minister_support_other: z.string().optional().or(z.literal('')),
 });
 
 const agendaItemSchema = (required: boolean) =>
   agendaItemBaseSchema.extend({
     agenda_item: required ? z.string().min(1, 'عنصر الأجندة مطلوب') : z.string().optional(),
+    minister_support_other: z.string().optional().or(z.literal('')),
+  }).superRefine((data, ctx) => {
+    if (data.minister_support_type === MINISTER_SUPPORT_TYPE_OTHER) {
+      if (!data.minister_support_other || data.minister_support_other.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'نص الدعم مطلوب عند اختيار "أخرى"',
+          path: ['minister_support_other'],
+        });
+      }
+    }
   });
-
-const ministerSupportItemSchema = z.object({ id: z.string(), support_description: z.string() });
-const ministerSupportItemValidationSchema = z.object({ id: z.string(), support_description: z.string().min(1, 'الدعم مطلوب') });
 
 const relatedDirectiveItemSchema = z.object({
   id: z.string(),
@@ -99,15 +112,17 @@ export const step1BaseSchema = z.object({
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string(),
   sector: z.string().optional().or(z.literal('')),
+  meeting_location: z.string().optional().or(z.literal('')),
   meetingGoals: z.array(meetingGoalItemSchema).optional().default([]),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
-  ministerSupport: z.array(ministerSupportItemSchema).optional().default([]),
   relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
   wasDiscussedPreviously: z.boolean().optional().default(false),
   previousMeetingDate: z.string().optional().or(z.literal('')),
   notes: z.string({invalid_type_error: 'القيمة المُدخلة غير صحيحة'}).optional().or(z.literal('')),
   presentation_files: z.array(z.instanceof(File)).optional().default([]),
+  additional_files: z.array(z.instanceof(File)).optional().default([]),
   existingFiles: z.array(existingFileSchema).optional().default([]),
+  existingAdditionalFiles: z.array(existingFileSchema).optional().default([]),
   is_urgent: z.boolean().optional().default(false),
   urgent_reason: z.string().optional().or(z.literal('')),
   presentation_attachment_timing: z.string().optional().or(z.literal('')),
@@ -143,6 +158,14 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
   const requiresDirectiveMethod = data.is_based_on_directive === true;
   const requiresPreviousMeetingMinutes = data.directive_method === 'PREVIOUS_MEETING';
 
+  // Minister support: at least one agenda item must have minister_support_type when agenda is required
+  const agendaItemsWithSupportSchema = requiresAgenda
+    ? z.array(agendaItemSchema(true)).min(1, 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي').refine(
+        (items) => items.some((i) => i.minister_support_type && i.minister_support_type.trim() !== ''),
+        'يجب تحديد نوع الدعم المطلوب من الوزير لعنصر أجندة واحد على الأقل'
+      ).optional().default([])
+    : z.array(agendaItemSchema(false)).optional().default([]);
+
   const baseSchema = z.object({
     meetingSubject: requiredString('موضوع الاجتماع مطلوب', 1, 200),
     meetingType: requiredString('نوع الاجتماع مطلوب', 1, 100),
@@ -151,19 +174,13 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
+    meeting_location: optionalString('مقر الاجتماع يجب أن يكون نصاً'),
     meetingGoals: z
       .array(meetingGoalItemValidationSchema)
       .min(1, 'يجب إضافة هدف واحد على الأقل')
       .optional()
       .default([]),
-    meetingAgenda: requiresAgenda
-      ? z.array(agendaItemSchema(true)).min(1, 'يجب إضافة عنصر أجندة واحد على الأقل عند وجود ملف عرض تقديمي').optional().default([])
-      : z.array(agendaItemSchema(false)).optional().default([]),
-    ministerSupport: z
-      .array(ministerSupportItemValidationSchema)
-      .min(1, 'يجب إضافة دعم واحد على الأقل')
-      .optional()
-      .default([]),
+    meetingAgenda: agendaItemsWithSupportSchema,
     relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
     wasDiscussedPreviously: z.boolean().optional().default(false),
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
@@ -242,7 +259,6 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
     case 'meetingClassification1':
     case 'meetingConfidentiality':
     case 'meetingGoals':
-    case 'ministerSupport':
       return true;
     case 'meetingReason':
       return !!data.meetingCategory && (CATEGORIES_REQUIRING_REASON as readonly string[]).includes(data.meetingCategory);
