@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye, Sparkles } from 'lucide-react';
@@ -15,9 +15,12 @@ import {
   Tabs,
   type TableColumn,
   AIGenerateButton,
+  FormAsyncSelectV2,
+  type OptionType,
 } from '@shared'; 
 import {
   getMeetingById,
+  getMeetings,
   rejectMeeting,
   sendToContent,
   requestGuidance,
@@ -26,6 +29,7 @@ import {
   requestSchedulingConsultation,
   returnMeetingForInfo,
   scheduleMeeting,
+  createWebexMeeting,
   type MinisterAttendee,
   getConsultationRecords,
   type ConsultationRecord,
@@ -66,6 +70,13 @@ const fieldLabels: Record<string, string> = {
   meeting_title: 'عنوان الاجتماع',
   meeting_subject: 'موضوع الاجتماع',
   meeting_classification: 'تصنيف الاجتماع',
+  meeting_owner: 'مالك الاجتماع',
+  is_sequential: 'اجتماع متسلسل؟',
+  previous_meeting_id: 'الاجتماع السابق',
+  is_based_on_directive: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير',
+  directive_method: 'طريقة التوجيه',
+  previous_meeting_minutes_id: 'محضر الاجتماع',
+  related_guidance: 'التوجيه',
   objectives: 'الأهداف',
   agenda_items: 'بنود جدول أعمال الاجتماع',
   meeting_channel: 'قناة الاجتماع',
@@ -78,10 +89,15 @@ const fieldLabels: Record<string, string> = {
   deleted_attachment_ids: 'حذف المرفقات',
 };
 
+const DIRECTIVE_METHOD_OPTIONS = [
+  { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
+  { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
+] as const;
+
 const MeetingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>('basic-info');
+  const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
 
@@ -92,26 +108,41 @@ const MeetingDetail: React.FC = () => {
     enabled: !!id,
   });
 
-  // Fetch consultation records
+  // Fetch consultation records (استشارة الجدولة tab)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
     queryKey: ['consultation-records', id],
     queryFn: () => getConsultationRecords(id!),
-    enabled: !!id && activeTab === 'consultations-log',
+    enabled: !!id && activeTab === 'scheduling-consultation',
   });
 
-  // Fetch guidance records
+  // Fetch guidance records (التوجيه tab)
   const { data: guidanceRecords, isLoading: isLoadingGuidanceRecords } = useQuery({
     queryKey: ['guidance-records', id],
     queryFn: () => getGuidanceRecords(id!),
-    enabled: !!id && activeTab === 'directives-log',
+    enabled: !!id && activeTab === 'directive',
   });
 
-  // Fetch content officer notes records
-  const { data: contentOfficerNotesRecords, isLoading: isLoadingContentOfficerNotes } = useQuery({
+  // Fetch content officer notes records (استشارة المحتوى tab)
+  // Only fetch when tab is active to prevent unnecessary data loading
+  const { data: contentOfficerNotesRecordsRaw, isLoading: isLoadingContentOfficerNotes } = useQuery({
     queryKey: ['content-officer-notes-records', id],
     queryFn: () => getContentOfficerNotesRecords(id!, { skip: 0, limit: 100 }),
-    enabled: !!id && activeTab === 'content-officer-notes',
+    enabled: !!id && activeTab === 'content-consultation',
+    // Don't keep previous data when disabled to prevent rendering stale objects
+    placeholderData: undefined,
   });
+
+  // Clear query cache when tab is not active to prevent stale data
+  // Note: queryClient is declared later in the component, so we'll move this effect there
+
+  // Only expose data when tab is actually active - this prevents stale data from being accessed
+  // Use useMemo to ensure we never access the data when tab is not active
+  const contentOfficerNotesRecords = React.useMemo(() => {
+    if (activeTab !== 'content-consultation') {
+      return undefined;
+    }
+    return contentOfficerNotesRecordsRaw;
+  }, [activeTab, contentOfficerNotesRecordsRaw]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -119,7 +150,18 @@ const MeetingDetail: React.FC = () => {
     meeting_title: '',
     meeting_classification: '',
     meeting_subject: '',
+    meeting_owner: '',
+    is_sequential: false,
+    previous_meeting_id: null as string | null,
+    is_based_on_directive: false,
+    directive_method: '',
+    previous_meeting_minutes_id: '',
+    related_guidance: '',
   });
+  /** Selected option for "الاجتماع السابق" async select (value + label) */
+  const [previousMeetingOption, setPreviousMeetingOption] = useState<OptionType | null>(null);
+  /** Selected option for "محضر الاجتماع" async select */
+  const [previousMeetingMinutesOption, setPreviousMeetingMinutesOption] = useState<OptionType | null>(null);
 
   // Alert visibility state - persisted in localStorage
   const [showAttachmentsAlert, setShowAttachmentsAlert] = useState(() => {
@@ -129,13 +171,6 @@ const MeetingDetail: React.FC = () => {
     return !isDismissed;
   });
 
-  // Scheduling alert visibility state - persisted in localStorage
-  const [showSchedulingAlert, setShowSchedulingAlert] = useState(() => {
-    if (!id) return true;
-    const dismissedKey = `meeting-scheduling-alert-dismissed-${id}`;
-    const isDismissed = localStorage.getItem(dismissedKey) === 'true';
-    return !isDismissed;
-  });
 
   // Suggested times state (populated from meeting alternative_time_slot_1/2)
   const [suggestedTimes, setSuggestedTimes] = useState<Array<{ id: string; time: string; selected: boolean }>>([]);
@@ -236,9 +271,17 @@ const MeetingDetail: React.FC = () => {
 
   // Schedule modal state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isCreatingWebex, setIsCreatingWebex] = useState(false);
+  const [webexMeetingDetails, setWebexMeetingDetails] = useState<{
+    join_link: string;
+    meeting_number: string;
+    password: string;
+    sip_address: string;
+    host_key: string;
+  } | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     scheduled_at: '',
-    meeting_channel: 'PHYSICAL',
+    meeting_channel: 'PHYSICAL' as 'PHYSICAL' | 'PHYSICAL_LOCATION_1' | 'PHYSICAL_LOCATION_2' | 'PHYSICAL_LOCATION_3' | 'VIRTUAL' | 'HYBRID',
     requires_protocol: false,
     protocol_type: null as string | null,
     protocol_type_text: '',
@@ -433,6 +476,14 @@ const MeetingDetail: React.FC = () => {
 
 
   const queryClient = useQueryClient();
+  
+  // Clear content officer notes query cache when tab is not active to prevent stale data
+  React.useEffect(() => {
+    if (activeTab !== 'content-consultation') {
+      queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id] });
+    }
+  }, [activeTab, id, queryClient]);
+  
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -446,6 +497,13 @@ const MeetingDetail: React.FC = () => {
     if (formData.meeting_title !== originalSnapshot.formData.meeting_title) payload.meeting_title = formData.meeting_title;
     if (formData.meeting_subject !== originalSnapshot.formData.meeting_subject) payload.meeting_subject = formData.meeting_subject;
     if (formData.meeting_classification !== originalSnapshot.formData.meeting_classification) payload.meeting_classification = formData.meeting_classification;
+    if ((formData.meeting_owner || '') !== (originalSnapshot.formData.meeting_owner || '')) payload.meeting_owner = formData.meeting_owner || undefined;
+    if (formData.is_sequential !== originalSnapshot.formData.is_sequential) payload.is_sequential = formData.is_sequential;
+    if ((formData.previous_meeting_id || null) !== (originalSnapshot.formData.previous_meeting_id || null)) payload.previous_meeting_id = formData.previous_meeting_id || null;
+    if (formData.is_based_on_directive !== originalSnapshot.formData.is_based_on_directive) payload.is_based_on_directive = formData.is_based_on_directive;
+    if ((formData.directive_method || '') !== (originalSnapshot.formData.directive_method || '')) payload.directive_method = formData.directive_method || null;
+    if ((formData.previous_meeting_minutes_id || '') !== (originalSnapshot.formData.previous_meeting_minutes_id || '')) payload.previous_meeting_minutes_id = formData.previous_meeting_minutes_id || null;
+    if ((formData.related_guidance || '') !== (originalSnapshot.formData.related_guidance || '')) payload.related_guidance = formData.related_guidance || null;
 
     // Compare content tab (objectives and agenda items) as arrays
     if (JSON.stringify(contentForm.objectives || []) !== JSON.stringify(originalSnapshot.contentForm.objectives || [])) {
@@ -642,30 +700,42 @@ const MeetingDetail: React.FC = () => {
       is_data_complete: boolean;
       notes: string;
       location?: string;
+      meeting_link?: string;
       minister_attendees: MinisterAttendee[];
     }) => scheduleMeeting(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-      setIsScheduleModalOpen(false);
-      setScheduleForm({
-        scheduled_at: '',
-        meeting_channel: 'PHYSICAL',
-        requires_protocol: false,
-        protocol_type: null,
-        protocol_type_text: '',
-        is_data_complete: true,
-        notes: '',
-        location: '',
-        selected_time_slot_id: null,
-        minister_attendees: [],
-      });
-      navigate(-1); // Navigate back after successful scheduling
+      // Keep modal open if Webex details exist so user can see them
+      // The modal will close when user clicks "تم" button
+      if (!webexMeetingDetails) {
+        setIsScheduleModalOpen(false);
+        setScheduleForm({
+          scheduled_at: '',
+          meeting_channel: 'PHYSICAL',
+          requires_protocol: false,
+          protocol_type: null,
+          protocol_type_text: '',
+          is_data_complete: true,
+          notes: '',
+          location: '',
+          selected_time_slot_id: null,
+          minister_attendees: [],
+        });
+        navigate(-1); // Navigate back after successful scheduling
+      }
     },
   });
 
-  const handleScheduleSubmit = (e: React.FormEvent) => {
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduleForm.scheduled_at) return;
+
+    // Reject past date/time
+    const scheduledAt = new Date(scheduleForm.scheduled_at);
+    if (scheduledAt.getTime() <= Date.now()) {
+      setValidationError('لا يمكن اختيار تاريخ أو وقت في الماضي');
+      return;
+    }
 
     // Validate: if requires_protocol is true, protocol_type or protocol_type_text must be filled
     if (scheduleForm.requires_protocol && !scheduleForm.protocol_type && !scheduleForm.protocol_type_text) {
@@ -675,10 +745,24 @@ const MeetingDetail: React.FC = () => {
 
     setValidationError(null);
 
-    // Convert datetime-local to ISO string
+    // Convert datetime-local to ISO string (UTC)
     const scheduledAtISO = new Date(scheduleForm.scheduled_at).toISOString();
 
-    scheduleMutation.mutate({
+    // If meeting channel is VIRTUAL (عن بُعد), use the already-created Webex meeting link
+    let meetingLink: string | undefined = undefined;
+    if (scheduleForm.meeting_channel === 'VIRTUAL') {
+      if (!webexMeetingDetails) {
+        setValidationError('يرجى الانتظار حتى يتم إنشاء اجتماع Webex');
+        return;
+      }
+      meetingLink = webexMeetingDetails.join_link;
+    } else {
+      // Clear Webex details if channel is not VIRTUAL
+      setWebexMeetingDetails(null);
+    }
+
+    // Prepare the payload - always include meeting_link field
+    const schedulePayload = {
       scheduled_at: scheduledAtISO,
       meeting_channel: scheduleForm.meeting_channel,
       requires_protocol: scheduleForm.requires_protocol,
@@ -686,8 +770,11 @@ const MeetingDetail: React.FC = () => {
       is_data_complete: scheduleForm.is_data_complete,
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
       location: scheduleForm.location || undefined,
+      online_link: meetingLink, // Always include meeting_link field (undefined for non-ONLINE channels)
       minister_attendees: scheduleForm.minister_attendees,
-    });
+    };
+
+    scheduleMutation.mutate(schedulePayload);
   };
 
   const addMinisterAttendee = () => {
@@ -723,12 +810,29 @@ const MeetingDetail: React.FC = () => {
   // Initialize form data when meeting loads
   React.useEffect(() => {
     if (meeting) {
+      const ownerDisplay = meeting.current_owner_user
+        ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
+        : meeting.current_owner_role?.name_ar || '';
+      const prevId = meeting.previous_meeting_id || null;
+      const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+      const directiveMethod = (meeting as any).directive_method || '';
+      const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+      const guidance = meeting.related_guidance ?? '';
       setFormData({
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
         meeting_subject: meeting.meeting_subject || '',
+        meeting_owner: ownerDisplay,
+        is_sequential: meeting.is_sequential ?? false,
+        previous_meeting_id: prevId,
+        is_based_on_directive: basedOnDirective,
+        directive_method: directiveMethod,
+        previous_meeting_minutes_id: minutesId,
+        related_guidance: guidance,
       });
+      setPreviousMeetingOption(prevId ? { value: prevId, label: prevId } : null);
+      setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
 
       // Initialize content tab form (objectives and agenda items)
       setContentForm({
@@ -747,21 +851,93 @@ const MeetingDetail: React.FC = () => {
  
  
 
+  // Auto-create Webex meeting when ONLINE channel is selected and date/time is set
+  useEffect(() => {
+      // Only create if modal is open, channel is VIRTUAL, date/time is set, and we don't already have details
+    if (
+      !isScheduleModalOpen ||
+      scheduleForm.meeting_channel !== 'VIRTUAL' ||
+      !scheduleForm.scheduled_at ||
+      webexMeetingDetails ||
+      isCreatingWebex
+    ) {
+      return;
+    }
+
+    const createWebexMeetingAsync = async () => {
+      setIsCreatingWebex(true);
+      try {
+        // Convert datetime-local to ISO string (UTC)
+        const scheduledAtISO = new Date(scheduleForm.scheduled_at).toISOString();
+        const scheduledDateUTC = new Date(scheduledAtISO);
+
+        // Format datetime for Webex API: "YYYY-MM-DD HH:mm:ss" in UTC
+        const year = scheduledDateUTC.getUTCFullYear();
+        const month = String(scheduledDateUTC.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(scheduledDateUTC.getUTCDate()).padStart(2, '0');
+        const hours = String(scheduledDateUTC.getUTCHours()).padStart(2, '0');
+        const minutes = String(scheduledDateUTC.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(scheduledDateUTC.getUTCSeconds()).padStart(2, '0');
+        const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+        // Get meeting title and duration from meeting data
+        const meetingTitle = meeting?.meeting_title || 'اجتماع';
+        const durationMinutes = meeting?.presentation_duration || 60;
+
+        const webexResponse = await createWebexMeeting({
+          meeting_title: meetingTitle,
+          start_datetime: webexDateTime,
+          time_zone: 'UTC',
+          duration_minutes: durationMinutes,
+        });
+
+        // Store Webex meeting details for display in the modal
+        setWebexMeetingDetails({
+          join_link: webexResponse.data.webex_meeting_join_link,
+          meeting_number: webexResponse.data.meeting_access_details.meeting_number,
+          password: webexResponse.data.meeting_access_details.password,
+          sip_address: webexResponse.data.meeting_access_details.sip_address,
+          host_key: webexResponse.data.meeting_access_details.host_key,
+        });
+      } catch (error) {
+        console.error('Failed to create Webex meeting:', error);
+        setValidationError('فشل في إنشاء اجتماع Webex. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setIsCreatingWebex(false);
+      }
+    };
+
+    // Debounce the creation to avoid creating multiple meetings
+    const timeoutId = setTimeout(() => {
+      createWebexMeetingAsync();
+    }, 500); // Wait 500ms after user stops typing/selecting
+
+    return () => clearTimeout(timeoutId);
+  }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, webexMeetingDetails, isCreatingWebex, meeting]);
+
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
     if (!meeting) return;
-    setScheduleForm((prev) => ({
-      ...prev,
-      scheduled_at: meeting.scheduled_at || '',
-      meeting_channel: meeting.meeting_channel || prev.meeting_channel,
-      requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
-      protocol_type: meeting.protocol_type || prev.protocol_type,
-      protocol_type_text: meeting.protocol_type || prev.protocol_type_text,
-      is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
-      location: meeting.meeting_channel || prev.location,
-      selected_time_slot_id: meeting.selected_time_slot_id || null,
-      minister_attendees: ((meeting as any).minister_attendees as any) || prev.minister_attendees,
-    }));
+    setScheduleForm((prev) => {
+      const validChannels: Array<'PHYSICAL' | 'PHYSICAL_LOCATION_1' | 'PHYSICAL_LOCATION_2' | 'PHYSICAL_LOCATION_3' | 'VIRTUAL' | 'HYBRID'> = 
+        ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'];
+      const meetingChannel = validChannels.includes(meeting.meeting_channel as any) 
+        ? (meeting.meeting_channel as typeof prev.meeting_channel)
+        : prev.meeting_channel;
+      
+      return {
+        ...prev,
+        scheduled_at: meeting.scheduled_at || '',
+        meeting_channel: meetingChannel,
+        requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
+        protocol_type: meeting.protocol_type || prev.protocol_type,
+        protocol_type_text: meeting.protocol_type || prev.protocol_type_text,
+        is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
+        location: meeting.meeting_channel || prev.location,
+        selected_time_slot_id: meeting.selected_time_slot_id || null,
+        minister_attendees: ((meeting as any).minister_attendees as any) || prev.minister_attendees,
+      };
+    });
 
     setLocalInvitees([]);
     
@@ -769,12 +945,27 @@ const MeetingDetail: React.FC = () => {
     setDeletedAttachmentIds([]);
     setNewAttachments([]);
 
+    const ownerDisplay = meeting.current_owner_user
+      ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
+      : meeting.current_owner_role?.name_ar || '';
+    const prevId = meeting.previous_meeting_id || null;
+    const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+    const directiveMethod = (meeting as any).directive_method || '';
+    const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+    const guidance = meeting.related_guidance ?? '';
     setOriginalSnapshot({
       formData: {
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
         meeting_subject: meeting.meeting_subject || '',
+        meeting_owner: ownerDisplay,
+        is_sequential: meeting.is_sequential ?? false,
+        previous_meeting_id: prevId,
+        is_based_on_directive: basedOnDirective,
+        directive_method: directiveMethod,
+        previous_meeting_minutes_id: minutesId,
+        related_guidance: guidance,
       },
       scheduleForm: {
         selected_time_slot_id: meeting.selected_time_slot_id || null,
@@ -815,14 +1006,71 @@ const MeetingDetail: React.FC = () => {
     }));
   };
 
+  /** Async load options for "الاجتماع السابق" – getMeetings with status CLOSED */
+  const loadClosedMeetingsOptions = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const res = await getMeetings({
+        status: MeetingStatus.CLOSED,
+        search: search || undefined,
+        skip,
+        limit,
+      });
+      const currentId = meeting?.id;
+      const items = res.items
+        .filter((m) => m.id !== currentId)
+        .map((m) => ({
+          value: m.id,
+          label: `${m.request_number || m.id} – ${m.meeting_title || m.meeting_subject || ''}`.trim() || m.id,
+        }));
+      return {
+        items,
+        total: res.total,
+        skip: res.skip,
+        limit: res.limit,
+        has_next: res.skip + res.limit < res.total,
+        has_previous: res.skip > 0,
+      };
+    },
+    [meeting?.id]
+  );
+
+  /** Async load options for "محضر الاجتماع" – getMeetings (meetings as minutes source) */
+  const loadPreviousMeetingMinutesOptions = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const res = await getMeetings({
+        search: search || undefined,
+        skip,
+        limit,
+      });
+      const currentId = meeting?.id;
+      const items = res.items
+        .filter((m) => m.id !== currentId)
+        .map((m) => ({
+          value: m.id,
+          label: (m.meeting_subject || m.meeting_title || 'غير محدد').trim(),
+        }));
+      return {
+        items,
+        total: res.total,
+        skip: res.skip,
+        limit: res.limit,
+        has_next: res.skip + res.limit < res.total,
+        has_previous: res.skip > 0,
+      };
+    },
+    [meeting?.id]
+  );
+
+  // Tabs per Excel "الجدولة - مراجعة الطلب": التبويب (column التبويب)
   const tabs = [
-    { id: 'basic-info', label: 'المعلومات الأساسية' },
+    { id: 'request-info', label: 'معلومات الطلب' },
+    { id: 'meeting-info', label: 'معلومات الاجتماع' },
     { id: 'content', label: 'المحتوى' },
-    { id: 'scheduling', label: 'الجدولة' },
-    { id: 'attachments', label: 'المرفقات' },
-    { id: 'consultations-log', label: 'سجل الإستشارات' },
-    { id: 'directives-log', label: 'سجل التوجيهات' },
-    { id: 'content-officer-notes', label: 'ملاحظات مسؤول المحتوى' },
+    { id: 'attendees', label: 'قائمة المدعوين' },
+    { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
+    { id: 'directive', label: 'التوجيه' },
+    { id: 'content-consultation', label: 'استشارة المحتوى' },
+    { id: 'request-notes', label: 'الملاحظات على الطلب' },
   ];
 
   // Loading state
@@ -935,513 +1183,372 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Form Fields - Basic Information */}
-          {activeTab === 'basic-info' && (
+          {/* Tab: معلومات الطلب (Excel التبويب) – اسم الحقل: رقم الطلب، حالة الطلب، مقدم الطلب، مالك الاجتماع */}
+          {activeTab === 'request-info' && (
             <div className="flex flex-col gap-4">
-              {/* Row 1 */}
-              <div className="flex flex-row gap-4">
-                <div className="flex-1 flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    نوع الاجتماع
-                  </label>
-                  <Select
-                    value={formData.meeting_type}
-                    onValueChange={(value) => handleFieldChange('meeting_type', value)}
-                  >
-                    <SelectTrigger
-                      className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    >
-                      <SelectValue placeholder="اختر نوع الاجتماع" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {Object.values(MeetingType).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {MeetingTypeLabels[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>رقم الطلب</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {meeting?.request_number ?? '-'}
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    عنوان الاجتماع
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.meeting_title}
-                    onChange={(e) => handleFieldChange('meeting_title', e.target.value)}
-                    className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    placeholder="أدخل عنوان الاجتماع"
-                  />
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>حالة الطلب</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {statusLabel}
+                  </div>
                 </div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="flex flex-row gap-4">
-                <div className="flex-1 flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    تصنيف الاجتماع
-                  </label>
-                  <Select
-                    value={formData.meeting_classification}
-                    onValueChange={(value) => handleFieldChange('meeting_classification', value)}
-                  >
-                    <SelectTrigger
-                      className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    >
-                      <SelectValue placeholder="اختر تصنيف الاجتماع" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {Object.values(MeetingClassification).map((classification) => (
-                        <SelectItem key={classification} value={classification}>
-                          {MeetingClassificationLabels[classification]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مقدم الطلب</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {meeting?.submitter_name ?? '-'}
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    موضوع الاجتماع
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.meeting_subject}
-                    onChange={(e) => handleFieldChange('meeting_subject', e.target.value)}
-                    className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    placeholder="أدخل موضوع الاجتماع"
-                  />
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* Content Tab */}
-          {activeTab === 'content' && (
-            <div className="flex flex-col gap-10 w-full" dir="rtl">
-              {/* Objectives Section */}
-              <div className="flex flex-col items-start gap-4 w-full">
-                <h3
-                  className="w-full font-semibold text-black text-right"
-                  style={{
-                    fontFamily: "'Somar Sans', sans-serif",
-                    fontSize: '21.1px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  الأهداف:
-                </h3>
-                <div className="w-full text-right overflow-y-auto">
-                  {contentForm.objectives.length > 0 ? (
-                    <div className="w-full overflow-x-auto table-scroll">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم',
-                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold mx-auto">
-                                {index + 1}
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'objective',
-                            header: 'الهدف',
-                            width: 'flex-[3] min-w-[200px]',
-                            align: 'end',
-                            render: (obj: any, index: number) => (
-                              <input
-                                type="text"
-                                value={obj.objective}
-                                onChange={(e) => {
-                                  const newObjectives = [...contentForm.objectives];
-                                  newObjectives[index] = { ...obj, objective: e.target.value };
-                                  setContentForm((prev) => ({ ...prev, objectives: newObjectives }));
-                                }}
-                                className="w-full h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86] px-3"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                                placeholder="أدخل الهدف"
-                              />
-                            ),
-                          },
-                          {
-                            id: 'action',
-                            header: '',
-                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
-                            align: 'center',
-                            render: (_item: any, index: number) => (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setContentForm((prev) => ({
-                                    ...prev,
-                                    objectives: prev.objectives.filter((_, i) => i !== index),
-                                  }));
-                                }}
-                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors mx-auto"
-                                title="حذف الهدف"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
-                        data={contentForm.objectives}
-                        className="border-none shadow-none min-w-[700px]"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p
-                        className="text-[#667085] text-sm"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        لا توجد أهداف
-                      </p>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newId = `obj-${Date.now()}-${Math.random()}`;
-                      setContentForm((prev) => ({
-                        ...prev,
-                        objectives: [...prev.objectives, { id: newId, objective: '' }],
-                      }));
-                    }}
-                    className="mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors font-medium"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    إضافة هدف جديد
-                  </button>
-                </div>
-              </div>
-
-              {/* Agenda Items Section */}
-              <div className="flex flex-col items-start gap-4 w-full">
-                <h3
-                  className="w-full font-semibold text-black text-right"
-                  style={{
-                    fontFamily: "'Somar Sans', sans-serif",
-                    fontSize: '21.1px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  بنود جدول أعمال الاجتماع:
-                </h3>
-                <div className="w-full text-right overflow-y-auto">
-                  {contentForm.agendaItems.length > 0 ? (
-                    <div className="w-full overflow-x-auto table-scroll">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم',
-                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold mx-auto">
-                                {index + 1}
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'agenda_item',
-                            header: 'عنوان البند',
-                            width: 'flex-[3] min-w-[250px]',
-                            align: 'end',
-                            render: (item: any, index: number) => (
-                              <Input
-                                type="text"
-                                value={item.agenda_item}
-                                onChange={(e) => {
-                                  const newAgendaItems = [...contentForm.agendaItems];
-                                  newAgendaItems[index] = {
-                                    ...item,
-                                    agenda_item: e.target.value,
-                                  };
-                                  setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
-                                }}
-                                className="w-full h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                                placeholder="أدخل عنوان البند"
-                              />
-                            ),
-                          },
-                          {
-                            id: 'duration',
-                            header: 'المدة',
-                            width: 'w-[140px] min-w-[140px] flex-shrink-0',
-                            align: 'end',
-                            render: (item: any, index: number) => (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={item.presentation_duration_minutes || ''}
-                                  onChange={(e) => {
-                                    const newAgendaItems = [...contentForm.agendaItems];
-                                    newAgendaItems[index] = {
-                                      ...item,
-                                      presentation_duration_minutes: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                                    };
-                                    setContentForm((prev) => ({ ...prev, agendaItems: newAgendaItems }));
-                                  }}
-                                  className="w-20 h-10 bg-white border border-gray-300 rounded-lg text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]"
-                                  style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                                  placeholder="المدة"
-                                />
-                                <span className="text-[#475467] text-xs font-medium" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  دقيقة
-                                </span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'action',
-                            header: '',
-                            width: 'w-[120px] min-w-[120px] flex-shrink-0',
-                            align: 'center',
-                            render: (_item: any, index: number) => (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setContentForm((prev) => ({
-                                    ...prev,
-                                    agendaItems: prev.agendaItems.filter((_, i) => i !== index),
-                                  }));
-                                }}
-                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors mx-auto"
-                                title="حذف البند"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
-                        data={contentForm.agendaItems}
-                        className="border-none shadow-none min-w-[900px]"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p
-                        className="text-[#667085] text-sm"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        لا توجد بنود جدول أعمال الاجتماع
-                      </p>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newId = `agenda-${Date.now()}-${Math.random()}`;
-                      setContentForm((prev) => ({
-                        ...prev,
-                        agendaItems: [...prev.agendaItems, { id: newId, agenda_item: '', presentation_duration_minutes: undefined }],
-                      }));
-                    }}
-                    className="mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors font-medium"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    إضافة بند جديد
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مالك الاجتماع</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {meeting?.current_owner_user ? `${meeting.current_owner_user.first_name} ${meeting.current_owner_user.last_name}`.trim() || meeting.current_owner_user.username : meeting?.current_owner_role?.name_ar ?? '-'}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Scheduling Tab */}
-          {activeTab === 'scheduling' && (
-            <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
-              {/* Alert Card */}
-              {showSchedulingAlert && !hasAttachments && (
-              <div className="relative flex flex-row items-start gap-3 w-full max-w-[1085px] bg-white border border-[#D0D5DD] rounded-[12px] p-4 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!id) return;
-                    const dismissedKey = `meeting-scheduling-alert-dismissed-${id}`;
-                    localStorage.setItem(dismissedKey, 'true');
-                    setShowSchedulingAlert(false);
-                  }}
-                  className="absolute -top-2 -left-2 w-9 h-9 flex items-center justify-center rounded-[8px] hover:bg-gray-100 transition-colors bg-white border border-gray-200"
-                >
-                  <X className="w-5 h-5 text-[#667085]" />
-                </button>
-                <div className="flex flex-col items-end gap-3 w-full pr-2">
-                  <div className="flex flex-col items-end gap-1 w-full">
-                    <p
-                      className="w-full text-right"
-                      style={{
-                        fontFamily: "'Somar Sans', sans-serif",
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        color: '#344054',
-                      }}
-                    >
-                      عند جدولة الاجتماع، سيتم الربط مع تقويم الوزير لحجز الموعد وإرسال الدعوات، والربط مع AD لإضافة المدعويين. سيتم إشعار فريق المراسم في حال الحاجة للبروتوكول.
-                    </p>
-                    <p
-                      className="w-full text-right"
-                      style={{
-                        fontFamily: "'Somar Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        color: '#475467',
-                      }}
-                    >
-                      تنبيه: هذا الطلب يحتوي على مرفقات (عروض تقديمية). يجب إرسال الطلب إلى مسؤول المحتوى أولاً لمراجعة جاهزية العرض وإعداد الملخص التنفيذي قبل جدولة الاجتماع. لا يمكن جدولة الاجتماع مباشرة عند وجود مرفقات.
-                    </p>
-                  </div>
+          {/* Tab: معلومات الاجتماع (Excel التبويب) – اسم الحقل per Excel */}
+          {activeTab === 'meeting-info' && (
+            <div className="flex flex-col gap-6" dir="rtl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل تطلب الاجتماع نيابة عن غيرك؟</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{(meeting as any)?.is_on_behalf_of === true ? 'نعم' : (meeting as any)?.is_on_behalf_of === false ? 'لا' : '-'}</div>
                 </div>
-                <div className="flex items-center justify-center w-8 h-8 rounded-full border border-[#475467] ml-2 flex-shrink-0">
-                  <Info className="w-4 h-4 text-[#475467]" />
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مالك الاجتماع</label>
+                  <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="مالك الاجتماع" />
                 </div>
-              </div>
-              )}
-
-              <div className="flex flex-col gap-6 w-full max-w-[1085px]">
-                {/* Suggested Times Section */}
-                <div className="flex flex-col gap-3 w-full">
-                  <div className="flex flex-row items-center justify-between w-full">
-                   
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
-                      }}
-                    >
-                      الوقت المقترح
-                    </h2>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>عنوان الاجتماع</label>
+                  <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل عنوان الاجتماع" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>وصف الاجتماع</label>
+                  <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل وصف الاجتماع" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>القطاع</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.sector ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>نوع الاجتماع</label>
+                  <Select value={formData.meeting_type} onValueChange={(v) => handleFieldChange('meeting_type', v)}>
+                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر نوع الاجتماع" /></SelectTrigger>
+                    <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>السبب</label>
+                  <div className="min-h-11 px-3 py-2 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.meeting_justification ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>آلية انعقاد الاجتماع</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.meeting_channel ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الموقع</label>
+                  <Input type="text" value={scheduleForm.location} onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="القاعة/الموقع" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل يتطلب بروتوكول؟</label>
+                  <div className="flex items-center gap-3 h-11">
+                    <span className="text-sm text-gray-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
+                    <button type="button" onClick={() => setScheduleForm((p) => ({ ...p, requires_protocol: !p.requires_protocol }))} className={`w-11 h-6 rounded-full flex transition-all cursor-pointer ${scheduleForm.requires_protocol ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}><div className="w-5 h-5 rounded-full bg-white shadow-sm" /></button>
                   </div>
-                  <div className="flex flex-row gap-4 flex-wrap">
-                    {suggestedTimes.length === 0 ? (
-                      <div className="w-full text-center py-6 text-gray-500">لا توجد أوقات متاحة</div>
-                    ) : (
-                      suggestedTimes.map((timeSlot) => (
-                        <div
-                          key={timeSlot.id}
-                          className="flex flex-row items-center gap-3 px-4 py-3 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm min-w-[300px]"
-                        >
-                          <button
-                            type="button"
-                        onClick={() => {
-                            setSuggestedTimes((prev) =>
-                              prev.map((slot) =>
-                                slot.id === timeSlot.id ? { ...slot, selected: !slot.selected } : { ...slot, selected: false }
-                              )
-                            );
-                            // update selected_time_slot_id in scheduleForm
-                            setScheduleForm((prev) => ({
-                              ...prev,
-                              selected_time_slot_id: prev.selected_time_slot_id === timeSlot.id ? null : timeSlot.id,
-                            }));
-                          }}
-                            className={`w-11 h-6 rounded-full flex items-center transition-all cursor-pointer ${
-                              timeSlot.selected
-                                ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end'
-                                : 'bg-[#F2F4F7] justify-start'
-                            } px-0.5`}
-                          >
-                            <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
-                          </button>
-                          <span
-                            className="flex-1 text-right"
-                            style={{
-                              fontFamily: "'Ping AR + LT', sans-serif",
-                              fontSize: '16px',
-                              lineHeight: '24px',
-                              color: '#101828',
-                            }}
-                          >
-                            {timeSlot.time}
-                          </span>
-                          <Calendar className="w-5 h-5 text-[#048F86] flex-shrink-0" />
-                        </div>
-                      ))
-                    )}
-                     <button
-                      onClick={() => setIsMinisterCalendarOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2 text-[#048F86] bg-[#048F86]/5 border border-[#048F86] rounded-lg hover:bg-[#048F86]/10 transition-colors"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px', fontWeight: 600 }}
+                  {scheduleForm.requires_protocol && (
+                    <Input type="text" value={scheduleForm.protocol_type_text} onChange={(e) => setScheduleForm((p) => ({ ...p, protocol_type_text: e.target.value }))} className="w-full h-11 mt-1 bg-white border border-gray-300 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="نوع البروتوكول" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>فئة الاجتماع</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.meeting_classification_type ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مبرّر اللقاء</label>
+                  <div className="min-h-11 px-3 py-2 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.meeting_justification ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>موضوع التكليف المرتبط</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.related_topic ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تاريخ الاستحقاق</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.deadline ? new Date(meeting.deadline).toLocaleDateString('ar-SA') : '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تصنيف الاجتماع</label>
+                  <Select value={formData.meeting_classification} onValueChange={(v) => handleFieldChange('meeting_classification', v)}>
+                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر تصنيف الاجتماع" /></SelectTrigger>
+                    <SelectContent dir="rtl">{Object.values(MeetingClassification).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationLabels[c]}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>سريّة الاجتماع</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.meeting_confidentiality ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>اجتماع متسلسل؟</label>
+                  <div className="flex items-center gap-3 h-11">
+                    <span className="text-sm text-gray-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_sequential ? 'نعم' : 'لا'}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !formData.is_sequential;
+                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_id: null }) }));
+                        if (!next) setPreviousMeetingOption(null);
+                      }}
+                      className={`w-11 h-6 rounded-full flex transition-all cursor-pointer ${formData.is_sequential ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}
                     >
-                      <Calendar className="w-4 h-4" />
-                      إطلع على جدول الوزير
+                      <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
                     </button>
                   </div>
                 </div>
-
-                {/* Minister Calendar Modal */}
-                <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
-                  <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-right text-2xl font-bold mb-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                        جدول الوزير
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <MinisterCalendarView 
-                        extraEvents={highlightedEvents} 
-                        initialDate={selectedSlotDate}
-                      />
-                    </div>
-                    <DialogFooter className="sm:justify-start">
-                      <button
-                        onClick={() => setIsMinisterCalendarOpen(false)}
-                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        إغلاق
-                      </button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                {/* Invitees table - shared DataTable, read-only from meeting.invitees */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
+                {formData.is_sequential && (
+                  <div className="flex flex-col gap-2 md:col-span-2">
+                    <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      الاجتماع السابق <span className="text-red-500">*</span>
+                    </label>
+                    <FormAsyncSelectV2
+                      value={previousMeetingOption}
+                      onValueChange={(opt) => {
+                        setPreviousMeetingOption(opt);
+                        setFormData((p) => ({ ...p, previous_meeting_id: opt?.value ?? null }));
                       }}
-                    >
-                      قائمة المدعوين
-                    </h2>
+                      loadOptions={loadClosedMeetingsOptions}
+                      placeholder="اختر الاجتماع السابق..."
+                      searchPlaceholder="ابحث..."
+                      emptyMessage="لا توجد اجتماعات مغلقة"
+                      fullWidth
+                      className="text-right"
+                      error={formData.is_sequential && !formData.previous_meeting_id}
+                      errorMessage={formData.is_sequential && !formData.previous_meeting_id ? 'مطلوب عند تفعيل اجتماع متسلسل' : undefined}
+                    />
                   </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الرقم التسلسلي</label>
+                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.sequential_number ?? '-'}</div>
+                </div>
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل طلب الاجتماع بناءً على توجيه من معالي الوزير</label>
+                  <div className="flex items-center gap-3 h-11">
+                    <span className="text-sm text-gray-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, is_based_on_directive: !p.is_based_on_directive, ...(!p.is_based_on_directive ? {} : { directive_method: '' }) }))}
+                      className={`w-11 h-6 rounded-full flex transition-all cursor-pointer ${formData.is_based_on_directive ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}
+                    >
+                      <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طريقة التوجيه</label>
+                  <Select value={formData.directive_method || ''} onValueChange={(v) => handleFieldChange('directive_method', v)}>
+                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      <SelectValue placeholder="اختر طريقة التوجيه" />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      {DIRECTIVE_METHOD_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>محضر الاجتماع</label>
+                  <FormAsyncSelectV2
+                    value={previousMeetingMinutesOption}
+                    onValueChange={(opt) => {
+                      setPreviousMeetingMinutesOption(opt);
+                      setFormData((p) => ({ ...p, previous_meeting_minutes_id: opt?.value ?? '' }));
+                    }}
+                    loadOptions={loadPreviousMeetingMinutesOptions}
+                    placeholder="اختر محضر الاجتماع..."
+                    searchPlaceholder="ابحث..."
+                    emptyMessage="لا توجد نتائج"
+                    fullWidth
+                    className="text-right"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>التوجيه</label>
+                  <Textarea
+                    value={formData.related_guidance}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((p) => ({ ...p, related_guidance: e.target.value }))}
+                    className="w-full min-h-24 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    placeholder="أدخل التوجيه..."
+                  />
+                </div>
+              </div>
+              {/* موعد الاجتماع */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-right font-semibold text-gray-800" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>موعد الاجتماع</h3>
+                <div className="flex flex-row gap-4 flex-wrap">
+                  {suggestedTimes.length === 0 ? (
+                    <div className="w-full text-center py-4 text-gray-500">لا توجد أوقات متاحة</div>
+                  ) : (
+                    suggestedTimes.map((timeSlot) => (
+                      <div key={timeSlot.id} className="flex flex-row items-center gap-3 px-4 py-3 bg-white border border-[#D0D5DD] rounded-lg shadow-sm min-w-[280px]">
+                        <button type="button" onClick={() => { setSuggestedTimes((prev) => prev.map((s) => (s.id === timeSlot.id ? { ...s, selected: !s.selected } : { ...s, selected: false }))); setScheduleForm((prev) => ({ ...prev, selected_time_slot_id: scheduleForm.selected_time_slot_id === timeSlot.id ? null : timeSlot.id })); }} className={`w-11 h-6 rounded-full flex transition-all cursor-pointer ${timeSlot.selected ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}><div className="w-5 h-5 rounded-full bg-white shadow-sm" /></button>
+                        <span className="flex-1 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}>{timeSlot.time}</span>
+                        <Calendar className="w-5 h-5 text-[#048F86] flex-shrink-0" />
+                      </div>
+                    ))
+                  )}
+                  <button type="button" onClick={() => setIsMinisterCalendarOpen(true)} className="flex items-center gap-2 px-4 py-2 text-[#048F86] bg-[#048F86]/10 border border-[#048F86] rounded-lg hover:bg-[#048F86]/20 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px', fontWeight: 600 }}><Calendar className="w-4 h-4" />إطلع على جدول الوزير</button>
+                </div>
+              </div>
+              {/* أهداف (للتعديل مع الحفظ) */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-right font-semibold text-gray-800" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الأهداف</h3>
+                {contentForm.objectives.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
+                    <DataTable
+                      columns={[
+                        { id: 'idx', header: 'رقم', width: 'w-20', align: 'center', render: (_: any, i: number) => i + 1 },
+                        { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (obj: any, index: number) => (
+                          <Input type="text" value={obj.objective} onChange={(e) => { const n = [...contentForm.objectives]; n[index] = { ...obj, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} className="w-full h-10 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="الهدف" />
+                        ) },
+                        { id: 'act', header: '', width: 'w-20', align: 'center', render: (_: any, index: number) => (
+                          <button type="button" onClick={() => setContentForm((p) => ({ ...p, objectives: p.objectives.filter((_, i) => i !== index) }))} className="p-2 text-red-600 hover:bg-red-50 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                        ) },
+                      ] as TableColumn<any>[]}
+                      data={contentForm.objectives}
+                      className="border-none"
+                      rowPadding="py-2"
+                    />
+                  </div>
+                ) : null}
+                <button type="button" onClick={() => setContentForm((p) => ({ ...p, objectives: [...p.objectives, { id: `obj-${Date.now()}`, objective: '' }] }))} className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة هدف</button>
+              </div>
+              {/* أجندة الاجتماع */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-right font-semibold text-gray-800" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>أجندة الاجتماع</h3>
+                {contentForm.agendaItems.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
+                    <DataTable
+                      columns={[
+                        { id: 'idx', header: 'رقم البند', width: 'w-24', align: 'center', render: (_: any, i: number) => i + 1 },
+                        { id: 'agenda_item', header: 'بند جدول الأعمال', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
+                          <Input type="text" value={item.agenda_item} onChange={(e) => { const n = [...contentForm.agendaItems]; n[index] = { ...item, agenda_item: e.target.value }; setContentForm((p) => ({ ...p, agendaItems: n })); }} className="w-full h-10 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="عنوان البند" />
+                        ) },
+                        { id: 'act', header: '', width: 'w-20', align: 'center', render: (_: any, index: number) => (
+                          <button type="button" onClick={() => setContentForm((p) => ({ ...p, agendaItems: p.agendaItems.filter((_, i) => i !== index) }))} className="p-2 text-red-600 hover:bg-red-50 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                        ) },
+                      ] as TableColumn<any>[]}
+                      data={contentForm.agendaItems}
+                      className="border-none"
+                      rowPadding="py-2"
+                    />
+                  </div>
+                ) : null}
+                <button type="button" onClick={() => setContentForm((p) => ({ ...p, agendaItems: [...p.agendaItems, { id: `agenda-${Date.now()}`, agenda_item: '', presentation_duration_minutes: undefined }] }))} className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-[#048F86] rounded-lg text-[#048F86] hover:bg-[#048F86] hover:text-white transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة بند</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>ملاحظات</label>
+                  <div className="min-h-20 px-3 py-2 flex items-start bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.general_notes ?? '-'}</div>
+                </div>
+              </div>
+              <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
+                <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle className="text-right text-2xl font-bold mb-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدول الوزير</DialogTitle></DialogHeader>
+                  <div className="py-4"><MinisterCalendarView extraEvents={highlightedEvents} initialDate={selectedSlotDate} /></div>
+                  <DialogFooter className="sm:justify-start"><button type="button" onClick={() => setIsMinisterCalendarOpen(false)} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إغلاق</button></DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {/* Tab: المحتوى (Excel التبويب) – اسم الحقل: العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
+          {activeTab === 'content' && (
+            <div className="flex flex-col gap-6 w-full max-w-[1085px]" dir="rtl">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>العرض التقديمي</label>
+                <div className="flex flex-row gap-4 flex-wrap">
+                  {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 ? (
+                    <p className="text-[#667085] text-sm py-2">لا يوجد عرض تقديمي</p>
+                  ) : (
+                    (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                      <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
+                        {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
+                        <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
+                        <div className="flex items-center gap-2 mr-auto"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button></div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>متى سيتم إرفاق العرض؟</label>
+                <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>—</div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مرفقات اختيارية</label>
+                <div className="flex flex-row gap-4 flex-wrap">
+                  {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                    <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-gray-300 rounded-xl">
+                      {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
+                      <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
+                      <div className="flex items-center gap-2 mr-auto"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button></div>
+                    </div>
+                  ))}
+                  {newAttachments.map((file, idx) => (
+                    <div key={`new-${idx}`} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-dashed border-[#048F86] rounded-xl">
+                      <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>
+                      <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{file.name}</span><span className="text-xs text-[#048F86]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جديد</span></div>
+                      <button type="button" onClick={() => handleRemoveNewAttachment(idx)} className="mr-auto p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                  <label className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[#048F86] rounded-xl text-[#048F86] hover:bg-[#048F86]/5 cursor-pointer" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة مرفق<input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>ملاحظات</label>
+                <div className="min-h-20 px-3 py-2 flex items-start bg-gray-50 border border-gray-200 rounded-lg text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  {(() => {
+                    const notes: any = meeting?.content_officer_notes;
+                    // Safely handle content_officer_notes - could be string, array, or object
+                    if (!notes) return '-';
+                    if (typeof notes === 'string') return notes;
+                    if (Array.isArray(notes)) {
+                      // If it's an array, try to extract text from objects or join strings
+                      return (notes as any[]).map((item: any) => {
+                        if (typeof item === 'string') return item;
+                        if (item && typeof item === 'object') {
+                          return item.text || item.note_answer || item.note_question || JSON.stringify(item);
+                        }
+                        return String(item);
+                      }).join('\n');
+                    }
+                    if (typeof notes === 'object') {
+                      // If it's a single object, extract text
+                      return (notes as any).text || (notes as any).note_answer || (notes as any).note_question || JSON.stringify(notes);
+                    }
+                    return String(notes);
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: قائمة المدعوين (Excel) – قائمة المدعوين (مقدم الطلب)، قائمة المدعوين (الوزير) */}
+          {activeTab === 'attendees' && (
+            <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+              <div className="flex flex-col gap-6 w-full max-w-[1085px]">
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>قائمة المدعوين (مقدّم الطلب)</h2>
                   <div className="w-full overflow-x-auto table-scroll">
                     <div className="min-w-full">
                       <DataTable
@@ -1579,20 +1686,9 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Minister attendees table - shared DataTable, editable via scheduleForm */}
+                {/* قائمة المدعوين (الوزير) */}
                 <div className="flex flex-col gap-2">
-                  <h2
-                    className="text-right"
-                    style={{
-                      fontFamily: "'Ping AR + LT', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '22px',
-                      lineHeight: '38px',
-                      color: '#101828',
-                    }}
-                  >
-                    الحضور من جهة الوزير
-                  </h2>
+                  <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>قائمة المدعوين (الوزير)</h2>
                   <div className="w-full overflow-x-auto table-scroll">
                     <div className="min-w-[1085px]">
                       <DataTable
@@ -1800,230 +1896,12 @@ const MeetingDetail: React.FC = () => {
                   </div>
                
                 </div>
-
-                {/* Location & completeness summary - bound to scheduleForm.is_data_complete */}
-                <div className="flex flex-col gap-6 w-full">
-                  {/* Location input */}
-                  <div className="flex flex-col gap-2 w-full max-w-[1085px]">
-                    <label
-                      className="text-sm font-medium text-[#344054] text-right"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    >
-                      القاعة/الموقع المقترح
-                    </label>
-                    <Input
-                      type="text"
-                      value={scheduleForm.location}
-                      onChange={(e) =>
-                        setScheduleForm((prev) => ({
-                          ...prev,
-                          location: e.target.value,
-                        }))
-                      }
-                      placeholder="أدخل القاعة أو الموقع المقترح"
-                      className="h-[44px] text-right"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '16px', lineHeight: '24px' }}
-                    />
-                  </div>
-
-                  {/* Protocol requirement toggle and type */}
-                  <div className="flex flex-row justify-between items-start gap-6 w-full max-w-[1085px]">
-                    <div className="flex flex-col items-end gap-3 ">
-                      <span
-                        className="text-sm font-medium text-[#344054]"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        يتطلب بروتوكول
-                      </span>
-                      <div className="flex flex-row items-center gap-3">
-                        <span
-                          className="text-base text-[#667085]"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {scheduleForm.requires_protocol ? 'نعم' : 'لا'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setScheduleForm((prev) => ({
-                              ...prev,
-                              requires_protocol: !prev.requires_protocol,
-                            }))
-                          }
-                          className={`w-11 h-6 rounded-full flex items-center transition-all cursor-pointer ${
-                            scheduleForm.requires_protocol
-                              ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end'
-                              : 'bg-[#F2F4F7] justify-start'
-                          } px-0.5`}
-                        >
-                          <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
-                        </button>
-                      </div>
-                    </div>
-                    {scheduleForm.requires_protocol && (
-                      <div className="flex flex-col gap-2 flex-1">
-                        <label
-                          className="text-sm font-medium text-[#344054] text-right"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          نوع البروتوكول <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          value={scheduleForm.protocol_type_text}
-                          onChange={(e) =>
-                            setScheduleForm((prev) => ({
-                              ...prev,
-                              protocol_type_text: e.target.value,
-                            }))
-                          }
-                          placeholder="أدخل نوع البروتوكول"
-                          className="h-[44px] text-right"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '16px', lineHeight: '24px' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}
 
-          {/* Attachments Tab */}
-          {activeTab === 'attachments' && (
-            <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
-              {/* Attachments list */}
-              <div className="flex flex-col gap-4 w-full max-w-[1085px]">
-                <div className="flex flex-row gap-4 flex-wrap">
-                  {/* Existing attachments (filter out deleted ones) */}
-                  {(meeting?.attachments || [])
-                    .filter((att) => !deletedAttachmentIds.includes(att.id))
-                    .map((att) => (
-                      <div
-                        key={att.id}
-                        className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
-                      >
-                        <div className="flex flex-row items-center justify-between">
-                          {att.file_type?.toLowerCase() === 'pdf' ? (
-                            <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
-                          ) : (
-                            <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
-                              {att.file_type?.toUpperCase() || ''}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                            {att.file_name}
-                          </span>
-                          <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                            {Math.round((att.file_size || 0) / 1024)} KB
-                          </span>
-                        </div>
-
-                        <div className="flex flex-row items-center self-end gap-2 ml-auto">
-                          <a
-                            href={att.blob_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                          >
-                            <Download className="w-5 h-5 text-[#009883]" />
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => window.open(att.blob_url, '_blank')}
-                            className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                          >
-                            <Eye className="w-5 h-5 text-[#475467]" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAttachment(att.id)}
-                            className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(202,69,69,0.1)] rounded-md hover:bg-[rgba(202,69,69,0.2)] transition-colors"
-                          >
-                            <Trash2 className="w-5 h-5 text-[#CA4545]" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* New attachments (pending upload) */}
-                  {newAttachments.map((file, index) => (
-                    <div
-                      key={`new-${index}`}
-                      className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#048F86] border-dashed rounded-[12px]"
-                    >
-                      <div className="flex flex-row items-center justify-between">
-                        {file.type === 'application/pdf' ? (
-                          <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
-                        ) : (
-                          <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
-                            {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {file.name}
-                        </span>
-                        <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {Math.round(file.size / 1024)} KB
-                        </span>
-                      </div>
-
-                      <div className="flex flex-row items-center self-end gap-2 ml-auto">
-                        <span className="text-xs text-[#048F86] px-2 py-1 bg-[rgba(4,143,134,0.1)] rounded" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          جديد
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewAttachment(index)}
-                          className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(202,69,69,0.1)] rounded-md hover:bg-[rgba(202,69,69,0.2)] transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5 text-[#CA4545]" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Empty state */}
-                  {(meeting?.attachments || []).filter((att) => !deletedAttachmentIds.includes(att.id)).length === 0 && newAttachments.length === 0 && (
-                    <div className="w-full text-center text-gray-500 py-6" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      لا توجد مرفقات
-                    </div>
-                  )}
-                </div>
-
-                {/* Add attachment button */}
-                <div className="flex items-center justify-start mt-2">
-                  <label className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Plus className="w-4 h-4" />
-                    <span
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        lineHeight: '24px',
-                      }}
-                    >
-                      إضافة مرفق جديد
-                    </span>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) => handleAddAttachments(e.target.files)}
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Consultations Log Tab */}
-          {activeTab === 'consultations-log' && (
+          {/* Consultations Log → استشارة الجدولة (Excel) */}
+          {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
@@ -2154,7 +2032,7 @@ const MeetingDetail: React.FC = () => {
           )}
 
           {/* Directives Log Tab */}
-          {activeTab === 'directives-log' && (
+          {activeTab === 'directive' && (
             <div className="flex flex-col gap-4">
               {isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
@@ -2285,51 +2163,97 @@ const MeetingDetail: React.FC = () => {
           )}
 
           {/* Content Officer Notes Tab */}
-          {activeTab === 'content-officer-notes' && (
+          {activeTab === 'content-consultation' && (
             <div className="flex flex-col gap-4">
               {isLoadingContentOfficerNotes ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
-              ) : contentOfficerNotesRecords && contentOfficerNotesRecords.items.length > 0 ? (
-                <DataTable
-                  columns={[
+              ) : (() => {
+                  // Double-check tab is active and data exists before processing
+                  if (activeTab !== 'content-consultation') {
+                    return (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <p className="text-gray-600 text-lg mb-2">ملاحظات مسؤول المحتوى</p>
+                          <p className="text-gray-500 text-sm">لا توجد ملاحظات مسجلة</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (!contentOfficerNotesRecords || !Array.isArray(contentOfficerNotesRecords.items) || contentOfficerNotesRecords.items.length === 0) {
+                    return (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <p className="text-gray-600 text-lg mb-2">ملاحظات مسؤول المحتوى</p>
+                          <p className="text-gray-500 text-sm">لا توجد ملاحظات مسجلة</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <DataTable
+                      columns={[
                     {
                       id: 'note_question',
                       header: 'السؤال',
                       width: 'flex-1',
-                      render: (row: ContentOfficerNoteRecord) => (
-                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.note_question || '-'}
-                        </span>
-                      ),
+                      render: (row: ContentOfficerNoteRecord) => {
+                        // Only access fields we know are safe strings from our transformation
+                        const question = (row.note_question && typeof row.note_question === 'string') 
+                          ? row.note_question 
+                          : '-';
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {question}
+                          </span>
+                        );
+                      },
                     },
                     {
                       id: 'note_answer',
                       header: 'الملاحظة',
                       width: 'flex-1',
-                      render: (row: ContentOfficerNoteRecord) => (
-                        <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.note_answer}
-                        </span>
-                      ),
+                      render: (row: ContentOfficerNoteRecord) => {
+                        // Only access fields we know are safe strings from our transformation
+                        const answer = (row.note_answer && typeof row.note_answer === 'string') 
+                          ? row.note_answer 
+                          : '';
+                        return (
+                          <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {answer}
+                          </span>
+                        );
+                      },
                     },
                     {
                       id: 'author_name',
                       header: 'المؤلف',
                       width: 'w-40',
-                      render: (row: ContentOfficerNoteRecord) => (
-                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.author_name}
-                        </span>
-                      ),
+                      render: (row: ContentOfficerNoteRecord) => {
+                        const authorName = typeof row.author_name === 'string' ? row.author_name : String(row.author_name || '-');
+                        return (
+                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            {authorName}
+                          </span>
+                        );
+                      },
                     },
                     {
                       id: 'created_at',
                       header: 'تاريخ الإنشاء',
                       width: 'w-40',
                       render: (row: ContentOfficerNoteRecord) => {
-                        const date = new Date(row.created_at);
+                        const createdAt = typeof row.created_at === 'string' ? row.created_at : String(row.created_at || '');
+                        const date = new Date(createdAt);
+                        if (isNaN(date.getTime())) {
+                          return (
+                            <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              -
+                            </span>
+                          );
+                        }
                         const formattedDate = date.toLocaleDateString('ar-SA', {
                           year: 'numeric',
                           month: '2-digit',
@@ -2349,7 +2273,15 @@ const MeetingDetail: React.FC = () => {
                       header: 'تاريخ التحديث',
                       width: 'w-40',
                       render: (row: ContentOfficerNoteRecord) => {
-                        const date = new Date(row.updated_at);
+                        const updatedAt = typeof row.updated_at === 'string' ? row.updated_at : String(row.updated_at || '');
+                        const date = new Date(updatedAt);
+                        if (isNaN(date.getTime())) {
+                          return (
+                            <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              -
+                            </span>
+                          );
+                        }
                         const formattedDate = date.toLocaleDateString('ar-SA', {
                           year: 'numeric',
                           month: '2-digit',
@@ -2365,31 +2297,99 @@ const MeetingDetail: React.FC = () => {
                       },
                     },
                   ]}
-                  data={contentOfficerNotesRecords.items}
-                  rowPadding="py-3"
-                />
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">ملاحظات مسؤول المحتوى</p>
-                    <p className="text-gray-500 text-sm">لا توجد ملاحظات مسجلة</p>
-                  </div>
-                </div>
-              )}
+                  data={contentOfficerNotesRecords && Array.isArray(contentOfficerNotesRecords.items) 
+                    ? contentOfficerNotesRecords.items
+                        .filter((item: any) => item && typeof item === 'object' && !Array.isArray(item)) // Only process valid objects, not arrays
+                        .map((item: any) => {
+                      // Helper function to safely convert any value to string
+                      const safeString = (value: any, fallback: string = ''): string => {
+                        if (value === null || value === undefined) return fallback;
+                        if (typeof value === 'string') return value;
+                        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+                        // If it's an object, don't try to render it - return fallback
+                        return fallback;
+                      };
+
+                      // Helper to safely get note_question (can be null)
+                      const safeNoteQuestion = (value: any): string | null => {
+                        if (value === null || value === undefined) return null;
+                        if (typeof value === 'string') return value;
+                        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+                        // If it's an object, return null
+                        return null;
+                      };
+
+                      // Get source values safely - check each field individually and ensure it's not an object
+                      const getSafeValue = (value: any, fallback: any = null): any => {
+                        if (value === null || value === undefined) return fallback;
+                        // Reject any object (including arrays) - only allow primitives
+                        if (typeof value === 'object') {
+                          return fallback;
+                        }
+                        // Only return primitives: string, number, boolean
+                        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                          return value;
+                        }
+                        return fallback;
+                      };
+
+                      const sourceId = getSafeValue(item.id) ?? getSafeValue(item.note_id) ?? '';
+                      const sourceQuestion = getSafeValue(item.note_question) ?? getSafeValue(item.text) ?? null;
+                      const sourceAnswer = getSafeValue(item.note_answer) ?? getSafeValue(item.text) ?? '';
+                      const sourceAuthor = getSafeValue(item.author_name) ?? '';
+                      const sourceCreated = getSafeValue(item.created_at) ?? '';
+                      const sourceUpdated = getSafeValue(item.updated_at) ?? '';
+
+                      // Safely extract values, ensuring we never have objects
+                      // Only include the exact fields we need, all converted to strings
+                      // Create a completely new object with only the fields we need
+                      const safeItem: ContentOfficerNoteRecord = {
+                        id: safeString(sourceId, ''),
+                        note_question: safeNoteQuestion(sourceQuestion),
+                        note_answer: safeString(sourceAnswer, ''),
+                        author_name: safeString(sourceAuthor, ''),
+                        created_at: safeString(sourceCreated, ''),
+                        updated_at: safeString(sourceUpdated, ''),
+                      };
+                      
+                      // Final safety check: ensure no object properties exist
+                      // This prevents any accidental object rendering
+                      const finalItem: any = {};
+                      Object.keys(safeItem).forEach(key => {
+                        const value = (safeItem as any)[key];
+                        if (value !== null && value !== undefined && typeof value !== 'object') {
+                          finalItem[key] = value;
+                        } else if (value === null) {
+                          finalItem[key] = null;
+                        } else {
+                          finalItem[key] = '';
+                        }
+                      });
+                      
+                      return finalItem as ContentOfficerNoteRecord;
+                        })
+                    : []}
+                      rowPadding="py-3"
+                    />
+                  );
+                })()}
             </div>
           )}
 
-          {/* Other Tab Content */}
-          {activeTab !== 'basic-info' && activeTab !== 'content' && activeTab !== 'scheduling' && activeTab !== 'attachments' && activeTab !== 'consultations-log' && activeTab !== 'directives-log' && activeTab !== 'content-officer-notes' && (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-gray-600">محتويات {tabs.find(t => t.id === activeTab)?.label} قريباً</p>
+          {/* Tab: الملاحظات على الطلب (Excel) – اسم الحقل: الملاحظات */}
+          {activeTab === 'request-notes' && (
+            <div className="flex flex-col gap-4 max-w-[1085px]" dir="rtl">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الملاحظات</label>
+                <div className="min-h-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{meeting?.general_notes ?? '-'}</div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Action Buttons - Fixed at bottom */}
-        {/* Sticky action bar - Hidden when status is UNDER_CONSULTATION_SCHEDULING, UNDER_CONTENT_CONSULTATION, or WAITING */}
-        {meeting && meeting.status !== MeetingStatus.UNDER_CONSULTATION_SCHEDULING && meeting.status !== MeetingStatus.UNDER_CONTENT_CONSULTATION && meeting.status !== MeetingStatus.WAITING && (
+        {/* Sticky action bar - Only shown when status is UNDER_REVIEW */}
+        {meeting && meeting.status === MeetingStatus.UNDER_REVIEW && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full  px-4">
             <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center w-max ">
             <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
@@ -2478,7 +2478,7 @@ const MeetingDetail: React.FC = () => {
                   className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافته إلى قائمة الانتظار'}
+                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}
                   </span>
                   <Plus className="w-5 h-5" />
                 </button>
@@ -2670,12 +2670,17 @@ const MeetingDetail: React.FC = () => {
                 // Validate: if requires_protocol is true, protocol_type must be filled
                 const requiresProtocol = changedPayload.requires_protocol ?? scheduleForm.requires_protocol;
                 const protocolType = changedPayload.protocol_type ?? scheduleForm.protocol_type_text;
-                
                 if (requiresProtocol === true && !protocolType) {
                   setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
                   return;
                 }
-                
+                // Validate: if اجتماع متسلسل؟ is checked, الاجتماع السابق is required
+                const isSequential = changedPayload.is_sequential ?? formData.is_sequential;
+                const previousMeetingId = changedPayload.previous_meeting_id ?? formData.previous_meeting_id;
+                if (isSequential === true && !previousMeetingId) {
+                  setValidationError('يجب اختيار الاجتماع السابق عند تفعيل خيار "اجتماع متسلسل؟"');
+                  return;
+                }
                 setValidationError(null);
                 updateMutation.mutate(changedPayload);
               }}
@@ -2976,7 +2981,10 @@ const MeetingDetail: React.FC = () => {
       {/* Schedule Meeting Modal */}
       <Dialog open={isScheduleModalOpen} onOpenChange={(open) => {
         setIsScheduleModalOpen(open);
-        if (!open) setValidationError(null);
+        if (!open) {
+          setValidationError(null);
+          setWebexMeetingDetails(null);
+        }
       }}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
@@ -2990,6 +2998,13 @@ const MeetingDetail: React.FC = () => {
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     {validationError}
+                  </p>
+                </div>
+              )}
+              {scheduleMutation.isSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-right text-sm text-green-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    تم جدولة الاجتماع بنجاح
                   </p>
                 </div>
               )}
@@ -3014,6 +3029,11 @@ const MeetingDetail: React.FC = () => {
                   placeholder="اختر التاريخ والوقت"
                   className="w-full"
                   required
+                  minDate={(() => {
+                    const d = new Date();
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                  })()}
                 />
               </div>
 
@@ -3024,18 +3044,113 @@ const MeetingDetail: React.FC = () => {
                 </label>
                 <Select
                   value={scheduleForm.meeting_channel}
-                  onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, meeting_channel: value }))}
+                  onValueChange={(value) => {
+                    setScheduleForm((prev) => ({ ...prev, meeting_channel: value as typeof prev.meeting_channel }));
+                    // Clear Webex details when channel changes
+                    if (value !== 'VIRTUAL') {
+                      setWebexMeetingDetails(null);
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent dir="rtl">
                     <SelectItem value="PHYSICAL">حضوري</SelectItem>
-                    <SelectItem value="ONLINE">عن بُعد</SelectItem>
+                    <SelectItem value="PHYSICAL_LOCATION_1">حضوري - الموقع 1</SelectItem>
+                    <SelectItem value="PHYSICAL_LOCATION_2">حضوري - الموقع 2</SelectItem>
+                    <SelectItem value="PHYSICAL_LOCATION_3">حضوري - الموقع 3</SelectItem>
+                    <SelectItem value="VIRTUAL">عن بُعد</SelectItem>
                     <SelectItem value="HYBRID">مختلط</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Webex Meeting Loading - Show when creating */}
+              {scheduleForm.meeting_channel === 'VIRTUAL' && isCreatingWebex && (
+                <div className="flex flex-col gap-2 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      جاري إنشاء اجتماع Webex...
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Webex Meeting Details - Show when VIRTUAL channel and details are available */}
+              {scheduleForm.meeting_channel === 'VIRTUAL' && webexMeetingDetails && !isCreatingWebex && (
+                <div className="flex flex-col gap-4 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD]"></div>
+                    <label className="text-sm font-semibold text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      تفاصيل اجتماع Webex
+                    </label>
+                  </div>
+                  
+                  {/* Join Link */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-medium text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      رابط الانضمام
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={webexMeetingDetails.join_link}
+                        readOnly
+                        className="flex-1 h-9 bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(webexMeetingDetails.join_link);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg hover:opacity-90 transition-opacity"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Meeting Details Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        رقم الاجتماع
+                      </label>
+                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        {webexMeetingDetails.meeting_number}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        كلمة المرور
+                      </label>
+                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        {webexMeetingDetails.password}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        عنوان SIP
+                      </label>
+                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        {webexMeetingDetails.sip_address}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        مفتاح المضيف
+                      </label>
+                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        {webexMeetingDetails.host_key}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Requires Protocol */}
               <div className="flex items-center gap-2">
@@ -3233,36 +3348,72 @@ const MeetingDetail: React.FC = () => {
               </div>
             </div>
             <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsScheduleModalOpen(false);
-                  setScheduleForm({
-                    scheduled_at: '',
-                    meeting_channel: 'PHYSICAL',
-                    requires_protocol: false,
-                    protocol_type: null,
-                    protocol_type_text: '',
-                    is_data_complete: true,
-                    notes: '',
-                    location: '',
-                    selected_time_slot_id: null,
-                    minister_attendees: [],
-                  });
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                disabled={!scheduleForm.scheduled_at || scheduleMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {scheduleMutation.isPending ? 'جاري الجدولة...' : 'جدولة'}
-              </button>
+              {scheduleMutation.isSuccess && webexMeetingDetails ? (
+                // Show close button after successful scheduling with Webex
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsScheduleModalOpen(false);
+                    setScheduleForm({
+                      scheduled_at: '',
+                      meeting_channel: 'PHYSICAL',
+                      requires_protocol: false,
+                      protocol_type: null,
+                      protocol_type_text: '',
+                      is_data_complete: true,
+                      notes: '',
+                      location: '',
+                      selected_time_slot_id: null,
+                      minister_attendees: [],
+                    });
+                    setWebexMeetingDetails(null);
+                    navigate(-1);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  تم
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsScheduleModalOpen(false);
+                      setScheduleForm({
+                        scheduled_at: '',
+                        meeting_channel: 'PHYSICAL',
+                        requires_protocol: false,
+                        protocol_type: null,
+                        protocol_type_text: '',
+                        is_data_complete: true,
+                        notes: '',
+                        location: '',
+                        selected_time_slot_id: null,
+                        minister_attendees: [],
+                      });
+                      setWebexMeetingDetails(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      !scheduleForm.scheduled_at || 
+                      scheduleMutation.isPending || 
+                      isCreatingWebex ||
+                      (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
+                    }
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  >
+                    {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري الجدولة...' : 'جدولة'}
+                  </button>
+                </>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

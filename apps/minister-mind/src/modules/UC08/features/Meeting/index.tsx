@@ -88,13 +88,13 @@ const Meeting: React.FC = () => {
                 <DataTable
                   columns={tableColumns}
                   data={meetings}
-                  onRowClick={(row) => navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))}
+                  onRowClick={(row) => navigate(`/meeting/${row.id}`)}
                 />
               ) : (
                 <CardsGrid
                   meetings={meetings}
-                  onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
-                  onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onView={(meeting) => navigate(`/meeting/${meeting.id}`)}
+                  onDetails={(meeting) => navigate(`/meeting/${meeting.id}`)}
                 />
               )}
               {totalPages > 1 && (

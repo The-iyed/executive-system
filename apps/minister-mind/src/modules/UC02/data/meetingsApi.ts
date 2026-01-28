@@ -135,6 +135,8 @@ export interface GetMeetingsParams {
   limit?: number;
   search?: string;
   owner_type?: string;
+  start_date?: string; // ISO date string for date range filtering
+  end_date?: string; // ISO date string for date range filtering
 }
 
 export const getMeetings = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
@@ -154,6 +156,12 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   }
   if (params.owner_type) {
     queryParams.append('owner_type', params.owner_type);
+  }
+  if (params.start_date) {
+    queryParams.append('start_date', params.start_date);
+  }
+  if (params.end_date) {
+    queryParams.append('end_date', params.end_date);
   }
 
   const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings?${queryParams.toString()}`);
@@ -320,6 +328,14 @@ export interface UpdateMeetingRequestPayload {
   related_directive_ids?: string[];
   general_notes?: string | null;
   content_officer_notes?: string | null;
+  /** مالك الاجتماع – editable in meeting-info tab */
+  meeting_owner?: string;
+  is_sequential?: boolean;
+  previous_meeting_id?: string | null;
+  is_based_on_directive?: boolean;
+  directive_method?: string | null;
+  previous_meeting_minutes_id?: string | null;
+  related_guidance?: string | null;
 }
 
 export const updateMeetingRequest = async (
@@ -357,6 +373,7 @@ export interface ScheduleMeetingRequest {
   is_data_complete: boolean;
   notes: string;
   location?: string;
+  meeting_link?: string;
   minister_attendees: MinisterAttendee[];
 }
 
@@ -365,6 +382,42 @@ export const scheduleMeeting = async (
   payload: ScheduleMeetingRequest
 ): Promise<void> => {
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/schedule`, payload);
+};
+
+// Webex Meeting API
+export interface CreateWebexMeetingRequest {
+  meeting_title: string;
+  start_datetime: string; // Format: "2026-01-29 14:43:44"
+  time_zone: string; // e.g., "UTC"
+  duration_minutes: number;
+}
+
+export interface WebexMeetingAccessDetails {
+  meeting_number: string;
+  password: string;
+  sip_address: string;
+  host_key: string;
+}
+
+export interface CreateWebexMeetingResponse {
+  success: boolean;
+  message: string;
+  document_id: string;
+  data: {
+    webex_meeting_join_link: string;
+    webex_meeting_unique_identifier: string;
+    meeting_access_details: WebexMeetingAccessDetails;
+  };
+}
+
+export const createWebexMeeting = async (
+  payload: CreateWebexMeetingRequest
+): Promise<CreateWebexMeetingResponse> => {
+  const response = await axiosInstance.post<CreateWebexMeetingResponse>(
+    '/api/v1/webex/meetings',
+    payload
+  );
+  return response.data;
 };
 
 // Directives API
@@ -471,13 +524,19 @@ export const getGuidanceRecords = async (meetingId: string): Promise<GuidanceRec
 
 // Content Officer Notes Records API
 export interface ContentOfficerNoteRecord {
-  note_id: string;
-  note_question: string | null;
-  note_answer: string;
-  author_user_id: string;
+  id: string;
+  note_type?: string;
+  text?: string;
+  author_id?: string;
+  author_type?: string;
   author_name: string;
   created_at: string;
   updated_at: string;
+  // Legacy fields (for backward compatibility)
+  note_id?: string;
+  note_question?: string | null;
+  note_answer?: string;
+  author_user_id?: string;
 }
 
 export interface ContentOfficerNotesRecordsResponse {
