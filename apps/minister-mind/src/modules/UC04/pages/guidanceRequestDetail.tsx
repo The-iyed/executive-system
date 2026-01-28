@@ -14,7 +14,7 @@ import {
   getMeetingChannelLabel,
   getInviteeResponseStatusLabel,
 } from '@shared/types';
-import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance } from '../data/guidanceApi';
+import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance, ProvideGuidanceRequest } from '../data/guidanceApi';
 import { getGuidanceRecords, type GuidanceRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
@@ -81,12 +81,15 @@ const GuidanceRequestDetail: React.FC = () => {
 
   // Submit guidance mutation
   const submitMutation = useMutation({
-    mutationFn: (data: { guidance_notes: string; feasibility_answer: boolean }) => {
+    mutationFn: (data: ProvideGuidanceRequest): Promise<ProvideGuidanceRequest> => {
       if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
-      return provideGuidance(meetingRequest.id, data);
+      return provideGuidance(meetingRequest.id, data).then(() => data);
     },
-    onSuccess: () => {
+    onSuccess: ( data: ProvideGuidanceRequest ) => {
       // Disable queries first to prevent any new requests
+      if (data.is_draft) {
+        navigate(PATH.GUIDANCE_REQUESTS);
+      }   
       setQueriesDisabled(true);
       
       // Cancel any in-flight queries
@@ -103,7 +106,6 @@ const GuidanceRequestDetail: React.FC = () => {
       setIsSuitableForScheduling(false);
       
       // Navigate back to guidance requests list
-      navigate(PATH.GUIDANCE_REQUESTS);
     },
     onError: (error) => {
       console.error('Error submitting guidance:', error);
@@ -113,12 +115,15 @@ const GuidanceRequestDetail: React.FC = () => {
 
   // Save as draft mutation
   const saveDraftMutation = useMutation({
-    mutationFn: (data: { guidance_notes: string; feasibility_answer: boolean }) => {
+    mutationFn: (data: ProvideGuidanceRequest): Promise<ProvideGuidanceRequest> => {
       if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
-      return saveGuidanceAsDraft(meetingRequest.id, data);
+      return saveGuidanceAsDraft(meetingRequest.id, data).then(() => data);
     },
-    onSuccess: () => {
+    onSuccess: ( data: ProvideGuidanceRequest ) => {
       queryClient.invalidateQueries({ queryKey: ['guidance-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['guidance-records-with-drafts', id] });
+      queryClient.invalidateQueries({ queryKey: ['guidance-records', id] });
+      queryClient.invalidateQueries({ queryKey: ['guidance-requests'] });
       setIsSubmitModalOpen(false);
     },
     onError: (error) => {
@@ -145,6 +150,7 @@ const GuidanceRequestDetail: React.FC = () => {
     submitMutation.mutate({
       guidance_notes: guidanceResponse,
       feasibility_answer: isSuitableForScheduling,
+      is_draft: false,
     });
   };
 
@@ -175,6 +181,7 @@ const GuidanceRequestDetail: React.FC = () => {
     saveDraftMutation.mutate({
       guidance_notes: guidanceResponse,
       feasibility_answer: isSuitableForScheduling,
+      is_draft: true,
     });
   };
 
