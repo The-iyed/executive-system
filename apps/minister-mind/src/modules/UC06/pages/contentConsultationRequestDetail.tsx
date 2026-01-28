@@ -787,7 +787,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                         {meetingRequest.meeting_subject || '-'}
                       </p>
-                    </div>
+                  </div>
                   </div>
                   {/* القطاع / نوع الاجتماع */}
                   <div className="flex flex-row gap-4">
@@ -1155,18 +1155,18 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
               {/* Additional Information Section */}
               <div className="flex flex-col gap-6 w-full">
-                <h2
-                  className="text-right"
-                  style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '22px',
-                    lineHeight: '38px',
-                    color: '#101828',
-                  }}
-                >
+                        <h2
+                          className="text-right"
+                          style={{
+                            fontFamily: "'Ping AR + LT', sans-serif",
+                            fontWeight: 700,
+                            fontSize: '22px',
+                            lineHeight: '38px',
+                            color: '#101828',
+                          }}
+                        >
                   معلومات إضافية
-                </h2>
+                        </h2>
                 <div className="flex flex-col gap-4">
                   {meetingRequest.meeting_justification && (
                     <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -1182,7 +1182,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       >
                         {meetingRequest.meeting_justification}
                       </p>
-                    </div>
+                      </div>
                   )}
                   {meetingRequest.related_topic && (
                     <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -1239,113 +1239,113 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   قائمة المدعوين (مقدّم الطلب)
                 </h2>
                 {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
-                  <div className="w-full overflow-x-auto table-scroll">
+                      <div className="w-full overflow-x-auto table-scroll">
                     <div className="w-full min-w-0">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
+                          <DataTable
+                            columns={[
+                              {
+                                id: 'index',
+                                header: 'رقم البند',
                             width: 'min-w-[8rem] flex-shrink-0',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <div className="flex items-center justify-center w-full">
-                                <span className="text-sm text-[#475467]">{index + 1}</span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'name',
-                            header: 'الاسم',
+                                align: 'center',
+                                render: (_row: any, index: number) => (
+                                  <div className="flex items-center justify-center w-full">
+                                    <span className="text-sm text-[#475467]">{index + 1}</span>
+                                  </div>
+                                ),
+                              },
+                              {
+                                id: 'name',
+                                header: 'الاسم',
                             width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
+                                align: 'end',
+                                render: (row: any) => (
                               <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_name || row.user_id || '--------------'}
-                              </span>
-                            ),
-                          },
-                          {
-                            id: 'email',
-                            header: 'البريد الإلكتروني',
+                                    {row.external_name || row.user_id || '--------------'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'email',
+                                header: 'البريد الإلكتروني',
                             width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
+                                align: 'end',
+                                render: (row: any) => (
                               <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_email || '--------------'}
-                              </span>
-                            ),
-                          },
-                          {
-                            id: 'is_required',
-                            header: 'الحضور أساسي',
+                                    {row.external_email || '--------------'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'is_required',
+                                header: 'الحضور أساسي',
                             width: 'min-w-[11rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
-                              <div className="flex items-center justify-center gap-2 w-full">
-                                <span className="text-sm text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  {row.is_required ? 'نعم' : 'لا'}
-                                </span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'response_status',
-                            header: 'الحالة',
+                                align: 'center',
+                                render: (row: any) => (
+                                  <div className="flex items-center justify-center gap-2 w-full">
+                                    <span className="text-sm text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                      {row.is_required ? 'نعم' : 'لا'}
+                                    </span>
+                                  </div>
+                                ),
+                              },
+                              {
+                                id: 'response_status',
+                                header: 'الحالة',
                             width: 'min-w-[6rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
+                                align: 'center',
+                                render: (row: any) => (
                               <span className="text-sm text-[#475467] whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                                 {getInviteeResponseStatusLabel(row.response_status)}
-                              </span>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
-                        data={meetingRequest.invitees}
-                      />
-                    </div>
-                  </div>
+                                  </span>
+                                ),
+                              },
+                            ] as TableColumn<any>[]}
+                            data={meetingRequest.invitees}
+                          />
+                        </div>
+                      </div>
                 ) : (
                   <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     لا توجد قائمة مدعوين من مقدّم الطلب
                   </p>
-                )}
+                  )}
               </div>
 
               {/* الحضور من جهة الوزير */}
-              <div className="flex flex-col gap-2">
-                <h2
-                  className="text-right"
-                  style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '22px',
-                    lineHeight: '38px',
-                    color: '#101828',
-                  }}
-                >
+                    <div className="flex flex-col gap-2">
+                      <h2
+                        className="text-right"
+                        style={{
+                          fontFamily: "'Ping AR + LT', sans-serif",
+                          fontWeight: 700,
+                          fontSize: '22px',
+                          lineHeight: '38px',
+                          color: '#101828',
+                        }}
+                      >
                   الحضور من جهة الوزير
-                </h2>
+                      </h2>
                 {(meetingRequest as { minister_attendees?: any[] }).minister_attendees &&
                 (meetingRequest as { minister_attendees?: any[] }).minister_attendees!.length > 0 ? (
-                  <div className="w-full overflow-x-auto table-scroll">
-                    <div className="min-w-[1085px]">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
-                            width: 'w-[114px]',
-                            align: 'center',
-                            render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
-                          },
-                          {
+                      <div className="w-full overflow-x-auto table-scroll">
+                        <div className="min-w-[1085px]">
+                          <DataTable
+                            columns={[
+                              {
+                                id: 'index',
+                                header: 'رقم البند',
+                                width: 'w-[114px]',
+                                align: 'center',
+                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
+                              },
+                              {
                             id: 'name',
                             header: 'اسم المستخدم',
                             width: 'w-[227px]',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                                 {row.external_name || row.user_id || '--------------'}
                               </span>
                             ),
@@ -1396,14 +1396,14 @@ const ContentConsultationRequestDetail: React.FC = () => {
                             render: (row: any) => (
                               <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                                 {row.justification || '-'}
-                              </span>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
+                                  </span>
+                                ),
+                              },
+                            ] as TableColumn<any>[]}
                         data={(meetingRequest as { minister_attendees?: any[] }).minister_attendees!}
-                      />
-                    </div>
-                  </div>
+                          />
+                        </div>
+                      </div>
                 ) : (
                   <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     لا يوجد حضور من جهة الوزير
