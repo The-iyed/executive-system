@@ -4,9 +4,9 @@ import { DraftApiResponse } from "../../../data";
 import { mapInviteesToFormData } from "./inviteeMappers";
 
 export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step1FormData> => {
+    const presentationAttachments = (draft.attachments || []).filter((a) => a.is_presentation);
+    const additionalAttachments = (draft.attachments || []).filter((a) => a.is_additional);
 
-    const allAttachments = draft.attachments || [];
-  
     return {
       meetingSubject: draft.meeting_subject || '',
       meetingType: draft.meeting_type || '',
@@ -17,18 +17,17 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
       sector: draft.sector || '',
+      meeting_location: draft.meeting_location ?? '',
       meetingGoals: draft.objectives?.map((obj) => ({
         id: obj.id,
         objective: obj.objective,
       })) || [],
-      meetingAgenda: draft.agenda_items?.map((item) => ({
+      meetingAgenda: draft.agenda_items?.map((item: any) => ({
         id: item.id,
         agenda_item: item.agenda_item || '',
-        presentation_duration_minutes: String(item.presentation_duration_minutes || ''),
-      })) || [],
-      ministerSupport: draft.minister_support?.map((support) => ({
-        id: support.id,
-        support_description: support.support_description,
+        presentation_duration_minutes: String(item.presentation_duration_minutes ?? ''),
+        minister_support_type: item.minister_support_type ?? '',
+        minister_support_other: item.minister_support_other ?? '',
       })) || [],
       relatedDirectives: draft.related_directives?.map((directive: any) => ({
         id: directive.id || '',
@@ -41,9 +40,15 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       })) || [],
       wasDiscussedPreviously: draft.topic_discussed_before || false,
       previousMeetingDate: formatDateStringToISO(draft.previous_meeting_date),
-      notes: draft.general_note || '',
-      // Store all attachments for display in edit mode - no filtering
-      existingFiles: allAttachments.map(att => ({
+      notes: draft.general_note || draft.general_notes?.[0] || '',
+      existingFiles: presentationAttachments.map((att) => ({
+        id: att.id,
+        file_name: att.file_name,
+        blob_url: att.blob_url,
+        file_size: att.file_size,
+        file_type: att.file_type,
+      })),
+      existingAdditionalFiles: additionalAttachments.map((att) => ({
         id: att.id,
         file_name: att.file_name,
         blob_url: att.blob_url,
