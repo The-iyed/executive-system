@@ -1,4 +1,5 @@
 import type { FormTableColumn } from '@shared';
+import { AttendanceMechanism } from '@shared/types';
 
 // ============================================================================
 // STEP 1 CONSTANTS
@@ -41,16 +42,22 @@ export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
+// Minister support type options per requirement: إحاطة|تحديث|قرار|توجيه|اعتماد|أخرى
+export const MINISTER_SUPPORT_TYPE_OPTIONS = [
+  { value: 'إحاطة', label: 'إحاطة' },
+  { value: 'تحديث', label: 'تحديث' },
+  { value: 'قرار', label: 'قرار' },
+  { value: 'توجيه', label: 'توجيه' },
+  { value: 'اعتماد', label: 'اعتماد' },
+  { value: 'أخرى', label: 'أخرى' },
+];
+
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'action', header: 'إجراء', width: 'w-20' },
-];
-
-export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: '-------', width: 'w-full' },
+  { id: 'minister_support_other', header: 'نص الدعم (أخرى)', type: 'text', placeholder: '-------', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
@@ -104,10 +111,13 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     width: 'min-w-[210px]',
   },
   {
-    id: 'is_required',
-    header: 'الحضور أساسي',
-    type: 'switch',
-    label: false,
+    id: 'attendance_mechanism',
+    header: 'الحضور',
+    type: 'select',
+    selectOptions: [
+      { value: AttendanceMechanism.PHYSICAL, label: AttendanceMechanism.PHYSICAL },
+      { value: AttendanceMechanism.VIRTUAL, label: AttendanceMechanism.VIRTUAL },
+    ],
     width: 'min-w-[210px]',
   },
   {
