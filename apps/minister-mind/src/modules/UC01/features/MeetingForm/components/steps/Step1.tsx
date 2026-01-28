@@ -328,11 +328,11 @@ export const Step1: React.FC<Step1Props> = ({
                   required={isFieldRequired('presentation_attachment_timing')}
                   error={touched.presentation_attachment_timing ? errors.presentation_attachment_timing : undefined}
                 >
-                  <FormInput
-                    value={formData.presentation_attachment_timing || ''}
-                    onChange={(e) => handleChange('presentation_attachment_timing', e.target.value)}
+                  <FormDatePicker
+                    value={formData.presentation_attachment_timing}
+                    onChange={(value) => handleChange('presentation_attachment_timing', value)}
                     onBlur={() => handleBlur('presentation_attachment_timing')}
-                    placeholder="-------"
+                    placeholder="dd/mm/yyyy"
                     error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
                   />
                 </FormField>
