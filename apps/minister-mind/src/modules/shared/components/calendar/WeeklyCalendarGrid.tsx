@@ -59,8 +59,24 @@ const getWeekDates = (weekStart: Date): Date[] => {
 const getEventsForSlot = (date: Date, time: string, events: CalendarEventData[]): CalendarEventData[] =>
   events.filter((event) => {
     const eventDate = new Date(event.date);
-
-    return eventDate.toDateString() === date.toDateString() && event.startTime === time;
+    
+    // Check if event is on the same date
+    if (eventDate.toDateString() !== date.toDateString()) {
+      return false;
+    }
+    
+    // Check if this time slot is within the event's time range
+    const timeHour = parseInt(time.split(':')[0]);
+    const startHour = parseInt(event.startTime.split(':')[0]);
+    const endHour = parseInt(event.endTime.split(':')[0]);
+    
+    // Event spans from startHour to endHour
+    // Show event in all hour slots it spans (startHour inclusive, endHour exclusive)
+    // If endHour equals startHour, still show it (single hour event)
+    if (startHour === endHour) {
+      return timeHour === startHour;
+    }
+    return timeHour >= startHour && timeHour < endHour;
   });
 
 export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({

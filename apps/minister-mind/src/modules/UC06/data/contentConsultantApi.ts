@@ -126,6 +126,16 @@ export interface ContentConsultationRequestDetailResponse {
     meeting_classification_type?: string;
     meeting_confidentiality?: string;
     sector?: string;
+    is_on_behalf_of?: boolean;
+    current_owner_user?: {
+      id: string;
+      first_name: string;
+      last_name: string;
+    } | null;
+    current_owner_role?: {
+      id: string;
+      name_ar: string;
+    } | null;
   };
   consultation_question: string;
   consultation_id: string;
@@ -152,6 +162,14 @@ export const submitConsultation = async (
   await axiosInstance.post(
     `/api/content-consultant/consultations/${consultationId}/respond`,
     data
+  );
+};
+
+export const completeConsultation = async (
+  consultationId: string
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/content-consultant/consultations/${consultationId}/complete`
   );
 };
 
