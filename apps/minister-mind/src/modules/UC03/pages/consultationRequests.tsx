@@ -11,8 +11,9 @@ import {
   StatusBadge,
   Pagination,
 } from '@shared';
+import { MeetingClassification, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { Eye, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import {
   getAssignedConsultationRequests,
   GetConsultationRequestsParams,
@@ -85,11 +86,11 @@ const ConsultationRequests: React.FC = () => {
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   // Define table columns - order is from right to left (RTL)
-  // Columns: رقم البند, رقم الطلب, عنوان الاجتماع, مقدم الطلب, تاريخ الإرسال, الحالة
+  // Columns: بند، رقم الطلب، تاريخ الطلب، اسم مقدم الطلب، موضوع الاجتماع، فئة الاجتماع، تاريخ الاجتماع، حالة الطلب، البيانات مكتملة؟
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
       id: 'sequentialNumber',
-      header: 'رقم البند',
+      header: 'بند',
       width: 'w-32',
       align: 'end',
       render: (row) => {
@@ -126,21 +127,21 @@ const ConsultationRequests: React.FC = () => {
       },
     },
     {
-      id: 'title',
-      header: 'عنوان الاجتماع',
-      width: 'flex-1',
+      id: 'requestDate',
+      header: 'تاريخ الطلب',
+      width: 'w-60',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.title}
+            {row.date}
           </span>
         </div>
       ),
     },
     {
-      id: 'coordinator',
-      header: 'مقدم الطلب',
+      id: 'submitterName',
+      header: 'اسم مقدم الطلب',
       width: 'w-56',
       align: 'end',
       render: (row) => (
@@ -152,24 +153,69 @@ const ConsultationRequests: React.FC = () => {
       ),
     },
     {
-      id: 'date',
-      header: 'تاريخ الإرسال',
+      id: 'meetingSubject',
+      header: 'موضوع الاجتماع',
+      width: 'flex-1',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const subject = originalRequest?.meeting_subject || originalRequest?.meeting_title || row.title;
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {subject || '-'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meetingCategory',
+      header: 'فئة الاجتماع',
+      width: 'w-60',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const classification = originalRequest?.meeting_classification as MeetingClassification | undefined;
+        const classificationLabel = classification
+          ? getMeetingClassificationLabel(classification)
+          : '-';
+
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {classificationLabel}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meetingDate',
+      header: 'تاريخ الاجتماع',
       width: 'w-72',
       align: 'end',
-      render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
-            {row.date}
-          </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const meetingDate = originalRequest?.scheduled_at
+          ? new Date(originalRequest.scheduled_at).toLocaleDateString('ar-SA')
+          : '';
+
+        return (
+          <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0">
+            <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
+              {meetingDate || '-'}
+            </span>
+            <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: 'status',
-      header: 'الحالة',
+      header: 'حالة الطلب',
       width: 'w-52',
       align: 'end',
       render: (row) => (
@@ -179,24 +225,23 @@ const ConsultationRequests: React.FC = () => {
       ),
     },
     {
-      id: 'actions',
-      header: '',
-      width: 'w-28',
-      align: 'center',
-      render: (row) => (
-        <div className="w-full flex justify-center">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // Navigate to consultation request detail page
-              navigate(`/consultation-request/${row.id}`);
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Eye className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
-          </button>
-        </div>
-      ),
+      id: 'isDataComplete',
+      header: 'البيانات مكتملة؟',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const isComplete = originalRequest?.is_data_complete;
+
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right leading-5 whitespace-nowrap
+              text-gray-600">
+              {isComplete === true ? 'نعم' : isComplete === false ? 'لا' : '-'}
+            </span>
+          </div>
+        );
+      },
     },
   ];
 
