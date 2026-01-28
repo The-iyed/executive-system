@@ -18,6 +18,10 @@ import {
   GetGuidanceRequestsParams,
 } from '../data/guidanceApi';
 import {
+  getMeetingClassificationLabel,
+  getMeetingClassificationTypeLabel,
+} from '@shared/types';
+import {
   mapGuidanceRequestToCardData,
   mapGuidanceRequestToCardViewData,
 } from '../utils/guidanceMapper';
@@ -85,7 +89,7 @@ const GuidanceRequests: React.FC = () => {
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   // Define table columns - order is from right to left (RTL)
-  // Columns: رقم البند, رقم الطلب, عنوان الاجتماع, مقدم الطلب, تاريخ الإرسال, الحالة
+  // Columns: رقم البند, رقم الطلب, عنوان الاجتماع, اسم مقدم الطلب, فئة الاجتماع، تاريخ الاجتماع، تاريخ الإرسال, الحالة
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
       id: 'sequentialNumber',
@@ -140,7 +144,7 @@ const GuidanceRequests: React.FC = () => {
     },
     {
       id: 'coordinator',
-      header: 'مقدم الطلب',
+      header: 'اسم مقدم الطلب',
       width: 'w-56',
       align: 'end',
       render: (row) => (
@@ -150,6 +154,46 @@ const GuidanceRequests: React.FC = () => {
           </span>
         </div>
       ),
+    },
+    {
+      id: 'meetingCategory',
+      header: 'فئة الاجتماع',
+      width: 'w-48',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const typeLabel = getMeetingClassificationTypeLabel(originalRequest?.meeting_classification_type);
+        const classLabel = getMeetingClassificationLabel(originalRequest?.meeting_classification ?? '');
+        const category = typeLabel !== '-' ? typeLabel : classLabel || '-';
+
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {category}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meetingDate',
+      header: 'تاريخ الاجتماع',
+      width: 'w-60',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const meetingDate = originalRequest?.scheduled_at
+          ? new Date(originalRequest.scheduled_at).toLocaleDateString('ar-SA')
+          : '-';
+
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {meetingDate}
+            </span>
+          </div>
+        );
+      },
     },
     {
       id: 'date',

@@ -4,37 +4,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
-import { getGuidanceRequestById, provideGuidance } from '../data/guidanceApi';
+import {
+  MeetingStatus,
+  getMeetingStatusLabel,
+  getMeetingTypeLabel,
+  getMeetingClassificationLabel,
+  getMeetingClassificationTypeLabel,
+  getMeetingConfidentialityLabel,
+  getMeetingChannelLabel,
+  getInviteeResponseStatusLabel,
+} from '@shared/types';
+import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft } from '../data/guidanceApi';
 import { getGuidanceRecords, type GuidanceRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
-
-// Translate response status to Arabic
-const translateResponseStatus = (status: string | null | undefined): string => {
-  if (!status) return '-';
-  
-  const statusMap: Record<string, string> = {
-    PENDING: 'قيد الانتظار',
-    ACCEPTED: 'مقبول',
-    DECLINED: 'مرفوض',
-  };
-  
-  return statusMap[status.toUpperCase()] || status;
-};
-
-// Get status label with support for custom statuses
-const getStatusLabel = (status: MeetingStatus | string): string => {
-  if (status in MeetingStatusLabels) {
-    return MeetingStatusLabels[status as MeetingStatus];
-  }
-  // Handle custom statuses
-  if (status === 'UNDER_GUIDANCE') {
-    return 'قيد التوجيه';
-  }
-  return status as string;
-};
 
 const GuidanceRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,15 +49,23 @@ const GuidanceRequestDetail: React.FC = () => {
   const tabs = [
     {
       id: 'guidance-request',
-      label: 'طلب التوجيه',
+      label: 'معلومات الطلب',
     },
     {
       id: 'meeting-info',
       label: 'معلومات الاجتماع',
     },
     {
+      id: 'content',
+      label: 'المحتوى',
+    },
+    {
       id: 'directives-log',
-      label: 'سجل التوجيهات',
+      label:  'سجلات التوجيهات',
+    },
+    {
+      id: 'invitees',
+      label: 'قائمة المدعوين',
     },
   ];
 
@@ -111,6 +103,22 @@ const GuidanceRequestDetail: React.FC = () => {
     },
   });
 
+  // Save as draft mutation
+  const saveDraftMutation = useMutation({
+    mutationFn: (data: { guidance_notes: string; feasibility_answer: boolean }) => {
+      if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
+      return saveGuidanceAsDraft(meetingRequest.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guidance-request', id] });
+      setIsSubmitModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error saving guidance draft:', error);
+      // TODO: Show error toast/notification
+    },
+  });
+
   const handleOpenSubmitModal = () => {
     setIsSubmitModalOpen(true);
   };
@@ -127,6 +135,18 @@ const GuidanceRequestDetail: React.FC = () => {
     }
 
     submitMutation.mutate({
+      guidance_notes: guidanceResponse,
+      feasibility_answer: isSuitableForScheduling,
+    });
+  };
+
+  const handleSaveAsDraft = () => {
+    if (!meetingRequest?.id) {
+      console.error('Meeting request ID is required');
+      return;
+    }
+
+    saveDraftMutation.mutate({
       guidance_notes: guidanceResponse,
       feasibility_answer: isSuitableForScheduling,
     });
@@ -152,7 +172,7 @@ const GuidanceRequestDetail: React.FC = () => {
 
   // Map status to MeetingStatus enum
   const meetingStatus = (meetingRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
-  const statusLabel = getStatusLabel(meetingStatus);
+  const statusLabel = getMeetingStatusLabel(meetingStatus);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
@@ -216,7 +236,7 @@ const GuidanceRequestDetail: React.FC = () => {
                     </h2>
 
                     {/* Question Content */}
-                    <div className="flex flex-col items-start p-0 gap-4 w-full h-[136px]">
+                    <div className="flex flex-col items-start p-0 gap-4 w-full min-h-[80px]">
                       <p
                         className="w-full text-base leading-6 text-right text-[#475467]"
                         style={{
@@ -255,6 +275,88 @@ const GuidanceRequestDetail: React.FC = () => {
                   </button>
                 </div>
               </div>
+                  {/* Request Info Section */}
+                  <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+                <h2
+                  className="text-xl font-bold text-right text-[#101828]"
+                  style={{
+                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                  }}
+                >
+                  معلومات الطلب
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* رقم الطلب */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md pasis font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      رقم الطلب
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {meetingRequest.request_number ?? '-'}
+                    </p>
+                  </div>
+
+                  {/* حالة الطلب */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md pasis font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      حالة الطلب
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {statusLabel}
+                    </p>
+                  </div>
+
+                  {/* مقدم الطلب */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md pasis font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      مقدم الطلب
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {meetingRequest.submitter_name ?? '-'}
+                    </p>
+                  </div>
+
+                  {/* مالك الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md pasis font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      مالك الاجتماع
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {meetingRequest.current_owner_user
+                        ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
+                        : meetingRequest.current_owner_role?.name_ar ?? '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -274,7 +376,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="flex flex-row gap-4">
                     <div className="flex-1 flex flex-col gap-2">
                       <label
-                        className="text-sm font-medium text-gray-700"
+                        className="text-md pasis font-medium text-gray-700"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
                         نوع الاجتماع
@@ -283,12 +385,12 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        {meetingRequest.meeting_type || '-'}
+                        {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
                       </p>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <label
-                        className="text-sm font-medium text-gray-700"
+                        className="text-md pasis font-medium text-gray-700"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
                         عنوان الاجتماع
@@ -306,7 +408,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="flex flex-row gap-4">
                     <div className="flex-1 flex flex-col gap-2">
                       <label
-                        className="text-sm font-medium text-gray-700"
+                        className="text-md pasis font-medium text-gray-700"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
                         تصنيف الاجتماع
@@ -315,21 +417,426 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        {meetingRequest.meeting_classification || '-'}
+                        {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
                       </p>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <label
-                        className="text-sm font-medium text-gray-700"
+                        className="text-md pasis font-medium text-gray-700"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        موضوع الاجتماع
+                        فئة الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) ||
+                          getMeetingClassificationLabel(meetingRequest.meeting_classification) ||
+                          '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 3 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        هل تطلب الاجتماع نيابة عن غيرك؟
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.is_on_behalf_of === true
+                          ? 'نعم'
+                          : meetingRequest.is_on_behalf_of === false
+                          ? 'لا'
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        مالك الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.current_owner_user
+                          ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
+                          : meetingRequest.current_owner_role?.name_ar ?? '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 4 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        القطاع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.sector || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        سريّة الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 5 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        اجتماع عاجل؟
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.is_direct_schedule === true
+                          ? 'نعم'
+                          : meetingRequest.is_direct_schedule === false
+                          ? 'لا'
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        اجتماع متسلسل؟
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.is_sequential === true
+                          ? 'نعم'
+                          : meetingRequest.is_sequential === false
+                          ? 'لا'
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 6 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        الاجتماع السابق
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.previous_meeting_id || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        الرقم التسلسلي
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.sequential_number ??
+                          (meetingRequest.sequential_number === 0
+                            ? '0'
+                            : '-')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 7 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        آلية انعقاد الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        الموقع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        -
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 8 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        موعد الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.scheduled_at
+                          ? new Date(meetingRequest.scheduled_at).toLocaleString(
+                              'ar-SA'
+                            )
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        تاريخ الاستحقاق
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.deadline
+                          ? new Date(meetingRequest.deadline).toLocaleDateString(
+                              'ar-SA'
+                            )
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 9 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        هل يتطلب بروتوكول؟
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.requires_protocol === true
+                          ? 'نعم'
+                          : meetingRequest.requires_protocol === false
+                          ? 'لا'
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        مبرّر اللقاء
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.meeting_justification || '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 10 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        موضوع التكليف المرتبط
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.related_topic || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        وصف الاجتماع
                       </label>
                       <p
                         className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
                         {meetingRequest.meeting_subject || '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Details Section */}
+              <div className="flex flex-col gap-4">
+                <h3
+                  className="text-lg font-semibold text-gray-900 text-right"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  تفاصيل إضافية
+                </h3>
+                <div className="flex flex-col gap-4">
+                  {/* Row 11 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        هل طلب الاجتماع بناءً على توجيه من معالي الوزير
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.related_directive_ids &&
+                        meetingRequest.related_directive_ids.length > 0
+                          ? 'نعم'
+                          : 'لا'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        طريقة التوجيه
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.related_directive_ids &&
+                        meetingRequest.related_directive_ids.length > 0
+                          ? 'توجيه رسمي'
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 12 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        التوجيه
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.related_guidance || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        محضر الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        -
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 13 */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        أجندة الاجتماع
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.agenda_items &&
+                        meetingRequest.agenda_items.length > 0
+                          ? `${meetingRequest.agenda_items.length} بند`
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        ملاحظات
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.general_notes ||
+                          meetingRequest.content_officer_notes ||
+                          '-'}
                       </p>
                     </div>
                   </div>
@@ -475,31 +982,28 @@ const GuidanceRequestDetail: React.FC = () => {
               {/* Scheduling Section - Invitees and Minister Attendees */}
               <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
                 <div className="flex flex-col gap-6 w-full max-w-[1085px]">
-                  {/* Invitees table */}
-                  {meetingRequest.invitees && meetingRequest.invitees.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <h2
-                          className="text-right"
-                          style={{
-                            fontFamily: "'Ping AR + LT', sans-serif",
-                            fontWeight: 700,
-                            fontSize: '22px',
-                            lineHeight: '38px',
-                            color: '#101828',
-                          }}
-                        >
-                          قائمة المدعوين
-                        </h2>
-                      </div>
+                  <div className="flex flex-col gap-2">
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      قائمة المدعوين (مقدّم الطلب)
+                    </h2>
+                    {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
                       <div className="w-full overflow-x-auto table-scroll">
-                        <div className="min-w-full">
+                        <div className="w-full min-w-0">
                           <DataTable
                             columns={[
                               {
                                 id: 'index',
                                 header: 'رقم البند',
-                                width: 'w-[120px]',
+                                width: 'min-w-[8rem] flex-shrink-0',
                                 align: 'center',
                                 render: (_row: any, index: number) => (
                                   <div className="flex items-center justify-center w-full">
@@ -510,10 +1014,10 @@ const GuidanceRequestDetail: React.FC = () => {
                               {
                                 id: 'name',
                                 header: 'الاسم',
-                                width: 'w-[300px]',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                                     {row.external_name || row.user_id || '--------------'}
                                   </span>
                                 ),
@@ -521,10 +1025,10 @@ const GuidanceRequestDetail: React.FC = () => {
                               {
                                 id: 'email',
                                 header: 'البريد الإلكتروني',
-                                width: 'w-[250px]',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                                     {row.external_email || '--------------'}
                                   </span>
                                 ),
@@ -532,7 +1036,7 @@ const GuidanceRequestDetail: React.FC = () => {
                               {
                                 id: 'is_required',
                                 header: 'الحضور أساسي',
-                                width: 'w-[180px]',
+                                width: 'min-w-[11rem] flex-shrink-0',
                                 align: 'center',
                                 render: (row: any) => (
                                   <div className="flex items-center justify-center gap-2 w-full">
@@ -545,11 +1049,11 @@ const GuidanceRequestDetail: React.FC = () => {
                               {
                                 id: 'response_status',
                                 header: 'الحالة',
-                                width: 'w-[150px]',
+                                width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {translateResponseStatus(row.response_status)}
+                                  <span className="text-sm text-[#475467] whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {getInviteeResponseStatusLabel(row.response_status)}
                                   </span>
                                 ),
                               },
@@ -558,24 +1062,27 @@ const GuidanceRequestDetail: React.FC = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا توجد قائمة مدعوين من مقدّم الطلب
+                      </p>
+                    )}
+                  </div>
 
-                  {/* Minister attendees table */}
-                  {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <h2
-                        className="text-right"
-                        style={{
-                          fontFamily: "'Ping AR + LT', sans-serif",
-                          fontWeight: 700,
-                          fontSize: '22px',
-                          lineHeight: '38px',
-                          color: '#101828',
-                        }}
-                      >
-                        الحضور من جهة الوزير
-                      </h2>
+                  <div className="flex flex-col gap-2">
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      الحضور من جهة الوزير
+                    </h2>
+                    {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
                       <div className="w-full overflow-x-auto table-scroll">
                         <div className="min-w-[1085px]">
                           <DataTable
@@ -652,24 +1159,27 @@ const GuidanceRequestDetail: React.FC = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا يوجد حضور من جهة الوزير
+                      </p>
+                    )}
+                  </div>
 
-                  {/* Minister Support table */}
-                  {meetingRequest.minister_support && meetingRequest.minister_support.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <h2
-                        className="text-right"
-                        style={{
-                          fontFamily: "'Ping AR + LT', sans-serif",
-                          fontWeight: 700,
-                          fontSize: '22px',
-                          lineHeight: '38px',
-                          color: '#101828',
-                        }}
-                      >
-                        دعم الوزير
-                      </h2>
+                  <div className="flex flex-col gap-2">
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      دعم الوزير
+                    </h2>
+                    {meetingRequest.minister_support && meetingRequest.minister_support.length > 0 ? (
                       <div className="w-full overflow-x-auto table-scroll">
                         <div className="min-w-[1085px]">
                           <DataTable
@@ -697,14 +1207,18 @@ const GuidanceRequestDetail: React.FC = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا يوجد دعم من الوزير
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Attachments Section */}
               {meetingRequest.attachments && meetingRequest.attachments.length > 0 && (
-                <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+                <div className="flex flex-col items-start gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
                   <div className="flex flex-col gap-4 w-full max-w-[1085px]">
                     <h2
                       className="text-right w-full"
@@ -870,6 +1384,82 @@ const GuidanceRequestDetail: React.FC = () => {
             </div>
           )}
 
+          {/* Content Tab */}
+          {activeTab === 'content' && (
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
+                <h3
+                  className="text-lg font-semibold text-gray-900 text-right"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  المحتوى
+                </h3>
+                <div className="flex flex-col gap-4">
+                  {/* Row 1 */}
+                  <div className="flex flex-row gap-4">
+                    {/* العرض التقديمي */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        العرض التقديمي
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.attachments &&
+                        meetingRequest.attachments.some((a) => a.is_presentation)
+                          ? `${meetingRequest.attachments.filter((a) => a.is_presentation).length} ملف`
+                          : '-'}
+                      </p>
+                    </div>
+
+                    {/* متى سيتم إرفاق العرض؟ */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        متى سيتم إرفاق العرض؟
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        -
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 2 */}
+                  <div className="flex flex-row gap-4">
+                    {/* مرفقات اختيارية */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        مرفقات اختيارية
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.attachments &&
+                        meetingRequest.attachments.some((a) => a.is_additional)
+                          ? `${meetingRequest.attachments.filter((a) => a.is_additional).length} ملف`
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Directives Log Tab */}
           {activeTab === 'directives-log' && (
             <div className="flex flex-col gap-4">
@@ -885,7 +1475,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       header: 'السؤال',
                       width: 'flex-1',
                       render: (row: GuidanceRecord) => (
-                        <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.guidance_question}
                         </span>
                       ),
@@ -895,7 +1485,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       header: 'الإجابة',
                       width: 'flex-1',
                       render: (row: GuidanceRecord) => (
-                        <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.guidance_answer || '-'}
                         </span>
                       ),
@@ -905,7 +1495,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       header: 'طلب بواسطة',
                       width: 'w-40',
                       render: (row: GuidanceRecord) => (
-                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.requested_by_name}
                         </span>
                       ),
@@ -915,7 +1505,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       header: 'رد بواسطة',
                       width: 'w-40',
                       render: (row: GuidanceRecord) => (
-                        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                           {row.responded_by_name || '-'}
                         </span>
                       ),
@@ -934,7 +1524,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           minute: '2-digit',
                         });
                         return (
-                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                             {formattedDate}
                           </span>
                         );
@@ -961,7 +1551,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           minute: '2-digit',
                         });
                         return (
-                          <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                             {formattedDate}
                           </span>
                         );
@@ -1000,6 +1590,246 @@ const GuidanceRequestDetail: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Invitees Tab - قائمة المدعوين */}
+          {activeTab === 'invitees' && (
+            <div className="flex flex-col gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+              {/* قائمة المدعوين (مقدّم الطلب) */}
+              <div className="flex flex-col gap-2">
+                <h2
+                  className="text-right"
+                  style={{
+                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '22px',
+                    lineHeight: '38px',
+                    color: '#101828',
+                  }}
+                >
+                  قائمة المدعوين (مقدّم الطلب)
+                </h2>
+                {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
+                  <div className="w-full overflow-x-auto table-scroll">
+                    <div className="w-full min-w-0">
+                      <DataTable
+                        columns={[
+                          {
+                            id: 'index',
+                            header: 'رقم البند',
+                            width: 'min-w-[8rem] flex-shrink-0',
+                            align: 'center',
+                            render: (_row: any, index: number) => (
+                              <div className="flex items-center justify-center w-full">
+                                <span className="text-sm text-[#475467]">{index + 1}</span>
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'name',
+                            header: 'الاسم',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_name || row.user_id || '--------------'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'email',
+                            header: 'البريد الإلكتروني',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_email || '--------------'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'is_required',
+                            header: 'الحضور أساسي',
+                            width: 'min-w-[11rem] flex-shrink-0',
+                            align: 'center',
+                            render: (row: any) => (
+                              <div className="flex items-center justify-center gap-2 w-full">
+                                <span className="text-sm text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {row.is_required ? 'نعم' : 'لا'}
+                                </span>
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'response_status',
+                            header: 'الحالة',
+                            width: 'min-w-[6rem] flex-shrink-0',
+                            align: 'center',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {getInviteeResponseStatusLabel(row.response_status)}
+                              </span>
+                            ),
+                          },
+                        ] as TableColumn<any>[]}
+                        data={meetingRequest.invitees}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    لا توجد قائمة مدعوين من مقدّم الطلب
+                  </p>
+                )}
+              </div>
+
+              {/* الحضور من جهة الوزير */}
+                  <div className="flex flex-col gap-2">
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      الحضور من جهة الوزير
+                    </h2>
+                {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
+                  <div className="w-full overflow-x-auto table-scroll">
+                    <div className="min-w-[1085px]">
+                      <DataTable
+                            columns={[
+                              {
+                                id: 'index',
+                                header: 'رقم البند',
+                                width: 'w-[114px]',
+                                align: 'center',
+                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
+                              },
+                              {
+                                id: 'name',
+                                header: 'اسم المستخدم',
+                                width: 'w-[227px]',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_name || row.user_id || '--------------'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'email',
+                                header: 'البريد الإلكتروني الخارجي',
+                                width: 'w-[227px]',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_email || '--------------'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'is_required',
+                                header: 'الحضور أساسي',
+                                width: 'w-[136px]',
+                                align: 'center',
+                                render: (row: any) => (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <span
+                                      className="text-sm text-[#667085]"
+                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    >
+                                      {row.is_required ? 'نعم' : 'لا'}
+                                    </span>
+                                  </div>
+                                ),
+                              },
+                              {
+                                id: 'access_permission',
+                                header: 'صلاحية الوصول',
+                                width: 'w-[165px]',
+                                align: 'center',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.access_permission || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'justification',
+                                header: 'المبرر',
+                                width: 'w-[300px]',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.justification || '-'}
+                                  </span>
+                                ),
+                              },
+                            ] as TableColumn<any>[]}
+                            data={meetingRequest.minister_attendees}
+                          />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    لا يوجد حضور من جهة الوزير
+                  </p>
+                )}
+                  </div>
+
+                  {/* minister_support - دعم الوزير */}
+                  <div className="flex flex-col gap-2">
+                    <h2
+                      className="text-right"
+                      style={{
+                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '22px',
+                        lineHeight: '38px',
+                        color: '#101828',
+                      }}
+                    >
+                      دعم الوزير
+                    </h2>
+                {meetingRequest.minister_support && meetingRequest.minister_support.length > 0 ? (
+                      <div className="w-full overflow-x-auto table-scroll">
+                        <div className="min-w-[1085px]">
+                          <DataTable
+                            columns={[
+                              {
+                                id: 'index',
+                                header: 'رقم البند',
+                                width: 'w-[120px]',
+                                align: 'center',
+                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
+                              },
+                              {
+                                id: 'support_description',
+                                header: 'وصف الدعم',
+                                width: 'flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.support_description || '-'}
+                                  </span>
+                                ),
+                              },
+                            ] as TableColumn<any>[]}
+                            data={meetingRequest.minister_support}
+                          />
+                        </div>
+                      </div>
+                ) : (
+                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    لا يوجد دعم من الوزير
+                  </p>
+                )}
+                  </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1017,7 +1847,7 @@ const GuidanceRequestDetail: React.FC = () => {
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col gap-2">
               <label
-                className="text-sm font-medium text-gray-700 text-right"
+                className="text-md pasis font-medium text-gray-700 text-right"
                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
               >
                محتوى التوجيه
@@ -1063,12 +1893,25 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
             </div>
           </div>
-          <DialogFooter className="flex-row-reverse gap-2">
+          <DialogFooter className="flex-row-reverse gap-2 flex-wrap">
             <button
               type="button"
-              onClick={handleSubmitGuidance}
+              onClick={() => setIsSubmitModalOpen(false)}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+              style={{
+                fontFamily: "'Ping AR + LT', sans-serif",
+                fontWeight: 700,
+                fontSize: '16px',
+                lineHeight: '24px',
+              }}
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAsDraft}
               disabled={submitMutation.isPending || !guidanceResponse.trim() || !meetingRequest?.id}
-              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 w-full h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 fontFamily: "'Ping AR + LT', sans-serif",
                 fontWeight: 700,
@@ -1077,7 +1920,23 @@ const GuidanceRequestDetail: React.FC = () => {
               }}
             >
               <span className="text-white">
-                {submitMutation.isPending ? 'جاري الإرسال...' : 'تقديم توجيه'}
+                {saveDraftMutation.isPending ? 'جاري الحفظ...' : 'حفظ كمسودة'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitGuidance}
+              disabled={submitMutation.isPending || !guidanceResponse.trim() || !meetingRequest?.id}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                fontFamily: "'Ping AR + LT', sans-serif",
+                fontWeight: 700,
+                fontSize: '16px',
+                lineHeight: '24px',
+              }}
+            >
+              <span className="text-white">
+                {submitMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
               </span>
             </button>
           </DialogFooter>
