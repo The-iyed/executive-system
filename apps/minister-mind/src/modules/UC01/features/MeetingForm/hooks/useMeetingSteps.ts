@@ -51,6 +51,8 @@ export const useMeetingSteps = ({
   const step2Hook = useStep2({
     draftId: draftId || '',
     initialData: initialData?.step2,
+    meetingCategory: step1Hook.formData.meetingCategory,
+    meetingConfidentiality: step1Hook.formData.meetingConfidentiality,
     onSuccess: onStep2Success || ((_isDraft) => {
       clearDraftData();
       navigate(PATH.MEETINGS);

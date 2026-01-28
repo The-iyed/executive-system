@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { ConsultationRequestApiResponse } from '../data/consultationsApi';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus, getMeetingStatusLabel, getMeetingChannelLabel } from '@shared/types';
 import { ConsultationRequestCardData } from '../components/consultation-request-card';
 
 /**
@@ -53,27 +53,14 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
 };
 
 /**
- * Get status label from status
- */
-const getStatusLabel = (status: MeetingStatus | string): string => {
-  if (status in MeetingStatusLabels) {
-    return MeetingStatusLabels[status as MeetingStatus];
-  }
-  // Handle custom statuses
-  if (status === 'UNDER_CONSULTATION_SCHEDULING') {
-    return 'قيد استشارة الجدولة';
-  }
-  return status;
-};
-
-/**
  * Map API consultation request response to MeetingCardData (for table view)
  */
 export const mapConsultationRequestToCardData = (
   request: ConsultationRequestApiResponse
 ): MeetingCardData => {
   const status = mapStatus(request.status);
-  const statusLabel = getStatusLabel(status);
+  const statusLabel = getMeetingStatusLabel(status);
+  const locationLabel = getMeetingChannelLabel(request.meeting_channel);
 
   // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
@@ -86,7 +73,7 @@ export const mapConsultationRequestToCardData = (
     coordinatorAvatar: undefined, // API doesn't provide avatar
     status: status,
     statusLabel: statusLabel,
-    location: request.meeting_channel,
+    location: locationLabel,
   };
 };
 
@@ -97,7 +84,7 @@ export const mapConsultationRequestToCardViewData = (
   request: ConsultationRequestApiResponse
 ): ConsultationRequestCardData => {
   const status = mapStatus(request.status);
-  const statusLabel = getStatusLabel(status);
+  const statusLabel = getMeetingStatusLabel(status);
 
   // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;

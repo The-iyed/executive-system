@@ -1,6 +1,7 @@
 import type { Step2FormData } from '../schemas/step2.schema';
 import type { DraftApiResponse } from '../../../data/draftApi';
 import type { UserApiResponse } from '../../../data/usersApi';
+import { AttendanceMechanism } from '@shared/types';
 
 /**
  * Form data structure for an invitee
@@ -35,6 +36,8 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
       user_id: userId, // Already converted null to undefined
       username: undefined, // Will be populated from user data if available
       disabled: true, // System users have disabled fields
+      attendance_mechanism:
+        (invitee.attendance_mechanism as AttendanceMechanism | null | undefined) ?? AttendanceMechanism.PHYSICAL,
     };
   }
   
@@ -49,6 +52,8 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
     user_id: undefined,
     username: undefined,
     disabled: false, // External users have editable fields
+    attendance_mechanism:
+      (invitee.attendance_mechanism as AttendanceMechanism | null | undefined) ?? AttendanceMechanism.PHYSICAL,
   };
 };
 
@@ -74,6 +79,7 @@ export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 
     user_id: user.id,
     username: user.username || fullName,
     disabled: true, // System users have disabled fields
+    attendance_mechanism:user.attendance_mechanism ?? AttendanceMechanism.PHYSICAL,
   };
 };
 
