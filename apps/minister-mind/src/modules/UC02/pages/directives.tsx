@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination } from '@shared';
+import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { Calendar, MoreVertical, CalendarPlus, X, ChevronLeft } from 'lucide-react';
-import { getDirectives, GetDirectivesParams, Directive, closeDirective } from '../data/meetingsApi';
+import { MoreVertical, CalendarPlus, X, ChevronLeft } from 'lucide-react';
+import { getDirectives, GetDirectivesParams, Directive, closeDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
 
 const ITEMS_PER_PAGE = 10;
@@ -244,6 +245,34 @@ const Directives: React.FC = () => {
   // Store original API response items for table columns
   const originalDirectives: Directive[] = directivesResponse?.items || [];
 
+  // Fetch related meeting data for directives that have related_meeting_request_id
+  const meetingIds = useMemo(() => {
+    return originalDirectives
+      .filter(d => d.related_meeting_request_id)
+      .map(d => d.related_meeting_request_id!)
+      .filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+  }, [originalDirectives]);
+
+  // Fetch meetings data
+  const { data: meetingsData } = useQuery({
+    queryKey: ['directives-meetings', meetingIds],
+    queryFn: async () => {
+      const meetings: Record<string, MeetingApiResponse> = {};
+      await Promise.all(
+        meetingIds.map(async (id) => {
+          try {
+            const meeting = await getMeetingById(id);
+            meetings[id] = meeting;
+          } catch (error) {
+            console.error(`Error fetching meeting ${id}:`, error);
+          }
+        })
+      );
+      return meetings;
+    },
+    enabled: meetingIds.length > 0,
+  });
+
   // Map API response to MeetingCardData
   const directives: MeetingCardData[] = useMemo(() => {
     if (!directivesResponse?.items) return [];
@@ -268,28 +297,62 @@ const Directives: React.FC = () => {
   const totalItems = directivesResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
+  // Format date helper
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get classification label
+  const getClassificationLabel = (classification: string | null): string => {
+    if (!classification) return '-';
+    return MeetingClassificationLabels[classification as MeetingClassification] || classification;
+  };
+
   // Define table columns - order is from right to left (RTL)
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
-      id: 'directiveNumber',
-      header: 'رقم التوجيه',
-      width: 'w-48',
+      id: 'item_number',
+      header: 'رقم البند',
+      width: 'w-32',
+      align: 'end',
+      render: (_row, index) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {index + 1 + (currentPage - 1) * ITEMS_PER_PAGE}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'directive_date',
+      header: 'تاريخ التوجيه',
+      width: 'w-40',
       align: 'end',
       render: (row) => {
         const originalDirective = originalDirectives.find((d) => d.id === row.id);
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {originalDirective?.directive_number || '-'}
+              {formatDate(originalDirective?.directive_date || null)}
             </span>
           </div>
         );
       },
     },
     {
-      id: 'directiveText',
-      header: 'نص التوجيه',
-      width: 'flex-1',
+      id: 'directive_text',
+      header: 'التوجيه',
+      width: 'w-[500px]',
       align: 'end',
       render: (row) => (
         <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -298,159 +361,85 @@ const Directives: React.FC = () => {
       ),
     },
     {
-      id: 'relatedMeeting',
-      header: 'الاجتماع المرتبط',
+      id: 'meeting_nature',
+      header: 'طبيعة الاجتماع',
       width: 'w-56',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
-          {row.coordinator || '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'directiveDate',
-      header: 'تاريخ التوجيه',
-      width: 'w-80',
-      align: 'end',
-      render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
-            {row.date}
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            {row.coordinator || '-'}
           </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
-          </div>
         </div>
       ),
     },
     {
-      id: 'deadline',
-      header: 'الموعد النهائي',
-      width: 'w-80',
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
+      width: 'w-56',
       align: 'end',
       render: (row) => {
         const originalDirective = originalDirectives.find((d) => d.id === row.id);
-        if (!originalDirective?.deadline) {
-          return (
-            <span className="text-base font-medium text-right text-gray-500 leading-5 whitespace-nowrap">
-              -
-            </span>
-          );
-        }
-        // Format deadline date
-        const formatDate = (dateString: string | null): string => {
-          if (!dateString) return '';
-          try {
-            const date = new Date(dateString);
-            const options: Intl.DateTimeFormatOptions = {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              calendar: 'islamic',
-              numberingSystem: 'arab',
-            };
-            const formatted = new Intl.DateTimeFormat('ar-SA', options).format(date);
-            return formatted;
-          } catch {
-            try {
-              const date = new Date(dateString);
-              return date.toLocaleDateString('ar-SA');
-            } catch {
-              return dateString;
-            }
-          }
-        };
-        const deadline = formatDate(originalDirective.deadline);
+        const meetingId = originalDirective?.related_meeting_request_id;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
         return (
-          <div className="flex flex-row justify-end items-center gap-3 w-full">
-            <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
-              {deadline}
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+              {meeting?.meeting_subject || '-'}
             </span>
-            <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0">
-              <Calendar className="w-5 h-5 text-orange-600" strokeWidth={1.4} />
-            </div>
           </div>
         );
       },
     },
     {
-      id: 'status',
-      header: 'الحالة',
-      width: 'w-52',
+      id: 'meeting_classification',
+      header: 'فئة الاجتماع',
+      width: 'w-56',
       align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-start items-center">
-          <StatusBadge status={row.status} label={row.statusLabel} />
-        </div>
-      ),
+      render: (row) => {
+        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const meetingId = originalDirective?.related_meeting_request_id;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+              {getClassificationLabel(meeting?.meeting_classification || null)}
+            </span>
+          </div>
+        );
+      },
     },
     {
-      id: 'actions',
-      header: '',
-      width: 'w-28',
-      align: 'center',
+      id: 'meeting_date',
+      header: 'تاريخ الاجتماع',
+      width: 'w-40',
+      align: 'end',
       render: (row) => {
-        const isOpen = openDropdownId === row.id;
+        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const meetingId = originalDirective?.related_meeting_request_id;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
         return (
-          <div 
-            className="w-full flex justify-center relative" 
-            ref={(el) => {
-              dropdownRefs.current[row.id] = el;
-            }} 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                const ref = dropdownRefs.current[row.id];
-                if (!isOpen && ref) {
-                  const rect = ref.getBoundingClientRect();
-                  const dropdownWidth = 180; // Approximate dropdown width
-                  const dropdownHeight = 120; // Approximate dropdown height
-                  
-                  // Calculate position with smart alignment
-                  let left = rect.right;
-                  let top = rect.bottom + 8;
-                  
-                  // Check if dropdown would overflow right edge
-                  if (left + dropdownWidth > window.innerWidth) {
-                    // Position to the left of the button
-                    left = rect.left - dropdownWidth;
-                  }
-                  
-                  // Check if dropdown would overflow bottom edge
-                  if (top + dropdownHeight > window.innerHeight) {
-                    // Position above the button
-                    top = rect.top - dropdownHeight - 8;
-                  }
-                  
-                  // Ensure dropdown doesn't go off left edge
-                  if (left < 0) {
-                    left = 8;
-                  }
-                  
-                  // Ensure dropdown doesn't go off top edge
-                  if (top < 0) {
-                    top = 8;
-                  }
-                  
-                  setDropdownPosition({
-                    top,
-                    left,
-                  });
-                  setOpenDropdownId(row.id);
-                } else {
-                  setOpenDropdownId(null);
-                  setDropdownPosition(null);
-                }
-              }}
-              className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors relative z-10"
-            >
-              <MoreVertical className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
-            </button>
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {formatDate(meeting?.scheduled_at || null)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'responsible_person',
+      header: 'الشخص المسؤول',
+      width: 'w-56',
+      align: 'end',
+      render: (row) => {
+        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const responsiblePersons = originalDirective?.responsible_persons || [];
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+              {responsiblePersons.length > 0 ? responsiblePersons[0] : '-'}
+            </span>
           </div>
         );
       },

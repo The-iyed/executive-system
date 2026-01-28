@@ -106,6 +106,7 @@ export const mapContentRequestToCardViewData = (
     id: request.id,
     requestNumber: request.request_number,
     title: request.meeting_title || request.meeting_subject,
+    meetingSubject: request.meeting_subject ?? '',
     date: formatDate(dateToUse),
     submitter: request.submitter_name ?? undefined,
     status: status,
