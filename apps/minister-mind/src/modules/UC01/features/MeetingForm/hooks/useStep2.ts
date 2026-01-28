@@ -1,14 +1,17 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { step2Schema, type Step2FormData } from '../schemas/step2.schema';
+import { createStep2Schema, type Step2FormData } from '../schemas/step2.schema';
 import axiosInstance from '@auth/utils/axios';
 import { mapUserToFormData } from '../utils/inviteeMappers';
 import type { UserApiResponse } from '../../../data/usersApi';
+import { AttendanceMechanism } from '@shared/types';
 
 interface UseStep2Props {
   draftId: string;
   initialData?: Partial<Step2FormData>;
+  meetingCategory?: string;
+  meetingConfidentiality?: string;
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
@@ -18,6 +21,7 @@ interface SubmitStep2Payload {
   formData: Partial<Step2FormData>;
   isDraft: boolean;
   draftId: string;
+  inviteesRequired: boolean;
 }
 
 interface SubmitStep2Response {
@@ -25,10 +29,10 @@ interface SubmitStep2Response {
 }
 
 const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2Response> => {
-  const { formData, isDraft, draftId } = payload;
+  const { formData, isDraft, draftId, inviteesRequired } = payload;
 
   if (!isDraft) {
-    const validationResult = step2Schema.safeParse(formData);
+    const validationResult = createStep2Schema({ inviteesRequired }).safeParse(formData);
     if (!validationResult.success) {
       const error = new Error('Validation failed');
       (error as any).validationErrors = validationResult.error;
@@ -41,6 +45,7 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
       if (invitee.user_id) {
         return {
           user_id: invitee.user_id,
+          attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
           is_required: invitee.is_required || false,
         };
       }
@@ -50,6 +55,7 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
         position: invitee.position || '',
         mobile: invitee.mobile || '',
         email: invitee.email || '',
+        attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
         item_number: index + 1,
         is_required: invitee.is_required || false,
       };
@@ -67,6 +73,8 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
 export const useStep2 = ({
   draftId,
   initialData,
+  meetingCategory,
+  meetingConfidentiality,
   onSuccess,
   onError,
   isEditMode = false,
@@ -77,6 +85,14 @@ export const useStep2 = ({
   });
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
   const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
+  const [tableErrorMessage, setTableErrorMessage] = useState<string>('');
+
+  const inviteesRequired = useMemo(() => {
+    // Invitees are required unless the meeting is a bilateral meeting or confidential
+    const isBilateral = meetingCategory === 'BILATERAL_MEETING';
+    const isConfidential = meetingConfidentiality === 'CONFIDENTIAL';
+    return !(isBilateral || isConfidential);
+  }, [meetingCategory, meetingConfidentiality]);
 
   useEffect(() => {
     if (initialData && isEditMode) {
@@ -89,7 +105,7 @@ export const useStep2 = ({
 
   const submitMutation = useMutation({
     mutationFn: (payload: { formData: Partial<Step2FormData>; isDraft: boolean }) =>
-      submitStep2Data({ ...payload, draftId }),
+      submitStep2Data({ ...payload, draftId, inviteesRequired }),
     onSuccess: (_, variables) => {
       onSuccess?.(variables.isDraft);
     },
@@ -100,23 +116,21 @@ export const useStep2 = ({
   });
 
   // Validation result memoized
+  const schema = useMemo(() => createStep2Schema({ inviteesRequired }), [inviteesRequired]);
   const validationResult = useMemo(() => {
-    return step2Schema.safeParse(formData);
-  }, [formData]);
+    return schema.safeParse(formData);
+  }, [formData, schema]);
 
   const validateAll = useCallback((): boolean => {
     if (!validationResult.success) {
       const newErrors: Record<string, Record<string, string>> = {};
+      let newTableError = '';
+
       validationResult.error.errors.forEach((err) => {
         if (err.path[0] === 'invitees' && err.path[1] !== undefined) {
           const inviteeIndex = err.path[1] as number;
           const field = err.path[2] as string;
           const invitee = formData.invitees?.[inviteeIndex];
-          
-          // Skip validation for name, position, mobile if user_id exists
-          if (invitee?.user_id && ['name', 'position', 'mobile'].includes(field)) {
-            return; // Skip this error
-          }
           
           if (invitee?.id) {
             if (!newErrors[invitee.id]) {
@@ -124,13 +138,18 @@ export const useStep2 = ({
             }
             newErrors[invitee.id][field] = err.message;
           }
+        } else if (err.path[0] === 'invitees') {
+          // Table-level error (e.g. invitees required)
+          newTableError = err.message;
         }
       });
       setErrors(newErrors);
+      setTableErrorMessage(newTableError);
       return false;
     }
     
     setErrors({});
+    setTableErrorMessage('');
     return true;
   }, [formData, validationResult]);
 
@@ -144,6 +163,7 @@ export const useStep2 = ({
       position: '',
       mobile: '',
       email: '',
+      attendance_mechanism: AttendanceMechanism.PHYSICAL,
       is_required: false,
     };
     setFormData((prev) => ({
@@ -240,6 +260,7 @@ export const useStep2 = ({
     const newInvitee = {
       ...mappedUser,
       id: nanoid(),
+      attendance_mechanism: AttendanceMechanism.PHYSICAL,
     };
 
     setFormData((prev) => ({
@@ -250,13 +271,6 @@ export const useStep2 = ({
   }, [formData.invitees]);
 
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
-    const hasInvitees = formData.invitees && formData.invitees.length > 0;
-
-    if (!hasInvitees) {
-      onSuccess?.(isDraft);
-      return;
-    }
-
     if (!isDraft && !validateAll()) {
       return;
     }
@@ -265,12 +279,14 @@ export const useStep2 = ({
       formData,
       isDraft,
     });
-  }, [formData, validateAll, submitMutation, onSuccess]);
+  }, [formData, validateAll, submitMutation]);
 
   return {
     formData,
     errors,
     touched,
+    inviteesRequired,
+    tableErrorMessage,
     isSubmitting: submitMutation.isPending,
     handleAddAttendee,
     handleDeleteAttendee,

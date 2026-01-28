@@ -19,7 +19,6 @@ import {
   MEETING_TYPE_OPTIONS,
   MEETING_GOALS_COLUMNS,
   MEETING_AGENDA_COLUMNS,
-  MINISTER_SUPPORT_COLUMNS,
   RELATED_DIRECTIVES_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
@@ -42,15 +41,13 @@ export interface Step1Props {
   handleChange: (field: keyof Step1FormData, value: any) => void;
   handleBlur: (field: keyof Step1FormData) => void;
   handleFilesSelect: (files: File[]) => void;
+  handleAdditionalFilesSelect: (files: File[]) => void;
   handleAddGoal: () => void;
   handleDeleteGoal: (id: string) => void;
   handleUpdateGoal: (id: string, field: string, value: any) => void;
   handleAddAgenda: () => void;
   handleDeleteAgenda: (id: string) => void;
   handleUpdateAgenda: (id: string, field: string, value: any) => void;
-  handleAddSupport: () => void;
-  handleDeleteSupport: (id: string) => void;
-  handleUpdateSupport: (id: string, field: string, value: any) => void;
   handleAddDirective: () => void;
   handleDeleteDirective: (id: string) => void;
   handleUpdateDirective: (id: string, field: string, value: any) => void;
@@ -73,15 +70,13 @@ export const Step1: React.FC<Step1Props> = ({
   handleChange,
   handleBlur,
   handleFilesSelect,
+  handleAdditionalFilesSelect,
   handleAddGoal,
   handleDeleteGoal,
   handleUpdateGoal,
   handleAddAgenda,
   handleDeleteAgenda,
   handleUpdateAgenda,
-  handleAddSupport,
-  handleDeleteSupport,
-  handleUpdateSupport,
   handleAddDirective,
   handleDeleteDirective,
   handleUpdateDirective,
@@ -282,7 +277,7 @@ export const Step1: React.FC<Step1Props> = ({
             </FormField>
           </FormRow>
 
-          <FormRow className='sm:justify-end'>
+          <FormRow>
             <FormField
               label="القطاع"
               required={isFieldRequired('sector')}
@@ -294,6 +289,18 @@ export const Step1: React.FC<Step1Props> = ({
                 onBlur={() => handleBlur('sector')}
                 placeholder="-------"
                 error={!!(touched.sector && errors.sector)}
+              />
+            </FormField>
+            <FormField
+              label="مقر الاجتماع"
+              error={touched.meeting_location ? errors.meeting_location : undefined}
+            >
+              <FormInput
+                value={formData.meeting_location || ''}
+                onChange={(e) => handleChange('meeting_location', e.target.value)}
+                onBlur={() => handleBlur('meeting_location')}
+                placeholder="-------"
+                error={!!(touched.meeting_location && errors.meeting_location)}
               />
             </FormField>
           </FormRow>
@@ -426,6 +433,15 @@ export const Step1: React.FC<Step1Props> = ({
           required={isFieldRequired('presentation_files')}
           existingFiles={formData.existingFiles}
           multiple={true}
+          label="العرض التقديمي"
+        />
+
+        <FileUpload
+          files={formData.additional_files}
+          onFilesSelect={handleAdditionalFilesSelect}
+          existingFiles={formData.existingAdditionalFiles}
+          multiple={true}
+          label="ملفات إضافية (PDF، Word، Excel)"
         />
 
         <FormTable
@@ -456,20 +472,6 @@ export const Step1: React.FC<Step1Props> = ({
           errorMessage={errors?.meetingAgenda}
         />
 
-        <FormTable
-          title="الدعم المطلوب من الوزير"
-          required
-          columns={MINISTER_SUPPORT_COLUMNS}
-          rows={formData.ministerSupport || []}
-          onAddRow={handleAddSupport}
-          onDeleteRow={handleDeleteSupport}
-          onUpdateRow={handleUpdateSupport}
-          addButtonLabel="إضافة دعم"
-          errors={tableErrors}
-          touched={tableTouched}
-          errorMessage={errors?.ministerSupport}
-        />
-        
         <FormRow 
           className={cn(
             'flex-wrap-reverse sm:flex-nowrap',
