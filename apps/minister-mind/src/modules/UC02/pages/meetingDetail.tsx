@@ -100,6 +100,9 @@ const MeetingDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
+  /** Include drafts in استشارة الجدولة and التوجيه tabs; default true */
+  const [includeDraftsConsultation, setIncludeDraftsConsultation] = useState(true);
+  const [includeDraftsGuidance, setIncludeDraftsGuidance] = useState(true);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -110,15 +113,15 @@ const MeetingDetail: React.FC = () => {
 
   // Fetch consultation records (استشارة الجدولة tab)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
-    queryKey: ['consultation-records', id],
-    queryFn: () => getConsultationRecords(id!),
+    queryKey: ['consultation-records', id, includeDraftsConsultation],
+    queryFn: () => getConsultationRecords(id!, includeDraftsConsultation),
     enabled: !!id && activeTab === 'scheduling-consultation',
   });
 
   // Fetch guidance records (التوجيه tab)
   const { data: guidanceRecords, isLoading: isLoadingGuidanceRecords } = useQuery({
-    queryKey: ['guidance-records', id],
-    queryFn: () => getGuidanceRecords(id!),
+    queryKey: ['guidance-records', id, includeDraftsGuidance],
+    queryFn: () => getGuidanceRecords(id!, includeDraftsGuidance),
     enabled: !!id && activeTab === 'directive',
   });
 
@@ -584,12 +587,12 @@ const MeetingDetail: React.FC = () => {
 
   // Send to content mutation
   const sendToContentMutation = useMutation({
-    mutationFn: (payload: { notes: string }) => sendToContent(id!, payload),
-    onSuccess: () => {
+    mutationFn: (payload: { notes: string; is_draft?: boolean }) => sendToContent(id!, payload),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsSendToContentModalOpen(false);
       setSendToContentForm({ notes: '' });
-      navigate(-1); // Navigate back after successful send
+      if (!variables.is_draft) navigate(-1);
     },
   });
 
@@ -605,19 +608,22 @@ const MeetingDetail: React.FC = () => {
 
   const handleSendToContentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendToContentMutation.mutate({
-      notes: sendToContentForm.notes,
-    });
+    sendToContentMutation.mutate({ notes: sendToContentForm.notes });
+  };
+
+  const handleSendToContentDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    sendToContentMutation.mutate({ notes: sendToContentForm.notes, is_draft: true });
   };
 
   // Request guidance mutation
   const requestGuidanceMutation = useMutation({
-    mutationFn: (payload: { notes: string }) => requestGuidance(id!, payload),
-    onSuccess: () => {
+    mutationFn: (payload: { notes: string; is_draft?: boolean }) => requestGuidance(id!, payload),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsRequestGuidanceModalOpen(false);
       setRequestGuidanceForm({ notes: '' });
-      navigate(-1); // Navigate back after successful request
+      if (!variables.is_draft) navigate(-1);
     },
   });
 
@@ -628,15 +634,24 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
-  // Consultants query for async select
+  const handleRequestGuidanceDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    requestGuidanceMutation.mutate({
+      notes: requestGuidanceForm.notes || 'يرجى توفير التوجيهات اللازمة حول هذا الطلب',
+      is_draft: true,
+    });
+  };
+
+  // Consultants query for async select (طلب استشارة جدولة) – EXECUTIVE_OFFICE_MANAGER only
   const {
     data: consultantsResponse,
     isLoading: isLoadingConsultants,
   } = useQuery({
-    queryKey: ['consultants', consultationForm.search],
+    queryKey: ['consultants', consultationForm.search, 'SCHEDULING_CONSULTANT'],
     queryFn: () =>
       getConsultants({
         search: consultationForm.search,
+        role_code: 'SCHEDULING_CONSULTANT',
         page: 1,
         limit: 50,
       }),
@@ -647,9 +662,12 @@ const MeetingDetail: React.FC = () => {
 
   // Scheduling consultation mutation
   const consultationMutation = useMutation({
-    mutationFn: (payload: { consultant_user_id: string; consultation_question: string }) =>
-      requestSchedulingConsultation(id!, payload),
-    onSuccess: () => {
+    mutationFn: (payload: {
+      consultant_user_id: string;
+      consultation_question: string;
+      is_draft?: boolean;
+    }) => requestSchedulingConsultation(id!, payload),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsConsultationModalOpen(false);
       setConsultationForm({
@@ -657,18 +675,27 @@ const MeetingDetail: React.FC = () => {
         consultation_question: '',
         search: '',
       });
-      navigate(-1); // Navigate back after successful request
+      if (!variables.is_draft) navigate(-1);
     },
   });
 
   const handleConsultationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!consultationForm.consultant_user_id) return;
-
     consultationMutation.mutate({
       consultant_user_id: consultationForm.consultant_user_id,
       consultation_question:
         consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
+    });
+  };
+
+  const handleConsultationDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    consultationMutation.mutate({
+      consultant_user_id: consultationForm.consultant_user_id || '',
+      consultation_question:
+        consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
+      is_draft: true,
     });
   };
 
@@ -679,7 +706,7 @@ const MeetingDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsReturnForInfoModalOpen(false);
       setReturnForInfoForm({ notes: '' });
-      navigate(-1); // Navigate back after successful return
+      navigate(-1);
     },
   });
 
@@ -1903,6 +1930,16 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة (Excel) */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4">
+              <div className="flex flex-row items-center gap-3 justify-end">
+                <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تضمين المسودات</span>
+                <button
+                  type="button"
+                  onClick={() => setIncludeDraftsConsultation((v) => !v)}
+                  className={`w-11 h-6 rounded-full flex transition-all cursor-pointer shrink-0 ${includeDraftsConsultation ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}
+                >
+                  <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
@@ -2034,6 +2071,16 @@ const MeetingDetail: React.FC = () => {
           {/* Directives Log Tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4">
+              <div className="flex flex-row items-center gap-3 justify-end">
+                <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تضمين المسودات</span>
+                <button
+                  type="button"
+                  onClick={() => setIncludeDraftsGuidance((v) => !v)}
+                  className={`w-11 h-6 rounded-full flex transition-all cursor-pointer shrink-0 ${includeDraftsGuidance ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end' : 'bg-[#F2F4F7] justify-start'} px-0.5`}
+                >
+                  <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
               {isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
@@ -2735,6 +2782,15 @@ const MeetingDetail: React.FC = () => {
                 إلغاء
               </button>
               <button
+                type="button"
+                onClick={handleSendToContentDraft}
+                disabled={sendToContentMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                {sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
+              </button>
+              <button
                 type="submit"
                 disabled={sendToContentMutation.isPending}
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2789,6 +2845,15 @@ const MeetingDetail: React.FC = () => {
                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
               >
                 إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestGuidanceDraft}
+                disabled={requestGuidanceMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                {requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
               </button>
               <button
                 type="submit"
@@ -2908,6 +2973,15 @@ const MeetingDetail: React.FC = () => {
                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
               >
                 إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConsultationDraft}
+                disabled={consultationMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                {consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
               </button>
               <button
                 type="submit"
