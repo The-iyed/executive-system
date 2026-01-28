@@ -79,6 +79,7 @@ export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 
     user_id: user.id,
     username: user.username || fullName,
     disabled: true, // System users have disabled fields
+    attendance_mechanism:user.attendance_mechanism ?? AttendanceMechanism.PHYSICAL,
   };
 };
 
