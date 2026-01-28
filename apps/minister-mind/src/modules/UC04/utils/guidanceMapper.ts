@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { GuidanceRequestApiResponse } from '../data/guidanceApi';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus, getMeetingStatusLabel } from '@shared/types';
 import { GuidanceRequestCardData } from '../components/guidance-request-card';
 
 /**
@@ -53,27 +53,13 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
 };
 
 /**
- * Get status label from status
- */
-const getStatusLabel = (status: MeetingStatus | string): string => {
-  if (status in MeetingStatusLabels) {
-    return MeetingStatusLabels[status as MeetingStatus];
-  }
-  // Handle custom statuses
-  if (status === 'UNDER_GUIDANCE') {
-    return 'قيد التوجيه';
-  }
-  return status;
-};
-
-/**
  * Map API guidance request response to MeetingCardData (for table view)
  */
 export const mapGuidanceRequestToCardData = (
   request: GuidanceRequestApiResponse
 ): MeetingCardData => {
   const status = mapStatus(request.status);
-  const statusLabel = getStatusLabel(status);
+  const statusLabel = getMeetingStatusLabel(status);
 
   // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
@@ -97,7 +83,7 @@ export const mapGuidanceRequestToCardViewData = (
   request: GuidanceRequestApiResponse
 ): GuidanceRequestCardData => {
   const status = mapStatus(request.status);
-  const statusLabel = getStatusLabel(status);
+  const statusLabel = getMeetingStatusLabel(status);
 
   // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
