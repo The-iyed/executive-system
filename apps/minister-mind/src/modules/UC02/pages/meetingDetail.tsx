@@ -2478,7 +2478,7 @@ const MeetingDetail: React.FC = () => {
                   className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافته إلى قائمة الانتظار'}
+                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}
                   </span>
                   <Plus className="w-5 h-5" />
                 </button>
