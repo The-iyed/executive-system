@@ -36,8 +36,8 @@ const welcomeByPath: Record<string, WelcomeConfig> = {
     breadcrumbs:[{ label: 'إضافة اجتماع', onClick: () => {} }]
   },
   [PATH.SCHEDULED_MEETINGS]: {
-    title: 'الاجتماعات المجدولة',
-    description: 'الاطلاع على الاجتماعات المجدولة',
+    title: 'الاجتماعات السابقة',
+    description: 'الاطلاع على الاجتماعات السابقة',
     actions: defaultActions
   },
   [PATH.WORK_BASKET]: {

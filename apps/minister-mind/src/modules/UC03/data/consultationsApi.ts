@@ -209,4 +209,3 @@ export const getPendingConsultations = async (
   );
   return response.data;
 };
-
