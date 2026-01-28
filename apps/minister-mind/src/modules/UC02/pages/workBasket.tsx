@@ -2,10 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
-import { MeetingStatus } from '@shared';
+import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import '@shared/styles';
-import { Eye } from 'lucide-react';
-import { getAssignedSchedulingRequests, GetMeetingsParams } from '../data/meetingsApi';
+import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
 
@@ -63,93 +62,164 @@ const WorkBasket: React.FC = () => {
     enabled: true,
   });
 
-  // Map API response to MeetingCardData
+  // Map API response to MeetingCardData for cards view
   const meetings: MeetingCardData[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
+  }, [meetingsResponse]);
+
+  // Raw meetings data for table view
+  const rawMeetings: MeetingApiResponse[] = useMemo(() => {
+    if (!meetingsResponse?.items) return [];
+    return meetingsResponse.items;
   }, [meetingsResponse]);
 
   // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
+  // Format date helper
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get classification label
+  const getClassificationLabel = (classification: string | null): string => {
+    if (!classification) return '-';
+    return MeetingClassificationLabels[classification as MeetingClassification] || classification;
+  };
+
+  // Get status label
+  const getStatusLabel = (status: string): string => {
+    return MeetingStatusLabels[status as MeetingStatus] || status;
+  };
+
   // Define table columns
-  const tableColumns: TableColumn<MeetingCardData>[] = [
+  const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
-      id: 'requestNumber',
+      id: 'sequential_number',
+      header: 'رقم البند',
+      width: 'w-32',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {row.sequential_number || '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'request_number',
       header: 'رقم الطلب',
       width: 'w-48',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.id}
+            {row.request_number}
           </span>
         </div>
       ),
     },
     {
-      id: 'subject',
-      header: 'الموضوع',
+      id: 'created_at',
+      header: 'تاريخ الطلب',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {formatDate(row.created_at)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'submitter_name',
+      header: 'اسم مقدم الطلب',
+      width: 'w-56',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            {row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
       width: 'flex-1',
       align: 'end',
       render: (row) => (
         <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
-          {row.title}
+          {row.meeting_subject}
         </span>
       ),
     },
     {
-      id: 'coordinator',
-      header: 'مقدم الطلب',
+      id: 'meeting_classification',
+      header: 'فئة الاجتماع',
       width: 'w-56',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
-          {row.coordinator || 'أحمد محمد'}
-        </span>
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            {getClassificationLabel(row.meeting_classification)}
+          </span>
+        </div>
       ),
     },
     {
-      id: 'date',
-      header: 'تاريخ الإرسال',
-      width: 'w-72',
+      id: 'scheduled_at',
+      header: 'تاريخ الاجتماع',
+      width: 'w-40',
       align: 'end',
       render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap">
-            {row.date}
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {formatDate(row.scheduled_at)}
           </span>
         </div>
       ),
     },
     {
       id: 'status',
-      header: 'الحالة',
+      header: 'حالة الاجتماع',
       width: 'w-52',
       align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-start items-center">
-          <StatusBadge status={row.status} label={row.statusLabel} />
-        </div>
-      ),
+      render: (row) => {
+        const status = row.status as MeetingStatus;
+        const statusLabel = getStatusLabel(row.status);
+        return (
+          <div className="w-full flex justify-start items-center">
+            <StatusBadge status={status} label={statusLabel} />
+          </div>
+        );
+      },
     },
     {
-      id: 'actions',
-      header: '',
-      width: 'w-28',
+      id: 'is_data_complete',
+      header: 'البيانات مكتملة؟',
+      width: 'w-40',
       align: 'center',
       render: (row) => (
         <div className="w-full flex justify-center">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(PATH.MEETING_DETAIL.replace(':id', row.id));
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Eye className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
-          </button>
+          <span className={`text-base font-medium leading-5 ${row.is_data_complete ? 'text-green-600' : 'text-red-600'}`}>
+            {row.is_data_complete ? 'نعم' : 'لا'}
+          </span>
         </div>
       ),
     },
@@ -161,7 +231,7 @@ const WorkBasket: React.FC = () => {
         {/* Page Title, Description, Search/Filter Bar and View Switcher */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div>
-            <h1 className="text-3xl font-bold mb-2 text-right">سلة العمل - طلبات قيد المراجعة</h1>
+            <h1 className="text-3xl font-bold mb-2 text-right">الطلبات الحالية</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
           </div>
 
@@ -186,7 +256,7 @@ const WorkBasket: React.FC = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
             </div>
-          ) : meetings.length === 0 ? (
+          ) : rawMeetings.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">لا توجد بيانات</div>
             </div>
@@ -195,7 +265,7 @@ const WorkBasket: React.FC = () => {
               {view === 'table' ? (
                 <DataTable
                   columns={tableColumns}
-                  data={meetings}
+                  data={rawMeetings}
                   onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
                 />
               ) : (

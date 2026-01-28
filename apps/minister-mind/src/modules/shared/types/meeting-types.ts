@@ -29,29 +29,30 @@ export enum MeetingStatus {
   CLOSED = 'CLOSED',
   // Waiting State
   WAITING = 'WAITING',
+  READY = 'READY',
 }
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   // Draft/Initial States
-  [MeetingStatus.DRAFT]: 'جديد',
+  [MeetingStatus.DRAFT]: 'مسودة',
   [MeetingStatus.NEW]: 'جديد',
   // Review States
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
-  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
-  [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',
-  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
-  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد المراجعة - استشارة المحتوى',
+  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد استشارة الجدولة',
+  [MeetingStatus.UNDER_GUIDANCE]: 'قيد التوجيه',
+  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد مراجعة المحتوى',
+  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد استشارة المحتوى',
   // Scheduled States
   [MeetingStatus.SCHEDULED]: 'مجدول',
-  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
-  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
-  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة المحتوى',
-  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث المحتوى',
-  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
-  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول (جدولة)',
+  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول (محتوى)',
+  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول (استشارة محتوى)',
+  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول (تحديث محتوى)',
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول (معلومات إضافية)',
+  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول (متأخر)',
   // Returned States
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من مسؤول الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من مسؤول المحتوى',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من المحتوى',
   // Legacy returned states (kept for backward compatibility)
   [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
   [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
@@ -60,8 +61,10 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.CLOSED]: 'مغلق',
   // Waiting State
-  [MeetingStatus.WAITING]: 'في الانتظار',
+  [MeetingStatus.WAITING]: 'قيد الانتظار',
+  [MeetingStatus.READY]: 'جاهز',
 };
+
 
 /**
  * Meeting Classification (فئة الاجتماع)
@@ -131,6 +134,7 @@ export const MeetingConfidentialityLabels: Record<MeetingConfidentiality, string
 export enum MeetingType {
   INTERNAL = 'INTERNAL',
   EXTERNAL = 'EXTERNAL',
+  BUSINESS_OWNER = 'BUSINESS_OWNER',
 }
 
 /**
@@ -139,40 +143,123 @@ export enum MeetingType {
 export const MeetingTypeLabels: Record<MeetingType, string> = {
   [MeetingType.INTERNAL]: 'داخلي',
   [MeetingType.EXTERNAL]: 'خارجي',
+  [MeetingType.BUSINESS_OWNER]: 'مالك أعمال',
 };
 
 /**
- * Helper function to get meeting status label
+ * Meeting Channel (آلية انعقاد الاجتماع / قناة الاجتماع)
  */
-export const getMeetingStatusLabel = (status: MeetingStatus): string => {
-  return MeetingStatusLabels[status] || status;
+export const MeetingChannelLabels: Record<string, string> = {
+  PHYSICAL: 'حضوري',
+  PHYSICAL_LOCATION_1: 'حضوري (الموقع1)',
+  PHYSICAL_LOCATION_2: 'حضوري (الموقع2)',
+  PHYSICAL_LOCATION_3: 'حضوري (الموقع3)',
+  VIRTUAL: 'عن بعد',
 };
 
 /**
- * Helper function to get meeting classification label
+ * Invitee Response Status (حالة رد المدعو)
  */
-export const getMeetingClassificationLabel = (classification: MeetingClassification): string => {
-  return MeetingClassificationLabels[classification] || classification;
+export const InviteeResponseStatusLabels: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  ACCEPTED: 'مقبول',
+  DECLINED: 'مرفوض',
 };
 
 /**
- * Helper function to get meeting classification type label
+ * Invitee Source (مصدر المدعو)
  */
-export const getMeetingClassificationTypeLabel = (type: MeetingClassificationType): string => {
-  return MeetingClassificationTypeLabels[type] || type;
+export const InviteeSourceLabels: Record<string, string> = {
+  SUBMITTER: 'مقدم الطلب',
+  MINISTER: 'الوزير',
 };
 
 /**
- * Helper function to get meeting confidentiality label
+ * Directive Method (طريقة التوجيه)
  */
-export const getMeetingConfidentialityLabel = (confidentiality: MeetingConfidentiality): string => {
-  return MeetingConfidentialityLabels[confidentiality] || confidentiality;
+export const DirectiveMethodLabels: Record<string, string> = {
+  DIRECT_DIRECTIVE: 'توجيه مباشر',
+  PREVIOUS_MEETING: 'اجتماع سابق',
 };
 
 /**
- * Helper function to get meeting type label
+ * Meeting Classification extra values (optional from API)
  */
-export const getMeetingTypeLabel = (type: MeetingType): string => {
-  return MeetingTypeLabels[type] || type;
+export const MeetingClassificationLabelsExtra: Record<string, string> = {
+  WORKSHOP: 'ورشة عمل',
+  DISCUSSION: 'مناقشة (بدون عرض تقديمي)',
+};
+
+/**
+ * Helper: get meeting status label (accepts enum or API string)
+ */
+export const getMeetingStatusLabel = (status: MeetingStatus | string): string => {
+  return MeetingStatusLabels[status as MeetingStatus] ?? status;
+};
+
+/**
+ * Helper: get meeting classification label (accepts enum or API string)
+ */
+export const getMeetingClassificationLabel = (classification: MeetingClassification | string | null | undefined): string => {
+  if (classification == null || classification === '') return '-';
+  return MeetingClassificationLabels[classification as MeetingClassification]
+    ?? MeetingClassificationLabelsExtra[String(classification)]
+    ?? classification;
+};
+
+/**
+ * Helper: get meeting classification type label (accepts enum or API string)
+ */
+export const getMeetingClassificationTypeLabel = (type: MeetingClassificationType | string | null | undefined): string => {
+  if (type == null || type === '') return '-';
+  return MeetingClassificationTypeLabels[type as MeetingClassificationType] ?? type;
+};
+
+/**
+ * Helper: get meeting confidentiality label (accepts enum or API string)
+ */
+export const getMeetingConfidentialityLabel = (confidentiality: MeetingConfidentiality | string | null | undefined): string => {
+  if (confidentiality == null || confidentiality === '') return '-';
+  return MeetingConfidentialityLabels[confidentiality as MeetingConfidentiality] ?? confidentiality;
+};
+
+/**
+ * Helper: get meeting type label (accepts enum or API string)
+ */
+export const getMeetingTypeLabel = (type: MeetingType | string | null | undefined): string => {
+  if (type == null || type === '') return '-';
+  return MeetingTypeLabels[type as MeetingType] ?? type;
+};
+
+/**
+ * Helper: get meeting channel label (قناة الاجتماع / آلية انعقاد الاجتماع)
+ */
+export const getMeetingChannelLabel = (channel: string | null | undefined): string => {
+  if (!channel) return '-';
+  return MeetingChannelLabels[String(channel).toUpperCase()] ?? channel;
+};
+
+/**
+ * Helper: get invitee response status label
+ */
+export const getInviteeResponseStatusLabel = (status: string | null | undefined): string => {
+  if (!status) return '-';
+  return InviteeResponseStatusLabels[String(status).toUpperCase()] ?? status;
+};
+
+/**
+ * Helper: get invitee source label
+ */
+export const getInviteeSourceLabel = (source: string | null | undefined): string => {
+  if (!source) return '-';
+  return InviteeSourceLabels[String(source).toUpperCase()] ?? source;
+};
+
+/**
+ * Helper: get directive method label
+ */
+export const getDirectiveMethodLabel = (method: string | null | undefined): string => {
+  if (!method) return '-';
+  return DirectiveMethodLabels[String(method).toUpperCase()] ?? method;
 };
 
