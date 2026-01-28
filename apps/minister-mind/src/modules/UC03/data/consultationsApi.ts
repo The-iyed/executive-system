@@ -103,7 +103,7 @@ export interface ConsultationRequestApiResponse {
   minister_attendees?: Invitee[];
   related_directive_ids?: string[];
   related_guidance?: string | null;
-  general_notes?: string | null;
+  general_notes?: string | string[] | null;
   content_officer_notes?: string | null;
   meeting_justification?: string;
   related_topic?: string | null;
@@ -111,6 +111,12 @@ export interface ConsultationRequestApiResponse {
   meeting_classification_type?: string;
   meeting_confidentiality?: string;
   sector?: string;
+  presentation_attachment_timing?: string | null;
+  is_on_behalf_of?: boolean;
+  is_urgent?: boolean;
+  urgent_reason?: string | null;
+  directive_method?: string | null;
+  location?: string | null;
 }
 
 export interface ConsultationsListResponse {
