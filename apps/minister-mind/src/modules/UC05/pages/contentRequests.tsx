@@ -5,22 +5,23 @@ import {
   DataTable,
   ViewSwitcher,
   SearchInput,
-  MeetingCardData,
   ViewType,
   TableColumn,
   StatusBadge,
   Pagination,
+  MeetingClassification,
+  MeetingClassificationLabels,
+  MeetingStatus,
+  MeetingStatusLabels,
 } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { Eye, Calendar } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import {
   getAssignedContentRequests,
   GetContentRequestsParams,
+  ContentRequestApiResponse,
 } from '../data/contentApi';
-import {
-  mapContentRequestToCardData,
-  mapContentRequestToCardViewData,
-} from '../utils/contentMapper';
+import { mapContentRequestToCardViewData } from '../utils/contentMapper';
 import { ContentRequestsGrid, ContentRequestCardData } from '../components';
 
 const ITEMS_PER_PAGE = 10;
@@ -65,14 +66,8 @@ const ContentRequests: React.FC = () => {
     },
   });
 
-  // Store original API response items for table columns
-  const originalRequests = requestsResponse?.items || [];
-
-  // Map API response to MeetingCardData (for table view)
-  const requests: MeetingCardData[] = useMemo(() => {
-    if (!requestsResponse?.items) return [];
-    return requestsResponse.items.map(mapContentRequestToCardData);
-  }, [requestsResponse]);
+  // Store original API response items for table
+  const originalRequests: ContentRequestApiResponse[] = requestsResponse?.items || [];
 
   // Map API response to ContentRequestCardData (for card view)
   const cardViewRequests: ContentRequestCardData[] = useMemo(() => {
@@ -84,97 +79,132 @@ const ContentRequests: React.FC = () => {
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
+  // Format date helper
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get classification label
+  const getClassificationLabel = (classification: string | null | undefined): string => {
+    if (!classification) return '-';
+    return MeetingClassificationLabels[classification as MeetingClassification] || classification;
+  };
+
+  // Get status label
+  const getStatusLabel = (status: string): string => {
+    return MeetingStatusLabels[status as MeetingStatus] ?? status;
+  };
+
   // Define table columns - order is from right to left (RTL)
-  // Columns: رقم البند, رقم الطلب, عنوان الاجتماع, مقدم الطلب, تاريخ الإرسال, الحالة
-  const tableColumns: TableColumn<MeetingCardData>[] = [
+  // Columns: رقم البند، رقم الطلب، تاريخ الطلب، اسم مقدم الطلب، موضوع الاجتماع، فئة الاجتماع، تاريخ الاجتماع، حالة الاجتماع
+  const tableColumns: TableColumn<ContentRequestApiResponse>[] = [
     {
-      id: 'sequentialNumber',
+      id: 'sequential_number',
       header: 'رقم البند',
       width: 'w-32',
-      align: 'end',
-      render: (row) => {
-        // Get sequential number from original data
-        const originalRequest = originalRequests.find((r) => r.id === row.id);
-        const sequentialNumber = originalRequest?.sequential_number
-          ? originalRequest.sequential_number.toString()
-          : '-';
-        return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {sequentialNumber}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'requestNumber',
-      header: 'رقم الطلب',
-      width: 'w-48',
-      align: 'end',
-      render: (row) => {
-        // Get request number from original data
-        const originalRequest = originalRequests.find((r) => r.id === row.id);
-        const requestNumber = originalRequest?.request_number || row.id;
-        return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {requestNumber}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'title',
-      header: 'عنوان الاجتماع',
-      width: 'flex-1',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.title}
+            {row.sequential_number ?? '-'}
           </span>
         </div>
       ),
     },
     {
-      id: 'coordinator',
-      header: 'مقدم الطلب',
+      id: 'request_number',
+      header: 'رقم الطلب',
+      width: 'w-48',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {row.request_number}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'created_at',
+      header: 'تاريخ الطلب',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {formatDate(row.created_at)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'submitter_name',
+      header: 'اسم مقدم الطلب',
       width: 'w-56',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.coordinator || '-'}
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+            {row.submitter_name || '-'}
           </span>
         </div>
       ),
     },
     {
-      id: 'date',
-      header: 'تاريخ الإرسال',
-      width: 'w-72',
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
+      width: 'flex-1',
       align: 'end',
       render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
-            {row.date}
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+          {row.meeting_subject || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'meeting_classification',
+      header: 'فئة الاجتماع',
+      width: 'w-56',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+            {getClassificationLabel(row.meeting_classification)}
           </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
-          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'meeting_date',
+      header: 'تاريخ الاجتماع',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {formatDate(row.scheduled_at ?? row.submitted_at)}
+          </span>
         </div>
       ),
     },
     {
       id: 'status',
-      header: 'الحالة',
+      header: 'حالة الاجتماع',
       width: 'w-52',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <StatusBadge status={row.status} label={row.statusLabel} />
+          <StatusBadge status={row.status} label={getStatusLabel(row.status)} />
         </div>
       ),
     },
@@ -239,20 +269,23 @@ const ContentRequests: React.FC = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
             </div>
-          ) : requests.length === 0 ? (
+          ) : originalRequests.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">لا توجد بيانات</div>
             </div>
           ) : (
             <>
               {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={requests}
-                  onRowClick={(row) => {
-                    navigate(`/content-request/${row.id}`);
-                  }}
-                />
+                <div className="overflow-x-auto -mx-6 px-6" dir="rtl">
+                  <DataTable
+                    columns={tableColumns}
+                    data={originalRequests}
+                    onRowClick={(row) => {
+                      navigate(`/content-request/${row.id}`);
+                    }}
+                    className="min-w-[1100px]"
+                  />
+                </div>
               ) : (
                 <ContentRequestsGrid
                   requests={cardViewRequests}

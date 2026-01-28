@@ -8,6 +8,7 @@ export interface ContentRequestCardData {
   id: string;
   requestNumber: string;
   title: string;
+  meetingSubject?: string;
   date: string;
   submitter?: string;
   status: StatusType | MeetingStatus;
@@ -60,7 +61,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
       {/* Card Content Frame */}
       <div className="flex flex-col items-start p-0 w-full gap-1.5">
         {/* Main Content Area */}
-        <div className="relative bg-white rounded-lg overflow-hidden w-full h-40">
+        <div className="relative bg-white rounded-lg overflow-hidden w-full min-h-52">
           {/* Background Blur Effect */}
           <div
             className="absolute rounded-full bg-[#A6D8C1]"
@@ -75,7 +76,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
           />
 
           {/* Content Frame - Centered */}
-          <div className="absolute flex flex-col items-end p-0 w-[calc(100%-22px)] max-w-[338px] h-[120px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-2.5">
+          <div className="absolute flex flex-col items-end p-0 w-[calc(100%-22px)] max-w-[338px] min-h-[160px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-2.5">
             {/* First Row: Request ID and Status */}
             <div className="flex flex-row justify-between items-center p-0 w-full gap-3">
               <span
@@ -111,7 +112,20 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
               </h3>
             </div>
 
-            {/* Third Row: Date */}
+            {/* Third Row: موضوع الاجتماع (Meeting Subject) */}
+            <div className="flex flex-col items-start p-0 w-full shrink-0">
+              <span
+                className="text-right w-full text-[#475467] font-normal text-sm leading-5 block truncate"
+                style={{
+                  fontFamily: "'Ping AR + LT', sans-serif",
+                }}
+                title={request.meetingSubject || undefined}
+              >
+                موضوع الاجتماع: {request.meetingSubject || '-'}
+              </span>
+            </div>
+
+            {/* Fourth Row: Date */}
             <div className="flex flex-col items-start p-0 w-full">
               <p
                 className="text-right w-full text-[#2C2C2C] font-normal text-xs leading-[19px]"
@@ -123,7 +137,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
               </p>
             </div>
 
-            {/* Fourth Row: مقدم الطلب (Submitter) */}
+            {/* Fifth Row: مقدم الطلب (Submitter) */}
             <div className="flex flex-row items-center justify-start w-full">
               <span
                 className="text-right text-sm font-medium text-[#344054] leading-5"
