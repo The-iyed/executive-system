@@ -39,13 +39,13 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'scheduled-meetings',
         icon: 'solar:calendar-mark-outline',
-        label: 'الاجتماعات المجدولة',
+        label: 'الاجتماعات السابقة',
         path: UC02_PATH.SCHEDULED_MEETINGS,
       },
       {
         id: 'work-basket',
         icon: 'solar:folder-with-files-outline',
-        label: 'سلة العمل',
+        label: 'الطلبات الحالية',
         path: UC02_PATH.WORK_BASKET,
       },
       {

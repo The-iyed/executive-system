@@ -37,11 +37,11 @@ const ScheduleReview: React.FC = () => {
   const tabs = [
     {
       id: 'scheduled-meetings',
-      label: 'الاجتماعات المجدولة',
+      label: 'الاجتماعات السابقة',
     },
     {
       id: 'work-basket',
-      label: 'سلة العمل',
+      label: 'الطلبات الحالية',
     },
   ];
 
@@ -237,11 +237,11 @@ const ScheduleReview: React.FC = () => {
           {/* Left side - Title and Description */}
           <div>
             <h1 className="text-3xl font-bold mb-2 text-right">
-              {activeTab === 'work-basket' ? 'سلة العمل - طلبات قيد المراجعة' : 'الاجتماعات المجدولة'}
+              {activeTab === 'work-basket' ? 'الطلبات الحالية' : 'الاجتماعات المجدولة'}
             </h1>
             <p className="text-base text-gray-600 text-right">
               {activeTab === 'work-basket' 
-                ? 'الاطلاع على الطلبات قيد المراجعة' 
+                ? 'الاطلاع على الطلبات الحالية' 
                 : 'الاطلاع على الاجتماعات المجدولة'}
             </p>
           </div>

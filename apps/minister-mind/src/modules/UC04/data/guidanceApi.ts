@@ -111,6 +111,7 @@ export interface GuidanceRequestApiResponse {
   meeting_classification_type?: string;
   meeting_confidentiality?: string;
   sector?: string;
+  is_on_behalf_of?: boolean;
 }
 
 export interface GuidanceRequestsListResponse {
@@ -171,6 +172,16 @@ export const provideGuidance = async (
   data: ProvideGuidanceRequest
 ): Promise<void> => {
   await axiosInstance.post(
+    `/api/guidance/${meetingRequestId}/provide`,
+    data
+  );
+};
+
+export const saveGuidanceAsDraft = async (
+  meetingRequestId: string,
+  data: ProvideGuidanceRequest
+): Promise<void> => {
+  await axiosInstance.put(
     `/api/guidance/${meetingRequestId}/provide`,
     data
   );
