@@ -44,7 +44,13 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     formDataToSend.append('meeting_type', formData.meetingType);
   }
   if (formData.meetingClassification1) {
-    formDataToSend.append('meeting_classification_type', formData.meetingClassification1);
+    // Auto-set to SPECIAL if PRIVATE_MEETING per requirement
+    const classificationType =
+      formData.meetingCategory === 'PRIVATE_MEETING' ? 'SPECIAL' : formData.meetingClassification1;
+    formDataToSend.append('meeting_classification_type', classificationType);
+  }
+  if (formData.meeting_location !== undefined && formData.meeting_location !== '') {
+    formDataToSend.append('meeting_location', formData.meeting_location);
   }
   if (formData.sector) {
     formDataToSend.append('sector', formData.sector);
@@ -73,23 +79,24 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   }
   if (formData.meetingAgenda && formData.meetingAgenda.length > 0) {
     const agendaItems = formData.meetingAgenda
-      .map((a) => ({
-        agenda_item: a.agenda_item || '',
-        presentation_duration_minutes: a.presentation_duration_minutes
-          ? parseInt(a.presentation_duration_minutes, 10) || 0
-          : 0,
-      }))
-      .filter((a) => a.agenda_item && a.agenda_item.trim() !== '');
+      .map((a) => {
+        const item: Record<string, unknown> = {
+          agenda_item: a.agenda_item || '',
+          presentation_duration_minutes: a.presentation_duration_minutes
+            ? parseInt(String(a.presentation_duration_minutes), 10) || 0
+            : 0,
+        };
+        if (a.minister_support_type && a.minister_support_type.trim() !== '') {
+          item.minister_support_type = a.minister_support_type;
+          if (a.minister_support_type === 'أخرى' && a.minister_support_other?.trim()) {
+            item.minister_support_other = a.minister_support_other;
+          }
+        }
+        return item;
+      })
+      .filter((a) => (a.agenda_item as string) && String(a.agenda_item).trim() !== '');
     if (agendaItems.length > 0) {
       formDataToSend.append('agenda_items', JSON.stringify(agendaItems));
-    }
-  }
-  if (formData.ministerSupport && formData.ministerSupport.length > 0) {
-    const support = formData.ministerSupport
-      .map((s) => ({ support_description: s.support_description }))
-      .filter((s) => s.support_description && s.support_description.trim() !== '');
-    if (support.length > 0) {
-      formDataToSend.append('minister_support', JSON.stringify(support));
     }
   }
 
@@ -190,6 +197,12 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
       formDataToSend.append('presentation_files', file);
     });
   }
+  // Additional files (optional)
+  if (formData.additional_files && formData.additional_files.length > 0) {
+    formData.additional_files.forEach((file) => {
+      formDataToSend.append('additional_files', file);
+    });
+  }
 
   return formDataToSend;
 };
@@ -249,11 +262,11 @@ export const useStep1 = ({
   const [formData, setFormData] = useState<Partial<Step1FormData>>({
     meetingGoals: [],
     meetingAgenda: [],
-    ministerSupport: [],
     relatedDirectives: [],
     wasDiscussedPreviously: false,
     existingFiles: [],
     presentation_files: [],
+    additional_files: [],
     is_urgent: false,
     is_on_behalf_of: false,
     is_based_on_directive: false,
@@ -352,10 +365,12 @@ export const useStep1 = ({
             'meetingClassification2',
             'meetingConfidentiality',
             'sector',
+            'meeting_location',
             'wasDiscussedPreviously',
             'previousMeetingDate',
             'notes',
             'presentation_files',
+            'additional_files',
             'is_urgent',
             'is_on_behalf_of',
             'is_based_on_directive',
@@ -387,11 +402,13 @@ export const useStep1 = ({
           formData.meetingGoals?.forEach((goal) => {
             allTableTouched[goal.id] = { objective: true };
           });
-          formData.ministerSupport?.forEach((support) => {
-            allTableTouched[support.id] = { support_description: true };
-          });
           formData.meetingAgenda?.forEach((agenda) => {
-            allTableTouched[agenda.id] = { agenda_item: true, presentation_duration_minutes: true };
+            allTableTouched[agenda.id] = {
+              agenda_item: true,
+              presentation_duration_minutes: true,
+              minister_support_type: true,
+              minister_support_other: true,
+            };
           });
 
           setTouched(allTouched);
@@ -532,6 +549,10 @@ export const useStep1 = ({
     });
   }, []);
 
+  const handleAdditionalFilesSelect = useCallback((files: File[]) => {
+    setFormData((prev) => ({ ...prev, additional_files: files || [] }));
+  }, []);
+
   // Table handlers - Goals
   const handleAddGoal = useCallback(() => {
     const newGoal = { id: nanoid(), objective: '' };
@@ -595,9 +616,15 @@ export const useStep1 = ({
     }
   }, []);
 
-  // Table handlers - Agenda
+  // Table handlers - Agenda (includes minister support per requirement)
   const handleAddAgenda = useCallback(() => {
-    const newAgenda = { id: nanoid(), agenda_item: '', presentation_duration_minutes: '' };
+    const newAgenda = {
+      id: nanoid(),
+      agenda_item: '',
+      presentation_duration_minutes: '',
+      minister_support_type: '',
+      minister_support_other: '',
+    };
     setFormData((prev) => {
       const updatedAgenda = [newAgenda, ...(prev.meetingAgenda || [])];
       // Clear table-specific errors when adding a new item
@@ -636,56 +663,6 @@ export const useStep1 = ({
       ...prev,
       meetingAgenda: (prev.meetingAgenda || []).map((a) =>
         a.id === id ? { ...a, [field]: value } : a
-      ),
-    }));
-  }, []);
-
-  // Table handlers - Support
-  const handleAddSupport = useCallback(() => {
-    const newSupport = { id: nanoid(), support_description: '' };
-    setFormData((prev) => {
-      const updatedSupport = [newSupport, ...(prev.ministerSupport || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.ministerSupport;
-        return newErrors;
-      });
-      // Clear all table errors for ministerSupport rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all support IDs from updated support
-        const supportIds = updatedSupport.map((s) => s.id);
-        // Remove errors for all support rows
-        supportIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        ministerSupport: updatedSupport,
-      };
-    });
-  }, []);
-
-  const handleDeleteSupport = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      ministerSupport: (prev.ministerSupport || []).filter((s) => s.id !== id),
-    }));
-    setTableErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  }, []);
-
-  const handleUpdateSupport = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      ministerSupport: (prev.ministerSupport || []).map((s) =>
-        s.id === id ? { ...s, [field]: value } : s
       ),
     }));
     // Clear error when field is updated
@@ -814,15 +791,13 @@ export const useStep1 = ({
     handleChange,
     handleBlur,
     handleFilesSelect,
+    handleAdditionalFilesSelect,
     handleAddGoal,
     handleDeleteGoal,
     handleUpdateGoal,
     handleAddAgenda,
     handleDeleteAgenda,
     handleUpdateAgenda,
-    handleAddSupport,
-    handleDeleteSupport,
-    handleUpdateSupport,
     handleAddDirective,
     handleDeleteDirective,
     handleUpdateDirective,

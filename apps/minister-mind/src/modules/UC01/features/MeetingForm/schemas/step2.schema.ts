@@ -1,27 +1,66 @@
 import { z } from 'zod';
+import { AttendanceMechanism } from '@shared/types';
 
-export const step2Schema = z.object({
-  invitees: z.array(z.object({
+const attendanceMechanismSchema = z.nativeEnum(AttendanceMechanism);
+
+const inviteeSchema = z
+  .object({
+    // UI row id (not part of API payload)
     id: z.string(),
-    name: z.string().optional(),
-    position: z.string().optional(),
-    mobile: z.string().optional(),
-    email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
+
+    // API fields
+    user_id: z.string().optional().or(z.literal('')), // internal invitee
+    email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')), // external invitee
+    name: z.string().optional().or(z.literal('')), // external invitee
+    position: z.string().optional().or(z.literal('')), // optional
+    mobile: z.string().optional().or(z.literal('')), // optional
+    attendance_mechanism: attendanceMechanismSchema.optional().default(AttendanceMechanism.PHYSICAL),
+
+    // UI-only fields
     is_required: z.boolean().optional().default(false),
-    user_id: z.string().optional(), // Indicates user exists in the platform
-    username: z.string().optional(), // Username for display when user exists
-    disabled: z.boolean().optional(), // Indicates if fields should be disabled (true when user_id exists)
-  }).refine((data) => {
-    // If user_id exists, name, position, mobile are not required
-    if (data.user_id) {
-      return true;
+    username: z.string().optional(),
+    disabled: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasUserId = !!data.user_id && data.user_id.trim().length > 0;
+    if (hasUserId) return;
+
+    // External invitee: name + email required (position/mobile optional per doc)
+    if (!data.name || data.name.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'الإسم مطلوب للمدعو الخارجي',
+        path: ['name'],
+      });
     }
-    // If no user_id, name, position, mobile, email are required
-    return !!data.name && !!data.position && !!data.mobile && !!data.email;
-  }, {
-    message: 'الحقول مطلوبة للمستخدمين الخارجيين',
-    path: ['name', 'position', 'mobile', 'email'], // Error will be shown on name field
-  })).optional().default([]),
-});
+    if (!data.email || data.email.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'البريد الإلكتروني مطلوب للمدعو الخارجي',
+        path: ['email'],
+      });
+    }
+  });
+
+export const createStep2Schema = (opts?: { inviteesRequired?: boolean }) => {
+  const inviteesRequired = opts?.inviteesRequired ?? true;
+
+  return z
+    .object({
+      invitees: z.array(inviteeSchema).optional().default([]),
+    })
+    .superRefine((data, ctx) => {
+      if (inviteesRequired && (!data.invitees || data.invitees.length === 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'قائمة المدعوين مطلوبة',
+          path: ['invitees'],
+        });
+      }
+    });
+};
+
+// Default schema (assume invitees required unless caller overrides)
+export const step2Schema = createStep2Schema({ inviteesRequired: true });
 
 export type Step2FormData = z.infer<typeof step2Schema>;

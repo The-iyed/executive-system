@@ -158,6 +158,15 @@ export const MeetingChannelLabels: Record<string, string> = {
 };
 
 /**
+ * Attendance Mechanism (آلية الحضور) for invitees
+ * Values are sent as Arabic strings per UC01 Step 2 requirement.
+ */
+export enum AttendanceMechanism {
+  PHYSICAL = 'حضوري',
+  VIRTUAL = 'عن بعد',
+}
+
+/**
  * Invitee Response Status (حالة رد المدعو)
  */
 export const InviteeResponseStatusLabels: Record<string, string> = {
