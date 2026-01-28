@@ -4,7 +4,14 @@ import {
   ScreenLoader,
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
+  FormField,
+  FormSelect,
+  FormSwitch,
+  FormTextArea,
+  FormRow,
+  FormDatePicker,
 } from '@shared';
+import { MEETING_CHANNEL_OPTIONS } from '../../utils/constants';
 import type { Step3Hook } from '../../hooks/useStep3';
 
 export interface Step3Props {
@@ -37,6 +44,11 @@ export const Step3: React.FC<Step3Props> = ({
     handleTimeSlotClick,
     handleAIGenerate,
     isSubmitting,
+    formData,
+    handleChange,
+    handleBlur,
+    errors,
+    touched,
   } = step3Hook;
   
   if (isLoadingEvents) {
@@ -89,9 +101,56 @@ export const Step3: React.FC<Step3Props> = ({
 
           {selectedSlots.length > 0 && (
             <div className="text-center text-sm text-gray-600">
-              تم اختيار {selectedSlots.length} من 3 مواعيد
+              تم اختيار موعد الاجتماع
             </div>
           )}
+
+          {/* Meeting Channel, Protocol, and Notes Fields */}
+          <FormRow className='sm:justify-end'>
+            <FormSwitch
+              checked={formData?.requires_protocol || false}
+              onCheckedChange={(value: boolean) => handleChange('requires_protocol', value)}
+              label="هل يتطلب بروتوكول؟"
+            />
+            <FormField
+              label="قناة الاجتماع"
+              required
+              error={touched?.meeting_channel ? errors?.meeting_channel : undefined}
+            >
+              <FormSelect
+                value={formData?.meeting_channel || ''}
+                onValueChange={(value: string) => {
+                  handleChange('meeting_channel', value);
+                  handleBlur('meeting_channel');
+                }}
+                options={MEETING_CHANNEL_OPTIONS}
+                placeholder="قناة الاجتماع"
+                error={!!(touched?.meeting_channel && errors?.meeting_channel)}
+              />
+            </FormField>
+          </FormRow>
+
+          {/* Scheduled Date - Required (date only, no time) */}
+          <FormField
+            label="تاريخ الاجتماع"
+            required
+            error={touched?.scheduled_at ? errors?.scheduled_at : undefined}
+          >
+            <FormDatePicker
+              value={formData?.scheduled_at || ''}
+              onChange={(value: string) => handleChange('scheduled_at', value)}
+              onBlur={() => handleBlur('scheduled_at')}
+              placeholder="dd/mm/yyyy"
+              error={!!(touched?.scheduled_at && errors?.scheduled_at)}
+            />
+          </FormField>
+
+          <FormTextArea
+            label="ملاحظات"
+            value={formData?.notes || ''}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('notes', e.target.value)}
+            placeholder="ملاحظات..."
+          />
 
           <ActionButtons
             onCancel={handleCancelClick}

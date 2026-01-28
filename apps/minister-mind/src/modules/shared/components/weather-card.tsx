@@ -37,7 +37,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
               className="flex flex-col p-0 gap-[8px] w-full"
             >
               <p
-                className="w-[179.11px] text-right text-white font-normal text-sm leading-[13.538px] whitespace-nowrap overflow-hidden text-ellipsis"
+                className="w-[179.11px] text-right text-white font-normal text-sm whitespace-nowrap overflow-hidden text-ellipsis"
               >
                 {rainChance}
               </p>
