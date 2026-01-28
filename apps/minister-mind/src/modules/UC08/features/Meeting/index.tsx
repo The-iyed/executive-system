@@ -4,7 +4,6 @@ import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagina
 import { createTableColumns } from '../../utils/createTableColumns';
 import { MEETING_TABS, PAGINATION } from '../../utils';
 import { useMeetings } from '../../hooks';
-import { PATH } from '../../routes/paths';
 import '@shared/styles';
 
 const Meeting: React.FC = () => {
