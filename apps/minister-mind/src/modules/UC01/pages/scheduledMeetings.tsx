@@ -173,8 +173,8 @@ const ScheduledMeetings: React.FC = () => {
         {/* Page Title, Description, and Search Bar */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right">الاجتماعات المجدولة</h1>
-            <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات المجدولة</p>
+            <h1 className="text-3xl font-bold mb-2 text-right">الاجتماعات السابقة</h1>
+            <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات السابقة</p>
           </div>
 
           <div className="flex-shrink-0">

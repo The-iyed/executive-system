@@ -20,16 +20,16 @@ export const Layout: React.FC<LayoutProps> = ({
   const getWelcomeConfig = (): WelcomeSectionProps => {
     if (pathname === PATH.SCHEDULED_MEETINGS) {
       return {
-        title: 'الاجتماعات المجدولة',
-        description: 'الاطلاع على الاجتماعات المجدولة',
+        title: 'الاجتماعات السابقة',
+        description: 'الاطلاع على الاجتماعات السابقة',
         breadcrumbs: undefined,
         actions: undefined,
       };
     }
     if (pathname === PATH.WORK_BASKET) {
       return {
-        title: 'سلة العمل - طلبات قيد المراجعة',
-        description: 'الاطلاع على الطلبات قيد المراجعة',
+        title: 'الطلبات الحالية',
+        description: 'الاطلاع على الطلبات الحالية',
         breadcrumbs: undefined,
         actions: undefined,
       };
