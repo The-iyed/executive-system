@@ -64,10 +64,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
       errorMessage={errorMessage}
       emptyMessage={emptyMessage}
       className={cn(
-        'text-right h-[44px] bg-[#FFFFFF] border border-[#D0D5DD] rounded-[8px]',
-        'focus:outline-none focus:border-[#008774]',
         error && 'border-[#D13C3C]',
-        !error && 'focus:border-[#008774]',
         fullWidth && 'w-full',
         className
       )}
