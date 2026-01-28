@@ -11,8 +11,9 @@ import {
   StatusBadge,
   Pagination,
 } from '@shared';
+import { MeetingClassification, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { Eye, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import {
   getAssignedConsultationRequests,
   GetConsultationRequestsParams,
@@ -84,14 +85,11 @@ const ConsultationRequests: React.FC = () => {
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Define table columns - order is from right to left (RTL)
-  // Columns: رقم البند, رقم الطلب, عنوان الاجتماع, مقدم الطلب, تاريخ الإرسال, الحالة
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
       id: 'sequentialNumber',
-      header: 'رقم البند',
-      width: 'w-32',
-      align: 'end',
+      header: 'بند',
+      width: 'w-[100px]',
       render: (row) => {
         // Get sequential number from original data
         const originalRequest = originalRequests.find((r) => r.id === row.id);
@@ -99,8 +97,8 @@ const ConsultationRequests: React.FC = () => {
           ? originalRequest.sequential_number.toString()
           : '-';
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
               {sequentialNumber}
             </span>
           </div>
@@ -110,15 +108,13 @@ const ConsultationRequests: React.FC = () => {
     {
       id: 'requestNumber',
       header: 'رقم الطلب',
-      width: 'w-48',
-      align: 'end',
+      width: 'w-[300px]',
       render: (row) => {
-        // Get request number from original data
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const requestNumber = originalRequest?.request_number || row.id;
         return (
-          <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
               {requestNumber}
             </span>
           </div>
@@ -126,77 +122,110 @@ const ConsultationRequests: React.FC = () => {
       },
     },
     {
-      id: 'title',
-      header: 'عنوان الاجتماع',
-      width: 'flex-1',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.title}
-          </span>
-        </div>
-      ),
+      id: 'requestDate',
+      header: 'تاريخ الطلب',
+      width: 'w-[250px]',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const submittedAt = originalRequest?.submitted_at;
+        const requestDate = submittedAt
+          ? new Date(submittedAt).toLocaleDateString('ar-SA')
+          : '';
+
+        return (
+          <div className="w-full flex justify-start">
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+              {requestDate || '-'}
+            </span>
+          </div>
+        );
+      },
     },
     {
-      id: 'coordinator',
-      header: 'مقدم الطلب',
-      width: 'w-56',
-      align: 'end',
+      id: 'submitterName',
+      header: 'اسم مقدم الطلب',
+      width: 'w-[300px]',
       render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
             {row.coordinator || '-'}
           </span>
-        </div>
       ),
     },
     {
-      id: 'date',
-      header: 'تاريخ الإرسال',
-      width: 'w-72',
-      align: 'end',
-      render: (row) => (
-        <div className="flex flex-row justify-end items-center gap-3 w-full min-w-0">
-          <span className="text-base font-medium text-right text-gray-900 leading-5 whitespace-nowrap overflow-visible">
-            {row.date}
-          </span>
-          <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
+      id: 'meetingSubject',
+      header: 'موضوع الاجتماع',
+      width: 'w-[320px]',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const subject = originalRequest?.meeting_subject;
+        return (
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+              {subject || '-'}
+            </span>
+        );
+      },
+    },
+    {
+      id: 'meetingCategory',
+      header: 'فئة الاجتماع',
+      width: 'w-[240px]',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const classification = originalRequest?.meeting_classification as MeetingClassification | undefined;
+        const classificationLabel = classification
+          ? getMeetingClassificationLabel(classification)
+          : '-';
+
+        return (
+            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+              {classificationLabel}
+            </span>
+        );
+      },
+    },
+    {
+      id: 'meetingDate',
+      header: 'تاريخ الاجتماع',
+      width: 'w-[300px]',     
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const meetingDate = originalRequest?.scheduled_at
+          ? new Date(originalRequest.scheduled_at).toLocaleDateString('ar-SA')
+          : '';
+
+        return (
+          <div className="flex flex-row justify-start items-center gap-3 w-full min-w-0">
+            <span className="block max-w-full text-base font-medium text-right text-gray-900 leading-5 truncate">
+              {meetingDate || '-'}
+            </span>
+            <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: 'status',
-      header: 'الحالة',
-      width: 'w-52',
-      align: 'end',
+      header: 'حالة الطلب',
+      width: 'w-[208px]',
       render: (row) => (
-        <div className="w-full flex justify-end">
           <StatusBadge status={row.status} label={row.statusLabel} />
-        </div>
       ),
     },
     {
-      id: 'actions',
-      header: '',
-      width: 'w-28',
-      align: 'center',
-      render: (row) => (
-        <div className="w-full flex justify-center">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // Navigate to consultation request detail page
-              navigate(`/consultation-request/${row.id}`);
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Eye className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
-          </button>
-        </div>
-      ),
+      id: 'isDataComplete',
+      header: 'البيانات مكتملة؟',
+      width: 'w-[220px]',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const isComplete = originalRequest?.is_data_complete;
+        return (
+            <span className="block max-w-full text-base font-normal text-right leading-5 truncate text-gray-600">
+              {isComplete === true ? 'نعم' : isComplete === false ? 'لا' : '-'}
+            </span>
+        );
+      },
     },
   ];
 
