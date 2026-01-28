@@ -205,6 +205,7 @@ export const submitContentReturn = async (
 export interface SubmitContentConsultationRequest {
   consultant_user_id: string;
   consultation_question: string;
+  is_draft?: boolean;
 }
 
 export const submitContentConsultation = async (
@@ -214,6 +215,15 @@ export const submitContentConsultation = async (
   await axiosInstance.post(
     `/api/content/${meetingRequestId}/request-consultation`,
     data
+  );
+};
+
+export const completeContentConsultation = async (
+  meetingRequestId: string,
+  consultationId: string
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/content/${meetingRequestId}/request-consultation/${consultationId}/complete`
   );
 };
 
