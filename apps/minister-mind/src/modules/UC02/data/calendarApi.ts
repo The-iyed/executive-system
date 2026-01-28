@@ -16,6 +16,7 @@ export interface GetCalendarEventsParams {
 
 /**
  * API function to fetch calendar events for a date range
+ * Uses start_date and end_date for filtering instead of pagination (page/limit/skip)
  */
 export const getCalendarEvents = async (
   params: GetCalendarEventsParams
@@ -29,6 +30,8 @@ export const getCalendarEvents = async (
         start_date,
         end_date,
         duration_minutes,
+        // Note: This API uses date range filtering (start_date/end_date) 
+        // instead of pagination parameters (page/limit/skip)
       },
     }
   );

@@ -3,7 +3,6 @@ import { Eye, Calendar } from 'lucide-react';
 import { TableColumn } from '@shared/components/data-table';
 import { StatusBadge } from '@shared/components/status-badge';
 import { MeetingDisplayData } from './meetingMapper';
-import { PATH } from '../routes/paths';
 
 export const createTableColumns = (navigate: NavigateFunction): TableColumn<MeetingDisplayData>[] => {
   return [
@@ -61,7 +60,7 @@ export const createTableColumns = (navigate: NavigateFunction): TableColumn<Meet
           <button
             onClick={(e) => {
               e.stopPropagation();
-              navigate(PATH.MEETING_PREVIEW.replace(':id', row.id));
+              navigate(`/meeting/${row.id}`);
             }}
             className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label="عرض التفاصيل"
