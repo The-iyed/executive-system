@@ -230,6 +230,7 @@ export const moveToWaitingList = async (meetingId: string): Promise<void> => {
 
 export interface SendToContentRequest {
   notes: string;
+  is_draft?: boolean;
 }
 
 export const sendToContent = async (meetingId: string, payload: SendToContentRequest): Promise<void> => {
@@ -238,6 +239,7 @@ export const sendToContent = async (meetingId: string, payload: SendToContentReq
 
 export interface RequestGuidanceRequest {
   notes: string;
+  is_draft?: boolean;
 }
 
 export const requestGuidance = async (meetingId: string, payload: RequestGuidanceRequest): Promise<void> => {
@@ -265,6 +267,7 @@ export interface ConsultantsResponse {
 export interface GetConsultantsParams {
   search?: string;
   role_id?: string;
+  role_code?: string;
   page?: number;
   limit?: number;
 }
@@ -277,6 +280,9 @@ export const getConsultants = async (params: GetConsultantsParams = {}): Promise
   }
   if (params.role_id) {
     queryParams.append('role_id', params.role_id);
+  }
+  if (params.role_code) {
+    queryParams.append('role_code', params.role_code);
   }
   if (params.page !== undefined) {
     queryParams.append('page', params.page.toString());
@@ -292,6 +298,7 @@ export const getConsultants = async (params: GetConsultantsParams = {}): Promise
 export interface RequestSchedulingConsultationRequest {
   consultant_user_id: string;
   consultation_question: string;
+  is_draft?: boolean;
 }
 
 export const requestSchedulingConsultation = async (
@@ -517,8 +524,8 @@ export interface GuidanceRecordsResponse {
   has_previous: boolean;
 }
 
-export const getGuidanceRecords = async (meetingId: string): Promise<GuidanceRecordsResponse> => {
-  const response = await axiosInstance.get<GuidanceRecordsResponse>(`/api/meeting-requests/${meetingId}/guidance-record`);
+export const getGuidanceRecords = async (meetingId: string, withDrafts: boolean = false): Promise<GuidanceRecordsResponse> => {
+  const response = await axiosInstance.get<GuidanceRecordsResponse>(`/api/meeting-requests/${meetingId}/guidance-record?with_drafts=${withDrafts}`);
   return response.data;
 };
 
