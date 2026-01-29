@@ -15,7 +15,7 @@ import {
   getInviteeResponseStatusLabel,
 } from '@shared/types';
 import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance, ProvideGuidanceRequest } from '../data/guidanceApi';
-import { getGuidanceRecords, type GuidanceRecord } from '../../UC02/data/meetingsApi';
+import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
@@ -51,6 +51,18 @@ const GuidanceRequestDetail: React.FC = () => {
     enabled: !!id && activeTab === 'guidance-request',
   });
 
+  // Fetch consultation records (سجلات الاستشارات)
+  const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
+    queryKey: ['consultation-records-content', id],
+    queryFn: () => getConsultationRecordsWithParams(id!, {
+      consultation_type: 'CONTENT',
+      include_drafts: false,
+      skip: 0,
+      limit: 100,
+    }),
+    enabled: !!id && activeTab === 'consultations-log',
+  });
+
   const meetingRequest = guidanceData?.meeting_request;
   const guidanceQuestion = guidanceData?.guidance_question || '';
 
@@ -70,6 +82,10 @@ const GuidanceRequestDetail: React.FC = () => {
     {
       id: 'directives-log',
       label:  'سجلات التوجيهات',
+    },
+    {
+      id: 'consultations-log',
+      label: 'سجلات الاستشارات',
     },
     {
       id: 'invitees',
@@ -1721,6 +1737,149 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="text-center">
                     <p className="text-gray-600 text-lg mb-2">سجل التوجيهات</p>
                     <p className="text-gray-500 text-sm">لا توجد توجيهات مسجلة</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Consultations Log Tab - سجلات الاستشارات */}
+          {activeTab === 'consultations-log' && (
+            <div className="flex flex-col gap-4">
+              {isLoadingConsultationRecords ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">جاري التحميل...</div>
+                </div>
+              ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                <DataTable
+                  columns={[
+                    {
+                      id: 'consultation_type',
+                      header: 'نوع الاستشارة',
+                      width: 'w-44',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_type === 'SCHEDULING'
+                            ? 'جدولة'
+                            : row.consultation_type === 'CONTENT'
+                              ? 'محتوى'
+                              : row.consultation_type}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_question',
+                      header: 'السؤال',
+                      width: 'flex-1',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700 line-clamp-2"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_question || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_answer',
+                      header: 'الإجابة',
+                      width: 'flex-1',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700 line-clamp-2"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_answer || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultant_name',
+                      header: 'رد بواسطة',
+                      width: 'w-48',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultant_name || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'requested_at',
+                      header: 'تاريخ الطلب',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.requested_at
+                            ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'responded_at',
+                      header: 'تاريخ الرد',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.responded_at
+                            ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'status',
+                      header: 'الحالة',
+                      width: 'w-32',
+                      align: 'center',
+                      render: (row: ConsultationRecord) => {
+                        const statusLabels: Record<string, string> = {
+                          PENDING: 'قيد الانتظار',
+                          RESPONDED: 'تم الرد',
+                          CANCELLED: 'ملغاة',
+                          DRAFT: 'مسودة',
+                        };
+                        const statusLabel = statusLabels[row.status] || row.status;
+                        return (
+                          <div className="flex justify-center">
+                            <StatusBadge status={row.status} label={statusLabel} />
+                          </div>
+                        );
+                      },
+                    },
+                  ]}
+                  data={consultationRecords.items}
+                  rowPadding="py-3"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-600 text-lg mb-2">سجل الاستشارات</p>
+                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
                   </div>
                 </div>
               )}
