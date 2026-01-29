@@ -38,7 +38,7 @@ export const createTableColumns = (
     {
       id: 'requestDate',
       header: 'تاريخ الطلب',
-      width: 'w-[420px]',
+      width: 'w-[500px]',
       render: (row) => (
         <div className="w-full flex justify-start">
           <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
@@ -101,7 +101,7 @@ export const createTableColumns = (
     {
       id: 'isDataComplete',
       header: 'البيانات مكتملة؟',
-      width: 'w-[260px]',
+      width: 'w-[280px]',
       align: 'center',
       render: (row) => (
         <span className="block max-w-full text-base font-normal text-right leading-5 truncate text-gray-600">
