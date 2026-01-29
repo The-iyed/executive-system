@@ -1,78 +1,122 @@
 import { NavigateFunction } from 'react-router-dom';
-import { Eye, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { TableColumn } from '@shared/components/data-table';
 import { StatusBadge } from '@shared/components/status-badge';
 import { MeetingDisplayData } from '../../utils/meetingMapper';
-import { PATH } from '../../routes/paths';
 
-export const createTableColumns = (navigate: NavigateFunction): TableColumn<MeetingDisplayData>[] => {
+export const createTableColumns = (
+  _navigate: NavigateFunction,
+  options?: { startIndex?: number }
+): TableColumn<MeetingDisplayData>[] => {
+  const startIndex = options?.startIndex ?? 0;
   return [
+    {
+      id: 'itemNumber',
+      header: 'رقم البند',
+      width: 'w-[200px]',
+      align: 'center',
+      render: (_row, index) => (
+        <div className="w-full flex justify-center">
+          <span className="block max-w-full text-base font-normal text-gray-600 leading-5 truncate">
+            {startIndex + index + 1}
+          </span>
+        </div>
+      ),
+    },
     {
       id: 'requestNumber',
       header: 'رقم الطلب',
-      width: 'w-40',
+      width: 'w-[300px]',
       render: (row) => (
-        // <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+        <div className="w-full flex justify-start">
+          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
             {row.requestNumber || '-'}
           </span>
+        </div>
+      ),
+    },
+    {
+      id: 'requestDate',
+      header: 'تاريخ الطلب',
+      width: 'w-[420px]',
+      render: (row) => (
+        <div className="w-full flex justify-start">
+          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            {row.requestDate || '-'}
+          </span>
+        </div>
       ),
     },
     {
       id: 'title',
       header: 'عنوان الاجتماع',
-      // width: 'flex-1',
+      width: 'w-[350px]',
       render: (row) => (
-        // <div className="w-full flex justify-start">
-          <span className="text-base font-normal text-right text-gray-600 leading-5">
-            {row.title || '-'}
-          </span>
-        // </div>
+        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          {row.title || '-'}
+        </span>
       ),
     },
     {
-      id: 'date',
-      header: 'التاريخ',
+      id: 'meetingCategory',
+      header: 'فئة الاجتماع',
+      width: 'w-[350px]',
       render: (row) => (
-        row.date ? <div className="flex flex-row justify-start items-center gap-3 w-full">
+        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          {row.meetingCategory || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'meetingDate',
+      header: 'تاريخ الاجتماع',
+      width: 'w-[300px]',
+      render: (row) => (
+        row.meetingDate !== '-' ? (
+          <div className="flex flex-row justify-start items-center gap-3 w-full min-w-0">
+          <span className="block max-w-full text-base font-medium text-right text-gray-900 leading-5 truncate">
+            {row.meetingDate}
+          </span>
           <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
             <Calendar className="w-5 h-5 text-teal-600" strokeWidth={1.4} />
           </div>
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.date}
-          </span>
         </div> 
-        :
-         <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">-</span>
-
+        ) : (
+          <span className="block max-w-full text-base font-normal text-center text-gray-600 leading-5 truncate">
+            -
+          </span>
+        )
       ),
     },
     {
       id: 'status',
-      header: 'الحالة',
+      header: 'حالة الاجتماع',
+      width: 'w-[250px]',
       render: (row) => (
-        <div className="w-[fit-content]">
-          <StatusBadge status={row.status} label={row.statusLabel} className="px-3" />
+        <div className="w-full flex justify-start">
+          <StatusBadge status={row.status} label={row.statusLabel} />
         </div>
       ),
     },
     {
-      id: 'actions',
-      header: '',
-      width: 'w-32',
+      id: 'isDataComplete',
+      header: 'البيانات مكتملة؟',
+      width: 'w-[260px]',
+      align: 'center',
       render: (row) => (
-        <div className="w-full flex justify-center">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(PATH.MEETING_PREVIEW.replace(':id', row.id));
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="عرض التفاصيل"
-          >
-            <Eye className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
-          </button>
-        </div>
+        <span className="block max-w-full text-base font-normal text-right leading-5 truncate text-gray-600">
+          {row.isDataComplete == null ? '-' : row.isDataComplete ? 'نعم' : 'لا'}
+        </span>
+      ),
+    },
+    {
+      id: 'returnNotes',
+      header: 'ملاحظات الإعادة',
+      width: 'w-[320px]',
+      render: (row) => (
+        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          {row.returnNotes || '-'}
+        </span>
       ),
     },
   ];

@@ -1915,55 +1915,6 @@ const GuidanceRequestDetail: React.FC = () => {
                   </p>
                 )}
                   </div>
-
-                  {/* minister_support - دعم الوزير */}
-                  <div className="flex flex-col gap-2">
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
-                      }}
-                    >
-                      دعم الوزير
-                    </h2>
-                {meetingRequest.minister_support && meetingRequest.minister_support.length > 0 ? (
-                      <div className="w-full overflow-x-auto table-scroll">
-                        <div className="min-w-[1085px]">
-                          <DataTable
-                            columns={[
-                              {
-                                id: 'index',
-                                header: 'رقم البند',
-                                width: 'w-[120px]',
-                                align: 'center',
-                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
-                              },
-                              {
-                                id: 'support_description',
-                                header: 'وصف الدعم',
-                                width: 'flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.support_description || '-'}
-                                  </span>
-                                ),
-                              },
-                            ] as TableColumn<any>[]}
-                            data={meetingRequest.minister_support}
-                          />
-                        </div>
-                      </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    لا يوجد دعم من الوزير
-                  </p>
-                )}
-                  </div>
             </div>
           )}
         </div>
