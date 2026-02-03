@@ -83,7 +83,6 @@ export const step1BasicInfoBaseSchema = z.object({
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string(),
   sector: z.string().optional().or(z.literal('')),
-  meeting_location: z.string().optional().or(z.literal('')),
   meetingGoals: z.array(meetingGoalItemSchema).optional().default([]),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
   relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
@@ -118,19 +117,21 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
   const requiresMeetingManager = data.is_on_behalf_of === true;
   const requiresDirectiveMethod = data.is_based_on_directive === true;
   const requiresPreviousMeetingMinutes = data.directive_method === 'PREVIOUS_MEETING';
+  const requiresClassification = data.meetingCategory !== 'PRIVATE_MEETING';
 
   // Agenda optional in step 1; presentation/content is in step 2
   const agendaItemsWithSupportSchema = z.array(agendaItemSchema(false)).optional().default([]);
 
   const baseSchema = z.object({
-    meetingSubject: requiredString('موضوع الاجتماع مطلوب', 1, 200),
+    meetingSubject: requiredString('عنوان الاجتماع مطلوب', 1, 200),
     meetingType: requiredString('نوع الاجتماع مطلوب', 1, 100),
     meetingCategory: requiredString('فئة الاجتماع مطلوبة'),
-    meetingClassification1: requiredString('تصنيف الاجتماع مطلوب'),
+    meetingClassification1: requiresClassification
+      ? requiredString('تصنيف الاجتماع مطلوب')
+      : optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
-    meeting_location: optionalString('مقر الاجتماع يجب أن يكون نصاً'),
     meetingGoals: z
       .array(meetingGoalItemValidationSchema)
       .min(1, 'يجب إضافة هدف واحد على الأقل')
@@ -150,8 +151,8 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       ? requiredString('مبرر اللقاء مطلوب')
       : optionalString('مبرر اللقاء يجب أن يكون نصاً'),
     relatedTopic: requiresRelatedTopic
-      ? requiredString('الموضوع المرتبط مطلوب')
-      : optionalString('الموضوع المرتبط يجب أن يكون نصاً'),
+      ? requiredString('موضوع التكليف المرتبط مطلوب')
+      : optionalString('موضوع التكليف المرتبط يجب أن يكون نصاً'),
     dueDate: dateSchema(requiresRelatedTopic, 'تاريخ الاستحقاق مطلوب'),
     previousMeetingDate: dateSchema(requiresPreviousDate, 'تاريخ الاجتماع السابق مطلوب'),
     sector: requiresSector ? requiredString('القطاع مطلوب') : optionalString('القطاع يجب أن يكون نصاً'),
@@ -200,15 +201,18 @@ export const extractStep1BasicInfoErrors = (
   return { formErrors, tableErrors };
 };
 
+const CATEGORY_PRIVATE_MEETING = 'PRIVATE_MEETING' as const;
+
 export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormData, data: Partial<Step1BasicInfoFormData>): boolean => {
   switch (field) {
     case 'meetingSubject':
     case 'meetingType':
     case 'meetingCategory':
-    case 'meetingClassification1':
     case 'meetingConfidentiality':
     case 'meetingGoals':
       return true;
+    case 'meetingClassification1':
+      return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
     case 'meetingReason':
       return !!data.meetingCategory && (CATEGORIES_REQUIRING_REASON as readonly string[]).includes(data.meetingCategory);
     case 'relatedTopic':

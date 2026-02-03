@@ -44,13 +44,7 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
     formDataToSend.append('meeting_type', formData.meetingType);
   }
   if (formData.meetingClassification1) {
-    // Auto-set to SPECIAL if PRIVATE_MEETING per requirement
-    const classificationType =
-      formData.meetingCategory === 'PRIVATE_MEETING' ? 'SPECIAL' : formData.meetingClassification1;
-    formDataToSend.append('meeting_classification_type', classificationType);
-  }
-  if (formData.meeting_location !== undefined && formData.meeting_location !== '') {
-    formDataToSend.append('meeting_location', formData.meeting_location);
+    formDataToSend.append('meeting_classification_type', formData.meetingClassification1);
   }
   if (formData.sector) {
     formDataToSend.append('sector', formData.sector);
@@ -340,7 +334,6 @@ export const useStep1BasicInfo = ({
             'meetingClassification2',
             'meetingConfidentiality',
             'sector',
-            'meeting_location',
             'wasDiscussedPreviously',
             'previousMeetingDate',
             'notes',
