@@ -58,6 +58,14 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
+    path: PATH.PREVIOUS_MEETINGS,
+    component: lazy(() => import('../features/PreviousMeeting')),
+    layout: Layout,
+    useCase: 'UC-01',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
     path: PATH.WORK_BASKET,
     component: lazy(() => import('../pages/workBasket')),
     layout: Layout,

@@ -21,8 +21,14 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'calendar',
         icon: 'solar:calendar-outline',
-        label: 'الاجتماعات',
+        label: 'الطلبات الحالية',
         path: UC01_PATH.MEETINGS,
+      },
+      {
+        id: 'previous-meetings',
+        icon: 'solar:calendar-mark-outline',
+        label: 'الاجتماعات السابقة',
+        path: UC01_PATH.PREVIOUS_MEETINGS,
       },
     ],
   },
