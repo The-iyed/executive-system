@@ -53,7 +53,7 @@ export const useMeetingSteps = ({
     initialData: initialData?.step2,
     onSuccess: onStep2Success || ((isDraft) => {
       if (isDraft) {
-        navigate(PATH.MEETINGS);
+        navigate(PATH.NEW_MEETING);
       }
     }),
     onError: (error) => {
@@ -67,7 +67,7 @@ export const useMeetingSteps = ({
     initialSlots: initialData?.step3?.initialSlots,
     onSuccess: onStep3Success || (() => {
       clearDraftData();
-      navigate(PATH.MEETINGS);
+      navigate(PATH.NEW_MEETING);
     }),
     onError: (error) => {
       console.error('Step3 error:', error);
