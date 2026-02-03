@@ -21,6 +21,13 @@ export interface MeetingApiResponse {
   scheduled_at: string | null;
   submitter_name: string;
   meeting_channel: string;
+  /** فئة الاجتماع (may be missing in some API responses) */
+  meeting_classification?: string | null;
+  /** هل البيانات مكتملة؟ */
+  is_data_complete?: boolean | null;
+  /** Notes arrays (used for "ملاحظات الإعادة" when present) */
+  general_notes?: unknown;
+  content_officer_notes?: unknown;
 }
 
 export interface MeetingsListResponse {

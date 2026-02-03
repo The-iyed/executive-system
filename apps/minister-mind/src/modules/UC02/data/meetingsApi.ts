@@ -558,6 +558,38 @@ export const getConsultationRecords = async (meetingId: string, withDrafts?: boo
   return response.data;
 };
 
+export interface GetConsultationRecordsParams {
+  consultation_type?: string;
+  include_drafts?: boolean;
+  skip?: number;
+  limit?: number;
+}
+
+export const getConsultationRecordsWithParams = async (
+  meetingId: string,
+  params: GetConsultationRecordsParams = {}
+): Promise<ConsultationRecordsResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.consultation_type) {
+    queryParams.append('consultation_type', params.consultation_type);
+  }
+  if (params.include_drafts !== undefined) {
+    queryParams.append('include_drafts', params.include_drafts.toString());
+  }
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+
+  const response = await axiosInstance.get<ConsultationRecordsResponse>(
+    `/api/meeting-requests/${meetingId}/consultation-record?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
 // Guidance Records API
 export interface GuidanceRecord {
   guidance_id: string;
