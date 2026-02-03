@@ -55,6 +55,17 @@ export interface Invitee {
   access_permission: string | null;
 }
 
+export interface GeneralNoteItem {
+  id: string;
+  note_type: string;
+  text: string;
+  author_id: string;
+  author_type: string;
+  author_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MeetingApiResponse {
   id: string;
   request_number: string;
@@ -88,6 +99,7 @@ export interface MeetingApiResponse {
   meeting_title: string;
   meeting_type: string;
   meeting_subject: string;
+  meeting_owner_name: string;
   meeting_classification: string;
   presentation_duration: number;
   is_data_complete: boolean;
@@ -112,8 +124,11 @@ export interface MeetingApiResponse {
   invitees: Invitee[];
   related_directive_ids: string[];
   related_guidance: string | null;
-  general_notes: string | null;
+  /** API returns array of note objects; legacy may be string */
+  general_notes: GeneralNoteItem[] | string | null;
   content_officer_notes: string | null;
+  /** Executive summary text; attachments with is_executive_summary may also carry the summary */
+  executive_summary?: string | null;
   meeting_justification: string;
   related_topic: string | null;
   deadline: string | null;
@@ -352,6 +367,21 @@ export const updateMeetingRequest = async (
   await axiosInstance.put(`/api/meeting-requests/${meetingId}/update`, payload);
 };
 
+/**
+ * Update meeting request with presentation files only (FormData multipart).
+ * Sends only presentation_files; no payload field.
+ */
+export const updateMeetingRequestWithAttachments = async (
+  meetingId: string,
+  presentationFiles: File[]
+): Promise<void> => {
+  const formData = new FormData();
+  presentationFiles.forEach((file) => {
+    formData.append('presentation_files', file, file.name || undefined);
+  });
+  await axiosInstance.put(`/api/meeting-requests/${meetingId}/update`, formData);
+};
+
 export interface ReturnForInfoRequest {
   notes: string;
 }
@@ -370,6 +400,9 @@ export interface MinisterAttendee {
   is_required: boolean;
   justification: string;
   access_permission: string;
+  position?: string;
+  phone?: string;
+  attendance_channel?: 'PHYSICAL' | 'REMOTE';
 }
 
 export interface ScheduleMeetingRequest {
@@ -428,6 +461,12 @@ export const createWebexMeeting = async (
 };
 
 // Directives API
+export interface DirectiveResponsiblePerson {
+  id: string;
+  name: string;
+  position: string | null;
+}
+
 export interface Directive {
   id: string;
   directive_number: string;
@@ -435,7 +474,7 @@ export interface Directive {
   directive_text: string;
   related_meeting: string;
   deadline: string | null;
-  responsible_persons: string[];
+  responsible_persons: DirectiveResponsiblePerson[];
   directive_status: string;
   related_meeting_request_id: string | null;
 }
@@ -468,8 +507,24 @@ export const getDirectives = async (params: GetDirectivesParams = {}): Promise<D
   return response.data;
 };
 
+export const getPreviousDirectives = async (params: GetDirectivesParams = {}): Promise<DirectivesListResponse> => {
+  const queryParams = new URLSearchParams();
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
+  return response.data;
+};
+
 export const closeDirective = async (directiveId: string): Promise<void> => {
   await axiosInstance.post(`/api/scheduling/directives/${directiveId}/close`);
+};
+
+export const cancelDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/scheduling/directives/${directiveId}/cancel`);
 };
 
 // Consultation Records API
@@ -495,8 +550,11 @@ export interface ConsultationRecordsResponse {
   has_previous: boolean;
 }
 
-export const getConsultationRecords = async (meetingId: string, withDrafts: boolean = false): Promise<ConsultationRecordsResponse> => {
-  const response = await axiosInstance.get<ConsultationRecordsResponse>(`/api/meeting-requests/${meetingId}/consultation-record?with_drafts=${withDrafts}`);
+export const getConsultationRecords = async (meetingId: string, withDrafts?: boolean): Promise<ConsultationRecordsResponse> => {
+  const url = withDrafts === undefined
+    ? `/api/meeting-requests/${meetingId}/consultation-record`
+    : `/api/meeting-requests/${meetingId}/consultation-record?with_drafts=${withDrafts}`;
+  const response = await axiosInstance.get<ConsultationRecordsResponse>(url);
   return response.data;
 };
 
@@ -524,8 +582,11 @@ export interface GuidanceRecordsResponse {
   has_previous: boolean;
 }
 
-export const getGuidanceRecords = async (meetingId: string, withDrafts: boolean = false): Promise<GuidanceRecordsResponse> => {
-  const response = await axiosInstance.get<GuidanceRecordsResponse>(`/api/meeting-requests/${meetingId}/guidance-record?with_drafts=${withDrafts}`);
+export const getGuidanceRecords = async (meetingId: string, withDrafts?: boolean): Promise<GuidanceRecordsResponse> => {
+  const url = withDrafts === undefined
+    ? `/api/meeting-requests/${meetingId}/guidance-record`
+    : `/api/meeting-requests/${meetingId}/guidance-record?with_drafts=${withDrafts}`;
+  const response = await axiosInstance.get<GuidanceRecordsResponse>(url);
   return response.data;
 };
 
