@@ -1,16 +1,14 @@
 import axiosInstance from "@auth/utils/axios";
 
-
-// Users API
 export interface GetUsersParams {
     search?: string;
     role_code?: string;
     user_type?: string;
     skip?: number;
     limit?: number;
-  }
+}
   
-  export interface UserApiResponse {
+export interface UserApiResponse {
     id: string;
     username?: string;
     email?: string;
@@ -22,7 +20,7 @@ export interface GetUsersParams {
     permission_ids?: string[];
     is_active?: boolean;
     [key: string]: any;
-  }
+}
   
   export interface UsersListResponse {
     items: UserApiResponse[];

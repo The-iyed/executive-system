@@ -1,13 +1,12 @@
 import React, { useCallback } from 'react';
-import { 
-  FormField, 
-  FormInput, 
-  FormSelect, 
-  FormDatePicker, 
-  FormTable, 
-  FormTextArea, 
-  FormSwitch, 
-  FileUpload,
+import {
+  FormField,
+  FormInput,
+  FormSelect,
+  FormDatePicker,
+  FormTable,
+  FormTextArea,
+  FormSwitch,
   FormRow,
   ActionButtons,
   FormAsyncSelectV2,
@@ -25,23 +24,18 @@ import {
 import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
 import { getMeetings, type MeetingApiResponse } from '../../../../data/meetingsApi';
 import { cn } from '@sanad-ai/ui';
-import type { Step1FormData } from '../../schemas/step1.schema';
+import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
 
-export interface Step1Props {
-  // Form data and state
-  formData: Partial<Step1FormData>;
-  errors: Partial<Record<keyof Step1FormData, string>>;
-  touched: Partial<Record<keyof Step1FormData, boolean>>;
+export interface Step1BasicInfoProps {
+  formData: Partial<Step1BasicInfoFormData>;
+  errors: Partial<Record<keyof Step1BasicInfoFormData, string>>;
+  touched: Partial<Record<keyof Step1BasicInfoFormData, boolean>>;
   tableErrors: Record<string, Record<string, string>>;
   tableTouched: Record<string, Record<string, boolean>>;
   isSubmitting: boolean;
   isDeleting: boolean;
-  
-  // Handlers
-  handleChange: (field: keyof Step1FormData, value: any) => void;
-  handleBlur: (field: keyof Step1FormData) => void;
-  handleFilesSelect: (files: File[]) => void;
-  handleAdditionalFilesSelect: (files: File[]) => void;
+  handleChange: (field: keyof Step1BasicInfoFormData, value: any) => void;
+  handleBlur: (field: keyof Step1BasicInfoFormData) => void;
   handleAddGoal: () => void;
   handleDeleteGoal: (id: string) => void;
   handleUpdateGoal: (id: string, field: string, value: any) => void;
@@ -55,11 +49,10 @@ export interface Step1Props {
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
   
-  // Utilities
-  isFieldRequired: (field: keyof Step1FormData) => boolean;
+  isStep1BasicInfoFieldRequired: (field: keyof Step1BasicInfoFormData) => boolean;
 }
 
-export const Step1: React.FC<Step1Props> = ({
+export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   formData,
   errors,
   touched,
@@ -69,8 +62,6 @@ export const Step1: React.FC<Step1Props> = ({
   isDeleting,
   handleChange,
   handleBlur,
-  handleFilesSelect,
-  handleAdditionalFilesSelect,
   handleAddGoal,
   handleDeleteGoal,
   handleUpdateGoal,
@@ -83,7 +74,7 @@ export const Step1: React.FC<Step1Props> = ({
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
-  isFieldRequired,
+  isStep1BasicInfoFieldRequired,
 }) => {
   // Load users options for meeting manager
   const loadMeetingManagerOptions = useCallback(async (
@@ -193,7 +184,7 @@ export const Step1: React.FC<Step1Props> = ({
           <FormRow>
             <FormField
               label="مبرر اللقاء"
-              required={isFieldRequired('meetingReason')}
+              required={isStep1BasicInfoFieldRequired('meetingReason')}
               error={touched.meetingReason ? errors.meetingReason : undefined}
             >
               <FormInput
@@ -222,7 +213,7 @@ export const Step1: React.FC<Step1Props> = ({
           <FormRow>
             <FormField
               label="تاريخ الاستحقاق"
-              required={isFieldRequired('dueDate')}
+              required={isStep1BasicInfoFieldRequired('dueDate')}
               error={touched.dueDate ? errors.dueDate : undefined}
             >
               <FormDatePicker
@@ -235,7 +226,7 @@ export const Step1: React.FC<Step1Props> = ({
             </FormField>
             <FormField
               label="الموضوع المرتبط"
-              required={isFieldRequired('relatedTopic')}
+              required={isStep1BasicInfoFieldRequired('relatedTopic')}
               error={touched.relatedTopic ? errors.relatedTopic : undefined}
             >
               <FormInput
@@ -280,7 +271,7 @@ export const Step1: React.FC<Step1Props> = ({
           <FormRow>
             <FormField
               label="القطاع"
-              required={isFieldRequired('sector')}
+              required={isStep1BasicInfoFieldRequired('sector')}
               error={touched.sector ? errors.sector : undefined}
             >
               <FormInput
@@ -315,36 +306,21 @@ export const Step1: React.FC<Step1Props> = ({
           </FormRow>
 
           {formData.is_urgent && (
-            <>
-              <FormRow>
-                <FormField
-                  label="السبب"
-                  required={isFieldRequired('urgent_reason')}
-                  error={touched.urgent_reason ? errors.urgent_reason : undefined}
-                >
-                  <FormInput
-                    value={formData.urgent_reason || ''}
-                    onChange={(e) => handleChange('urgent_reason', e.target.value)}
-                    onBlur={() => handleBlur('urgent_reason')}
-                    placeholder="-------"
-                    error={!!(touched.urgent_reason && errors.urgent_reason)}
-                  />
-                </FormField>
-                <FormField
-                  label="متى سيتم إرفاق العرض؟"
-                  required={isFieldRequired('presentation_attachment_timing')}
-                  error={touched.presentation_attachment_timing ? errors.presentation_attachment_timing : undefined}
-                >
-                  <FormDatePicker
-                    value={formData.presentation_attachment_timing}
-                    onChange={(value) => handleChange('presentation_attachment_timing', value)}
-                    onBlur={() => handleBlur('presentation_attachment_timing')}
-                    placeholder="dd/mm/yyyy"
-                    error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
-                  />
-                </FormField>
-              </FormRow>
-            </>
+            <FormRow className='sm:justify-end'>
+              <FormField
+                label="السبب"
+                required={isStep1BasicInfoFieldRequired('urgent_reason')}
+                error={touched.urgent_reason ? errors.urgent_reason : undefined}
+              >
+                <FormInput
+                  value={formData.urgent_reason || ''}
+                  onChange={(e) => handleChange('urgent_reason', e.target.value)}
+                  onBlur={() => handleBlur('urgent_reason')}
+                  placeholder="-------"
+                  error={!!(touched.urgent_reason && errors.urgent_reason)}
+                />
+              </FormField>
+            </FormRow>
           )}
 
           {/* On Behalf Of Section */}
@@ -359,8 +335,8 @@ export const Step1: React.FC<Step1Props> = ({
           {formData.is_on_behalf_of && (
             <FormRow className='sm:justify-end'>
               <FormField
-                label="مسير الاجتماع"
-                required={isFieldRequired('meeting_manager_id')}
+                label="مالك الاجتماع"
+                required={isStep1BasicInfoFieldRequired('meeting_manager_id')}
                 error={touched.meeting_manager_id ? errors.meeting_manager_id : undefined}
               >
                 <FormAsyncSelectV2
@@ -390,7 +366,7 @@ export const Step1: React.FC<Step1Props> = ({
               <FormRow className='sm:justify-end'>
                 <FormField
                   label="طريقة التوجيه"
-                  required={isFieldRequired('directive_method')}
+                  required={isStep1BasicInfoFieldRequired('directive_method')}
                   error={touched.directive_method ? errors.directive_method : undefined}
                 >
                   <FormSelect
@@ -407,7 +383,7 @@ export const Step1: React.FC<Step1Props> = ({
                 <FormRow className='sm:justify-end'>
                   <FormField
                     label="محضر الاجتماع"
-                    required={isFieldRequired('previous_meeting_minutes_id')}
+                    required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_id')}
                     error={touched.previous_meeting_minutes_id ? errors.previous_meeting_minutes_id : undefined}
                   >
                     <FormAsyncSelectV2
@@ -426,24 +402,6 @@ export const Step1: React.FC<Step1Props> = ({
           )}
         </div>
 
-        <FileUpload
-          files={formData.presentation_files}
-          error={errors.presentation_files}
-          onFilesSelect={handleFilesSelect}
-          required={isFieldRequired('presentation_files')}
-          existingFiles={formData.existingFiles}
-          multiple={true}
-          label="العرض التقديمي"
-        />
-
-        <FileUpload
-          files={formData.additional_files}
-          onFilesSelect={handleAdditionalFilesSelect}
-          existingFiles={formData.existingAdditionalFiles}
-          multiple={true}
-          label="ملفات إضافية (PDF، Word، Excel)"
-        />
-
         <FormTable
           title="أهداف الاجتماع"
           required
@@ -460,7 +418,7 @@ export const Step1: React.FC<Step1Props> = ({
 
         <FormTable
           title="أجندة الاجتماع"
-          required={isFieldRequired('meetingAgenda')}
+          required={isStep1BasicInfoFieldRequired('meetingAgenda')}
           columns={MEETING_AGENDA_COLUMNS}
           rows={formData.meetingAgenda || []}
           onAddRow={handleAddAgenda}
@@ -480,7 +438,7 @@ export const Step1: React.FC<Step1Props> = ({
           {formData.wasDiscussedPreviously && (
             <FormField
               label="تاريخ الاجتماع السابق"
-              required={isFieldRequired('previousMeetingDate')}
+              required={isStep1BasicInfoFieldRequired('previousMeetingDate')}
               error={touched.previousMeetingDate ? errors.previousMeetingDate : undefined}
             >
               <FormDatePicker

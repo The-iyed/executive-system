@@ -1,83 +1,94 @@
 import { useCallback } from 'react';
-import { PATH } from '../../../routes/paths';
 
-interface Step1Hook {
+interface Step1BasicInfoHook {
   submitStep: (isDraft: boolean) => Promise<string | null>;
 }
 
-interface Step2Hook {
+interface Step2ContentHook {
   submitStep: (isDraft: boolean) => void;
 }
 
-interface Step3Hook {
+interface Step3InviteesHook {
+  submitStep: (isDraft: boolean) => void;
+}
+
+interface Step4SchedulingHook {
   submitStep: (isDraft: boolean, slots: string[]) => Promise<void>;
   selectedSlots: string[];
 }
 
 interface UseStepHandlersProps {
-  step1Hook: Step1Hook;
-  step2Hook: Step2Hook;
-  step3Hook: Step3Hook;
+  step1BasicInfoHook: Step1BasicInfoHook;
+  step2ContentHook: Step2ContentHook;
+  step3InviteesHook: Step3InviteesHook;
+  step4SchedulingHook: Step4SchedulingHook;
   onNext: (newDraftId?: string) => void | string | undefined;
   onSaveDraft: () => void;
-  navigate: (path: string) => void;
 }
 
 export const useStepHandlers = ({
-  step1Hook,
-  step2Hook,
-  step3Hook,
+  step1BasicInfoHook,
+  step2ContentHook,
+  step3InviteesHook,
+  step4SchedulingHook,
   onNext,
   onSaveDraft,
-  navigate,
 }: UseStepHandlersProps) => {
-  const handleStep1Next = useCallback(async () => {
+  const handleStep1BasicInfoNext = useCallback(async () => {
     try {
-      const newDraftId = await step1Hook.submitStep(false);
+      const newDraftId = await step1BasicInfoHook.submitStep(false);
       if (newDraftId) {
         onNext(newDraftId);
       }
     } catch (error) {
-      console.error('Error submitting step 1:', error);
+      console.error('Error submitting step 1 (Basic Info):', error);
     }
-  }, [step1Hook, onNext]);
+  }, [step1BasicInfoHook, onNext]);
 
-  const handleStep1SaveDraft = useCallback(async () => {
+  const handleStep1BasicInfoSaveDraft = useCallback(async () => {
     try {
-      const newDraftId = await step1Hook.submitStep(true);
+      const newDraftId = await step1BasicInfoHook.submitStep(true);
       if (newDraftId) {
         onSaveDraft();
       }
     } catch (error) {
       console.error('Error saving draft:', error);
     }
-  }, [step1Hook, onSaveDraft]);
+  }, [step1BasicInfoHook, onSaveDraft]);
 
-  const handleStep2Next = useCallback(() => {
-    step2Hook.submitStep(false);
-  }, [step2Hook]);
+  const handleStep2ContentNext = useCallback(() => {
+    step2ContentHook.submitStep(false);
+  }, [step2ContentHook]);
 
-  const handleStep2SaveDraft = useCallback(() => {
-    step2Hook.submitStep(true);
-  }, [step2Hook]);
+  const handleStep2ContentSaveDraft = useCallback(() => {
+    step2ContentHook.submitStep(true);
+  }, [step2ContentHook]);
 
-  const handleStep3Next = useCallback(async () => {
-    await step3Hook.submitStep(false, step3Hook.selectedSlots);
-  }, [step3Hook]);
+  const handleStep3InviteesNext = useCallback(() => {
+    step3InviteesHook.submitStep(false);
+  }, [step3InviteesHook]);
 
-  const handleStep3SaveDraft = useCallback(async () => {
-    await step3Hook.submitStep(true, step3Hook.selectedSlots);
-    if (step3Hook.selectedSlots.length === 0) {
-      navigate(PATH.MEETINGS);
-    }
-  }, [step3Hook, navigate]);
+  const handleStep3InviteesSaveDraft = useCallback(() => {
+    step3InviteesHook.submitStep(true);
+  }, [step3InviteesHook]);
+
+  const handleStep4SchedulingNext = useCallback(async () => {
+    await step4SchedulingHook.submitStep(false, step4SchedulingHook.selectedSlots);
+  }, [step4SchedulingHook]);
+
+  const handleStep4SchedulingSaveDraft = useCallback(async () => {
+    await step4SchedulingHook.submitStep(true, step4SchedulingHook.selectedSlots);
+    // Navigation after save draft is handled by step 4 hook's onSuccess (same as steps 2 & 3)
+  }, [step4SchedulingHook]);
 
   return {
-    handleStep1Next,
-    handleStep1SaveDraft,
-    handleStep2Next,
-    handleStep2SaveDraft,
-    handleStep3Next,
-    handleStep3SaveDraft,
+    handleStep1BasicInfoNext,
+    handleStep1BasicInfoSaveDraft,
+    handleStep2ContentNext,
+    handleStep2ContentSaveDraft,
+    handleStep3InviteesNext,
+    handleStep3InviteesSaveDraft,
+    handleStep4SchedulingNext,
+    handleStep4SchedulingSaveDraft,
   };
 };

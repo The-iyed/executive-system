@@ -10,6 +10,8 @@ export const MEETING_CATEGORY_OPTIONS = [
   { value: 'EVENTS_AND_VISITS', label: 'الفعاليات والزيارات' },
   { value: 'BILATERAL_MEETING', label: 'لقاء ثنائي' },
   { value: 'PRIVATE_MEETING', label: 'لقاء خاص' },
+  { value: 'WORKSHOP', label: 'ورشة عمل' },
+  { value: 'DISCUSSION_WITHOUT_PRESENTATION', label: 'مناقشة (بدون عرض تقديمي)' },
   { value: 'BUSINESS', label: 'أعمال' },
   { value: 'GOVERNMENT_CENTER_TOPICS', label: 'مواضيع مركز الحكومة' },
 ];
@@ -112,7 +114,7 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   },
   {
     id: 'attendance_mechanism',
-    header: 'الحضور',
+    header: 'آلية الحضور',
     type: 'select',
     selectOptions: [
       { value: AttendanceMechanism.PHYSICAL, label: AttendanceMechanism.PHYSICAL },
@@ -136,6 +138,7 @@ export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو جديد';
 
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
-  { id: 'step2', label: 'قائمة المدعوين' },
-  // { id: 'step3', label: 'موعد الاجتماع' },
+  { id: 'step2', label: 'المحتوى' },
+  { id: 'step3', label: 'قائمة المدعوين' },
+  // { id: 'step4', label: 'موعد الاجتماع' },
 ];
