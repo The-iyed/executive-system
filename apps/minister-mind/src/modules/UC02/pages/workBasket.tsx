@@ -133,6 +133,17 @@ const WorkBasket: React.FC = () => {
       ),
     },
     {
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
+      width: 'min-w-[220px] flex-1',
+      align: 'end',
+      render: (row) => (
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          {row.meeting_subject ?? '-'}
+        </span>
+      ),
+    },
+    {
       id: 'created_at',
       header: 'تاريخ الطلب',
       width: 'w-40',
@@ -156,17 +167,6 @@ const WorkBasket: React.FC = () => {
             {row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}
           </span>
         </div>
-      ),
-    },
-    {
-      id: 'meeting_subject',
-      header: 'موضوع الاجتماع',
-      width: 'flex-1',
-      align: 'end',
-      render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
-          {row.meeting_subject}
-        </span>
       ),
     },
     {
@@ -263,11 +263,14 @@ const WorkBasket: React.FC = () => {
           ) : (
             <>
               {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={rawMeetings}
-                  onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
-                />
+                <div className="w-full overflow-x-auto">
+                  <DataTable
+                    columns={tableColumns}
+                    data={rawMeetings}
+                    onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
+                    className="min-w-[900px]"
+                  />
+                </div>
               ) : (
                 <CardsGrid
                   meetings={meetings}
