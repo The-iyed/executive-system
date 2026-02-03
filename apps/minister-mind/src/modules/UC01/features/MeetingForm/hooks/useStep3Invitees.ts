@@ -1,15 +1,15 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { createStep2Schema, type Step2FormData } from '../schemas/step2.schema';
 import axiosInstance from '@auth/utils/axios';
+import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
+import { AttendanceMechanism } from '@shared/types';
 import { mapUserToFormData } from '../utils/inviteeMappers';
 import type { UserApiResponse } from '../../../data/usersApi';
-import { AttendanceMechanism } from '@shared/types';
 
-interface UseStep2Props {
+interface UseStep3InviteesProps {
   draftId: string;
-  initialData?: Partial<Step2FormData>;
+  initialData?: Partial<Step3InviteesFormData>;
   meetingCategory?: string;
   meetingConfidentiality?: string;
   onSuccess?: (isDraft: boolean) => void;
@@ -17,22 +17,22 @@ interface UseStep2Props {
   isEditMode?: boolean;
 }
 
-interface SubmitStep2Payload {
-  formData: Partial<Step2FormData>;
+interface SubmitStep3InviteesPayload {
+  formData: Partial<Step3InviteesFormData>;
   isDraft: boolean;
   draftId: string;
   inviteesRequired: boolean;
 }
 
-interface SubmitStep2Response {
+interface SubmitStep3InviteesResponse {
   success: boolean;
 }
 
-const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2Response> => {
+const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Promise<SubmitStep3InviteesResponse> => {
   const { formData, isDraft, draftId, inviteesRequired } = payload;
 
   if (!isDraft) {
-    const validationResult = createStep2Schema({ inviteesRequired }).safeParse(formData);
+    const validationResult = createStep3InviteesSchema({ inviteesRequired }).safeParse(formData);
     if (!validationResult.success) {
       const error = new Error('Validation failed');
       (error as any).validationErrors = validationResult.error;
@@ -70,7 +70,7 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2
   return { success: true };
 };
 
-export const useStep2 = ({
+export const useStep3Invitees = ({
   draftId,
   initialData,
   meetingCategory,
@@ -78,8 +78,8 @@ export const useStep2 = ({
   onSuccess,
   onError,
   isEditMode = false,
-}: UseStep2Props) => {
-  const [formData, setFormData] = useState<Partial<Step2FormData>>({
+}: UseStep3InviteesProps) => {
+  const [formData, setFormData] = useState<Partial<Step3InviteesFormData>>({
     invitees: [],
     ...initialData,
   });
@@ -104,8 +104,8 @@ export const useStep2 = ({
   }, [initialData, isEditMode]);
 
   const submitMutation = useMutation({
-    mutationFn: (payload: { formData: Partial<Step2FormData>; isDraft: boolean }) =>
-      submitStep2Data({ ...payload, draftId, inviteesRequired }),
+    mutationFn: (payload: { formData: Partial<Step3InviteesFormData>; isDraft: boolean }) =>
+      submitStep3InviteesData({ ...payload, draftId, inviteesRequired }),
     onSuccess: (_, variables) => {
       onSuccess?.(variables.isDraft);
     },
@@ -116,7 +116,7 @@ export const useStep2 = ({
   });
 
   // Validation result memoized
-  const schema = useMemo(() => createStep2Schema({ inviteesRequired }), [inviteesRequired]);
+  const schema = useMemo(() => createStep3InviteesSchema({ inviteesRequired }), [inviteesRequired]);
   const validationResult = useMemo(() => {
     return schema.safeParse(formData);
   }, [formData, schema]);
@@ -153,9 +153,6 @@ export const useStep2 = ({
     return true;
   }, [formData, validationResult]);
 
-  /**
-   * Add a new attendee to the list
-   */
   const handleAddAttendee = useCallback(() => {
     const newAttendee = {
       id: nanoid(),
@@ -172,9 +169,6 @@ export const useStep2 = ({
     }));
   }, []);
 
-  /**
-   * Delete an attendee from the list
-   */
   const handleDeleteAttendee = useCallback((id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -192,9 +186,6 @@ export const useStep2 = ({
     });
   }, []);
 
-  /**
-   * Update an attendee field
-   */
   const handleUpdateAttendee = useCallback((id: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
@@ -203,7 +194,6 @@ export const useStep2 = ({
       ),
     }));
     
-    // Mark field as touched
     setTouched((prev) => ({
       ...prev,
       [id]: {
@@ -212,7 +202,6 @@ export const useStep2 = ({
       },
     }));
     
-    // Clear error if field is valid
     if (field === 'name' && value) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -227,10 +216,6 @@ export const useStep2 = ({
     }
   }, []);
 
-  /**
-   * Add a user from async select to the invitees list
-   * Accepts user option with user details and adds them with user_id set
-   */
   const handleAddUserFromSelect = useCallback((userOption: { 
     value: string; 
     label: string; 

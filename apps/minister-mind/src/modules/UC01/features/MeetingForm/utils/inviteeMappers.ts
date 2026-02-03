@@ -1,4 +1,4 @@
-import type { Step2FormData } from '../schemas/step2.schema';
+import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import type { DraftApiResponse } from '../../../data/draftApi';
 import type { UserApiResponse } from '../../../data/usersApi';
 import { AttendanceMechanism } from '@shared/types';
@@ -6,7 +6,7 @@ import { AttendanceMechanism } from '@shared/types';
 /**
  * Form data structure for an invitee
  */
-export type InviteeFormData = Step2FormData['invitees'][number];
+export type InviteeFormData = Step3InviteesFormData['invitees'][number];
 
 /**
  * Invitee from draft API response

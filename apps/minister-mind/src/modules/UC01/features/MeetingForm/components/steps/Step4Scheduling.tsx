@@ -5,18 +5,18 @@ import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
 } from '@shared';
-import type { Step3Hook } from '../../hooks/useStep3';
+import type { Step4SchedulingHook } from '../../hooks/useStep4Scheduling';
 
-export interface Step3Props {
-  step3Hook: Step3Hook;
+export interface Step4SchedulingProps {
+  step4SchedulingHook: Step4SchedulingHook;
   isDeleting: boolean;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
 }
 
-export const Step3: React.FC<Step3Props> = ({
-  step3Hook,
+export const Step4Scheduling: React.FC<Step4SchedulingProps> = ({
+  step4SchedulingHook,
   isDeleting,
   handleNextClick,
   handleSaveDraftClick,
@@ -37,7 +37,7 @@ export const Step3: React.FC<Step3Props> = ({
     handleTimeSlotClick,
     handleAIGenerate,
     isSubmitting,
-  } = step3Hook;
+  } = step4SchedulingHook;
   
   if (isLoadingEvents) {
     return <ScreenLoader message="جاري تحميل المواعيد المتاحة..." />;
