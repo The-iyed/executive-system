@@ -2,9 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getCalendarEvents, type GetCalendarEventsParams } from '../../../data/calendarApi';
 import type { CalendarEventData } from '@shared';
 
-/**
- * Convert API slot to CalendarEventData format
- */
 const mapSlotToEvent = (slot: {
   id: string;
   slot_start: string;
@@ -13,12 +10,8 @@ const mapSlotToEvent = (slot: {
 }): CalendarEventData => {
   const startDate = new Date(slot.slot_start);
   const endDate = new Date(slot.slot_end);
-
-  // Format time for grid positioning (must match HH:00 slots)
   const startTime = `${startDate.getHours().toString().padStart(2, '0')}:00`;
   const endTime = `${endDate.getHours().toString().padStart(2, '0')}:00`;
-
-  // Format exact time for display
   const exactStartTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
   const exactEndTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
 
@@ -43,9 +36,6 @@ interface UseCalendarEventsOptions {
   enabled?: boolean;
 }
 
-/**
- * Hook to fetch calendar events for a date range
- */
 export const useCalendarEvents = ({
   startDate,
   endDate,

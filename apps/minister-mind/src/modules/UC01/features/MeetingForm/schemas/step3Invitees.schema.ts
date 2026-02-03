@@ -42,7 +42,7 @@ const inviteeSchema = z
     }
   });
 
-export const createStep2Schema = (opts?: { inviteesRequired?: boolean }) => {
+export const createStep3InviteesSchema = (opts?: { inviteesRequired?: boolean }) => {
   const inviteesRequired = opts?.inviteesRequired ?? true;
 
   return z
@@ -60,7 +60,6 @@ export const createStep2Schema = (opts?: { inviteesRequired?: boolean }) => {
     });
 };
 
-// Default schema (assume invitees required unless caller overrides)
-export const step2Schema = createStep2Schema({ inviteesRequired: true });
+export const step3InviteesSchema = createStep3InviteesSchema({ inviteesRequired: true });
 
-export type Step2FormData = z.infer<typeof step2Schema>;
+export type Step3InviteesFormData = z.infer<typeof step3InviteesSchema>;
