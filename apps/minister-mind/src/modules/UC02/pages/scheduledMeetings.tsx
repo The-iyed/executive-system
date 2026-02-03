@@ -41,7 +41,7 @@ const ScheduledMeetings: React.FC = () => {
       const params: GetMeetingsParams = {
         skip: skip,
         limit: ITEMS_PER_PAGE,
-        status: MeetingStatus.SCHEDULED,
+        status: MeetingStatus.CLOSED,
         owner_type: 'SCHEDULING',
       };
       if (debouncedSearch.trim()) {

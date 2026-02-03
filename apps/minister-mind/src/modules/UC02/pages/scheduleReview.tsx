@@ -52,12 +52,11 @@ const ScheduleReview: React.FC = () => {
   };
 
   // Determine API status based on active tab
-  // For scheduled-meetings tab, always use SCHEDULED status
+  // For scheduled-meetings tab, use CLOSED status
   // For work-basket tab, use statusFilter or default to UNDER_REVIEW
   const apiStatus = useMemo(() => {
     if (activeTab === 'scheduled-meetings') {
-      // Always use SCHEDULED for scheduled meetings tab
-      return MeetingStatus.SCHEDULED;
+      return MeetingStatus.CLOSED;
     }
     // For work-basket tab, use statusFilter or default to UNDER_REVIEW
     if (activeTab === 'work-basket') {
@@ -91,9 +90,9 @@ const ScheduleReview: React.FC = () => {
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by status SCHEDULED and owner_type
+      // For scheduled meetings fetch meetings filtered by status CLOSED and owner_type
       if (activeTab === 'scheduled-meetings') {
-        params.status = MeetingStatus.SCHEDULED;
+        params.status = MeetingStatus.CLOSED;
         params.owner_type = 'SCHEDULING';
         return getMeetings(params);
       }
