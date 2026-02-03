@@ -20,11 +20,6 @@ export const Layout: React.FC<LayoutProps> = ({
   ];
 
   const welcomeByPath: Record<string, WelcomeConfig> = {
-    [PATH.MEETINGS]: {
-      title: 'سلة العمل - طلبات قيد المراجعة',
-      description: 'يمكنك الاطلاع على الطلبات قيد المراجعة',
-      actions: defaultActions
-    },
     [PATH.NEW_MEETING]: {
       title: 'طلب اجتماع', 
       description: 'أدخل البيانات اللازمة بعناية لإضافة اجتماع جديد.', 
