@@ -167,7 +167,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               />
             </FormField>
             <FormField
-              label="موضوع الاجتماع"
+              label="عنوان الاجتماع"
               required
               error={touched.meetingSubject ? errors.meetingSubject : undefined}
             >
@@ -182,19 +182,21 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           </FormRow>
 
           <FormRow>
-            <FormField
-              label="مبرر اللقاء"
-              required={isStep1BasicInfoFieldRequired('meetingReason')}
-              error={touched.meetingReason ? errors.meetingReason : undefined}
-            >
-              <FormInput
-                value={formData.meetingReason || ''}
-                onChange={(e) => handleChange('meetingReason', e.target.value)}
-                onBlur={() => handleBlur('meetingReason')}
-                placeholder="-------"
-                error={!!(touched.meetingReason && errors.meetingReason)}
-              />
-            </FormField>
+            {isStep1BasicInfoFieldRequired('meetingReason') && (
+              <FormField
+                label="مبرر اللقاء"
+                required
+                error={touched.meetingReason ? errors.meetingReason : undefined}
+              >
+                <FormInput
+                  value={formData.meetingReason || ''}
+                  onChange={(e) => handleChange('meetingReason', e.target.value)}
+                  onBlur={() => handleBlur('meetingReason')}
+                  placeholder="-------"
+                  error={!!(touched.meetingReason && errors.meetingReason)}
+                />
+              </FormField>
+            )}
             <FormField
               label="فئة الاجتماع"
               required
@@ -211,32 +213,36 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           </FormRow>
 
           <FormRow>
-            <FormField
-              label="تاريخ الاستحقاق"
-              required={isStep1BasicInfoFieldRequired('dueDate')}
-              error={touched.dueDate ? errors.dueDate : undefined}
-            >
-              <FormDatePicker
-                value={formData.dueDate}
-                onChange={(value) => handleChange('dueDate', value)}
-                onBlur={() => handleBlur('dueDate')}
-                placeholder="dd/mm/yyyy"
-                error={!!(touched.dueDate && errors.dueDate)}
-              />
-            </FormField>
-            <FormField
-              label="الموضوع المرتبط"
-              required={isStep1BasicInfoFieldRequired('relatedTopic')}
-              error={touched.relatedTopic ? errors.relatedTopic : undefined}
-            >
-              <FormInput
-                value={formData.relatedTopic || ''}
-                onChange={(e) => handleChange('relatedTopic', e.target.value)}
-                onBlur={() => handleBlur('relatedTopic')}
-                placeholder="-------"
-                error={!!(touched.relatedTopic && errors.relatedTopic)}
-              />
-            </FormField>
+            {isStep1BasicInfoFieldRequired('dueDate') && (
+              <FormField
+                label="تاريخ الاستحقاق"
+                required
+                error={touched.dueDate ? errors.dueDate : undefined}
+              >
+                <FormDatePicker
+                  value={formData.dueDate}
+                  onChange={(value) => handleChange('dueDate', value)}
+                  onBlur={() => handleBlur('dueDate')}
+                  placeholder="dd/mm/yyyy"
+                  error={!!(touched.dueDate && errors.dueDate)}
+                />
+              </FormField>
+            )}
+            {isStep1BasicInfoFieldRequired('relatedTopic') && (
+              <FormField
+                label="موضوع التكليف المرتبط"
+                required
+                error={touched.relatedTopic ? errors.relatedTopic : undefined}
+              >
+                <FormInput
+                  value={formData.relatedTopic || ''}
+                  onChange={(e) => handleChange('relatedTopic', e.target.value)}
+                  onBlur={() => handleBlur('relatedTopic')}
+                  placeholder="-------"
+                  error={!!(touched.relatedTopic && errors.relatedTopic)}
+                />
+              </FormField>
+            )}
           </FormRow>
 
           <FormRow>
@@ -255,7 +261,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             </FormField>
             <FormField
               label="تصنيف الاجتماع"
-              required
+              required={isStep1BasicInfoFieldRequired('meetingClassification1')}
               error={touched.meetingClassification1 ? errors.meetingClassification1 : undefined}
             >
               <FormSelect
@@ -280,18 +286,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 onBlur={() => handleBlur('sector')}
                 placeholder="-------"
                 error={!!(touched.sector && errors.sector)}
-              />
-            </FormField>
-            <FormField
-              label="مقر الاجتماع"
-              error={touched.meeting_location ? errors.meeting_location : undefined}
-            >
-              <FormInput
-                value={formData.meeting_location || ''}
-                onChange={(e) => handleChange('meeting_location', e.target.value)}
-                onBlur={() => handleBlur('meeting_location')}
-                placeholder="-------"
-                error={!!(touched.meeting_location && errors.meeting_location)}
               />
             </FormField>
           </FormRow>

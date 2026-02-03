@@ -16,7 +16,6 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
       sector: draft.sector || '',
-      meeting_location: draft.meeting_location ?? '',
       meetingGoals: draft.objectives?.map((obj) => ({
         id: obj.id,
         objective: obj.objective,

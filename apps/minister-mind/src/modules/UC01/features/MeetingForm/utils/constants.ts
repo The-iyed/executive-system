@@ -19,7 +19,6 @@ export const MEETING_CATEGORY_OPTIONS = [
 export const MEETING_CLASSIFICATION_OPTIONS = [
   { value: 'STRATEGIC', label: 'استراتيجي' },
   { value: 'OPERATIONAL', label: 'تشغيلي' },
-  { value: 'SPECIAL', label: 'خاص' },
 ];
 
 export const CONFIDENTIALITY_OPTIONS = [
