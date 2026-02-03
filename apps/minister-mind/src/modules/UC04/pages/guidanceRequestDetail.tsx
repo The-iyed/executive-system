@@ -15,7 +15,7 @@ import {
   getInviteeResponseStatusLabel,
 } from '@shared/types';
 import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance, ProvideGuidanceRequest } from '../data/guidanceApi';
-import { getGuidanceRecords, type GuidanceRecord } from '../../UC02/data/meetingsApi';
+import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
@@ -51,6 +51,18 @@ const GuidanceRequestDetail: React.FC = () => {
     enabled: !!id && activeTab === 'guidance-request',
   });
 
+  // Fetch consultation records (سجلات الاستشارات)
+  const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
+    queryKey: ['consultation-records-content', id],
+    queryFn: () => getConsultationRecordsWithParams(id!, {
+      consultation_type: 'CONTENT',
+      include_drafts: false,
+      skip: 0,
+      limit: 100,
+    }),
+    enabled: !!id && activeTab === 'consultations-log',
+  });
+
   const meetingRequest = guidanceData?.meeting_request;
   const guidanceQuestion = guidanceData?.guidance_question || '';
 
@@ -70,6 +82,10 @@ const GuidanceRequestDetail: React.FC = () => {
     {
       id: 'directives-log',
       label:  'سجلات التوجيهات',
+    },
+    {
+      id: 'consultations-log',
+      label: 'سجلات الاستشارات',
     },
     {
       id: 'invitees',
@@ -1028,7 +1044,7 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
 
               {/* Scheduling Section - Invitees and Minister Attendees */}
-              <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+              {/* <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
                 <div className="flex flex-col gap-6 w-full max-w-[1085px]">
                   <div className="flex flex-col gap-2">
                     <h2
@@ -1214,6 +1230,7 @@ const GuidanceRequestDetail: React.FC = () => {
                     )}
                   </div>
 
+
                   <div className="flex flex-col gap-2">
                     <h2
                       className="text-right"
@@ -1260,9 +1277,9 @@ const GuidanceRequestDetail: React.FC = () => {
                         لا يوجد دعم من الوزير
                       </p>
                     )}
-                  </div>
+                  </div> 
                 </div>
-              </div>
+              </div> */}
 
               {/* Attachments Section */}
               {meetingRequest.attachments && meetingRequest.attachments.length > 0 && (
@@ -1442,66 +1459,153 @@ const GuidanceRequestDetail: React.FC = () => {
                 >
                   المحتوى
                 </h3>
-                <div className="flex flex-col gap-4">
-                  {/* Row 1 */}
-                  <div className="flex flex-row gap-4">
-                    {/* العرض التقديمي */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        العرض التقديمي
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        {meetingRequest.attachments &&
-                        meetingRequest.attachments.some((a) => a.is_presentation)
-                          ? `${meetingRequest.attachments.filter((a) => a.is_presentation).length} ملف`
-                          : '-'}
-                      </p>
-                    </div>
+                <div className="flex flex-col gap-6">
+                  {/* العرض التقديمي */}
+                  <div className="flex flex-col gap-4">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      العرض التقديمي
+                    </label>
+                    {meetingRequest.attachments && meetingRequest.attachments.filter((a) => a.is_presentation).length > 0 ? (
+                      <div className="flex flex-row gap-4 flex-wrap">
+                        {meetingRequest.attachments
+                          .filter((a) => a.is_presentation)
+                          .map((att) => (
+                            <div
+                              key={att.id}
+                              className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
+                            >
+                              <div className="flex flex-row items-center justify-between">
+                                {att.file_type?.toLowerCase() === 'pdf' ? (
+                                  <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                  <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
+                                    {att.file_type?.toUpperCase() || ''}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {att.file_name}
+                                </span>
+                                <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {Math.round((att.file_size || 0) / 1024)} KB
+                                </span>
+                              </div>
 
-                    {/* متى سيتم إرفاق العرض؟ */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        متى سيتم إرفاق العرض؟
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        -
+                              <div className="flex flex-row items-center self-end gap-2 ml-auto">
+                                {att.blob_url && (
+                                  <>
+                                    <a
+                                      href={att.blob_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
+                                    >
+                                      <Download className="w-5 h-5 text-[#009883]" />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                                    >
+                                      <Eye className="w-5 h-5 text-[#475467]" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-500 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا توجد مرفقات
                       </p>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Row 2 */}
-                  <div className="flex flex-row gap-4">
-                    {/* مرفقات اختيارية */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label
-                        className="text-md pasis font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        مرفقات اختيارية
-                      </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      >
-                        {meetingRequest.attachments &&
-                        meetingRequest.attachments.some((a) => a.is_additional)
-                          ? `${meetingRequest.attachments.filter((a) => a.is_additional).length} ملف`
-                          : '-'}
+                  {/* متى سيتم إرفاق العرض؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      متى سيتم إرفاق العرض؟
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      -
+                    </p>
+                  </div>
+
+                  {/* مرفقات اختيارية */}
+                  <div className="flex flex-col gap-4">
+                    <label
+                      className="text-md font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      مرفقات اختيارية
+                    </label>
+                    {meetingRequest.attachments && meetingRequest.attachments.filter((a) => a.is_additional).length > 0 ? (
+                      <div className="flex flex-row gap-4 flex-wrap">
+                        {meetingRequest.attachments
+                          .filter((a) => a.is_additional)
+                          .map((att) => (
+                            <div
+                              key={att.id}
+                              className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
+                            >
+                              <div className="flex flex-row items-center justify-between">
+                                {att.file_type?.toLowerCase() === 'pdf' ? (
+                                  <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                  <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
+                                    {att.file_type?.toUpperCase() || ''}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {att.file_name}
+                                </span>
+                                <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {Math.round((att.file_size || 0) / 1024)} KB
+                                </span>
+                              </div>
+
+                              <div className="flex flex-row items-center self-end gap-2 ml-auto">
+                                {att.blob_url && (
+                                  <>
+                                    <a
+                                      href={att.blob_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
+                                    >
+                                      <Download className="w-5 h-5 text-[#009883]" />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                                    >
+                                      <Eye className="w-5 h-5 text-[#475467]" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-500 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        لا توجد مرفقات
                       </p>
-                    </div>
-                    <div className="flex-1" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1633,6 +1737,149 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="text-center">
                     <p className="text-gray-600 text-lg mb-2">سجل التوجيهات</p>
                     <p className="text-gray-500 text-sm">لا توجد توجيهات مسجلة</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Consultations Log Tab - سجلات الاستشارات */}
+          {activeTab === 'consultations-log' && (
+            <div className="flex flex-col gap-4">
+              {isLoadingConsultationRecords ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">جاري التحميل...</div>
+                </div>
+              ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                <DataTable
+                  columns={[
+                    {
+                      id: 'consultation_type',
+                      header: 'نوع الاستشارة',
+                      width: 'w-44',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_type === 'SCHEDULING'
+                            ? 'جدولة'
+                            : row.consultation_type === 'CONTENT'
+                              ? 'محتوى'
+                              : row.consultation_type}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_question',
+                      header: 'السؤال',
+                      width: 'flex-1',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700 line-clamp-2"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_question || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultation_answer',
+                      header: 'الإجابة',
+                      width: 'flex-1',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700 line-clamp-2"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultation_answer || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'consultant_name',
+                      header: 'رد بواسطة',
+                      width: 'w-48',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.consultant_name || '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'requested_at',
+                      header: 'تاريخ الطلب',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.requested_at
+                            ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'responded_at',
+                      header: 'تاريخ الرد',
+                      width: 'w-40',
+                      render: (row: ConsultationRecord) => (
+                        <span
+                          className="text-sm text-gray-700"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        >
+                          {row.responded_at
+                            ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '-'}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'status',
+                      header: 'الحالة',
+                      width: 'w-32',
+                      align: 'center',
+                      render: (row: ConsultationRecord) => {
+                        const statusLabels: Record<string, string> = {
+                          PENDING: 'قيد الانتظار',
+                          RESPONDED: 'تم الرد',
+                          CANCELLED: 'ملغاة',
+                          DRAFT: 'مسودة',
+                        };
+                        const statusLabel = statusLabels[row.status] || row.status;
+                        return (
+                          <div className="flex justify-center">
+                            <StatusBadge status={row.status} label={statusLabel} />
+                          </div>
+                        );
+                      },
+                    },
+                  ]}
+                  data={consultationRecords.items}
+                  rowPadding="py-3"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-600 text-lg mb-2">سجل الاستشارات</p>
+                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
                   </div>
                 </div>
               )}
@@ -1824,55 +2071,6 @@ const GuidanceRequestDetail: React.FC = () => {
                 ) : (
                   <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     لا يوجد حضور من جهة الوزير
-                  </p>
-                )}
-                  </div>
-
-                  {/* minister_support - دعم الوزير */}
-                  <div className="flex flex-col gap-2">
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
-                      }}
-                    >
-                      دعم الوزير
-                    </h2>
-                {meetingRequest.minister_support && meetingRequest.minister_support.length > 0 ? (
-                      <div className="w-full overflow-x-auto table-scroll">
-                        <div className="min-w-[1085px]">
-                          <DataTable
-                            columns={[
-                              {
-                                id: 'index',
-                                header: 'رقم البند',
-                                width: 'w-[120px]',
-                                align: 'center',
-                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
-                              },
-                              {
-                                id: 'support_description',
-                                header: 'وصف الدعم',
-                                width: 'flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.support_description || '-'}
-                                  </span>
-                                ),
-                              },
-                            ] as TableColumn<any>[]}
-                            data={meetingRequest.minister_support}
-                          />
-                        </div>
-                      </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    لا يوجد دعم من الوزير
                   </p>
                 )}
                   </div>
