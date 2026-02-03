@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const step3Schema = z.object({
+export const step4SchedulingSchema = z.object({
   selectedEvent: z
     .object({
       id: z.string(),
@@ -14,4 +14,4 @@ export const step3Schema = z.object({
     .optional(),
 });
 
-export type Step3FormData = z.infer<typeof step3Schema>;
+export type Step4SchedulingFormData = z.infer<typeof step4SchedulingSchema>;

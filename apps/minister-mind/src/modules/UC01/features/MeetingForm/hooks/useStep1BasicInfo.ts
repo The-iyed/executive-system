@@ -2,29 +2,29 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import axiosInstance from '@auth/utils/axios';
-import type { Step1FormData } from '../schemas/step1.schema';
-import { validateStep1, extractValidationErrors, isFieldRequired } from '../schemas/step1.schema';
+import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
+import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
 
-interface UseStep1Props {
+interface UseStep1BasicInfoProps {
   draftId?: string;
-  initialData?: Partial<Step1FormData>;
+  initialData?: Partial<Step1BasicInfoFormData>;
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
 }
 
-interface SubmitStep1Payload {
-  formData: Partial<Step1FormData>;
+interface SubmitStep1BasicInfoPayload {
+  formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
 }
 
-interface SubmitStep1Response {
+interface SubmitStep1BasicInfoResponse {
   id: string;
 }
 
 
-const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
+const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): FormData => {
   const formDataToSend = new FormData();
 
   // Required fields
@@ -174,9 +174,6 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   if (formData.is_urgent && formData.urgent_reason) {
     formDataToSend.append('urgent_reason', formData.urgent_reason);
   }
-  if (formData.is_urgent && formData.presentation_attachment_timing) {
-    formDataToSend.append('presentation_attachment_timing', formData.presentation_attachment_timing);
-  }
 
   // On behalf of fields
   if (formData.is_on_behalf_of && formData.meeting_manager_id) {
@@ -191,34 +188,21 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     formDataToSend.append('previous_meeting_minutes_id', formData.previous_meeting_minutes_id);
   }
 
-  // File uploads - append all presentation files
-  if (formData.presentation_files && formData.presentation_files.length > 0) {
-    formData.presentation_files.forEach((file) => {
-      formDataToSend.append('presentation_files', file);
-    });
-  }
-  // Additional files (optional)
-  if (formData.additional_files && formData.additional_files.length > 0) {
-    formData.additional_files.forEach((file) => {
-      formDataToSend.append('additional_files', file);
-    });
-  }
-
   return formDataToSend;
 };
 
 /**
  * Submits basic info and file (if exists) to API
  */
-const submitStep1Data = async (
-  payload: SubmitStep1Payload,
+const submitStep1BasicInfoData = async (
+  payload: SubmitStep1BasicInfoPayload,
   isEditMode: boolean = false
 ): Promise<string> => {
   const { formData, isDraft, draftId } = payload;
 
   // Validate if not draft
   if (!isDraft) {
-    const validationResult = validateStep1(formData);
+    const validationResult = validateStep1BasicInfo(formData);
     if (!validationResult.success) {
       // Create a validation error with details
       const error = new Error('Validation failed');
@@ -227,18 +211,18 @@ const submitStep1Data = async (
     }
   }
 
-  const formDataToSend = prepareFormData(formData);
+  const formDataToSend = prepareBasicInfoFormData(formData);
 
   let response;
   if (isEditMode && draftId) {
     // Update existing draft using PATCH
-    response = await axiosInstance.patch<SubmitStep1Response>(
+    response = await axiosInstance.patch<SubmitStep1BasicInfoResponse>(
       `/api/meeting-requests/drafts/${draftId}/basic-info`,
       formDataToSend
     );
   } else {
     // Create new draft using POST
-    response = await axiosInstance.post<SubmitStep1Response>(
+    response = await axiosInstance.post<SubmitStep1BasicInfoResponse>(
       '/api/meeting-requests/drafts/basic-info',
       formDataToSend
     );
@@ -252,51 +236,42 @@ const submitStep1Data = async (
   return newDraftId;
 };
 
-export const useStep1 = ({
+export const useStep1BasicInfo = ({
   draftId,
   initialData,
   onSuccess,
   onError,
   isEditMode = false,
-}: UseStep1Props = {}) => {
-  const [formData, setFormData] = useState<Partial<Step1FormData>>({
+}: UseStep1BasicInfoProps = {}) => {
+  const [formData, setFormData] = useState<Partial<Step1BasicInfoFormData>>({
     meetingGoals: [],
     meetingAgenda: [],
     relatedDirectives: [],
     wasDiscussedPreviously: false,
-    existingFiles: [],
-    presentation_files: [],
-    additional_files: [],
     is_urgent: false,
     is_on_behalf_of: false,
     is_based_on_directive: false,
     ...initialData,
   });
 
-  // Update form data when initialData changes (for edit mode)
+  // Update form data when initialData changes (edit mode or create flow after refresh when draft is fetched)
   useEffect(() => {
-    if (initialData && isEditMode) {
-      setFormData((prev) => {
-        // Merge initialData, ensuring arrays and objects are properly merged
-        const merged = {
-          ...prev,
-          ...initialData,
-          // Preserve existingFiles from initialData if present
-          existingFiles: initialData.existingFiles || prev.existingFiles || [],
-        };
-        return merged;
-      });
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
     }
-  }, [initialData, isEditMode]);
+  }, [initialData]);
 
-  const [errors, setErrors] = useState<Partial<Record<keyof Step1FormData, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof Step1FormData, boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof Step1BasicInfoFormData, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof Step1BasicInfoFormData, boolean>>>({});
   const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
   const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
 
   // React Query mutation for submitting step 1
   const submitMutation = useMutation({
-    mutationFn: (payload: SubmitStep1Payload) => submitStep1Data(payload, isEditMode),
+    mutationFn: (payload: SubmitStep1BasicInfoPayload) => submitStep1BasicInfoData(payload, isEditMode),
     onSuccess: (newDraftId) => {
       onSuccess?.(newDraftId);
     },
@@ -308,14 +283,14 @@ export const useStep1 = ({
 
   // Validation with conditional rules
   const validationResult = useMemo(() => {
-    return validateStep1(formData);
+    return validateStep1BasicInfo(formData);
   }, [formData]);
 
   // Validate single field - similar to login form pattern
   const validateField = useCallback(
-    (field: keyof Step1FormData, value: any) => {
+    (field: keyof Step1BasicInfoFormData, value: any) => {
       const updatedData = { ...formData, [field]: value };
-      const result = validateStep1(updatedData);
+      const result = validateStep1BasicInfo(updatedData);
 
       // Check if this specific field has an error
       const fieldError = result.success 
@@ -344,7 +319,7 @@ export const useStep1 = ({
   const validateAll = useCallback(
     (markTouched: boolean = true): boolean => {
       if (!validationResult.success) {
-        const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(
+        const { formErrors, tableErrors: extractedTableErrors } = extractStep1BasicInfoErrors(
           validationResult,
           formData
         );
@@ -354,7 +329,7 @@ export const useStep1 = ({
 
         if (markTouched) {
           // Mark all form fields as touched
-          const allFormFields: (keyof Step1FormData)[] = [
+          const allFormFields: (keyof Step1BasicInfoFormData)[] = [
             'meetingSubject',
             'meetingType',
             'meetingCategory',
@@ -369,14 +344,12 @@ export const useStep1 = ({
             'wasDiscussedPreviously',
             'previousMeetingDate',
             'notes',
-            'presentation_files',
-            'additional_files',
             'is_urgent',
             'is_on_behalf_of',
             'is_based_on_directive',
           ];
 
-          const allTouched: Partial<Record<keyof Step1FormData, boolean>> = {};
+          const allTouched: Partial<Record<keyof Step1BasicInfoFormData, boolean>> = {};
           allFormFields.forEach((field) => {
             allTouched[field] = true;
           });
@@ -385,7 +358,6 @@ export const useStep1 = ({
           // Similar to previousMeetingDate when wasDiscussedPreviously is true
           if (formData.is_urgent === true) {
             allTouched.urgent_reason = true;
-            allTouched.presentation_attachment_timing = true;
           }
           if (formData.is_on_behalf_of === true) {
             allTouched.meeting_manager_id = true;
@@ -441,7 +413,7 @@ export const useStep1 = ({
 
   // Form field handlers
   const handleChange = useCallback(
-    (field: keyof Step1FormData, value: any) => {
+    (field: keyof Step1BasicInfoFormData, value: any) => {
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
         // Clear dependent fields and their errors when parent fields change
@@ -467,11 +439,9 @@ export const useStep1 = ({
         // Clear urgent-related fields when is_urgent is false
         if (field === 'is_urgent' && value === false) {
           newData.urgent_reason = '';
-          newData.presentation_attachment_timing = '';
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.urgent_reason;
-            delete newErrors.presentation_attachment_timing;
             return newErrors;
           });
         }
@@ -504,24 +474,6 @@ export const useStep1 = ({
             return newErrors;
           });
         }
-        // Clear presentation_files error when meetingConfidentiality or meetingCategory changes
-        // and the file is no longer required (becomes optional)
-        if (field === 'meetingConfidentiality' || field === 'meetingCategory') {
-          // Check if file is now optional (not required) using the updated form data
-          const isFileRequired = isFieldRequired('presentation_files', newData);
-          
-          // If file is not required (optional) and has an error, clear the error
-          if (!isFileRequired) {
-            setErrors((prevErrors) => {
-              if (prevErrors.presentation_files) {
-                const newErrors = { ...prevErrors };
-                delete newErrors.presentation_files;
-                return newErrors;
-              }
-              return prevErrors;
-            });
-          }
-        }
         return newData;
       });
       // Validate field on change if it's been touched (like login form pattern)
@@ -533,25 +485,12 @@ export const useStep1 = ({
   );
 
   const handleBlur = useCallback(
-    (field: keyof Step1FormData) => {
+    (field: keyof Step1BasicInfoFormData) => {
       setTouched((prev) => ({ ...prev, [field]: true }));
       validateField(field, formData[field]);
     },
     [formData, validateField]
   );
-
-  const handleFilesSelect = useCallback((files: File[]) => {
-    setFormData((prev) => ({ ...prev, presentation_files: files }));
-    setErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors.presentation_files;
-      return newErrors;
-    });
-  }, []);
-
-  const handleAdditionalFilesSelect = useCallback((files: File[]) => {
-    setFormData((prev) => ({ ...prev, additional_files: files || [] }));
-  }, []);
 
   // Table handlers - Goals
   const handleAddGoal = useCallback(() => {
@@ -751,7 +690,7 @@ export const useStep1 = ({
       } catch (error: any) {
         // If validation error, extract and set errors
         if (error?.validationErrors) {
-          const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(
+          const { formErrors, tableErrors: extractedTableErrors } = extractStep1BasicInfoErrors(
             {
               success: false,
               error: error.validationErrors,
@@ -770,8 +709,8 @@ export const useStep1 = ({
 
   // Helper to check if a field is required
   const getIsFieldRequired = useCallback(
-    (field: keyof Step1FormData) => {
-      return isFieldRequired(field, formData);
+    (field: keyof Step1BasicInfoFormData) => {
+      return isStep1BasicInfoFieldRequired(field, formData);
     },
     [formData]
   );
@@ -787,11 +726,9 @@ export const useStep1 = ({
     isError: submitMutation.isError,
     isSuccess: submitMutation.isSuccess,
     error: submitMutation.error,
-    isFieldRequired: getIsFieldRequired,
+    isStep1BasicInfoFieldRequired: getIsFieldRequired,
     handleChange,
     handleBlur,
-    handleFilesSelect,
-    handleAdditionalFilesSelect,
     handleAddGoal,
     handleDeleteGoal,
     handleUpdateGoal,

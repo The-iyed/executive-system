@@ -9,8 +9,8 @@ export interface CalendarSlot {
 }
 
 export interface GetCalendarEventsParams {
-  start_date: string; // ISO date string
-  end_date: string; // ISO date string
+  start_date: string;
+  end_date: string;
   duration_minutes?: number;
 }
 
@@ -32,4 +32,3 @@ export const getCalendarEvents = async (
 
   return response.data;
 };
-

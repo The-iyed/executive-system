@@ -1,4 +1,3 @@
-export { default as StatsCards } from './statsCards';
 export { GoBackHeader } from './GoBackHeader';
 export type { GoBackHeaderProps } from './GoBackHeader';
 export { EditButton } from './EditButton';
