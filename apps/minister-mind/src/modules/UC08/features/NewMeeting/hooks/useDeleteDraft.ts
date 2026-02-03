@@ -38,7 +38,7 @@ export const useDeleteDraft = ({
       clearDraftData();
 
       // Navigate to meetings list
-      navigate(PATH.MEETINGS);
+      navigate(PATH.NEW_MEETING);
 
       // Call custom success callback if provided
       onSuccess?.();
@@ -57,7 +57,7 @@ export const useDeleteDraft = ({
       setIsConfirmOpen(true);
     } else {
       // If no draft ID, just navigate away
-      navigate(PATH.MEETINGS);
+      navigate(PATH.NEW_MEETING);
     }
   }, [draftId, navigate]);
 

@@ -111,7 +111,7 @@ const NewMeeting: React.FC = () => {
     // Clear all draft data and navigate to meetings list
     clearDraftData();
     // Navigate to meetings list page
-    navigate(PATH.MEETINGS);
+    navigate(PATH.NEW_MEETING);
   };
 
   const renderStepContent = () => {
