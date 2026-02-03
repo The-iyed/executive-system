@@ -54,7 +54,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
 
   const handleSuccess = useCallback(() => {
     // Navigate to meetings list on success
-    navigate(PATH.MEETINGS);
+    navigate(PATH.NEW_MEETING);
   }, [navigate]);
 
   const handleError = useCallback((error: Error) => {
@@ -191,7 +191,7 @@ const Step3: React.FC<Step3Props> = ({ draftId }) => {
     await submitStep(true, selectedSlots);
     // If no slots selected, navigate to meetings list directly
     if (selectedSlots.length === 0) {
-      navigate(PATH.MEETINGS);
+      navigate(PATH.NEW_MEETING);
     }
   }, [submitStep, selectedSlots, navigate]);
 

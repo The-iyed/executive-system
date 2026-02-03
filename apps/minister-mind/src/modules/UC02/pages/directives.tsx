@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination } from '@shared';
+import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { MoreVertical, CalendarPlus, X, ChevronLeft } from 'lucide-react';
-import { getDirectives, GetDirectivesParams, Directive, closeDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { MoreVertical, X, ChevronLeft } from 'lucide-react';
+import { getDirectives, getPreviousDirectives, GetDirectivesParams, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
 
 const ITEMS_PER_PAGE = 10;
@@ -14,21 +14,19 @@ const ITEMS_PER_PAGE = 10;
 // Custom Directives Cards Grid Component with Actions
 interface DirectivesCardsGridProps {
   directives: MeetingCardData[];
-  originalDirectives: Directive[];
   openDropdownId: string | null;
   setOpenDropdownId: (id: string | null) => void;
   dropdownRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
-  navigate: (path: string) => void;
+  onCloseDirective: (directiveId: string, directiveText: string, relatedMeeting: string) => void | Promise<void>;
 }
 
 const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => Promise<any> }> = ({
   directives,
-  originalDirectives,
   openDropdownId,
   setOpenDropdownId,
   dropdownRefs,
   refetch,
-  navigate,
+  onCloseDirective,
 }) => {
   const renderActionsDropdown = (directive: MeetingCardData) => {
     const isOpen = openDropdownId === directive.id;
@@ -45,38 +43,33 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
           <MoreVertical className="w-5 h-5 text-[#475467]" strokeWidth={1.67} />
         </button>
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[160px]" dir="rtl" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const originalDirective = originalDirectives.find((d) => d.id === directive.id);
-                if (originalDirective) {
-                  const directiveText = encodeURIComponent(originalDirective.directive_text);
-                  navigate(`/uc08/meetings/new?directive_text=${directiveText}`);
-                }
-                setOpenDropdownId(null);
-              }}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)',
-                boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-              }}
-            >
-              <span>طلب اجتماع</span>
-              <CalendarPlus className="w-4 h-4" />
-            </button>
+          <div className="absolute right-0 top-full mt-2 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[140px]" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
-                  await closeDirective(directive.id);
+                  await cancelDirective(directive.id);
                   setOpenDropdownId(null);
-                  // Refetch directives after closing
                   await refetch();
                 } catch (error) {
-                  console.error('Error closing directive:', error);
+                  console.error('Error cancelling directive:', error);
                   setOpenDropdownId(null);
                 }
+              }}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: '#F59E0B',
+                boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+              }}
+            >
+              <span>إلغاء التوجيه</span>
+              <X className="w-4 h-4" />
+            </button>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                await onCloseDirective(directive.id, directive.title || '', directive.coordinator || '');
+                setOpenDropdownId(null);
               }}
               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
               style={{
@@ -84,7 +77,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
                 boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
               }}
             >
-              <span>إلغاء</span>
+              <span>إغلاق التوجيه</span>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -173,7 +166,15 @@ const Directives: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
+  const [directivesSubTab, setDirectivesSubTab] = useState<'current' | 'previous'>('current');
+
+  const handleCloseDirectiveNavigate = async (directiveId: string, directiveText: string, relatedMeeting: string) => {
+    await closeDirective(directiveId);
+    navigate(
+      `/uc08/meetings/new?directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
+    );
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -245,6 +246,18 @@ const Directives: React.FC = () => {
   // Store original API response items for table columns
   const originalDirectives: Directive[] = directivesResponse?.items || [];
 
+  // Fetch previous directives (التوجيهات السابقة)
+  const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious } = useQuery({
+    queryKey: ['directives-previous', 0, 100],
+    queryFn: () => getPreviousDirectives({ skip: 0, limit: 100 }),
+    enabled: directivesSubTab === 'previous',
+  });
+  const originalPreviousDirectives: Directive[] = previousDirectivesResponse?.items || [];
+  const previousDirectives: MeetingCardData[] = useMemo(() => {
+    if (!previousDirectivesResponse?.items) return [];
+    return previousDirectivesResponse.items.map(mapDirectiveToCardData);
+  }, [previousDirectivesResponse]);
+
   // Fetch related meeting data for directives that have related_meeting_request_id
   const meetingIds = useMemo(() => {
     return originalDirectives
@@ -253,7 +266,14 @@ const Directives: React.FC = () => {
       .filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
   }, [originalDirectives]);
 
-  // Fetch meetings data
+  const previousMeetingIds = useMemo(() => {
+    return originalPreviousDirectives
+      .filter(d => d.related_meeting_request_id)
+      .map(d => d.related_meeting_request_id!)
+      .filter((id, index, self) => self.indexOf(id) === index);
+  }, [originalPreviousDirectives]);
+
+  // Fetch meetings data for current directives
   const { data: meetingsData } = useQuery({
     queryKey: ['directives-meetings', meetingIds],
     queryFn: async () => {
@@ -271,6 +291,26 @@ const Directives: React.FC = () => {
       return meetings;
     },
     enabled: meetingIds.length > 0,
+  });
+
+  // Fetch meetings data for previous directives
+  const { data: meetingsDataForPrevious } = useQuery({
+    queryKey: ['directives-previous-meetings', previousMeetingIds],
+    queryFn: async () => {
+      const meetings: Record<string, MeetingApiResponse> = {};
+      await Promise.all(
+        previousMeetingIds.map(async (id) => {
+          try {
+            const meeting = await getMeetingById(id);
+            meetings[id] = meeting;
+          } catch (error) {
+            console.error(`Error fetching meeting ${id}:`, error);
+          }
+        })
+      );
+      return meetings;
+    },
+    enabled: directivesSubTab === 'previous' && previousMeetingIds.length > 0,
   });
 
   // Map API response to MeetingCardData
@@ -318,8 +358,12 @@ const Directives: React.FC = () => {
     return MeetingClassificationLabels[classification as MeetingClassification] || classification;
   };
 
-  // Define table columns - order is from right to left (RTL)
-  const tableColumns: TableColumn<MeetingCardData>[] = [
+  // Build table columns for a given directives list and meetings data
+  const buildTableColumns = (
+    originalList: Directive[],
+    meetingsMap: Record<string, MeetingApiResponse> | undefined,
+    pageOffset: number
+  ): TableColumn<MeetingCardData>[] => [
     {
       id: 'item_number',
       header: 'رقم البند',
@@ -328,7 +372,7 @@ const Directives: React.FC = () => {
       render: (_row, index) => (
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {index + 1 + (currentPage - 1) * ITEMS_PER_PAGE}
+            {index + 1 + pageOffset}
           </span>
         </div>
       ),
@@ -339,7 +383,7 @@ const Directives: React.FC = () => {
       width: 'w-40',
       align: 'end',
       render: (row) => {
-        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const originalDirective = originalList.find((d) => d.id === row.id);
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
@@ -379,9 +423,9 @@ const Directives: React.FC = () => {
       width: 'w-56',
       align: 'end',
       render: (row) => {
-        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.related_meeting_request_id;
-        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -397,9 +441,9 @@ const Directives: React.FC = () => {
       width: 'w-56',
       align: 'end',
       render: (row) => {
-        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.related_meeting_request_id;
-        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
@@ -415,9 +459,9 @@ const Directives: React.FC = () => {
       width: 'w-40',
       align: 'end',
       render: (row) => {
-        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.related_meeting_request_id;
-        const meeting: MeetingApiResponse | undefined = meetingId && meetingsData ? meetingsData[meetingId] : undefined;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
@@ -433,18 +477,59 @@ const Directives: React.FC = () => {
       width: 'w-56',
       align: 'end',
       render: (row) => {
-        const originalDirective = originalDirectives.find((d) => d.id === row.id);
+        const originalDirective = originalList.find((d) => d.id === row.id);
         const responsiblePersons = originalDirective?.responsible_persons || [];
+        const firstPerson = responsiblePersons.length > 0 ? responsiblePersons[0] : null;
+        const displayName = firstPerson?.name ?? '-';
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
-              {responsiblePersons.length > 0 ? responsiblePersons[0] : '-'}
+              {displayName}
             </span>
           </div>
         );
       },
     },
   ];
+
+  const tableColumns = useMemo(() => {
+    const base = buildTableColumns(originalDirectives, meetingsData, (currentPage - 1) * ITEMS_PER_PAGE);
+    return [
+      ...base,
+      {
+        id: 'actions',
+        header: '',
+        width: 'w-20',
+        align: 'center' as const,
+        render: (row: MeetingCardData) => (
+          <div
+            ref={(el) => {
+              dropdownRefs.current[row.id] = el;
+            }}
+            className="flex justify-center w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setOpenDropdownId(row.id);
+                setDropdownPosition({ top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom });
+              }}
+              className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-200 transition-colors bg-[#F6F6F6]"
+            >
+              <MoreVertical className="w-5 h-5 text-[#475467]" strokeWidth={1.67} />
+            </button>
+          </div>
+        ),
+      },
+    ];
+  }, [originalDirectives, meetingsData, currentPage]);
+  const previousTableColumns = useMemo(
+    () => buildTableColumns(originalPreviousDirectives, meetingsDataForPrevious, 0),
+    [originalPreviousDirectives, meetingsDataForPrevious]
+  );
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
@@ -454,9 +539,9 @@ const Directives: React.FC = () => {
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           {/* Right side - Title and Description */}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right">التوجيهات</h1>
+            <h1 className="text-3xl font-bold mb-2 text-right">توجيهات الجدولة</h1>
             <p className="text-base text-gray-600 text-right">
-              يمكنك الاطلاع على التوجيهات الحالية
+              يمكنك الاطلاع على توجيهات الجدولة الحالية والسابقة
             </p>
           </div>
 
@@ -478,54 +563,65 @@ const Directives: React.FC = () => {
         {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
+          const dropdownHeight = 100;
+          const gap = 4;
+          // Position above the button so it stays on screen; align right edge with button (RTL)
+          const top = Math.max(8, pos.top - dropdownHeight - gap);
+          const right = window.innerWidth - pos.right;
           return createPortal(
             <div 
-              className="fixed bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[130px]" 
+              className="fixed bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[140px]" 
               dir="rtl" 
               onClick={(e) => e.stopPropagation()}
               style={{ 
                 zIndex: 9999,
-                top: `${pos.top}px`,
-                right: `${window.innerWidth - pos.left}px`,
+                top: `${top}px`,
+                right: `${Math.min(right, window.innerWidth - 150)}px`,
+                left: 'auto',
               }}
             >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (openDropdownId) {
-                    const originalDirective = originalDirectives.find((d) => d.id === openDropdownId);
-                    if (originalDirective) {
-                      // const directiveText = encodeURIComponent(originalDirective.directive_text);
-                      navigate(`/uc08/meetings/new?directive_id=${originalDirective?.id}&directive_text=${originalDirective?.directive_text}&related_meeting=${originalDirective?.related_meeting}`);
-                    }
-                  }
-                  setOpenDropdownId(null);
-                  setDropdownPosition(null);
-                }}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)',
-                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-                }}
-              >
-                <span>طلب اجتماع</span>
-                <CalendarPlus className="w-4 h-4" />
-              </button>
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (openDropdownId) {
                     try {
-                      await closeDirective(openDropdownId);
+                      await cancelDirective(openDropdownId);
                       setOpenDropdownId(null);
                       setDropdownPosition(null);
-                      // Refetch directives after closing
                       await refetch();
                     } catch (error) {
-                      console.error('Error closing directive:', error);
+                      console.error('Error cancelling directive:', error);
                       setOpenDropdownId(null);
                       setDropdownPosition(null);
                     }
+                  }
+                }}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: '#F59E0B',
+                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+                }}
+              >
+                <span>إلغاء التوجيه</span>
+                <X className="w-4 h-4" />
+              </button>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (openDropdownId) {
+                    const d = originalDirectives.find((x) => x.id === openDropdownId);
+                    if (d) {
+                      try {
+                        await closeDirective(d.id);
+                        navigate(
+                          `/uc08/meetings/new?directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
+                        );
+                      } catch (err) {
+                        console.error('Error closing directive:', err);
+                      }
+                    }
+                    setOpenDropdownId(null);
+                    setDropdownPosition(null);
                   }
                 }}
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -534,7 +630,7 @@ const Directives: React.FC = () => {
                   boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
                 }}
               >
-                <span>إلغاء</span>
+                <span>إغلاق التوجيه</span>
                 <X className="w-4 h-4" />
               </button>
             </div>,
@@ -542,9 +638,43 @@ const Directives: React.FC = () => {
           );
         })()}
 
+        {/* Sub-tabs: التوجيهات السابقة / التوجيهات الحالية */}
+        <div className="flex justify-center my-4">
+          <Tabs
+            items={[
+              { id: 'previous', label: 'التوجيهات السابقة' },
+              { id: 'current', label: 'التوجيهات الحالية' },
+            ]}
+            activeTab={directivesSubTab}
+            onTabChange={(id) => setDirectivesSubTab(id as 'current' | 'previous')}
+          />
+        </div>
+
         {/* Content - Table or Cards */}
         <div className="mt-4">
-          {isLoading ? (
+          {directivesSubTab === 'previous' ? (
+            isLoadingPrevious ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-gray-600">جاري التحميل...</div>
+              </div>
+            ) : errorPrevious ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
+              </div>
+            ) : previousDirectives.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center text-gray-600">لا توجد توجيهات سابقة</div>
+              </div>
+            ) : (
+              <div style={{ overflow: 'visible' }}>
+                <DataTable
+                  columns={previousTableColumns}
+                  data={previousDirectives}
+                  rowPadding="py-2"
+                />
+              </div>
+            )
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
             </div>
@@ -572,12 +702,11 @@ const Directives: React.FC = () => {
               ) : (
                 <DirectivesCardsGrid
                   directives={directives}
-                  originalDirectives={originalDirectives}
                   openDropdownId={openDropdownId}
                   setOpenDropdownId={setOpenDropdownId}
                   dropdownRefs={dropdownRefs}
                   refetch={refetch}
-                  navigate={navigate}
+                  onCloseDirective={handleCloseDirectiveNavigate}
                 />
               )}
 

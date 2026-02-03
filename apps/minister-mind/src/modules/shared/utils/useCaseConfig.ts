@@ -34,8 +34,15 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-02': {
     code: 'UC-02',
-    defaultRoute: UC02_PATH.SCHEDULED_MEETINGS,
+    defaultRoute: UC02_PATH.DIRECTIVES,
     navigationItems: [
+      {
+        id: 'directives',
+        icon: 'solar:document-text-outline',
+        label: 'توجيهات الجدولة',
+        path: UC02_PATH.DIRECTIVES,
+        requiresUseCase: 'UC-07', // Only show if user has UC-07 access
+      },
       {
         id: 'scheduled-meetings',
         icon: 'solar:calendar-mark-outline',
@@ -59,13 +66,6 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: 'solar:calendar-outline',
         label: 'التقويم',
         path: UC02_PATH.CALENDAR,
-      },
-      {
-        id: 'directives',
-        icon: 'solar:document-text-outline',
-        label: 'التوجيهات',
-        path: UC02_PATH.DIRECTIVES,
-        requiresUseCase: 'UC-07', // Only show if user has UC-07 access
       },
     ],
   },
@@ -119,15 +119,8 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-08': {
     code: 'UC-08',
-    defaultRoute: UC08_PATH.MEETINGS,
-    navigationItems: [
-      {
-        id: 'meetings',
-        icon: 'solar:calendar-outline',
-        label: 'الاجتماعات',
-        path: UC08_PATH.MEETINGS,
-      },
-    ],
+    defaultRoute: UC08_PATH.NEW_MEETING,
+    navigationItems: [],
   },
 };
 
