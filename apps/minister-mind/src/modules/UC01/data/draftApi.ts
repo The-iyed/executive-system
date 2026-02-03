@@ -36,6 +36,8 @@ export interface DraftApiResponse {
   related_directives?: Array<any>;
   topic_discussed_before?: boolean;
   previous_meeting_date?: string | null;
+  is_urgent?: boolean;
+  urgent_reason?: string | null;
   general_notes?: string | string[] | null;
   general_note?: string | null;
   content_officer_notes?: string | null;

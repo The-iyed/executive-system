@@ -18,14 +18,6 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
-    path: PATH.HOME,
-    component: lazy(() => import('../features/Home')),
-    layout: Layout,
-    useCase: 'UC-01',
-  },
-  {
-    exact: true,
-    guard: AuthGuard,
     path: PATH.MEETINGS,
     component: lazy(() => import('../features/Meeting')),
     layout: Layout,

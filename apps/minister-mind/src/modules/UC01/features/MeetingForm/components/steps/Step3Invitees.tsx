@@ -6,13 +6,12 @@ import {
   INVITEES_TABLE_TITLE,
   ADD_INVITEE_BUTTON_LABEL,
 } from '../../utils/constants';
-import type { Step2FormData } from '../../schemas/step2.schema';
+import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import { getUsers } from '../../../../data/usersApi';
 import type { UserApiResponse } from '../../../../data/usersApi';
 
-export interface Step2Props {
-  // Form data and state
-  formData: Partial<Step2FormData>;
+export interface Step3InviteesProps {
+  formData: Partial<Step3InviteesFormData>;
   errors: Record<string, Record<string, string>>;
   touched: Record<string, Record<string, boolean>>;
   inviteesRequired?: boolean;
@@ -39,7 +38,7 @@ export interface Step2Props {
   handleCancelClick: () => void;
 }
 
-export const Step2: React.FC<Step2Props> = ({
+export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   formData,
   errors,
   touched,

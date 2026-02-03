@@ -16,14 +16,8 @@ export interface UseCaseConfig {
 export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   'UC-01': {
     code: 'UC-01',
-    defaultRoute: UC01_PATH.HOME,
+    defaultRoute: UC01_PATH.MEETINGS,
     navigationItems: [
-      {
-        id: 'home',
-        icon: 'solar:home-2-outline',
-        label: 'الصفحة الرئيسية',
-        path: UC01_PATH.HOME,
-      },
       {
         id: 'calendar',
         icon: 'solar:calendar-outline',
@@ -133,11 +127,11 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
 
 /**
  * Get the default route for a user based on their use cases
- * Returns the first use case's default route, or falls back to UC-01 home
+ * Returns the first use case's default route, or falls back to UC-01 meetings
  */
 export const getDefaultRouteForUser = (useCases?: string[]): string => {
   if (!useCases || useCases.length === 0) {
-    return UC01_PATH.HOME;
+    return UC01_PATH.MEETINGS;
   }
 
   // Find the first valid use case and return its default route
@@ -148,7 +142,7 @@ export const getDefaultRouteForUser = (useCases?: string[]): string => {
     }
   }
 
-  return UC01_PATH.HOME;
+  return UC01_PATH.MEETINGS;
 };
 
 /**
