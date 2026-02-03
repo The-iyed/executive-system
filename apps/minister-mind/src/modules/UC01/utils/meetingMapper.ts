@@ -1,5 +1,5 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '@shared/types';
 import { MeetingApiResponse } from '../data/meetingsApi';
 
 /**
@@ -61,19 +61,58 @@ const getStatusLabel = (status: MeetingStatus | string): string => {
 
 export interface MeetingDisplayData extends MeetingCardData {
   requestNumber: string;
+  requestDate: string;
+  meetingCategory: string;
+  meetingDate: string;
+  isDataComplete: boolean | null;
+  returnNotes: string;
 }
+
+type NoteItem = { text?: unknown };
+
+const normalizeNotes = (notes: unknown): string[] => {
+  if (!Array.isArray(notes)) return [];
+  return (notes as unknown[])
+    .map((n) => {
+      if (typeof n === 'string') return n;
+      const obj = n as NoteItem;
+      return obj?.text != null ? String(obj.text) : '';
+    })
+    .map((s) => String(s).trim())
+    .filter((s) => s.length > 0);
+};
+
+const getReturnNotes = (meeting: MeetingApiResponse): string => {
+  // Prefer explicit arrays when available (same shape used in preview Notes tab)
+  const general = normalizeNotes(meeting.general_notes);
+  const content = normalizeNotes(meeting.content_officer_notes);
+  const all = [...general, ...content];
+  if (all.length === 0) return '-';
+  // Show the most recent note (last) for compact table display
+  return all[all.length - 1];
+};
 
 export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingDisplayData => {
   const status = mapStatus(meeting.status);
   const statusLabel = getStatusLabel(status);
   
-  const dateToUse = meeting.submitted_at || meeting.created_at;
+  const requestDateIso = meeting.submitted_at || meeting.created_at;
+  const requestDate = formatDate(requestDateIso);
+  const meetingDate = meeting.scheduled_at ? formatDate(meeting.scheduled_at) : '-';
+  const meetingCategory = getMeetingClassificationLabel(meeting.meeting_classification);
   
   return {
     id: meeting.id,
     requestNumber: meeting.request_number,
     title: meeting.meeting_title || meeting.meeting_subject,
-    date: formatDate(dateToUse),
+    // For cards, show meeting date when scheduled; otherwise fall back to request date
+    date: meetingDate !== '-' ? meetingDate : requestDate,
+    requestDate,
+    meetingCategory,
+    meetingDate,
+    isDataComplete:
+      meeting.is_data_complete == null ? null : Boolean(meeting.is_data_complete),
+    returnNotes: getReturnNotes(meeting),
     coordinator: meeting.submitter_name,
     coordinatorAvatar: undefined,
     status: status,
