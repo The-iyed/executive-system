@@ -38,7 +38,7 @@ export const useEditMeeting = () => {
 
   const handleSaveDraft = useCallback(() => {
     clearDraftData();
-    navigate(PATH.MEETINGS);
+    navigate(PATH.NEW_MEETING);
   }, [navigate]);
 
   const { deleteDraft, step1Hook, step2Hook, step3Hook } = useMeetingSteps({

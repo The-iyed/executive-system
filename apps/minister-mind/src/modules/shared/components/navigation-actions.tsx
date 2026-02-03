@@ -41,10 +41,11 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
 
   useEffect(() => {
     if (!items || items.length === 0) return;
-    const currentItem = items.find(item =>
-      isRouteActive(item.path, location.pathname)
-    );
-  
+    // When on UC08 routes, show "توجيهات الجدولة" (directives) as selected
+    const isUc08 = location.pathname.startsWith('/uc08');
+    const currentItem = isUc08
+      ? items.find(item => item.id === 'directives')
+      : items.find(item => isRouteActive(item.path, location.pathname));
     if (currentItem && currentItem.id !== activeId) {
       setActiveId(currentItem.id);
     }

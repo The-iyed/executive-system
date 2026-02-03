@@ -155,6 +155,7 @@ export const MeetingChannelLabels: Record<string, string> = {
   PHYSICAL_LOCATION_2: 'حضوري (الموقع2)',
   PHYSICAL_LOCATION_3: 'حضوري (الموقع3)',
   VIRTUAL: 'عن بعد',
+  HYBRID: 'مختلط',
 };
 
 /**
