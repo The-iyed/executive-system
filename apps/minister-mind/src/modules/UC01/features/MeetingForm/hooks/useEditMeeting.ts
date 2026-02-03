@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getDraftById } from '../../../data';
 import { PATH } from '../../../routes/paths';
-import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2Data, transformDraftToStep3Data } from '../utils';
+import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData, transformDraftToStep4SchedulingData } from '../utils';
 import { useStepNavigation } from './useStepNavigation';
 import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
@@ -22,9 +22,10 @@ export const useEditMeeting = () => {
   const initialData = useMemo(() => {
     if (!draftData) return undefined;
     return {
-      step1: transformDraftToStep1Data(draftData),
-      step2: transformDraftToStep2Data(draftData),
-      step3: { initialSlots: transformDraftToStep3Data(draftData) },
+      step1BasicInfo: transformDraftToStep1Data(draftData),
+      step2Content: transformDraftToStep2ContentData(draftData),
+      step3Invitees: transformDraftToStep3InviteesData(draftData),
+      step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
     };
   }, [draftData]);
 
@@ -41,20 +42,17 @@ export const useEditMeeting = () => {
     navigate(PATH.MEETINGS);
   }, [navigate]);
 
-  const { deleteDraft, step1Hook, step2Hook, step3Hook } = useMeetingSteps({
+  const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook, step4SchedulingHook } = useMeetingSteps({
     draftId: id!,
     isEditMode: true,
     initialData,
-    // onStep2Success: (isDraft) => {
-    //   if (isDraft) {
-    //     handleSaveDraft();
-    //   } else {
-    //     handleNext();
-    //   }
-    // },
-    // onStep3Success: () => {
-    //   clearDraftData();
-    // },
+    onStep2ContentSuccess: (isDraft) => {
+      if (isDraft) handleSaveDraft();
+      else handleNext();
+    },
+    onStep3InviteesSuccess: () => {
+      handleSaveDraft();
+    },
   });
 
   const handleCancel = useCallback(() => {
@@ -62,12 +60,12 @@ export const useEditMeeting = () => {
   }, [deleteDraft]);
 
   const stepHandlers = useStepHandlers({
-    step1Hook,
-    step2Hook,
-    step3Hook,
+    step1BasicInfoHook,
+    step2ContentHook,
+    step3InviteesHook,
+    step4SchedulingHook,
     onNext: handleNext,
     onSaveDraft: handleSaveDraft,
-    navigate,
   });
 
   return {
@@ -75,9 +73,10 @@ export const useEditMeeting = () => {
     draftId: id!,
     scrollContainerRef,
     deleteDraft,
-    step1Hook,
-    step2Hook,
-    step3Hook,
+    step1BasicInfoHook,
+    step2ContentHook,
+    step3InviteesHook,
+    step4SchedulingHook,
     handleNext,
     handlePrevious,
     handleCancel,

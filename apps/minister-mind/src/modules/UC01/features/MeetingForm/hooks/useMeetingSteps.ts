@@ -1,24 +1,29 @@
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PATH } from '../../../routes/paths';
-import { useStep1 } from './useStep1';
-import { useStep2 } from './useStep2';
-import { useStep3 } from './useStep3';
+import { useStep1BasicInfo } from './useStep1BasicInfo';
+import { useStep2Content } from './useStep2Content';
+import { useStep3Invitees } from './useStep3Invitees';
+import { useStep4Scheduling } from './useStep4Scheduling';
 import { useDeleteDraft } from './useDeleteDraft';
-import type { Step1FormData } from '../schemas/step1.schema';
-import type { Step2FormData } from '../schemas/step2.schema';
-import { clearDraftData } from '../utils';
+import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
+import type { Step2ContentFormData } from '../schemas/step2Content.schema';
+import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
+import { clearDraftData, getContentStepOptions, saveContentStepOptions } from '../utils';
 
 interface UseMeetingStepsProps {
   draftId: string | undefined;
   isEditMode: boolean;
   initialData?: {
-    step1?: Partial<Step1FormData>;
-    step2?: Partial<Step2FormData>;
-    step3?: { initialSlots?: string[] };
+    step1BasicInfo?: Partial<Step1BasicInfoFormData>;
+    step2Content?: Partial<Step2ContentFormData>;
+    step3Invitees?: Partial<Step3InviteesFormData>;
+    step4Scheduling?: { initialSlots?: string[] };
   };
   onStep1Success?: (newDraftId: string) => void;
-  onStep2Success?: (isDraft: boolean) => void;
-  onStep3Success?: () => void;
+  onStep2ContentSuccess?: (isDraft: boolean) => void;
+  onStep3InviteesSuccess?: (isDraft: boolean) => void;
+  onStep4SchedulingSuccess?: () => void;
 }
 
 export const useMeetingSteps = ({
@@ -26,8 +31,9 @@ export const useMeetingSteps = ({
   isEditMode,
   initialData,
   onStep1Success,
-  onStep2Success,
-  onStep3Success,
+  onStep2ContentSuccess,
+  onStep3InviteesSuccess,
+  onStep4SchedulingSuccess,
 }: UseMeetingStepsProps) => {
   const navigate = useNavigate();
 
@@ -38,50 +44,92 @@ export const useMeetingSteps = ({
     },
   });
 
-  const step1Hook = useStep1({
+  const step1BasicInfoHook = useStep1BasicInfo({
     draftId,
-    initialData: initialData?.step1,
+    initialData: initialData?.step1BasicInfo,
     onSuccess: onStep1Success,
     onError: (error) => {
-      console.error('Step1 error:', error);
+      console.error('Step1BasicInfo error:', error);
     },
     isEditMode,
   });
 
-  const step2Hook = useStep2({
+  useEffect(() => {
+    if (draftId && step1BasicInfoHook.formData.meetingCategory !== undefined && step1BasicInfoHook.formData.meetingCategory !== '') {
+      saveContentStepOptions({
+        meetingCategory: step1BasicInfoHook.formData.meetingCategory,
+        meetingConfidentiality: step1BasicInfoHook.formData.meetingConfidentiality,
+        isUrgent: step1BasicInfoHook.formData.is_urgent === true,
+      });
+    }
+  }, [draftId, step1BasicInfoHook.formData.meetingCategory, step1BasicInfoHook.formData.meetingConfidentiality, step1BasicInfoHook.formData.is_urgent]);
+
+  const contentStepOptions = useMemo(() => {
+    const fromStep1 = {
+      meetingCategory: step1BasicInfoHook.formData.meetingCategory,
+      meetingConfidentiality: step1BasicInfoHook.formData.meetingConfidentiality,
+      isUrgent: step1BasicInfoHook.formData.is_urgent === true,
+    };
+    const hasFromStep1 =
+      fromStep1.meetingCategory !== undefined && fromStep1.meetingCategory !== '';
+    if (hasFromStep1) return fromStep1;
+    const persisted = getContentStepOptions();
+    return {
+      meetingCategory: persisted?.meetingCategory,
+      meetingConfidentiality: persisted?.meetingConfidentiality,
+      isUrgent: persisted?.isUrgent ?? false,
+    };
+  }, [
+    step1BasicInfoHook.formData.meetingCategory,
+    step1BasicInfoHook.formData.meetingConfidentiality,
+    step1BasicInfoHook.formData.is_urgent,
+  ]);
+
+  const step2ContentHook = useStep2Content({
     draftId: draftId || '',
-    initialData: initialData?.step2,
-    meetingCategory: step1Hook.formData.meetingCategory,
-    meetingConfidentiality: step1Hook.formData.meetingConfidentiality,
-    onSuccess: onStep2Success || ((_isDraft) => {
-      clearDraftData();
-      navigate(PATH.MEETINGS);
-      // if (isDraft) {
-      //   navigate(PATH.MEETINGS);
-      // }
-    }),
-    onError: (error) => {
-      console.error('Step2 error:', error);
+    initialData: initialData?.step2Content,
+    meetingCategory: contentStepOptions.meetingCategory,
+    meetingConfidentiality: contentStepOptions.meetingConfidentiality,
+    isUrgent: contentStepOptions.isUrgent,
+    onSuccess: onStep2ContentSuccess,
+    onError: (error:any) => {
+      console.error('Step2Content error:', error);
     },
     isEditMode,
   });
 
-  const step3Hook = useStep3({
+  const step3InviteesHook = useStep3Invitees({
     draftId: draftId || '',
-    initialSlots: initialData?.step3?.initialSlots,
-    onSuccess: onStep3Success || (() => {
+    initialData: initialData?.step3Invitees,
+    meetingCategory: contentStepOptions.meetingCategory,
+    meetingConfidentiality: contentStepOptions.meetingConfidentiality,
+    onSuccess: onStep3InviteesSuccess || (() => {
+      clearDraftData();
+      navigate(PATH.MEETINGS);
+    }), 
+    onError: (error) => {
+      console.error('Step3Invitees error:', error);
+    },
+    isEditMode,
+  });
+
+  const step4SchedulingHook = useStep4Scheduling({
+    draftId: draftId || '',
+    initialSlots: initialData?.step4Scheduling?.initialSlots,
+    onSuccess: onStep4SchedulingSuccess || (() => {
       clearDraftData();
       navigate(PATH.MEETINGS);
     }),
     onError: (error) => {
-      console.error('Step3 error:', error);
+      console.error('Step4Scheduling error:', error);
     },
   });
 
   return {
     deleteDraft,
-    step1Hook,
-    step2Hook,
-    step3Hook,
+    step1BasicInfoHook,
+    step2ContentHook,
+    step3InviteesHook,
+    step4SchedulingHook,
   };
 };
