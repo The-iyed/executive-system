@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput } from '@shared';
-import { MeetingStatus } from '@shared';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
+import type { MeetingClassification } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye } from 'lucide-react';
-import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests } from '../data/meetingsApi';
+import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests, type MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
 
@@ -51,12 +52,11 @@ const ScheduleReview: React.FC = () => {
   };
 
   // Determine API status based on active tab
-  // For scheduled-meetings tab, always use SCHEDULED status
+  // For scheduled-meetings tab, use CLOSED status
   // For work-basket tab, use statusFilter or default to UNDER_REVIEW
   const apiStatus = useMemo(() => {
     if (activeTab === 'scheduled-meetings') {
-      // Always use SCHEDULED for scheduled meetings tab
-      return MeetingStatus.SCHEDULED;
+      return MeetingStatus.CLOSED;
     }
     // For work-basket tab, use statusFilter or default to UNDER_REVIEW
     if (activeTab === 'work-basket') {
@@ -90,9 +90,9 @@ const ScheduleReview: React.FC = () => {
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by status SCHEDULED and owner_type
+      // For scheduled meetings fetch meetings filtered by status CLOSED and owner_type
       if (activeTab === 'scheduled-meetings') {
-        params.status = MeetingStatus.SCHEDULED;
+        params.status = MeetingStatus.CLOSED;
         params.owner_type = 'SCHEDULING';
         return getMeetings(params);
       }
@@ -106,6 +106,28 @@ const ScheduleReview: React.FC = () => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
+
+  // Raw meetings for work-basket table (to show meeting_subject, فئة الاجتماع)
+  const rawMeetings: MeetingApiResponse[] = useMemo(() => {
+    if (!meetingsResponse?.items) return [];
+    return meetingsResponse.items;
+  }, [meetingsResponse]);
+
+  // Get classification label for work-basket table
+  const getClassificationLabel = (classification: string | null): string => {
+    if (!classification) return '-';
+    return MeetingClassificationLabels[classification as MeetingClassification] || classification;
+  };
+
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
 
   // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
@@ -216,6 +238,89 @@ const ScheduleReview: React.FC = () => {
     },
   ];
 
+  // Table columns for الطلبات الحالية (work-basket): include موضوع الاجتماع before فئة الاجتماع
+  const workBasketTableColumns: TableColumn<MeetingApiResponse>[] = [
+    {
+      id: 'request_number',
+      header: 'رقم الطلب',
+      width: 'w-48',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">{row.request_number}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
+      width: 'flex-1',
+      align: 'end',
+      render: (row) => (
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{row.meeting_subject}</span>
+      ),
+    },
+    {
+      id: 'meeting_classification',
+      header: 'فئة الاجتماع',
+      width: 'w-56',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{getClassificationLabel(row.meeting_classification)}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'coordinator',
+      header: 'مقدم الطلب',
+      width: 'w-56',
+      align: 'end',
+      render: (row) => (
+        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{row.submitter_name || '-'}</span>
+      ),
+    },
+    {
+      id: 'date',
+      header: 'تاريخ الإرسال',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => (
+        <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">{formatDate(row.submitted_at || row.created_at)}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'الحالة',
+      width: 'w-42',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-start items-center">
+          <StatusBadge status={row.status as MeetingStatus} label={MeetingStatusLabels[row.status as MeetingStatus] || row.status} />
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      width: 'w-28',
+      align: 'center',
+      render: (row) => (
+        <div className="w-full flex justify-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(PATH.MEETING_DETAIL.replace(':id', row.id));
+            }}
+            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Eye className="w-5 h-5 text-gray-600" strokeWidth={1.67} />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       {/* Scrollable Content */}
@@ -288,11 +393,19 @@ const ScheduleReview: React.FC = () => {
           ) : (
             <>
               {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={meetings}
-                  onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
-                />
+                activeTab === 'work-basket' ? (
+                  <DataTable
+                    columns={workBasketTableColumns}
+                    data={rawMeetings}
+                    onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
+                  />
+                ) : (
+                  <DataTable
+                    columns={tableColumns}
+                    data={meetings}
+                    onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
+                  />
+                )
               ) : (
                 <CardsGrid
                   meetings={meetings}

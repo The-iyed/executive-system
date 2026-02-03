@@ -17,14 +17,6 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
-    path: PATH.MEETINGS,
-    component: lazy(() => import('../features/Meeting')),
-    layout: Layout,
-    useCase: 'UC-08',
-  },
-  {
-    exact: true,
-    guard: AuthGuard,
     path: PATH.NEW_MEETING,
     component: lazy(() => import('../features/MeetingForm/features/create')),
     layout: Layout,

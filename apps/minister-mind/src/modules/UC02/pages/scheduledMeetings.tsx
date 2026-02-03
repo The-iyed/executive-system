@@ -41,7 +41,7 @@ const ScheduledMeetings: React.FC = () => {
       const params: GetMeetingsParams = {
         skip: skip,
         limit: ITEMS_PER_PAGE,
-        status: MeetingStatus.SCHEDULED,
+        status: MeetingStatus.CLOSED,
         owner_type: 'SCHEDULING',
       };
       if (debouncedSearch.trim()) {
@@ -118,19 +118,6 @@ const ScheduledMeetings: React.FC = () => {
       ),
     },
     {
-      id: 'created_at',
-      header: 'تاريخ الطلب',
-      width: 'w-40',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {formatDate(row.created_at)}
-          </span>
-        </div>
-      ),
-    },
-    {
       id: 'submitter_name',
       header: 'اسم مقدم الطلب',
       width: 'w-56',
@@ -163,6 +150,19 @@ const ScheduledMeetings: React.FC = () => {
         <div className="w-full flex justify-end">
           <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
             {getClassificationLabel(row.meeting_classification)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'scheduled_at',
+      header: 'تاريخ الاجتماع',
+      width: 'w-40',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {formatDate(row.scheduled_at)}
           </span>
         </div>
       ),
