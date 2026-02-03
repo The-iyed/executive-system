@@ -1,5 +1,6 @@
 import { NavigateFunction } from 'react-router-dom';
 import { Calendar } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@sanad-ai/ui';
 import { TableColumn } from '@shared/components/data-table';
 import { StatusBadge } from '@shared/components/status-badge';
 import { MeetingDisplayData } from '../../utils/meetingMapper';
@@ -51,11 +52,24 @@ export const createTableColumns = (
       id: 'title',
       header: 'عنوان الاجتماع',
       width: 'w-[350px]',
-      render: (row) => (
-        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
-          {row.title || '-'}
-        </span>
-      ),
+      render: (row) => {
+        const title = row.title || '-';
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+                {title}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="max-w-[350px] bg-neutral-900 text-white border-neutral-700"
+            >
+              <p className="break-words text-right">{title}</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
     },
     {
       id: 'meetingCategory',
@@ -91,7 +105,7 @@ export const createTableColumns = (
     {
       id: 'status',
       header: 'حالة الاجتماع',
-      width: 'w-[250px]',
+      width: 'w-[310px]',
       render: (row) => (
         <div className="w-full flex justify-start">
           <StatusBadge status={row.status} label={row.statusLabel} />
@@ -101,7 +115,7 @@ export const createTableColumns = (
     {
       id: 'isDataComplete',
       header: 'البيانات مكتملة؟',
-      width: 'w-[280px]',
+      width: 'w-[310px]',
       align: 'center',
       render: (row) => (
         <span className="block max-w-full text-base font-normal text-right leading-5 truncate text-gray-600">

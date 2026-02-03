@@ -7,5 +7,6 @@ export const PATH = {
   MEETING_PREVIEW: '/meeting/:id/preview',
   EDIT_MEETING: '/meeting/:id/edit',
   SCHEDULED_MEETINGS: '/scheduled-meetings',
+  PREVIOUS_MEETINGS: '/previous-meetings',
   WORK_BASKET: '/work-basket',
 }

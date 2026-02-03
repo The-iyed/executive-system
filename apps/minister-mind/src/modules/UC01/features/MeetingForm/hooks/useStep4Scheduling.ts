@@ -5,7 +5,7 @@ import { useCalendarEvents } from './useCalendarEvents';
 import type { CalendarEventData } from '@shared';
 import { getWeekStart, getWeekEnd } from '../utils';
 
-interface UseStep3Props {
+interface UseStep4SchedulingProps {
   draftId: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -18,7 +18,7 @@ interface SchedulingPayload {
   alternative_time_slot_id_2?: string;
 }
 
-export interface Step3Hook {
+export interface Step4SchedulingHook {
   // calendar state
   currentDate: Date;
   weekStart: Date;
@@ -45,12 +45,12 @@ export interface Step3Hook {
   setSelectedSlots: (slots: string[]) => void;
 }
 
-export const useStep3 = ({
+export const useStep4Scheduling = ({
   draftId,
   onSuccess,
   onError,
   initialSlots = [],
-}: UseStep3Props): Step3Hook => {
+}: UseStep4SchedulingProps): Step4SchedulingHook => {
   const [currentDate, setCurrentDate] = useState<Date>(() => getWeekStart(new Date()));
   const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
   const [validationError, setValidationError] = useState<string | null>(null);

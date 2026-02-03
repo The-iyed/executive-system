@@ -31,7 +31,7 @@ const isRouteActive = (itemPath?: string, pathname?: string) => {
 
 export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
   className = '',
-  defaultActive = 'home',
+  defaultActive = 'calendar',
   onNavChange,
   items
 }) => {

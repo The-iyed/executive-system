@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { TooltipProvider } from '@sanad-ai/ui';
 import { SharedLayout } from '@shared';
 import { LayoutProps, WelcomeConfig } from './types';
 import { PATH } from '../routes/paths';
@@ -16,18 +17,13 @@ const defaultActions: WelcomeConfig['actions'] = [
     variant: 'primary',  
     onClick: () => navigate(`${PATH.NEW_MEETING}?new=true`, { state: { isNewMeeting: true } }), 
   }, 
-  { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }
+  // { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }
 ]
 
 const welcomeByPath: Record<string, WelcomeConfig> = {
-  [PATH.HOME]: {
-    title: 'مرحباً بك،',
-    description: 'لوحة التحكم الرئيسية - المنصة التنفيذية لجدولة الاجتماعات',
-    actions: defaultActions
-  },
   [PATH.MEETINGS]: {
-    title: 'الاجتماعات',
-    description: 'يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.',
+    title: 'الطلبات الحالية',
+    description: 'الاطلاع على الطلبات الحالية',
     actions: defaultActions
   },
   [PATH.NEW_MEETING]: {
@@ -35,7 +31,7 @@ const welcomeByPath: Record<string, WelcomeConfig> = {
     description:"أدخل البيانات اللازمة بعناية لإضافة اجتماع جديد.", 
     breadcrumbs:[{ label: 'إضافة اجتماع', onClick: () => {} }]
   },
-  [PATH.SCHEDULED_MEETINGS]: {
+  [PATH.PREVIOUS_MEETINGS]: {
     title: 'الاجتماعات السابقة',
     description: 'الاطلاع على الاجتماعات السابقة',
     actions: defaultActions
@@ -50,14 +46,17 @@ const welcomeByPath: Record<string, WelcomeConfig> = {
 const welcome = welcomeByPath[pathname];
 
   return (
-    <SharedLayout
-    children={children}
-    useDynamicNavigation={true}
-    welcomeSection={{
-      title: welcome?.title ?? 'مرحباً بك',
-      description: welcome?.description,
-      breadcrumbs: welcome?.breadcrumbs,
-      actions: welcome?.actions
-    }}
-    />
-)};
+    <TooltipProvider>
+      <SharedLayout
+        children={children}
+        useDynamicNavigation={true}
+        welcomeSection={{
+          title: welcome?.title ?? 'مرحباً بك',
+          description: welcome?.description,
+          breadcrumbs: welcome?.breadcrumbs,
+          actions: welcome?.actions
+        }}
+      />
+    </TooltipProvider>
+  );
+};

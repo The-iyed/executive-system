@@ -8,6 +8,7 @@ export interface GetMeetingsParams {
   skip?: number;
   limit?: number;
   search?: string;
+  date_now?: string;
 }
 
 export interface MeetingApiResponse {
@@ -54,6 +55,9 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   }
   if (params.search) {
     queryParams.append('search', params.search);
+  }
+  if (params.date_now) {
+    queryParams.append('date_now', params.date_now);
   }
 
   const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings?${queryParams.toString()}`);
