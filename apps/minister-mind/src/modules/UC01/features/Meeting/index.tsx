@@ -31,7 +31,10 @@ const Meeting: React.FC = () => {
     currentPage,
   });
 
-  const tableColumns = useMemo(() => createTableColumns(navigate), [navigate]);
+  const tableColumns = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGINATION.ITEMS_PER_PAGE;
+    return createTableColumns(navigate, { startIndex });
+  }, [navigate, currentPage]);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
@@ -81,11 +84,17 @@ const Meeting: React.FC = () => {
           ) : (
             <>
               {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={meetings}
-                  onRowClick={(row) => navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))}
-                />
+                <div className="w-full overflow-x-auto table-scroll">
+                  <div className="min-w-[1400px]">
+                    <DataTable
+                      columns={tableColumns}
+                      data={meetings}
+                      onRowClick={(row) =>
+                        navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
+                      }
+                    />
+                  </div>
+                </div>
               ) : (
                 <CardsGrid
                   meetings={meetings}
