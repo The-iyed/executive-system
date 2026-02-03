@@ -2,9 +2,10 @@ import React from 'react';
 import { Stepper } from '@shared';
 import { STEP_LABELS } from '../../utils';
 import { useCreateMeeting } from '../../hooks/useCreateMeeting';
-import { Step1 } from '../../components/steps/Step1';
-import { Step2 } from '../../components/steps/Step2';
-import { Step3 } from '../../components/steps/Step3';
+import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
+import { Step2Content } from '../../components/steps/Step2Content';
+import { Step3Invitees } from '../../components/steps/Step3Invitees';
+import { Step4Scheduling } from '../../components/steps/Step4Scheduling';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import '@shared/styles';
 
@@ -14,15 +15,18 @@ export const CreateMeeting: React.FC = () => {
     draftId,
     scrollContainerRef,
     deleteDraft,
-    step1Hook,
-    step2Hook,
-    step3Hook,
-    handleStep1Next,
-    handleStep1SaveDraft,
-    handleStep2Next,
-    handleStep2SaveDraft,
-    handleStep3Next,
-    handleStep3SaveDraft,
+    step1BasicInfoHook,
+    step2ContentHook,
+    step3InviteesHook,
+    step4SchedulingHook,
+    handleStep1BasicInfoNext,
+    handleStep1BasicInfoSaveDraft,
+    handleStep2ContentNext,
+    handleStep2ContentSaveDraft,
+    handleStep3InviteesNext,
+    handleStep3InviteesSaveDraft,
+    handleStep4SchedulingNext,
+    handleStep4SchedulingSaveDraft,
     handleCancel,
   } = useCreateMeeting();
 
@@ -30,61 +34,81 @@ export const CreateMeeting: React.FC = () => {
     switch (currentStep) {
       case 0:
         return (
-          <Step1
-            formData={step1Hook.formData}
-            errors={step1Hook.errors}
-            touched={step1Hook.touched}
-            tableErrors={step1Hook.tableErrors}
-            tableTouched={step1Hook.tableTouched}
-            isSubmitting={step1Hook.isSubmitting}
+          <Step1BasicInfo
+            formData={step1BasicInfoHook.formData}
+            errors={step1BasicInfoHook.errors}
+            touched={step1BasicInfoHook.touched}
+            tableErrors={step1BasicInfoHook.tableErrors}
+            tableTouched={step1BasicInfoHook.tableTouched}
+            isSubmitting={step1BasicInfoHook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
-            handleChange={step1Hook.handleChange}
-            handleBlur={step1Hook.handleBlur}
-            handleFilesSelect={step1Hook.handleFilesSelect}
-            handleAdditionalFilesSelect={step1Hook.handleAdditionalFilesSelect}
-            handleAddGoal={step1Hook.handleAddGoal}
-            handleDeleteGoal={step1Hook.handleDeleteGoal}
-            handleUpdateGoal={step1Hook.handleUpdateGoal}
-            handleAddAgenda={step1Hook.handleAddAgenda}
-            handleDeleteAgenda={step1Hook.handleDeleteAgenda}
-            handleUpdateAgenda={step1Hook.handleUpdateAgenda}
-            handleAddDirective={step1Hook.handleAddDirective}
-            handleDeleteDirective={step1Hook.handleDeleteDirective}
-            handleUpdateDirective={step1Hook.handleUpdateDirective}
-            handleNextClick={handleStep1Next}
-            handleSaveDraftClick={handleStep1SaveDraft}
+            handleChange={step1BasicInfoHook.handleChange}
+            handleBlur={step1BasicInfoHook.handleBlur}
+            handleAddGoal={step1BasicInfoHook.handleAddGoal}
+            handleDeleteGoal={step1BasicInfoHook.handleDeleteGoal}
+            handleUpdateGoal={step1BasicInfoHook.handleUpdateGoal}
+            handleAddAgenda={step1BasicInfoHook.handleAddAgenda}
+            handleDeleteAgenda={step1BasicInfoHook.handleDeleteAgenda}
+            handleUpdateAgenda={step1BasicInfoHook.handleUpdateAgenda}
+            handleAddDirective={step1BasicInfoHook.handleAddDirective}
+            handleDeleteDirective={step1BasicInfoHook.handleDeleteDirective}
+            handleUpdateDirective={step1BasicInfoHook.handleUpdateDirective}
+            handleNextClick={handleStep1BasicInfoNext}
+            handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
-            isFieldRequired={step1Hook.isFieldRequired}
+            isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
           />
         );
       case 1:
         if (!draftId) return null;
         return (
-          <Step2
-            formData={step2Hook.formData}
-            errors={step2Hook.errors}
-            touched={step2Hook.touched}
-            inviteesRequired={step2Hook.inviteesRequired}
-            tableErrorMessage={step2Hook.tableErrorMessage}
-            isSubmitting={step2Hook.isSubmitting}
+          <Step2Content
+            formData={step2ContentHook.formData}
+            errors={step2ContentHook.errors}
+            touched={step2ContentHook.touched}
+            presentationRequired={step2ContentHook.presentationRequired}
+            showPresentationBlock={step2ContentHook.showPresentationBlock}
+            showAttachmentTiming={step2ContentHook.showAttachmentTiming}
+            attachmentTimingRequired={step2ContentHook.attachmentTimingRequired}
+            isSubmitting={step2ContentHook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
-            handleAddAttendee={step2Hook.handleAddAttendee}
-            handleDeleteAttendee={step2Hook.handleDeleteAttendee}
-            handleUpdateAttendee={step2Hook.handleUpdateAttendee}
-            handleAddUserFromSelect={step2Hook.handleAddUserFromSelect}
-            handleNextClick={handleStep2Next}
-            handleSaveDraftClick={handleStep2SaveDraft}
+            handleChange={step2ContentHook.handleChange}
+            handleBlur={step2ContentHook.handleBlur}
+            handleFilesSelect={step2ContentHook.handleFilesSelect}
+            handleAdditionalFilesSelect={step2ContentHook.handleAdditionalFilesSelect}
+            handleNextClick={handleStep2ContentNext}
+            handleSaveDraftClick={handleStep2ContentSaveDraft}
             handleCancelClick={handleCancel}
           />
         );
       case 2:
         if (!draftId) return null;
         return (
-          <Step3
-            step3Hook={step3Hook}
+          <Step3Invitees
+            formData={step3InviteesHook.formData}
+            errors={step3InviteesHook.errors}
+            touched={step3InviteesHook.touched}
+            inviteesRequired={step3InviteesHook.inviteesRequired}
+            tableErrorMessage={step3InviteesHook.tableErrorMessage}
+            isSubmitting={step3InviteesHook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
-            handleNextClick={handleStep3Next}
-            handleSaveDraftClick={handleStep3SaveDraft}
+            handleAddAttendee={step3InviteesHook.handleAddAttendee}
+            handleDeleteAttendee={step3InviteesHook.handleDeleteAttendee}
+            handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
+            handleAddUserFromSelect={step3InviteesHook.handleAddUserFromSelect}
+            handleNextClick={handleStep3InviteesNext}
+            handleSaveDraftClick={handleStep3InviteesSaveDraft}
+            handleCancelClick={handleCancel}
+          />
+        );
+      case 3:
+        if (!draftId) return null;
+        return (
+          <Step4Scheduling
+            step4SchedulingHook={step4SchedulingHook}
+            isDeleting={deleteDraft.isDeleting}
+            handleNextClick={handleStep4SchedulingNext}
+            handleSaveDraftClick={handleStep4SchedulingSaveDraft}
             handleCancelClick={handleCancel}
           />
         );
@@ -110,7 +134,6 @@ export const CreateMeeting: React.FC = () => {
         <div className="mt-8">{renderStepContent()}</div>
       </div>
 
-      {/* Delete Draft Confirmation Modal */}
       <DeleteDraftConfirmationModal
         isOpen={deleteDraft.isConfirmOpen}
         onClose={deleteDraft.closeConfirm}

@@ -1,15 +1,34 @@
-// Step 1 exports
-export { 
-  step1BaseSchema,
-  validateStep1, 
-  extractValidationErrors, 
-  isFieldRequired,
-  createConditionalSchema,
-  type Step1FormData
-} from './step1.schema';
+// Step 1: Basic Info (معلومات الاجتماع)
+export {
+  step1BasicInfoBaseSchema,
+  validateStep1BasicInfo,
+  extractStep1BasicInfoErrors,
+  isStep1BasicInfoFieldRequired,
+  createStep1BasicInfoSchema,
+  type Step1BasicInfoFormData,
+} from './step1BasicInfo.schema';
 
-// Step 2 exports
-export { step2Schema, type Step2FormData } from './step2.schema';
+// Step 2: Content (المحتوى)
+export {
+  step2ContentBaseSchema,
+  createStep2ContentSchema,
+  isPresentationHidden,
+  isPresentationRequired,
+  isAttachmentTimingRequired,
+  isAttachmentTimingVisible,
+  type Step2ContentFormData,
+  type Step2ContentSchemaOptions,
+} from './step2Content.schema';
 
-// Step 3 exports
-export { step3Schema, type Step3FormData } from './step3.schema';
+// Step 3: Invitees (قائمة المدعوين)
+export {
+  step3InviteesSchema,
+  createStep3InviteesSchema,
+  type Step3InviteesFormData,
+} from './step3Invitees.schema';
+
+// Step 4: Scheduling (موعد الاجتماع)
+export {
+  step4SchedulingSchema,
+  type Step4SchedulingFormData,
+} from './step4Scheduling.schema';
