@@ -15,6 +15,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       dueDate: formatDateStringToISO(draft.deadline),
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
+      meetingChannel: draft.meeting_channel ?? '',
       sector: draft.sector || '',
       meetingGoals: draft.objectives?.map((obj) => ({
         id: obj.id,
@@ -79,14 +80,8 @@ export const transformDraftToStep3InviteesData = (draft: DraftApiResponse): Part
 
 export const transformDraftToStep4SchedulingData = (draft: DraftApiResponse): string[] => {
   const slots: string[] = [];
-  if (draft?.selected_time_slot?.external_slot_id) {
-    slots.push(draft.selected_time_slot.external_slot_id);
-  }
-  if (draft?.alternative_time_slot_1?.external_slot_id) {
-    slots.push(draft.alternative_time_slot_1.external_slot_id);
-  }
-  if (draft?.alternative_time_slot_2?.external_slot_id) {
-    slots.push(draft.alternative_time_slot_2.external_slot_id);
-  }
+  if (draft?.selected_time_slot_id) slots.push(draft.selected_time_slot_id);
+  if (draft?.alternative_time_slot_id_1) slots.push(draft.alternative_time_slot_id_1);
+  if (draft?.alternative_time_slot_id_2) slots.push(draft.alternative_time_slot_id_2);
   return slots;
 };

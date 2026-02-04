@@ -16,6 +16,7 @@ import {
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
   MEETING_TYPE_OPTIONS,
+  MEETING_CHANNEL_OPTIONS,
   MEETING_GOALS_COLUMNS,
   MEETING_AGENDA_COLUMNS,
   RELATED_DIRECTIVES_COLUMNS,
@@ -25,17 +26,18 @@ import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
 import { getMeetings, type MeetingApiResponse } from '../../../../data/meetingsApi';
 import { cn } from '@sanad-ai/ui';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
+import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
 
 export interface Step1BasicInfoProps {
   formData: Partial<Step1BasicInfoFormData>;
-  errors: Partial<Record<keyof Step1BasicInfoFormData, string>>;
-  touched: Partial<Record<keyof Step1BasicInfoFormData, boolean>>;
+  errors: Partial<Record<Step1ErrorKey, string>>;
+  touched: Partial<Record<Step1ErrorKey, boolean>>;
   tableErrors: Record<string, Record<string, string>>;
   tableTouched: Record<string, Record<string, boolean>>;
   isSubmitting: boolean;
   isDeleting: boolean;
   handleChange: (field: keyof Step1BasicInfoFormData, value: any) => void;
-  handleBlur: (field: keyof Step1BasicInfoFormData) => void;
+  handleBlur: (field: Step1ErrorKey) => void;
   handleAddGoal: () => void;
   handleDeleteGoal: (id: string) => void;
   handleUpdateGoal: (id: string, field: string, value: any) => void;
@@ -49,7 +51,20 @@ export interface Step1BasicInfoProps {
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
   
-  isStep1BasicInfoFieldRequired: (field: keyof Step1BasicInfoFormData) => boolean;
+  isStep1BasicInfoFieldRequired: (field: Step1ErrorKey) => boolean;
+
+  /** Time slots (shown when draft exists and meeting is not urgent) */
+  timeSlots?: {
+    selected_time_slot_id: string | null;
+    alternative_time_slot_id_1: string | null;
+    alternative_time_slot_id_2: string | null;
+    slotOptions: { value: string; label: string }[];
+    isLoadingSlots: boolean;
+    showTimeSlots: boolean;
+  };
+  handleSelectMainSlot?: (slotId: string) => void;
+  handleSelectAlt1?: (slotId: string) => void;
+  handleSelectAlt2?: (slotId: string) => void;
 }
 
 export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
@@ -75,6 +90,10 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   handleSaveDraftClick,
   handleCancelClick,
   isStep1BasicInfoFieldRequired,
+  timeSlots,
+  handleSelectMainSlot,
+  handleSelectAlt1,
+  handleSelectAlt2,
 }) => {
   // Load users options for meeting manager
   const loadMeetingManagerOptions = useCallback(async (
@@ -150,10 +169,11 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
-        {/* Existing form fields */}
+
         <div className="w-full flex flex-col items-center gap-6 sm:gap-7">
-          <FormRow>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
             <FormField
+                className="w-full min-w-0"
               label="نوع الاجتماع"
               required
               error={touched.meetingType ? errors.meetingType : undefined}
@@ -167,6 +187,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               />
             </FormField>
             <FormField
+                className="w-full min-w-0"
               label="عنوان الاجتماع"
               required
               error={touched.meetingSubject ? errors.meetingSubject : undefined}
@@ -179,11 +200,10 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 error={!!(touched.meetingSubject && errors.meetingSubject)}
               />
             </FormField>
-          </FormRow>
 
-          <FormRow>
             {isStep1BasicInfoFieldRequired('meetingReason') && (
               <FormField
+                className="w-full min-w-0"
                 label="مبرر اللقاء"
                 required
                 error={touched.meetingReason ? errors.meetingReason : undefined}
@@ -198,6 +218,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               </FormField>
             )}
             <FormField
+                className="w-full min-w-0"
               label="فئة الاجتماع"
               required
               error={touched.meetingCategory ? errors.meetingCategory : undefined}
@@ -210,11 +231,10 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 error={!!(touched.meetingCategory && errors.meetingCategory)}
               />
             </FormField>
-          </FormRow>
 
-          <FormRow>
             {isStep1BasicInfoFieldRequired('dueDate') && (
               <FormField
+                className="w-full min-w-0"
                 label="تاريخ الاستحقاق"
                 required
                 error={touched.dueDate ? errors.dueDate : undefined}
@@ -230,6 +250,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             )}
             {isStep1BasicInfoFieldRequired('relatedTopic') && (
               <FormField
+                className="w-full min-w-0"
                 label="موضوع التكليف المرتبط"
                 required
                 error={touched.relatedTopic ? errors.relatedTopic : undefined}
@@ -243,10 +264,9 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 />
               </FormField>
             )}
-          </FormRow>
 
-          <FormRow>
             <FormField
+                className="w-full min-w-0"
               label="سرية الاجتماع"
               required
               error={touched.meetingConfidentiality ? errors.meetingConfidentiality : undefined}
@@ -260,6 +280,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               />
             </FormField>
             <FormField
+                className="w-full min-w-0"
               label="تصنيف الاجتماع"
               required={isStep1BasicInfoFieldRequired('meetingClassification1')}
               error={touched.meetingClassification1 ? errors.meetingClassification1 : undefined}
@@ -272,10 +293,22 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 error={!!(touched.meetingClassification1 && errors.meetingClassification1)}
               />
             </FormField>
-          </FormRow>
 
-          <FormRow>
             <FormField
+                className="w-full min-w-0"
+              label="آلية انعقاد الاجتماع"
+              error={touched.meetingChannel ? errors.meetingChannel : undefined}
+            >
+              <FormSelect
+                value={formData.meetingChannel || ''}
+                onValueChange={(value) => handleChange('meetingChannel', value)}
+                options={MEETING_CHANNEL_OPTIONS}
+                placeholder="حضوري / عن بعد"
+                error={!!(touched.meetingChannel && errors.meetingChannel)}
+              />
+            </FormField>
+            <FormField
+                className="w-full min-w-0"
               label="القطاع"
               required={isStep1BasicInfoFieldRequired('sector')}
               error={touched.sector ? errors.sector : undefined}
@@ -288,8 +321,58 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 error={!!(touched.sector && errors.sector)}
               />
             </FormField>
-          </FormRow>
-
+            {isStep1BasicInfoFieldRequired('selected_time_slot_id') && timeSlots && (
+              <>
+              {/* {timeSlots.isLoadingSlots ? ( <div className="text-gray-600 text-right py-4">جاري تحميل المواعيد المتاحة...</div> */}
+                <div data-time-slot-error>
+                <FormField
+                  className="w-full min-w-0"
+                  label="موعد الاجتماع"
+                  required
+                  error={touched.selected_time_slot_id ? errors.selected_time_slot_id : undefined}
+                >
+                  <FormSelect
+                    value={timeSlots.selected_time_slot_id || ''}
+                    onValueChange={(v) => handleSelectMainSlot?.(v)}
+                    onBlur={() => handleBlur('selected_time_slot_id')}
+                    options={timeSlots.slotOptions}
+                    placeholder="اختر موعد الاجتماع"
+                    error={!!(touched.selected_time_slot_id && errors.selected_time_slot_id)}
+                    loading={timeSlots.isLoadingSlots}
+                  />
+                </FormField>
+                </div>
+                <FormField
+                className="w-full min-w-0"
+                label="الموعد البديل الأول"
+                error={undefined}
+                >
+                <FormSelect
+                  value={timeSlots.alternative_time_slot_id_1 || ''}
+                  onValueChange={(v) => handleSelectAlt1?.(v)}
+                  options={timeSlots.slotOptions.filter((o) => o.value !== timeSlots.selected_time_slot_id)}
+                  placeholder="( اختياري ) الموعد البديل الأول"
+                  loading={timeSlots.isLoadingSlots}
+                />
+                </FormField>
+                <FormField
+                className="w-full min-w-0"
+                label="الموعد البديل الثاني"
+                error={undefined}
+                >
+                <FormSelect
+                  value={timeSlots.alternative_time_slot_id_2 || ''}
+                  onValueChange={(v) => handleSelectAlt2?.(v)}
+                  options={timeSlots.slotOptions.filter(
+                    (o) => o.value !== timeSlots.selected_time_slot_id && o.value !== timeSlots.alternative_time_slot_id_1
+                  )}
+                  placeholder="( اختياري ) الموعد البديل الثاني"
+                  loading={timeSlots.isLoadingSlots}
+                />
+                </FormField>
+              </>  
+            )}
+          </div>
           {/* Urgent Meeting Section */}
           <FormRow className='sm:justify-end'>
             <FormSwitch
