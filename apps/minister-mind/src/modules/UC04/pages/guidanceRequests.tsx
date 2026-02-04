@@ -130,6 +130,34 @@ const GuidanceRequests: React.FC = () => {
       },
     },
     {
+      id: 'requestDate',
+      header: 'تاريخ الطلب',
+      width: 'w-64',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        let requestDate = '-';
+        if (originalRequest?.created_at) {
+          const date = new Date(originalRequest.created_at);
+          requestDate = new Intl.DateTimeFormat('ar-SA', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            calendar: 'islamic',
+            numberingSystem: 'arab',
+          }).format(date);
+        }
+        return (
+          <div className="w-full flex justify-end">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {requestDate}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       id: 'title',
       header: 'عنوان الاجتماع',
       width: 'flex-1',
@@ -212,12 +240,29 @@ const GuidanceRequests: React.FC = () => {
       ),
     },
     {
+      id: 'isDataComplete',
+      header: 'بيانات مكتملة',
+      width: 'w-36',
+      align: 'end',
+      render: (row) => {
+        const originalRequest = originalRequests.find((r) => r.id === row.id);
+        const value = originalRequest?.is_data_complete ?? false;
+        return (
+          <div className="w-full flex justify-start">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {value ? 'نعم' : 'لا'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       id: 'status',
       header: 'الحالة',
       width: 'w-52',
       align: 'end',
       render: (row) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-start">
           <StatusBadge status={row.status} label={row.statusLabel} />
         </div>
       ),
