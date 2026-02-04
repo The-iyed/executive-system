@@ -10,6 +10,7 @@ import {
   FormRow,
   ActionButtons,
   FormAsyncSelectV2,
+  FileUpload,
 } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
@@ -17,14 +18,10 @@ import {
   CONFIDENTIALITY_OPTIONS,
   MEETING_TYPE_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
-  MEETING_GOALS_COLUMNS,
   MEETING_AGENDA_COLUMNS,
-  RELATED_DIRECTIVES_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
 import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
-import { getMeetings, type MeetingApiResponse } from '../../../../data/meetingsApi';
-import { cn } from '@sanad-ai/ui';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
 
@@ -38,15 +35,9 @@ export interface Step1BasicInfoProps {
   isDeleting: boolean;
   handleChange: (field: keyof Step1BasicInfoFormData, value: any) => void;
   handleBlur: (field: Step1ErrorKey) => void;
-  handleAddGoal: () => void;
-  handleDeleteGoal: (id: string) => void;
-  handleUpdateGoal: (id: string, field: string, value: any) => void;
   handleAddAgenda: () => void;
   handleDeleteAgenda: (id: string) => void;
   handleUpdateAgenda: (id: string, field: string, value: any) => void;
-  handleAddDirective: () => void;
-  handleDeleteDirective: (id: string) => void;
-  handleUpdateDirective: (id: string, field: string, value: any) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -77,15 +68,9 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   isDeleting,
   handleChange,
   handleBlur,
-  handleAddGoal,
-  handleDeleteGoal,
-  handleUpdateGoal,
   handleAddAgenda,
   handleDeleteAgenda,
   handleUpdateAgenda,
-  handleAddDirective,
-  handleDeleteDirective,
-  handleUpdateDirective,
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
@@ -134,38 +119,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
     }
   }, []);
 
-  // Load previous meeting minutes options
-  const loadPreviousMeetingMinutesOptions = useCallback(async (
-    search: string,
-    skip: number,
-    limit: number
-  ) => {
-    try {
-      const response = await getMeetings({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-
-      const items = response?.items.map((meeting: MeetingApiResponse) => ({
-        label: meeting.meeting_subject || meeting.meeting_title || 'غير محدد',
-        value: meeting.id || '',
-      }));
-
-      return {
-        items,
-        total: response?.total,
-        skip: response?.skip,
-        limit: response?.limit,
-        has_next: false,
-        has_previous: false,
-      };
-    } catch (error) {
-      console.error('Error loading previous meeting minutes:', error);
-      throw error;
-    }
-  }, []);
-
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
@@ -200,7 +153,20 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 error={!!(touched.meetingSubject && errors.meetingSubject)}
               />
             </FormField>
-
+            {/* وصف الاجتماع - optional, payload field: meeting_description */}
+            <FormField
+              className="w-full min-w-0"
+              label="وصف الاجتماع"
+              error={touched.meetingDescription ? errors.meetingDescription : undefined}
+            >
+              <FormInput
+                value={formData.meetingDescription || ''}
+                onChange={(e) => handleChange('meetingDescription', e.target.value)}
+                onBlur={() => handleBlur('meetingDescription')}
+                placeholder="-------"
+                error={!!(touched.meetingDescription && errors.meetingDescription)}
+              />
+            </FormField>
             {isStep1BasicInfoFieldRequired('meetingReason') && (
               <FormField
                 className="w-full min-w-0"
@@ -457,20 +423,38 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               </FormRow>
 
               {formData.directive_method === 'PREVIOUS_MEETING' && (
-                <FormRow className='sm:justify-end'>
+                <FormRow className='sm:justify-end' {...(errors.previous_meeting_minutes_file ? { 'data-error-field': true } : {})}>
                   <FormField
                     label="محضر الاجتماع"
-                    required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_id')}
-                    error={touched.previous_meeting_minutes_id ? errors.previous_meeting_minutes_id : undefined}
+                    required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_file')}
+                    error={touched.previous_meeting_minutes_file ? errors.previous_meeting_minutes_file : undefined}
                   >
-                    <FormAsyncSelectV2
-                      value={formData.previous_meeting_minutes_id ? { label: formData.previous_meeting_minutes_id, value: formData.previous_meeting_minutes_id } : null}
-                      onValueChange={(option) => handleChange('previous_meeting_minutes_id', option?.value || '')}
-                      loadOptions={loadPreviousMeetingMinutesOptions}
+                    <FileUpload
+                      file={formData.previous_meeting_minutes_file ?? undefined}
+                      onFileSelect={(file) => handleChange('previous_meeting_minutes_file', file ?? null)}
+                      required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_file')}
+                      label="رفع ملف (PDF، Word، Excel)"
+                      acceptedTypes={['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']}
+                      acceptedExtensions={['.pdf', '.doc', '.docx', '.xls', '.xlsx']}
+                      error={errors.previous_meeting_minutes_file}
+                      dropzoneClassName="!p-6 max-h-[160px]"
+                    />
+                  </FormField>
+                </FormRow>
+              )}
+              {formData.directive_method === 'DIRECT_DIRECTIVE' && (
+                <FormRow className='sm:justify-end'>
+                  <FormField
+                    label="التوجيه"
+                    required={isStep1BasicInfoFieldRequired('directive_text')}
+                    error={touched.directive_text ? errors.directive_text : undefined}
+                  >
+                    <FormInput
+                      value={formData.directive_text || ''}
+                      onChange={(e) => handleChange('directive_text', e.target.value)}
+                      onBlur={() => handleBlur('directive_text')}
                       placeholder="-------"
-                      error={!!(touched.previous_meeting_minutes_id && errors.previous_meeting_minutes_id)}
-                      errorMessage={touched.previous_meeting_minutes_id ? errors.previous_meeting_minutes_id : undefined}
-                      fullWidth
+                      error={!!(touched.directive_text && errors.directive_text)}
                     />
                   </FormField>
                 </FormRow>
@@ -478,20 +462,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             </>
           )}
         </div>
-
-        <FormTable
-          title="أهداف الاجتماع"
-          required
-          columns={MEETING_GOALS_COLUMNS}
-          rows={formData.meetingGoals || []}
-          onAddRow={handleAddGoal}
-          onDeleteRow={handleDeleteGoal}
-          onUpdateRow={handleUpdateGoal}
-          addButtonLabel="إضافة هدف"
-          errors={tableErrors}
-          touched={tableTouched}
-          errorMessage={errors?.meetingGoals}
-        />
 
         <FormTable
           title="أجندة الاجتماع"
@@ -506,48 +476,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           touched={tableTouched}
           errorMessage={errors?.meetingAgenda}
         />
-
-        <FormRow 
-          className={cn(
-            'flex-wrap-reverse sm:flex-nowrap',
-            formData.wasDiscussedPreviously ? 'sm:justify-between' : 'sm:justify-end')}
-        >
-          {formData.wasDiscussedPreviously && (
-            <FormField
-              label="تاريخ الاجتماع السابق"
-              required={isStep1BasicInfoFieldRequired('previousMeetingDate')}
-              error={touched.previousMeetingDate ? errors.previousMeetingDate : undefined}
-            >
-              <FormDatePicker
-                value={formData.previousMeetingDate}
-                onChange={(value) => handleChange('previousMeetingDate', value)}
-                onBlur={() => handleBlur('previousMeetingDate')}
-                placeholder="dd/mm/yyyy"
-                error={!!(touched.previousMeetingDate && errors.previousMeetingDate)}
-              />
-            </FormField>
-          )}
-          <FormSwitch
-            checked={formData.wasDiscussedPreviously || false}
-            onCheckedChange={(checked) => handleChange('wasDiscussedPreviously', checked)}
-            label="هل تمت مناقشة الموضوع سابقاً؟"
-          />
-        </FormRow>
-
-        {formData.wasDiscussedPreviously && (
-          <FormTable
-            title="التوجيه المرتبط"
-            columns={RELATED_DIRECTIVES_COLUMNS}
-            rows={formData.relatedDirectives || []}
-            onAddRow={handleAddDirective}
-            onDeleteRow={handleDeleteDirective}
-            onUpdateRow={handleUpdateDirective}
-            addButtonLabel="إضافة توجيه مرتبط"
-            errors={tableErrors}
-            touched={tableTouched}
-            errorMessage={errors?.relatedDirectives}
-          />
-        )}
 
         <FormTextArea
           label="ملاحظات"

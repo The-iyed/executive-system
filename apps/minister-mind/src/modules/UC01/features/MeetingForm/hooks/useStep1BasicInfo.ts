@@ -85,16 +85,11 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
   if (formData.meetingReason) {
     formDataToSend.append('meeting_justification', formData.meetingReason);
   }
+  if (formData.meetingDescription && formData.meetingDescription.trim() !== '') {
+    formDataToSend.append('description', formData.meetingDescription);
+  }
 
   // JSON array fields - transform to backend format
-  if (formData.meetingGoals && formData.meetingGoals.length > 0) {
-    const objectives = formData.meetingGoals
-      .map((g) => ({ objective: g.objective }))
-      .filter((g) => g.objective && g.objective.trim() !== '');
-    if (objectives.length > 0) {
-      formDataToSend.append('objectives', JSON.stringify(objectives));
-    }
-  }
   if (formData.meetingAgenda && formData.meetingAgenda.length > 0) {
     const agendaItems = formData.meetingAgenda
       .map((a) => {
@@ -118,11 +113,6 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
     }
   }
 
-  // Boolean
-  formDataToSend.append(
-    'topic_discussed_before',
-    formData.wasDiscussedPreviously ? 'true' : 'false'
-  );
   if (formData.is_urgent !== undefined) {
     formDataToSend.append('is_urgent', formData.is_urgent ? 'true' : 'false');
   }
@@ -131,56 +121,6 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
   }
   if (formData.is_based_on_directive !== undefined) {
     formDataToSend.append('is_based_on_directive', formData.is_based_on_directive ? 'true' : 'false');
-  }
-
-  // Date fields (ISO 8601 format)
-  // Only send previousMeetingDate if wasDiscussedPreviously is true
-  if (formData.wasDiscussedPreviously && formData.previousMeetingDate && formData.previousMeetingDate !== '') {
-    const prevDate = new Date(formData.previousMeetingDate + 'T00:00:00');
-    if (!isNaN(prevDate.getTime())) {
-      formDataToSend.append('previous_meeting_date', prevDate.toISOString());
-    }
-  }
-
-  // Related directives - format according to backend payload structure
-  if (formData.relatedDirectives && formData.relatedDirectives.length > 0) {
-    const directives = formData.relatedDirectives
-      .map((d) => {
-        const directive: any = {};
-        
-        if (d.directive && d.directive.trim() !== '') {
-          directive.directive_text = d.directive;
-        }
-        if (d.previousMeeting && d.previousMeeting.trim() !== '') {
-          directive.related_meeting = d.previousMeeting;
-        }
-        if (d.directiveDate && d.directiveDate !== '') {
-          const directiveDate = new Date(d.directiveDate + 'T00:00:00');
-          if (!isNaN(directiveDate.getTime())) {
-            directive.directive_date = directiveDate.toISOString();
-          }
-        }
-        if (d.directiveStatus && d.directiveStatus.trim() !== '') {
-          directive.directive_status = d.directiveStatus;
-        }
-        if (d.dueDate && d.dueDate !== '') {
-          const deadlineDate = new Date(d.dueDate + 'T00:00:00');
-          if (!isNaN(deadlineDate.getTime())) {
-            directive.deadline = deadlineDate.toISOString();
-          }
-        }
-        if (d.responsible && d.responsible.trim() !== '') {
-          directive.responsible_persons = d.responsible;
-        }
-        
-        // Only include directive if it has at least one field
-        return Object.keys(directive).length > 0 ? directive : null;
-      })
-      .filter(Boolean);
-    
-    if (directives.length > 0) {
-      formDataToSend.append('related_directives', JSON.stringify(directives));
-    }
   }
 
   // Notes
@@ -202,8 +142,11 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
   if (formData.is_based_on_directive && formData.directive_method) {
     formDataToSend.append('directive_method', formData.directive_method);
   }
-  if (formData.is_based_on_directive && formData.directive_method === 'PREVIOUS_MEETING' && formData.previous_meeting_minutes_id) {
-    formDataToSend.append('previous_meeting_minutes_id', formData.previous_meeting_minutes_id);
+  if (formData.is_based_on_directive && formData.directive_method === 'PREVIOUS_MEETING' && formData.previous_meeting_minutes_file instanceof File) {
+    formDataToSend.append('previous_meeting_minutes_file_content', formData.previous_meeting_minutes_file);
+  }
+  if (formData.is_based_on_directive && formData.directive_method === 'DIRECT_DIRECTIVE' && formData.directive_text?.trim()) {
+    formDataToSend.append('directive_text', formData.directive_text.trim());
   }
 
   return formDataToSend;
@@ -276,10 +219,7 @@ export const useStep1BasicInfo = ({
   isEditMode = false,
 }: UseStep1BasicInfoProps = {}) => {
   const [formData, setFormData] = useState<Partial<Step1BasicInfoFormData>>({
-    meetingGoals: [],
     meetingAgenda: [],
-    relatedDirectives: [],
-    wasDiscussedPreviously: false,
     is_urgent: false,
     is_on_behalf_of: false,
     is_based_on_directive: false,
@@ -538,8 +478,6 @@ export const useStep1BasicInfo = ({
         'meetingConfidentiality',
         'meetingChannel',
         'sector',
-        'wasDiscussedPreviously',
-        'previousMeetingDate',
         'notes',
         'is_urgent',
         'is_on_behalf_of',
@@ -556,7 +494,8 @@ export const useStep1BasicInfo = ({
         if (formData.is_on_behalf_of === true) allTouched.meeting_manager_id = true;
         if (formData.is_based_on_directive === true) {
           allTouched.directive_method = true;
-          if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_id = true;
+          if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_file = true;
+          if (formData.directive_method === 'DIRECT_DIRECTIVE') allTouched.directive_text = true;
         }
         return allTouched;
       };
@@ -578,7 +517,6 @@ export const useStep1BasicInfo = ({
           setTableTouched(
             Object.fromEntries(
               [
-                ...(formData.meetingGoals ?? []).map((g) => [g.id, { objective: true }]),
                 ...(formData.meetingAgenda ?? []).map((a) => [
                   a.id,
                   { agenda_item: true, presentation_duration_minutes: true, minister_support_type: true, minister_support_other: true },
@@ -624,26 +562,6 @@ export const useStep1BasicInfo = ({
     (field: keyof Step1BasicInfoFormData, value: any) => {
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
-        // Clear dependent fields and their errors when parent fields change
-        if (field === 'wasDiscussedPreviously' && value === false) {
-          newData.previousMeetingDate = '';
-          const directiveIds = prev.relatedDirectives?.map((d) => d.id) || [];
-          newData.relatedDirectives = [];
-          // Clear errors for dependent fields
-          setErrors((prevErrors) => {
-            const newErrors = { ...prevErrors };
-            delete newErrors.previousMeetingDate;
-            delete newErrors.relatedDirectives;
-            return newErrors;
-          });
-          setTableErrors((prevTableErrors) => {
-            const newTableErrors = { ...prevTableErrors };
-            directiveIds.forEach((id) => {
-              delete newTableErrors[id];
-            });
-            return newTableErrors;
-          });
-        }
         // Clear urgent-related fields when is_urgent is false
         if (field === 'is_urgent' && value === false) {
           newData.urgent_reason = '';
@@ -673,20 +591,31 @@ export const useStep1BasicInfo = ({
         // Clear directive-related fields when is_based_on_directive is false
         if (field === 'is_based_on_directive' && value === false) {
           newData.directive_method = '';
-          newData.previous_meeting_minutes_id = '';
+          newData.previous_meeting_minutes_file = null;
+          newData.directive_text = '';
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.directive_method;
-            delete newErrors.previous_meeting_minutes_id;
+            delete newErrors.previous_meeting_minutes_file;
+            delete newErrors.directive_text;
             return newErrors;
           });
         }
-        // Clear previous_meeting_minutes_id when directive_method changes away from PREVIOUS_MEETING
+        // Clear previous_meeting_minutes_file when directive_method changes away from PREVIOUS_MEETING
         if (field === 'directive_method' && value !== 'PREVIOUS_MEETING') {
-          newData.previous_meeting_minutes_id = '';
+          newData.previous_meeting_minutes_file = null;
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
-            delete newErrors.previous_meeting_minutes_id;
+            delete newErrors.previous_meeting_minutes_file;
+            return newErrors;
+          });
+        }
+        // Clear directive_text when directive_method changes away from DIRECT_DIRECTIVE
+        if (field === 'directive_method' && value !== 'DIRECT_DIRECTIVE') {
+          newData.directive_text = '';
+          setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.directive_text;
             return newErrors;
           });
         }
@@ -719,69 +648,6 @@ export const useStep1BasicInfo = ({
     },
     [formData, validateField, showTimeSlots, selected_time_slot_id]
   );
-
-  // Table handlers - Goals
-  const handleAddGoal = useCallback(() => {
-    const newGoal = { id: nanoid(), objective: '' };
-    setFormData((prev) => {
-      const updatedGoals = [newGoal, ...(prev.meetingGoals || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.meetingGoals;
-        return newErrors;
-      });
-      // Clear all table errors for meetingGoals rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all goal IDs from updated goals
-        const goalIds = updatedGoals.map((g) => g.id);
-        // Remove errors for all goal rows
-        goalIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        meetingGoals: updatedGoals,
-      };
-    });
-  }, []);
-
-  const handleDeleteGoal = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).filter((g) => g.id !== id),
-    }));
-    setTableErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  }, []);
-
-  const handleUpdateGoal = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).map((g) =>
-        g.id === id ? { ...g, [field]: value } : g
-      ),
-    }));
-    // Clear error when field is updated
-    if (value) {
-      setTableErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
-      });
-    }
-  }, []);
 
   // Table handlers - Agenda (includes minister support per requirement)
   const handleAddAgenda = useCallback(() => {
@@ -845,59 +711,6 @@ export const useStep1BasicInfo = ({
         return newErrors;
       });
     }
-  }, []);
-
-  // Table handlers - Directives
-  const handleAddDirective = useCallback(() => {
-    const newDirective = {
-      id: nanoid(),
-      directive: '',
-      previousMeeting: '',
-      directiveDate: '',
-      directiveStatus: '',
-      dueDate: '',
-      responsible: '',
-    };
-    setFormData((prev) => {
-      const updatedDirectives = [newDirective, ...(prev.relatedDirectives || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.relatedDirectives;
-        return newErrors;
-      });
-      // Clear all table errors for relatedDirectives rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all directive IDs from updated directives
-        const directiveIds = updatedDirectives.map((d) => d.id);
-        // Remove errors for all directive rows
-        directiveIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        relatedDirectives: updatedDirectives,
-      };
-    });
-  }, []);
-
-  const handleDeleteDirective = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).filter((d) => d.id !== id),
-    }));
-  }, []);
-
-  const handleUpdateDirective = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).map((d) =>
-        d.id === id ? { ...d, [field]: value } : d
-      ),
-    }));
   }, []);
 
   // Submit step
@@ -975,15 +788,9 @@ export const useStep1BasicInfo = ({
     isStep1BasicInfoFieldRequired: getIsFieldRequired,
     handleChange,
     handleBlur,
-    handleAddGoal,
-    handleDeleteGoal,
-    handleUpdateGoal,
     handleAddAgenda,
     handleDeleteAgenda,
     handleUpdateAgenda,
-    handleAddDirective,
-    handleDeleteDirective,
-    handleUpdateDirective,
     validateAll,
     submitStep,
     // Time slots (step 1 scheduling)
