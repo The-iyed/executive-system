@@ -145,7 +145,7 @@ export const Step2: React.FC<Step2Props> = ({
           loadOptions={handleLoadOptions}
           isClearable
           fullWidth
-          className='max-w-[1085px] mx-auto'
+          className='max-w-[1200px] mx-auto'  
           isSearchable={true}
           limit={10}
           searchPlaceholder="ابحث عن مستخدم..."
