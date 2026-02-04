@@ -234,7 +234,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className={cn("w-full flex justify-center", containerClassName)}>
-      <div className={cn("w-full max-w-[1085px] flex flex-col gap-4", className)}>
+      <div className={cn("w-full max-w-[1200px] flex flex-col gap-4", className)}>
         <label className="text-right text-[14px] font-medium text-[#344054]">
           {label}
           {required && <span className="text-red-500 mr-1">*</span>}
