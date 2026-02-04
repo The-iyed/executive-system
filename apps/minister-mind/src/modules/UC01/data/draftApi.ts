@@ -19,6 +19,7 @@ export interface DraftApiResponse {
   meeting_classification: string;
   meeting_classification_type: string;
   meeting_confidentiality: string;
+  meeting_channel?: string | null;
   sector?: string | null;
   related_topic?: string | null;
   deadline?: string | null;
@@ -83,6 +84,23 @@ export interface DraftApiResponse {
 export const getDraftById = async (draftId: string): Promise<DraftApiResponse> => {
   const response = await axiosInstance.get<DraftApiResponse>(
     `/api/meeting-requests/drafts/${draftId}`
+  );
+  return response.data;
+};
+
+export interface PatchDraftSchedulingPayload {
+  selected_time_slot_id?: string;
+  alternative_time_slot_id_1?: string;
+  alternative_time_slot_id_2?: string;
+}
+
+export const patchDraftScheduling = async (
+  draftId: string,
+  payload: PatchDraftSchedulingPayload
+): Promise<unknown> => {
+  const response = await axiosInstance.patch(
+    `/api/meeting-requests/drafts/${draftId}/scheduling`,
+    payload
   );
   return response.data;
 };

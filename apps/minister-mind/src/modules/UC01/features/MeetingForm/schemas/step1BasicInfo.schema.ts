@@ -82,6 +82,7 @@ export const step1BasicInfoBaseSchema = z.object({
   meetingClassification1: z.string(),
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string(),
+  meetingChannel: z.string().optional().or(z.literal('')),
   sector: z.string().optional().or(z.literal('')),
   meetingGoals: z.array(meetingGoalItemSchema).optional().default([]),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
@@ -131,6 +132,7 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       : optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
+    meetingChannel: optionalString('آلية انعقاد الاجتماع يجب أن تكون نصاً'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
     meetingGoals: z
       .array(meetingGoalItemValidationSchema)
@@ -203,7 +205,10 @@ export const extractStep1BasicInfoErrors = (
 
 const CATEGORY_PRIVATE_MEETING = 'PRIVATE_MEETING' as const;
 
-export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormData, data: Partial<Step1BasicInfoFormData>): boolean => {
+/** Field keys that can have required/validation (form fields + time slot) */
+export type Step1FieldKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
+
+export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partial<Step1BasicInfoFormData>): boolean => {
   switch (field) {
     case 'meetingSubject':
     case 'meetingType':
@@ -230,6 +235,8 @@ export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormDat
       return data.is_based_on_directive === true;
     case 'previous_meeting_minutes_id':
       return data.directive_method === 'PREVIOUS_MEETING';
+    case 'selected_time_slot_id':
+      return data.is_urgent !== true;
     default:
       return false;
   }

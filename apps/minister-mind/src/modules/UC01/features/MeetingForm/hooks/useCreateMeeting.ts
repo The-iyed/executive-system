@@ -30,7 +30,6 @@ export const useCreateMeeting = () => {
     return getDraftId();
   });
 
-  // Fetch draft when draftId exists (e.g. after refresh on step 2+) so step 1 and content-step rules (required/optional/hidden) are restored
   const { data: draftData } = useQuery({
     queryKey: ['draft', draftId, 'create-hydrate'],
     queryFn: () => getDraftById(draftId!),
@@ -41,6 +40,11 @@ export const useCreateMeeting = () => {
     if (!draftData) return undefined;
     return {
       step1BasicInfo: transformDraftToStep1Data(draftData),
+      step1Scheduling: {
+        selected_time_slot_id: draftData.selected_time_slot_id ?? null,
+        alternative_time_slot_id_1: draftData.alternative_time_slot_id_1 ?? null,
+        alternative_time_slot_id_2: draftData.alternative_time_slot_id_2 ?? null,
+      },
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
       step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
@@ -74,6 +78,7 @@ export const useCreateMeeting = () => {
   const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook, step4SchedulingHook } = useMeetingSteps({
     draftId,
     isEditMode: false,
+    currentStep,
     initialData: initialDataFromDraft,
     onStep1Success: (newDraftId) => {
       setDraftId(newDraftId);

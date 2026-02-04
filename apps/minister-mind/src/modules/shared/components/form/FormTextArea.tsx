@@ -16,7 +16,7 @@ export const FormTextArea = React.forwardRef<
   return (
     <div className={cn(
       'flex flex-col gap-2',
-      fullWidth ? 'w-full max-w-[1085px] mx-auto px-4' : '',
+      fullWidth ? 'w-full max-w-[1200px] mx-auto px-4' : '',
       containerClassName
     )}>
       {label && (
