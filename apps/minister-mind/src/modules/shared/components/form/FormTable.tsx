@@ -53,7 +53,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   touched = {},
   errorMessage,
   maxHeight = '220px',
-  maxWidth = '1085px',
+  maxWidth = '1200px',
   emptyStateMessage = 'لا توجد بيانات',
   showErrorList = true,
 }) => {

@@ -47,7 +47,7 @@ export const Step4Scheduling: React.FC<Step4SchedulingProps> = ({
     return (
       <div className="w-full flex flex-col items-center mt-12">
         <div className="w-full flex justify-center">
-          <div className="w-[1085px] flex flex-col gap-6">
+          <div className="w-[1200px] flex flex-col gap-6">
             <div className="text-center text-red-600 p-4">
               حدث خطأ أثناء تحميل المواعيد. يرجى المحاولة مرة أخرى.
             </div>
@@ -60,7 +60,7 @@ export const Step4Scheduling: React.FC<Step4SchedulingProps> = ({
   return (
     <div className="w-full flex flex-col items-center mt-12">
       <div className="w-full flex justify-center">
-        <div className="w-[1085px] flex flex-col gap-6">
+        <div className="w-[1200px] flex flex-col gap-6">
        {/* <div className="flex items-center justify-between w-full mb-6">
          {onAIGenerate && (
          <AIGenerateButton onClick={onAIGenerate} />

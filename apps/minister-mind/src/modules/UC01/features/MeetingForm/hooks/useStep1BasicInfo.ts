@@ -1,13 +1,28 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import axiosInstance from '@auth/utils/axios';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
+import { getWeekStart, getWeekEnd } from '../utils';
+import { getDraftAvailableTimeSlots } from '../../../data/calendarApi';
+import { patchDraftScheduling } from '../../../data';
+
+export interface Step1SchedulingState {
+  selected_time_slot_id: string | null;
+  alternative_time_slot_id_1: string | null;
+  alternative_time_slot_id_2: string | null;
+}
+
+/** Keys that can have validation errors (form fields + time slot main) */
+export type Step1ErrorKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
+
+export type TimeSlotField = 'main' | 'alt1' | 'alt2';
 
 interface UseStep1BasicInfoProps {
   draftId?: string;
   initialData?: Partial<Step1BasicInfoFormData>;
+  initialScheduling?: Partial<Step1SchedulingState>;
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
@@ -17,6 +32,12 @@ interface SubmitStep1BasicInfoPayload {
   formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
+  /** Time slots to send in the same request when creating/updating draft */
+  timeSlots?: {
+    selected_time_slot_id?: string | null;
+    alternative_time_slot_id_1?: string | null;
+    alternative_time_slot_id_2?: string | null;
+  };
 }
 
 interface SubmitStep1BasicInfoResponse {
@@ -45,6 +66,9 @@ const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): Fo
   }
   if (formData.meetingClassification1) {
     formDataToSend.append('meeting_classification_type', formData.meetingClassification1);
+  }
+  if (formData.meetingChannel && formData.meetingChannel !== '') {
+    formDataToSend.append('meeting_channel', formData.meetingChannel);
   }
   if (formData.sector) {
     formDataToSend.append('sector', formData.sector);
@@ -192,7 +216,7 @@ const submitStep1BasicInfoData = async (
   payload: SubmitStep1BasicInfoPayload,
   isEditMode: boolean = false
 ): Promise<string> => {
-  const { formData, isDraft, draftId } = payload;
+  const { formData, isDraft, draftId, timeSlots } = payload;
 
   // Validate if not draft
   if (!isDraft) {
@@ -206,6 +230,19 @@ const submitStep1BasicInfoData = async (
   }
 
   const formDataToSend = prepareBasicInfoFormData(formData);
+
+  // Append time slots to the same request when present
+  if (timeSlots) {
+    if (timeSlots.selected_time_slot_id) {
+      formDataToSend.append('selected_time_slot_id', timeSlots.selected_time_slot_id);
+    }
+    if (timeSlots.alternative_time_slot_id_1) {
+      formDataToSend.append('alternative_time_slot_id_1', timeSlots.alternative_time_slot_id_1);
+    }
+    if (timeSlots.alternative_time_slot_id_2) {
+      formDataToSend.append('alternative_time_slot_id_2', timeSlots.alternative_time_slot_id_2);
+    }
+  }
 
   let response;
   if (isEditMode && draftId) {
@@ -233,6 +270,7 @@ const submitStep1BasicInfoData = async (
 export const useStep1BasicInfo = ({
   draftId,
   initialData,
+  initialScheduling,
   onSuccess,
   onError,
   isEditMode = false,
@@ -248,6 +286,17 @@ export const useStep1BasicInfo = ({
     ...initialData,
   });
 
+  // Time slots (required when draftId exists and not urgent)
+  const [selected_time_slot_id, setSelectedTimeSlotId] = useState<string | null>(
+    initialScheduling?.selected_time_slot_id ?? null
+  );
+  const [alternative_time_slot_id_1, setAlternativeTimeSlotId1] = useState<string | null>(
+    initialScheduling?.alternative_time_slot_id_1 ?? null
+  );
+  const [alternative_time_slot_id_2, setAlternativeTimeSlotId2] = useState<string | null>(
+    initialScheduling?.alternative_time_slot_id_2 ?? null
+  );
+
   // Update form data when initialData changes (edit mode or create flow after refresh when draft is fetched)
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -258,8 +307,173 @@ export const useStep1BasicInfo = ({
     }
   }, [initialData]);
 
-  const [errors, setErrors] = useState<Partial<Record<keyof Step1BasicInfoFormData, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof Step1BasicInfoFormData, boolean>>>({});
+  // Sync time slot state from initialScheduling when draft is loaded
+  useEffect(() => {
+    if (initialScheduling) {
+      if (initialScheduling.selected_time_slot_id != null) setSelectedTimeSlotId(initialScheduling.selected_time_slot_id);
+      if (initialScheduling.alternative_time_slot_id_1 != null) setAlternativeTimeSlotId1(initialScheduling.alternative_time_slot_id_1);
+      if (initialScheduling.alternative_time_slot_id_2 != null) setAlternativeTimeSlotId2(initialScheduling.alternative_time_slot_id_2);
+    }
+  }, [initialScheduling?.selected_time_slot_id, initialScheduling?.alternative_time_slot_id_1, initialScheduling?.alternative_time_slot_id_2]);
+
+  // Clear time slots when meeting is urgent
+  useEffect(() => {
+    if (formData.is_urgent === true) {
+      setSelectedTimeSlotId(null);
+      setAlternativeTimeSlotId1(null);
+      setAlternativeTimeSlotId2(null);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.selected_time_slot_id;
+        return next;
+      });
+    }
+  }, [formData.is_urgent]);
+
+  const weekStart = useMemo(() => getWeekStart(new Date()), []);
+  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
+  const showTimeSlots = formData.is_urgent !== true;
+
+  const startDateStr = useMemo(() => {
+    const d = weekStart;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, [weekStart]);
+  const endDateStr = useMemo(() => {
+    const d = weekEnd;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, [weekEnd]);
+
+  const queryClient = useQueryClient();
+  const timeSlotsQueryKey = ['draft-available-time-slots', startDateStr, endDateStr];
+
+  // Prefetch time slots on step 1 when not urgent (no draftId required)
+  useEffect(() => {
+    if (!showTimeSlots) return;
+    queryClient.prefetchQuery({
+      queryKey: timeSlotsQueryKey,
+      queryFn: () => getDraftAvailableTimeSlots(),
+    });
+  }, [showTimeSlots, startDateStr, endDateStr, queryClient]);
+
+  const { data: slotsData = [], isLoading: isLoadingSlots } = useQuery({
+    queryKey: timeSlotsQueryKey,
+    queryFn: () => getDraftAvailableTimeSlots(),
+    enabled: showTimeSlots,
+  });
+
+  const calendarEvents = useMemo(
+    () =>
+      slotsData.map((slot) => {
+        const startDate = new Date(slot.slot_start);
+        const endDate = new Date(slot.slot_end);
+        const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+        const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+        return {
+          id: slot.id,
+          date: startDate,
+          startTime,
+          endTime,
+          is_available: slot.is_available,
+        };
+      }),
+    [slotsData]
+  );
+
+  const schedulingMutation = useMutation({
+    mutationFn: ({ dId, payload }: { dId: string; payload: Parameters<typeof patchDraftScheduling>[1] }) =>
+      patchDraftScheduling(dId, payload),
+    onError: (err) => {
+      onError?.(err instanceof Error ? err : new Error('فشل حفظ المواعيد'));
+    },
+  });
+
+  const slotOptions = useMemo(() => {
+    return calendarEvents
+      .filter((e) => e.is_available)
+      .map((event) => {
+        const d = event.date;
+        const dateLabel = d.toLocaleDateString('ar-SA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        const label = `${dateLabel} ${event.startTime}–${event.endTime}`;
+        return { value: event.id, label };
+      });
+  }, [calendarEvents]);
+
+  const [errors, setErrors] = useState<Partial<Record<Step1ErrorKey, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<Step1ErrorKey, boolean>>>({});
+
+  const persistScheduling = useCallback(
+    (main: string | null, alt1: string | null, alt2: string | null) => {
+      if (!draftId) return;
+      const payload: Parameters<typeof patchDraftScheduling>[1] = {};
+      if (main) payload.selected_time_slot_id = main;
+      if (alt1 && alt1 !== main) payload.alternative_time_slot_id_1 = alt1;
+      if (alt2 && alt2 !== main && alt2 !== alt1) payload.alternative_time_slot_id_2 = alt2;
+      if (Object.keys(payload).length > 0) schedulingMutation.mutate({ dId: draftId, payload });
+    },
+    [draftId, schedulingMutation]
+  );
+
+  const clearTimeSlotError = useCallback(() => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.selected_time_slot_id;
+      return next;
+    });
+  }, []);
+
+  const markTimeSlotTouched = useCallback((field: TimeSlotField) => {
+    if (field === 'main') {
+      setTouched((prev) => ({ ...prev, selected_time_slot_id: true }));
+    }
+  }, []);
+
+  const handleTimeSlotChange = useCallback(
+    (field: TimeSlotField, value: string) => {
+      clearTimeSlotError();
+      markTimeSlotTouched(field);
+      if (field === 'main') {
+        if (!value) {
+          setSelectedTimeSlotId(null);
+          setAlternativeTimeSlotId1(null);
+          setAlternativeTimeSlotId2(null);
+          return;
+        }
+        const nextAlt1 = alternative_time_slot_id_1 === value ? null : alternative_time_slot_id_1;
+        const nextAlt2 = alternative_time_slot_id_2 === value ? null : alternative_time_slot_id_2;
+        setSelectedTimeSlotId(value);
+        setAlternativeTimeSlotId1(nextAlt1);
+        setAlternativeTimeSlotId2(nextAlt2);
+        persistScheduling(value, nextAlt1, nextAlt2);
+      } else if (field === 'alt1') {
+        if (!value || value === selected_time_slot_id) {
+          setAlternativeTimeSlotId1(null);
+          persistScheduling(selected_time_slot_id, null, alternative_time_slot_id_2);
+          return;
+        }
+        const nextAlt2 = value === alternative_time_slot_id_2 ? null : alternative_time_slot_id_2;
+        setAlternativeTimeSlotId1(value);
+        setAlternativeTimeSlotId2(nextAlt2);
+        persistScheduling(selected_time_slot_id, value, nextAlt2);
+      } else {
+        if (!value || value === selected_time_slot_id || value === alternative_time_slot_id_1) {
+          setAlternativeTimeSlotId2(null);
+          persistScheduling(selected_time_slot_id, alternative_time_slot_id_1, null);
+          return;
+        }
+        setAlternativeTimeSlotId2(value);
+        persistScheduling(selected_time_slot_id, alternative_time_slot_id_1, value);
+      }
+    },
+    [
+      selected_time_slot_id,
+      alternative_time_slot_id_1,
+      alternative_time_slot_id_2,
+      persistScheduling,
+      clearTimeSlotError,
+      markTimeSlotTouched,
+    ]
+  );
+
   const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
   const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
 
@@ -309,99 +523,100 @@ export const useStep1BasicInfo = ({
     [formData]
   );
 
-  // Validate all fields
+  // Validate all fields (including time slot when applicable)
   const validateAll = useCallback(
     (markTouched: boolean = true): boolean => {
+      const allFormFields: Step1ErrorKey[] = [
+        'meetingSubject',
+        'meetingType',
+        'meetingCategory',
+        'meetingReason',
+        'relatedTopic',
+        'dueDate',
+        'meetingClassification1',
+        'meetingClassification2',
+        'meetingConfidentiality',
+        'meetingChannel',
+        'sector',
+        'wasDiscussedPreviously',
+        'previousMeetingDate',
+        'notes',
+        'is_urgent',
+        'is_on_behalf_of',
+        'is_based_on_directive',
+      ];
+      if (showTimeSlots) allFormFields.push('selected_time_slot_id');
+
+      const buildTouched = (): Partial<Record<Step1ErrorKey, boolean>> => {
+        const allTouched: Partial<Record<Step1ErrorKey, boolean>> = {};
+        allFormFields.forEach((field) => {
+          allTouched[field] = true;
+        });
+        if (formData.is_urgent === true) allTouched.urgent_reason = true;
+        if (formData.is_on_behalf_of === true) allTouched.meeting_manager_id = true;
+        if (formData.is_based_on_directive === true) {
+          allTouched.directive_method = true;
+          if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_id = true;
+        }
+        return allTouched;
+      };
+
       if (!validationResult.success) {
         const { formErrors, tableErrors: extractedTableErrors } = extractStep1BasicInfoErrors(
           validationResult,
           formData
         );
-
-        setErrors(formErrors);
+        // Include time slot error when required and empty (same check as other required fields)
+        const errorsToSet =
+          showTimeSlots && !selected_time_slot_id
+            ? { ...formErrors, selected_time_slot_id: 'اختر الموعد الرئيسي للاجتماع' }
+            : formErrors;
+        setErrors(errorsToSet);
         setTableErrors(extractedTableErrors);
-
         if (markTouched) {
-          // Mark all form fields as touched
-          const allFormFields: (keyof Step1BasicInfoFormData)[] = [
-            'meetingSubject',
-            'meetingType',
-            'meetingCategory',
-            'meetingReason',
-            'relatedTopic',
-            'dueDate',
-            'meetingClassification1',
-            'meetingClassification2',
-            'meetingConfidentiality',
-            'sector',
-            'wasDiscussedPreviously',
-            'previousMeetingDate',
-            'notes',
-            'is_urgent',
-            'is_on_behalf_of',
-            'is_based_on_directive',
-          ];
-
-          const allTouched: Partial<Record<keyof Step1BasicInfoFormData, boolean>> = {};
-          allFormFields.forEach((field) => {
-            allTouched[field] = true;
-          });
-
-          // Mark conditional fields as touched based on their parent field values
-          // Similar to previousMeetingDate when wasDiscussedPreviously is true
-          if (formData.is_urgent === true) {
-            allTouched.urgent_reason = true;
-          }
-          if (formData.is_on_behalf_of === true) {
-            allTouched.meeting_manager_id = true;
-          }
-          if (formData.is_based_on_directive === true) {
-            allTouched.directive_method = true;
-            if (formData.directive_method === 'PREVIOUS_MEETING') {
-              allTouched.previous_meeting_minutes_id = true;
-            }
-          }
-
-          // Mark all table rows as touched
-          const allTableTouched: Record<string, Record<string, boolean>> = {};
-          formData.meetingGoals?.forEach((goal) => {
-            allTableTouched[goal.id] = { objective: true };
-          });
-          formData.meetingAgenda?.forEach((agenda) => {
-            allTableTouched[agenda.id] = {
-              agenda_item: true,
-              presentation_duration_minutes: true,
-              minister_support_type: true,
-              minister_support_other: true,
-            };
-          });
-
-          setTouched(allTouched);
-          setTableTouched(allTableTouched);
-
-          // Scroll to first error
+          setTouched((prev) => ({ ...prev, ...buildTouched(), selected_time_slot_id: true }));
+          setTableTouched(
+            Object.fromEntries(
+              [
+                ...(formData.meetingGoals ?? []).map((g) => [g.id, { objective: true }]),
+                ...(formData.meetingAgenda ?? []).map((a) => [
+                  a.id,
+                  { agenda_item: true, presentation_duration_minutes: true, minister_support_type: true, minister_support_other: true },
+                ]),
+              ] as [string, Record<string, boolean>][]
+            )
+          );
           setTimeout(() => {
-            const firstErrorElement = document.querySelector('[data-error-field]');
-            if (firstErrorElement) {
-              firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const timeSlotEl = document.querySelector('[data-time-slot-error]');
+            if (timeSlotEl && showTimeSlots && !selected_time_slot_id) {
+              timeSlotEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
-              const formContainer = document.querySelector('[data-form-container]');
-              if (formContainer) {
-                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
+              document.querySelector('[data-error-field]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) ??
+                document.querySelector('[data-form-container]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           }, 100);
         }
-
         return false;
       }
 
-      // Clear errors if validation passes
+      // Form valid – check time slot when required (same pattern as other fields: set error + mark touched)
+      if (showTimeSlots && !selected_time_slot_id) {
+        setErrors((prev) => ({ ...prev, selected_time_slot_id: 'مطلوب – اختر الموعد الرئيسي للاجتماع' }));
+        if (markTouched) {
+          setTouched((prev) => ({ ...prev, ...buildTouched(), selected_time_slot_id: true }));
+        }
+        setTimeout(() => {
+          document.querySelector('[data-time-slot-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) ??
+            document.querySelector('[data-form-container]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        return false;
+      }
+
       setErrors({});
       setTableErrors({});
       return true;
     },
-    [validationResult, formData]
+    [validationResult, formData, showTimeSlots, selected_time_slot_id]
   );
 
   // Form field handlers
@@ -435,6 +650,14 @@ export const useStep1BasicInfo = ({
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.urgent_reason;
+            return newErrors;
+          });
+        }
+        // Clear time slot error when is_urgent is true
+        if (field === 'is_urgent' && value === true) {
+          setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.selected_time_slot_id;
             return newErrors;
           });
         }
@@ -478,11 +701,23 @@ export const useStep1BasicInfo = ({
   );
 
   const handleBlur = useCallback(
-    (field: keyof Step1BasicInfoFormData) => {
+    (field: Step1ErrorKey) => {
       setTouched((prev) => ({ ...prev, [field]: true }));
+      if (field === 'selected_time_slot_id') {
+        if (showTimeSlots && !selected_time_slot_id) {
+          setErrors((prev) => ({ ...prev, selected_time_slot_id: 'مطلوب – اختر الموعد الرئيسي للاجتماع' }));
+        } else if (selected_time_slot_id) {
+          setErrors((prev) => {
+            const next = { ...prev };
+            delete next.selected_time_slot_id;
+            return next;
+          });
+        }
+        return;
+      }
       validateField(field, formData[field]);
     },
-    [formData, validateField]
+    [formData, validateField, showTimeSlots, selected_time_slot_id]
   );
 
   // Table handlers - Goals
@@ -668,7 +903,7 @@ export const useStep1BasicInfo = ({
   // Submit step
   const submitStep = useCallback(
     async (isDraft: boolean = false): Promise<string | null> => {
-      // Validate if not draft - this will set errors and touched state
+      // Validate if not draft (includes time slot when showTimeSlots) - sets errors and touched
       if (!isDraft && !validateAll(true)) {
         return null;
       }
@@ -678,6 +913,15 @@ export const useStep1BasicInfo = ({
           formData,
           isDraft,
           draftId,
+          timeSlots:
+            showTimeSlots &&
+            (selected_time_slot_id || alternative_time_slot_id_1 || alternative_time_slot_id_2)
+              ? {
+                  selected_time_slot_id: selected_time_slot_id || undefined,
+                  alternative_time_slot_id_1: alternative_time_slot_id_1 || undefined,
+                  alternative_time_slot_id_2: alternative_time_slot_id_2 || undefined,
+                }
+              : undefined,
         });
         return newDraftId;
       } catch (error: any) {
@@ -697,12 +941,21 @@ export const useStep1BasicInfo = ({
         return null;
       }
     },
-    [formData, validateAll, submitMutation]
+    [
+      formData,
+      draftId,
+      showTimeSlots,
+      selected_time_slot_id,
+      alternative_time_slot_id_1,
+      alternative_time_slot_id_2,
+      validateAll,
+      submitMutation,
+    ]
   );
 
-  // Helper to check if a field is required
+  // Helper to check if a field is required (form fields + time slot)
   const getIsFieldRequired = useCallback(
-    (field: keyof Step1BasicInfoFormData) => {
+    (field: Step1ErrorKey) => {
       return isStep1BasicInfoFieldRequired(field, formData);
     },
     [formData]
@@ -733,5 +986,17 @@ export const useStep1BasicInfo = ({
     handleUpdateDirective,
     validateAll,
     submitStep,
+    // Time slots (step 1 scheduling)
+    timeSlots: {
+      selected_time_slot_id,
+      alternative_time_slot_id_1,
+      alternative_time_slot_id_2,
+      slotOptions,
+      isLoadingSlots,
+      showTimeSlots,
+    },
+    handleSelectMainSlot: (v: string) => handleTimeSlotChange('main', v),
+    handleSelectAlt1: (v: string) => handleTimeSlotChange('alt1', v),
+    handleSelectAlt2: (v: string) => handleTimeSlotChange('alt2', v),
   };
 };

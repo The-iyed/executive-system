@@ -32,3 +32,16 @@ export const getCalendarEvents = async (
 
   return response.data;
 };
+
+export const getDraftAvailableTimeSlots = async (): Promise<CalendarSlot[]> => {
+  const response = await axiosInstance.get<CalendarSlot[]>(
+    '/api/meeting-requests/drafts/available-time-slots/suggestions',
+    {
+      params: {
+        random_order: true,
+      },
+    },
+  );
+
+  return response.data;
+};
