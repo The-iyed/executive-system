@@ -39,6 +39,9 @@ export interface Invitee {
   user_id: string | null;
   external_email: string | null;
   external_name: string | null;
+  position?: string | null;
+  mobile?: string | null;
+  attendance_mechanism?: string | null;
   is_required: boolean;
   response_status: string;
   attendee_source: string;
@@ -112,6 +115,7 @@ export interface GuidanceRequestApiResponse {
   meeting_confidentiality?: string;
   sector?: string;
   is_on_behalf_of?: boolean;
+  urgent_reason?: string | null;
 }
 
 export interface GuidanceRequestsListResponse {

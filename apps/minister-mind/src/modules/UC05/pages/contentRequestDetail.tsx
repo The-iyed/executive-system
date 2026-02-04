@@ -12,7 +12,6 @@ import {
   getMeetingClassificationTypeLabel,
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
-  getInviteeResponseStatusLabel,
 } from '@shared/types';
 import {
   getContentRequestById,
@@ -25,6 +24,23 @@ import {
   type ConsultantUser,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
+
+/** Safely format related_guidance which may be a string or a directive object/array from the API */
+function formatRelatedGuidance(value: unknown): string {
+  if (typeof value === 'string') return value.trim() || '-';
+  if (value && typeof value === 'object') {
+    if (Array.isArray(value)) {
+      const texts = value
+        .map((d: { directive_text?: string }) => (d?.directive_text != null ? String(d.directive_text) : ''))
+        .filter(Boolean);
+      return texts.length > 0 ? texts.join(' ') : '-';
+    }
+    if ('directive_text' in value && typeof (value as { directive_text?: string }).directive_text === 'string') {
+      return (value as { directive_text: string }).directive_text;
+    }
+  }
+  return '-';
+}
 import {
   Textarea,
   Dialog,
@@ -774,7 +790,7 @@ const ContentRequestDetail: React.FC = () => {
                       التوجيه
                     </label>
                     <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      {contentRequest.related_guidance || '-'}
+                      {formatRelatedGuidance(contentRequest.related_guidance)}
                     </p>
                   </div>
 
@@ -973,7 +989,7 @@ const ContentRequestDetail: React.FC = () => {
                           {
                             id: 'index',
                             header: 'رقم البند',
-                            width: 'min-w-[8rem] flex-shrink-0',
+                            width: 'min-w-[6rem] flex-shrink-0',
                             align: 'center',
                             render: (_row: any, index: number) => (
                               <div className="flex items-center justify-center w-full">
@@ -983,15 +999,34 @@ const ContentRequestDetail: React.FC = () => {
                           },
                           {
                             id: 'name',
-                            header: 'الاسم',
+                            header: 'الإسم',
                             width: 'min-w-0 flex-1',
                             align: 'end',
                             render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] text-right block truncate"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.external_name || row.user_id || '--------------'}
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_name || row.user_id || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'position',
+                            header: 'المنصب',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.position || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'mobile',
+                            header: 'الجوال',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.mobile || '-'}
                               </span>
                             ),
                           },
@@ -1001,43 +1036,25 @@ const ContentRequestDetail: React.FC = () => {
                             width: 'min-w-0 flex-1',
                             align: 'end',
                             render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] text-right block truncate"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.external_email || '--------------'}
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_email || '-'}
                               </span>
                             ),
                           },
                           {
-                            id: 'is_required',
-                            header: 'الحضور أساسي',
-                            width: 'min-w-[11rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
-                              <div className="flex items-center justify-center gap-2 w-full">
-                                <span
-                                  className="text-sm text-[#667085]"
-                                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                >
-                                  {row.is_required ? 'نعم' : 'لا'}
+                            id: 'attendance_mechanism',
+                            header: 'آلية الحضور',
+                            width: 'min-w-[8rem] flex-shrink-0',
+                            align: 'end',
+                            render: (row: any) => {
+                              const v = row.attendance_mechanism;
+                              const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                              return (
+                                <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {label}
                                 </span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'response_status',
-                            header: 'الحالة',
-                            width: 'min-w-[6rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] whitespace-nowrap"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {getInviteeResponseStatusLabel(row.response_status)}
-                              </span>
-                            ),
+                              );
+                            },
                           },
                         ] as TableColumn<any>[]}
                         data={contentRequest.invitees}
@@ -1070,89 +1087,78 @@ const ContentRequestDetail: React.FC = () => {
                 </h2>
                 {contentRequest.minister_attendees && contentRequest.minister_attendees.length > 0 ? (
                   <div className="w-full overflow-x-auto table-scroll">
-                    <div className="min-w-[1085px]">
+                    <div className="w-full min-w-0">
                       <DataTable
                         columns={[
                           {
                             id: 'index',
                             header: 'رقم البند',
-                            width: 'w-[114px]',
+                            width: 'min-w-[6rem] flex-shrink-0',
                             align: 'center',
                             render: (_row: any, index: number) => (
-                              <span className="text-sm text-[#475467]">{index + 1}</span>
+                              <div className="flex items-center justify-center w-full">
+                                <span className="text-sm text-[#475467]">{index + 1}</span>
+                              </div>
                             ),
                           },
                           {
                             id: 'name',
-                            header: 'اسم المستخدم',
-                            width: 'w-[227px]',
+                            header: 'الإسم',
+                            width: 'min-w-0 flex-1',
                             align: 'end',
                             render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] text-right"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.external_name || row.user_id || '--------------'}
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_name || row.user_id || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'position',
+                            header: 'المنصب',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.position || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'mobile',
+                            header: 'الجوال',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.mobile || '-'}
                               </span>
                             ),
                           },
                           {
                             id: 'email',
-                            header: 'البريد الإلكتروني الخارجي',
-                            width: 'w-[227px]',
+                            header: 'البريد الإلكتروني',
+                            width: 'min-w-0 flex-1',
                             align: 'end',
                             render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] text-right"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.external_email || '--------------'}
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.external_email || '-'}
                               </span>
                             ),
                           },
                           {
-                            id: 'is_required',
-                            header: 'الحضور أساسي',
-                            width: 'w-[136px]',
-                            align: 'center',
-                            render: (row: any) => (
-                              <div className="flex items-center justify-center gap-2">
-                                <span
-                                  className="text-sm text-[#667085]"
-                                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                >
-                                  {row.is_required ? 'نعم' : 'لا'}
+                            id: 'attendance_mechanism',
+                            header: 'آلية الحضور',
+                            width: 'min-w-[8rem] flex-shrink-0',
+                            align: 'end',
+                            render: (row: any) => {
+                              const v = row.attendance_mechanism;
+                              const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                              return (
+                                <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {label}
                                 </span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'access_permission',
-                            header: 'صلاحية الوصول',
-                            width: 'w-[165px]',
-                            align: 'center',
-                            render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467]"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.access_permission || '-'}
-                              </span>
-                            ),
-                          },
-                          {
-                            id: 'justification',
-                            header: 'المبرر',
-                            width: 'w-[300px]',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span
-                                className="text-sm text-[#475467] text-right"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              >
-                                {row.justification || '-'}
-                              </span>
-                            ),
+                              );
+                            },
                           },
                         ] as TableColumn<any>[]}
                         data={contentRequest.minister_attendees}

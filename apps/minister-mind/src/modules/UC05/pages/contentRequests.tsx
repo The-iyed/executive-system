@@ -79,16 +79,19 @@ const ContentRequests: React.FC = () => {
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Format date helper
+  // Format date in Arabic Islamic format: الجمعة، ١٠ رمضان ١٤٤٧ هـ
   const formatDate = (dateString: string | null | undefined): string => {
     if (!dateString) return '-';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA', {
+      return new Intl.DateTimeFormat('ar-SA', {
+        weekday: 'long',
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
+        month: 'long',
+        day: 'numeric',
+        calendar: 'islamic',
+        numberingSystem: 'arab',
+      }).format(date);
     } catch {
       return dateString;
     }
@@ -137,7 +140,7 @@ const ContentRequests: React.FC = () => {
     {
       id: 'created_at',
       header: 'تاريخ الطلب',
-      width: 'w-40',
+      width: 'w-64',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
@@ -187,7 +190,7 @@ const ContentRequests: React.FC = () => {
     {
       id: 'meeting_date',
       header: 'تاريخ الاجتماع',
-      width: 'w-40',
+      width: 'w-64',
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
