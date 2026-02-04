@@ -12,13 +12,29 @@ import {
   getMeetingClassificationTypeLabel,
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
-  getInviteeResponseStatusLabel,
 } from '@shared/types';
 import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance, ProvideGuidanceRequest } from '../data/guidanceApi';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
+
+/** Safely format related_guidance which may be a string or a directive object/array from the API */
+function formatRelatedGuidance(value: unknown): string {
+  if (typeof value === 'string') return value.trim() || '-';
+  if (value && typeof value === 'object') {
+    if (Array.isArray(value)) {
+      const texts = value
+        .map((d: { directive_text?: string }) => (d?.directive_text != null ? String(d.directive_text) : ''))
+        .filter(Boolean);
+      return texts.length > 0 ? texts.join(' ') : '-';
+    }
+    if ('directive_text' in value && typeof (value as { directive_text?: string }).directive_text === 'string') {
+      return (value as { directive_text: string }).directive_text;
+    }
+  }
+  return '-';
+}
 
 const GuidanceRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,6 +69,17 @@ const GuidanceRequestDetail: React.FC = () => {
 
   // Fetch consultation records (سجلات الاستشارات)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
+    queryKey: ['consultation-records', id],
+    queryFn: () => getConsultationRecordsWithParams(id!, {
+      include_drafts: false,
+      skip: 0,
+      limit: 100,
+    }),
+    enabled: !!id && activeTab === 'consultations-log',
+  });
+
+  // Fetch content consultation records (سجلات الاستشارات المحتوى) from /api/meeting-requests/{meeting_id}/consultation-record
+  const { data: contentConsultationRecords, isLoading: isLoadingContentConsultationRecords } = useQuery({
     queryKey: ['consultation-records-content', id],
     queryFn: () => getConsultationRecordsWithParams(id!, {
       consultation_type: 'CONTENT',
@@ -60,7 +87,7 @@ const GuidanceRequestDetail: React.FC = () => {
       skip: 0,
       limit: 100,
     }),
-    enabled: !!id && activeTab === 'consultations-log',
+    enabled: !!id && activeTab === 'consultations-log-content',
   });
 
   const meetingRequest = guidanceData?.meeting_request;
@@ -80,6 +107,10 @@ const GuidanceRequestDetail: React.FC = () => {
       label: 'المحتوى',
     },
     {
+      id: 'invitees',
+      label: 'قائمة المدعوين',
+    },
+    {
       id: 'directives-log',
       label:  'سجلات التوجيهات',
     },
@@ -88,8 +119,107 @@ const GuidanceRequestDetail: React.FC = () => {
       label: 'سجلات الاستشارات',
     },
     {
-      id: 'invitees',
-      label: 'قائمة المدعوين',
+      id: 'consultations-log-content',
+      label: 'سجلات الاستشارات المحتوى',
+    },
+  ];
+
+  const consultationLogColumns: TableColumn<ConsultationRecord>[] = [
+    {
+      id: 'consultation_type',
+      header: 'نوع الاستشارة',
+      width: 'w-44',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type}
+        </span>
+      ),
+    },
+    {
+      id: 'consultation_question',
+      header: 'السؤال',
+      width: 'flex-1',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700 line-clamp-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.consultation_question || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'consultation_answer',
+      header: 'الإجابة',
+      width: 'flex-1',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700 line-clamp-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.consultation_answer || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'consultant_name',
+      header: 'رد بواسطة',
+      width: 'w-48',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.consultant_name || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'requested_at',
+      header: 'تاريخ الطلب',
+      width: 'w-40',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.requested_at
+            ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'responded_at',
+      header: 'تاريخ الرد',
+      width: 'w-40',
+      render: (row: ConsultationRecord) => (
+        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          {row.responded_at
+            ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'الحالة',
+      width: 'w-32',
+      align: 'center',
+      render: (row: ConsultationRecord) => {
+        const statusLabels: Record<string, string> = {
+          PENDING: 'قيد الانتظار',
+          RESPONDED: 'تم الرد',
+          CANCELLED: 'ملغاة',
+          DRAFT: 'مسودة',
+        };
+        const statusLabel = statusLabels[row.status] || row.status;
+        return (
+          <div className="flex justify-center">
+            <StatusBadge status={row.status} label={statusLabel} />
+          </div>
+        );
+      },
     },
   ];
 
@@ -414,9 +544,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       className="text-base text-gray-900 text-right"
                       style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                     >
-                      {meetingRequest.current_owner_user
-                        ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
-                        : meetingRequest.current_owner_role?.name_ar ?? '-'}
+                       {meetingRequest.submitter_name ?? '-'}
                     </p>
                   </div>
                 </div>
@@ -533,9 +661,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        {meetingRequest.current_owner_user
-                          ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
-                          : meetingRequest.current_owner_role?.name_ar ?? '-'}
+                        {meetingRequest.submitter_name ?? '-'}
                       </p>
                     </div>
                   </div>
@@ -610,6 +736,25 @@ const GuidanceRequestDetail: React.FC = () => {
                           : '-'}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Row 5b - السبب (urgent reason) */}
+                  <div className="flex flex-row gap-4">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <label
+                        className="text-md pasis font-medium text-gray-700"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        السبب
+                      </label>
+                      <p
+                        className="text-base text-gray-900 text-right"
+                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      >
+                        {meetingRequest.urgent_reason || '-'}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2" />
                   </div>
 
                   {/* Row 6 */}
@@ -849,7 +994,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        {meetingRequest.related_guidance || '-'}
+                        {formatRelatedGuidance(meetingRequest.related_guidance)}
                       </p>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
@@ -859,12 +1004,43 @@ const GuidanceRequestDetail: React.FC = () => {
                       >
                         محضر الاجتماع
                       </label>
-                      <p
-                        className="text-base text-gray-900 text-right"
+                      <div
+                        className="text-base text-gray-900 text-right flex flex-row items-center justify-end gap-2 flex-wrap"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        -
-                      </p>
+                        {(() => {
+                          const execSummary = meetingRequest.attachments?.find((a) => a.is_executive_summary);
+                          if (!execSummary) return '-';
+                          return (
+                            <>
+                              <span className="truncate max-w-[200px]" title={execSummary.file_name}>
+                                {execSummary.file_name}
+                              </span>
+                              {execSummary.blob_url && (
+                                <>
+                                  <a
+                                    href={execSummary.blob_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center w-8 h-8 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors flex-shrink-0"
+                                    title="تحميل"
+                                  >
+                                    <Download className="w-4 h-4 text-[#009883]" />
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => window.open(execSummary.blob_url, '_blank')}
+                                    className="inline-flex items-center justify-center w-8 h-8 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors flex-shrink-0"
+                                    title="عرض"
+                                  >
+                                    <Eye className="w-4 h-4 text-[#475467]" />
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
 
@@ -1067,7 +1243,7 @@ const GuidanceRequestDetail: React.FC = () => {
                               {
                                 id: 'index',
                                 header: 'رقم البند',
-                                width: 'min-w-[8rem] flex-shrink-0',
+                                width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
                                 render: (_row: any, index: number) => (
                                   <div className="flex items-center justify-center w-full">
@@ -1077,12 +1253,34 @@ const GuidanceRequestDetail: React.FC = () => {
                               },
                               {
                                 id: 'name',
-                                header: 'الاسم',
+                                header: 'الإسم',
                                 width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
                                   <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_name || row.user_id || '--------------'}
+                                    {row.external_name || row.user_id || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'position',
+                                header: 'المنصب',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.position || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'mobile',
+                                header: 'الجوال',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.mobile || '-'}
                                   </span>
                                 ),
                               },
@@ -1093,33 +1291,24 @@ const GuidanceRequestDetail: React.FC = () => {
                                 align: 'end',
                                 render: (row: any) => (
                                   <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_email || '--------------'}
+                                    {row.external_email || '-'}
                                   </span>
                                 ),
                               },
                               {
-                                id: 'is_required',
-                                header: 'الحضور أساسي',
-                                width: 'min-w-[11rem] flex-shrink-0',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <div className="flex items-center justify-center gap-2 w-full">
-                                    <span className="text-sm text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                      {row.is_required ? 'نعم' : 'لا'}
+                                id: 'attendance_mechanism',
+                                header: 'آلية الحضور',
+                                width: 'min-w-[8rem] flex-shrink-0',
+                                align: 'end',
+                                render: (row: any) => {
+                                  const v = row.attendance_mechanism;
+                                  const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                                  return (
+                                    <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                      {label}
                                     </span>
-                                  </div>
-                                ),
-                              },
-                              {
-                                id: 'response_status',
-                                header: 'الحالة',
-                                width: 'min-w-[6rem] flex-shrink-0',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {getInviteeResponseStatusLabel(row.response_status)}
-                                  </span>
-                                ),
+                                  );
+                                },
                               },
                             ] as TableColumn<any>[]}
                             data={meetingRequest.invitees}
@@ -1148,75 +1337,78 @@ const GuidanceRequestDetail: React.FC = () => {
                     </h2>
                     {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
                       <div className="w-full overflow-x-auto table-scroll">
-                        <div className="min-w-[1085px]">
+                        <div className="w-full min-w-0">
                           <DataTable
                             columns={[
                               {
                                 id: 'index',
                                 header: 'رقم البند',
-                                width: 'w-[114px]',
+                                width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
-                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
+                                render: (_row: any, index: number) => (
+                                  <div className="flex items-center justify-center w-full">
+                                    <span className="text-sm text-[#475467]">{index + 1}</span>
+                                  </div>
+                                ),
                               },
                               {
                                 id: 'name',
-                                header: 'اسم المستخدم',
-                                width: 'w-[227px]',
+                                header: 'الإسم',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_name || row.user_id || '--------------'}
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_name || row.user_id || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'position',
+                                header: 'المنصب',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.position || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'mobile',
+                                header: 'الجوال',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.mobile || '-'}
                                   </span>
                                 ),
                               },
                               {
                                 id: 'email',
-                                header: 'البريد الإلكتروني الخارجي',
-                                width: 'w-[227px]',
+                                header: 'البريد الإلكتروني',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_email || '--------------'}
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_email || '-'}
                                   </span>
                                 ),
                               },
                               {
-                                id: 'is_required',
-                                header: 'الحضور أساسي',
-                                width: 'w-[136px]',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <span
-                                      className="text-sm text-[#667085]"
-                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                    >
-                                      {row.is_required ? 'نعم' : 'لا'}
+                                id: 'attendance_mechanism',
+                                header: 'آلية الحضور',
+                                width: 'min-w-[8rem] flex-shrink-0',
+                                align: 'end',
+                                render: (row: any) => {
+                                  const v = row.attendance_mechanism;
+                                  const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                                  return (
+                                    <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                      {label}
                                     </span>
-                                  </div>
-                                ),
-                              },
-                              {
-                                id: 'access_permission',
-                                header: 'صلاحية الوصول',
-                                width: 'w-[165px]',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.access_permission || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'justification',
-                                header: 'المبرر',
-                                width: 'w-[300px]',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.justification || '-'}
-                                  </span>
-                                ),
+                                  );
+                                },
                               },
                             ] as TableColumn<any>[]}
                             data={meetingRequest.minister_attendees}
@@ -1428,7 +1620,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       </p>
                     </div>
                   )}
-                  {meetingRequest.related_guidance && (
+                  {formatRelatedGuidance(meetingRequest.related_guidance) !== '-' && (
                     <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                       <label
                         className="text-sm font-semibold text-gray-900 text-right"
@@ -1440,7 +1632,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-700 text-right leading-relaxed"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       >
-                        {meetingRequest.related_guidance}
+                        {formatRelatedGuidance(meetingRequest.related_guidance)}
                       </p>
                     </div>
                   )}
@@ -1752,126 +1944,7 @@ const GuidanceRequestDetail: React.FC = () => {
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 <DataTable
-                  columns={[
-                    {
-                      id: 'consultation_type',
-                      header: 'نوع الاستشارة',
-                      width: 'w-44',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.consultation_type === 'SCHEDULING'
-                            ? 'جدولة'
-                            : row.consultation_type === 'CONTENT'
-                              ? 'محتوى'
-                              : row.consultation_type}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'consultation_question',
-                      header: 'السؤال',
-                      width: 'flex-1',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700 line-clamp-2"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.consultation_question || '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'consultation_answer',
-                      header: 'الإجابة',
-                      width: 'flex-1',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700 line-clamp-2"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.consultation_answer || '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'consultant_name',
-                      header: 'رد بواسطة',
-                      width: 'w-48',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.consultant_name || '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'requested_at',
-                      header: 'تاريخ الطلب',
-                      width: 'w-40',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.requested_at
-                            ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'responded_at',
-                      header: 'تاريخ الرد',
-                      width: 'w-40',
-                      render: (row: ConsultationRecord) => (
-                        <span
-                          className="text-sm text-gray-700"
-                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                        >
-                          {row.responded_at
-                            ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'status',
-                      header: 'الحالة',
-                      width: 'w-32',
-                      align: 'center',
-                      render: (row: ConsultationRecord) => {
-                        const statusLabels: Record<string, string> = {
-                          PENDING: 'قيد الانتظار',
-                          RESPONDED: 'تم الرد',
-                          CANCELLED: 'ملغاة',
-                          DRAFT: 'مسودة',
-                        };
-                        const statusLabel = statusLabels[row.status] || row.status;
-                        return (
-                          <div className="flex justify-center">
-                            <StatusBadge status={row.status} label={statusLabel} />
-                          </div>
-                        );
-                      },
-                    },
-                  ]}
+                  columns={consultationLogColumns}
                   data={consultationRecords.items}
                   rowPadding="py-3"
                 />
@@ -1880,6 +1953,30 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="text-center">
                     <p className="text-gray-600 text-lg mb-2">سجل الاستشارات</p>
                     <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Content Consultation Records Tab - سجلات الاستشارات المحتوى */}
+          {activeTab === 'consultations-log-content' && (
+            <div className="flex flex-col gap-4">
+              {isLoadingContentConsultationRecords ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">جاري التحميل...</div>
+                </div>
+              ) : contentConsultationRecords && contentConsultationRecords.items.length > 0 ? (
+                <DataTable
+                  columns={consultationLogColumns}
+                  data={contentConsultationRecords.items}
+                  rowPadding="py-3"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-600 text-lg mb-2">سجلات الاستشارات المحتوى</p>
+                    <p className="text-gray-500 text-sm">لا توجد استشارات محتوى مسجلة</p>
                   </div>
                 </div>
               )}
@@ -1911,7 +2008,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           {
                             id: 'index',
                             header: 'رقم البند',
-                            width: 'min-w-[8rem] flex-shrink-0',
+                            width: 'min-w-[6rem] flex-shrink-0',
                             align: 'center',
                             render: (_row: any, index: number) => (
                               <div className="flex items-center justify-center w-full">
@@ -1921,12 +2018,34 @@ const GuidanceRequestDetail: React.FC = () => {
                           },
                           {
                             id: 'name',
-                            header: 'الاسم',
+                            header: 'الإسم',
                             width: 'min-w-0 flex-1',
                             align: 'end',
                             render: (row: any) => (
                               <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_name || row.user_id || '--------------'}
+                                {row.external_name || row.user_id || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'position',
+                            header: 'المنصب',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.position || '-'}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: 'mobile',
+                            header: 'الجوال',
+                            width: 'min-w-0 flex-1',
+                            align: 'end',
+                            render: (row: any) => (
+                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                {row.mobile || '-'}
                               </span>
                             ),
                           },
@@ -1937,33 +2056,24 @@ const GuidanceRequestDetail: React.FC = () => {
                             align: 'end',
                             render: (row: any) => (
                               <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_email || '--------------'}
+                                {row.external_email || '-'}
                               </span>
                             ),
                           },
                           {
-                            id: 'is_required',
-                            header: 'الحضور أساسي',
-                            width: 'min-w-[11rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
-                              <div className="flex items-center justify-center gap-2 w-full">
-                                <span className="text-sm text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  {row.is_required ? 'نعم' : 'لا'}
+                            id: 'attendance_mechanism',
+                            header: 'آلية الحضور',
+                            width: 'min-w-[8rem] flex-shrink-0',
+                            align: 'end',
+                            render: (row: any) => {
+                              const v = row.attendance_mechanism;
+                              const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                              return (
+                                <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                  {label}
                                 </span>
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'response_status',
-                            header: 'الحالة',
-                            width: 'min-w-[6rem] flex-shrink-0',
-                            align: 'center',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {getInviteeResponseStatusLabel(row.response_status)}
-                              </span>
-                            ),
+                              );
+                            },
                           },
                         ] as TableColumn<any>[]}
                         data={meetingRequest.invitees}
@@ -1993,75 +2103,78 @@ const GuidanceRequestDetail: React.FC = () => {
                     </h2>
                 {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
                   <div className="w-full overflow-x-auto table-scroll">
-                    <div className="min-w-[1085px]">
+                    <div className="w-full min-w-0">
                       <DataTable
                             columns={[
                               {
                                 id: 'index',
                                 header: 'رقم البند',
-                                width: 'w-[114px]',
+                                width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
-                                render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
+                                render: (_row: any, index: number) => (
+                                  <div className="flex items-center justify-center w-full">
+                                    <span className="text-sm text-[#475467]">{index + 1}</span>
+                                  </div>
+                                ),
                               },
                               {
                                 id: 'name',
-                                header: 'اسم المستخدم',
-                                width: 'w-[227px]',
+                                header: 'الإسم',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_name || row.user_id || '--------------'}
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_name || row.user_id || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'position',
+                                header: 'المنصب',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.position || '-'}
+                                  </span>
+                                ),
+                              },
+                              {
+                                id: 'mobile',
+                                header: 'الجوال',
+                                width: 'min-w-0 flex-1',
+                                align: 'end',
+                                render: (row: any) => (
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.mobile || '-'}
                                   </span>
                                 ),
                               },
                               {
                                 id: 'email',
-                                header: 'البريد الإلكتروني الخارجي',
-                                width: 'w-[227px]',
+                                header: 'البريد الإلكتروني',
+                                width: 'min-w-0 flex-1',
                                 align: 'end',
                                 render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_email || '--------------'}
+                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                    {row.external_email || '-'}
                                   </span>
                                 ),
                               },
                               {
-                                id: 'is_required',
-                                header: 'الحضور أساسي',
-                                width: 'w-[136px]',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <span
-                                      className="text-sm text-[#667085]"
-                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                    >
-                                      {row.is_required ? 'نعم' : 'لا'}
+                                id: 'attendance_mechanism',
+                                header: 'آلية الحضور',
+                                width: 'min-w-[8rem] flex-shrink-0',
+                                align: 'end',
+                                render: (row: any) => {
+                                  const v = row.attendance_mechanism;
+                                  const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                                  return (
+                                    <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                                      {label}
                                     </span>
-                                  </div>
-                                ),
-                              },
-                              {
-                                id: 'access_permission',
-                                header: 'صلاحية الوصول',
-                                width: 'w-[165px]',
-                                align: 'center',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.access_permission || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'justification',
-                                header: 'المبرر',
-                                width: 'w-[300px]',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.justification || '-'}
-                                  </span>
-                                ),
+                                  );
+                                },
                               },
                             ] as TableColumn<any>[]}
                             data={meetingRequest.minister_attendees}
