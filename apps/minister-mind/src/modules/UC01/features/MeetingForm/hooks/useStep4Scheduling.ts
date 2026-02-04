@@ -10,6 +10,8 @@ interface UseStep4SchedulingProps {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
   initialSlots?: string[];
+  /** When false, the calendar events fetch (GET .../drafts/available-time-slots) is disabled. Set true only when user is on step 4. */
+  enableCalendarFetch?: boolean;
 }
 
 interface SchedulingPayload {
@@ -50,6 +52,7 @@ export const useStep4Scheduling = ({
   onSuccess,
   onError,
   initialSlots = [],
+  enableCalendarFetch = true,
 }: UseStep4SchedulingProps): Step4SchedulingHook => {
   const [currentDate, setCurrentDate] = useState<Date>(() => getWeekStart(new Date()));
   const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
@@ -72,7 +75,7 @@ export const useStep4Scheduling = ({
     startDate: weekStart,
     endDate: weekEnd,
     durationMinutes: 60,
-    enabled: true,
+    enabled: enableCalendarFetch,
   });
 
   const events: CalendarEventData[] = useMemo(
