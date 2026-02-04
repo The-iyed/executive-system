@@ -593,7 +593,7 @@ const Step1: React.FC<Step1Props> = ({ draftId, onNext, onCancel, onSaveDraft })
         />
 
         {/* Checkbox: Is Complete */}
-        <div className="w-full max-w-[1085px] mx-auto px-4">
+        <div className="w-full max-w-[1200px] mx-auto px-4">
           <FormCheckbox
             checked={formData.isComplete || false}
             onCheckedChange={(checked) => handleChange('isComplete', checked)}

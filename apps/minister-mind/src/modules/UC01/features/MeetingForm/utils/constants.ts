@@ -31,6 +31,12 @@ export const MEETING_TYPE_OPTIONS = [
   { value: 'EXTERNAL', label: 'خارجي' },
 ];
 
+/** آلية انعقاد الاجتماع: حضوري / عن بعد — sent to API as meeting_channel */
+export const MEETING_CHANNEL_OPTIONS = [
+  { value: 'PHYSICAL', label: AttendanceMechanism.PHYSICAL },
+  { value: 'VIRTUAL', label: AttendanceMechanism.VIRTUAL },
+];
+
 export const DIRECTIVE_METHOD_OPTIONS = [
   { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
   { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
