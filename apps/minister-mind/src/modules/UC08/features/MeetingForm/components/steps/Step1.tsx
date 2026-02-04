@@ -480,7 +480,7 @@ export const Step1: React.FC<Step1Props> = ({
           <FormField
             label="هل الطلب مكتمل؟"
             error={touched.isComplete ? errors.isComplete : undefined}
-            className='w-full max-w-[1085px]'
+            className='w-full max-w-[1200px]'
           >
             <FormSwitch
               checked={formData.isComplete || false}
