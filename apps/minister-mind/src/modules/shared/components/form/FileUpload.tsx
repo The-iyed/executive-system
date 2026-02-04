@@ -24,6 +24,8 @@ export interface FileUploadProps {
   acceptedExtensions?: string[];
   className?: string;
   containerClassName?: string;
+  /** Optional class for the dropzone area (e.g. to reduce height: py-6 max-h-[160px]) */
+  dropzoneClassName?: string;
   showProgress?: boolean;
   multiple?: boolean; // Enable multiple file upload
 }
@@ -52,6 +54,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   acceptedExtensions = DEFAULT_ACCEPTED_EXTENSIONS,
   className,
   containerClassName,
+  dropzoneClassName,
   showProgress = true,
   multiple = false,
 }) => {
@@ -252,7 +255,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               : currentFiles.length > 0
               ? 'border-[#009883] bg-[#009883]/5'
               : 'border-[#D0D5DD] bg-white hover:border-[#009883] hover:bg-[#009883]/5',
-            error && currentFiles.length === 0 && "border-[#D13C3C]"
+            error && currentFiles.length === 0 && "border-[#D13C3C]",
+            dropzoneClassName
           )}
           onClick={handleBrowseClick}
         >

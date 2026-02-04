@@ -12,7 +12,7 @@ export const MEETING_CATEGORY_OPTIONS = [
   { value: 'PRIVATE_MEETING', label: 'لقاء خاص' },
   { value: 'WORKSHOP', label: 'ورشة عمل' },
   { value: 'DISCUSSION_WITHOUT_PRESENTATION', label: 'مناقشة (بدون عرض تقديمي)' },
-  { value: 'BUSINESS', label: 'أعمال' },
+  { value: 'BUSINESS', label: 'اجتماعات الأعمال' },
   { value: 'GOVERNMENT_CENTER_TOPICS', label: 'مواضيع مركز الحكومة' },
 ];
 
@@ -42,41 +42,40 @@ export const DIRECTIVE_METHOD_OPTIONS = [
   { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
 ];
 
-// Table Column Definitions for Step 1
-export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'action', header: 'إجراء', width: 'w-20' },
-];
-
-// Minister support type options per requirement: إحاطة|تحديث|قرار|توجيه|اعتماد|أخرى
+// Minister support type: إحاطة، تحديث، قرار، توجيه، اعتماد، أخرى (يقوم بالإدخال)
 export const MINISTER_SUPPORT_TYPE_OPTIONS = [
   { value: 'إحاطة', label: 'إحاطة' },
   { value: 'تحديث', label: 'تحديث' },
   { value: 'قرار', label: 'قرار' },
   { value: 'توجيه', label: 'توجيه' },
   { value: 'اعتماد', label: 'اعتماد' },
-  { value: 'أخرى', label: 'أخرى' },
+  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
 ];
 
+// مدة العرض: مدة زمنية بالدقائق (قائمة اختيار)
+export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
+  { value: '0', label: '0 دقيقة' },
+  { value: '5', label: '5 دقائق' },
+  { value: '10', label: '10 دقائق' },
+  { value: '15', label: '15 دقيقة' },
+  { value: '20', label: '20 دقيقة' },
+  { value: '25', label: '25 دقيقة' },
+  { value: '30', label: '30 دقيقة' },
+  { value: '45', label: '45 دقيقة' },
+  { value: '60', label: '60 دقيقة' },
+  { value: '90', label: '90 دقيقة' },
+  { value: '120', label: '120 دقيقة' },
+  { value: '180', label: '180 دقيقة' },
+];
+
+// جدول أجندة الاجتماع: رقم البند، الأجندة، الدعم المطلوب من الوزير، مدة العرض (بالدقائق)، ونص الدعم يظهر عند اختيار أخرى
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: '-------', width: 'w-full' },
-  { id: 'minister_support_other', header: 'نص الدعم (أخرى)', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: 'عنصر الأجندة', width: 'w-full' },
+  { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: 'إحاطة / تحديث / قرار / توجيه / اعتماد / أخرى', width: 'w-full' },
+  { id: 'presentation_duration_minutes', header: 'مدة العرض (بالدقائق)', type: 'select', selectOptions: PRESENTATION_DURATION_MINUTES_OPTIONS, placeholder: 'اختر المدة', width: 'w-40' },
+  { id: 'minister_support_other', header: 'نص الدعم (عند اختيار أخرى)', type: 'text', placeholder: 'أدخل نص الدعم', width: 'w-full', showWhen: { field: 'minister_support_type', value: 'أخرى' } },
   { id: 'action', header: 'إجراء', width: 'w-20' },
-];
-
-export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
-  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
-  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
-  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
 // ============================================================================

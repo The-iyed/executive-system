@@ -44,15 +44,9 @@ export const CreateMeeting: React.FC = () => {
             isDeleting={deleteDraft.isDeleting}
             handleChange={step1BasicInfoHook.handleChange}
             handleBlur={step1BasicInfoHook.handleBlur}
-            handleAddGoal={step1BasicInfoHook.handleAddGoal}
-            handleDeleteGoal={step1BasicInfoHook.handleDeleteGoal}
-            handleUpdateGoal={step1BasicInfoHook.handleUpdateGoal}
             handleAddAgenda={step1BasicInfoHook.handleAddAgenda}
             handleDeleteAgenda={step1BasicInfoHook.handleDeleteAgenda}
             handleUpdateAgenda={step1BasicInfoHook.handleUpdateAgenda}
-            handleAddDirective={step1BasicInfoHook.handleAddDirective}
-            handleDeleteDirective={step1BasicInfoHook.handleDeleteDirective}
-            handleUpdateDirective={step1BasicInfoHook.handleUpdateDirective}
             handleNextClick={handleStep1BasicInfoNext}
             handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
