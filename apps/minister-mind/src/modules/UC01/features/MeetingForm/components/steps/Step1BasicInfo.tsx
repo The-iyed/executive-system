@@ -421,26 +421,17 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   />
                 </FormField>
               </FormRow>
-
               {formData.directive_method === 'PREVIOUS_MEETING' && (
-                <FormRow className='sm:justify-end' {...(errors.previous_meeting_minutes_file ? { 'data-error-field': true } : {})}>
-                  <FormField
-                    label="محضر الاجتماع"
-                    required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_file')}
-                    error={touched.previous_meeting_minutes_file ? errors.previous_meeting_minutes_file : undefined}
-                  >
                     <FileUpload
                       file={formData.previous_meeting_minutes_file ?? undefined}
                       onFileSelect={(file) => handleChange('previous_meeting_minutes_file', file ?? null)}
                       required={isStep1BasicInfoFieldRequired('previous_meeting_minutes_file')}
-                      label="رفع ملف (PDF، Word، Excel)"
+                      label="محضر الاجتماع"
                       acceptedTypes={['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']}
                       acceptedExtensions={['.pdf', '.doc', '.docx', '.xls', '.xlsx']}
                       error={errors.previous_meeting_minutes_file}
-                      dropzoneClassName="!p-6 max-h-[160px]"
+                      dropzoneClassName="p-3 min-h-[170px]  max-w-[1200px] max-h-[160px]"
                     />
-                  </FormField>
-                </FormRow>
               )}
               {formData.directive_method === 'DIRECT_DIRECTIVE' && (
                 <FormRow className='sm:justify-end'>
