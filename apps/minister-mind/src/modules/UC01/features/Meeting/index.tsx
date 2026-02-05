@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
 import { MEETING_TABS, PAGINATION, createTableColumns } from '../../utils';
 import { useMeetings } from '../../hooks';
+import { submitDraft } from '../../data/draftApi';
+import { useMutation } from '@tanstack/react-query';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [view, setView] = useState<ViewType>('table');
   const [searchValue, setSearchValue] = useState<string>('');
@@ -31,10 +35,24 @@ const Meeting: React.FC = () => {
     currentPage,
   });
 
+  const submitDraftMutation = useMutation({
+    mutationFn: submitDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+    },
+    onError: (err) => {
+      console.error('Submit draft error:', err);
+    },
+  });
+
   const tableColumns = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGINATION.ITEMS_PER_PAGE;
-    return createTableColumns(navigate, { startIndex });
-  }, [navigate, currentPage]);
+    return createTableColumns(navigate, {
+      startIndex,
+      onSubmitDraft: submitDraftMutation.mutate,
+      submittingDraftId: submitDraftMutation.isPending && submitDraftMutation.variables !== undefined ? submitDraftMutation.variables : null,
+    });
+  }, [navigate, currentPage, submitDraftMutation.mutate, submitDraftMutation.isPending, submitDraftMutation.variables]);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
