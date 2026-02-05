@@ -1,12 +1,11 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import axiosInstance from '@auth/utils/axios';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
 import { getWeekStart, getWeekEnd } from '../utils';
 import { getDraftAvailableTimeSlots } from '../../../data/calendarApi';
-import { patchDraftScheduling } from '../../../data';
+import { patchDraftScheduling, buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 
 export interface Step1SchedulingState {
   selected_time_slot_id: string | null;
@@ -14,7 +13,6 @@ export interface Step1SchedulingState {
   alternative_time_slot_id_2: string | null;
 }
 
-/** Keys that can have validation errors (form fields + time slot main) */
 export type Step1ErrorKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
 
 export type TimeSlotField = 'main' | 'alt1' | 'alt2';
@@ -28,11 +26,10 @@ interface UseStep1BasicInfoProps {
   isEditMode?: boolean;
 }
 
-interface SubmitStep1BasicInfoPayload {
+export interface SubmitStep1BasicInfoPayload {
   formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
-  /** Time slots to send in the same request when creating/updating draft */
   timeSlots?: {
     selected_time_slot_id?: string | null;
     alternative_time_slot_id_1?: string | null;
@@ -40,232 +37,25 @@ interface SubmitStep1BasicInfoPayload {
   };
 }
 
-interface SubmitStep1BasicInfoResponse {
-  id: string;
-}
-
-
-const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): FormData => {
-  const formDataToSend = new FormData();
-
-  // Required fields
-  if (formData.meetingSubject) {
-    formDataToSend.append('meeting_title', formData.meetingSubject);
-    formDataToSend.append('meeting_subject', formData.meetingSubject);
-  }
-  if (formData.meetingCategory) {
-    formDataToSend.append('meeting_classification', formData.meetingCategory);
-  }
-  if (formData.meetingConfidentiality) {
-    formDataToSend.append('meeting_confidentiality', formData.meetingConfidentiality);
-  }
-
-  // Optional fields
-  if (formData.meetingType) {
-    formDataToSend.append('meeting_type', formData.meetingType);
-  }
-  if (formData.meetingClassification1) {
-    formDataToSend.append('meeting_classification_type', formData.meetingClassification1);
-  }
-  if (formData.meetingChannel && formData.meetingChannel !== '') {
-    formDataToSend.append('meeting_channel', formData.meetingChannel);
-  }
-  if (formData.sector) {
-    formDataToSend.append('sector', formData.sector);
-  }
-  if (formData.relatedTopic) {
-    formDataToSend.append('related_topic', formData.relatedTopic);
-  }
-  if (formData.dueDate && formData.dueDate !== '') {
-    const deadlineDate = new Date(formData.dueDate + 'T00:00:00');
-    if (!isNaN(deadlineDate.getTime())) {
-      formDataToSend.append('deadline', deadlineDate.toISOString());
-    }
-  }
-  if (formData.meetingReason) {
-    formDataToSend.append('meeting_justification', formData.meetingReason);
-  }
-
-  // JSON array fields - transform to backend format
-  if (formData.meetingGoals && formData.meetingGoals.length > 0) {
-    const objectives = formData.meetingGoals
-      .map((g) => ({ objective: g.objective }))
-      .filter((g) => g.objective && g.objective.trim() !== '');
-    if (objectives.length > 0) {
-      formDataToSend.append('objectives', JSON.stringify(objectives));
-    }
-  }
-  if (formData.meetingAgenda && formData.meetingAgenda.length > 0) {
-    const agendaItems = formData.meetingAgenda
-      .map((a) => {
-        const item: Record<string, unknown> = {
-          agenda_item: a.agenda_item || '',
-          presentation_duration_minutes: a.presentation_duration_minutes
-            ? parseInt(String(a.presentation_duration_minutes), 10) || 0
-            : 0,
-        };
-        if (a.minister_support_type && a.minister_support_type.trim() !== '') {
-          item.minister_support_type = a.minister_support_type;
-          if (a.minister_support_type === 'أخرى' && a.minister_support_other?.trim()) {
-            item.minister_support_other = a.minister_support_other;
-          }
-        }
-        return item;
-      })
-      .filter((a) => (a.agenda_item as string) && String(a.agenda_item).trim() !== '');
-    if (agendaItems.length > 0) {
-      formDataToSend.append('agenda_items', JSON.stringify(agendaItems));
-    }
-  }
-
-  // Boolean
-  formDataToSend.append(
-    'topic_discussed_before',
-    formData.wasDiscussedPreviously ? 'true' : 'false'
-  );
-  if (formData.is_urgent !== undefined) {
-    formDataToSend.append('is_urgent', formData.is_urgent ? 'true' : 'false');
-  }
-  if (formData.is_on_behalf_of !== undefined) {
-    formDataToSend.append('is_on_behalf_of', formData.is_on_behalf_of ? 'true' : 'false');
-  }
-  if (formData.is_based_on_directive !== undefined) {
-    formDataToSend.append('is_based_on_directive', formData.is_based_on_directive ? 'true' : 'false');
-  }
-
-  // Date fields (ISO 8601 format)
-  // Only send previousMeetingDate if wasDiscussedPreviously is true
-  if (formData.wasDiscussedPreviously && formData.previousMeetingDate && formData.previousMeetingDate !== '') {
-    const prevDate = new Date(formData.previousMeetingDate + 'T00:00:00');
-    if (!isNaN(prevDate.getTime())) {
-      formDataToSend.append('previous_meeting_date', prevDate.toISOString());
-    }
-  }
-
-  // Related directives - format according to backend payload structure
-  if (formData.relatedDirectives && formData.relatedDirectives.length > 0) {
-    const directives = formData.relatedDirectives
-      .map((d) => {
-        const directive: any = {};
-        
-        if (d.directive && d.directive.trim() !== '') {
-          directive.directive_text = d.directive;
-        }
-        if (d.previousMeeting && d.previousMeeting.trim() !== '') {
-          directive.related_meeting = d.previousMeeting;
-        }
-        if (d.directiveDate && d.directiveDate !== '') {
-          const directiveDate = new Date(d.directiveDate + 'T00:00:00');
-          if (!isNaN(directiveDate.getTime())) {
-            directive.directive_date = directiveDate.toISOString();
-          }
-        }
-        if (d.directiveStatus && d.directiveStatus.trim() !== '') {
-          directive.directive_status = d.directiveStatus;
-        }
-        if (d.dueDate && d.dueDate !== '') {
-          const deadlineDate = new Date(d.dueDate + 'T00:00:00');
-          if (!isNaN(deadlineDate.getTime())) {
-            directive.deadline = deadlineDate.toISOString();
-          }
-        }
-        if (d.responsible && d.responsible.trim() !== '') {
-          directive.responsible_persons = d.responsible;
-        }
-        
-        // Only include directive if it has at least one field
-        return Object.keys(directive).length > 0 ? directive : null;
-      })
-      .filter(Boolean);
-    
-    if (directives.length > 0) {
-      formDataToSend.append('related_directives', JSON.stringify(directives));
-    }
-  }
-
-  // Notes
-  if (formData.notes) {
-    formDataToSend.append('general_notes', formData.notes);
-  }
-
-  // Urgent meeting fields
-  if (formData.is_urgent && formData.urgent_reason) {
-    formDataToSend.append('urgent_reason', formData.urgent_reason);
-  }
-
-  // On behalf of fields
-  if (formData.is_on_behalf_of && formData.meeting_manager_id) {
-    formDataToSend.append('meeting_manager_id', formData.meeting_manager_id);
-  }
-
-  // Directive fields
-  if (formData.is_based_on_directive && formData.directive_method) {
-    formDataToSend.append('directive_method', formData.directive_method);
-  }
-  if (formData.is_based_on_directive && formData.directive_method === 'PREVIOUS_MEETING' && formData.previous_meeting_minutes_id) {
-    formDataToSend.append('previous_meeting_minutes_id', formData.previous_meeting_minutes_id);
-  }
-
-  return formDataToSend;
-};
-
-/**
- * Submits basic info and file (if exists) to API
- */
-const submitStep1BasicInfoData = async (
+/** Validates form, builds FormData via data layer, submits draft basic-info. */
+async function submitStep1BasicInfoData(
   payload: SubmitStep1BasicInfoPayload,
-  isEditMode: boolean = false
-): Promise<string> => {
+  isEditMode: boolean
+): Promise<string> {
   const { formData, isDraft, draftId, timeSlots } = payload;
 
-  // Validate if not draft
   if (!isDraft) {
-    const validationResult = validateStep1BasicInfo(formData);
-    if (!validationResult.success) {
-      // Create a validation error with details
-      const error = new Error('Validation failed');
-      (error as any).validationErrors = validationResult.error;
-      throw error;
+    const result = validateStep1BasicInfo(formData);
+    if (!result.success) {
+      const err = new Error('Validation failed');
+      (err as Error & { validationErrors: unknown }).validationErrors = result.error;
+      throw err;
     }
   }
 
-  const formDataToSend = prepareBasicInfoFormData(formData);
-
-  // Append time slots to the same request when present
-  if (timeSlots) {
-    if (timeSlots.selected_time_slot_id) {
-      formDataToSend.append('selected_time_slot_id', timeSlots.selected_time_slot_id);
-    }
-    if (timeSlots.alternative_time_slot_id_1) {
-      formDataToSend.append('alternative_time_slot_id_1', timeSlots.alternative_time_slot_id_1);
-    }
-    if (timeSlots.alternative_time_slot_id_2) {
-      formDataToSend.append('alternative_time_slot_id_2', timeSlots.alternative_time_slot_id_2);
-    }
-  }
-
-  let response;
-  if (isEditMode && draftId) {
-    // Update existing draft using PATCH
-    response = await axiosInstance.patch<SubmitStep1BasicInfoResponse>(
-      `/api/meeting-requests/drafts/${draftId}/basic-info`,
-      formDataToSend
-    );
-  } else {
-    // Create new draft using POST
-    response = await axiosInstance.post<SubmitStep1BasicInfoResponse>(
-      '/api/meeting-requests/drafts/basic-info',
-      formDataToSend
-    );
-  }
-
-  const newDraftId = response.data?.id || draftId;
-  if (!newDraftId) {
-    throw new Error('Invalid response format: missing draft ID');
-  }
-
-  return newDraftId;
-};
+  const fd = buildDraftBasicInfoFormData(formData);
+  return submitDraftBasicInfo({ formData: fd, draftId, timeSlots, isEditMode });
+}
 
 export const useStep1BasicInfo = ({
   draftId,
@@ -276,10 +66,7 @@ export const useStep1BasicInfo = ({
   isEditMode = false,
 }: UseStep1BasicInfoProps = {}) => {
   const [formData, setFormData] = useState<Partial<Step1BasicInfoFormData>>({
-    meetingGoals: [],
     meetingAgenda: [],
-    relatedDirectives: [],
-    wasDiscussedPreviously: false,
     is_urgent: false,
     is_on_behalf_of: false,
     is_based_on_directive: false,
@@ -538,8 +325,6 @@ export const useStep1BasicInfo = ({
         'meetingConfidentiality',
         'meetingChannel',
         'sector',
-        'wasDiscussedPreviously',
-        'previousMeetingDate',
         'notes',
         'is_urgent',
         'is_on_behalf_of',
@@ -556,7 +341,8 @@ export const useStep1BasicInfo = ({
         if (formData.is_on_behalf_of === true) allTouched.meeting_manager_id = true;
         if (formData.is_based_on_directive === true) {
           allTouched.directive_method = true;
-          if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_id = true;
+          if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_file = true;
+          if (formData.directive_method === 'DIRECT_DIRECTIVE') allTouched.directive_text = true;
         }
         return allTouched;
       };
@@ -578,7 +364,6 @@ export const useStep1BasicInfo = ({
           setTableTouched(
             Object.fromEntries(
               [
-                ...(formData.meetingGoals ?? []).map((g) => [g.id, { objective: true }]),
                 ...(formData.meetingAgenda ?? []).map((a) => [
                   a.id,
                   { agenda_item: true, presentation_duration_minutes: true, minister_support_type: true, minister_support_other: true },
@@ -624,26 +409,6 @@ export const useStep1BasicInfo = ({
     (field: keyof Step1BasicInfoFormData, value: any) => {
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
-        // Clear dependent fields and their errors when parent fields change
-        if (field === 'wasDiscussedPreviously' && value === false) {
-          newData.previousMeetingDate = '';
-          const directiveIds = prev.relatedDirectives?.map((d) => d.id) || [];
-          newData.relatedDirectives = [];
-          // Clear errors for dependent fields
-          setErrors((prevErrors) => {
-            const newErrors = { ...prevErrors };
-            delete newErrors.previousMeetingDate;
-            delete newErrors.relatedDirectives;
-            return newErrors;
-          });
-          setTableErrors((prevTableErrors) => {
-            const newTableErrors = { ...prevTableErrors };
-            directiveIds.forEach((id) => {
-              delete newTableErrors[id];
-            });
-            return newTableErrors;
-          });
-        }
         // Clear urgent-related fields when is_urgent is false
         if (field === 'is_urgent' && value === false) {
           newData.urgent_reason = '';
@@ -673,20 +438,31 @@ export const useStep1BasicInfo = ({
         // Clear directive-related fields when is_based_on_directive is false
         if (field === 'is_based_on_directive' && value === false) {
           newData.directive_method = '';
-          newData.previous_meeting_minutes_id = '';
+          newData.previous_meeting_minutes_file = null;
+          newData.directive_text = '';
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.directive_method;
-            delete newErrors.previous_meeting_minutes_id;
+            delete newErrors.previous_meeting_minutes_file;
+            delete newErrors.directive_text;
             return newErrors;
           });
         }
-        // Clear previous_meeting_minutes_id when directive_method changes away from PREVIOUS_MEETING
+        // Clear previous_meeting_minutes_file when directive_method changes away from PREVIOUS_MEETING
         if (field === 'directive_method' && value !== 'PREVIOUS_MEETING') {
-          newData.previous_meeting_minutes_id = '';
+          newData.previous_meeting_minutes_file = null;
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
-            delete newErrors.previous_meeting_minutes_id;
+            delete newErrors.previous_meeting_minutes_file;
+            return newErrors;
+          });
+        }
+        // Clear directive_text when directive_method changes away from DIRECT_DIRECTIVE
+        if (field === 'directive_method' && value !== 'DIRECT_DIRECTIVE') {
+          newData.directive_text = '';
+          setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.directive_text;
             return newErrors;
           });
         }
@@ -719,69 +495,6 @@ export const useStep1BasicInfo = ({
     },
     [formData, validateField, showTimeSlots, selected_time_slot_id]
   );
-
-  // Table handlers - Goals
-  const handleAddGoal = useCallback(() => {
-    const newGoal = { id: nanoid(), objective: '' };
-    setFormData((prev) => {
-      const updatedGoals = [newGoal, ...(prev.meetingGoals || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.meetingGoals;
-        return newErrors;
-      });
-      // Clear all table errors for meetingGoals rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all goal IDs from updated goals
-        const goalIds = updatedGoals.map((g) => g.id);
-        // Remove errors for all goal rows
-        goalIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        meetingGoals: updatedGoals,
-      };
-    });
-  }, []);
-
-  const handleDeleteGoal = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).filter((g) => g.id !== id),
-    }));
-    setTableErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  }, []);
-
-  const handleUpdateGoal = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingGoals: (prev.meetingGoals || []).map((g) =>
-        g.id === id ? { ...g, [field]: value } : g
-      ),
-    }));
-    // Clear error when field is updated
-    if (value) {
-      setTableErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
-      });
-    }
-  }, []);
 
   // Table handlers - Agenda (includes minister support per requirement)
   const handleAddAgenda = useCallback(() => {
@@ -845,59 +558,6 @@ export const useStep1BasicInfo = ({
         return newErrors;
       });
     }
-  }, []);
-
-  // Table handlers - Directives
-  const handleAddDirective = useCallback(() => {
-    const newDirective = {
-      id: nanoid(),
-      directive: '',
-      previousMeeting: '',
-      directiveDate: '',
-      directiveStatus: '',
-      dueDate: '',
-      responsible: '',
-    };
-    setFormData((prev) => {
-      const updatedDirectives = [newDirective, ...(prev.relatedDirectives || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.relatedDirectives;
-        return newErrors;
-      });
-      // Clear all table errors for relatedDirectives rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all directive IDs from updated directives
-        const directiveIds = updatedDirectives.map((d) => d.id);
-        // Remove errors for all directive rows
-        directiveIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        relatedDirectives: updatedDirectives,
-      };
-    });
-  }, []);
-
-  const handleDeleteDirective = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).filter((d) => d.id !== id),
-    }));
-  }, []);
-
-  const handleUpdateDirective = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      relatedDirectives: (prev.relatedDirectives || []).map((d) =>
-        d.id === id ? { ...d, [field]: value } : d
-      ),
-    }));
   }, []);
 
   // Submit step
@@ -975,15 +635,9 @@ export const useStep1BasicInfo = ({
     isStep1BasicInfoFieldRequired: getIsFieldRequired,
     handleChange,
     handleBlur,
-    handleAddGoal,
-    handleDeleteGoal,
-    handleUpdateGoal,
     handleAddAgenda,
     handleDeleteAgenda,
     handleUpdateAgenda,
-    handleAddDirective,
-    handleDeleteDirective,
-    handleUpdateDirective,
     validateAll,
     submitStep,
     // Time slots (step 1 scheduling)
