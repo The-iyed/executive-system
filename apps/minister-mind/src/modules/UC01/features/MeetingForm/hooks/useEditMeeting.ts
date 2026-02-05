@@ -21,6 +21,11 @@ export const useEditMeeting = () => {
 
   const initialData = useMemo(() => {
     if (!draftData) return undefined;
+    const slotsFromDraft = [
+      draftData.selected_time_slot,
+      draftData.alternative_time_slot_1,
+      draftData.alternative_time_slot_2,
+    ].filter((s): s is NonNullable<typeof s> => s != null);
     return {
       step1BasicInfo: transformDraftToStep1Data(draftData),
       step1Scheduling: {
@@ -28,6 +33,7 @@ export const useEditMeeting = () => {
         alternative_time_slot_id_1: draftData.alternative_time_slot_id_1 ?? null,
         alternative_time_slot_id_2: draftData.alternative_time_slot_id_2 ?? null,
       },
+      step1SchedulingSlotsFromDraft: slotsFromDraft.length > 0 ? slotsFromDraft : undefined,
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
       step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },

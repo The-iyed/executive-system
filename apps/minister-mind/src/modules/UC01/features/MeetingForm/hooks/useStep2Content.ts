@@ -53,6 +53,11 @@ const prepareContentFormData = (formData: Partial<Step2ContentFormData>): FormDa
   return formDataToSend;
 };
 
+/** Returns true if the FormData has at least one entry (so we send multipart). */
+function hasFormDataEntries(fd: FormData): boolean {
+  return !fd.entries().next().done;
+}
+
 export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload): Promise<void> => {
   const { formData, isDraft, draftId, schemaOptions } = payload;
 
@@ -67,11 +72,13 @@ export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload)
   }
 
   const formDataToSend = prepareContentFormData(formData);
+  const url = `/api/meeting-requests/drafts/${draftId}/content`;
 
-  await axiosInstance.patch(
-    `/api/meeting-requests/drafts/${draftId}/content`,
-    formDataToSend
-  );
+  if (hasFormDataEntries(formDataToSend)) {
+    await axiosInstance.patch(url, formDataToSend);
+  } else {
+    await axiosInstance.patch(url, {}, { headers: { 'Content-Type': 'application/json' } });
+  }
 };
 
 export const useStep2Content = ({
