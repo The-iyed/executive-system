@@ -3,9 +3,9 @@ import axiosInstance from '@auth/utils/axios';
 export interface TimeSlotApiResponse {
   id: string;
   slot_start: string;
-  slot_end: string;
-  is_available: boolean;
-  is_selected: boolean;
+  slot_end?: string | null;
+  is_available?: boolean;
+  is_selected?: boolean;
   external_slot_id?: string | null;
 }
 
