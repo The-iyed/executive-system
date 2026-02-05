@@ -3,9 +3,9 @@ import axiosInstance from '@auth/utils/axios';
 export interface TimeSlotApiResponse {
   id: string;
   slot_start: string;
-  slot_end: string;
-  is_available: boolean;
-  is_selected: boolean;
+  slot_end?: string | null;
+  is_available?: boolean;
+  is_selected?: boolean;
   external_slot_id?: string | null;
 }
 
@@ -85,23 +85,6 @@ export interface DraftApiResponse {
 export const getDraftById = async (draftId: string): Promise<DraftApiResponse> => {
   const response = await axiosInstance.get<DraftApiResponse>(
     `/api/meeting-requests/drafts/${draftId}`
-  );
-  return response.data;
-};
-
-export interface PatchDraftSchedulingPayload {
-  selected_time_slot_id?: string;
-  alternative_time_slot_id_1?: string;
-  alternative_time_slot_id_2?: string;
-}
-
-export const patchDraftScheduling = async (
-  draftId: string,
-  payload: PatchDraftSchedulingPayload
-): Promise<unknown> => {
-  const response = await axiosInstance.patch(
-    `/api/meeting-requests/drafts/${draftId}/scheduling`,
-    payload
   );
   return response.data;
 };
