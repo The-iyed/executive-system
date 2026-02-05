@@ -88,3 +88,28 @@ export const getDraftById = async (draftId: string): Promise<DraftApiResponse> =
   );
   return response.data;
 };
+
+export interface PatchDraftSchedulingPayload {
+  selected_time_slot_id?: string;
+  alternative_time_slot_id_1?: string;
+  alternative_time_slot_id_2?: string;
+}
+
+export const patchDraftScheduling = async (
+  draftId: string,
+  payload: PatchDraftSchedulingPayload
+): Promise<unknown> => {
+  const response = await axiosInstance.patch(
+    `/api/meeting-requests/drafts/${draftId}/scheduling`,
+    payload
+  );
+  return response.data;
+};
+
+/** Submit draft – moves it to UNDER_REVIEW */
+export const submitDraft = async (draftId: string): Promise<unknown> => {
+  const response = await axiosInstance.post(
+    `/api/meeting-requests/drafts/${draftId}/submit`
+  );
+  return response.data;
+};
