@@ -1,15 +1,25 @@
 import { NavigateFunction } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
+import { Calendar, Send } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@sanad-ai/ui';
 import { TableColumn } from '@shared/components/data-table';
 import { StatusBadge } from '@shared/components/status-badge';
+import { MeetingStatus } from '@shared/types';
 import { MeetingDisplayData } from '../../utils/meetingMapper';
+
+export interface CreateTableColumnsOptions {
+  startIndex?: number;
+  /** When provided, draft rows show a "Submit draft" action that calls this with draft id */
+  onSubmitDraft?: (draftId: string) => void;
+  submittingDraftId?: string | null;
+}
 
 export const createTableColumns = (
   _navigate: NavigateFunction,
-  options?: { startIndex?: number }
+  options?: CreateTableColumnsOptions
 ): TableColumn<MeetingDisplayData>[] => {
   const startIndex = options?.startIndex ?? 0;
+  const onSubmitDraft = options?.onSubmitDraft;
+  const submittingDraftId = options?.submittingDraftId;
   return [
     {
       id: 'itemNumber',
@@ -133,5 +143,32 @@ export const createTableColumns = (
         </span>
       ),
     },
+    ...(onSubmitDraft
+      ? [
+          {
+            id: 'actions',
+            header: '',
+            width: 'min-w-[200px] w-[200px]',
+            align: 'center' as const,
+            render: (row: MeetingDisplayData) =>
+              row.status === MeetingStatus.DRAFT ? (
+                <div className="flex justify-center w-full min-w-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSubmitDraft(row.id);
+                    }}
+                    disabled={submittingDraftId === row.id}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                  >
+                    <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
+                    <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                  </button>
+                </div>
+              ) : null,
+          } as TableColumn<MeetingDisplayData>,
+        ]
+      : []),
   ];
 };
