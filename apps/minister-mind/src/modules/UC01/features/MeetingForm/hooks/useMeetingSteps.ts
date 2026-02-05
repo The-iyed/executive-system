@@ -9,13 +9,19 @@ import { useDeleteDraft } from './useDeleteDraft';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import type { Step2ContentFormData } from '../schemas/step2Content.schema';
 import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
+import type { Step1SchedulingState } from './useStep1BasicInfo';
 import { clearDraftData, getContentStepOptions, saveContentStepOptions } from '../utils';
+
+const STEP_4_INDEX = 3;
 
 interface UseMeetingStepsProps {
   draftId: string | undefined;
   isEditMode: boolean;
+  /** Current stepper step (0-based). When not step 4, the calendar fetch in step 4 is disabled. */
+  currentStep?: number;
   initialData?: {
     step1BasicInfo?: Partial<Step1BasicInfoFormData>;
+    step1Scheduling?: Partial<Step1SchedulingState>;
     step2Content?: Partial<Step2ContentFormData>;
     step3Invitees?: Partial<Step3InviteesFormData>;
     step4Scheduling?: { initialSlots?: string[] };
@@ -29,6 +35,7 @@ interface UseMeetingStepsProps {
 export const useMeetingSteps = ({
   draftId,
   isEditMode,
+  currentStep = 0,
   initialData,
   onStep1Success,
   onStep2ContentSuccess,
@@ -47,6 +54,7 @@ export const useMeetingSteps = ({
   const step1BasicInfoHook = useStep1BasicInfo({
     draftId,
     initialData: initialData?.step1BasicInfo,
+    initialScheduling: initialData?.step1Scheduling,
     onSuccess: onStep1Success,
     onError: (error) => {
       console.error('Step1BasicInfo error:', error);
@@ -116,6 +124,7 @@ export const useMeetingSteps = ({
   const step4SchedulingHook = useStep4Scheduling({
     draftId: draftId || '',
     initialSlots: initialData?.step4Scheduling?.initialSlots,
+    enableCalendarFetch: currentStep === STEP_4_INDEX,
     onSuccess: onStep4SchedulingSuccess || (() => {
       clearDraftData();
       navigate(PATH.MEETINGS);

@@ -11,15 +11,13 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingType: draft.meeting_type || '',
       meetingCategory: draft.meeting_classification || '',
       meetingReason: draft.meeting_justification || '',
+      meetingDescription: draft.meeting_description || '',
       relatedTopic: draft.related_topic || '',
       dueDate: formatDateStringToISO(draft.deadline),
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
+      meetingChannel: draft.meeting_channel ?? '',
       sector: draft.sector || '',
-      meetingGoals: draft.objectives?.map((obj) => ({
-        id: obj.id,
-        objective: obj.objective,
-      })) || [],
       meetingAgenda: draft.agenda_items?.map((item: any) => ({
         id: item.id,
         agenda_item: item.agenda_item || '',
@@ -27,17 +25,6 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
         minister_support_type: item.minister_support_type ?? '',
         minister_support_other: item.minister_support_other ?? '',
       })) || [],
-      relatedDirectives: draft.related_directives?.map((directive: any) => ({
-        id: directive.id || '',
-        directive: directive.directive_text || '',
-        previousMeeting: directive.related_meeting || '',
-        directiveDate: formatDateStringToISO(directive.directive_date),
-        directiveStatus: directive.directive_status || '',
-        dueDate: formatDateStringToISO(directive.deadline),
-        responsible: directive.responsible_persons || '',
-      })) || [],
-      wasDiscussedPreviously: draft.topic_discussed_before || false,
-      previousMeetingDate: formatDateStringToISO(draft.previous_meeting_date),
       notes: draft.general_note || draft.general_notes?.[0] || '',
       is_urgent: draft.is_urgent ?? false,
       urgent_reason: draft.urgent_reason ?? '',
@@ -79,14 +66,8 @@ export const transformDraftToStep3InviteesData = (draft: DraftApiResponse): Part
 
 export const transformDraftToStep4SchedulingData = (draft: DraftApiResponse): string[] => {
   const slots: string[] = [];
-  if (draft?.selected_time_slot?.external_slot_id) {
-    slots.push(draft.selected_time_slot.external_slot_id);
-  }
-  if (draft?.alternative_time_slot_1?.external_slot_id) {
-    slots.push(draft.alternative_time_slot_1.external_slot_id);
-  }
-  if (draft?.alternative_time_slot_2?.external_slot_id) {
-    slots.push(draft.alternative_time_slot_2.external_slot_id);
-  }
+  if (draft?.selected_time_slot_id) slots.push(draft.selected_time_slot_id);
+  if (draft?.alternative_time_slot_id_1) slots.push(draft.alternative_time_slot_id_1);
+  if (draft?.alternative_time_slot_id_2) slots.push(draft.alternative_time_slot_id_2);
   return slots;
 };

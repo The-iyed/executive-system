@@ -56,7 +56,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
-        <div className="w-full max-w-[1085px] flex flex-col gap-8">
+        <div className="w-full max-w-[1200px] flex flex-col gap-8">
           {showPresentationBlock && (
             <div {...(errors.presentation_files ? { 'data-error-field': true } : {})}>
               <FileUpload

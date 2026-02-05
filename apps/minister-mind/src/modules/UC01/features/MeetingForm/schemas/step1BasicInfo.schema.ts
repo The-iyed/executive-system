@@ -3,7 +3,6 @@ import { z } from 'zod';
 const CATEGORIES_REQUIRING_REASON = ['PRIVATE_MEETING', 'BILATERAL_MEETING'] as const;
 const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as const;
 const MEETING_TYPE_REQUIRING_SECTOR = 'INTERNAL' as const;
-
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const requiredString = (message: string, minLength = 1, maxLength?: number) => {
@@ -30,12 +29,8 @@ const dateSchema = (required: boolean, fieldName: string) => {
   return base;
 };
 
-// Reusable schema objects
-const meetingGoalItemSchema = z.object({ id: z.string(), objective: z.string() });
-const meetingGoalItemValidationSchema = z.object({ id: z.string(), objective: z.string().min(1, 'الهدف مطلوب') });
-
-// Minister support type values per requirement: إحاطة|تحديث|قرار|توجيه|اعتماد|أخرى
 const MINISTER_SUPPORT_TYPE_OTHER = 'أخرى';
+const MINISTER_SUPPORT_TYPE_VALUES = ['إحاطة', 'تحديث', 'قرار', 'توجيه', 'اعتماد', 'أخرى'] as const;
 
 const agendaItemBaseSchema = z.object({
   id: z.string(),
@@ -45,11 +40,26 @@ const agendaItemBaseSchema = z.object({
   minister_support_other: z.string().optional().or(z.literal('')),
 });
 
-const agendaItemSchema = (required: boolean) =>
-  agendaItemBaseSchema.extend({
-    agenda_item: required ? z.string().min(1, 'عنصر الأجندة مطلوب') : z.string().optional(),
+const agendaItemStrictSchema = z
+  .object({
+    id: z.string(),
+    agenda_item: z.string().min(1, 'عنصر الأجندة مطلوب'),
+    presentation_duration_minutes: z.string().min(1, 'مدة العرض (بالدقائق) مطلوبة'),
+    minister_support_type: z.string().min(1, 'الدعم المطلوب من الوزير مطلوب'),
     minister_support_other: z.string().optional().or(z.literal('')),
-  }).superRefine((data, ctx) => {
+  })
+  .refine(
+    (data) => {
+      const num = parseInt(data.presentation_duration_minutes, 10);
+      return !Number.isNaN(num) && num >= 0 && Number.isInteger(num);
+    },
+    { message: 'مدة العرض يجب أن تكون رقماً صحيحاً (بالدقائق)', path: ['presentation_duration_minutes'] }
+  )
+  .refine(
+    (data) => (MINISTER_SUPPORT_TYPE_VALUES as readonly string[]).includes(data.minister_support_type),
+    { message: 'اختر نوع الدعم من القائمة', path: ['minister_support_type'] }
+  )
+  .superRefine((data, ctx) => {
     if (data.minister_support_type === MINISTER_SUPPORT_TYPE_OTHER) {
       if (!data.minister_support_other || data.minister_support_other.trim().length === 0) {
         ctx.addIssue({
@@ -61,33 +71,20 @@ const agendaItemSchema = (required: boolean) =>
     }
   });
 
-const relatedDirectiveItemSchema = z.object({
-  id: z.string(),
-  directive: z.string().optional(),
-  previousMeeting: z.string().optional(),
-  directiveDate: z.string().optional(),
-  directiveStatus: z.string().optional(),
-  dueDate: z.string().optional(),
-  responsible: z.string().optional(),
-});
-
-// Type-only schema - minimal validation for TypeScript inference
 export const step1BasicInfoBaseSchema = z.object({
   meetingSubject: z.string(),
   meetingType: z.string(),
   meetingCategory: z.string(),
   meetingReason: z.string().optional().or(z.literal('')),
+  meetingDescription: z.string().optional().or(z.literal('')),
   relatedTopic: z.string().optional().or(z.literal('')),
   dueDate: z.string().optional().or(z.literal('')),
   meetingClassification1: z.string(),
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string(),
+  meetingChannel: z.string().optional().or(z.literal('')),
   sector: z.string().optional().or(z.literal('')),
-  meetingGoals: z.array(meetingGoalItemSchema).optional().default([]),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
-  relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
-  wasDiscussedPreviously: z.boolean().optional().default(false),
-  previousMeetingDate: z.string().optional().or(z.literal('')),
   notes: z.string({invalid_type_error: 'القيمة المُدخلة غير صحيحة'}).optional().or(z.literal('')),
   is_urgent: z.boolean().optional().default(false),
   urgent_reason: z.string().optional().or(z.literal('')),
@@ -95,7 +92,8 @@ export const step1BasicInfoBaseSchema = z.object({
   meeting_manager_id: z.string().optional().or(z.literal('')),
   is_based_on_directive: z.boolean().optional().default(false),
   directive_method: z.string().optional().or(z.literal('')),
-  previous_meeting_minutes_id: z.string().optional().or(z.literal('')),
+  previous_meeting_minutes_file: z.union([z.instanceof(File), z.null()]).optional(),
+  directive_text: z.string().optional().or(z.literal('')),
 });
 
 export type Step1BasicInfoFormData = z.infer<typeof step1BasicInfoBaseSchema>;
@@ -104,23 +102,23 @@ z.setErrorMap(() => ({
   message: 'هناك خطأ ما في هذا الحقل',
 }));
 
-// Validation schema factory with conditional rules
 export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>) => {
   const requiresReason = data.meetingCategory
     ? (CATEGORIES_REQUIRING_REASON as readonly string[]).includes(data.meetingCategory)
     : false;
   const requiresRelatedTopic = data.meetingCategory === CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE;
-  const requiresPreviousDate = data.wasDiscussedPreviously === true;
   const requiresSector = data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
 
   const requiresUrgentReason = data.is_urgent === true;
   const requiresMeetingManager = data.is_on_behalf_of === true;
   const requiresDirectiveMethod = data.is_based_on_directive === true;
-  const requiresPreviousMeetingMinutes = data.directive_method === 'PREVIOUS_MEETING';
+  const requiresDirectiveText = data.directive_method === 'DIRECT_DIRECTIVE';
   const requiresClassification = data.meetingCategory !== 'PRIVATE_MEETING';
+  const requiresAgenda = data.meetingCategory !== 'PRIVATE_MEETING';
 
-  // Agenda optional in step 1; presentation/content is in step 2
-  const agendaItemsWithSupportSchema = z.array(agendaItemSchema(false)).optional().default([]);
+  const agendaItemsWithSupportSchema = requiresAgenda
+    ? z.array(agendaItemStrictSchema).min(1, 'يجب إضافة عنصر أجندة واحد على الأقل').optional().default([])
+    : z.array(agendaItemStrictSchema).optional().default([]);
 
   const baseSchema = z.object({
     meetingSubject: requiredString('عنوان الاجتماع مطلوب', 1, 200),
@@ -131,15 +129,9 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       : optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
+    meetingChannel: optionalString('آلية انعقاد الاجتماع يجب أن تكون نصاً'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
-    meetingGoals: z
-      .array(meetingGoalItemValidationSchema)
-      .min(1, 'يجب إضافة هدف واحد على الأقل')
-      .optional()
-      .default([]),
     meetingAgenda: agendaItemsWithSupportSchema,
-    relatedDirectives: z.array(relatedDirectiveItemSchema).optional().default([]),
-    wasDiscussedPreviously: z.boolean().optional().default(false),
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
     is_urgent: z.boolean().optional().default(false),
     is_on_behalf_of: z.boolean().optional().default(false),
@@ -154,7 +146,6 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       ? requiredString('موضوع التكليف المرتبط مطلوب')
       : optionalString('موضوع التكليف المرتبط يجب أن يكون نصاً'),
     dueDate: dateSchema(requiresRelatedTopic, 'تاريخ الاستحقاق مطلوب'),
-    previousMeetingDate: dateSchema(requiresPreviousDate, 'تاريخ الاجتماع السابق مطلوب'),
     sector: requiresSector ? requiredString('القطاع مطلوب') : optionalString('القطاع يجب أن يكون نصاً'),
     urgent_reason: requiresUrgentReason
       ? requiredString('السبب مطلوب')
@@ -165,9 +156,22 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     directive_method: requiresDirectiveMethod
       ? requiredString('طريقة التوجيه مطلوبة')
       : optionalString('طريقة التوجيه يجب أن تكون نصاً'),
-    previous_meeting_minutes_id: requiresPreviousMeetingMinutes
-      ? requiredString('محضر الاجتماع مطلوب')
-      : optionalString('محضر الاجتماع يجب أن يكون نصاً'),
+    previous_meeting_minutes_file: z.union([z.instanceof(File), z.null()]).optional(),
+    directive_text: requiresDirectiveText
+      ? requiredString('التوجيه مطلوب')
+      : optionalString('التوجيه يجب أن يكون نصاً'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.directive_method === 'PREVIOUS_MEETING') {
+      const file = data.previous_meeting_minutes_file;
+      if (!file || !(file instanceof File)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'محضر الاجتماع مطلوب (PDF، Word، Excel)',
+          path: ['previous_meeting_minutes_file'],
+        });
+      }
+    }
   });
 };
 
@@ -203,14 +207,14 @@ export const extractStep1BasicInfoErrors = (
 
 const CATEGORY_PRIVATE_MEETING = 'PRIVATE_MEETING' as const;
 
-export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormData, data: Partial<Step1BasicInfoFormData>): boolean => {
+export type Step1FieldKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
+
+export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partial<Step1BasicInfoFormData>): boolean => {
   switch (field) {
     case 'meetingSubject':
     case 'meetingType':
     case 'meetingCategory':
     case 'meetingConfidentiality':
-    case 'meetingGoals':
-      return true;
     case 'meetingClassification1':
       return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
     case 'meetingReason':
@@ -218,8 +222,6 @@ export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormDat
     case 'relatedTopic':
     case 'dueDate':
       return data.meetingCategory === CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE;
-    case 'previousMeetingDate':
-      return data.wasDiscussedPreviously === true;
     case 'sector':
       return data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
     case 'urgent_reason':
@@ -228,8 +230,14 @@ export const isStep1BasicInfoFieldRequired = (field: keyof Step1BasicInfoFormDat
       return data.is_on_behalf_of === true;
     case 'directive_method':
       return data.is_based_on_directive === true;
-    case 'previous_meeting_minutes_id':
+    case 'previous_meeting_minutes_file':
       return data.directive_method === 'PREVIOUS_MEETING';
+    case 'directive_text':
+      return data.directive_method === 'DIRECT_DIRECTIVE';
+    case 'meetingAgenda':
+      return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
+    case 'selected_time_slot_id':
+      return data.is_urgent !== true;
     default:
       return false;
   }
