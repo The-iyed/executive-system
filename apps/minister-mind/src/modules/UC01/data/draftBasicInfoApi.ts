@@ -1,10 +1,17 @@
 import axiosInstance from '@auth/utils/axios';
 import type { Step1BasicInfoFormData } from '../features/MeetingForm/schemas/step1BasicInfo.schema';
 
+/** Payload for one time slot: create sends slot_start/slot_end; edit (from get-details) can include id. */
+export interface TimeSlotPayload {
+  id?: string;
+  slot_start: string;
+  slot_end: string;
+}
+
 export interface DraftBasicInfoTimeSlots {
-  selected_time_slot_id?: string | null;
-  alternative_time_slot_id_1?: string | null;
-  alternative_time_slot_id_2?: string | null;
+  selected_time_slot?: TimeSlotPayload;
+  alternative_time_slot_1?: TimeSlotPayload;
+  alternative_time_slot_2?: TimeSlotPayload;
 }
 
 export interface SubmitDraftBasicInfoParams {
@@ -97,9 +104,15 @@ export async function submitDraftBasicInfo(params: SubmitDraftBasicInfoParams): 
   const { formData, draftId, timeSlots, isEditMode } = params;
 
   if (timeSlots) {
-    if (timeSlots.selected_time_slot_id) formData.append('selected_time_slot_id', timeSlots.selected_time_slot_id);
-    if (timeSlots.alternative_time_slot_id_1) formData.append('alternative_time_slot_id_1', timeSlots.alternative_time_slot_id_1);
-    if (timeSlots.alternative_time_slot_id_2) formData.append('alternative_time_slot_id_2', timeSlots.alternative_time_slot_id_2);
+    if (timeSlots.selected_time_slot) {
+      formData.append('selected_time_slot', JSON.stringify(timeSlots.selected_time_slot));
+    }
+    if (timeSlots.alternative_time_slot_1) {
+      formData.append('alternative_time_slot_1', JSON.stringify(timeSlots.alternative_time_slot_1));
+    }
+    if (timeSlots.alternative_time_slot_2) {
+      formData.append('alternative_time_slot_2', JSON.stringify(timeSlots.alternative_time_slot_2));
+    }
   }
 
   const url = isEditMode && draftId
