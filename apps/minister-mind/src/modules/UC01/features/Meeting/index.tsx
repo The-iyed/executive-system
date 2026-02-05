@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
 import { MEETING_TABS, PAGINATION, createTableColumns } from '../../utils';
 import { useMeetings } from '../../hooks';
-import { submitDraft } from '../../data/draftApi';
+import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
 import { useMutation } from '@tanstack/react-query';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
@@ -45,14 +45,50 @@ const Meeting: React.FC = () => {
     },
   });
 
+  const resubmitToSchedulingMutation = useMutation({
+    mutationFn: resubmitToScheduling,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+    },
+    onError: (err) => {
+      console.error('Resubmit to scheduling error:', err);
+    },
+  });
+
+  const resubmitToContentMutation = useMutation({
+    mutationFn: resubmitToContent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+    },
+    onError: (err) => {
+      console.error('Resubmit to content error:', err);
+    },
+  });
+
   const tableColumns = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGINATION.ITEMS_PER_PAGE;
     return createTableColumns(navigate, {
       startIndex,
       onSubmitDraft: submitDraftMutation.mutate,
       submittingDraftId: submitDraftMutation.isPending && submitDraftMutation.variables !== undefined ? submitDraftMutation.variables : null,
+      onResubmitToScheduling: resubmitToSchedulingMutation.mutate,
+      submittingResubmitToSchedulingId: resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables !== undefined ? resubmitToSchedulingMutation.variables : null,
+      onResubmitToContent: resubmitToContentMutation.mutate,
+      submittingResubmitToContentId: resubmitToContentMutation.isPending && resubmitToContentMutation.variables !== undefined ? resubmitToContentMutation.variables : null,
     });
-  }, [navigate, currentPage, submitDraftMutation.mutate, submitDraftMutation.isPending, submitDraftMutation.variables]);
+  }, [
+    navigate,
+    currentPage,
+    submitDraftMutation.mutate,
+    submitDraftMutation.isPending,
+    submitDraftMutation.variables,
+    resubmitToSchedulingMutation.mutate,
+    resubmitToSchedulingMutation.isPending,
+    resubmitToSchedulingMutation.variables,
+    resubmitToContentMutation.mutate,
+    resubmitToContentMutation.isPending,
+    resubmitToContentMutation.variables,
+  ]);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
