@@ -314,3 +314,27 @@ export const approveContent = async (
   );
 };
 
+// Analyze contradictions between consultant statements
+export interface AnalyzeContradiction {
+  statements: string[];
+  severity: string;
+  comment: string;
+}
+
+export interface AnalyzeCategory {
+  category_name: string;
+  statements: string[];
+  contradictions: AnalyzeContradiction[];
+}
+
+export interface AnalyzeResponse {
+  categories: AnalyzeCategory[];
+}
+
+const ANALYZE_ENDPOINT = 'https://text-contradiction-detector.momrahai.com/analyze';
+
+export const analyzeContradictions = async (sentences: string[]): Promise<AnalyzeResponse> => {
+  const response = await axiosInstance.post<AnalyzeResponse>(ANALYZE_ENDPOINT, { sentences });
+  return response.data;
+};
+
