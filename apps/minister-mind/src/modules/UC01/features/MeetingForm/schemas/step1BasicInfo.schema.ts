@@ -3,7 +3,6 @@ import { z } from 'zod';
 const CATEGORIES_REQUIRING_REASON = ['PRIVATE_MEETING', 'BILATERAL_MEETING'] as const;
 const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as const;
 const MEETING_TYPE_REQUIRING_SECTOR = 'INTERNAL' as const;
-
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const requiredString = (message: string, minLength = 1, maxLength?: number) => {
