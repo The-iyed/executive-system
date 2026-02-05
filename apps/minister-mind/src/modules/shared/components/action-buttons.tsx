@@ -27,7 +27,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div
       className={cn(
-        'w-full max-w-[1085px] mx-auto pt-4 px-4',
+        'w-full max-w-[1200px] mx-auto pt-4 px-4',
         'flex flex-col-reverse gap-4',
         'md:flex-row md:items-center md:justify-between',
         className

@@ -15,6 +15,7 @@ export interface FormTableColumn {
   selectOptions?: { value: string; label: string }[];
   placeholder?: string;
   label?: boolean;
+  showWhen?: { field: string; value: string };
 }
 
 export interface FormTableRow {
@@ -53,11 +54,10 @@ export const FormTable: React.FC<FormTableProps> = ({
   touched = {},
   errorMessage,
   maxHeight = '220px',
-  maxWidth = '1085px',
+  maxWidth = '1200px',
   emptyStateMessage = 'لا توجد بيانات',
   showErrorList = true,
 }) => {
-  // Check if table has errors when required and touched
   const hasRowErrors = Object.keys(errors).length > 0;
   const hasTableError =
   required &&
@@ -66,7 +66,15 @@ export const FormTable: React.FC<FormTableProps> = ({
     () => showErrorList ? getTableErrorList(errors, rows) : {},
     [errors, rows, showErrorList]
   );
-  // const rowHasError = !!errors[row.id];
+
+  const visibleColumns = useMemo(
+    () =>
+      columns.filter(
+        (col) =>
+          !col.showWhen || rows.some((row) => row[col.showWhen!.field] === col.showWhen!.value)
+      ),
+    [columns, rows]
+  );
 
   return (
     <div
@@ -88,7 +96,7 @@ export const FormTable: React.FC<FormTableProps> = ({
           <div className="min-w-max">
             {/* Table Header */}
             <div className="flex w-full bg-[#F9FAFB] border-b border-[#D0D5DD] min-w-max">
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <div
                   key={column.id}
                   className={cn(
@@ -119,7 +127,9 @@ export const FormTable: React.FC<FormTableProps> = ({
                       rowIndex === rows.length - 1 && 'border-b-0'
                     )}
                   >
-                    {columns.map((column) => (
+                    {visibleColumns.map((column) => {
+                      const showCell = !column.showWhen || row[column.showWhen.field] === column.showWhen.value;
+                      return (
                       <div
                         key={column.id}
                         className={cn(
@@ -127,7 +137,9 @@ export const FormTable: React.FC<FormTableProps> = ({
                           column.width || 'flex-1'
                         )}
                       >
-                        {column.id === 'action' ? (
+                        {!showCell ? (
+                          <span className="text-[14px] text-[#98A2B3]">—</span>
+                        ) : column.id === 'action' ? (
                           <button
                             type="button"
                             onClick={() => onDeleteRow(row.id)}
@@ -223,7 +235,8 @@ export const FormTable: React.FC<FormTableProps> = ({
                           </div>
                         )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 ))
               )}

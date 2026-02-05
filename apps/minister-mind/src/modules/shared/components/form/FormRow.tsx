@@ -10,7 +10,7 @@ export interface FormRowProps {
 export const FormRow: React.FC<FormRowProps> = ({ 
   children, 
   className,
-  maxWidth = '1085px'
+  maxWidth = '1200px'
 }) => (
   <div 
     className={cn(
