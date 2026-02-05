@@ -33,12 +33,12 @@ export const MEETING_TABS: TabItem[] = [
   //   label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
   // },
   {
-    id: MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER,
-    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER],
+    id: MeetingStatus.RETURNED_FROM_SCHEDULING,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING],
   },
   {
-    id: MeetingStatus.RETURNED_FROM_CONTENT_MANAGER,
-    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_CONTENT_MANAGER],
+    id: MeetingStatus.RETURNED_FROM_CONTENT,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_CONTENT],
   },
 ];
 
@@ -60,11 +60,11 @@ export interface TabFilterConfig {
   //   status: MeetingStatus.SCHEDULED,
   //   owner_type: MeetingOwnerType.SUBMITTER,
   // },
-  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: {
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: {
     status: MeetingStatus.UNDER_REVIEW,
     owner_type: MeetingOwnerType.SUBMITTER,
   },
-  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: {
+  [MeetingStatus.RETURNED_FROM_CONTENT]: {
     status: MeetingStatus.UNDER_REVIEW,
     owner_type: MeetingOwnerType.SUBMITTER,
   },
