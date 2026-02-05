@@ -11,26 +11,24 @@ export interface ExistingFile {
 }
 
 export interface FileUploadProps {
-  file?: File | null | undefined; // For single file mode
-  files?: File[]; // For multiple files mode
+  file?: File | null | undefined; 
+  files?: File[]; 
   error?: string;
-  onFileSelect?: (file: File | null) => void; // For single file mode
-  onFilesSelect?: (files: File[]) => void; // For multiple files mode
+  onFileSelect?: (file: File | null) => void; 
+  onFilesSelect?: (files: File[]) => void; 
   required?: boolean;
-  existingFiles?: ExistingFile[]; // For edit mode - existing uploaded files
+  existingFiles?: ExistingFile[]; 
   label?: string;
-  maxFileSize?: number; // in bytes, default 20MB
+  maxFileSize?: number; 
   acceptedTypes?: string[];
   acceptedExtensions?: string[];
   className?: string;
   containerClassName?: string;
-  /** Optional class for the dropzone area (e.g. to reduce height: py-6 max-h-[160px]) */
   dropzoneClassName?: string;
   showProgress?: boolean;
-  multiple?: boolean; // Enable multiple file upload
+  multiple?: boolean; 
 }
-
-const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024; 
 const DEFAULT_ACCEPTED_TYPES = [
   'application/pdf',
   'application/msword',

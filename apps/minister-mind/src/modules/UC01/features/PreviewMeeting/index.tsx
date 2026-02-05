@@ -7,7 +7,7 @@ import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 import { PATH } from '../../routes/paths';
 import { Tabs } from '@shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
-import { MeetingPreviewTab, NotesTab } from './tabs';
+import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 
 const PreviewMeeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(MeetingPreviewTabs.MEETING_PREVIEW);
@@ -59,6 +59,12 @@ const PreviewMeeting: React.FC = () => {
     switch (activeTab) {
       case MeetingPreviewTabs.MEETING_PREVIEW:
         return <MeetingPreviewTab meeting={meeting} />;
+      case MeetingPreviewTabs.REQUEST_INFO:
+        return <RequestInfoTab meeting={meeting} />;
+      case MeetingPreviewTabs.INVITEES:
+        return <InviteesTab meeting={meeting} />;
+      case MeetingPreviewTabs.CONTENT:
+        return <ContentTab meeting={meeting} />;
       case MeetingPreviewTabs.NOTES:
         return <NotesTab meeting={meeting} />;
       default:
