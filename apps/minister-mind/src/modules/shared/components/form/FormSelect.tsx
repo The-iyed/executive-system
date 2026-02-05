@@ -73,14 +73,14 @@ export const FormSelect: React.FC<FormSelectProps> = ({
         )}
       </SelectTrigger>
       <SelectContent dir="rtl">
-        {options.map((option) => (
-          <SelectItem
-            key={option.value}
-            value={option.value}
-          >
-            {option.label}
-          </SelectItem>
-        ))}
+        {options?.map((option, index) => (
+            <SelectItem
+              key={`option-${index}`}
+              value={option?.value}
+            >
+              {option?.label}
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   );

@@ -71,13 +71,14 @@ async function submitStep1BasicInfoData(
   return submitDraftBasicInfo({ formData: fd, draftId, timeSlots, isEditMode });
 }
 
-function slotToCalendarEvent(slot: { id: string; slot_start: string; slot_end?: string | null; is_available?: boolean }) {
+function slotToCalendarEvent(slot: { id?: string | null; slot_start: string; slot_end?: string | null; is_available?: boolean }) {
   const startDate = new Date(slot.slot_start);
   const endDate = slot.slot_end ? new Date(slot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
   const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
   const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
   return {
-    id: slot.id,
+    // When availability API returns id = null, fall back to slot_start as a stable identifier.
+    id: slot.id ?? slot.slot_start,
     date: startDate,
     startTime,
     endTime,
@@ -89,16 +90,17 @@ function slotToCalendarEvent(slot: { id: string; slot_start: string; slot_end?: 
 function buildSlotPayload(
   slotId: string,
   fromDraft: DraftTimeSlot[] | undefined,
-  fromAvailability: { id: string; slot_start: string; slot_end?: string }[] | undefined
+  fromAvailability: { id?: string | null; slot_start: string; slot_end?: string | null }[] | undefined
 ): TimeSlotPayload | null {
   if (fromDraft?.length) {
-    const s = fromDraft.find((x) => x.id === slotId);
+    const s = fromDraft.find((x) => x.id === slotId || x.slot_start === slotId);
     if (!s) return null;
     const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
     return { id: s.id, slot_start: s.slot_start, slot_end };
   }
   if (fromAvailability?.length) {
-    const s = fromAvailability.find((x) => x.id === slotId);
+    // Availability suggestions can have id = null, so we also match on slot_start (used as fallback value).
+    const s = fromAvailability.find((x) => x.id === slotId || x.slot_start === slotId);
     if (!s) return null;
     const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
     return { slot_start: s.slot_start, slot_end };
@@ -144,14 +146,21 @@ export const useStep1BasicInfo = ({
     }
   }, [initialData]);
 
-  // Sync time slot state from initialScheduling when draft is loaded
+  // Sync time slot state from initialScheduling only when draft provided slot objects (so ids exist in options).
+  // When edit has no slot objects in get-details, we fetch suggestions and ids from draft are not in that list — don't apply them so user can select from suggestions.
+  const hasDraftSlots = Boolean(draftSlots && draftSlots.length > 0);
   useEffect(() => {
-    if (initialScheduling) {
-      if (initialScheduling.selected_time_slot_id != null) setSelectedTimeSlotId(initialScheduling.selected_time_slot_id);
-      if (initialScheduling.alternative_time_slot_id_1 != null) setAlternativeTimeSlotId1(initialScheduling.alternative_time_slot_id_1);
-      if (initialScheduling.alternative_time_slot_id_2 != null) setAlternativeTimeSlotId2(initialScheduling.alternative_time_slot_id_2);
+    if (!initialScheduling) return;
+    if (isEditMode && !hasDraftSlots) {
+      setSelectedTimeSlotId(null);
+      setAlternativeTimeSlotId1(null);
+      setAlternativeTimeSlotId2(null);
+      return;
     }
-  }, [initialScheduling?.selected_time_slot_id, initialScheduling?.alternative_time_slot_id_1, initialScheduling?.alternative_time_slot_id_2]);
+    if (initialScheduling.selected_time_slot_id != null) setSelectedTimeSlotId(initialScheduling.selected_time_slot_id);
+    if (initialScheduling.alternative_time_slot_id_1 != null) setAlternativeTimeSlotId1(initialScheduling.alternative_time_slot_id_1);
+    if (initialScheduling.alternative_time_slot_id_2 != null) setAlternativeTimeSlotId2(initialScheduling.alternative_time_slot_id_2);
+  }, [isEditMode, hasDraftSlots, initialScheduling?.selected_time_slot_id, initialScheduling?.alternative_time_slot_id_1, initialScheduling?.alternative_time_slot_id_2]);
 
   // Clear time slots when meeting is urgent
   useEffect(() => {
@@ -201,22 +210,16 @@ export const useStep1BasicInfo = ({
   });
 
   const calendarEvents = useMemo(() => {
+    // In edit mode with slots coming from draft details, use them directly.
     if (useSlotsFromDraft && draftSlots?.length) {
       return draftSlots.map(slotToCalendarEvent);
     }
-    return slotsData.map((slot) => {
-      const startDate = new Date(slot.slot_start);
-      const endDate = new Date(slot.slot_end);
-      const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
-      const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-      return {
-        id: slot.id,
-        date: startDate,
-        startTime,
-        endTime,
-        is_available: slot.is_available,
-      };
-    });
+
+    // Otherwise use availability/suggestions API. Some fields like `slot_end` or
+    // `is_available` may be missing; `slotToCalendarEvent` already handles:
+    // - missing `slot_end` by falling back to +60 minutes
+    // - missing `is_available` by defaulting to true
+    return slotsData.map((slot) => slotToCalendarEvent(slot));
   }, [useSlotsFromDraft, draftSlots, slotsData]);
 
   const slotOptions = useMemo(() => {
@@ -230,6 +233,19 @@ export const useStep1BasicInfo = ({
       return { value: event.id, label };
     });
   }, [calendarEvents, useSlotsFromDraft]);
+
+  const slotOptionsAlt1 = useMemo(() => {
+    const main = selected_time_slot_id ?? '';
+    if (!main) return slotOptions;
+    return slotOptions.filter((o) => o.value !== main);
+  }, [slotOptions, selected_time_slot_id]);
+
+  const slotOptionsAlt2 = useMemo(() => {
+    const main = selected_time_slot_id ?? '';
+    const alt1 = alternative_time_slot_id_1 ?? '';
+    if (!main && !alt1) return slotOptions;
+    return slotOptions.filter((o) => o.value !== main && o.value !== alt1);
+  }, [slotOptions, selected_time_slot_id, alternative_time_slot_id_1]);
 
   const [errors, setErrors] = useState<Partial<Record<Step1ErrorKey, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<Step1ErrorKey, boolean>>>({});
@@ -692,6 +708,8 @@ export const useStep1BasicInfo = ({
       alternative_time_slot_id_1,
       alternative_time_slot_id_2,
       slotOptions,
+      slotOptionsAlt1,
+      slotOptionsAlt2,
       isLoadingSlots: useSlotsFromDraft ? false : isLoadingSlots,
       showTimeSlots,
     },
