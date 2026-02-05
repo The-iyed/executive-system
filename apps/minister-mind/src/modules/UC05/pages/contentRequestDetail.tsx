@@ -20,10 +20,8 @@ import {
   completeContentConsultation,
   getContentConsultants,
   approveContent,
-  compareConsultantStatements,
   type Attachment,
   type ConsultantUser,
-  type CompareConsultantStatementsResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 
@@ -122,6 +120,8 @@ const ContentRequestDetail: React.FC = () => {
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
+  const [isAnalyzeModalOpen, setIsAnalyzeModalOpen] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResponse | null>(null);
   const [returnNotes, setReturnNotes] = useState<string>('');
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
@@ -334,6 +334,19 @@ const ContentRequestDetail: React.FC = () => {
     },
     onError: (error) => {
       console.error('Error sending to scheduling officer:', error);
+    },
+  });
+
+  const analyzeContradictionsMutation = useMutation({
+    mutationFn: (sentences: string[]) => analyzeContradictions(sentences),
+    onSuccess: (data) => {
+      setAnalyzeResult(data);
+      setIsAnalyzeModalOpen(true);
+    },
+    onError: (error) => {
+      console.error('Error analyzing contradictions:', error);
+      setAnalyzeResult(null);
+      setIsAnalyzeModalOpen(true);
     },
   });
 
@@ -1207,6 +1220,34 @@ const ContentRequestDetail: React.FC = () => {
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                <>
+                  <div className="flex justify-start w-full" dir="rtl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const typeLabel = (t: string) =>
+                          t === 'SCHEDULING' ? 'جدولة' : t === 'CONTENT' ? 'محتوى' : t;
+                        const sentences: string[] = [];
+                        consultationRecords.items.forEach((row: ConsultationRecord) => {
+                          const prefix = typeLabel(row.consultation_type);
+                          if (row.consultation_question?.trim()) {
+                            sentences.push(`${prefix} ${row.consultation_question.trim()}`);
+                          }
+                          if (row.consultation_answer?.trim()) {
+                            sentences.push(`${prefix} ${row.consultation_answer.trim()}`);
+                          }
+                        });
+                        if (sentences.length > 0) {
+                          analyzeContradictionsMutation.mutate(sentences);
+                        }
+                      }}
+                      disabled={analyzeContradictionsMutation.isPending}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      {analyzeContradictionsMutation.isPending ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
+                    </button>
+                  </div>
                 <DataTable
                   columns={[
                     {
@@ -1319,6 +1360,7 @@ const ContentRequestDetail: React.FC = () => {
                   data={consultationRecords.items}
                   rowPadding="py-3"
                 />
+                </>
               ) : (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
@@ -1329,6 +1371,96 @@ const ContentRequestDetail: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Analyze contradictions result modal */}
+          <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
+            <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  تقييم التعارض بين افادات المستشارين
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-1 space-y-6">
+                {analyzeResult?.categories && analyzeResult.categories.length > 0 ? (
+                  analyzeResult.categories.map((category, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-gray-200 bg-gray-50/80 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 bg-[#009883]/10 border-b border-gray-200">
+                        <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {category.category_name || `الفئة ${idx + 1}`}
+                        </h4>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        {category.statements && category.statements.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-700 mb-2 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              العبارات
+                            </h5>
+                            <ul className="list-disc list-inside text-sm text-gray-600 text-right space-y-1" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              {category.statements.map((s, i) => (
+                                <li key={i}>{s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {category.contradictions && category.contradictions.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-amber-800 mb-2 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              التعارضات
+                            </h5>
+                            <ul className="space-y-3">
+                              {category.contradictions.map((c, i) => (
+                                <li
+                                  key={i}
+                                  className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-right"
+                                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                >
+                                  {c.statements && c.statements.length > 0 && (
+                                    <p className="text-sm text-gray-700 mb-1">
+                                      <span className="font-medium">العبارات المتعارضة:</span>{' '}
+                                      {c.statements.join(' ← → ')}
+                                    </p>
+                                  )}
+                                  {c.severity && (
+                                    <p className="text-xs font-medium text-amber-800 mb-1">
+                                      درجة التعارض: {c.severity}
+                                    </p>
+                                  )}
+                                  {c.comment && (
+                                    <p className="text-sm text-gray-600">{c.comment}</p>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : analyzeContradictionsMutation.isError ? (
+                  <p className="text-center text-red-600 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    حدث خطأ أثناء تحليل التعارضات. يرجى المحاولة لاحقاً.
+                  </p>
+                ) : (
+                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    لا توجد فئات أو تعارضات في النتيجة.
+                  </p>
+                )}
+              </div>
+              <DialogFooter className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAnalyzeModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  إغلاق
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Action Content (outside tabs) */}
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
