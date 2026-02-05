@@ -105,3 +105,11 @@ export const patchDraftScheduling = async (
   );
   return response.data;
 };
+
+/** Submit draft – moves it to UNDER_REVIEW */
+export const submitDraft = async (draftId: string): Promise<unknown> => {
+  const response = await axiosInstance.post(
+    `/api/meeting-requests/drafts/${draftId}/submit`
+  );
+  return response.data;
+};

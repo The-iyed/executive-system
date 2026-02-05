@@ -314,3 +314,37 @@ export const approveContent = async (
   );
 };
 
+// Compare consultant statements (تقييم التعارض بين افادات المستشارين)
+export interface ComparisonSummary {
+  total_slides_original: number;
+  total_slides_new: number;
+  slide_count_difference: number;
+  unchanged_slides: number;
+  minor_changes: number;
+  moderate_changes: number;
+  major_changes: number;
+  new_slides: number;
+}
+
+export interface CompareConsultantStatementsResponse {
+  comparison_id: string;
+  overall_score: number;
+  difference_level: string;
+  status: string;
+  regeneration_recommendation: string;
+  summary: ComparisonSummary;
+  slide_by_slide?: Record<string, unknown>[];
+  regeneration_decision?: Record<string, unknown>;
+  ai_insights?: Record<string, unknown>;
+}
+
+export const compareConsultantStatements = async (
+  meetingId: string
+): Promise<CompareConsultantStatementsResponse> => {
+  const response = await axiosInstance.post<CompareConsultantStatementsResponse>(
+    '/api/comparisons/compare',
+    { meeting_id: meetingId }
+  );
+  return response.data;
+};
+
