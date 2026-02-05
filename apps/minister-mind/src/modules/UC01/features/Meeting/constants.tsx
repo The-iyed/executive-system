@@ -11,7 +11,16 @@ export interface CreateTableColumnsOptions {
   /** When provided, draft rows show a "Submit draft" action that calls this with draft id */
   onSubmitDraft?: (draftId: string) => void;
   submittingDraftId?: string | null;
+  /** When provided, "معاد من مسؤول الجدولة" rows show "إرسال للمراجعة" → resubmit-to-scheduling */
+  onResubmitToScheduling?: (draftId: string) => void;
+  submittingResubmitToSchedulingId?: string | null;
+  /** When provided, "معاد من مسؤول المحتوى" rows show "إرسال للمراجعة" → resubmit-to-content */
+  onResubmitToContent?: (draftId: string) => void;
+  submittingResubmitToContentId?: string | null;
 }
+
+const ACTION_BTN_CLASS =
+  'flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0';
 
 export const createTableColumns = (
   _navigate: NavigateFunction,
@@ -20,6 +29,12 @@ export const createTableColumns = (
   const startIndex = options?.startIndex ?? 0;
   const onSubmitDraft = options?.onSubmitDraft;
   const submittingDraftId = options?.submittingDraftId;
+  const onResubmitToScheduling = options?.onResubmitToScheduling;
+  const submittingResubmitToSchedulingId = options?.submittingResubmitToSchedulingId;
+  const onResubmitToContent = options?.onResubmitToContent;
+  const submittingResubmitToContentId = options?.submittingResubmitToContentId;
+  const hasActions =
+    onSubmitDraft || onResubmitToScheduling || onResubmitToContent;
   return [
     {
       id: 'itemNumber',
@@ -143,30 +158,78 @@ export const createTableColumns = (
         </span>
       ),
     },
-    ...(onSubmitDraft
+    ...(hasActions
       ? [
           {
             id: 'actions',
             header: '',
             width: 'min-w-[200px] w-[200px]',
             align: 'center' as const,
-            render: (row: MeetingDisplayData) =>
-              row.status === MeetingStatus.DRAFT ? (
-                <div className="flex justify-center w-full min-w-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSubmitDraft(row.id);
-                    }}
-                    disabled={submittingDraftId === row.id}
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                  >
-                    <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
-                    <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
-                  </button>
-                </div>
-              ) : null,
+            render: (row: MeetingDisplayData) => {
+              if (row.status === MeetingStatus.DRAFT && onSubmitDraft) {
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSubmitDraft(row.id);
+                      }}
+                      disabled={submittingDraftId === row.id}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              if (
+                row.status === MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                onResubmitToScheduling
+              ) {
+                const submitting = submittingResubmitToSchedulingId === row.id;
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onResubmitToScheduling(row.id);
+                      }}
+                      disabled={submitting}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submitting ? 'جاري الإرسال...' : 'إرسال للمراجعة'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              if (
+                row.status === MeetingStatus.RETURNED_FROM_CONTENT &&
+                onResubmitToContent
+              ) {
+                const submitting = submittingResubmitToContentId === row.id;
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onResubmitToContent(row.id);
+                      }}
+                      disabled={submitting}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submitting ? 'جاري الإرسال...' : 'إرسال للمراجعة'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            },
           } as TableColumn<MeetingDisplayData>,
         ]
       : []),

@@ -113,3 +113,19 @@ export const submitDraft = async (draftId: string): Promise<unknown> => {
   );
   return response.data;
 };
+
+/** Resubmit to scheduling (from "معاد من مسؤول الجدولة" tab) */
+export const resubmitToScheduling = async (draftId: string): Promise<unknown> => {
+  const response = await axiosInstance.post(
+    `/api/meeting-requests/drafts/${draftId}/resubmit-to-scheduling`
+  );
+  return response.data;
+};
+
+/** Resubmit to content (from "معاد من مسؤول المحتوى" tab) */
+export const resubmitToContent = async (draftId: string): Promise<unknown> => {
+  const response = await axiosInstance.post(
+    `/api/meeting-requests/drafts/${draftId}/resubmit-to-content`
+  );
+  return response.data;
+};
