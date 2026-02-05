@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable, AIGenerateButton } from '@shared/components';
+import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
   MeetingStatus,
@@ -20,8 +20,10 @@ import {
   completeContentConsultation,
   getContentConsultants,
   approveContent,
+  analyzeContradictions,
   type Attachment,
   type ConsultantUser,
+  type AnalyzeResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 
@@ -126,8 +128,6 @@ const ContentRequestDetail: React.FC = () => {
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
   const [consultantSearch, setConsultantSearch] = useState<string>('');
-  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState<CompareConsultantStatementsResponse | null>(null);
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -378,25 +378,6 @@ const ContentRequestDetail: React.FC = () => {
 
   const handleRequestConsultation = () => {
     setIsConsultationModalOpen(true);
-  };
-
-  // Compare consultant statements (تقييم التعارض بين افادات المستشارين)
-  const compareMutation = useMutation({
-    mutationFn: () => {
-      if (!id) throw new Error('Meeting request ID is required');
-      return compareConsultantStatements(id);
-    },
-    onSuccess: (data) => {
-      setComparisonResult(data);
-      setIsCompareModalOpen(true);
-    },
-    onError: (err) => {
-      console.error('Compare consultant statements error:', err);
-    },
-  });
-
-  const handleCompareConsultantStatements = () => {
-    compareMutation.mutate();
   };
 
   const handleSubmitConsultation = (type: 'draft' | 'submit') => {
@@ -1605,91 +1586,9 @@ const ContentRequestDetail: React.FC = () => {
               </span>
               <ClipboardCheck className="w-5 h-5" />
             </button>
-
-            {/* Compare consultant statements (تقييم التعارض بين افادات المستشارين) */}
-            <AIGenerateButton
-              label="تقييم التعارض بين افادات المستشارين"
-              onClick={handleCompareConsultantStatements}
-              disabled={compareMutation.isPending}
-            />
           </div>
         </div>
       </div>
-
-      {/* Comparison result modal (تقييم التعارض بين افادات المستشارين) */}
-      <Dialog open={isCompareModalOpen} onOpenChange={setIsCompareModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-              تقييم التعارض بين افادات المستشارين
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-4 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-            {comparisonResult ? (
-              <>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500">معرف التقييم</span>
-                    <span className="font-medium text-gray-900">{comparisonResult.comparison_id || '—'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500">الدرجة الإجمالية</span>
-                    <span className="font-medium text-gray-900">{comparisonResult.overall_score ?? '—'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500">مستوى الاختلاف</span>
-                    <span className="font-medium text-gray-900">{comparisonResult.difference_level || '—'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500">الحالة</span>
-                    <span className="font-medium text-gray-900">{comparisonResult.status || '—'}</span>
-                  </div>
-                </div>
-                {comparisonResult.regeneration_recommendation ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500 text-sm">توصية إعادة التوليد</span>
-                    <p className="text-gray-900 whitespace-pre-wrap">{comparisonResult.regeneration_recommendation}</p>
-                  </div>
-                ) : null}
-                {comparisonResult.summary ? (
-                  <div className="flex flex-col gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <span className="text-gray-700 font-medium">ملخص الشرائح</span>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span>الشرائح الأصلية: {comparisonResult.summary.total_slides_original ?? '—'}</span>
-                      <span>الشرائح الجديدة: {comparisonResult.summary.total_slides_new ?? '—'}</span>
-                      <span>فرق العدد: {comparisonResult.summary.slide_count_difference ?? '—'}</span>
-                      <span>بدون تغيير: {comparisonResult.summary.unchanged_slides ?? '—'}</span>
-                      <span>تغييرات طفيفة: {comparisonResult.summary.minor_changes ?? '—'}</span>
-                      <span>تغييرات متوسطة: {comparisonResult.summary.moderate_changes ?? '—'}</span>
-                      <span>تغييرات كبيرة: {comparisonResult.summary.major_changes ?? '—'}</span>
-                      <span>شرائح جديدة: {comparisonResult.summary.new_slides ?? '—'}</span>
-                    </div>
-                  </div>
-                ) : null}
-                {comparisonResult.ai_insights && Object.keys(comparisonResult.ai_insights).length > 0 ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-gray-500 text-sm">رؤى الذكاء الاصطناعي</span>
-                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
-                      {JSON.stringify(comparisonResult.ai_insights, null, 2)}
-                    </pre>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-gray-500">لا توجد نتيجة لعرضها.</p>
-            )}
-          </div>
-          <DialogFooter className="flex-row-reverse gap-2">
-            <button
-              onClick={() => { setIsCompareModalOpen(false); setComparisonResult(null); }}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              إغلاق
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Return Request Modal */}
       <Dialog open={isReturnModalOpen} onOpenChange={setIsReturnModalOpen}>
