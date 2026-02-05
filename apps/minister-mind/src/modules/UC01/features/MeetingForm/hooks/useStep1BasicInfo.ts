@@ -1,12 +1,11 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import axiosInstance from '@auth/utils/axios';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
 import { getWeekStart, getWeekEnd } from '../utils';
 import { getDraftAvailableTimeSlots } from '../../../data/calendarApi';
-import { patchDraftScheduling } from '../../../data';
+import { patchDraftScheduling, buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 
 export interface Step1SchedulingState {
   selected_time_slot_id: string | null;
@@ -14,7 +13,6 @@ export interface Step1SchedulingState {
   alternative_time_slot_id_2: string | null;
 }
 
-/** Keys that can have validation errors (form fields + time slot main) */
 export type Step1ErrorKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
 
 export type TimeSlotField = 'main' | 'alt1' | 'alt2';
@@ -28,11 +26,10 @@ interface UseStep1BasicInfoProps {
   isEditMode?: boolean;
 }
 
-interface SubmitStep1BasicInfoPayload {
+export interface SubmitStep1BasicInfoPayload {
   formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
-  /** Time slots to send in the same request when creating/updating draft */
   timeSlots?: {
     selected_time_slot_id?: string | null;
     alternative_time_slot_id_1?: string | null;
@@ -40,175 +37,25 @@ interface SubmitStep1BasicInfoPayload {
   };
 }
 
-interface SubmitStep1BasicInfoResponse {
-  id: string;
-}
-
-
-const prepareBasicInfoFormData = (formData: Partial<Step1BasicInfoFormData>): FormData => {
-  const formDataToSend = new FormData();
-
-  // Required fields
-  if (formData.meetingSubject) {
-    formDataToSend.append('meeting_title', formData.meetingSubject);
-    formDataToSend.append('meeting_subject', formData.meetingSubject);
-  }
-  if (formData.meetingCategory) {
-    formDataToSend.append('meeting_classification', formData.meetingCategory);
-  }
-  if (formData.meetingConfidentiality) {
-    formDataToSend.append('meeting_confidentiality', formData.meetingConfidentiality);
-  }
-
-  // Optional fields
-  if (formData.meetingType) {
-    formDataToSend.append('meeting_type', formData.meetingType);
-  }
-  if (formData.meetingClassification1) {
-    formDataToSend.append('meeting_classification_type', formData.meetingClassification1);
-  }
-  if (formData.meetingChannel && formData.meetingChannel !== '') {
-    formDataToSend.append('meeting_channel', formData.meetingChannel);
-  }
-  if (formData.sector) {
-    formDataToSend.append('sector', formData.sector);
-  }
-  if (formData.relatedTopic) {
-    formDataToSend.append('related_topic', formData.relatedTopic);
-  }
-  if (formData.dueDate && formData.dueDate !== '') {
-    const deadlineDate = new Date(formData.dueDate + 'T00:00:00');
-    if (!isNaN(deadlineDate.getTime())) {
-      formDataToSend.append('deadline', deadlineDate.toISOString());
-    }
-  }
-  if (formData.meetingReason) {
-    formDataToSend.append('meeting_justification', formData.meetingReason);
-  }
-  if (formData.meetingDescription && formData.meetingDescription.trim() !== '') {
-    formDataToSend.append('description', formData.meetingDescription);
-  }
-
-  // JSON array fields - transform to backend format
-  if (formData.meetingAgenda && formData.meetingAgenda.length > 0) {
-    const agendaItems = formData.meetingAgenda
-      .map((a) => {
-        const item: Record<string, unknown> = {
-          agenda_item: a.agenda_item || '',
-          presentation_duration_minutes: a.presentation_duration_minutes
-            ? parseInt(String(a.presentation_duration_minutes), 10) || 0
-            : 0,
-        };
-        if (a.minister_support_type && a.minister_support_type.trim() !== '') {
-          item.minister_support_type = a.minister_support_type;
-          if (a.minister_support_type === 'أخرى' && a.minister_support_other?.trim()) {
-            item.minister_support_other = a.minister_support_other;
-          }
-        }
-        return item;
-      })
-      .filter((a) => (a.agenda_item as string) && String(a.agenda_item).trim() !== '');
-    if (agendaItems.length > 0) {
-      formDataToSend.append('agenda_items', JSON.stringify(agendaItems));
-    }
-  }
-
-  if (formData.is_urgent !== undefined) {
-    formDataToSend.append('is_urgent', formData.is_urgent ? 'true' : 'false');
-  }
-  if (formData.is_on_behalf_of !== undefined) {
-    formDataToSend.append('is_on_behalf_of', formData.is_on_behalf_of ? 'true' : 'false');
-  }
-  if (formData.is_based_on_directive !== undefined) {
-    formDataToSend.append('is_based_on_directive', formData.is_based_on_directive ? 'true' : 'false');
-  }
-
-  // Notes
-  if (formData.notes) {
-    formDataToSend.append('general_notes', formData.notes);
-  }
-
-  // Urgent meeting fields
-  if (formData.is_urgent && formData.urgent_reason) {
-    formDataToSend.append('urgent_reason', formData.urgent_reason);
-  }
-
-  // On behalf of fields
-  if (formData.is_on_behalf_of && formData.meeting_manager_id) {
-    formDataToSend.append('meeting_manager_id', formData.meeting_manager_id);
-  }
-
-  // Directive fields
-  if (formData.is_based_on_directive && formData.directive_method) {
-    formDataToSend.append('directive_method', formData.directive_method);
-  }
-  if (formData.is_based_on_directive && formData.directive_method === 'PREVIOUS_MEETING' && formData.previous_meeting_minutes_file instanceof File) {
-    formDataToSend.append('previous_meeting_minutes_file_content', formData.previous_meeting_minutes_file);
-  }
-  if (formData.is_based_on_directive && formData.directive_method === 'DIRECT_DIRECTIVE' && formData.directive_text?.trim()) {
-    formDataToSend.append('directive_text', formData.directive_text.trim());
-  }
-
-  return formDataToSend;
-};
-
-/**
- * Submits basic info and file (if exists) to API
- */
-const submitStep1BasicInfoData = async (
+/** Validates form, builds FormData via data layer, submits draft basic-info. */
+async function submitStep1BasicInfoData(
   payload: SubmitStep1BasicInfoPayload,
-  isEditMode: boolean = false
-): Promise<string> => {
+  isEditMode: boolean
+): Promise<string> {
   const { formData, isDraft, draftId, timeSlots } = payload;
 
-  // Validate if not draft
   if (!isDraft) {
-    const validationResult = validateStep1BasicInfo(formData);
-    if (!validationResult.success) {
-      // Create a validation error with details
-      const error = new Error('Validation failed');
-      (error as any).validationErrors = validationResult.error;
-      throw error;
+    const result = validateStep1BasicInfo(formData);
+    if (!result.success) {
+      const err = new Error('Validation failed');
+      (err as Error & { validationErrors: unknown }).validationErrors = result.error;
+      throw err;
     }
   }
 
-  const formDataToSend = prepareBasicInfoFormData(formData);
-
-  // Append time slots to the same request when present
-  if (timeSlots) {
-    if (timeSlots.selected_time_slot_id) {
-      formDataToSend.append('selected_time_slot_id', timeSlots.selected_time_slot_id);
-    }
-    if (timeSlots.alternative_time_slot_id_1) {
-      formDataToSend.append('alternative_time_slot_id_1', timeSlots.alternative_time_slot_id_1);
-    }
-    if (timeSlots.alternative_time_slot_id_2) {
-      formDataToSend.append('alternative_time_slot_id_2', timeSlots.alternative_time_slot_id_2);
-    }
-  }
-
-  let response;
-  if (isEditMode && draftId) {
-    // Update existing draft using PATCH
-    response = await axiosInstance.patch<SubmitStep1BasicInfoResponse>(
-      `/api/meeting-requests/drafts/${draftId}/basic-info`,
-      formDataToSend
-    );
-  } else {
-    // Create new draft using POST
-    response = await axiosInstance.post<SubmitStep1BasicInfoResponse>(
-      '/api/meeting-requests/drafts/basic-info',
-      formDataToSend
-    );
-  }
-
-  const newDraftId = response.data?.id || draftId;
-  if (!newDraftId) {
-    throw new Error('Invalid response format: missing draft ID');
-  }
-
-  return newDraftId;
-};
+  const fd = buildDraftBasicInfoFormData(formData);
+  return submitDraftBasicInfo({ formData: fd, draftId, timeSlots, isEditMode });
+}
 
 export const useStep1BasicInfo = ({
   draftId,
