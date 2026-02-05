@@ -44,19 +44,17 @@ export const CreateMeeting: React.FC = () => {
             isDeleting={deleteDraft.isDeleting}
             handleChange={step1BasicInfoHook.handleChange}
             handleBlur={step1BasicInfoHook.handleBlur}
-            handleAddGoal={step1BasicInfoHook.handleAddGoal}
-            handleDeleteGoal={step1BasicInfoHook.handleDeleteGoal}
-            handleUpdateGoal={step1BasicInfoHook.handleUpdateGoal}
             handleAddAgenda={step1BasicInfoHook.handleAddAgenda}
             handleDeleteAgenda={step1BasicInfoHook.handleDeleteAgenda}
             handleUpdateAgenda={step1BasicInfoHook.handleUpdateAgenda}
-            handleAddDirective={step1BasicInfoHook.handleAddDirective}
-            handleDeleteDirective={step1BasicInfoHook.handleDeleteDirective}
-            handleUpdateDirective={step1BasicInfoHook.handleUpdateDirective}
             handleNextClick={handleStep1BasicInfoNext}
             handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
             isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
+            timeSlots={step1BasicInfoHook.timeSlots}
+            handleSelectMainSlot={step1BasicInfoHook.handleSelectMainSlot}
+            handleSelectAlt1={step1BasicInfoHook.handleSelectAlt1}
+            handleSelectAlt2={step1BasicInfoHook.handleSelectAlt2}
           />
         );
       case 1:
