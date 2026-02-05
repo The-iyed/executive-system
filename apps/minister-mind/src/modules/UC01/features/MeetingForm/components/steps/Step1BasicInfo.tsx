@@ -50,6 +50,8 @@ export interface Step1BasicInfoProps {
     alternative_time_slot_id_1: string | null;
     alternative_time_slot_id_2: string | null;
     slotOptions: { value: string; label: string }[];
+    slotOptionsAlt1: { value: string; label: string }[];
+    slotOptionsAlt2: { value: string; label: string }[];
     isLoadingSlots: boolean;
     showTimeSlots: boolean;
   };
@@ -289,8 +291,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             </FormField>
             {isStep1BasicInfoFieldRequired('selected_time_slot_id') && timeSlots && (
               <>
-              {/* {timeSlots.isLoadingSlots ? ( <div className="text-gray-600 text-right py-4">جاري تحميل المواعيد المتاحة...</div> */}
-                <div data-time-slot-error>
                 <FormField
                   className="w-full min-w-0"
                   label="موعد الاجتماع"
@@ -307,7 +307,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     loading={timeSlots.isLoadingSlots}
                   />
                 </FormField>
-                </div>
                 <FormField
                 className="w-full min-w-0"
                 label="الموعد البديل الأول"
@@ -316,7 +315,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 <FormSelect
                   value={timeSlots.alternative_time_slot_id_1 || ''}
                   onValueChange={(v) => handleSelectAlt1?.(v)}
-                  options={timeSlots.slotOptions.filter((o) => o.value !== timeSlots.selected_time_slot_id)}
+                  options={timeSlots.slotOptionsAlt1 ?? timeSlots.slotOptions}
                   placeholder="( اختياري ) الموعد البديل الأول"
                   loading={timeSlots.isLoadingSlots}
                 />
@@ -329,9 +328,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 <FormSelect
                   value={timeSlots.alternative_time_slot_id_2 || ''}
                   onValueChange={(v) => handleSelectAlt2?.(v)}
-                  options={timeSlots.slotOptions.filter(
-                    (o) => o.value !== timeSlots.selected_time_slot_id && o.value !== timeSlots.alternative_time_slot_id_1
-                  )}
+                  options={timeSlots.slotOptionsAlt2 ?? timeSlots.slotOptions}
                   placeholder="( اختياري ) الموعد البديل الثاني"
                   loading={timeSlots.isLoadingSlots}
                 />
