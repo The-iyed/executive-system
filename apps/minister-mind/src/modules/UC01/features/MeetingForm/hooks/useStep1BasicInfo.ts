@@ -5,7 +5,7 @@ import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
 import { getWeekStart, getWeekEnd } from '../utils';
 import { getDraftAvailableTimeSlots } from '../../../data/calendarApi';
-import { patchDraftScheduling, buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
+import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 
 export interface Step1SchedulingState {
   selected_time_slot_id: string | null;
@@ -17,23 +17,37 @@ export type Step1ErrorKey = keyof Step1BasicInfoFormData | 'selected_time_slot_i
 
 export type TimeSlotField = 'main' | 'alt1' | 'alt2';
 
+/** Slot shape from get-details API (draft); used in edit to avoid fetching availability. */
+export type DraftTimeSlot = {
+  id: string;
+  slot_start: string;
+  slot_end?: string | null;
+  is_available?: boolean;
+  is_selected?: boolean;
+};
+
 interface UseStep1BasicInfoProps {
   draftId?: string;
   initialData?: Partial<Step1BasicInfoFormData>;
   initialScheduling?: Partial<Step1SchedulingState>;
+  /** In edit mode, use these slots from get-details instead of fetching available-time-slots. */
+  draftSlots?: DraftTimeSlot[];
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
 }
+
+/** One time slot for API: create = { slot_start, slot_end }; edit from get-details = { id, slot_start, slot_end }. */
+export type TimeSlotPayload = { id?: string; slot_start: string; slot_end: string };
 
 export interface SubmitStep1BasicInfoPayload {
   formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
   timeSlots?: {
-    selected_time_slot_id?: string | null;
-    alternative_time_slot_id_1?: string | null;
-    alternative_time_slot_id_2?: string | null;
+    selected_time_slot?: TimeSlotPayload;
+    alternative_time_slot_1?: TimeSlotPayload;
+    alternative_time_slot_2?: TimeSlotPayload;
   };
 }
 
@@ -57,10 +71,46 @@ async function submitStep1BasicInfoData(
   return submitDraftBasicInfo({ formData: fd, draftId, timeSlots, isEditMode });
 }
 
+function slotToCalendarEvent(slot: { id: string; slot_start: string; slot_end?: string | null; is_available?: boolean }) {
+  const startDate = new Date(slot.slot_start);
+  const endDate = slot.slot_end ? new Date(slot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
+  const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+  const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+  return {
+    id: slot.id,
+    date: startDate,
+    startTime,
+    endTime,
+    is_available: slot.is_available ?? true,
+  };
+}
+
+/** Build API slot payload: with id when from draft (edit), without id when from availability (create). */
+function buildSlotPayload(
+  slotId: string,
+  fromDraft: DraftTimeSlot[] | undefined,
+  fromAvailability: { id: string; slot_start: string; slot_end?: string }[] | undefined
+): TimeSlotPayload | null {
+  if (fromDraft?.length) {
+    const s = fromDraft.find((x) => x.id === slotId);
+    if (!s) return null;
+    const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
+    return { id: s.id, slot_start: s.slot_start, slot_end };
+  }
+  if (fromAvailability?.length) {
+    const s = fromAvailability.find((x) => x.id === slotId);
+    if (!s) return null;
+    const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
+    return { slot_start: s.slot_start, slot_end };
+  }
+  return null;
+}
+
 export const useStep1BasicInfo = ({
   draftId,
   initialData,
   initialScheduling,
+  draftSlots,
   onSuccess,
   onError,
   isEditMode = false,
@@ -130,75 +180,59 @@ export const useStep1BasicInfo = ({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }, [weekEnd]);
 
+  const useSlotsFromDraft = Boolean(isEditMode && draftSlots && draftSlots.length > 0);
+
   const queryClient = useQueryClient();
   const timeSlotsQueryKey = ['draft-available-time-slots', startDateStr, endDateStr];
 
-  // Prefetch time slots on step 1 when not urgent (no draftId required)
+  // In edit mode with draft slots from get-details, do not fetch availability
   useEffect(() => {
-    if (!showTimeSlots) return;
+    if (!showTimeSlots || useSlotsFromDraft) return;
     queryClient.prefetchQuery({
       queryKey: timeSlotsQueryKey,
       queryFn: () => getDraftAvailableTimeSlots(),
     });
-  }, [showTimeSlots, startDateStr, endDateStr, queryClient]);
+  }, [showTimeSlots, useSlotsFromDraft, startDateStr, endDateStr, queryClient]);
 
   const { data: slotsData = [], isLoading: isLoadingSlots } = useQuery({
     queryKey: timeSlotsQueryKey,
     queryFn: () => getDraftAvailableTimeSlots(),
-    enabled: showTimeSlots,
+    enabled: showTimeSlots && !useSlotsFromDraft,
   });
 
-  const calendarEvents = useMemo(
-    () =>
-      slotsData.map((slot) => {
-        const startDate = new Date(slot.slot_start);
-        const endDate = new Date(slot.slot_end);
-        const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
-        const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-        return {
-          id: slot.id,
-          date: startDate,
-          startTime,
-          endTime,
-          is_available: slot.is_available,
-        };
-      }),
-    [slotsData]
-  );
-
-  const schedulingMutation = useMutation({
-    mutationFn: ({ dId, payload }: { dId: string; payload: Parameters<typeof patchDraftScheduling>[1] }) =>
-      patchDraftScheduling(dId, payload),
-    onError: (err) => {
-      onError?.(err instanceof Error ? err : new Error('فشل حفظ المواعيد'));
-    },
-  });
+  const calendarEvents = useMemo(() => {
+    if (useSlotsFromDraft && draftSlots?.length) {
+      return draftSlots.map(slotToCalendarEvent);
+    }
+    return slotsData.map((slot) => {
+      const startDate = new Date(slot.slot_start);
+      const endDate = new Date(slot.slot_end);
+      const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+      const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+      return {
+        id: slot.id,
+        date: startDate,
+        startTime,
+        endTime,
+        is_available: slot.is_available,
+      };
+    });
+  }, [useSlotsFromDraft, draftSlots, slotsData]);
 
   const slotOptions = useMemo(() => {
-    return calendarEvents
-      .filter((e) => e.is_available)
-      .map((event) => {
-        const d = event.date;
-        const dateLabel = d.toLocaleDateString('ar-SA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        const label = `${dateLabel} ${event.startTime}–${event.endTime}`;
-        return { value: event.id, label };
-      });
-  }, [calendarEvents]);
+    const events = useSlotsFromDraft
+      ? calendarEvents
+      : calendarEvents.filter((e) => e.is_available);
+    return events.map((event) => {
+      const d = event.date;
+      const dateLabel = d.toLocaleDateString('ar-SA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      const label = `${dateLabel} ${event.startTime}–${event.endTime}`;
+      return { value: event.id, label };
+    });
+  }, [calendarEvents, useSlotsFromDraft]);
 
   const [errors, setErrors] = useState<Partial<Record<Step1ErrorKey, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<Step1ErrorKey, boolean>>>({});
-
-  const persistScheduling = useCallback(
-    (main: string | null, alt1: string | null, alt2: string | null) => {
-      if (!draftId) return;
-      const payload: Parameters<typeof patchDraftScheduling>[1] = {};
-      if (main) payload.selected_time_slot_id = main;
-      if (alt1 && alt1 !== main) payload.alternative_time_slot_id_1 = alt1;
-      if (alt2 && alt2 !== main && alt2 !== alt1) payload.alternative_time_slot_id_2 = alt2;
-      if (Object.keys(payload).length > 0) schedulingMutation.mutate({ dId: draftId, payload });
-    },
-    [draftId, schedulingMutation]
-  );
 
   const clearTimeSlotError = useCallback(() => {
     setErrors((prev) => {
@@ -230,32 +264,26 @@ export const useStep1BasicInfo = ({
         setSelectedTimeSlotId(value);
         setAlternativeTimeSlotId1(nextAlt1);
         setAlternativeTimeSlotId2(nextAlt2);
-        persistScheduling(value, nextAlt1, nextAlt2);
       } else if (field === 'alt1') {
         if (!value || value === selected_time_slot_id) {
           setAlternativeTimeSlotId1(null);
-          persistScheduling(selected_time_slot_id, null, alternative_time_slot_id_2);
           return;
         }
         const nextAlt2 = value === alternative_time_slot_id_2 ? null : alternative_time_slot_id_2;
         setAlternativeTimeSlotId1(value);
         setAlternativeTimeSlotId2(nextAlt2);
-        persistScheduling(selected_time_slot_id, value, nextAlt2);
       } else {
         if (!value || value === selected_time_slot_id || value === alternative_time_slot_id_1) {
           setAlternativeTimeSlotId2(null);
-          persistScheduling(selected_time_slot_id, alternative_time_slot_id_1, null);
           return;
         }
         setAlternativeTimeSlotId2(value);
-        persistScheduling(selected_time_slot_id, alternative_time_slot_id_1, value);
       }
     },
     [
       selected_time_slot_id,
       alternative_time_slot_id_1,
       alternative_time_slot_id_2,
-      persistScheduling,
       clearTimeSlotError,
       markTimeSlotTouched,
     ]
@@ -569,19 +597,34 @@ export const useStep1BasicInfo = ({
       }
 
       try {
+        const fromDraft = useSlotsFromDraft ? draftSlots : undefined;
+        const fromAvailability = !useSlotsFromDraft ? slotsData : undefined;
+        const selectedSlot =
+          showTimeSlots && selected_time_slot_id
+            ? buildSlotPayload(selected_time_slot_id, fromDraft, fromAvailability)
+            : undefined;
+        const alt1Slot =
+          showTimeSlots && alternative_time_slot_id_1
+            ? buildSlotPayload(alternative_time_slot_id_1, fromDraft, fromAvailability)
+            : undefined;
+        const alt2Slot =
+          showTimeSlots && alternative_time_slot_id_2
+            ? buildSlotPayload(alternative_time_slot_id_2, fromDraft, fromAvailability)
+            : undefined;
+        const timeSlotsPayload =
+          selectedSlot || alt1Slot || alt2Slot
+            ? {
+                ...(selectedSlot && { selected_time_slot: selectedSlot }),
+                ...(alt1Slot && { alternative_time_slot_1: alt1Slot }),
+                ...(alt2Slot && { alternative_time_slot_2: alt2Slot }),
+              }
+            : undefined;
+
         const newDraftId = await submitMutation.mutateAsync({
           formData,
           isDraft,
           draftId,
-          timeSlots:
-            showTimeSlots &&
-            (selected_time_slot_id || alternative_time_slot_id_1 || alternative_time_slot_id_2)
-              ? {
-                  selected_time_slot_id: selected_time_slot_id || undefined,
-                  alternative_time_slot_id_1: alternative_time_slot_id_1 || undefined,
-                  alternative_time_slot_id_2: alternative_time_slot_id_2 || undefined,
-                }
-              : undefined,
+          timeSlots: timeSlotsPayload,
         });
         return newDraftId;
       } catch (error: any) {
@@ -605,6 +648,9 @@ export const useStep1BasicInfo = ({
       formData,
       draftId,
       showTimeSlots,
+      useSlotsFromDraft,
+      draftSlots,
+      slotsData,
       selected_time_slot_id,
       alternative_time_slot_id_1,
       alternative_time_slot_id_2,
@@ -646,7 +692,7 @@ export const useStep1BasicInfo = ({
       alternative_time_slot_id_1,
       alternative_time_slot_id_2,
       slotOptions,
-      isLoadingSlots,
+      isLoadingSlots: useSlotsFromDraft ? false : isLoadingSlots,
       showTimeSlots,
     },
     handleSelectMainSlot: (v: string) => handleTimeSlotChange('main', v),
