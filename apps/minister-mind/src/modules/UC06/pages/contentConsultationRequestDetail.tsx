@@ -45,6 +45,26 @@ const formatFileSize = (bytes: number): string => {
   return `${Math.round(bytes / (1024 * 1024))} MB`;
 };
 
+/** Safely format related_guidance which may be a string or a directive object/array from the API */
+function formatRelatedGuidance(value: unknown): string {
+  if (value == null) return '-';
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : '-';
+  }
+  if (Array.isArray(value)) {
+    const texts = value
+      .map((d: { directive_text?: string }) => (d?.directive_text != null ? String(d.directive_text) : ''))
+      .filter(Boolean);
+    return texts.length > 0 ? texts.join(' ') : '-';
+  }
+  if (typeof value === 'object' && value !== null && 'directive_text' in value) {
+    const text = (value as { directive_text?: string }).directive_text;
+    return text != null && String(text).trim() !== '' ? String(text).trim() : '-';
+  }
+  return '-';
+}
+
 const ContentConsultationRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -996,7 +1016,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         التوجيه
                       </label>
                       <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                        {meetingRequest.related_guidance || '-'}
+                        {formatRelatedGuidance(meetingRequest.related_guidance)}
                       </p>
                     </div>
                   </div>
