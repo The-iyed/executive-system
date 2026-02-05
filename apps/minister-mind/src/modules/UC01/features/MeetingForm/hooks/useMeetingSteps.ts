@@ -10,6 +10,7 @@ import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import type { Step2ContentFormData } from '../schemas/step2Content.schema';
 import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import type { Step1SchedulingState } from './useStep1BasicInfo';
+import type { TimeSlotApiResponse } from '../../../data/draftApi';
 import { clearDraftData, getContentStepOptions, saveContentStepOptions } from '../utils';
 
 const STEP_4_INDEX = 3;
@@ -22,6 +23,8 @@ interface UseMeetingStepsProps {
   initialData?: {
     step1BasicInfo?: Partial<Step1BasicInfoFormData>;
     step1Scheduling?: Partial<Step1SchedulingState>;
+    /** In edit mode, use these slots from get-details API instead of fetching availability. */
+    step1SchedulingSlotsFromDraft?: TimeSlotApiResponse[];
     step2Content?: Partial<Step2ContentFormData>;
     step3Invitees?: Partial<Step3InviteesFormData>;
     step4Scheduling?: { initialSlots?: string[] };
@@ -55,6 +58,7 @@ export const useMeetingSteps = ({
     draftId,
     initialData: initialData?.step1BasicInfo,
     initialScheduling: initialData?.step1Scheduling,
+    draftSlots: initialData?.step1SchedulingSlotsFromDraft,
     onSuccess: onStep1Success,
     onError: (error) => {
       console.error('Step1BasicInfo error:', error);
