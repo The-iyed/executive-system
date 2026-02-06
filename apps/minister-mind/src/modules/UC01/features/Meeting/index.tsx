@@ -1,17 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
+import { Send } from 'lucide-react';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
-import { MEETING_TABS, PAGINATION, createTableColumns } from '../../utils';
+import { MEETING_TABS, PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
-import { useMutation } from '@tanstack/react-query';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
+
+const MEETING_ACTION_SUCCESS_MESSAGE = 'تم الإرسال بنجاح';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const pendingConfirmRef = useRef<(() => void) | null>(null);
   const [activeTab, setActiveTab] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [view, setView] = useState<ViewType>('table');
   const [searchValue, setSearchValue] = useState<string>('');
@@ -39,6 +46,7 @@ const Meeting: React.FC = () => {
     mutationFn: submitDraft,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
     },
     onError: (err) => {
       console.error('Submit draft error:', err);
@@ -49,6 +57,7 @@ const Meeting: React.FC = () => {
     mutationFn: resubmitToScheduling,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
     },
     onError: (err) => {
       console.error('Resubmit to scheduling error:', err);
@@ -59,11 +68,30 @@ const Meeting: React.FC = () => {
     mutationFn: resubmitToContent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
     },
     onError: (err) => {
       console.error('Resubmit to content error:', err);
     },
   });
+
+  const openConfirmModal = useCallback((_message: string, onConfirm: () => void) => {
+    pendingConfirmRef.current = onConfirm;
+    setConfirmOpen(true);
+  }, []);
+
+  const handleConfirmClose = useCallback((open: boolean) => {
+    if (!open) {
+      pendingConfirmRef.current = null;
+      setConfirmOpen(false);
+    }
+  }, []);
+
+  const handleConfirmAction = useCallback(() => {
+    pendingConfirmRef.current?.();
+    pendingConfirmRef.current = null;
+    setConfirmOpen(false);
+  }, []);
 
   const tableColumns = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGINATION.ITEMS_PER_PAGE;
@@ -75,6 +103,7 @@ const Meeting: React.FC = () => {
       submittingResubmitToSchedulingId: resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables !== undefined ? resubmitToSchedulingMutation.variables : null,
       onResubmitToContent: resubmitToContentMutation.mutate,
       submittingResubmitToContentId: resubmitToContentMutation.isPending && resubmitToContentMutation.variables !== undefined ? resubmitToContentMutation.variables : null,
+      openConfirmModal,
     });
   }, [
     navigate,
@@ -88,10 +117,45 @@ const Meeting: React.FC = () => {
     resubmitToContentMutation.mutate,
     resubmitToContentMutation.isPending,
     resubmitToContentMutation.variables,
+    openConfirmModal,
   ]);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
+      <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <div className="flex items-center gap-3 text-right">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50">
+                <Send className="h-6 w-6 text-teal-600" strokeWidth={1.5} />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-gray-900">
+                {MEETING_ACTION_CONFIRM_TITLE}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              {MEETING_ACTION_CONFIRM_MESSAGE}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleConfirmClose(false)}
+              className="min-w-[100px]"
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmAction}
+              className="min-w-[100px] bg-[#048F86] hover:bg-[#037a72] text-white"
+            >
+              تأكيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         <div className="flex flex-row items-center justify-between mb-8">
           <Tabs

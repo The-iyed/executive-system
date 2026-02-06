@@ -18,6 +18,7 @@ export interface FileUploadProps {
   onFilesSelect?: (files: File[]) => void; 
   required?: boolean;
   existingFiles?: ExistingFile[]; 
+  onExistingFileDelete?: (fileId: string) => void;
   label?: string;
   maxFileSize?: number; 
   acceptedTypes?: string[];
@@ -46,6 +47,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onFilesSelect,
   required = false, 
   existingFiles = [],
+  onExistingFileDelete,
   label = 'العرض التقديمي',
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
@@ -308,14 +310,43 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       >
                         {existingFile.file_name}
                       </a>
-                      {existingFile.file_size && (
+                      {existingFile.file_size != null && (
                         <p className="text-[12px] text-[#667085]">{formatFileSize(existingFile.file_size)}</p>
                       )}
                     </div>
                   </div>
-                  <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
-                    ملف موجود
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
+                      ملف موجود
+                    </span>
+                    {onExistingFileDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onExistingFileDelete(existingFile.id);
+                        }}
+                        className="text-[#667085] hover:text-[#344054] transition-colors"
+                        aria-label="حذف المرفق"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M15 5L5 15M5 5L15 15"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
