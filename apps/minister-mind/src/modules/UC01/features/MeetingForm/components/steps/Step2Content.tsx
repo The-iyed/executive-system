@@ -30,6 +30,7 @@ export interface Step2ContentProps {
   handleBlur: (field: keyof Step2ContentFormData) => void;
   handleFilesSelect: (files: File[]) => void;
   handleAdditionalFilesSelect: (files: File[]) => void;
+  handleDeleteExistingAttachment?: (attachmentId: string, type: 'presentation' | 'additional') => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -49,6 +50,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   handleBlur,
   handleFilesSelect,
   handleAdditionalFilesSelect,
+  handleDeleteExistingAttachment,
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
@@ -65,6 +67,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
                 onFilesSelect={handleFilesSelect}
                 required={presentationRequired}
                 existingFiles={formData.existingFiles}
+                onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'presentation') : undefined}
                 multiple
                 label="العرض التقديمي"
                 acceptedTypes={PRESENTATION_ACCEPTED_TYPES}
@@ -96,6 +99,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
               files={formData.additional_files}
               onFilesSelect={handleAdditionalFilesSelect}
               existingFiles={formData.existingAdditionalFiles}
+              onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'additional') : undefined}
               multiple
               label="مرفقات اختيارية (PDF، Word، Excel)"
               acceptedTypes={ADDITIONAL_ACCEPTED_TYPES}

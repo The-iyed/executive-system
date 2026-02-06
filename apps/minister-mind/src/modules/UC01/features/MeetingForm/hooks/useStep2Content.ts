@@ -50,12 +50,23 @@ const prepareContentFormData = (formData: Partial<Step2ContentFormData>): FormDa
     });
   }
 
+  const deletedIds = formData.deleted_attachment_ids ?? [];
+  if (deletedIds.length > 0) {
+    formDataToSend.append('deleted_attachment_ids', JSON.stringify(deletedIds));
+  }
+
   return formDataToSend;
 };
 
 /** Returns true if the FormData has at least one entry (so we send multipart). */
 function hasFormDataEntries(fd: FormData): boolean {
   return !fd.entries().next().done;
+}
+
+/** Returns true if we have deleted attachment ids to send (may need JSON body). */
+function hasDeletedAttachmentIds(formData: Partial<Step2ContentFormData>): boolean {
+  const ids = formData.deleted_attachment_ids ?? [];
+  return ids.length > 0;
 }
 
 export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload): Promise<void> => {
@@ -76,6 +87,8 @@ export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload)
 
   if (hasFormDataEntries(formDataToSend)) {
     await axiosInstance.patch(url, formDataToSend);
+  } else if (hasDeletedAttachmentIds(formData)) {
+    await axiosInstance.patch(url, { deleted_attachment_ids: formData.deleted_attachment_ids }, { headers: { 'Content-Type': 'application/json' } });
   } else {
     await axiosInstance.patch(url, {}, { headers: { 'Content-Type': 'application/json' } });
   }
@@ -96,6 +109,7 @@ export const useStep2Content = ({
     additional_files: [],
     existingFiles: [],
     existingAdditionalFiles: [],
+    deleted_attachment_ids: [],
     ...initialData,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof Step2ContentFormData, string>>>({});
@@ -217,6 +231,21 @@ export const useStep2Content = ({
     setFormData((prev) => ({ ...prev, additional_files: files || [] }));
   }, []);
 
+  const handleDeleteExistingAttachment = useCallback(
+    (attachmentId: string, type: 'presentation' | 'additional') => {
+      setFormData((prev) => {
+        const deletedIds = [...(prev.deleted_attachment_ids ?? []), attachmentId];
+        if (type === 'presentation') {
+          const existingFiles = (prev.existingFiles ?? []).filter((f) => f.id !== attachmentId);
+          return { ...prev, deleted_attachment_ids: deletedIds, existingFiles };
+        }
+        const existingAdditionalFiles = (prev.existingAdditionalFiles ?? []).filter((f) => f.id !== attachmentId);
+        return { ...prev, deleted_attachment_ids: deletedIds, existingAdditionalFiles };
+      });
+    },
+    []
+  );
+
   const submitStep = useCallback(
     async (isDraft = false): Promise<void> => {
       if (!isDraft && !validateAll(true)) {
@@ -244,6 +273,7 @@ export const useStep2Content = ({
     handleBlur,
     handleFilesSelect,
     handleAdditionalFilesSelect,
+    handleDeleteExistingAttachment,
     validateAll,
     submitStep,
   };
