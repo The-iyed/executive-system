@@ -61,7 +61,7 @@ import {
   Textarea,
   DateTimePicker,
 } from '@sanad-ai/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, comparePresentations, type ComparePresentationsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { type CalendarEventData } from '@shared';
@@ -384,6 +384,10 @@ const MeetingDetail: React.FC = () => {
   // Minister Calendar Modal state
   const [isMinisterCalendarOpen, setIsMinisterCalendarOpen] = useState(false);
 
+  // Compare presentations modal (تقييم الاختلاف بين العروض)
+  const [isComparePresentationsModalOpen, setIsComparePresentationsModalOpen] = useState(false);
+  const [comparePresentationsResult, setComparePresentationsResult] = useState<ComparePresentationsResponse | null>(null);
+
   // Handle invitee deletion
   const handleDeleteInvitee = () => {
     if (deleteInviteeId) {
@@ -676,6 +680,21 @@ const MeetingDetail: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       navigate(-1); // Navigate back after successful move
+    },
+  });
+
+  // Compare presentations (تقييم الاختلاف بين العروض)
+  const comparePresentationsMutation = useMutation({
+    mutationFn: () => {
+      if (!id) throw new Error('Meeting ID is required');
+      return comparePresentations(id);
+    },
+    onSuccess: (data) => {
+      setComparePresentationsResult(data);
+      setIsComparePresentationsModalOpen(true);
+    },
+    onError: (err) => {
+      console.error('Compare presentations error:', err);
     },
   });
 
@@ -1691,6 +1710,13 @@ const MeetingDetail: React.FC = () => {
           {/* Tab: المحتوى (Excel التبويب) – اسم الحقل: العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6 w-full max-w-[1085px]" dir="rtl">
+              <div className="flex justify-start">
+                <AIGenerateButton
+                  label="تقييم الاختلاف بين العروض"
+                  onClick={() => comparePresentationsMutation.mutate()}
+                  disabled={comparePresentationsMutation.isPending}
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>العرض التقديمي</label>
                 <div className="flex flex-row gap-4 flex-wrap">
@@ -1746,6 +1772,82 @@ const MeetingDetail: React.FC = () => {
                     : contentTabForm.general_notes || '—'}
                 </div>
               </div>
+
+              {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
+              <Dialog open={isComparePresentationsModalOpen} onOpenChange={setIsComparePresentationsModalOpen}>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      تقييم الاختلاف بين العروض
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-4 py-4 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    {comparePresentationsResult ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500">معرف التقييم</span>
+                            <span className="font-medium text-gray-900">{comparePresentationsResult.comparison_id || '—'}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500">الدرجة الإجمالية</span>
+                            <span className="font-medium text-gray-900">{comparePresentationsResult.overall_score ?? '—'}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500">مستوى الاختلاف</span>
+                            <span className="font-medium text-gray-900">{comparePresentationsResult.difference_level || '—'}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500">الحالة</span>
+                            <span className="font-medium text-gray-900">{comparePresentationsResult.status || '—'}</span>
+                          </div>
+                        </div>
+                        {comparePresentationsResult.regeneration_recommendation ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500 text-sm">توصية إعادة التوليد</span>
+                            <p className="text-gray-900 whitespace-pre-wrap">{comparePresentationsResult.regeneration_recommendation}</p>
+                          </div>
+                        ) : null}
+                        {comparePresentationsResult.summary ? (
+                          <div className="flex flex-col gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                            <span className="text-gray-700 font-medium">ملخص الشرائح</span>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <span>الشرائح الأصلية: {comparePresentationsResult.summary.total_slides_original ?? '—'}</span>
+                              <span>الشرائح الجديدة: {comparePresentationsResult.summary.total_slides_new ?? '—'}</span>
+                              <span>فرق العدد: {comparePresentationsResult.summary.slide_count_difference ?? '—'}</span>
+                              <span>بدون تغيير: {comparePresentationsResult.summary.unchanged_slides ?? '—'}</span>
+                              <span>تغييرات طفيفة: {comparePresentationsResult.summary.minor_changes ?? '—'}</span>
+                              <span>تغييرات متوسطة: {comparePresentationsResult.summary.moderate_changes ?? '—'}</span>
+                              <span>تغييرات كبيرة: {comparePresentationsResult.summary.major_changes ?? '—'}</span>
+                              <span>شرائح جديدة: {comparePresentationsResult.summary.new_slides ?? '—'}</span>
+                            </div>
+                          </div>
+                        ) : null}
+                        {comparePresentationsResult.ai_insights && Object.keys(comparePresentationsResult.ai_insights).length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-500 text-sm">رؤى الذكاء الاصطناعي</span>
+                            <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
+                              {JSON.stringify(comparePresentationsResult.ai_insights, null, 2)}
+                            </pre>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="text-gray-500">لا توجد نتيجة لعرضها.</p>
+                    )}
+                  </div>
+                  <DialogFooter className="flex-row-reverse gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); }}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    >
+                      إغلاق
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 
