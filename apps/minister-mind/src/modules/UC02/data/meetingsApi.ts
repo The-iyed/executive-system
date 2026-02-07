@@ -685,3 +685,34 @@ export const evaluateReadiness = async (meetingId: string): Promise<EvaluateRead
   return response.data;
 };
 
+// Compare presentations (تقييم الاختلاف بين العروض)
+export interface ComparePresentationsSummary {
+  total_slides_original: number;
+  total_slides_new: number;
+  slide_count_difference: number;
+  unchanged_slides: number;
+  minor_changes: number;
+  moderate_changes: number;
+  major_changes: number;
+  new_slides: number;
+}
+
+export interface ComparePresentationsResponse {
+  comparison_id: string;
+  overall_score: number;
+  difference_level: string;
+  status: string;
+  regeneration_recommendation: string;
+  summary: ComparePresentationsSummary;
+  slide_by_slide?: Record<string, unknown>[];
+  regeneration_decision?: Record<string, unknown>;
+  ai_insights?: Record<string, unknown>;
+}
+
+export const comparePresentations = async (meetingId: string): Promise<ComparePresentationsResponse> => {
+  const response = await axiosInstance.post<ComparePresentationsResponse>(
+    '/api/comparisons/compare',
+    { meeting_id: meetingId }
+  );
+  return response.data;
+};
