@@ -11,23 +11,28 @@ export interface ExistingFile {
 }
 
 export interface FileUploadProps {
-  file?: File | null | undefined; 
-  files?: File[]; 
+  file?: File | null | undefined;
+  files?: File[];
   error?: string;
-  onFileSelect?: (file: File | null) => void; 
-  onFilesSelect?: (files: File[]) => void; 
+  onFileSelect?: (file: File | null) => void;
+  onFilesSelect?: (files: File[]) => void;
   required?: boolean;
-  existingFiles?: ExistingFile[]; 
+  existingFiles?: ExistingFile[];
   onExistingFileDelete?: (fileId: string) => void;
+  /** When provided, shows a Replace button for each existing file. Called with (existingId, newFile) when user selects a file. */
+  onExistingFileReplace?: (existingId: string, file: File) => void;
+  /** When provided, for existing files with an id in this map, the card shows the replacement file instead of the original (with Replace/Clear). */
+  replacementFiles?: Record<string, File>;
+  onClearReplacement?: (existingId: string) => void;
   label?: string;
-  maxFileSize?: number; 
+  maxFileSize?: number;
   acceptedTypes?: string[];
   acceptedExtensions?: string[];
   className?: string;
   containerClassName?: string;
   dropzoneClassName?: string;
   showProgress?: boolean;
-  multiple?: boolean; 
+  multiple?: boolean;
 }
 const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024; 
 const DEFAULT_ACCEPTED_TYPES = [
@@ -39,15 +44,18 @@ const DEFAULT_ACCEPTED_TYPES = [
 ];
 const DEFAULT_ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
 
-export const FileUpload: React.FC<FileUploadProps> = ({ 
-  file, 
+export const FileUpload: React.FC<FileUploadProps> = ({
+  file,
   files,
-  error, 
+  error,
   onFileSelect,
   onFilesSelect,
-  required = false, 
+  required = false,
   existingFiles = [],
   onExistingFileDelete,
+  onExistingFileReplace,
+  replacementFiles = {},
+  onClearReplacement,
   label = 'العرض التقديمي',
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
@@ -61,6 +69,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [pendingReplaceId, setPendingReplaceId] = useState<string | null>(null);
   
   // Determine if we're in multiple mode
   const isMultiple = multiple || !!onFilesSelect;
@@ -129,16 +139,42 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
       if (isMultiple) {
-        // Handle multiple files
         selectedFiles.forEach((selectedFile) => {
           handleFileSelect(selectedFile);
         });
       } else {
-        // Handle single file
         handleFileSelect(selectedFiles[0]);
       }
     }
   };
+
+  const handleReplaceClick = useCallback(
+    (existingId: string) => {
+      if (!onExistingFileReplace) return;
+      setPendingReplaceId(existingId);
+      replaceInputRef.current?.click();
+    },
+    [onExistingFileReplace]
+  );
+
+  const handleReplaceInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      const id = pendingReplaceId;
+      setPendingReplaceId(null);
+      e.target.value = '';
+      if (id && selectedFiles.length > 0 && onExistingFileReplace) {
+        const file = selectedFiles[0];
+        if (file.size > maxFileSize) return;
+        const isValidType =
+          acceptedTypes.includes(file.type) ||
+          acceptedExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+        if (!isValidType) return;
+        onExistingFileReplace(id, file);
+      }
+    },
+    [pendingReplaceId, onExistingFileReplace, maxFileSize, acceptedTypes, acceptedExtensions]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -290,66 +326,146 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p className="text-[14px] text-red-500 -mt-[10px]">{error}</p>
         )}
 
+        {/* Hidden input for Replace flow (opens file picker) */}
+        {onExistingFileReplace && (
+          <input
+            ref={replaceInputRef}
+            type="file"
+            accept={acceptString}
+            onChange={handleReplaceInputChange}
+            className="hidden"
+            aria-hidden
+          />
+        )}
+
         {/* Existing Files (Edit Mode) */}
         {existingFiles && existingFiles.length > 0 && (
           <div className="flex flex-col gap-3">
-            {existingFiles.map((existingFile) => (
-              <div
-                key={existingFile.id}
-                className="p-4 rounded-xl bg-[#FFFFFF] border border-[#009883] border-radius-[12px]"
-              >
-                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                    {getFileTypeIcon(existingFile.file_name)}
-                    <div className="text-right">
-                      <a
-                        href={existingFile.blob_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[14px] font-medium text-[#009883] hover:text-[#007a6e] break-all underline"
-                      >
-                        {existingFile.file_name}
-                      </a>
-                      {existingFile.file_size != null && (
-                        <p className="text-[12px] text-[#667085]">{formatFileSize(existingFile.file_size)}</p>
-                      )}
+            {existingFiles.map((existingFile) => {
+              const replacementFile = replacementFiles?.[existingFile.id];
+              const displayFileName = replacementFile?.name ?? existingFile.file_name;
+              const displayFileSize = replacementFile?.size ?? existingFile.file_size;
+              const isReplaced = !!replacementFile;
+
+              return (
+                <div
+                  key={existingFile.id}
+                  className="p-4 rounded-xl bg-[#FFFFFF] border border-[#009883] border-radius-[12px]"
+                >
+                  <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      {getFileTypeIcon(displayFileName)}
+                      <div className="text-right">
+                        {isReplaced ? (
+                          <>
+                            <p className="text-[14px] font-medium text-[#344054] break-all">
+                              {displayFileName}
+                            </p>
+                            {displayFileSize != null && (
+                              <p className="text-[12px] text-[#667085]">
+                                {formatFileSize(displayFileSize)}
+                              </p>
+                            )}
+                            <span className="text-[11px] text-[#009883] bg-[#009883]/10 px-2 py-0.5 rounded">
+                              سيتم استبدال الملف الأصلي
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <a
+                              href={existingFile.blob_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[14px] font-medium text-[#009883] hover:text-[#007a6e] break-all underline"
+                            >
+                              {displayFileName}
+                            </a>
+                            {displayFileSize != null && (
+                              <p className="text-[12px] text-[#667085]">
+                                {formatFileSize(displayFileSize)}
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
-                      ملف موجود
-                    </span>
-                    {onExistingFileDelete && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onExistingFileDelete(existingFile.id);
-                        }}
-                        className="text-[#667085] hover:text-[#344054] transition-colors"
-                        aria-label="حذف المرفق"
-                      >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
+                    <div className="flex items-center gap-2">
+                      {!isReplaced && (
+                        <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
+                          ملف موجود
+                        </span>
+                      )}
+                      {onExistingFileReplace && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReplaceClick(existingFile.id);
+                          }}
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-[#009883] hover:bg-[#009883]/10 transition-colors"
+                          aria-label={isReplaced ? 'استبدال الملف' : 'استبدال المرفق'}
+                          title={isReplaced ? 'استبدال الملف' : 'استبدال المرفق'}
                         >
-                          <path
-                            d="M15 5L5 15M5 5L15 15"
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
                             stroke="currentColor"
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    )}
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                          </svg>
+                        </button>
+                      )}
+                      {isReplaced && onClearReplacement && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClearReplacement(existingFile.id);
+                          }}
+                          className="text-[12px] text-[#667085] hover:text-[#344054] border border-[#D0D5DD] px-2 py-1 rounded"
+                        >
+                          إلغاء الاستبدال
+                        </button>
+                      )}
+                      {onExistingFileDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onExistingFileDelete(existingFile.id);
+                          }}
+                          className="text-[#667085] hover:text-[#344054] transition-colors"
+                          aria-label="حذف المرفق"
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M15 5L5 15M5 5L15 15"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
