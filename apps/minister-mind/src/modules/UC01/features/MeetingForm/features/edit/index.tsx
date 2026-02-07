@@ -87,6 +87,13 @@ export const EditMeeting: React.FC = () => {
             handleBlur={step2ContentHook.handleBlur}
             handleFilesSelect={step2ContentHook.handleFilesSelect}
             handleAdditionalFilesSelect={step2ContentHook.handleAdditionalFilesSelect}
+            handleDeleteExistingAttachment={step2ContentHook.handleDeleteExistingAttachment}
+            handleReplacePresentationFile={step2ContentHook.handleReplacePresentationFile}
+            handleReplaceAdditionalFile={step2ContentHook.handleReplaceAdditionalFile}
+            handleClearReplacementPresentation={step2ContentHook.handleClearReplacementPresentation}
+            handleClearReplacementAdditional={step2ContentHook.handleClearReplacementAdditional}
+            replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
+            replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
             handleSaveDraftClick={handleStep2ContentSaveDraft}
             handleCancelClick={handleCancel}
