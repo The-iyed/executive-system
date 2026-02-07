@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye, GitCompare } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -61,7 +61,7 @@ import {
   Textarea,
   DateTimePicker,
 } from '@sanad-ai/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments, comparePresentations, type ComparePresentationsResponse } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, type ComparePresentationsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { type CalendarEventData } from '@shared';
@@ -104,6 +104,15 @@ const DIRECTIVE_METHOD_OPTIONS = [
   { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
   { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
 ] as const;
+
+/** Translate comparison API enum-like values to Arabic */
+const COMPARE_STATUS: Record<string, string> = { completed: 'مكتمل', pending: 'قيد المعالجة' };
+const COMPARE_LEVEL: Record<string, string> = { minor: 'طفيف', moderate: 'متوسط', major: 'كبير' };
+const COMPARE_RECOMMENDATION: Record<string, string> = { review: 'مراجعة' };
+function translateCompareValue(value: string | undefined | null, map: Record<string, string>): string {
+  if (value == null || value === '') return '—';
+  return map[String(value).toLowerCase()] ?? value;
+}
 
 /** Normalize API general_notes (array of items or legacy string) to a list for display */
 function getGeneralNotesList(
@@ -387,6 +396,7 @@ const MeetingDetail: React.FC = () => {
   // Compare presentations modal (تقييم الاختلاف بين العروض)
   const [isComparePresentationsModalOpen, setIsComparePresentationsModalOpen] = useState(false);
   const [comparePresentationsResult, setComparePresentationsResult] = useState<ComparePresentationsResponse | null>(null);
+  const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
 
   // Handle invitee deletion
   const handleDeleteInvitee = () => {
@@ -683,18 +693,21 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  // Compare presentations (تقييم الاختلاف بين العروض)
-  const comparePresentationsMutation = useMutation({
-    mutationFn: () => {
-      if (!id) throw new Error('Meeting ID is required');
-      return comparePresentations(id);
-    },
+  // Compare by attachment (تقييم الاختلاف بين العروض) – only for attachments with replaces_attachment_id
+  const compareByAttachmentMutation = useMutation({
+    mutationFn: (attachmentId: string) => runCompareByAttachment(attachmentId),
     onSuccess: (data) => {
       setComparePresentationsResult(data);
+      setCompareErrorDetail(null);
       setIsComparePresentationsModalOpen(true);
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       console.error('Compare presentations error:', err);
+      setComparePresentationsResult(null);
+      const e = err as { response?: { data?: { detail?: string } }; detail?: string };
+      const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : typeof e?.detail === 'string' ? e.detail : null;
+      setCompareErrorDetail(detail);
+      setIsComparePresentationsModalOpen(true);
     },
   });
 
@@ -1710,13 +1723,6 @@ const MeetingDetail: React.FC = () => {
           {/* Tab: المحتوى (Excel التبويب) – اسم الحقل: العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6 w-full max-w-[1085px]" dir="rtl">
-              <div className="flex justify-start">
-                <AIGenerateButton
-                  label="تقييم الاختلاف بين العروض"
-                  onClick={() => comparePresentationsMutation.mutate()}
-                  disabled={comparePresentationsMutation.isPending}
-                />
-              </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>العرض التقديمي</label>
                 <div className="flex flex-row gap-4 flex-wrap">
@@ -1724,7 +1730,20 @@ const MeetingDetail: React.FC = () => {
                     <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
                       {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                      <div className="flex items-center gap-2 mr-auto"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button></div>
+                      <div className="flex items-center gap-2 mr-auto">
+                        {att.replaces_attachment_id != null && (
+                          <button
+                            type="button"
+                            onClick={() => { setComparePresentationsResult(null); setCompareErrorDetail(null); setIsComparePresentationsModalOpen(true); compareByAttachmentMutation.mutate(att.id); }}
+                            disabled={compareByAttachmentMutation.isPending}
+                            className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
+                            title="تقييم الاختلاف بين العروض"
+                          >
+                            <GitCompare className="w-4 h-4" />
+                          </button>
+                        )}
+                        <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </div>
                   ))}
                   {newPresentationAttachments.map((file, idx) => (
@@ -1782,7 +1801,14 @@ const MeetingDetail: React.FC = () => {
                     </DialogTitle>
                   </DialogHeader>
                   <div className="flex flex-col gap-4 py-4 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    {comparePresentationsResult ? (
+                    {compareByAttachmentMutation.isPending ? (
+                      <p className="text-center text-gray-500 py-6">جاري تقييم الاختلاف بين العروض...</p>
+                    ) : compareByAttachmentMutation.isError ? (
+                      <div className="text-center py-4">
+                        <p className="text-red-600 font-medium mb-1">حدث خطأ أثناء تقييم الاختلاف</p>
+                        {compareErrorDetail ? <p className="text-gray-700 text-sm mt-2 text-right">{compareErrorDetail}</p> : <p className="text-gray-600 text-sm mt-2">يرجى المحاولة لاحقاً.</p>}
+                      </div>
+                    ) : comparePresentationsResult ? (
                       <>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="flex flex-col gap-1">
@@ -1795,17 +1821,17 @@ const MeetingDetail: React.FC = () => {
                           </div>
                           <div className="flex flex-col gap-1">
                             <span className="text-gray-500">مستوى الاختلاف</span>
-                            <span className="font-medium text-gray-900">{comparePresentationsResult.difference_level || '—'}</span>
+                            <span className="font-medium text-gray-900">{translateCompareValue(comparePresentationsResult.difference_level, COMPARE_LEVEL)}</span>
                           </div>
                           <div className="flex flex-col gap-1">
                             <span className="text-gray-500">الحالة</span>
-                            <span className="font-medium text-gray-900">{comparePresentationsResult.status || '—'}</span>
+                            <span className="font-medium text-gray-900">{translateCompareValue(comparePresentationsResult.status, COMPARE_STATUS)}</span>
                           </div>
                         </div>
                         {comparePresentationsResult.regeneration_recommendation ? (
                           <div className="flex flex-col gap-1">
                             <span className="text-gray-500 text-sm">توصية إعادة التوليد</span>
-                            <p className="text-gray-900 whitespace-pre-wrap">{comparePresentationsResult.regeneration_recommendation}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap">{translateCompareValue(comparePresentationsResult.regeneration_recommendation, COMPARE_RECOMMENDATION)}</p>
                           </div>
                         ) : null}
                         {comparePresentationsResult.summary ? (
@@ -1839,7 +1865,7 @@ const MeetingDetail: React.FC = () => {
                   <DialogFooter className="flex-row-reverse gap-2">
                     <button
                       type="button"
-                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); }}
+                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); setCompareErrorDetail(null); }}
                       className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                       style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                     >
