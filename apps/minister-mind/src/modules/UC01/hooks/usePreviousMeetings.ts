@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@shared/types';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
-import { PAGINATION, MeetingOwnerType } from '../utils/constants';
+import { PAGINATION } from '../utils/constants';
 
 interface UsePreviousMeetingsOptions {
   searchValue: string;
