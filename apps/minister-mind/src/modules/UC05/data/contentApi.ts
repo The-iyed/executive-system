@@ -346,6 +346,25 @@ export const compareConsultantStatements = async (
   return response.data;
 };
 
+// LLM notes/insights for an attachment (presentation)
+export interface AttachmentInsightsResponse {
+  attachment_id: string;
+  presentation_id: string;
+  extraction_status: string;
+  llm_processing_status: string;
+  llm_notes?: string[];
+  llm_suggestions?: string[];
+}
+
+export const getAttachmentInsights = async (
+  attachmentId: string
+): Promise<AttachmentInsightsResponse> => {
+  const response = await axiosInstance.get<AttachmentInsightsResponse>(
+    `/api/presentations/by-attachment/${attachmentId}/insights`
+  );
+  return response.data;
+};
+
 // Analyze contradictions between consultant statements
 export interface AnalyzeContradiction {
   statements: string[];
