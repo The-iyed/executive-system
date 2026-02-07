@@ -100,6 +100,8 @@ export const isAttachmentTimingVisible = (opts?: Step2ContentSchemaOptions): boo
   return opts?.isUrgent === true;
 };
 
+const PRESENTATION_REQUIRED_MESSAGE = 'يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)';
+
 export const createStep2ContentSchema = (opts?: Step2ContentSchemaOptions) => {
   const hidden = isPresentationHidden(opts);
   const fileOptional = !hidden && (
@@ -108,16 +110,27 @@ export const createStep2ContentSchema = (opts?: Step2ContentSchemaOptions) => {
     opts?.isUrgent === true
   );
   const attachmentTimingRequired = isAttachmentTimingRequired(opts);
+  const presentationRequired = !hidden && !fileOptional;
 
-  return step2ContentBaseSchema.extend({
+  const base = step2ContentBaseSchema.extend({
     presentation_files: hidden
       ? z.array(presentationFileSchema).optional().default([])
-      : fileOptional
-        ? z.array(presentationFileSchema).optional().default([])
-        : z.array(presentationFileSchema).min(1, 'يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)'),
+      : z.array(presentationFileSchema).optional().default([]),
     presentation_attachment_timing: attachmentTimingRequired
       ? requiredDateSchema('متى سيتم إرفاق العرض؟')
       : dateSchema('متى سيتم إرفاق العرض؟'),
     additional_files: z.array(additionalFileSchema).optional().default([]),
   });
+
+  if (!presentationRequired) return base;
+
+  return base.refine(
+    (data) => {
+      const deleted = data.deleted_attachment_ids ?? [];
+      const existingCount = (data.existingFiles ?? []).filter((f) => !deleted.includes(f.id)).length;
+      const newCount = (data.presentation_files ?? []).length;
+      return existingCount + newCount >= 1;
+    },
+    { message: PRESENTATION_REQUIRED_MESSAGE, path: ['presentation_files'] }
+  );
 };

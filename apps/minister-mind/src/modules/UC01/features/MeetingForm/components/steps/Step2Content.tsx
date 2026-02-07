@@ -31,6 +31,12 @@ export interface Step2ContentProps {
   handleFilesSelect: (files: File[]) => void;
   handleAdditionalFilesSelect: (files: File[]) => void;
   handleDeleteExistingAttachment?: (attachmentId: string, type: 'presentation' | 'additional') => void;
+  handleReplacePresentationFile?: (existingId: string, file: File) => void;
+  handleReplaceAdditionalFile?: (existingId: string, file: File) => void;
+  handleClearReplacementPresentation?: (existingId: string) => void;
+  handleClearReplacementAdditional?: (existingId: string) => void;
+  replacementPresentationFiles?: Record<string, File>;
+  replacementAdditionalFiles?: Record<string, File>;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -51,6 +57,12 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   handleFilesSelect,
   handleAdditionalFilesSelect,
   handleDeleteExistingAttachment,
+  handleReplacePresentationFile,
+  handleReplaceAdditionalFile,
+  handleClearReplacementPresentation,
+  handleClearReplacementAdditional,
+  replacementPresentationFiles,
+  replacementAdditionalFiles,
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
@@ -68,6 +80,9 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
                 required={presentationRequired}
                 existingFiles={formData.existingFiles}
                 onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'presentation') : undefined}
+                onExistingFileReplace={handleReplacePresentationFile}
+                replacementFiles={replacementPresentationFiles}
+                onClearReplacement={handleClearReplacementPresentation}
                 multiple
                 label="العرض التقديمي"
                 acceptedTypes={PRESENTATION_ACCEPTED_TYPES}
@@ -100,6 +115,9 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
               onFilesSelect={handleAdditionalFilesSelect}
               existingFiles={formData.existingAdditionalFiles}
               onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'additional') : undefined}
+              onExistingFileReplace={handleReplaceAdditionalFile}
+              replacementFiles={replacementAdditionalFiles}
+              onClearReplacement={handleClearReplacementAdditional}
               multiple
               label="مرفقات اختيارية (PDF، Word، Excel)"
               acceptedTypes={ADDITIONAL_ACCEPTED_TYPES}
