@@ -33,6 +33,8 @@ export interface Attachment {
   is_executive_summary: boolean;
   version: number;
   is_latest: boolean;
+  /** When set, this attachment is a new version replacing another; enables compare. */
+  replaces_attachment_id?: string | null;
 }
 
 export interface TimeSlot {
@@ -709,10 +711,63 @@ export interface ComparePresentationsResponse {
   ai_insights?: Record<string, unknown>;
 }
 
-export const comparePresentations = async (meetingId: string): Promise<ComparePresentationsResponse> => {
-  const response = await axiosInstance.post<ComparePresentationsResponse>(
-    '/api/comparisons/compare',
-    { meeting_id: meetingId }
+/** POST compare-by-attachment response. When status is "completed", full result is fetched via GET. */
+export interface CompareByAttachmentPostResponse {
+  comparison_id: string;
+  status: string;
+  created_at?: string;
+  completed_at?: string;
+  is_new?: boolean;
+  task_id?: string | null;
+}
+
+/** POST /api/comparisons/compare-by-attachment/{attachment_id}. Returns status (completed | pending). */
+export const postCompareByAttachment = async (
+  attachmentId: string
+): Promise<CompareByAttachmentPostResponse> => {
+  const response = await axiosInstance.post<CompareByAttachmentPostResponse>(
+    `/api/comparisons/compare-by-attachment/${attachmentId}`
   );
   return response.data;
+};
+
+/** GET /api/comparisons/by-attachment/{attachment_id} response: wrapper with nested result. */
+export interface GetComparisonByAttachmentResponse {
+  comparison_id: string;
+  status: string;
+  created_at?: string;
+  completed_at?: string;
+  result: ComparePresentationsResponse;
+}
+
+/** GET /api/comparisons/by-attachment/{attachment_id}. Returns the inner result for display (POST is only for status). */
+export const getComparisonByAttachment = async (
+  attachmentId: string
+): Promise<ComparePresentationsResponse> => {
+  const response = await axiosInstance.get<GetComparisonByAttachmentResponse>(
+    `/api/comparisons/by-attachment/${attachmentId}`
+  );
+  return response.data.result;
+};
+
+const DEFAULT_POLL_INTERVAL_MS = 2000;
+
+/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. */
+export const runCompareByAttachment = async (
+  attachmentId: string,
+  options?: { pollIntervalMs?: number }
+): Promise<ComparePresentationsResponse> => {
+  const intervalMs = options?.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+
+  const pollPost = async (): Promise<void> => {
+    const data = await postCompareByAttachment(attachmentId);
+    if (data.status === 'completed') {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+    await pollPost();
+  };
+
+  await pollPost();
+  return getComparisonByAttachment(attachmentId);
 };
