@@ -22,10 +22,12 @@ import {
   approveContent,
   analyzeContradictions,
   getAttachmentInsights,
+  comparePresentations,
   type Attachment,
   type ConsultantUser,
   type AnalyzeResponse,
   type AttachmentInsightsResponse,
+  type ComparePresentationsResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 
@@ -111,6 +113,16 @@ const getNotesText = (...candidates: unknown[]): string => {
   return '-';
 };
 
+/** Translate known compare-presentations API error detail to Arabic */
+function translateCompareErrorDetail(detail: string | null): string | null {
+  if (!detail || typeof detail !== 'string') return detail;
+  const trimmed = detail.trim();
+  if (trimmed.includes('Need at least two presentation attachments with completed extraction')) {
+    return 'يجب وجود عرضين تقديميين على الأقل مع اكتمال استخراج المحتوى للمقارنة. تأكد من وجود العرضين في النظام واكتمال الاستخراج، أو قدّم النسخة الأصلية والنسخة الجديدة.';
+  }
+  return detail;
+}
+
 const ContentRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -133,6 +145,11 @@ const ContentRequestDetail: React.FC = () => {
 
   // LLM notes/insights modal for presentation attachment
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
+
+  // Compare presentations modal (تقييم الاختلاف بين العروض)
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [compareResult, setCompareResult] = useState<ComparePresentationsResponse | null>(null);
+  const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -359,6 +376,28 @@ const ContentRequestDetail: React.FC = () => {
       console.error('Error analyzing contradictions:', error);
       setAnalyzeResult(null);
       setIsAnalyzeModalOpen(true);
+    },
+  });
+
+  const comparePresentationsMutation = useMutation({
+    mutationFn: (meetingId: string) => comparePresentations(meetingId),
+    onSuccess: (data) => {
+      setCompareResult(data);
+      setCompareErrorDetail(null);
+      setIsCompareModalOpen(true);
+    },
+    onError: (error: unknown) => {
+      console.error('Error comparing presentations:', error);
+      setCompareResult(null);
+      const err = error as { response?: { data?: { detail?: string } }; detail?: string };
+      const detail =
+        typeof err?.response?.data?.detail === 'string'
+          ? err.response.data.detail
+          : typeof err?.detail === 'string'
+            ? err.detail
+            : null;
+      setCompareErrorDetail(detail);
+      setIsCompareModalOpen(true);
     },
   });
 
@@ -839,17 +878,34 @@ const ContentRequestDetail: React.FC = () => {
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  المحتوى
-                </h2>
+                <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
+                  <h2
+                    className="text-xl font-bold text-right text-[#101828]"
+                    style={{
+                      fontFamily: "'Ping AR + LT', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '20px',
+                      lineHeight: '28px',
+                    }}
+                  >
+                    المحتوى
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (contentRequest?.id) {
+                        setCompareResult(null);
+                        setCompareErrorDetail(null);
+                        comparePresentationsMutation.mutate(contentRequest.id);
+                      }
+                    }}
+                    disabled={comparePresentationsMutation.isPending || !contentRequest?.id}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  >
+                    {comparePresentationsMutation.isPending ? 'جاري التقييم...' : 'تقييم الاختلاف بين العروض'}
+                  </button>
+                </div>
 
                 {/* العرض التقديمي */}
                 <div className="flex flex-col gap-2">
@@ -1372,6 +1428,176 @@ const ContentRequestDetail: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
+          <Dialog open={isCompareModalOpen} onOpenChange={setIsCompareModalOpen}>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  تقييم الاختلاف بين العروض
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-1 space-y-6">
+                {comparePresentationsMutation.isPending ? (
+                  <p className="text-center text-gray-500 py-8" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    جاري تقييم الاختلاف بين العروض...
+                  </p>
+                ) : comparePresentationsMutation.isError ? (
+                  <div className="text-center py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-red-600 font-medium mb-1">
+                      حدث خطأ أثناء تقييم الاختلاف
+                    </p>
+                    {compareErrorDetail ? (
+                      <p className="text-gray-700 text-sm mt-2 text-right max-w-xl mx-auto">
+                        {translateCompareErrorDetail(compareErrorDetail) ?? compareErrorDetail}
+                      </p>
+                    ) : (
+                      <p className="text-gray-600 text-sm mt-2">يرجى المحاولة لاحقاً.</p>
+                    )}
+                  </div>
+                ) : compareResult ? (
+                  <>
+                    {/* Overall */}
+                    <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+                      <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        النتيجة العامة
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-gray-600">معرف التقييم:</span>
+                        <span className="text-gray-900">{compareResult.comparison_id}</span>
+                        <span className="text-gray-600">الحالة:</span>
+                        <span className="text-gray-900">{compareResult.status}</span>
+                        <span className="text-gray-600">درجة الاختلاف الإجمالية:</span>
+                        <span className="text-gray-900">{compareResult.overall_score}</span>
+                        <span className="text-gray-600">مستوى الاختلاف:</span>
+                        <span className="text-gray-900">{compareResult.difference_level}</span>
+                        <span className="text-gray-600">توصية إعادة التوليد:</span>
+                        <span className="text-gray-900">{compareResult.regeneration_recommendation}</span>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    {compareResult.summary && (
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          ملخص الشرائح
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <span className="text-gray-600">شرائح العرض الأصلي:</span>
+                          <span className="text-gray-900">{compareResult.summary.total_slides_original}</span>
+                          <span className="text-gray-600">شرائح العرض الجديد:</span>
+                          <span className="text-gray-900">{compareResult.summary.total_slides_new}</span>
+                          <span className="text-gray-600">الفرق:</span>
+                          <span className="text-gray-900">{compareResult.summary.slide_count_difference}</span>
+                          <span className="text-gray-600">بدون تغيير:</span>
+                          <span className="text-gray-900">{compareResult.summary.unchanged_slides}</span>
+                          <span className="text-gray-600">تغييرات طفيفة:</span>
+                          <span className="text-gray-900">{compareResult.summary.minor_changes}</span>
+                          <span className="text-gray-600">تغييرات متوسطة:</span>
+                          <span className="text-gray-900">{compareResult.summary.moderate_changes}</span>
+                          <span className="text-gray-600">تغييرات كبيرة:</span>
+                          <span className="text-gray-900">{compareResult.summary.major_changes}</span>
+                          <span className="text-gray-600">شرائح جديدة:</span>
+                          <span className="text-gray-900">{compareResult.summary.new_slides}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regeneration decision */}
+                    {compareResult.regeneration_decision && (
+                      <div className="rounded-xl border border-gray-200 bg-amber-50/80 p-4">
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          قرار إعادة التوليد
+                        </h4>
+                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <p><span className="text-gray-600 font-medium">التوصية:</span> {compareResult.regeneration_decision.recommendation}</p>
+                          <p><span className="text-gray-600 font-medium">الثقة:</span> {compareResult.regeneration_decision.confidence}</p>
+                          {compareResult.regeneration_decision.reasoning && (
+                            <p><span className="text-gray-600 font-medium">الاستدلال:</span> {compareResult.regeneration_decision.reasoning}</p>
+                          )}
+                          {compareResult.regeneration_decision.key_factors && compareResult.regeneration_decision.key_factors.length > 0 && (
+                            <div>
+                              <span className="text-gray-600 font-medium">عوامل رئيسية:</span>
+                              <ul className="list-disc list-inside mt-1">{compareResult.regeneration_decision.key_factors.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                            </div>
+                          )}
+                          {compareResult.regeneration_decision.business_impact && (
+                            <p><span className="text-gray-600 font-medium">الأثر على العمل:</span> {compareResult.regeneration_decision.business_impact}</p>
+                          )}
+                          {compareResult.regeneration_decision.risk_assessment && (
+                            <p><span className="text-gray-600 font-medium">تقييم المخاطر:</span> {compareResult.regeneration_decision.risk_assessment}</p>
+                          )}
+                          {compareResult.regeneration_decision.presentation_coherence && (
+                            <p><span className="text-gray-600 font-medium">تماسك العرض:</span> {compareResult.regeneration_decision.presentation_coherence}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI insights */}
+                    {compareResult.ai_insights && (
+                      <div className="rounded-xl border border-gray-200 bg-blue-50/80 p-4">
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          رؤى الذكاء الاصطناعي
+                        </h4>
+                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          {compareResult.ai_insights.main_topics && compareResult.ai_insights.main_topics.length > 0 && (
+                            <p><span className="text-gray-600 font-medium">المواضيع الرئيسية:</span> {compareResult.ai_insights.main_topics.join('، ')}</p>
+                          )}
+                          {compareResult.ai_insights.slide_count_comparison && (
+                            <p>
+                              <span className="text-gray-600 font-medium">مقارنة عدد الشرائح:</span>{' '}
+                              أصلي: {compareResult.ai_insights.slide_count_comparison.original_count}،
+                              جديد: {compareResult.ai_insights.slide_count_comparison.new_count}،
+                              فرق: {compareResult.ai_insights.slide_count_comparison.difference}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Slide by slide */}
+                    {compareResult.slide_by_slide && compareResult.slide_by_slide.length > 0 && (
+                      <div className="rounded-xl border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 bg-[#009883]/10 border-b border-gray-200">
+                          <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            تفاصيل كل شريحة
+                          </h4>
+                        </div>
+                        <div className="max-h-[320px] overflow-y-auto">
+                          {compareResult.slide_by_slide.map((slide, idx) => (
+                            <div
+                              key={idx}
+                              className="px-4 py-3 border-b border-gray-100 text-right text-sm last:border-b-0"
+                              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                            >
+                              <span className="font-medium text-[#009883]">شريحة {slide.slide_number}:</span>{' '}
+                              <span className="text-gray-700">{slide.details}</span>{' '}
+                              <span className="text-gray-500">({slide.change_level})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    لا توجد نتيجة لعرضها.
+                  </p>
+                )}
+              </div>
+              <DialogFooter className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCompareModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  إغلاق
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Analyze contradictions result modal */}
           <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
