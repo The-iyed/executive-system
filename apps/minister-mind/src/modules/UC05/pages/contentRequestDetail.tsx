@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck } from 'lucide-react';
+import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, FileText } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
@@ -21,9 +21,11 @@ import {
   getContentConsultants,
   approveContent,
   analyzeContradictions,
+  getAttachmentInsights,
   type Attachment,
   type ConsultantUser,
   type AnalyzeResponse,
+  type AttachmentInsightsResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 
@@ -129,6 +131,9 @@ const ContentRequestDetail: React.FC = () => {
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
   const [consultantSearch, setConsultantSearch] = useState<string>('');
 
+  // LLM notes/insights modal for presentation attachment
+  const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
+
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
     queryKey: ['content-request', id],
@@ -151,6 +156,13 @@ const ContentRequestDetail: React.FC = () => {
   });
 
   const draftsRecords = consultationRecordsWithDrafts?.items?.filter((item) => !!item.is_draft) || [];
+
+  // Fetch LLM notes/insights when user opens the insights modal for a presentation
+  const { data: attachmentInsights, isLoading: isLoadingInsights } = useQuery({
+    queryKey: ['attachment-insights', insightsModalAttachment?.id],
+    queryFn: () => getAttachmentInsights(insightsModalAttachment!.id),
+    enabled: !!insightsModalAttachment?.id,
+  });
 
   const queryClient = useQueryClient();
 
@@ -869,6 +881,14 @@ const ContentRequestDetail: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex flex-row items-center gap-2 ml-auto">
+                            <button
+                              type="button"
+                              onClick={() => setInsightsModalAttachment({ id: att.id, file_name: att.file_name })}
+                              className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                              title="ملاحظات الذكاء الاصطناعي"
+                            >
+                              <FileText className="w-5 h-5 text-[#475467]" />
+                            </button>
                             {att.blob_url && (
                               <>
                                 <button
@@ -1589,6 +1609,67 @@ const ContentRequestDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Attachment LLM notes/insights modal (presentation) */}
+      <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) setInsightsModalAttachment(null); }}>
+        <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              ملاحظات الذكاء الاصطناعي {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+            {isLoadingInsights ? (
+              <p className="text-gray-500">جاري التحميل...</p>
+            ) : attachmentInsights != null ? (
+              (() => {
+                const d = attachmentInsights as AttachmentInsightsResponse;
+                const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
+                const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                return (
+                  <>
+                    {notes.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-gray-700 font-medium">ملاحظات الذكاء الاصطناعي</span>
+                        <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                          {notes.map((note, idx) => (
+                            <li key={idx} className="whitespace-pre-wrap">{note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {suggestions.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-gray-700 font-medium">اقتراحات الذكاء الاصطناعي</span>
+                        <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                          {suggestions.map((s, idx) => (
+                            <li key={idx} className="whitespace-pre-wrap">{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {notes.length === 0 && suggestions.length === 0 && (
+                      <p className="text-gray-500">لا توجد ملاحظات أو اقتراحات.</p>
+                    )}
+                  </>
+                );
+              })()
+            ) : (
+              <p className="text-gray-500">لا توجد ملاحظات.</p>
+            )}
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <button
+              type="button"
+              onClick={() => setInsightsModalAttachment(null)}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              إغلاق
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Return Request Modal */}
       <Dialog open={isReturnModalOpen} onOpenChange={setIsReturnModalOpen}>
