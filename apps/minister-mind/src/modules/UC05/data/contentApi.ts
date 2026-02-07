@@ -324,24 +324,72 @@ export interface ComparisonSummary {
   new_slides: number;
 }
 
-export interface CompareConsultantStatementsResponse {
+export interface CompareSlideBySlideItem {
+  slide_number: number;
+  details: string;
+  change_level: string;
+}
+
+export interface CompareRegenerationDecision {
+  recommendation: string;
+  confidence: string;
+  reasoning: string;
+  key_factors?: string[];
+  business_impact?: string;
+  risk_assessment?: string;
+  presentation_coherence?: string;
+}
+
+export interface CompareAiInsights {
+  main_topics?: string[];
+  business_impact?: string;
+  risk_assessment?: string;
+  presentation_coherence?: string;
+  slide_count_comparison?: {
+    original_count: number;
+    new_count: number;
+    difference: number;
+  };
+}
+
+export interface ComparePresentationsResponse {
   comparison_id: string;
   overall_score: number;
   difference_level: string;
   status: string;
   regeneration_recommendation: string;
   summary: ComparisonSummary;
-  slide_by_slide?: Record<string, unknown>[];
-  regeneration_decision?: Record<string, unknown>;
-  ai_insights?: Record<string, unknown>;
+  slide_by_slide: CompareSlideBySlideItem[];
+  regeneration_decision?: CompareRegenerationDecision;
+  ai_insights?: CompareAiInsights;
 }
 
-export const compareConsultantStatements = async (
+/** Compare presentations for a meeting (العرض التقديمي). POST /api/comparisons/compare */
+export const comparePresentations = async (
   meetingId: string
-): Promise<CompareConsultantStatementsResponse> => {
-  const response = await axiosInstance.post<CompareConsultantStatementsResponse>(
+): Promise<ComparePresentationsResponse> => {
+  const response = await axiosInstance.post<ComparePresentationsResponse>(
     '/api/comparisons/compare',
     { meeting_id: meetingId }
+  );
+  return response.data;
+};
+
+// LLM notes/insights for an attachment (presentation)
+export interface AttachmentInsightsResponse {
+  attachment_id: string;
+  presentation_id: string;
+  extraction_status: string;
+  llm_processing_status: string;
+  llm_notes?: string[];
+  llm_suggestions?: string[];
+}
+
+export const getAttachmentInsights = async (
+  attachmentId: string
+): Promise<AttachmentInsightsResponse> => {
+  const response = await axiosInstance.get<AttachmentInsightsResponse>(
+    `/api/presentations/by-attachment/${attachmentId}/insights`
   );
   return response.data;
 };
