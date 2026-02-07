@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, FileText } from 'lucide-react';
+import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, FileText, GitCompare } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
@@ -22,7 +22,7 @@ import {
   approveContent,
   analyzeContradictions,
   getAttachmentInsights,
-  comparePresentations,
+  runCompareByAttachment,
   type Attachment,
   type ConsultantUser,
   type AnalyzeResponse,
@@ -121,6 +121,37 @@ function translateCompareErrorDetail(detail: string | null): string | null {
     return 'يجب وجود عرضين تقديميين على الأقل مع اكتمال استخراج المحتوى للمقارنة. تأكد من وجود العرضين في النظام واكتمال الاستخراج، أو قدّم النسخة الأصلية والنسخة الجديدة.';
   }
   return detail;
+}
+
+/** Translate comparison API enum-like values to Arabic for display */
+const COMPARE_STATUS: Record<string, string> = {
+  completed: 'مكتمل',
+  pending: 'قيد المعالجة',
+};
+const COMPARE_LEVEL: Record<string, string> = {
+  minor: 'طفيف',
+  moderate: 'متوسط',
+  major: 'كبير',
+};
+const COMPARE_RECOMMENDATION: Record<string, string> = {
+  review: 'مراجعة',
+};
+const COMPARE_CONFIDENCE_IMPACT: Record<string, string> = {
+  high: 'عالي',
+  medium: 'متوسط',
+  low: 'منخفض',
+};
+const COMPARE_COHERENCE: Record<string, string> = {
+  good: 'جيد',
+  needs_improvement: 'يحتاج تحسين',
+};
+function translateCompareValue(
+  value: string | undefined | null,
+  map: Record<string, string>
+): string {
+  if (value == null || value === '') return '—';
+  const v = String(value).toLowerCase();
+  return map[v] ?? value;
 }
 
 const ContentRequestDetail: React.FC = () => {
@@ -379,8 +410,8 @@ const ContentRequestDetail: React.FC = () => {
     },
   });
 
-  const comparePresentationsMutation = useMutation({
-    mutationFn: (meetingId: string) => comparePresentations(meetingId),
+  const compareByAttachmentMutation = useMutation({
+    mutationFn: (attachmentId: string) => runCompareByAttachment(attachmentId),
     onSuccess: (data) => {
       setCompareResult(data);
       setCompareErrorDetail(null);
@@ -893,17 +924,15 @@ const ContentRequestDetail: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (contentRequest?.id) {
-                        setCompareResult(null);
-                        setCompareErrorDetail(null);
-                        comparePresentationsMutation.mutate(contentRequest.id);
-                      }
+                      const first = presentationAttachments[0];
+                      if (first) setInsightsModalAttachment({ id: first.id, file_name: first.file_name });
                     }}
-                    disabled={comparePresentationsMutation.isPending || !contentRequest?.id}
+                    disabled={presentationAttachments.length === 0}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                   >
-                    {comparePresentationsMutation.isPending ? 'جاري التقييم...' : 'تقييم الاختلاف بين العروض'}
+                    <FileText className="w-5 h-5" />
+                    تقييم الاختلاف بين العروض
                   </button>
                 </div>
 
@@ -937,11 +966,27 @@ const ContentRequestDetail: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex flex-row items-center gap-2 ml-auto">
+                            {att.replaces_attachment_id != null && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCompareResult(null);
+                                  setCompareErrorDetail(null);
+                                  setIsCompareModalOpen(true);
+                                  compareByAttachmentMutation.mutate(att.id);
+                                }}
+                                disabled={compareByAttachmentMutation.isPending}
+                                className="inline-flex items-center justify-center w-9 h-9 bg-[#009883]/10 rounded-md hover:bg-[#009883]/20 transition-colors text-[#009883] disabled:opacity-50"
+                                title="تقييم الاختلاف بين العروض"
+                              >
+                                <GitCompare className="w-5 h-5" />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => setInsightsModalAttachment({ id: att.id, file_name: att.file_name })}
                               className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                              title="ملاحظات الذكاء الاصطناعي"
+                              title="تقييم الاختلاف بين العروض"
                             >
                               <FileText className="w-5 h-5 text-[#475467]" />
                             </button>
@@ -1438,11 +1483,11 @@ const ContentRequestDetail: React.FC = () => {
                 </DialogTitle>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto px-1 space-y-6">
-                {comparePresentationsMutation.isPending ? (
+                {compareByAttachmentMutation.isPending ? (
                   <p className="text-center text-gray-500 py-8" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     جاري تقييم الاختلاف بين العروض...
                   </p>
-                ) : comparePresentationsMutation.isError ? (
+                ) : compareByAttachmentMutation.isError ? (
                   <div className="text-center py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     <p className="text-red-600 font-medium mb-1">
                       حدث خطأ أثناء تقييم الاختلاف
@@ -1466,13 +1511,13 @@ const ContentRequestDetail: React.FC = () => {
                         <span className="text-gray-600">معرف التقييم:</span>
                         <span className="text-gray-900">{compareResult.comparison_id}</span>
                         <span className="text-gray-600">الحالة:</span>
-                        <span className="text-gray-900">{compareResult.status}</span>
+                        <span className="text-gray-900">{translateCompareValue(compareResult.status, COMPARE_STATUS)}</span>
                         <span className="text-gray-600">درجة الاختلاف الإجمالية:</span>
                         <span className="text-gray-900">{compareResult.overall_score}</span>
                         <span className="text-gray-600">مستوى الاختلاف:</span>
-                        <span className="text-gray-900">{compareResult.difference_level}</span>
+                        <span className="text-gray-900">{translateCompareValue(compareResult.difference_level, COMPARE_LEVEL)}</span>
                         <span className="text-gray-600">توصية إعادة التوليد:</span>
-                        <span className="text-gray-900">{compareResult.regeneration_recommendation}</span>
+                        <span className="text-gray-900">{translateCompareValue(compareResult.regeneration_recommendation, COMPARE_RECOMMENDATION)}</span>
                       </div>
                     </div>
 
@@ -1510,8 +1555,8 @@ const ContentRequestDetail: React.FC = () => {
                           قرار إعادة التوليد
                         </h4>
                         <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          <p><span className="text-gray-600 font-medium">التوصية:</span> {compareResult.regeneration_decision.recommendation}</p>
-                          <p><span className="text-gray-600 font-medium">الثقة:</span> {compareResult.regeneration_decision.confidence}</p>
+                          <p><span className="text-gray-600 font-medium">التوصية:</span> {translateCompareValue(compareResult.regeneration_decision.recommendation, COMPARE_RECOMMENDATION)}</p>
+                          <p><span className="text-gray-600 font-medium">الثقة:</span> {translateCompareValue(compareResult.regeneration_decision.confidence, COMPARE_CONFIDENCE_IMPACT)}</p>
                           {compareResult.regeneration_decision.reasoning && (
                             <p><span className="text-gray-600 font-medium">الاستدلال:</span> {compareResult.regeneration_decision.reasoning}</p>
                           )}
@@ -1522,13 +1567,13 @@ const ContentRequestDetail: React.FC = () => {
                             </div>
                           )}
                           {compareResult.regeneration_decision.business_impact && (
-                            <p><span className="text-gray-600 font-medium">الأثر على العمل:</span> {compareResult.regeneration_decision.business_impact}</p>
+                            <p><span className="text-gray-600 font-medium">الأثر على العمل:</span> {translateCompareValue(compareResult.regeneration_decision.business_impact, COMPARE_CONFIDENCE_IMPACT)}</p>
                           )}
                           {compareResult.regeneration_decision.risk_assessment && (
-                            <p><span className="text-gray-600 font-medium">تقييم المخاطر:</span> {compareResult.regeneration_decision.risk_assessment}</p>
+                            <p><span className="text-gray-600 font-medium">تقييم المخاطر:</span> {translateCompareValue(compareResult.regeneration_decision.risk_assessment, COMPARE_CONFIDENCE_IMPACT)}</p>
                           )}
                           {compareResult.regeneration_decision.presentation_coherence && (
-                            <p><span className="text-gray-600 font-medium">تماسك العرض:</span> {compareResult.regeneration_decision.presentation_coherence}</p>
+                            <p><span className="text-gray-600 font-medium">تماسك العرض:</span> {translateCompareValue(compareResult.regeneration_decision.presentation_coherence, COMPARE_COHERENCE)}</p>
                           )}
                         </div>
                       </div>
@@ -1573,7 +1618,7 @@ const ContentRequestDetail: React.FC = () => {
                             >
                               <span className="font-medium text-[#009883]">شريحة {slide.slide_number}:</span>{' '}
                               <span className="text-gray-700">{slide.details}</span>{' '}
-                              <span className="text-gray-500">({slide.change_level})</span>
+                              <span className="text-gray-500">({translateCompareValue(slide.change_level, COMPARE_LEVEL)})</span>
                             </div>
                           ))}
                         </div>
@@ -1841,7 +1886,7 @@ const ContentRequestDetail: React.FC = () => {
         <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-              ملاحظات الذكاء الاصطناعي {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
+              تقييم الاختلاف بين العروض {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
