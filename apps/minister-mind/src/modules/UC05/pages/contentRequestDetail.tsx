@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, FileText, GitCompare } from 'lucide-react';
+import { ChevronRight, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, GitCompare, MessageSquare } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
@@ -909,32 +909,17 @@ const ContentRequestDetail: React.FC = () => {
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-                <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
-                  <h2
-                    className="text-xl font-bold text-right text-[#101828]"
-                    style={{
-                      fontFamily: "'Ping AR + LT', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '20px',
-                      lineHeight: '28px',
-                    }}
-                  >
-                    المحتوى
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const first = presentationAttachments[0];
-                      if (first) setInsightsModalAttachment({ id: first.id, file_name: first.file_name });
-                    }}
-                    disabled={presentationAttachments.length === 0}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    <FileText className="w-5 h-5" />
-                    تقييم الاختلاف بين العروض
-                  </button>
-                </div>
+                <h2
+                  className="text-xl font-bold text-right text-[#101828]"
+                  style={{
+                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                  }}
+                >
+                  المحتوى
+                </h2>
 
                 {/* العرض التقديمي */}
                 <div className="flex flex-col gap-2">
@@ -988,7 +973,7 @@ const ContentRequestDetail: React.FC = () => {
                               className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                               title="تقييم الاختلاف بين العروض"
                             >
-                              <FileText className="w-5 h-5 text-[#475467]" />
+                              <MessageSquare className="w-5 h-5 text-[#475467]" />
                             </button>
                             {att.blob_url && (
                               <>
