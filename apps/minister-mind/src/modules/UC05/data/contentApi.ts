@@ -451,6 +451,7 @@ export const getAttachmentInsights = async (
 };
 
 // Analyze contradictions between consultant statements
+// UI only uses contradictions (not statements).
 export interface AnalyzeContradiction {
   statements: string[];
   severity: string;
@@ -459,8 +460,8 @@ export interface AnalyzeContradiction {
 
 export interface AnalyzeCategory {
   category_name: string;
-  statements: string[];
-  contradictions: AnalyzeContradiction[];
+  statements?: string[]; // not used in UI
+  contradictions: (string | AnalyzeContradiction)[];
 }
 
 export interface AnalyzeResponse {
