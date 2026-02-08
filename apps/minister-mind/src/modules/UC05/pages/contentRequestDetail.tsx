@@ -60,6 +60,10 @@ import {
   SelectContent,
   SelectItem,
   Input,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
 } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
@@ -927,6 +931,7 @@ const ContentRequestDetail: React.FC = () => {
                     العرض التقديمي
                   </label>
                   {presentationAttachments.length > 0 ? (
+                    <TooltipProvider>
                     <div className="flex flex-col gap-4">
                       {presentationAttachments.map((att: Attachment) => (
                         <div
@@ -952,29 +957,41 @@ const ContentRequestDetail: React.FC = () => {
                           </div>
                           <div className="flex flex-row items-center gap-2 ml-auto">
                             {att.replaces_attachment_id != null && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCompareResult(null);
-                                  setCompareErrorDetail(null);
-                                  setIsCompareModalOpen(true);
-                                  compareByAttachmentMutation.mutate(att.id);
-                                }}
-                                disabled={compareByAttachmentMutation.isPending}
-                                className="inline-flex items-center justify-center w-9 h-9 bg-[#009883]/10 rounded-md hover:bg-[#009883]/20 transition-colors text-[#009883] disabled:opacity-50"
-                                title="تقييم الاختلاف بين العروض"
-                              >
-                                <GitCompare className="w-5 h-5" />
-                              </button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCompareResult(null);
+                                      setCompareErrorDetail(null);
+                                      setIsCompareModalOpen(true);
+                                      compareByAttachmentMutation.mutate(att.id);
+                                    }}
+                                    disabled={compareByAttachmentMutation.isPending}
+                                    className="inline-flex items-center justify-center w-9 h-9 bg-[#009883]/10 rounded-md hover:bg-[#009883]/20 transition-colors text-[#009883] disabled:opacity-50"
+                                  >
+                                    <GitCompare className="w-5 h-5" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-right">
+                                  <p>مقارنة</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => setInsightsModalAttachment({ id: att.id, file_name: att.file_name })}
-                              className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                              title="تقييم الاختلاف بين العروض"
-                            >
-                              <MessageSquare className="w-5 h-5 text-[#475467]" />
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => setInsightsModalAttachment({ id: att.id, file_name: att.file_name })}
+                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
+                                >
+                                  <MessageSquare className="w-5 h-5 text-[#475467]" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-right">
+                                <p>ملاحظات على العرض</p>
+                              </TooltipContent>
+                            </Tooltip>
                             {att.blob_url && (
                               <>
                                 <button
@@ -998,6 +1015,7 @@ const ContentRequestDetail: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    </TooltipProvider>
                   ) : (
                     <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                       لا يوجد عرض تقديمي
