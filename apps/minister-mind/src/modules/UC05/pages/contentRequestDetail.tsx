@@ -1335,9 +1335,6 @@ const ContentRequestDetail: React.FC = () => {
                         const sentences: string[] = [];
                         consultationRecords.items.forEach((row: ConsultationRecord) => {
                           const prefix = typeLabel(row.consultation_type);
-                          if (row.consultation_question?.trim()) {
-                            sentences.push(`${prefix} ${row.consultation_question.trim()}`);
-                          }
                           if (row.consultation_answer?.trim()) {
                             sentences.push(`${prefix} ${row.consultation_answer.trim()}`);
                           }
@@ -1656,73 +1653,75 @@ const ContentRequestDetail: React.FC = () => {
                 </DialogTitle>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto px-1 space-y-6">
-                {analyzeResult?.categories && analyzeResult.categories.length > 0 ? (
-                  analyzeResult.categories.map((category, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-gray-200 bg-gray-50/80 overflow-hidden"
-                    >
-                      <div className="px-4 py-3 bg-[#009883]/10 border-b border-gray-200">
-                        <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {category.category_name || `الفئة ${idx + 1}`}
-                        </h4>
-                      </div>
-                      <div className="p-4 space-y-4">
-                        {category.statements && category.statements.length > 0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-700 mb-2 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              العبارات
-                            </h5>
-                            <ul className="list-disc list-inside text-sm text-gray-600 text-right space-y-1" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              {category.statements.map((s, i) => (
-                                <li key={i}>{s}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {category.contradictions && category.contradictions.length > 0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-amber-800 mb-2 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              التعارضات
-                            </h5>
-                            <ul className="space-y-3">
-                              {category.contradictions.map((c, i) => (
+                {(() => {
+                  const categoriesWithContradictions = (analyzeResult?.categories ?? []).filter(
+                    (c) => c.contradictions && c.contradictions.length > 0
+                  );
+                  return categoriesWithContradictions.length > 0 ? (
+                    categoriesWithContradictions.map((category, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-amber-200 bg-amber-50/30 overflow-hidden"
+                      >
+                        <div className="px-4 py-3 bg-amber-100/80 border-b border-amber-200">
+                          <h4 className="text-base font-semibold text-amber-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            يوجد تعارض في: {category.category_name || `الفئة ${idx + 1}`}
+                          </h4>
+                        </div>
+                        <div className="p-4">
+                          <ul className="space-y-3 list-none">
+                            {category.contradictions.map((item, i) => {
+                              if (typeof item === 'string') {
+                                return (
+                                  <li
+                                    key={i}
+                                    className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-sm text-gray-800 text-right"
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  >
+                                    {item}
+                                  </li>
+                                );
+                              }
+                              const obj = item as { statements?: string[]; severity?: string; comment?: string };
+                              const statementsText = obj.statements?.length
+                                ? obj.statements.join(' ← → ')
+                                : '';
+                              const hasContent = statementsText || obj.severity || obj.comment;
+                              if (!hasContent) return null;
+                              return (
                                 <li
                                   key={i}
-                                  className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-right"
+                                  className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-right space-y-2"
                                   style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                                 >
-                                  {c.statements && c.statements.length > 0 && (
-                                    <p className="text-sm text-gray-700 mb-1">
-                                      <span className="font-medium">العبارات المتعارضة:</span>{' '}
-                                      {c.statements.join(' ← → ')}
+                                  {statementsText && (
+                                    <p className="text-sm text-gray-800">{statementsText}</p>
+                                  )}
+                                  {obj.severity && (
+                                    <p className="text-xs font-medium text-amber-800">
+                                      درجة التعارض: {obj.severity}
                                     </p>
                                   )}
-                                  {c.severity && (
-                                    <p className="text-xs font-medium text-amber-800 mb-1">
-                                      درجة التعارض: {c.severity}
-                                    </p>
-                                  )}
-                                  {c.comment && (
-                                    <p className="text-sm text-gray-600">{c.comment}</p>
+                                  {obj.comment && (
+                                    <p className="text-sm text-gray-600">{obj.comment}</p>
                                   )}
                                 </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                              );
+                            })}
+                          </ul>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : analyzeContradictionsMutation.isError ? (
-                  <p className="text-center text-red-600 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    حدث خطأ أثناء تحليل التعارضات. يرجى المحاولة لاحقاً.
-                  </p>
-                ) : (
-                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    لا توجد فئات أو تعارضات في النتيجة.
-                  </p>
-                )}
+                    ))
+                  ) : analyzeContradictionsMutation.isError ? (
+                    <p className="text-center text-red-600 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      حدث خطأ أثناء تحليل التعارضات. يرجى المحاولة لاحقاً.
+                    </p>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      لا توجد تعارضات في النتيجة.
+                    </p>
+                  );
+                })()}
               </div>
               <DialogFooter className="border-t pt-4">
                 <button
