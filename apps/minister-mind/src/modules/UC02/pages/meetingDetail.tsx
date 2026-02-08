@@ -60,6 +60,10 @@ import {
   DialogFooter,
   Textarea,
   DateTimePicker,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
 } from '@sanad-ai/ui';
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, type ComparePresentationsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
@@ -1725,6 +1729,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-6 w-full max-w-[1085px]" dir="rtl">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>العرض التقديمي</label>
+                <TooltipProvider>
                 <div className="flex flex-row gap-4 flex-wrap">
                   {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
                     <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
@@ -1732,15 +1737,21 @@ const MeetingDetail: React.FC = () => {
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                       <div className="flex items-center gap-2 mr-auto">
                         {att.replaces_attachment_id != null && (
-                          <button
-                            type="button"
-                            onClick={() => { setComparePresentationsResult(null); setCompareErrorDetail(null); setIsComparePresentationsModalOpen(true); compareByAttachmentMutation.mutate(att.id); }}
-                            disabled={compareByAttachmentMutation.isPending}
-                            className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
-                            title="تقييم الاختلاف بين العروض"
-                          >
-                            <GitCompare className="w-4 h-4" />
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => { setComparePresentationsResult(null); setCompareErrorDetail(null); setIsComparePresentationsModalOpen(true); compareByAttachmentMutation.mutate(att.id); }}
+                                disabled={compareByAttachmentMutation.isPending}
+                                className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
+                              >
+                                <GitCompare className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-right">
+                              <p>مقارنة</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -1758,6 +1769,7 @@ const MeetingDetail: React.FC = () => {
                   )}
                   <label className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[#009883] rounded-xl text-[#009883] hover:bg-[#009883]/5 cursor-pointer" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
                 </div>
+                </TooltipProvider>
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>متى سيتم إرفاق العرض؟</label>
