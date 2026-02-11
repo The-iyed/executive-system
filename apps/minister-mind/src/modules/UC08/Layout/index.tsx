@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { SharedLayout } from '@shared';
 import { LayoutProps, WelcomeConfig } from './types';
 import { PATH } from '../routes/paths';
@@ -7,17 +7,17 @@ import { PATH } from '../routes/paths';
 export const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const defaultActions: WelcomeConfig['actions'] = [
-    { 
-      label: 'إنشاء اجتماع', 
-      variant: 'primary',  
-      onClick: () => navigate(`${PATH.NEW_MEETING}?new=true`, { state: { isNewMeeting: true } }), 
-    }, 
-    { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }
-  ];
+  // const defaultActions: WelcomeConfig['actions'] = [
+  //   { 
+  //     label: 'إنشاء اجتماع', 
+  //     variant: 'primary',  
+  //     onClick: () => navigate(`${PATH.NEW_MEETING}?new=true`, { state: { isNewMeeting: true } }), 
+  //   }, 
+  //   { label: 'عرض المسودات', variant: 'secondary', onClick: () => {} }
+  // ];
 
   const welcomeByPath: Record<string, WelcomeConfig> = {
     [PATH.NEW_MEETING]: {

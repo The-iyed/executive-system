@@ -27,9 +27,15 @@ interface SubmitStep2ContentPayload {
   isDraft: boolean;
   draftId: string;
   schemaOptions: Step2ContentSchemaOptions;
+  replacementPresentationFiles: Record<string, File>;
+  replacementAdditionalFiles: Record<string, File>;
 }
 
-const prepareContentFormData = (formData: Partial<Step2ContentFormData>): FormData => {
+const prepareContentFormData = (
+  formData: Partial<Step2ContentFormData>,
+  replacementPresentationFiles: Record<string, File>,
+  replacementAdditionalFiles: Record<string, File>
+): FormData => {
   const formDataToSend = new FormData();
 
   if (formData.presentation_attachment_timing && formData.presentation_attachment_timing !== '') {
@@ -39,15 +45,50 @@ const prepareContentFormData = (formData: Partial<Step2ContentFormData>): FormDa
     }
   }
 
-  if (formData.presentation_files && formData.presentation_files.length > 0) {
-    formData.presentation_files.forEach((file) => {
-      formDataToSend.append('presentation_files', file);
-    });
+  const existingPresentation = formData.existingFiles ?? [];
+  const presentationReplacedIds: (string | null)[] = existingPresentation.map((e) =>
+    replacementPresentationFiles[e.id] ? e.id : null
+  );
+  const presentationReplacementFiles = existingPresentation
+    .filter((e) => replacementPresentationFiles[e.id])
+    .map((e) => replacementPresentationFiles[e.id]!);
+  const presentationNewFiles = formData.presentation_files ?? [];
+  const allPresentationFiles = [...presentationReplacementFiles, ...presentationNewFiles];
+  const presentationReplacesIds = [
+    ...presentationReplacedIds.filter((id): id is string => id !== null),
+    ...presentationNewFiles.map(() => null),
+  ];
+
+  allPresentationFiles.forEach((file) => {
+    formDataToSend.append('presentation_files', file);
+  });
+  if (presentationReplacesIds.length > 0) {
+    formDataToSend.append('replaces_presentation_attachment_ids', JSON.stringify(presentationReplacesIds));
   }
-  if (formData.additional_files && formData.additional_files.length > 0) {
-    formData.additional_files.forEach((file) => {
-      formDataToSend.append('additional_files', file);
-    });
+
+  const existingAdditional = formData.existingAdditionalFiles ?? [];
+  const additionalReplacementFiles = existingAdditional
+    .filter((e) => replacementAdditionalFiles[e.id])
+    .map((e) => replacementAdditionalFiles[e.id]!);
+  const additionalNewFiles = formData.additional_files ?? [];
+  const allAdditionalFiles = [...additionalReplacementFiles, ...additionalNewFiles];
+  const additionalReplacesIds = [
+    ...existingAdditional
+      .filter((e) => replacementAdditionalFiles[e.id])
+      .map((e) => e.id),
+    ...additionalNewFiles.map(() => null),
+  ];
+
+  allAdditionalFiles.forEach((file) => {
+    formDataToSend.append('additional_files', file);
+  });
+  if (additionalReplacesIds.length > 0) {
+    formDataToSend.append('replaces_additional_attachment_ids', JSON.stringify(additionalReplacesIds));
+  }
+
+  const deletedIds = formData.deleted_attachment_ids ?? [];
+  if (deletedIds.length > 0) {
+    formDataToSend.append('deleted_attachment_ids', JSON.stringify(deletedIds));
   }
 
   return formDataToSend;
@@ -56,6 +97,12 @@ const prepareContentFormData = (formData: Partial<Step2ContentFormData>): FormDa
 /** Returns true if the FormData has at least one entry (so we send multipart). */
 function hasFormDataEntries(fd: FormData): boolean {
   return !fd.entries().next().done;
+}
+
+/** Returns true if we have deleted attachment ids to send (may need JSON body). */
+function hasDeletedAttachmentIds(formData: Partial<Step2ContentFormData>): boolean {
+  const ids = formData.deleted_attachment_ids ?? [];
+  return ids.length > 0;
 }
 
 export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload): Promise<void> => {
@@ -71,11 +118,17 @@ export const submitStep2ContentData = async (payload: SubmitStep2ContentPayload)
     }
   }
 
-  const formDataToSend = prepareContentFormData(formData);
+  const formDataToSend = prepareContentFormData(
+    formData,
+    payload.replacementPresentationFiles,
+    payload.replacementAdditionalFiles
+  );
   const url = `/api/meeting-requests/drafts/${draftId}/content`;
 
   if (hasFormDataEntries(formDataToSend)) {
     await axiosInstance.patch(url, formDataToSend);
+  } else if (hasDeletedAttachmentIds(formData)) {
+    await axiosInstance.patch(url, { deleted_attachment_ids: formData.deleted_attachment_ids }, { headers: { 'Content-Type': 'application/json' } });
   } else {
     await axiosInstance.patch(url, {}, { headers: { 'Content-Type': 'application/json' } });
   }
@@ -96,8 +149,11 @@ export const useStep2Content = ({
     additional_files: [],
     existingFiles: [],
     existingAdditionalFiles: [],
+    deleted_attachment_ids: [],
     ...initialData,
   });
+  const [replacementPresentationFiles, setReplacementPresentationFiles] = useState<Record<string, File>>({});
+  const [replacementAdditionalFiles, setReplacementAdditionalFiles] = useState<Record<string, File>>({});
   const [errors, setErrors] = useState<Partial<Record<keyof Step2ContentFormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Step2ContentFormData, boolean>>>({});
 
@@ -138,11 +194,19 @@ export const useStep2Content = ({
   }, [initialData, isEditMode]);
 
   const submitMutation = useMutation({
-    mutationFn: (payload: { formData: Partial<Step2ContentFormData>; isDraft: boolean }) =>
+    mutationFn: (payload: {
+      formData: Partial<Step2ContentFormData>;
+      isDraft: boolean;
+      replacementPresentationFiles: Record<string, File>;
+      replacementAdditionalFiles: Record<string, File>;
+    }) =>
       submitStep2ContentData({
-        ...payload,
+        formData: payload.formData,
+        isDraft: payload.isDraft,
         draftId,
         schemaOptions,
+        replacementPresentationFiles: payload.replacementPresentationFiles,
+        replacementAdditionalFiles: payload.replacementAdditionalFiles,
       }),
     onSuccess: (_, variables) => {
       onSuccess?.(variables.isDraft);
@@ -217,6 +281,63 @@ export const useStep2Content = ({
     setFormData((prev) => ({ ...prev, additional_files: files || [] }));
   }, []);
 
+  const handleDeleteExistingAttachment = useCallback(
+    (attachmentId: string, type: 'presentation' | 'additional') => {
+      setFormData((prev) => {
+        const deletedIds = [...(prev.deleted_attachment_ids ?? []), attachmentId];
+        if (type === 'presentation') {
+          const existingFiles = (prev.existingFiles ?? []).filter((f) => f.id !== attachmentId);
+          return { ...prev, deleted_attachment_ids: deletedIds, existingFiles };
+        }
+        const existingAdditionalFiles = (prev.existingAdditionalFiles ?? []).filter((f) => f.id !== attachmentId);
+        return { ...prev, deleted_attachment_ids: deletedIds, existingAdditionalFiles };
+      });
+      if (type === 'presentation') {
+        setReplacementPresentationFiles((prev) => {
+          const next = { ...prev };
+          delete next[attachmentId];
+          return next;
+        });
+      } else {
+        setReplacementAdditionalFiles((prev) => {
+          const next = { ...prev };
+          delete next[attachmentId];
+          return next;
+        });
+      }
+    },
+    []
+  );
+
+  const handleReplacePresentationFile = useCallback((existingId: string, file: File) => {
+    setReplacementPresentationFiles((prev) => ({ ...prev, [existingId]: file }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.presentation_files;
+      return next;
+    });
+  }, []);
+
+  const handleReplaceAdditionalFile = useCallback((existingId: string, file: File) => {
+    setReplacementAdditionalFiles((prev) => ({ ...prev, [existingId]: file }));
+  }, []);
+
+  const handleClearReplacementPresentation = useCallback((existingId: string) => {
+    setReplacementPresentationFiles((prev) => {
+      const next = { ...prev };
+      delete next[existingId];
+      return next;
+    });
+  }, []);
+
+  const handleClearReplacementAdditional = useCallback((existingId: string) => {
+    setReplacementAdditionalFiles((prev) => {
+      const next = { ...prev };
+      delete next[existingId];
+      return next;
+    });
+  }, []);
+
   const submitStep = useCallback(
     async (isDraft = false): Promise<void> => {
       if (!isDraft && !validateAll(true)) {
@@ -226,9 +347,11 @@ export const useStep2Content = ({
       submitMutation.mutate({
         formData,
         isDraft,
+        replacementPresentationFiles,
+        replacementAdditionalFiles,
       });
     },
-    [formData, validateAll, submitMutation]
+    [formData, replacementPresentationFiles, replacementAdditionalFiles, validateAll, submitMutation]
   );
 
   return {
@@ -240,10 +363,17 @@ export const useStep2Content = ({
     showAttachmentTiming,
     attachmentTimingRequired,
     isSubmitting: submitMutation.isPending,
+    replacementPresentationFiles,
+    replacementAdditionalFiles,
     handleChange,
     handleBlur,
     handleFilesSelect,
     handleAdditionalFilesSelect,
+    handleDeleteExistingAttachment,
+    handleReplacePresentationFile,
+    handleReplaceAdditionalFile,
+    handleClearReplacementPresentation,
+    handleClearReplacementAdditional,
     validateAll,
     submitStep,
   };
