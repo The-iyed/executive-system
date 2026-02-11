@@ -2,14 +2,24 @@ import React from 'react';
 import { Stepper } from '@shared';
 import { STEP_LABELS } from '../../utils';
 import { useCreateMeeting } from '../../hooks/useCreateMeeting';
+import { useFormMeetingModal } from '../../hooks';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { Step4Scheduling } from '../../components/steps/Step4Scheduling';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import FormMeetingModal from '../../components/FormMeetingModal/FormMeetingModal';
 import '@shared/styles';
 
-export const CreateMeeting: React.FC = () => {
+export interface CreateMeetingProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOpen, onOpenChange: controlledOnOpenChange } = {}) => {
+  const uncontrolled = useFormMeetingModal();
+  const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
+  const onOpenChange = controlledOnOpenChange ?? uncontrolled.onOpenChange;
   const {
     currentStep,
     draftId,
@@ -122,8 +132,8 @@ export const CreateMeeting: React.FC = () => {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+  const content = (
+    <>
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
           قم بإضافة معلومات الاجتماع
@@ -145,7 +155,16 @@ export const CreateMeeting: React.FC = () => {
         onConfirm={deleteDraft.confirmDelete}
         isDeleting={deleteDraft.isDeleting}
       />
-    </div>
+    </>
+  );
+
+  if (controlledOnOpenChange !== undefined) {
+    return content;
+  }
+  return (
+    <FormMeetingModal open={open} onOpenChange={onOpenChange}>
+      {content}
+    </FormMeetingModal>
   );
 };
 
