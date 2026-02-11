@@ -6,9 +6,20 @@ import { Step1 } from '../../components/steps/Step1';
 import { Step2 } from '../../components/steps/Step2';
 import { Step3 } from '../../components/steps/Step3';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
+import { useFormMeetingModal } from '../../hooks/useFormMeetingModal';
 import '@shared/styles';
 
-export const CreateMeeting: React.FC = () => {
+export interface CreateMeetingProps {
+  /** When provided, drawer mode: use these and render content only (no modal wrapper) */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOpen, onOpenChange: controlledOnOpenChange } = {}) => {
+  const uncontrolled = useFormMeetingModal();
+  const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
+  const onOpenChange = controlledOnOpenChange ?? uncontrolled.onOpenChange;
   const {
     currentStep,
     draftId,
@@ -95,8 +106,8 @@ export const CreateMeeting: React.FC = () => {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+  const content = (
+    <>
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
           قم بإضافة معلومات الاجتماع
@@ -118,7 +129,16 @@ export const CreateMeeting: React.FC = () => {
         onConfirm={deleteDraft.confirmDelete}
         isDeleting={deleteDraft.isDeleting}
       />
-    </div>
+    </>
+  );
+
+  if (controlledOnOpenChange !== undefined) {
+    return content;
+  }
+  return (
+    <FormMeetingModal open={open} onOpenChange={onOpenChange}>
+      {content}
+    </FormMeetingModal>
   );
 };
 

@@ -35,7 +35,7 @@ export const useDeleteDraft = ({
     mutationFn: deleteDraft,
     onSuccess: () => {
       clearDraftData();
-      navigate(PATH.NEW_MEETING);
+      navigate(PATH.MEETINGS);
 
       // Call custom success callback if provided
       onSuccess?.();
@@ -54,7 +54,7 @@ export const useDeleteDraft = ({
       setIsConfirmOpen(true);
     } else {
       // If no draft ID, just navigate away
-      navigate(PATH.NEW_MEETING);
+      navigate(PATH.MEETINGS);
     }
   }, [draftId, navigate]);
 
