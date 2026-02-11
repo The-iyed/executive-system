@@ -48,7 +48,7 @@ function FileTypeIcon({ fileType, fileName }: { fileType?: string; fileName?: st
   const key = getFileTypeKey(fileType, fileName);
   if (key === 'pdf') {
     return (
-      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8E5E5] flex items-center justify-center overflow-hidden">
+      <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-[#E8E5E5] flex items-center justify-center overflow-hidden">
         <img src={pdfIcon} alt="PDF" className="w-6 h-6 object-contain" />
       </div>
     );
