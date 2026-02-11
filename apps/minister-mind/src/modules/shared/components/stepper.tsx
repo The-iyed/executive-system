@@ -67,7 +67,7 @@ export const Stepper: React.FC<StepperProps> = ({ steps, currentStep, className 
                 <div
                   className="flex-none relative"
                   style={{
-                    width: '233px',
+                    width: '200px',
                     height: '2px',
                     flexGrow: 0,
                     alignSelf: 'flex-start',
