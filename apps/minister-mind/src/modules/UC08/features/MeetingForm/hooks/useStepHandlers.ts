@@ -68,7 +68,7 @@ export const useStepHandlers = ({
   const handleStep3SaveDraft = useCallback(async () => {
     await step3Hook.submitStep(true, step3Hook.selectedSlots);
     if (step3Hook.selectedSlots.length === 0) {
-      navigate(PATH.NEW_MEETING);
+      navigate(PATH.MEETINGS);
     }
   }, [step3Hook, navigate]);
 

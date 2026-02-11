@@ -33,7 +33,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         className
       )}
     >
-      {/* Left side (Next + Save Draft) */}
       <div className="flex flex-col gap-3 w-full md:flex-row md:w-auto">
         {onNext && (
           <button
@@ -42,8 +41,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             disabled={disabled}
             className={cn(
               'flex items-center justify-center gap-2',
-              'px-4 py-2 h-[48px] rounded-lg',
-              'w-full md:min-w-[188px]',
+              'px-4 py-2 h-[45px] rounded-lg',
+              'w-full md:min-w-[190px]',
               'text-[16px] font-bold text-white whitespace-nowrap',
               'transition-colors',
               disabled
@@ -74,8 +73,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             disabled={disabled}
             className={cn(
               'flex items-center justify-center gap-2',
-              'px-4 py-2 h-[48px] rounded-lg',
-              'w-full md:min-w-[188px]',
+              'px-4 py-2 h-[45px] rounded-lg',
+              'w-full md:min-w-[190px]',
               'text-[16px] font-bold transition-colors',
               disabled
                 ? 'bg-[#E4E7EC] text-[#9CA3AF] opacity-50 cursor-not-allowed'
@@ -92,7 +91,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         )}
       </div>
 
-      {/* Right side (Cancel) */}
       {onCancel && (
         <button
           type="button"
@@ -100,8 +98,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           disabled={disabled}
           className={cn(
             'flex items-center justify-center',
-            'px-4 py-2 h-[48px] rounded-lg',
-            'w-full md:min-w-[188px] md:max-w-[220px]',
+            'px-4 py-2 h-[45px] rounded-lg',
+            'w-full md:min-w-[190px] md:max-w-[220px]',
             'border border-[#D0D5DD] bg-white',
             'text-[16px] font-bold text-[#344054]',
             'transition-colors',
