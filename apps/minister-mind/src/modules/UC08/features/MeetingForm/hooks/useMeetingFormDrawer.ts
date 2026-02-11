@@ -44,7 +44,7 @@ export function useMeetingFormDrawer() {
   const openEditDrawer = useCallback(
     (meetingId: string) => {
       const currentPath = window.location.pathname;
-      const isPreviewOrDetail = currentPath.includes('/meeting/') && currentPath.includes('/preview');
+      const isPreviewOrDetail = currentPath.includes('/uc08/meeting/') && currentPath.includes('/preview');
       if (isPreviewOrDetail && params.id) {
         setSearchParams((prev) => {
           const next = new URLSearchParams(prev);
