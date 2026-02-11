@@ -203,7 +203,12 @@
     border-color: rgb(var(--color-border));
   }
   body {
-    background-color: rgb(var(--color-background));
+    background-color: #F3F4F6;
+    background-image: url('/assets/bg-pattern.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: rgb(var(--color-foreground));
     font-family: 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
   }
