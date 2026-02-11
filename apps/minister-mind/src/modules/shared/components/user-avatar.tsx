@@ -5,10 +5,13 @@ import Avatar from '../assets/Avatar.svg';
 
 export interface UserAvatarProps {
   className?: string;
+  /** Header mode: only show circular avatar, keep hover card for logout */
+  compact?: boolean;
 }
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({ 
-  className = ''
+  className = '',
+  compact = false,
 }) => {
   const { user, logout } = useAuth();
   
@@ -23,12 +26,13 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     <TooltipProvider>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <div className={`flex items-center gap-3 cursor-pointer ${className}`}>
+          <div className={`flex items-center gap-3 cursor-pointer ${compact ? 'rounded-full overflow-hidden flex-shrink-0' : ''} ${className}`}>
             <img 
               src={Avatar} 
               alt="User Avatar" 
-              className="w-[43px] h-[43px] rounded-full flex-shrink-0"
+              className={`rounded-full flex-shrink-0 ${compact ? 'w-10 h-10' : 'w-[43px] h-[43px]'}`}
             />
+            {!compact && (
             <div className="flex flex-col min-w-0 flex-1 max-w-[150px]">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -52,6 +56,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 </TooltipContent>
               </Tooltip>
             </div>
+            )}
           </div>
         </HoverCardTrigger>
         <HoverCardContent className="w-56" align="end" sideOffset={8}>
