@@ -1,15 +1,30 @@
 import React from 'react';
-import { Stepper, ScreenLoader } from '@shared';
+import { Stepper, Loader } from '@shared';
 import { STEP_LABELS } from '../../utils';
 import { useEditMeeting } from '../../hooks/useEditMeeting';
+import { useFormMeetingModal } from '../../hooks';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { Step4Scheduling } from '../../components/steps/Step4Scheduling';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
 import '@shared/styles';
 
-export const EditMeeting: React.FC = () => {
+export interface EditMeetingProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  meetingId?: string;
+}
+
+export const EditMeeting: React.FC<EditMeetingProps> = ({
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  meetingId,
+} = {}) => {
+  const uncontrolled = useFormMeetingModal();
+  const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
+  const onOpenChange = controlledOnOpenChange ?? uncontrolled.onOpenChange;
   const {
     currentStep,
     scrollContainerRef,
@@ -30,19 +45,7 @@ export const EditMeeting: React.FC = () => {
     isLoading,
     error,
     draftData,
-  } = useEditMeeting();
-
-  if (isLoading) {
-    return <ScreenLoader message="جاري تحميل البيانات..." />;
-  }
-
-  if (error || !draftData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
-      </div>
-    );
-  }
+  } = useEditMeeting(meetingId != null ? { meetingIdOverride: meetingId } : undefined);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -133,8 +136,14 @@ export const EditMeeting: React.FC = () => {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+  const content = isLoading ? (
+    <Loader message="جاري تحميل البيانات..." />
+  ) : error || !draftData ? (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
+    </div>
+  ) : (
+    <>
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
           تعديل معلومات الاجتماع
@@ -149,15 +158,21 @@ export const EditMeeting: React.FC = () => {
 
         <div className="mt-8">{renderStepContent()}</div>
       </div>
-
       <DeleteDraftConfirmationModal
         isOpen={deleteDraft.isConfirmOpen}
         onClose={deleteDraft.closeConfirm}
         onConfirm={deleteDraft.confirmDelete}
         isDeleting={deleteDraft.isDeleting}
       />
-    </div>
+    </>
+  );
+
+  if (controlledOnOpenChange !== undefined) {
+    return <>{content}</>;
+  }
+  return (
+    <FormMeetingModal open={open} onOpenChange={onOpenChange}>
+      {content}
+    </FormMeetingModal>
   );
 };
-
-export default EditMeeting;
