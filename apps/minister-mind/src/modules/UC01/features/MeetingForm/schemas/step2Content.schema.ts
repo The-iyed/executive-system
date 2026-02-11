@@ -1,24 +1,16 @@
 import { z } from 'zod';
 
-// Presentation becomes optional when:
-// - فئة الاجتماع = لقاء خاص، لقاء ثنائي، ورشة عمل
-// - سريّة الاجتماع = سرّي
-// - اجتماع عاجل؟ = نعم
 const CATEGORIES_MAKING_FILE_OPTIONAL = ['BILATERAL_MEETING', 'PRIVATE_MEETING', 'WORKSHOP'] as const;
 const CONFIDENTIALITY_MAKING_FILE_OPTIONAL = 'CONFIDENTIAL' as const;
 
-// Presentation block is hidden when:
-// - فئة الاجتماع = مناقشة (بدون عرض تقديمي)
 const CATEGORY_HIDING_PRESENTATION = 'DISCUSSION_WITHOUT_PRESENTATION' as const;
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
-// PDF only for presentation
 const PDF_TYPES = ['application/pdf'];
 const PDF_EXTENSIONS = ['.pdf'];
 
-// PDF, Word, Excel for optional attachments
 const ADDITIONAL_FILE_TYPES = [
   'application/pdf',
   'application/msword',
@@ -43,7 +35,6 @@ const requiredDateSchema = (fieldName: string) =>
     'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
   );
 
-// Presentation: PDF only
 const presentationFileSchema = z
   .instanceof(File, { message: 'الملف مطلوب' })
   .refine((file) => file.size <= MAX_FILE_SIZE, 'حجم الملف يتجاوز 20 ميجابايت')
@@ -53,7 +44,6 @@ const presentationFileSchema = z
     'يجب رفع ملف PDF فقط'
   );
 
-// Additional attachments: PDF, Word, Excel
 const additionalFileSchema = z
   .instanceof(File, { message: 'الملف مطلوب' })
   .refine((file) => file.size <= MAX_FILE_SIZE, 'حجم الملف يتجاوز 20 ميجابايت')
@@ -78,6 +68,7 @@ export const step2ContentBaseSchema = z.object({
   additional_files: z.array(z.instanceof(File)).optional().default([]),
   existingFiles: z.array(existingFileSchema).optional().default([]),
   existingAdditionalFiles: z.array(existingFileSchema).optional().default([]),
+  deleted_attachment_ids: z.array(z.string()).optional().default([]),
 });
 
 export type Step2ContentFormData = z.infer<typeof step2ContentBaseSchema>;
@@ -88,12 +79,10 @@ export interface Step2ContentSchemaOptions {
   isUrgent?: boolean;
 }
 
-/** Presentation block is hidden when category = مناقشة (بدون عرض تقديمي) */
 export const isPresentationHidden = (opts?: Step2ContentSchemaOptions): boolean => {
   return opts?.meetingCategory === CATEGORY_HIDING_PRESENTATION;
 };
 
-/** Presentation file is required unless optional conditions or hidden */
 export const isPresentationRequired = (opts?: Step2ContentSchemaOptions): boolean => {
   if (isPresentationHidden(opts)) return false;
   const isFileOptional =
@@ -103,7 +92,6 @@ export const isPresentationRequired = (opts?: Step2ContentSchemaOptions): boolea
   return !isFileOptional;
 };
 
-/** "متى سيتم إرفاق العرض؟" is shown and required when اجتماع عاجل؟ = نعم */
 export const isAttachmentTimingRequired = (opts?: Step2ContentSchemaOptions): boolean => {
   return opts?.isUrgent === true;
 };
@@ -111,6 +99,8 @@ export const isAttachmentTimingRequired = (opts?: Step2ContentSchemaOptions): bo
 export const isAttachmentTimingVisible = (opts?: Step2ContentSchemaOptions): boolean => {
   return opts?.isUrgent === true;
 };
+
+const PRESENTATION_REQUIRED_MESSAGE = 'يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)';
 
 export const createStep2ContentSchema = (opts?: Step2ContentSchemaOptions) => {
   const hidden = isPresentationHidden(opts);
@@ -120,16 +110,27 @@ export const createStep2ContentSchema = (opts?: Step2ContentSchemaOptions) => {
     opts?.isUrgent === true
   );
   const attachmentTimingRequired = isAttachmentTimingRequired(opts);
+  const presentationRequired = !hidden && !fileOptional;
 
-  return step2ContentBaseSchema.extend({
+  const base = step2ContentBaseSchema.extend({
     presentation_files: hidden
       ? z.array(presentationFileSchema).optional().default([])
-      : fileOptional
-        ? z.array(presentationFileSchema).optional().default([])
-        : z.array(presentationFileSchema).min(1, 'يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)'),
+      : z.array(presentationFileSchema).optional().default([]),
     presentation_attachment_timing: attachmentTimingRequired
       ? requiredDateSchema('متى سيتم إرفاق العرض؟')
       : dateSchema('متى سيتم إرفاق العرض؟'),
     additional_files: z.array(additionalFileSchema).optional().default([]),
   });
+
+  if (!presentationRequired) return base;
+
+  return base.refine(
+    (data) => {
+      const deleted = data.deleted_attachment_ids ?? [];
+      const existingCount = (data.existingFiles ?? []).filter((f) => !deleted.includes(f.id)).length;
+      const newCount = (data.presentation_files ?? []).length;
+      return existingCount + newCount >= 1;
+    },
+    { message: PRESENTATION_REQUIRED_MESSAGE, path: ['presentation_files'] }
+  );
 };

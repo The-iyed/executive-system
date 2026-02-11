@@ -16,6 +16,8 @@ export interface Attachment {
   is_executive_summary: boolean;
   version: number;
   is_latest: boolean;
+  /** When set, this attachment is a new version replacing another; used to enable compare. */
+  replaces_attachment_id?: string | null;
 }
 
 export interface ContentRequestApiResponse {
@@ -324,29 +326,132 @@ export interface ComparisonSummary {
   new_slides: number;
 }
 
-export interface CompareConsultantStatementsResponse {
+export interface CompareSlideBySlideItem {
+  slide_number: number;
+  details: string;
+  change_level: string;
+}
+
+export interface CompareRegenerationDecision {
+  recommendation: string;
+  confidence: string;
+  reasoning: string;
+  key_factors?: string[];
+  business_impact?: string;
+  risk_assessment?: string;
+  presentation_coherence?: string;
+}
+
+export interface CompareAiInsights {
+  main_topics?: string[];
+  business_impact?: string;
+  risk_assessment?: string;
+  presentation_coherence?: string;
+  slide_count_comparison?: {
+    original_count: number;
+    new_count: number;
+    difference: number;
+  };
+}
+
+export interface ComparePresentationsResponse {
   comparison_id: string;
   overall_score: number;
   difference_level: string;
   status: string;
   regeneration_recommendation: string;
   summary: ComparisonSummary;
-  slide_by_slide?: Record<string, unknown>[];
-  regeneration_decision?: Record<string, unknown>;
-  ai_insights?: Record<string, unknown>;
+  slide_by_slide: CompareSlideBySlideItem[];
+  regeneration_decision?: CompareRegenerationDecision;
+  ai_insights?: CompareAiInsights;
 }
 
-export const compareConsultantStatements = async (
-  meetingId: string
-): Promise<CompareConsultantStatementsResponse> => {
-  const response = await axiosInstance.post<CompareConsultantStatementsResponse>(
-    '/api/comparisons/compare',
-    { meeting_id: meetingId }
+/** POST compare-by-attachment response. When status is "completed", full result is fetched via GET. */
+export interface CompareByAttachmentPostResponse {
+  comparison_id: string;
+  status: string;
+  created_at?: string;
+  completed_at?: string;
+  is_new?: boolean;
+  task_id?: string | null;
+}
+
+/** POST /api/comparisons/compare-by-attachment/{attachment_id}. Returns status (completed | pending). */
+export const postCompareByAttachment = async (
+  attachmentId: string
+): Promise<CompareByAttachmentPostResponse> => {
+  const response = await axiosInstance.post<CompareByAttachmentPostResponse>(
+    `/api/comparisons/compare-by-attachment/${attachmentId}`
   );
   return response.data;
 };
 
+/** GET /api/comparisons/by-attachment/{attachment_id} response: wrapper with nested result. */
+export interface GetComparisonByAttachmentResponse {
+  comparison_id: string;
+  status: string;
+  created_at?: string;
+  completed_at?: string;
+  result: ComparePresentationsResponse;
+}
+
+/** GET /api/comparisons/by-attachment/{attachment_id}. Returns the inner result for display (POST is only for status). */
+export const getComparisonByAttachment = async (
+  attachmentId: string
+): Promise<ComparePresentationsResponse> => {
+  const response = await axiosInstance.get<GetComparisonByAttachmentResponse>(
+    `/api/comparisons/by-attachment/${attachmentId}`
+  );
+  return response.data.result;
+};
+
+const DEFAULT_POLL_INTERVAL_MS = 2000;
+
+/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. */
+export const runCompareByAttachment = async (
+  attachmentId: string,
+  options?: { pollIntervalMs?: number }
+): Promise<ComparePresentationsResponse> => {
+  const intervalMs = options?.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+
+  const pollPost = async (): Promise<void> => {
+    const data = await postCompareByAttachment(attachmentId);
+    if (data.status === 'completed') {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+    await pollPost();
+  };
+
+  await pollPost();
+  return getComparisonByAttachment(attachmentId);
+};
+
+// LLM notes/insights for an attachment (presentation) – تقييم الاختلاف بين العروض
+const INSIGHTS_API_BASE =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EXECUTION_SYSTEM_URL) ||
+  'https://execution-system.momrahai.com';
+
+export interface AttachmentInsightsResponse {
+  attachment_id: string;
+  presentation_id: string;
+  extraction_status: string;
+  llm_processing_status: string;
+  llm_notes?: string[];
+  llm_suggestions?: string[];
+}
+
+/** GET presentations/by-attachment/{id}/insights from execution-system (تقييم الاختلاف بين العروض). */
+export const getAttachmentInsights = async (
+  attachmentId: string
+): Promise<AttachmentInsightsResponse> => {
+  const url = `${INSIGHTS_API_BASE}/api/presentations/by-attachment/${attachmentId}/insights`;
+  const response = await axiosInstance.get<AttachmentInsightsResponse>(url);
+  return response.data;
+};
+
 // Analyze contradictions between consultant statements
+// UI only uses contradictions (not statements).
 export interface AnalyzeContradiction {
   statements: string[];
   severity: string;
@@ -355,8 +460,8 @@ export interface AnalyzeContradiction {
 
 export interface AnalyzeCategory {
   category_name: string;
-  statements: string[];
-  contradictions: AnalyzeContradiction[];
+  statements?: string[]; // not used in UI
+  contradictions: (string | AnalyzeContradiction)[];
 }
 
 export interface AnalyzeResponse {
