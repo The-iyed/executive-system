@@ -16,7 +16,7 @@ export { CardsGrid, type CardsGridProps } from './cards-grid';
 export { ViewSwitcher, type ViewSwitcherProps, type ViewType } from './view-switcher';
 export { SearchFilterBar, type SearchFilterBarProps } from './search-filter-bar';
 export { Pagination, type PaginationProps } from './pagination';
-export { ScreenLoader } from './screen-loader';
+export { ScreenLoader, Loader } from './screen-loader';
 export { Stepper, type StepperProps, type StepperStep } from './stepper';
 export { ActionButtons, type ActionButtonsProps } from './action-buttons';
 export { AIGenerateButton, type AIGenerateButtonProps } from './ai-generate-button';

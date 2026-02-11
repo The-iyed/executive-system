@@ -9,9 +9,14 @@ import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
 import { useScrollToTop } from './useScrollToTop';
 
-export const useEditMeeting = () => {
+export interface UseEditMeetingOptions {
+  meetingIdOverride?: string;
+}
+
+export const useEditMeeting = (options?: UseEditMeetingOptions) => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id: idFromParams } = useParams<{ id: string }>();
+  const id = options?.meetingIdOverride ?? idFromParams ?? undefined;
 
   const { data: draftData, isLoading, error } = useQuery({
     queryKey: ['draft', id, 'edit'],
@@ -54,7 +59,7 @@ export const useEditMeeting = () => {
   }, [navigate]);
 
   const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook, step4SchedulingHook } = useMeetingSteps({
-    draftId: id!,
+    draftId: id ?? '',
     isEditMode: true,
     currentStep,
     initialData,
@@ -82,7 +87,7 @@ export const useEditMeeting = () => {
 
   return {
     currentStep,
-    draftId: id!,
+    draftId: id ?? '',
     scrollContainerRef,
     deleteDraft,
     step1BasicInfoHook,
