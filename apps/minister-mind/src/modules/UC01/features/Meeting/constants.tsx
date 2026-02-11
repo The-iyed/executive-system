@@ -8,10 +8,20 @@ import { MeetingDisplayData } from '../../utils/meetingMapper';
 
 export interface CreateTableColumnsOptions {
   startIndex?: number;
-  /** When provided, draft rows show a "Submit draft" action that calls this with draft id */
   onSubmitDraft?: (draftId: string) => void;
   submittingDraftId?: string | null;
+  onResubmitToScheduling?: (draftId: string) => void;
+  submittingResubmitToSchedulingId?: string | null;
+  onResubmitToContent?: (draftId: string) => void;
+  submittingResubmitToContentId?: string | null;
+  openConfirmModal?: (message: string, onConfirm: () => void) => void;
 }
+
+const ACTION_BTN_CLASS =
+  'flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0';
+
+export const MEETING_ACTION_CONFIRM_MESSAGE = 'هل أنت متأكد من الإرسال؟';
+export const MEETING_ACTION_CONFIRM_TITLE = 'تأكيد الإرسال';
 
 export const createTableColumns = (
   _navigate: NavigateFunction,
@@ -20,6 +30,20 @@ export const createTableColumns = (
   const startIndex = options?.startIndex ?? 0;
   const onSubmitDraft = options?.onSubmitDraft;
   const submittingDraftId = options?.submittingDraftId;
+  const onResubmitToScheduling = options?.onResubmitToScheduling;
+  const submittingResubmitToSchedulingId = options?.submittingResubmitToSchedulingId;
+  const onResubmitToContent = options?.onResubmitToContent;
+  const submittingResubmitToContentId = options?.submittingResubmitToContentId;
+  const openConfirmModal = options?.openConfirmModal;
+  const hasActions =
+    onSubmitDraft || onResubmitToScheduling || onResubmitToContent;
+
+  const handleActionClick = (handler: (draftId: string) => void, draftId: string) => {
+    if (openConfirmModal) {
+      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => handler(draftId));
+    }
+  };
+
   return [
     {
       id: 'itemNumber',
@@ -115,7 +139,7 @@ export const createTableColumns = (
     {
       id: 'status',
       header: 'حالة الاجتماع',
-      width: 'w-[310px]',
+      width: 'w-[400px]',
       render: (row) => (
         <div className="w-full flex justify-start">
           <StatusBadge status={row.status} label={row.statusLabel} />
@@ -136,37 +160,85 @@ export const createTableColumns = (
     {
       id: 'returnNotes',
       header: 'ملاحظات الإعادة',
-      width: 'w-[320px]',
+      width: 'w-[400px]',
       render: (row) => (
         <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
           {row.returnNotes || '-'}
         </span>
       ),
     },
-    ...(onSubmitDraft
+    ...(hasActions
       ? [
           {
             id: 'actions',
             header: '',
             width: 'min-w-[200px] w-[200px]',
             align: 'center' as const,
-            render: (row: MeetingDisplayData) =>
-              row.status === MeetingStatus.DRAFT ? (
-                <div className="flex justify-center w-full min-w-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSubmitDraft(row.id);
-                    }}
-                    disabled={submittingDraftId === row.id}
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                  >
-                    <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
-                    <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
-                  </button>
-                </div>
-              ) : null,
+            render: (row: MeetingDisplayData) => {
+              if (row.status === MeetingStatus.DRAFT && onSubmitDraft) {
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleActionClick(onSubmitDraft, row.id);
+                      }}
+                      disabled={submittingDraftId === row.id}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              if (
+                row.status === MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                onResubmitToScheduling
+              ) {
+                const submitting = submittingResubmitToSchedulingId === row.id;
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleActionClick(onResubmitToScheduling, row.id);
+                      }}
+                      disabled={submitting}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              if (
+                row.status === MeetingStatus.RETURNED_FROM_CONTENT &&
+                onResubmitToContent
+              ) {
+                const submitting = submittingResubmitToContentId === row.id;
+                return (
+                  <div className="flex justify-center w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleActionClick(onResubmitToContent, row.id);
+                      }}
+                      disabled={submitting}
+                      className={ACTION_BTN_CLASS}
+                    >
+                      <span>{submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}</span>
+                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            },
           } as TableColumn<MeetingDisplayData>,
         ]
       : []),
