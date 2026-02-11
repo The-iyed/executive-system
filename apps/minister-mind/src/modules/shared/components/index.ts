@@ -18,6 +18,7 @@ export { SearchFilterBar, type SearchFilterBarProps } from './search-filter-bar'
 export { Pagination, type PaginationProps } from './pagination';
 export { ScreenLoader, Loader } from './screen-loader';
 export { Stepper, type StepperProps, type StepperStep } from './stepper';
+export { Drawer, type DrawerProps } from './drawer';
 export { ActionButtons, type ActionButtonsProps } from './action-buttons';
 export { AIGenerateButton, type AIGenerateButtonProps } from './ai-generate-button';
 export { FormCheckbox, type FormCheckboxProps } from './FormCheckbox';
