@@ -12,6 +12,8 @@ export interface TabsProps {
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   className?: string;
+  /** 'pill' = gradient pill (default), 'underline' = text with bottom border for active */
+  variant?: 'pill' | 'underline';
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -19,6 +21,7 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onTabChange,
   className = '',
+  variant = 'pill',
 }) => {
   const defaultActive = activeTab || items[0]?.id;
 
@@ -27,6 +30,36 @@ export const Tabs: React.FC<TabsProps> = ({
       onTabChange(tabId);
     }
   };
+
+  if (variant === 'underline') {
+    return (
+      <div
+        className={`flex flex-row items-center justify-center gap-2.5 ${className}`}
+        dir="rtl"
+        style={{ fontFamily: "var(--font-family-ping-ar)" }}
+      >
+        {items.map((item) => {
+          const isActive = defaultActive === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabClick(item.id)}
+              className={`
+                flex flex-row justify-center items-center py-2 px-2.5
+                whitespace-nowrap transition-colors box-border text-sm
+                ${isActive
+                  ? 'text-[#00A79D] font-bold border-b border-[#00A79D] border-b-[1px]'
+                  : 'text-[#000000] font-normal'}
+              `}
+              style={{ lineHeight: '1.4' }}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -41,6 +74,7 @@ export const Tabs: React.FC<TabsProps> = ({
         rounded-[64px]
         ${className}
       `}
+      style={{ fontFamily: "var(--font-family-ping-ar)" }}
     >
         {items.map((item) => {
         const isActive = defaultActive === item.id;
