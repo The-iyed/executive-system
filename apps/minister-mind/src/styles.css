@@ -210,7 +210,7 @@
     background-repeat: no-repeat;
     background-attachment: fixed;
     color: rgb(var(--color-foreground));
-    font-family: 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'Almarai', 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
   }
 }
 
