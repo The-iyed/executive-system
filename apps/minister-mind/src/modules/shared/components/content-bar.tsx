@@ -67,7 +67,8 @@ export const ContentBar: React.FC<ContentBarProps> = ({
         </button>
       </div>
 
-      {/* Left/Center: Filter pill - slightly lighter grey than bar */}
+      {/* Left/Center: Filter pill - hide when no tabs (page has its own filters) */}
+      {filterTabs.length > 0 && (
       <div
         className="flex flex-row items-center gap-0 rounded-full overflow-hidden flex-shrink-0"
         style={{ backgroundColor: 'white', padding: '5px' }}
@@ -90,6 +91,7 @@ export const ContentBar: React.FC<ContentBarProps> = ({
           );
         })}
       </div>
+      )}
     </div>
   );
 };
