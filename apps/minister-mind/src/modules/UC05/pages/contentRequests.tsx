@@ -13,6 +13,7 @@ import {
   MeetingClassificationLabels,
   MeetingStatus,
   MeetingStatusLabels,
+  TruncatedWithTooltip,
 } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye } from 'lucide-react';
@@ -157,9 +158,9 @@ const ContentRequests: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+          <TruncatedWithTooltip title={row.submitter_name || '-'}>
             {row.submitter_name || '-'}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -169,9 +170,9 @@ const ContentRequests: React.FC = () => {
       width: 'flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+        <TruncatedWithTooltip title={row.meeting_subject || '-'}>
           {row.meeting_subject || '-'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -181,9 +182,9 @@ const ContentRequests: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full truncate">
+          <TruncatedWithTooltip title={getClassificationLabel(row.meeting_classification)}>
             {getClassificationLabel(row.meeting_classification)}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -237,7 +238,7 @@ const ContentRequests: React.FC = () => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
+        <div className="flex flex-row items-center justify-between mb-6 gap-6" dir="rtl">
           {/* Right side - Title and Description */}
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">الطلبات التي تتطلب تقييم المحتوى</h1>
@@ -246,16 +247,20 @@ const ContentRequests: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="ltr">
-            <div className="flex flex-row items-center gap-9">
+          {/* Left side - Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              dir="rtl"
+            >
               <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
                 value={searchValue}
                 onChange={setSearchValue}
                 placeholder="بحث"
                 variant="default"
-                className="w-[300px]"
+                className="w-[280px] h-[40px] min-w-0 rounded-full! bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
           </div>

@@ -468,16 +468,21 @@ const ContentConsultationRequests: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="ltr">
-            <div className="flex flex-row items-center gap-9">
+          {/* Left side - Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              
+              dir="rtl"
+            >
               <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
                 value={searchValue}
                 onChange={setSearchValue}
                 placeholder="بحث"
                 variant="default"
-                className="w-[300px]"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
           </div>

@@ -11,6 +11,7 @@ export { SharedLayout, type SharedLayoutProps } from './shared-layout';
 export { ContentBar, type ContentBarProps, type ContentBarFilterTab } from './content-bar';
 export { Tabs, type TabsProps, type TabItem } from './tabs';
 export { StatusBadge, type StatusBadgeProps, type StatusType } from './status-badge';
+export { TruncatedWithTooltip, type TruncatedWithTooltipProps } from './truncated-with-tooltip';
 export { DataTable, type DataTableProps, type TableColumn } from './data-table';
 export { MeetingCard, type MeetingCardProps, type MeetingCardData } from './meeting-card';
 export { CardsGrid, type CardsGridProps } from './cards-grid';
