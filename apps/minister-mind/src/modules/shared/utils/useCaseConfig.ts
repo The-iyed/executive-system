@@ -119,7 +119,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-08': {
     code: 'UC-08',
-    defaultRoute: UC08_PATH.NEW_MEETING,
+    defaultRoute: UC08_PATH.MEETINGS,
     navigationItems: [],
   },
 };

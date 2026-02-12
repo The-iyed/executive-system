@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getMeetingById } from '../../../UC02/data/meetingsApi';
 import { GoBackHeader, EditButton } from '../../components';
@@ -13,6 +13,7 @@ const PreviewMeeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(MeetingPreviewTabs.MEETING_PREVIEW);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
 
   // Fetch meeting data using React Query
   const { data: meeting, isLoading, error } = useQuery({
@@ -37,24 +38,24 @@ const PreviewMeeting: React.FC = () => {
     );
   }
 
-  // Get status label
   const statusLabel = MeetingStatusLabels[meeting.status as MeetingStatus] || meeting.status;
 
-  // Handle navigation back to meetings list
   const handleBack = () => {
     navigate(PATH.MEETINGS);
   };
 
-  // Handle edit button click
   const handleEdit = () => {
-    navigate(`${PATH.EDIT_MEETING.replace(':id', id!)}?new=true`, { state: { isNewMeeting: true } });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('form', 'edit');
+      return next;
+    });
   };
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
   };
 
-  // Render active tab content
   const renderTabContent = () => {
     switch (activeTab) {
       case MeetingPreviewTabs.MEETING_PREVIEW:
