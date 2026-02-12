@@ -2,12 +2,12 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { TooltipProvider } from '@sanad-ai/ui';
 import { SharedLayout } from '@shared';
-import { LayoutProps, WelcomeConfig } from './types';
-import { PATH } from '../routes/paths';
-import { useMeetingFormDrawer } from '../features/MeetingForm/hooks/useMeetingFormDrawer';
 import { FormMeetingModal } from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { useMeetingFormDrawer } from '../features/MeetingForm/hooks/useMeetingFormDrawer';
 import { CreateMeeting } from '../features/MeetingForm/features/create';
 import { EditMeeting } from '../features/MeetingForm/features/edit';
+import { LayoutProps, WelcomeConfig } from './types';
+import { PATH } from '../routes/paths';
 
 export const Layout: React.FC<LayoutProps> = ({
   children,

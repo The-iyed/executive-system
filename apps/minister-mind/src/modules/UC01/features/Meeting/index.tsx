@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
 import { Send } from 'lucide-react';
+import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
 import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
 import { MEETING_TABS, PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
-import { PATH } from '../../routes/paths';
+import { PATH as UC02_PATH } from '../../../UC02/routes/paths';
 import '@shared/styles';
 
 const MEETING_ACTION_SUCCESS_MESSAGE = 'تم الإرسال بنجاح';
@@ -216,7 +216,7 @@ const Meeting: React.FC = () => {
                       columns={tableColumns}
                       data={meetings}
                       onRowClick={(row) =>
-                        navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
+                        navigate(UC02_PATH.MEETING_DETAIL.replace(':id', row.id))
                       }
                     />
                   </div>
@@ -224,8 +224,8 @@ const Meeting: React.FC = () => {
               ) : (
                 <CardsGrid
                   meetings={meetings}
-                  onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
-                  onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onView={(meeting) => navigate(UC02_PATH.MEETING_DETAIL.replace(':id', meeting.id))}
+                  onDetails={(meeting) => navigate(UC02_PATH.MEETING_DETAIL.replace(':id', meeting.id))}
                 />
               )}
               {totalPages > 1 && (

@@ -12,6 +12,7 @@ type RouteConfig = {
   guard?: React.ComponentType<any> | typeof Fragment | any
   layout?: React.ComponentType<any> | typeof Fragment
   useCase?: string
+  useCases?: string[]
 } & RouteProps
 
 const routes: RouteConfig[] = [
@@ -37,7 +38,8 @@ const routes: RouteConfig[] = [
     path: PATH.MEETING_DETAIL,
     component: lazy(() => import('../pages/meetingDetail')),
     layout: Layout,
-    useCase: 'UC-02',
+    // Allow access to meeting details for both UC-01 and UC-02 users
+    useCases: ['UC-01', 'UC-02'],
   },
   {
     exact: true,
