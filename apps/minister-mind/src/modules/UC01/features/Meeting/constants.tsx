@@ -1,7 +1,6 @@
 import { NavigateFunction } from 'react-router-dom';
 import { Calendar, Send } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@sanad-ai/ui';
-import { TableColumn } from '@shared/components/data-table';
+import { TableColumn, TruncatedWithTooltip } from '@shared';
 import { StatusBadge } from '@shared/components/status-badge';
 import { MeetingStatus } from '@shared/types';
 import { MeetingDisplayData } from '../../utils/meetingMapper';
@@ -64,9 +63,9 @@ export const createTableColumns = (
       width: 'w-[300px]',
       render: (row) => (
         <div className="w-full flex justify-start">
-          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          <TruncatedWithTooltip title={row.requestNumber || '-'}>
             {row.requestNumber || '-'}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -76,9 +75,9 @@ export const createTableColumns = (
       width: 'w-[500px]',
       render: (row) => (
         <div className="w-full flex justify-start">
-          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          <TruncatedWithTooltip title={row.requestDate || '-'}>
             {row.requestDate || '-'}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -89,19 +88,9 @@ export const createTableColumns = (
       render: (row) => {
         const title = row.title || '-';
         return (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
-                {title}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent
-              side="top"
-              className="max-w-[350px] bg-neutral-900 text-white border-neutral-700"
-            >
-              <p className="break-words text-right">{title}</p>
-            </TooltipContent>
-          </Tooltip>
+          <TruncatedWithTooltip title={title}>
+            {title}
+          </TruncatedWithTooltip>
         );
       },
     },
@@ -110,9 +99,9 @@ export const createTableColumns = (
       header: 'فئة الاجتماع',
       width: 'w-[350px]',
       render: (row) => (
-        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+        <TruncatedWithTooltip title={row.meetingCategory || '-'}>
           {row.meetingCategory || '-'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -162,9 +151,9 @@ export const createTableColumns = (
       header: 'ملاحظات الإعادة',
       width: 'w-[400px]',
       render: (row) => (
-        <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+        <TruncatedWithTooltip title={row.returnNotes || '-'}>
           {row.returnNotes || '-'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     ...(hasActions

@@ -1,5 +1,59 @@
 import axiosInstance from '@auth/utils/axios';
 
+/** Attachment shape from Outlook timeline API */
+export interface OutlookAttachment {
+  name: string;
+  content_type: string;
+  size: number;
+  is_inline: boolean;
+  attachment_id: string;
+  content_base64?: string;
+}
+
+/** Outlook timeline event from GET /api/v1/outlook/events/timeline */
+export interface OutlookTimelineEvent {
+  subject: string;
+  body?: string | null;
+  start_datetime: string; // ISO datetime
+  end_datetime: string;   // ISO datetime
+  location?: string | null;
+  item_id: string;
+  change_key: string;
+  organizer: {
+    name: string;
+    email: string;
+  };
+  attachments?: OutlookAttachment[] | null;
+  /** true = internal, false = external */
+  is_internal: boolean;
+}
+
+export interface OutlookTimelineResponse {
+  success: boolean;
+  message: string;
+  document_id: string | null;
+  data: {
+    events: OutlookTimelineEvent[];
+  };
+}
+
+/**
+ * Fetch Outlook calendar events for a date range.
+ * GET /api/v1/outlook/events/timeline?start={start}&end={end}
+ * Returns data.events from the API response.
+ */
+export const getOutlookTimelineEvents = async (
+  start: string,
+  end: string
+): Promise<OutlookTimelineEvent[]> => {
+  const response = await axiosInstance.get<OutlookTimelineResponse>(
+    '/api/v1/outlook/events/timeline',
+    { params: { start, end } }
+  );
+  const events = response.data?.data?.events;
+  return Array.isArray(events) ? events : [];
+};
+
 export interface CalendarSlot {
   id: string;
   slot_start: string;

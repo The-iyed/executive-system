@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus, MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles';
 import { getMeetings, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
@@ -124,9 +124,9 @@ const ScheduledMeetings: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}>
             {row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -136,9 +136,9 @@ const ScheduledMeetings: React.FC = () => {
       width: 'flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.meeting_subject}>
           {row.meeting_subject}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -148,9 +148,9 @@ const ScheduledMeetings: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={getClassificationLabel(row.meeting_classification)}>
             {getClassificationLabel(row.meeting_classification)}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -179,15 +179,20 @@ const ScheduledMeetings: React.FC = () => {
             <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات المجدولة</p>
           </div>
 
-          <div className="flex-shrink-0 flex items-center gap-6" dir="ltr">
-            <ViewSwitcher view={view} onViewChange={setView} />
-            <div className="w-[240px] h-[32px]">
+          {/* Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
                 value={searchValue}
                 onChange={setSearchValue}
                 placeholder="ادخل البحث"
                 variant="default"
-                className="w-full h-[32px]"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
           </div>

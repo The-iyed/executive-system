@@ -75,38 +75,35 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     );
   }
 
-  // Default variant - smaller size
+  // Default variant - pill-shaped, white, subtle shadow (like design image)
   return (
-    <div 
+    <div
+      dir="rtl"
       className={`
-        relative
-        flex flex-row justify-end items-center
-        h-[32px]
-        px-3 py-1.5
-        gap-1.5
-        rounded-lg
+        relative flex flex-row items-center
+        h-10 pl-4 pr-4 gap-3
+        rounded-full
         bg-white
-        border border-[#D0D5DD]
-        shadow-[0px_1px_2px_rgba(16,24,40,0.05)]
+        border-none
+        shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)]
         ${className}
       `}
     >
+      <img
+        src={SearchIcon}
+        alt=""
+        className="w-5 h-5 flex-shrink-0 opacity-80"
+        style={{ filter: 'brightness(0) saturate(100%)' }}
+        aria-hidden
+      />
       <input
         type="text"
         placeholder={placeholder}
         value={value}
         onChange={handleChange}
-        className="w-full h-4 text-sm font-normal bg-transparent border-none outline-none text-gray-900 placeholder:text-[#667085]"
+        className="w-full min-w-0 h-[30px] text-[15px] font-normal bg-transparent border-none outline-none text-right placeholder:text-[#5E6977] text-gray-800"
         style={{
-          fontFamily: "'Ping AR + LT', sans-serif",
-        }}
-      />
-      <img 
-        src={SearchIcon} 
-        alt="Search" 
-        className="w-4 h-4 flex-shrink-0"
-        style={{
-          filter: 'opacity(0.7)',
+          fontFamily: "'Almarai', 'Ping AR + LT', sans-serif",
         }}
       />
     </div>
