@@ -1,7 +1,6 @@
 import React from 'react';
 import AsyncSelectV2 from '../AsyncSelectV2';
 import { cn } from '@sanad-ai/ui';
-
 import type { OptionType } from '../AsyncSelectV2/types';
 
 export interface FormAsyncSelectV2Props {
@@ -28,6 +27,7 @@ export interface FormAsyncSelectV2Props {
   className?: string;
   fullWidth?: boolean;
   searchPlaceholder?: string;
+  menuPortalTarget?: HTMLElement | null;
 }
 
 export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
@@ -47,6 +47,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
   className,
   fullWidth = false,
   searchPlaceholder = 'ابحث...',
+  menuPortalTarget,
 }) => {
   return (
     <AsyncSelectV2
@@ -70,6 +71,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
       )}
       fullWidth={fullWidth}
       searchPlaceholder={searchPlaceholder}
+      menuPortalTarget={menuPortalTarget}
     />
   );
 };
