@@ -61,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
           label: 'إنشاء اجتماع مباشر',
           variant: 'primary',
           onClick: () => {
-            navigate('/uc08/meetings/new');
+            navigate('/uc08/meetings?form=create');
           }
         }
       ] : undefined,
