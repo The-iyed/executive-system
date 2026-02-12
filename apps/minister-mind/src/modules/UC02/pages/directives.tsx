@@ -8,6 +8,7 @@ import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, ChevronLeft } from 'lucide-react';
 import { getDirectives, getPreviousDirectives, GetDirectivesParams, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
+import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -172,7 +173,7 @@ const Directives: React.FC = () => {
   const handleCloseDirectiveNavigate = async (directiveId: string, directiveText: string, relatedMeeting: string) => {
     await closeDirective(directiveId);
     navigate(
-      `/uc08/meetings/new?directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
+      ` ${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
     );
   };
 
@@ -614,7 +615,7 @@ const Directives: React.FC = () => {
                       try {
                         await closeDirective(d.id);
                         navigate(
-                          `/uc08/meetings/new?directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
+                          `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
                         );
                       } catch (err) {
                         console.error('Error closing directive:', err);
