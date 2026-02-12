@@ -1325,14 +1325,14 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 <>
-                  <div className="flex justify-start w-full" dir="rtl">
+                  <div className="flex justify-end w-full" dir="rtl">
                     <button
                       type="button"
                       onClick={() => {
@@ -1404,7 +1404,7 @@ const ContentRequestDetail: React.FC = () => {
                           </button>
 
                           {isExpanded && answers.length > 0 && (
-                            <div className="flex w-full flex-row items-stretch gap-0 mt-0" dir="rtl">
+                            <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                               <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
                                 <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
                                 <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
@@ -1455,7 +1455,7 @@ const ContentRequestDetail: React.FC = () => {
                             </div>
                           )}
                           {isExpanded && answers.length === 0 && (
-                            <div className="flex w-full flex-row items-stretch gap-0 mt-0" dir="rtl">
+                            <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                               <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
                                 <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
                                 <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
