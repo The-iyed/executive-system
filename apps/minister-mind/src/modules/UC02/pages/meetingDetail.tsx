@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Info, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -23,6 +23,7 @@ import {
   FormAsyncSelectV2,
   FormDatePicker,
   type OptionType,
+  Drawer,
 } from '@shared'; 
 import {
   getMeetingById,
@@ -238,15 +239,6 @@ const MeetingDetail: React.FC = () => {
     queryFn: () => getMeetingById(previousMeetingId!),
     enabled: !!previousMeetingId && !!id && previousMeetingId !== id,
   });
-
-  // Alert visibility state - persisted in localStorage
-  const [showAttachmentsAlert, setShowAttachmentsAlert] = useState(() => {
-    if (!id) return true;
-    const dismissedKey = `meeting-alert-dismissed-${id}`;
-    const isDismissed = localStorage.getItem(dismissedKey) === 'true';
-    return !isDismissed;
-  });
-
 
   // Suggested times state (populated from meeting alternative_time_slot_1/2)
   const [suggestedTimes, setSuggestedTimes] = useState<Array<{ id: string; time: string; selected: boolean }>>([]);
@@ -1192,10 +1184,6 @@ const MeetingDetail: React.FC = () => {
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
   
-  // Check if meeting has attachments (presentations)
-  const hasAttachments = meeting?.attachments && meeting.attachments.length > 0;
-  const hasPresentations = meeting?.attachments?.some(att => att.is_presentation) || false;
-
   // Handle form field changes
   const handleFieldChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -1423,46 +1411,6 @@ const MeetingDetail: React.FC = () => {
           className="w-full flex-1 min-h-0 flex flex-row overflow-y-auto pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white justify-center"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
         >
-          {/* Alert Box */}
-          {hasAttachments && showAttachmentsAlert && (
-            
-            <div className="bg-gray-50 border border-gray-300 rounded-xl p-4 flex flex-row items-start gap-3 relative">
-              <button
-                onClick={() => {
-                  setShowAttachmentsAlert(false);
-                  // Persist dismissal in localStorage
-                  if (id) {
-                    const dismissedKey = `meeting-alert-dismissed-${id}`;
-                    localStorage.setItem(dismissedKey, 'true');
-                  }
-                }}
-                className="absolute -top-1 -left-1 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-              <Info className="w-5 h-5 text-gray-600 flex-shrink-0" />
-
-            
-              <div className="flex-1 flex flex-col gap-2">
-                <p
-                  className="text-sm font-semibold text-gray-700 text-right"
-                  style={{ fontFamily: "'Somar Sans', sans-serif" }}
-                >
-                  يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.
-                </p>
-                {hasPresentations && (
-                  <p
-                    className="text-sm text-gray-600 text-right"
-                    style={{ fontFamily: "'Somar Sans', sans-serif" }}
-                  >
-                    تنبيه: هذا الطلب يحتوي على مرفقات (عروض تقديمية). يجب إرسال الطلب إلى مسؤول المحتوى أولاً لمراجعة جاهزية العرض وإعداد الملخص التنفيذي قبل جدولة الاجتماع. لا يمكن جدولة الاجتماع مباشرة عند وجود مرفقات.
-                  </p>
-                )}
-              </div>
-          
-            </div>
-          )}
-
           {/* Tab: معلومات الطلب (Excel التبويب) – اسم الحقل: رقم الطلب، حالة الطلب، مقدم الطلب، مالك الاجتماع */}
           {activeTab === 'request-info' && (
             <div className="flex flex-col gap-4 w-full">
@@ -1497,11 +1445,11 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: معلومات الاجتماع – Figma: flex column gap 14px, rows justify-between gap 15px, label #344054 8.24px, input border #D0D5DD rounded 4.71px */}
           {activeTab === 'meeting-info' && (
-            <div className="flex flex-col gap-[14px] items-end w-full max-w-[1029px]" dir="rtl">
+            <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
                 <div className="flex flex-col gap-[3.53px]">
                   <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل نطلب الاجتماع نيابة عن غيرك؟</label>
-                  <div className="flex items-center gap-2 w-full justify-end">
+                  <div className="flex items-center gap-2 w-full justify-start">
                     <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
                       type="button"
@@ -1790,7 +1738,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: المحتوى (Excel التبويب) – اسم الحقل: العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
           {activeTab === 'content' && (
-            <div className="flex flex-col gap-6 w-full max-w-[1085px]" dir="rtl">
+            <div className="flex flex-col gap-6 w-full" dir="rtl">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>العرض التقديمي</label>
                 <TooltipProvider>
@@ -1955,8 +1903,8 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: قائمة المدعوين (Excel) – قائمة المدعوين (مقدم الطلب)، قائمة المدعوين (الوزير) */}
           {activeTab === 'attendees' && (
-            <div className="flex flex-col items-center gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
-              <div className="flex flex-col gap-6 w-full max-w-[1085px]">
+            <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
+              <div className="flex flex-col gap-6 w-full">
                 <div className="flex flex-col gap-2">
                   <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>قائمة المدعوين (مقدّم الطلب)</h2>
                   <div className="w-full overflow-x-auto table-scroll">
@@ -2614,7 +2562,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* Content Officer Notes Tab – الملخص التنفيذي + الملاحظات (preview) + notes table */}
           {activeTab === 'content-consultation' && (
-            <div className="flex flex-col gap-6 max-w-[1085px]" dir="rtl">
+            <div className="flex flex-col gap-6 w-full" dir="rtl">
               {isLoadingContentOfficerNotes ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
@@ -2688,116 +2636,71 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Content officer notes table */}
+                  {/* Content officer notes – card design (same as الملاحظات على الطلب) */}
                   {contentOfficerNotesTableData.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="text-center">
-                        <p className="text-gray-600 text-lg mb-2">ملاحظات مسؤول المحتوى</p>
-                        <p className="text-gray-500 text-sm">لا توجد ملاحظات مسجلة</p>
+                        <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>ملاحظات مسؤول المحتوى</p>
+                        <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد ملاحظات مسجلة</p>
                       </div>
                     </div>
                   ) : (
-                    <DataTable
-                      columns={[
-                        {
-                          id: 'note_question',
-                          header: 'السؤال',
-                          width: 'flex-1',
-                          render: (row: ContentOfficerNoteRecord) => {
-                            const question = (row.note_question && typeof row.note_question === 'string') ? row.note_question : '-';
-                            return (
-                              <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {question}
-                              </span>
-                            );
-                          },
-                        },
-                        {
-                          id: 'note_answer',
-                          header: 'الملاحظة',
-                          width: 'flex-1',
-                          render: (row: ContentOfficerNoteRecord) => {
-                            const answer = (row.note_answer && typeof row.note_answer === 'string') ? row.note_answer : '';
-                            return (
-                              <span className="text-sm text-gray-700 whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {answer}
-                              </span>
-                            );
-                          },
-                        },
-                        {
-                          id: 'author_name',
-                          header: 'المؤلف',
-                          width: 'w-40',
-                          render: (row: ContentOfficerNoteRecord) => {
-                            const authorName = typeof row.author_name === 'string' ? row.author_name : String(row.author_name || '-');
-                            return (
-                              <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {authorName}
-                              </span>
-                            );
-                          },
-                        },
-                        {
-                          id: 'created_at',
-                          header: 'تاريخ الإنشاء',
-                          width: 'w-40',
-                          render: (row: ContentOfficerNoteRecord) => {
-                            const createdAt = typeof row.created_at === 'string' ? row.created_at : String(row.created_at || '');
-                            const date = new Date(createdAt);
-                            if (isNaN(date.getTime())) {
-                              return (
-                                <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  -
-                                </span>
-                              );
-                            }
-                            const formattedDate = date.toLocaleDateString('ar-SA', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            });
-                            return (
-                              <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {formattedDate}
-                              </span>
-                            );
-                          },
-                        },
-                        {
-                          id: 'updated_at',
-                          header: 'تاريخ التحديث',
-                          width: 'w-40',
-                          render: (row: ContentOfficerNoteRecord) => {
-                            const updatedAt = typeof row.updated_at === 'string' ? row.updated_at : String(row.updated_at || '');
-                            const date = new Date(updatedAt);
-                            if (isNaN(date.getTime())) {
-                              return (
-                                <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  -
-                                </span>
-                              );
-                            }
-                            const formattedDate = date.toLocaleDateString('ar-SA', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            });
-                            return (
-                              <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {formattedDate}
-                              </span>
-                            );
-                          },
-                        },
-                      ]}
-                      data={contentOfficerNotesTableData}
-                      rowPadding="py-3"
-                    />
+                    <div className="flex flex-col gap-[10px] w-full">
+                      <h3 className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        ملاحظات مسؤول المحتوى
+                      </h3>
+                      {contentOfficerNotesTableData.map((row) => {
+                        const question = (row.note_question && typeof row.note_question === 'string') ? row.note_question : '';
+                        const answer = (row.note_answer && typeof row.note_answer === 'string') ? row.note_answer : '';
+                        const authorName = typeof row.author_name === 'string' ? row.author_name : String(row.author_name || '—');
+                        const createdAt = typeof row.created_at === 'string' ? row.created_at : String(row.created_at || '');
+                        const dateValid = createdAt ? !isNaN(new Date(createdAt).getTime()) : false;
+                        const formattedDate = dateValid ? new Date(createdAt).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+                        return (
+                          <div
+                            key={row.id}
+                            className="flex flex-col justify-center items-center p-[3px] gap-[10px] w-full rounded-[9.26px]"
+                            style={{ background: '#E6ECF5' }}
+                          >
+                            <div
+                              className="flex flex-col items-end w-full py-[10px] px-[8.5px] gap-[7.13px] rounded-[8.05px] bg-white"
+                              style={{ fontFamily: "'Almarai', sans-serif" }}
+                            >
+                              <div className="flex flex-row justify-between items-start w-full gap-[15px]">
+                                <div className="flex flex-col justify-center items-end gap-[4.28px] min-w-0 flex-1">
+                                  <span className="text-[15.67px] font-bold leading-5 text-right" style={{ color: '#383838', fontFamily: "'Almarai', sans-serif" }}>
+                                    {authorName}
+                                  </span>
+                                  {question ? (
+                                    <p className="text-[10px] leading-[11px] text-right" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
+                                      {question}
+                                    </p>
+                                  ) : null}
+                                  {answer ? (
+                                    <p className="text-[10px] leading-[11px] text-right whitespace-pre-wrap" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
+                                      {answer}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-row justify-between items-center gap-3 flex-shrink-0">
+                                  <div className="flex flex-row justify-center items-center gap-2 px-2.5 py-1.5 rounded-full" style={{ background: 'rgba(0, 167, 157, 0.06)' }}>
+                                    <span className="text-[10px] leading-[11px]" style={{ color: '#00A79D', fontFamily: "'Almarai', sans-serif" }}>
+                                      مكتمل
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-row justify-center items-center gap-2">
+                                    <span className="text-[9px] leading-[10px] text-right" style={{ color: '#2C2C2C', fontFamily: "'Almarai', sans-serif" }}>
+                                      تاريخ الطلب : {formattedDate}
+                                    </span>
+                                    <Clock className="w-3 h-3 text-[#475467]" strokeWidth={1.08} aria-hidden />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </>
               )}
@@ -2806,7 +2709,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) – محضر الاجتماع، الحضور الفعلي، التوجيهات المرتبطة بالاجتماع */}
           {activeTab === 'meeting-documentation' && (
-            <div className="flex flex-col gap-8 max-w-[1085px]" dir="rtl">
+            <div className="flex flex-col gap-8 w-full" dir="rtl">
               <div className="flex flex-col gap-2">
                 <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '18px' }}>محضر الاجتماع</h2>
                 <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
@@ -2906,32 +2809,56 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Tab: الملاحظات على الطلب – list of notes + editable new note */}
+          {/* Tab: الملاحظات على الطلب – list of notes (card design) + editable new note */}
           {activeTab === 'request-notes' && (
-            <div className="flex flex-col gap-4 max-w-[1085px]" dir="rtl">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {generalNotesList.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                <div className="flex flex-col gap-[10px] w-full">
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     الملاحظات المسجلة
                   </label>
-                  <div className="flex flex-col gap-3">
-                    {generalNotesList.map((note) => (
+                  {generalNotesList.map((note) => (
+                    <div
+                      key={note.id}
+                      className="flex flex-col justify-center items-center p-[3px] gap-[10px] w-full rounded-[9.26px]"
+                      style={{ background: '#E6ECF5' }}
+                    >
                       <div
-                        key={note.id}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        className="flex flex-col items-end w-full py-[10px] px-[8.5px] gap-[7.13px] rounded-[8.05px] bg-white"
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
-                        <p className="text-sm text-[#475467] whitespace-pre-wrap">{note.text}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {note.author_name || note.author_type || '—'} · {note.created_at ? new Date(note.created_at).toLocaleString('ar-SA') : ''}
-                        </p>
+                        <div className="flex flex-row justify-between items-start w-full gap-[15px]">
+                          {/* Right in RTL: heading + question/text */}
+                          <div className="flex flex-col justify-center items-end gap-[4.28px] min-w-0 flex-1">
+                            <span className="text-[15.67px] font-bold leading-5 text-right" style={{ color: '#383838', fontFamily: "'Almarai', sans-serif" }}>
+                              {note.author_name || note.author_type || note.note_type || 'ملاحظة'}
+                            </span>
+                            <p className="text-[10px] leading-[11px] text-right whitespace-pre-wrap" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
+                              {note.text}
+                            </p>
+                          </div>
+                          {/* Left in RTL: date + clock and status pill */}
+                          <div className="flex flex-row justify-between items-center gap-3 flex-shrink-0">
+                            <div className="flex flex-row justify-center items-center gap-2 px-2.5 py-1.5 rounded-full" style={{ background: 'rgba(0, 167, 157, 0.06)' }}>
+                              <span className="text-[10px] leading-[11px]" style={{ color: '#00A79D', fontFamily: "'Almarai', sans-serif" }}>
+                                مكتمل
+                              </span>
+                            </div>
+                            <div className="flex flex-row justify-center items-center gap-2">
+                              <span className="text-[9px] leading-[10px] text-right" style={{ color: '#2C2C2C', fontFamily: "'Almarai', sans-serif" }}>
+                                تاريخ الطلب : {note.created_at ? new Date(note.created_at).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                              </span>
+                              <Clock className="w-3 h-3 text-[#475467]" strokeWidth={1.08} aria-hidden />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   {generalNotesList.length > 0 ? 'إضافة ملاحظة جديدة' : 'الملاحظات'}
                 </label>
                 <Textarea
@@ -2941,7 +2868,7 @@ const MeetingDetail: React.FC = () => {
                   }
                   placeholder="أدخل الملاحظات..."
                   className="w-full min-h-[200px] px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 />
               </div>
             </div>
@@ -3269,350 +3196,238 @@ const MeetingDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Send to Content Modal */}
-      <Dialog open={isSendToContentModalOpen} onOpenChange={setIsSendToContentModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle
-              className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              إرسال للمحتوى
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSendToContentSubmit}>
-            <div className="flex flex-col gap-4 py-4">
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  ملاحظات
-                </label>
-                <Textarea
-                  value={sendToContentForm.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSendToContentForm({ notes: e.target.value })}
-                  placeholder="يرجى مراجعة المحتوى قبل الجدولة"
-                  className="w-full min-h-[100px] text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSendToContentModalOpen(false);
-                  setSendToContentForm({ notes: '' });
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleSendToContentDraft}
-                disabled={sendToContentMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
-              </button>
-              <button
-                type="submit"
-                disabled={sendToContentMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {sendToContentMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Request Guidance Modal */}
-      <Dialog open={isRequestGuidanceModalOpen} onOpenChange={setIsRequestGuidanceModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle
-              className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              طلب توجيه
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleRequestGuidanceSubmit}>
-            <div className="flex flex-col gap-4 py-4">
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  ملاحظات
-                </label>
-                <Textarea
-                  value={requestGuidanceForm.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setRequestGuidanceForm({ notes: e.target.value })
-                  }
-                  placeholder="يرجى توفير التوجيهات اللازمة حول هذا الطلب"
-                  className="w-full min-h-[100px] text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRequestGuidanceModalOpen(false);
-                  setRequestGuidanceForm({ notes: '' });
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleRequestGuidanceDraft}
-                disabled={requestGuidanceMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
-              </button>
-              <button
-                type="submit"
-                disabled={requestGuidanceMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب توجيه'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Scheduling Consultation Modal */}
-      <Dialog open={isConsultationModalOpen} onOpenChange={setIsConsultationModalOpen}>
-        <DialogContent className="sm:max-w-[520px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle
-              className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              طلب استشارة جدولة
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleConsultationSubmit}>
-            <div className="flex flex-col gap-4 py-4">
-              {/* Consultant async select with internal search */}
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  المستشار
-                </label>
-                <Select
-                  value={consultationForm.consultant_user_id}
-                  onValueChange={(value) =>
-                    setConsultationForm((prev) => ({
-                      ...prev,
-                      consultant_user_id: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger
-                    className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
-                  </SelectTrigger>
-                  <SelectContent dir="rtl">
-                    {/* Search inside dropdown */}
-                    <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
-                      <Input
-                        type="text"
-                        value={consultationForm.search}
-                        onChange={(e) =>
-                          setConsultationForm((prev) => ({
-                            ...prev,
-                            search: e.target.value,
-                          }))
-                        }
-                        placeholder="ابحث عن المستشار بالاسم أو البريد"
-                        className="h-9 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                      />
-                    </div>
-                    {consultants.length === 0 && !isLoadingConsultants ? (
-                      <SelectItem disabled value="__no_results__">
-                        لا توجد نتائج
-                      </SelectItem>
-                    ) : (
-                      consultants.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {`${user.first_name} ${user.last_name} - ${user.email}`}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Consultation question */}
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  سؤال الاستشارة
-                </label>
-                <Textarea
-                  value={consultationForm.consultation_question}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setConsultationForm((prev) => ({
-                      ...prev,
-                      consultation_question: e.target.value,
-                    }))
-                  }
-                  placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟"
-                  className="w-full min-h-[100px] text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsConsultationModalOpen(false);
-                  setConsultationForm({
-                    consultant_user_id: '',
-                    consultation_question: '',
-                    search: '',
-                  });
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleConsultationDraft}
-                disabled={consultationMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}
-              </button>
-              <button
-                type="submit"
-                disabled={!consultationForm.consultant_user_id || consultationMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Return for Info Modal */}
-      <Dialog open={isReturnForInfoModalOpen} onOpenChange={setIsReturnForInfoModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle
-              className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-            >
-              إعادة للطلب
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleReturnForInfoSubmit}>
-            <div className="flex flex-col gap-4 py-4">
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  ملاحظات
-                </label>
-                <Textarea
-                  value={returnForInfoForm.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setReturnForInfoForm({ notes: e.target.value })
-                  }
-                  placeholder="يرجى توفير معلومات إضافية حول الموضوع"
-                  className="w-full min-h-[100px] text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsReturnForInfoModalOpen(false);
-                  setReturnForInfoForm({ notes: '' });
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                disabled={returnForInfoMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-              >
-                {returnForInfoMutation.isPending ? 'جاري الإرسال...' : 'إعادة للطلب'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Schedule Meeting Modal */}
-      <Dialog open={isScheduleModalOpen} onOpenChange={(open) => {
-        setIsScheduleModalOpen(open);
-        if (!open) {
-          setValidationError(null);
-          setWebexMeetingDetails(null);
+      {/* Send to Content – Drawer */}
+      <Drawer
+        open={isSendToContentModalOpen}
+        onOpenChange={setIsSendToContentModalOpen}
+        title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إرسال للمحتوى</span>}
+        side="left"
+        width={500}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsSendToContentModalOpen(false); setSendToContentForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
+            <button type="button" onClick={handleSendToContentDraft} disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            <button type="submit" form="send-to-content-form" disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}</button>
+          </div>
         }
-      }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-              جدولة الاجتماع
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleScheduleSubmit}>
-            <div className="flex flex-col gap-4 py-4">
-              {validationError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    {validationError}
-                  </p>
+      >
+        <form id="send-to-content-form" onSubmit={handleSendToContentSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              ملاحظات
+            </label>
+            <Textarea
+              value={sendToContentForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSendToContentForm({ notes: e.target.value })}
+              placeholder="يرجى مراجعة المحتوى قبل الجدولة"
+              className="w-full min-h-[100px] text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            />
+          </div>
+        </form>
+      </Drawer>
+
+      {/* Request Guidance – Drawer */}
+      <Drawer
+        open={isRequestGuidanceModalOpen}
+        onOpenChange={setIsRequestGuidanceModalOpen}
+        title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب توجيه</span>}
+        side="left"
+        width={500}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
+            <button type="button" onClick={handleRequestGuidanceDraft} disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب توجيه'}</button>
+          </div>
+        }
+      >
+        <form id="request-guidance-form" onSubmit={handleRequestGuidanceSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>ملاحظات</label>
+            <Textarea value={requestGuidanceForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })} placeholder="يرجى توفير التوجيهات اللازمة حول هذا الطلب" className="w-full min-h-[100px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} />
+          </div>
+        </form>
+      </Drawer>
+
+      {/* Scheduling Consultation – Drawer */}
+      <Drawer
+        open={isConsultationModalOpen}
+        onOpenChange={setIsConsultationModalOpen}
+        title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب استشارة جدولة</span>}
+        side="left"
+        width={520}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_id: '', consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
+            <button type="button" onClick={handleConsultationDraft} disabled={consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            <button type="submit" form="consultation-form" disabled={!consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+          </div>
+        }
+      >
+        <form id="consultation-form" onSubmit={handleConsultationSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>المستشار</label>
+            <Select value={consultationForm.consultant_user_id} onValueChange={(value) => setConsultationForm((prev) => ({ ...prev, consultant_user_id: value }))}>
+              <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
+                  <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-9 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} />
                 </div>
-              )}
-              {scheduleMutation.isSuccess && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-right text-sm text-green-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    تم جدولة الاجتماع بنجاح
-                  </p>
-                </div>
-              )}
-              {/* Scheduled Date/Time */}
-              <div className="flex flex-col gap-2">
+                {consultants.length === 0 && !isLoadingConsultants ? <SelectItem disabled value="__no_results__">لا توجد نتائج</SelectItem> : consultants.map((user) => <SelectItem key={user.id} value={user.id}>{`${user.first_name} ${user.last_name} - ${user.email}`}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>سؤال الاستشارة</label>
+            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} />
+          </div>
+        </form>
+      </Drawer>
+
+      {/* Return for Info – Drawer */}
+      <Drawer
+        open={isReturnForInfoModalOpen}
+        onOpenChange={setIsReturnForInfoModalOpen}
+        title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إعادة للطلب</span>}
+        side="left"
+        width={500}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsReturnForInfoModalOpen(false); setReturnForInfoForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
+            <button type="submit" form="return-for-info-form" disabled={returnForInfoMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{returnForInfoMutation.isPending ? 'جاري الإرسال...' : 'إعادة للطلب'}</button>
+          </div>
+        }
+      >
+        <form id="return-for-info-form" onSubmit={handleReturnForInfoSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label
+              className="text-sm font-medium text-gray-700 text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              ملاحظات
+            </label>
+            <Textarea
+              value={returnForInfoForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setReturnForInfoForm({ notes: e.target.value })
+              }
+              placeholder="يرجى توفير معلومات إضافية حول الموضوع"
+              className="w-full min-h-[100px] text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            />
+          </div>
+        </form>
+      </Drawer>
+
+      {/* Schedule Meeting – Drawer */}
+      <Drawer
+        open={isScheduleModalOpen}
+        onOpenChange={(open: boolean) => {
+          setIsScheduleModalOpen(open);
+          if (!open) {
+            setValidationError(null);
+            setWebexMeetingDetails(null);
+          }
+        }}
+        title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة الاجتماع</span>}
+        side="left"
+        width={700}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            {scheduleMutation.isSuccess && webexMeetingDetails ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsScheduleModalOpen(false);
+                  setScheduleForm({
+                    scheduled_at: '',
+                    meeting_channel: 'PHYSICAL',
+                    requires_protocol: false,
+                    protocol_type: null,
+                    protocol_type_text: '',
+                    is_data_complete: true,
+                    notes: '',
+                    location: '',
+                    selected_time_slot_id: null,
+                    minister_attendees: [],
+                  });
+                  setWebexMeetingDetails(null);
+                  navigate(-1);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity"
+                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              >
+                تم
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsScheduleModalOpen(false);
+                    setScheduleForm({
+                      scheduled_at: '',
+                      meeting_channel: 'PHYSICAL',
+                      requires_protocol: false,
+                      protocol_type: null,
+                      protocol_type_text: '',
+                      is_data_complete: true,
+                      notes: '',
+                      location: '',
+                      selected_time_slot_id: null,
+                      minister_attendees: [],
+                    });
+                    setWebexMeetingDetails(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  form="schedule-meeting-form"
+                  disabled={
+                    !scheduleForm.scheduled_at ||
+                    scheduleMutation.isPending ||
+                    isCreatingWebex ||
+                    (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
+                  }
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري الجدولة...' : 'جدولة'}
+                </button>
+              </>
+            )}
+          </div>
+        }
+      >
+        <form id="schedule-meeting-form" onSubmit={handleScheduleSubmit} className="flex flex-col gap-4">
+          {validationError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                {validationError}
+              </p>
+            </div>
+          )}
+          {scheduleMutation.isSuccess && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-right text-sm text-green-600" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                تم جدولة الاجتماع بنجاح
+              </p>
+            </div>
+          )}
+          {/* Scheduled Date/Time */}
+          <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                   تاريخ ووقت الاجتماع <span className="text-red-500">*</span>
                 </label>
@@ -3949,78 +3764,8 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              {scheduleMutation.isSuccess && webexMeetingDetails ? (
-                // Show close button after successful scheduling with Webex
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsScheduleModalOpen(false);
-                    setScheduleForm({
-                      scheduled_at: '',
-                      meeting_channel: 'PHYSICAL',
-                      requires_protocol: false,
-                      protocol_type: null,
-                      protocol_type_text: '',
-                      is_data_complete: true,
-                      notes: '',
-                      location: '',
-                      selected_time_slot_id: null,
-                      minister_attendees: [],
-                    });
-                    setWebexMeetingDetails(null);
-                    navigate(-1);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  تم
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsScheduleModalOpen(false);
-                      setScheduleForm({
-                        scheduled_at: '',
-                        meeting_channel: 'PHYSICAL',
-                        requires_protocol: false,
-                        protocol_type: null,
-                        protocol_type_text: '',
-                        is_data_complete: true,
-                        notes: '',
-                        location: '',
-                        selected_time_slot_id: null,
-                        minister_attendees: [],
-                      });
-                      setWebexMeetingDetails(null);
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={
-                      !scheduleForm.scheduled_at || 
-                      scheduleMutation.isPending || 
-                      isCreatingWebex ||
-                      (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
-                    }
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                  >
-                    {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري الجدولة...' : 'جدولة'}
-                  </button>
-                </>
-              )}
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </form>
+      </Drawer>
 
       {/* Delete minister attendee confirmation modal */}
       <Dialog
