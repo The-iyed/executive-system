@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { SharedLayout, WelcomeSectionProps } from '@shared';
 import { USE_CASE_CONFIGS } from '@shared';
 import { PATH } from '../routes/paths';
+import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -51,7 +52,6 @@ export const Layout: React.FC<LayoutProps> = ({
         actions: undefined,
       };
     }
-    // Default for schedule-review and directives
     return {
       title: 'مراجعة الجدولة',
       description: 'مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.',
@@ -61,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
           label: 'إنشاء اجتماع مباشر',
           variant: 'primary',
           onClick: () => {
-            navigate('/uc08/meetings?form=create');
+            navigate(`${UC08_PATH.MEETINGS}?form=create`);
           }
         }
       ] : undefined,
@@ -84,4 +84,3 @@ export const Layout: React.FC<LayoutProps> = ({
     />
   );
 };
-
