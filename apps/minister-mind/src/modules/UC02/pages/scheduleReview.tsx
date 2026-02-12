@@ -51,46 +51,34 @@ const ScheduleReview: React.FC = () => {
     setCurrentPage(1); // Reset to first page when tab changes
   };
 
-  // Determine API status based on active tab
-  // For scheduled-meetings tab, use CLOSED status
-  // For work-basket tab, use statusFilter or default to UNDER_REVIEW
+  // API status: for work-basket use statusFilter (undefined when 'all'); for scheduled-meetings use CLOSED (like before redesign)
   const apiStatus = useMemo(() => {
-    if (activeTab === 'scheduled-meetings') {
-      return MeetingStatus.CLOSED;
-    }
-    // For work-basket tab, use statusFilter or default to UNDER_REVIEW
+    if (activeTab === 'scheduled-meetings') return MeetingStatus.CLOSED;
     if (activeTab === 'work-basket') {
-      if (statusFilter === 'all') {
-        return undefined;
-      }
+      if (statusFilter === 'all') return undefined;
       return statusFilter;
     }
     return undefined;
   }, [activeTab, statusFilter]);
-  // Calculate pagination values
+
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch meetings from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
     queryKey: ['meetings', activeTab, apiStatus, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        skip: skip,
+        skip,
         limit: ITEMS_PER_PAGE,
       };
-      // Always add status (apiStatus is always defined based on tab)
       if (apiStatus) {
         params.status = apiStatus;
       }
-      // Only add search if it's not empty
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
-      // Use assigned scheduling endpoint for work-basket tab
       if (activeTab === 'work-basket') {
         return getAssignedSchedulingRequests(params);
       }
-      // For scheduled meetings fetch meetings filtered by status CLOSED and owner_type
       if (activeTab === 'scheduled-meetings') {
         params.status = MeetingStatus.CLOSED;
         params.owner_type = 'SCHEDULING';
@@ -98,7 +86,7 @@ const ScheduleReview: React.FC = () => {
       }
       return getMeetings(params);
     },
-    enabled: true, // Always enabled, status is optional
+    enabled: true,
   });
 
   // Map API response to MeetingCardData
@@ -133,24 +121,19 @@ const ScheduleReview: React.FC = () => {
   const totalItems = meetingsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Auto-switch to scheduled-meetings tab when all cases with UNDER_REVIEW status are removed
+  // Auto-switch to scheduled-meetings tab when all UNDER_REVIEW items are gone (like before redesign)
   useEffect(() => {
-    // Only check when on work-basket tab and not loading
     if (
       activeTab === 'work-basket' &&
       !isLoading &&
       (statusFilter === 'all' || statusFilter === MeetingStatus.UNDER_REVIEW) &&
-      apiStatus === MeetingStatus.UNDER_REVIEW
+      apiStatus === MeetingStatus.UNDER_REVIEW &&
+      totalItems === 0 &&
+      meetings.length === 0
     ) {
-      // Check if there are no more cases with UNDER_REVIEW status
-      if (totalItems === 0 && meetings.length === 0) {
-        // Switch to scheduled-meetings tab immediately
-        // This will change activeTab, which will change apiStatus to SCHEDULED
-        // and prevent further queries with UNDER_REVIEW
-        setActiveTab('scheduled-meetings');
-      }
+      setActiveTab('scheduled-meetings');
     }
-  }, [activeTab, isLoading, statusFilter, totalItems, meetings.length, apiStatus]);
+  }, [activeTab, isLoading, statusFilter, apiStatus, totalItems, meetings.length]);
 
   // Define table columns - order is from left to right (will be displayed RTL)
   // First column will appear on the rightmost side in RTL layout
@@ -337,24 +320,20 @@ const ScheduleReview: React.FC = () => {
           />
         </div>
 
-        {/* Page Title, Description, and Search/Filter Bar */}
+        {/* Page Title, Description, and Search/Filter Bar (like before redesign) */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          {/* Left side - Title and Description */}
           <div>
             <h1 className="text-3xl font-bold mb-2 text-right">
               {activeTab === 'work-basket' ? 'الطلبات الحالية' : 'الاجتماعات المجدولة'}
             </h1>
             <p className="text-base text-gray-600 text-right">
-              {activeTab === 'work-basket' 
-                ? 'الاطلاع على الطلبات الحالية' 
+              {activeTab === 'work-basket'
+                ? 'الاطلاع على الطلبات الحالية'
                 : 'الاطلاع على الاجتماعات المجدولة'}
             </p>
           </div>
-
-          {/* Right side - Search and Filter Bar */}
           <div className="flex-shrink-0">
             {activeTab === 'scheduled-meetings' ? (
-              // For scheduled meetings, only show search input (no status filter)
               <div className="w-[240px] h-[32px]">
                 <SearchInput
                   value={searchValue}
@@ -365,7 +344,6 @@ const ScheduleReview: React.FC = () => {
                 />
               </div>
             ) : (
-              // For work-basket, show full SearchFilterBar with status filter
               <SearchFilterBar
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
