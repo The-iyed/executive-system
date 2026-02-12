@@ -6,9 +6,26 @@ import { Step1 } from '../../components/steps/Step1';
 import { Step2 } from '../../components/steps/Step2';
 import { Step3 } from '../../components/steps/Step3';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
+import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
+import { useFormMeetingModal } from '../../hooks/useFormMeetingModal';
 import '@shared/styles';
 
-export const EditMeeting: React.FC = () => {
+export interface EditMeetingProps {
+  /** When provided, drawer mode: use these and render content only (no modal wrapper) */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** When provided (drawer mode), use this meeting id instead of route param */
+  meetingId?: string;
+}
+
+export const EditMeeting: React.FC<EditMeetingProps> = ({
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  meetingId,
+} = {}) => {
+  const uncontrolled = useFormMeetingModal();
+  const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
+  const onOpenChange = controlledOnOpenChange ?? uncontrolled.onOpenChange;
   const {
     currentStep,
     scrollContainerRef,
@@ -26,20 +43,7 @@ export const EditMeeting: React.FC = () => {
     isLoading,
     error,
     draftData,
-  } = useEditMeeting();
-
-  if (isLoading) {
-    return <ScreenLoader message="جاري تحميل البيانات..." />;
-  }
-
-  if (error || !draftData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
-      </div>
-    );
-  }
-
+  } = useEditMeeting(meetingId != null ? { meetingIdOverride: meetingId } : undefined);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -108,8 +112,14 @@ export const EditMeeting: React.FC = () => {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+  const content = isLoading ? (
+    <ScreenLoader message="جاري تحميل البيانات..." />
+  ) : error || !draftData ? (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
+    </div>
+  ) : (
+    <>
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
           تعديل معلومات الاجتماع
@@ -131,7 +141,16 @@ export const EditMeeting: React.FC = () => {
         onConfirm={deleteDraft.confirmDelete}
         isDeleting={deleteDraft.isDeleting}
       />
-    </div>
+    </>
+  );
+
+  if (controlledOnOpenChange !== undefined) {
+    return <>{content}</>;
+  }
+  return (
+    <FormMeetingModal open={open} onOpenChange={onOpenChange}>
+      {content}
+    </FormMeetingModal>
   );
 };
 
