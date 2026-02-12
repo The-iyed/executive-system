@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, Info, Plus, Trash2, Download, Eye, GitCompare, HelpCircle } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Info, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -1309,12 +1309,15 @@ const MeetingDetail: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-    <div className="flex-1 min-h-0 flex flex-col gap-6 p-6 pb-28 bg-[#F1F3F4]">
-        {/* Card 1: Header + Tabs (white), divided from content by gap where #F1F3F4 shows */}
-        <div className="w-full bg-white rounded-[15.59px] p-6 md:p-7 flex flex-col flex-shrink-0" style={{ boxShadow: '0px 4px 59.2px rgba(0, 0, 0, 0.05)' }}>
-          <div className="flex flex-row justify-end items-center p-2.5 gap-2.5 bg-white rounded-[14px] relative">
+      {/* Single parent: no bg, no extra container — only head and content are white cards with gap */}
+      <div className="flex-1 min-h-0 flex flex-col gap-8 pr-5">
+        {/* Head: white card */}
+        <div
+            className="flex flex-col flex-shrink-0 gap-8 h-full pb-3 "
+          >
+            <div className="flex flex-row justify-end items-center gap-2.5 relative">
             {/* Figma Frame 2147241026: column, justify-center, items-end, gap 18px */}
-            <div className="flex flex-col justify-center items-end gap-[18px] flex-1 min-w-0">
+            <div className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white">
               {/* Top row: title + status on right (RTL), quality button at end (left in RTL) */}
               <div className="flex flex-row justify-between items-center gap-2.5 w-full">
                 {/* Right side (RTL): back, title block, status */}
@@ -1329,36 +1332,35 @@ const MeetingDetail: React.FC = () => {
                   <div className="flex flex-col items-start min-w-0 text-right">
                     <h1
                       className="text-xl font-bold text-[#101828] leading-tight whitespace-nowrap truncate max-w-full"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                     >
                       مراجعة طلب الاجتماع ({meeting.request_number})
                     </h1>
                     <p
                       className="text-sm font-normal text-[#475467] leading-snug text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                     >
                       مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.
                     </p>
                   </div>
                   {hasChanges && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white text-xs flex-shrink-0" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white text-xs flex-shrink-0" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                       تغييرات غير محفوظة
                     </span>
                   )}
                   <StatusBadge status={meetingStatus} label={statusLabel} />
                 </div>
-                {/* End (left in RTL): quality button */}
+                {/* End (left in RTL): quality button - animated with shadow */}
                 <button
                   type="button"
                   onClick={() => setIsQualityModalOpen(true)}
-                  className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4"
+                  className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontSize: '11px',
                     lineHeight: '14px',
                     background: '#34C3BA',
-                    boxShadow: 'inset 0px 0.228393px 10.0721px rgba(51, 51, 51, 0.8)',
-                    filter: 'drop-shadow(0px 0.913574px 10.3919px rgba(4, 143, 134, 0.3))',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
                   }}
                 >
                   {/* Ellipse glow - Figma Ellipse 1: #87F8F8, blur(9.41px), soft highlight top-left */}
@@ -1371,9 +1373,8 @@ const MeetingDetail: React.FC = () => {
                     aria-hidden
                   />
                   <span className="relative z-10 flex items-center gap-2">
-                
                     تقييم جودة الاجتماع
-                    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
                       <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
                       <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
@@ -1386,13 +1387,7 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* Tabs row: help icon and tabs on same row, same alignment */}
               <div className="flex flex-row items-center w-full gap-2.5">
-                <button
-                  type="button"
-                  className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
-                  aria-label="مساعدة"
-                >
-                  <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
-                </button>
+            
                 <div className="flex-1 flex justify-center min-w-0">
                   <Tabs
                     items={tabs}
@@ -1402,14 +1397,32 @@ const MeetingDetail: React.FC = () => {
                     className="gap-2.5"
                   />
                 </div>
-                <div className="w-6 flex-shrink-0" aria-hidden />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
+                        aria-label="مساعدة"
+                      >
+                        <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[280px] text-right">
+                      <p className="font-semibold text-gray-900 mb-1">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
+                      <p className="text-sm text-gray-600">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
-          </div>
         </div>
 
-        {/* Card 2: Content (alert + tab panels), white on #F1F3F4 — scroll inside card so content stays on white bg */}
-        <div className="w-full min-h-0 flex-1 bg-white rounded-[15.59px] p-6 md:p-7 gap-6 flex flex-col overflow-y-auto" style={{ boxShadow: '0px 4px 59.2px rgba(0, 0, 0, 0.05)' }}>
+        {/* Content: white card, takes full remaining height, gap above from head */}
+        <div
+          className="w-full flex-1 min-h-0 flex flex-row overflow-y-auto pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white justify-center"
+          style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
+        >
           {/* Alert Box */}
           {hasAttachments && showAttachmentsAlert && (
             
@@ -1452,29 +1465,29 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: معلومات الطلب (Excel التبويب) – اسم الحقل: رقم الطلب، حالة الطلب، مقدم الطلب، مالك الاجتماع */}
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>رقم الطلب</label>
-                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     {meeting?.request_number ?? '-'}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>حالة الطلب</label>
-                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     {statusLabel}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مقدم الطلب</label>
-                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     {meeting?.submitter_name ?? '-'}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مالك الاجتماع</label>
-                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     {(meeting )?.meeting_owner_name ?? '-'}
                   </div>
                 </div>
@@ -1486,10 +1499,10 @@ const MeetingDetail: React.FC = () => {
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-[14px] items-end w-full max-w-[1029px]" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>هل نطلب الاجتماع نيابة عن غيرك؟</label>
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل نطلب الاجتماع نيابة عن غيرك؟</label>
                   <div className="flex items-center gap-2 w-full justify-end">
-                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
+                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
                       type="button"
                       onClick={() => setFormData((p) => ({ ...p, is_on_behalf_of: !p.is_on_behalf_of }))}
@@ -1499,26 +1512,26 @@ const MeetingDetail: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>مالك الاجتماع</label>
-                  <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="مالك الاجتماع" />
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مالك الاجتماع</label>
+                  <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="مالك الاجتماع" />
                 </div>
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>عنوان الاجتماع</label>
-                  <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="أدخل عنوان الاجتماع" />
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>عنوان الاجتماع</label>
+                  <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل عنوان الاجتماع" />
                 </div>
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>وصف الاجتماع</label>
-                  <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="أدخل وصف الاجتماع" />
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>وصف الاجتماع</label>
+                  <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل وصف الاجتماع" />
                 </div>
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>القطاع</label>
-                  <Input type="text" value={formData.sector} onChange={(e) => handleFieldChange('sector', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="القطاع" />
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>القطاع</label>
+                  <Input type="text" value={formData.sector} onChange={(e) => handleFieldChange('sector', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="القطاع" />
                 </div>
-                <div className="flex flex-col items-end gap-[3.53px]">
-                  <label className="text-[8.24px] leading-[12px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>نوع الاجتماع</label>
+                <div className="flex flex-col gap-[3.53px]">
+                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>نوع الاجتماع</label>
                   <Select value={formData.meeting_type} onValueChange={(v) => handleFieldChange('meeting_type', v)}>
-                    <SelectTrigger className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right flex-row-reverse text-[9.42px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue placeholder="اختر نوع الاجتماع" /></SelectTrigger>
+                    <SelectTrigger className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right flex-row-reverse text-[9.42px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر نوع الاجتماع" /></SelectTrigger>
                     <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -1549,9 +1562,9 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 )}
                 <div className="flex flex-col items-end gap-[6.89px]">
-                  <label className="text-[8.24px] leading-[11px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>هل يتطلب بروتوكول؟</label>
+                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل يتطلب بروتوكول؟</label>
                   <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>{scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
+                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
                     <button type="button" onClick={() => setScheduleForm((p) => ({ ...p, requires_protocol: !p.requires_protocol }))} className={`w-7 h-[15.34px] rounded-full flex transition-all cursor-pointer flex-shrink-0 ${scheduleForm.requires_protocol ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'} p-[1.28px]`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
                   </div>
                   {scheduleForm.requires_protocol && (
@@ -1598,9 +1611,9 @@ const MeetingDetail: React.FC = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col items-end gap-[6.89px]">
-                  <label className="text-[8.24px] leading-[11px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>اجتماع متسلسل؟</label>
+                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>اجتماع متسلسل؟</label>
                   <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>{formData.is_sequential ? 'نعم' : 'لا'}</span>
+                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_sequential ? 'نعم' : 'لا'}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1649,9 +1662,9 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-[6.89px] md:col-span-2">
-                  <label className="text-[8.24px] leading-[11px] text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>هل طلب الاجتماع بناء على توجيه من معالي الوزير</label>
+                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل طلب الاجتماع بناء على توجيه من معالي الوزير</label>
                   <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
+                    <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
                     <button
                       type="button"
                       onClick={() => setFormData((p) => ({ ...p, is_based_on_directive: !p.is_based_on_directive, ...(!p.is_based_on_directive ? {} : { directive_method: '' }) }))}
@@ -1703,7 +1716,7 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
               <div className="flex flex-col gap-[8px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[19px] text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>موعد الاجتماع</h3>
+                <h3 className="text-right text-[12.69px] leading-[19px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>موعد الاجتماع</h3>
                 <div className="flex flex-row gap-4 flex-wrap items-center">
                   {suggestedTimes.length === 0 ? (
                     <div className="w-full text-center py-4 text-[#667085] text-sm">لا توجد أوقات متاحة</div>
@@ -1711,7 +1724,7 @@ const MeetingDetail: React.FC = () => {
                     suggestedTimes.map((timeSlot) => (
                       <div key={timeSlot.id} className="flex flex-row items-center gap-2 px-2.5 py-2.5 bg-white border border-[#EEEEEE] rounded-[5px] shadow-[0px_4px_28px_rgba(0,0,0,0.06)] min-w-[160px]">
                         <button type="button" onClick={() => { setSuggestedTimes((prev) => prev.map((s) => (s.id === timeSlot.id ? { ...s, selected: !s.selected } : { ...s, selected: false }))); setScheduleForm((prev) => ({ ...prev, selected_time_slot_id: scheduleForm.selected_time_slot_id === timeSlot.id ? null : timeSlot.id })); }} className={`w-7 h-[15.34px] rounded-full flex transition-all cursor-pointer flex-shrink-0 ${timeSlot.selected ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'} p-[1.28px]`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
-                        <span className="flex-1 text-right text-[10.23px] text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>{timeSlot.time}</span>
+                        <span className="flex-1 text-right text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{timeSlot.time}</span>
                         <Calendar className="w-4 h-4 text-[#667085] flex-shrink-0" />
                       </div>
                     ))
@@ -1721,14 +1734,14 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* الأهداف – Figma: table border #EAECF0, header #F9FAFB, trash #FFF4F4, add button gradient. Columns RTL: رقم البند | الهدف | إجراء */}
               <div className="flex flex-col gap-[10px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>الأهداف</h3>
+                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الأهداف</h3>
                 {contentForm.objectives.length > 0 ? (
                   <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
                     <DataTable
                       columns={[
-                        { id: 'idx', header: 'رقم البند', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                        { id: 'idx', header: 'رقم البند', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{i + 1}</span> },
                         { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (obj: any, index: number) => (
-                          <Input type="text" value={obj.objective} onChange={(e) => { const n = [...contentForm.objectives]; n[index] = { ...obj, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="الهدف" />
+                          <Input type="text" value={obj.objective} onChange={(e) => { const n = [...contentForm.objectives]; n[index] = { ...obj, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="الهدف" />
                         ) },
                         { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
                           <button type="button" onClick={() => setContentForm((p) => ({ ...p, objectives: p.objectives.filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5]" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
@@ -1744,14 +1757,14 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* أجندة الاجتماع – Figma: same table style, "+ إضافة أجندة" */}
               <div className="flex flex-col gap-[10px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>أجندة الاجتماع</h3>
+                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>أجندة الاجتماع</h3>
                 {contentForm.agendaItems.length > 0 ? (
                   <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
                     <DataTable
                       columns={[
-                        { id: 'idx', header: 'رقم البند', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                        { id: 'idx', header: 'رقم البند', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{i + 1}</span> },
                         { id: 'agenda_item', header: 'بند جدول الأعمال', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
-                          <Input type="text" value={item.agenda_item} onChange={(e) => { const n = [...contentForm.agendaItems]; n[index] = { ...item, agenda_item: e.target.value }; setContentForm((p) => ({ ...p, agendaItems: n })); }} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="عنوان البند" />
+                          <Input type="text" value={item.agenda_item} onChange={(e) => { const n = [...contentForm.agendaItems]; n[index] = { ...item, agenda_item: e.target.value }; setContentForm((p) => ({ ...p, agendaItems: n })); }} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="عنوان البند" />
                         ) },
                         { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
                           <button type="button" onClick={() => setContentForm((p) => ({ ...p, agendaItems: p.agendaItems.filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5]" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
@@ -2664,7 +2677,14 @@ const MeetingDetail: React.FC = () => {
                       الملاحظات
                     </h3>
                     <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      {meeting?.content_officer_notes ?? '—'}
+                      {(() => {
+                        const raw: unknown = meeting?.content_officer_notes;
+                        if (raw == null) return '—';
+                        if (typeof raw === 'string') return raw;
+                        if (Array.isArray(raw)) return raw.map((n: any) => (n && typeof n === 'object' && typeof n.text === 'string' ? n.text : String(n?.text ?? '')).trim()).filter(Boolean).join('\n\n') || '—';
+                        if (typeof raw === 'object' && raw !== null && 'text' in raw) return (raw as { text?: string }).text ?? '—';
+                        return '—';
+                      })()}
                     </div>
                   </div>
 
@@ -2928,114 +2948,119 @@ const MeetingDetail: React.FC = () => {
           )}
         </div>
 
-        {/* Action Buttons - Fixed at bottom. Figma: rounded 32px, bg rgba(255,255,255,0.44), border #F6F9FD, shadow, circular icon buttons */}
+        {/* Action Buttons - iPhone-style liquid glass: blur + saturate, frost, layered shadow */}
         {meeting && meeting.status === MeetingStatus.UNDER_REVIEW && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full px-4">
-            <div className="mx-auto rounded-[32px] p-2.5 flex justify-center w-max border border-[#F6F9FD] flex-row gap-2" style={{ background: 'rgba(255, 255, 255, 0.44)', boxShadow: '0px 4px 33px rgba(0, 0, 0, 0.1)' }}>
-            <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
-              {/* Schedule Button - Hide when status is WAITING */}
-              {meetingStatus !== MeetingStatus.WAITING && (
-                <button
-                  onClick={() => setIsScheduleModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-                >
-                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    جدولة
-                  </span>
-                  <Calendar className="w-5 h-5" />
-                </button>
-              )}
-              {/* Edit/Save Button - shown when there are changes */}
-              <button
-                onClick={() => setIsEditConfirmOpen(true)}
-                disabled={!hasChanges}
-                aria-disabled={!hasChanges}
-                title={!hasChanges ? 'لا توجد تعديلات ليتم إرسالها' : 'تعديل'}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full transition-opacity ${
-                  hasChanges
-                    ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white hover:opacity-90'
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                  تعديل
-                </span>
-              </button>
-                      {/* Return to Request Button - Hide when status is WAITING */}
-                      {meetingStatus !== MeetingStatus.WAITING && (
-                        <button
-                          onClick={() => setIsReturnForInfoModalOpen(true)}
-                          className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-                        >
-                          <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                            إعادة للطلب
-                          </span>
-                          <RotateCcw className="w-5 h-5" />
-                        </button>
-                      )}
-                {/* Request Consultation Button - Hide when status is WAITING */}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+            <div
+              className="flex flex-col items-center justify-center py-2.5 px-3 min-h-[50px] rounded-[32px] transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] overflow-visible"
+              style={{
+                isolation: 'isolate',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.02), 0 2px 8px rgba(0, 0, 0, 0.06), 0 12px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                backdropFilter: 'blur(48px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(48px) saturate(200%)',
+              }}
+            >
+              <div className="flex flex-row items-center justify-center gap-2 flex-wrap max-w-[90vw]">
                 {meetingStatus !== MeetingStatus.WAITING && (
                   <button
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
+                    type="button"
+                    onClick={() => setIsScheduleModalOpen(true)}
+                    aria-label="جدولة"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
                   >
-                    <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      طلب استشارة
-                    </span>
-                    <ClipboardCheck className="w-5 h-5" />
+                    <CalendarMinus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة</span>
                   </button>
                 )}
-                     {/* Request Guidance Button - Hide when status is WAITING */}
-                     {meetingStatus !== MeetingStatus.WAITING && (
-                       <button
-                         onClick={() => setIsRequestGuidanceModalOpen(true)}
-                         className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors"
-                       >
-                         <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                           طلب توجيه
-                         </span>
-                         <FileCheck className="w-5 h-5" />
-                       </button>
-                     )}
-               {/* Send to Content Button - Hide when status is WAITING */}
-               {meetingStatus !== MeetingStatus.WAITING && (
-                 <button
-                   onClick={() => setIsSendToContentModalOpen(true)}
-                   className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity"
-                 >
-                   <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                     إرسال للمحتوى
-                   </span>
-                   <Send className="w-5 h-5" />
-                 </button>
-               )}
-
-              {/* Add to Waiting List Button - Only show when status is UNDER_REVIEW */}
-              {meetingStatus === MeetingStatus.UNDER_REVIEW && (
                 <button
-                  onClick={() => moveToWaitingListMutation.mutate()}
-                  disabled={moveToWaitingListMutation.isPending}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => setIsEditConfirmOpen(true)}
+                  disabled={!hasChanges}
+                  aria-disabled={!hasChanges}
+                  aria-label="تعديل"
+                  className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
                 >
-                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    {moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}
-                  </span>
-                  <Plus className="w-5 h-5" />
+                  <Pencil className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                  <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تعديل</span>
                 </button>
-              )}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    type="button"
+                    onClick={() => setIsReturnForInfoModalOpen(true)}
+                    aria-label="إعادة للطلب"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <RotateCcw className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إعادة للطلب</span>
+                  </button>
+                )}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConsultationModalOpen(true)}
+                    aria-label="طلب استشارة"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <ClipboardCheck className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب استشارة</span>
+                  </button>
+                )}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestGuidanceModalOpen(true)}
+                    aria-label="طلب توجيه"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <FileCheck className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب توجيه</span>
+                  </button>
+                )}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSendToContentModalOpen(true)}
+                    aria-label="إرسال للمحتوى"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <Send className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إرسال للمحتوى</span>
+                  </button>
+                )}
 
-              {/* Reject Button - Hide when status is WAITING */}
-              {meetingStatus !== MeetingStatus.WAITING && (
-                <button
-                  onClick={() => setIsRejectModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
-                >
-                  <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                    رفض
-                  </span>
-                  <X className="w-5 h-5" />
-                </button>
-              )}
+                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
+                  <button
+                    type="button"
+                    onClick={() => moveToWaitingListMutation.mutate()}
+                    disabled={moveToWaitingListMutation.isPending}
+                    aria-label="إضافة إلى قائمة الانتظار"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <Plus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}</span>
+                  </button>
+                )}
+                {meetingStatus !== MeetingStatus.WAITING && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectModalOpen(true)}
+                    aria-label="رفض"
+                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-red-300/40 hover:ring-offset-2 hover:bg-red-50/30"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                  >
+                    <X className="w-[15px] h-[15px] text-red-600 flex-shrink-0" strokeWidth={1.26} />
+                    <span className="text-sm font-medium text-red-700 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>رفض</span>
+                  </button>
+                )}
 
              
        
@@ -3049,6 +3074,7 @@ const MeetingDetail: React.FC = () => {
           </div>
         </div>
         )}
+        </div>
       </div>
 
       {/* Meeting Quality Modal */}

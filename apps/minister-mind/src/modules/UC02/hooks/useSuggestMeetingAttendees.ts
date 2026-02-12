@@ -11,6 +11,14 @@ export interface SuggestMeetingAttendeesPayload {
   minister_support_required: string;
 }
 
+/** Scores returned by the suggest API; when all zeros, the backend is not populating them yet. */
+export interface SuggestionScores {
+  experienceScore: number;
+  skillsMatch: number;
+  educationScore: number;
+  overallScore: number;
+}
+
 export interface SuggestedAttendee {
   employee_id: number;
   first_name: string;
@@ -23,6 +31,8 @@ export interface SuggestedAttendee {
   department_type: string;
   suggestion_reason: string;
   importance_level: string;
+  /** Optional scores from the API (camelCase). API may send snake_case; we normalize in the hook. */
+  scores?: SuggestionScores;
 }
 
 export interface SuggestMeetingAttendeesResponse {
@@ -103,7 +113,28 @@ export const useSuggestMeetingAttendees = () => {
 
       const data = await response.json();
       setIsLoading(false);
-      return data;
+
+      // Normalize suggestions: map snake_case scores to camelCase so UI has a consistent shape.
+      // If the API returns all score values as 0, the backend (invitee.builtop.com) must compute and populate them.
+      const rawSuggestions = data?.suggestions ?? (Array.isArray(data) ? data : []);
+      const suggestions: SuggestedAttendee[] = rawSuggestions.map((s: any) => {
+        const rawScores = s?.scores ?? s;
+        const scores: SuggestionScores | undefined =
+          rawScores && typeof rawScores === 'object'
+            ? {
+                experienceScore: Number(rawScores.experienceScore ?? rawScores.experience_score ?? 0),
+                skillsMatch: Number(rawScores.skillsMatch ?? rawScores.skills_match ?? 0),
+                educationScore: Number(rawScores.educationScore ?? rawScores.education_score ?? 0),
+                overallScore: Number(rawScores.overallScore ?? rawScores.overall_score ?? 0),
+              }
+            : undefined;
+        return {
+          ...s,
+          scores,
+        };
+      });
+
+      return { ...data, suggestions };
     } catch (err: any) {
       const errorMessage = err?.message || 'حدث خطأ أثناء اقتراح المدعوين';
       setError(errorMessage);
