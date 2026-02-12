@@ -1,14 +1,14 @@
 import { RouteProps } from 'react-router-dom';
 import { Fragment, lazy } from 'react';
-import { PATH } from './paths';
-import { Layout } from '../Layout';
 import { AuthGuard } from '@shared';
+import { Layout } from '../Layout';
+import { PATH } from './paths';
 
 type RouteConfig = {
   exact: boolean | null;
   path: string;
-  component: React.ComponentType<any>;
   guard?: React.ComponentType<any> | typeof Fragment | any;
+  component: React.ComponentType<any>;
   layout?: React.ComponentType<any> | typeof Fragment;
   useCase?: string;
 } & RouteProps;
