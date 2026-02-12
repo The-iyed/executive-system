@@ -5,7 +5,7 @@ import { Icon } from '@iconify/react';
 import { NavigationActions, NavItem } from './navigation-actions';
 import { UserAvatar } from './user-avatar';
 import { WelcomeSectionProps } from './welcome-section';
-import { ContentBar } from './content-bar';
+import { ContentBar, type ContentBarFilterTab } from './content-bar';
 import { useUserNavigation } from '../hooks/useUserNavigation';
 
 export interface SharedLayoutProps {
@@ -15,6 +15,12 @@ export interface SharedLayoutProps {
   welcomeSection: WelcomeSectionProps;
   navigationItems?: NavItem[];
   useDynamicNavigation?: boolean;
+  /** When empty array, ContentBar filter tabs are hidden (e.g. page has its own status tabs) */
+  contentBarFilterTabs?: ContentBarFilterTab[];
+  /** When true, hide the entire ContentBar (e.g. on meeting detail page) */
+  hideContentBar?: boolean;
+  /** Optional class for the main content wrapper (e.g. bg-transparent so only inner cards have bg) */
+  contentContainerClassName?: string;
 }
 
 const HEADER_BG = '#E5E7EB';
@@ -26,20 +32,30 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   welcomeSection,
   navigationItems,
   useDynamicNavigation = false,
+  contentBarFilterTabs,
+  hideContentBar = false,
+  contentContainerClassName,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { navigationItems: dynamicNavItems } = useUserNavigation();
 
   const finalNavigationItems = useMemo(() => {
     if (useDynamicNavigation || !navigationItems) {
       return dynamicNavItems;
     }
-    return navigationItems;
-  }, [navigationItems, dynamicNavItems, useDynamicNavigation]);
+    // Old way: filter passed navigationItems by user permissions (requiresUseCase)
+    const useCases = user?.use_cases ?? [];
+    return navigationItems
+      .filter((item) => {
+        if (!item.requiresUseCase) return true;
+        return useCases.includes(item.requiresUseCase);
+      })
+      .map(({ requiresUseCase, ...item }) => item);
+  }, [navigationItems, dynamicNavItems, useDynamicNavigation, user?.use_cases]);
 
   return (
-    <div className="min-h-screen relative w-full overflow-hidden" dir="rtl">
-      <div className={twMerge('relative min-h-screen z-10 my-0', headerClassName)}>
+    <div className="h-screen flex flex-col relative w-full overflow-hidden" dir="rtl">
+      <div className={twMerge('relative flex flex-col flex-1 min-h-0 z-10 my-0', headerClassName)}>
         {/* Single horizontal header bar - same UI as image */}
         <header
           className="flex flex-row items-center justify-between gap-4 p-10 rounded-t-[14px]"
@@ -107,8 +123,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
           )}
         </header>
 
-        {/* Sub-header / Content bar: title, primary action, filter pill, search */}
-        {isAuthenticated && (
+        {/* Sub-header / Content bar: title, primary action, filter pill, search — hidden on meeting detail */}
+        {isAuthenticated && !hideContentBar && (
           <div className="px-4 pt-2 pb-0">
             <ContentBar
               title={welcomeSection.title}
@@ -116,13 +132,14 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
                 welcomeSection.actions?.find((a) => a.variant === 'primary' || !a.variant) ??
                 welcomeSection.actions?.[0]
               }
+              filterTabs={contentBarFilterTabs}
             />
           </div>
         )}
 
-        {/* Main content */}
+        {/* Main content — flex-1 min-h-0 so it takes remaining height below header/content bar */}
         <div
-          className="children-container rounded-t-[31px]"
+          className={twMerge('children-container flex-1 min-h-0 flex flex-col rounded-t-[31px] pl-5', contentContainerClassName)}
         >
           {children}
         </div>
