@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import '@shared/styles';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
@@ -32,23 +32,19 @@ const WorkBasket: React.FC = () => {
     setCurrentPage(1);
   }, [debouncedSearch, statusFilter]);
 
-  // Determine API status based on status filter
+  // API status: only send when a specific status is selected (like before redesign)
   const apiStatus = useMemo(() => {
-    if (statusFilter === 'all') {
-      return undefined;
-    }
+    if (statusFilter === 'all') return undefined;
     return statusFilter;
   }, [statusFilter]);
 
-  // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch assigned scheduling requests from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
     queryKey: ['work-basket', 'uc02', apiStatus, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        skip: skip,
+        skip,
         limit: ITEMS_PER_PAGE,
       };
       if (apiStatus) {
@@ -138,9 +134,9 @@ const WorkBasket: React.FC = () => {
       width: 'min-w-[220px] flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.meeting_subject ?? '-'}>
           {row.meeting_subject ?? '-'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -163,9 +159,9 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}>
             {row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -176,9 +172,9 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={getClassificationLabel(row.meeting_classification)}>
             {getClassificationLabel(row.meeting_classification)}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -228,13 +224,12 @@ const WorkBasket: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar and View Switcher */}
+        {/* Page Title, Description, Search/Filter Bar and View Switcher (like before redesign) */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div>
             <h1 className="text-3xl font-bold mb-2 text-right">الطلبات الحالية</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
           </div>
-
           <div className="flex-shrink-0 flex items-center gap-6" dir="ltr">
             <ViewSwitcher view={view} onViewChange={setView} />
             <SearchFilterBar

@@ -1,21 +1,38 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { ScreenLoader } from '@shared';
-import { MeetingStatus } from '@shared';
+import { ScreenLoader, Drawer } from '@shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
   type CalendarEventData,
 } from '@shared';
-import { Skeleton } from '@sanad-ai/ui';
-import { getMeetings, type MeetingApiResponse } from '../data/meetingsApi';
+import { Skeleton, cn } from '@sanad-ai/ui';
+import { getOutlookTimelineEvents, type OutlookTimelineEvent } from '../data/calendarApi';
 
+const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+function formatDetailDate(date: Date): string {
+  const dayName = dayNames[date.getDay()];
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  return `${dayName} ${day} ${month}`;
+}
+
+function formatAttachmentSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} بايت`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ك.ب`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} م.ب`;
+}
+
+/** Monday of the given week at local midnight */
 const getWeekStart = (date: Date): Date => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+  d.setDate(diff);
+  return d;
 };
 
 const getWeekEnd = (weekStart: Date): Date => {
@@ -35,65 +52,79 @@ const getRandomVariant = (id: string): string => {
   return variants[index];
 };
 
-const mapMeetingToEvent = (meeting: MeetingApiResponse): CalendarEventData | null => {
-  let startDate: Date | null = null;
-  let endDate: Date | null = null;
-  
-  if (meeting.selected_time_slot?.slot_start) {
-    startDate = new Date(meeting.selected_time_slot.slot_start);
-    endDate = meeting.selected_time_slot.slot_end 
-      ? new Date(meeting.selected_time_slot.slot_end)
-      : new Date(startDate.getTime() + 60 * 60 * 1000);
-  } else if (meeting.scheduled_at) {
-    startDate = new Date(meeting.scheduled_at);
-    const durationMinutes = meeting.presentation_duration || 60;
-    endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
-  } else {
-    return null;
+/** Map a datetime to a grid slot string (HH:00) using local time */
+const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
+  slotHour = Math.max(0, Math.min(23, slotHour));
+  return `${slotHour.toString().padStart(2, '0')}:00`;
+};
+
+const formatExactTime = (date: Date): string => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+/** Map API attachment to calendar event attachment (no base64) */
+function mapAttachments(attachments: OutlookTimelineEvent['attachments']): CalendarEventData['attachments'] {
+  if (!Array.isArray(attachments)) return undefined;
+  return attachments.map((a) => ({
+    name: a.name,
+    content_type: a.content_type,
+    size: a.size,
+    is_inline: a.is_inline,
+    attachment_id: a.attachment_id,
+  }));
+}
+
+const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEventData => {
+  const startDate = new Date(event.start_datetime);
+  const endDate = new Date(event.end_datetime);
+  const id = event.item_id;
+  const title = event.subject || 'اجتماع';
+  const variantByInternal =
+    event.is_internal === true ? 'internal' : event.is_internal === false ? 'external' : getRandomVariant(id);
+  if (isNaN(startDate.getTime())) {
+    return {
+      id,
+      type: 'reserved',
+      variant: variantByInternal,
+      label: title,
+      startTime: '08:00',
+      endTime: '09:00',
+      date: new Date(),
+      title,
+      is_available: false,
+      is_internal: event.is_internal,
+      location: event.location ?? undefined,
+      organizer: event.organizer,
+      attachments: mapAttachments(event.attachments),
+    };
   }
-  
-  if (isNaN(startDate.getTime())) return null;
-  
-  const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
-    slotHour = Math.max(0, Math.min(23, slotHour));
-    return `${slotHour.toString().padStart(2, '0')}:00`;
-  };
-  
-  const formatExactTime = (date: Date): string => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-  
   const startTime = formatTimeToSlot(startDate, false);
-  let endTime = endDate ? formatTimeToSlot(endDate, true) : startTime;
-  
-  if (endTime === startTime && endDate && endDate > startDate) {
-    const startHour = parseInt(startTime.split(':')[0]);
-    const endHour = Math.min(23, startHour + 1);
-    endTime = `${endHour.toString().padStart(2, '0')}:00`;
+  let endTime = formatTimeToSlot(endDate, true);
+  if (endTime === startTime && endDate > startDate) {
+    const startHour = parseInt(startTime.split(':')[0], 10);
+    endTime = `${Math.min(23, startHour + 1).toString().padStart(2, '0')}:00`;
   }
-  
-  const exactStartTime = formatExactTime(startDate);
-  const exactEndTime = endDate ? formatExactTime(endDate) : exactStartTime;
-  const meetingTitle = meeting.meeting_title || meeting.meeting_subject || 'اجتماع';
-  
   return {
-    id: meeting.id,
+    id,
     type: 'reserved',
-    variant: getRandomVariant(meeting.id),
-    label: meetingTitle,
+    variant: variantByInternal,
+    label: title,
     startTime,
     endTime,
     date: startDate,
-    title: meetingTitle,
-    description: meeting.meeting_subject || undefined,
+    title,
     is_available: false,
-    exactStartTime,
-    exactEndTime,
+    exactStartTime: formatExactTime(startDate),
+    exactEndTime: formatExactTime(endDate),
+    is_internal: event.is_internal,
+    location: event.location ?? undefined,
+    organizer: event.organizer,
+    attachments: mapAttachments(event.attachments),
   };
 };
 
@@ -107,8 +138,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   initialDate
 }) => {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
-  // Keep previous events while loading new week
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
+  const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
 
   // Sync currentDate if initialDate changes (e.g. when opening modal with a new selection)
   React.useEffect(() => {
@@ -133,44 +164,17 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     return date.toISOString();
   }, [weekEnd]);
 
-  const { data: meetingsResponse, isLoading, isFetching, error } = useQuery({
-    queryKey: ['calendar-meetings', 'uc02', startDateISO, endDateISO],
-    queryFn: () => {
-      return getMeetings({
-        status: MeetingStatus.SCHEDULED,
-        owner_type: 'SCHEDULING',
-        start_date: startDateISO,
-        end_date: endDateISO,
-      });
-    },
+  const { data: timelineEvents, isLoading, isFetching, error } = useQuery({
+    queryKey: ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+    queryFn: () => getOutlookTimelineEvents(startDateISO, endDateISO),
     enabled: true,
   });
 
-  // Process new events from API response
+  // Process Outlook timeline events and merge with extraEvents
   const processedEvents = useMemo(() => {
-    if (!meetingsResponse?.items) return [];
-    
-    const allMappedEvents = meetingsResponse.items
-      .map(mapMeetingToEvent)
-      .filter((event): event is CalendarEventData => event !== null);
-    
-    const weekStartDate = new Date(weekStart);
-    weekStartDate.setHours(0, 0, 0, 0);
-    const weekStartTime = weekStartDate.getTime();
-    
-    const weekEndDate = new Date(weekEnd);
-    weekEndDate.setHours(23, 59, 59, 999);
-    const weekEndTime = weekEndDate.getTime();
-    
-    const filtered = allMappedEvents.filter((event) => {
-      const eventDateOnly = new Date(event.date);
-      eventDateOnly.setHours(0, 0, 0, 0);
-      const eventTime = eventDateOnly.getTime();
-      return eventTime >= weekStartTime && eventTime <= weekEndTime;
-    });
-
-    return [...filtered, ...extraEvents];
-  }, [meetingsResponse, weekStart, weekEnd, extraEvents]);
+    const mapped = (timelineEvents ?? []).map(mapOutlookEventToCalendarEvent);
+    return [...mapped, ...extraEvents];
+  }, [timelineEvents, extraEvents]);
 
   // Update previous events when we get new data
   // Use a ref to track the last event IDs to prevent infinite loops
@@ -213,10 +217,10 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   // Track if we've ever loaded data successfully
   const hasLoadedOnce = React.useRef(false);
   React.useEffect(() => {
-    if (meetingsResponse && !isFetching) {
+    if (timelineEvents && !isFetching) {
       hasLoadedOnce.current = true;
     }
-  }, [meetingsResponse, isFetching]);
+  }, [timelineEvents, isFetching]);
 
   // Show full loader only on the very first load when we've never loaded data before
   const isInitialLoad = isLoading && !hasLoadedOnce.current && previousEvents.length === 0 && !error;
@@ -230,7 +234,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   }
 
   // Show error only on initial load with no previous data
-  if (error && !meetingsResponse && previousEvents.length === 0 && !hasLoadedOnce.current) {
+  if (error && !timelineEvents && previousEvents.length === 0 && !hasLoadedOnce.current) {
     return (
       <div className="w-full h-[600px] flex items-center justify-center text-red-600" dir="rtl">
         حدث خطأ أثناء تحميل المواعيد. يرجى المحاولة مرة أخرى.
@@ -274,28 +278,23 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     }, [timeSlots.length]);
 
     return (
-      <div className="w-full border-[0.6px] border-b-0 border-[#B6C1CA] rounded-[2px] overflow-hidden bg-white">
-        {/* Header Row - Days */}
-        <div className="grid grid-cols-[60px_repeat(7,minmax(0,1fr))] border-b-[0.6px] border-[#B6C1CA] bg-[#FFFFFF]">
-          <div className="p-3 border-[#B6C1CA] bg-[#F9FAFB]" />
+      <div className="w-full overflow-hidden bg-white" style={{ borderBottomLeftRadius: '14.5312px', borderBottomRightRadius: '14.5312px' }}>
+        <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_52px]">
           {weekDates.map((_date, index) => (
-            <div key={index} className="p-1 border-r-[0.6px] border-[#B6C1CA] text-right h-[50px]">
+            <div
+              key={index}
+              className="p-2 min-h-[67px] border-b border-r flex flex-col justify-center"
+              style={{ borderColor: '#EBEBEB', borderStyle: 'dashed', borderWidth: '0.908201px', background: 'rgba(255,255,255,0.6)' }}
+            >
               <Skeleton className="h-4 w-6 mb-1" />
               <Skeleton className="h-3 w-16" />
             </div>
           ))}
+          <div className="min-h-[67px] border-b border-r" style={{ borderColor: '#EBEBEB', borderStyle: 'dashed', borderWidth: '0.908201px', background: 'rgba(255,255,255,0.6)' }} />
         </div>
-
-        {/* Time Slots */}
-        <div className="grid grid-cols-[60px_repeat(7,minmax(0,1fr))]">
+        <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_52px]">
           {timeSlots.map((time, timeIndex) => (
             <React.Fragment key={time}>
-              {/* Time Label */}
-              <div className="p-3 border-r-0 border-b-[0.6px] border-[#B6C1CA] bg-[#F9FAFB] text-right w-[60px]">
-                <Skeleton className="h-4 w-10" />
-              </div>
-
-              {/* Day Columns */}
               {weekDates.map((_date, dayIndex) => {
                 const hasSkeletonEvent = skeletonEvents.some(
                   (e) => e.dayIndex === dayIndex && e.timeIndex === timeIndex
@@ -303,26 +302,24 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 const skeletonEvent = skeletonEvents.find(
                   (e) => e.dayIndex === dayIndex && e.timeIndex === timeIndex
                 );
-
                 return (
                   <div
                     key={dayIndex}
-                    className="border-r-[0.6px] border-b-[0.6px] border-[#B6C1CA] h-[50px] relative"
+                    className="min-h-[53px] border-b border-r relative"
+                    style={{ borderColor: '#EAECED', borderStyle: 'dashed', borderWidth: '0.908201px' }}
                   >
                     {hasSkeletonEvent && skeletonEvent && (
                       <div
-                        className="absolute left-1 right-1 rounded px-2 py-1"
-                        style={{
-                          top: '2px',
-                          height: `${skeletonEvent.height * 50 - 4}px`,
-                        }}
+                        className="absolute inset-1 rounded-[7.58px] bg-[#F1F5F9] border border-[#D2E0EE]"
+                        style={{ height: `${skeletonEvent.height * 53 - 8}px` }}
                       >
-                        <Skeleton className="h-full w-full rounded" />
+                        <Skeleton className="h-full w-full rounded-[7.58px]" />
                       </div>
                     )}
                   </div>
                 );
               })}
+              <div className="min-h-[53px] border-b border-r" style={{ borderColor: '#EAECED', borderStyle: 'dashed', borderWidth: '0.908201px' }} />
             </React.Fragment>
           ))}
         </div>
@@ -332,14 +329,46 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
   // Always show the calendar structure - never remove it after initial load
   return (
-    <div className="w-full flex flex-col gap-6 relative" dir="rtl">
-      <WeeklyCalendarNavigation
-        currentDate={currentDate}
-        onPreviousWeek={handlePreviousWeek}
-        onNextWeek={handleNextWeek}
-      />
+    <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
+      {/* Header: Frame 2147241014 - flex row justify-end align center, padding 10px, gap 10px */}
+      <div
+        className="flex flex-row justify-between items-center flex-none px-[10px] pt-4 pb-4 gap-[10px] bg-white"
+        style={{ borderRadius: '14px' }}
+      >
+        {/* Right in RTL: التقويم + subtitle + chevron-down button */}
+        <div className="flex flex-row items-center gap-2">
+          <button
+            type="button"
+            className="flex items-center justify-center w-6 h-6 rounded-[4.97024px] border border-[#D0D5DD] bg-white shadow-[0px_0.62px_1.24px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
+            aria-label="خيارات"
+          >
+            <ChevronDown className="w-3 h-3 text-[#667085]" />
+          </button>
+          <div className="flex flex-col items-end">
+            <h1
+              className="font-bold text-[#101828] leading-tight"
+              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '15.7722px', lineHeight: '30px' }}
+            >
+              التقويم
+            </h1>
+            <p
+              className="text-[#475467] leading-tight"
+              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '11.0405px', lineHeight: '19px' }}
+            >
+              عرض الجدول الزمني للاجتماعات
+            </p>
+          </div>
+        </div>
 
-      <div className="relative">
+        {/* Left in RTL: month nav with teal circles */}
+        <WeeklyCalendarNavigation
+          currentDate={currentDate}
+          onPreviousWeek={handlePreviousWeek}
+          onNextWeek={handleNextWeek}
+        />
+      </div>
+
+      <div className="relative flex-1 min-h-0 bg-white overflow-auto" style={{ borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' }}>
         {/* Show skeleton only on initial load when we have no data at all */}
         {isInitialLoad ? (
           <CalendarSkeleton />
@@ -348,13 +377,12 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             <WeeklyCalendarGrid
               weekStart={weekStart}
               events={events}
-              startHour={0}
-              endHour={23}
+              startHour={8}
+              endHour={18}
               onEventClick={(event) => {
-                // In modal context, we might not want to navigate away, 
-                // or we can open meeting details in a new tab
                 window.open(`/meeting/${event.id}`, '_blank');
               }}
+              onEventShowDetails={(event) => setSelectedEventForDetails(event)}
             />
             
             {/* Subtle loading indicator when fetching new week data */}
@@ -373,13 +401,88 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       </div>
 
       {/* Error message overlay if there's an error but we have previous data */}
-      {error && (meetingsResponse || previousEvents.length > 0) && (
+      {error && (timelineEvents || previousEvents.length > 0) && (
         <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-20">
           <p className="text-sm text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
             حدث خطأ أثناء تحديث المواعيد. يرجى المحاولة مرة أخرى.
           </p>
         </div>
       )}
+
+      {/* Event details drawer */}
+      <Drawer
+        open={!!selectedEventForDetails}
+        onOpenChange={(open) => !open && setSelectedEventForDetails(null)}
+        title={selectedEventForDetails?.title || 'تفاصيل الموعد'}
+        width={480}
+        side="left"
+      >
+        {selectedEventForDetails && (
+          <div className="flex flex-col gap-4 text-right" dir="rtl">
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedEventForDetails.is_internal !== undefined && (
+                <span
+                  className={cn(
+                    'text-xs font-medium px-2 py-1 rounded-full',
+                    selectedEventForDetails.is_internal
+                      ? 'bg-[#E6F6F4] text-[#008774]'
+                      : 'bg-amber-50 text-amber-700'
+                  )}
+                >
+                  {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
+                </span>
+              )}
+            </div>
+            <p className="text-[#475467] text-sm">
+              {formatDetailDate(selectedEventForDetails.date)}
+            </p>
+            <p className="text-[#101828] font-semibold text-sm">
+              من {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} إلى{' '}
+              {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
+            </p>
+            {selectedEventForDetails.location && (
+              <div>
+                <h4 className="text-xs font-semibold text-[#475467] mb-1">المكان</h4>
+                <p className="text-sm text-[#101828] break-all">
+                  {selectedEventForDetails.location.startsWith('http')
+                    ? (
+                        <a
+                          href={selectedEventForDetails.location}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0E6F90] underline"
+                        >
+                          {selectedEventForDetails.location}
+                        </a>
+                      )
+                    : selectedEventForDetails.location
+                  }
+                </p>
+              </div>
+            )}
+            {selectedEventForDetails.organizer && (
+              <div>
+                <h4 className="text-xs font-semibold text-[#475467] mb-1">المنظم</h4>
+                <p className="text-sm text-[#101828]">{selectedEventForDetails.organizer.name}</p>
+                <p className="text-xs text-[#475467]">{selectedEventForDetails.organizer.email}</p>
+              </div>
+            )}
+            {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-[#475467] mb-1">المرفقات</h4>
+                <ul className="list-none space-y-1">
+                  {selectedEventForDetails.attachments.map((att) => (
+                    <li key={att.attachment_id} className="text-sm text-[#101828] flex items-center gap-2">
+                      <span className="truncate flex-1" title={att.name}>{att.name}</span>
+                      <span className="text-xs text-[#475467] shrink-0">{formatAttachmentSize(att.size)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };
