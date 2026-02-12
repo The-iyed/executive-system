@@ -10,6 +10,7 @@ import {
   TableColumn,
   StatusBadge,
   Pagination,
+  TruncatedWithTooltip,
 } from '@shared';
 import { MeetingClassification, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -98,9 +99,9 @@ const ConsultationRequests: React.FC = () => {
           : '-';
         return (
           <div className="w-full flex justify-start">
-            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            <TruncatedWithTooltip title={sequentialNumber}>
               {sequentialNumber}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -114,9 +115,9 @@ const ConsultationRequests: React.FC = () => {
         const requestNumber = originalRequest?.request_number || row.id;
         return (
           <div className="w-full flex justify-start">
-            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            <TruncatedWithTooltip title={requestNumber}>
               {requestNumber}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -134,9 +135,9 @@ const ConsultationRequests: React.FC = () => {
 
         return (
           <div className="w-full flex justify-start">
-            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            <TruncatedWithTooltip title={requestDate || '-'}>
               {requestDate || '-'}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -146,9 +147,9 @@ const ConsultationRequests: React.FC = () => {
       header: 'اسم مقدم الطلب',
       width: 'w-[300px]',
       render: (row) => (
-          <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+          <TruncatedWithTooltip title={row.coordinator || '-'}>
             {row.coordinator || '-'}
-          </span>
+          </TruncatedWithTooltip>
       ),
     },
     {
@@ -159,9 +160,9 @@ const ConsultationRequests: React.FC = () => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const subject = originalRequest?.meeting_subject;
         return (
-            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            <TruncatedWithTooltip title={subject || '-'}>
               {subject || '-'}
-            </span>
+            </TruncatedWithTooltip>
         );
       },
     },
@@ -177,9 +178,9 @@ const ConsultationRequests: React.FC = () => {
           : '-';
 
         return (
-            <span className="block max-w-full text-base font-normal text-right text-gray-600 leading-5 truncate">
+            <TruncatedWithTooltip title={classificationLabel}>
               {classificationLabel}
-            </span>
+            </TruncatedWithTooltip>
         );
       },
     },
@@ -243,16 +244,21 @@ const ConsultationRequests: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="ltr">
-            <div className="flex flex-row items-center gap-9">
+          {/* Left side - Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              
+              dir="rtl"
+            >
               <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
                 value={searchValue}
                 onChange={setSearchValue}
                 placeholder="بحث"
                 variant="default"
-                className="w-[300px]"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
           </div>

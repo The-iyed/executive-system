@@ -123,7 +123,6 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
         {/* Main content */}
         <div
           className="children-container rounded-t-[31px]"
-          style={{ width: 'calc(100% - 54px)' }}
         >
           {children}
         </div>
