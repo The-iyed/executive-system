@@ -210,11 +210,30 @@
     background-repeat: no-repeat;
     background-attachment: fixed;
     color: rgb(var(--color-foreground));
-    font-family: 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'Almarai', 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
+  }
+}
+
+@keyframes sparkle-stars {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.12);
+    filter: brightness(1.2);
   }
 }
 
 @layer utilities {
+  /* Sparkle / stars animation for quality button icon */
+  .animate-sparkle-stars {
+    animation: sparkle-stars 1.8s ease-in-out infinite;
+    transform-origin: center;
+  }
+
   /* Gradient Utilities */
   .bg-gradient-primary {
     background: linear-gradient(180deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-mid) 0.01%, var(--color-primary-gradient-end) 100%);

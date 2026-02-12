@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SharedLayout, WelcomeSectionProps } from '@shared';
+import { USE_CASE_CONFIGS } from '@shared';
 import { PATH } from '../routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 
@@ -67,11 +68,19 @@ export const Layout: React.FC<LayoutProps> = ({
     };
   };
   
+  const hideContentBarFilterTabs = pathname === PATH.WORK_BASKET || pathname === PATH.SCHEDULE_REVIEW;
+  const isMeetingDetail = pathname.startsWith('/meeting/') && pathname.split('/').filter(Boolean).length >= 2;
+  const isCalendar = pathname === PATH.CALENDAR;
+
   return (
     <SharedLayout
       children={children}
       welcomeSection={getWelcomeConfig()}
-      useDynamicNavigation={true}
+      navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
+      useDynamicNavigation={false}
+      contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
+      hideContentBar={isMeetingDetail || isCalendar}
+      contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
     />
   );
 };

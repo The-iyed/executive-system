@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
@@ -45,6 +45,7 @@ const GuidanceRequestDetail: React.FC = () => {
   const [isSuitableForScheduling, setIsSuitableForScheduling] = useState<boolean>(false);
   const [queriesDisabled, setQueriesDisabled] = useState<boolean>(false);
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
+  const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
@@ -121,105 +122,6 @@ const GuidanceRequestDetail: React.FC = () => {
     {
       id: 'consultations-log-content',
       label: 'سجلات الاستشارات المحتوى',
-    },
-  ];
-
-  const consultationLogColumns: TableColumn<ConsultationRecord>[] = [
-    {
-      id: 'consultation_type',
-      header: 'نوع الاستشارة',
-      width: 'w-44',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type}
-        </span>
-      ),
-    },
-    {
-      id: 'consultation_question',
-      header: 'السؤال',
-      width: 'flex-1',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700 line-clamp-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.consultation_question || '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'consultation_answer',
-      header: 'الإجابة',
-      width: 'flex-1',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700 line-clamp-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.consultation_answer || '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'consultant_name',
-      header: 'رد بواسطة',
-      width: 'w-48',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.consultant_name || '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'requested_at',
-      header: 'تاريخ الطلب',
-      width: 'w-40',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.requested_at
-            ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'responded_at',
-      header: 'تاريخ الرد',
-      width: 'w-40',
-      render: (row: ConsultationRecord) => (
-        <span className="text-sm text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-          {row.responded_at
-            ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'status',
-      header: 'الحالة',
-      width: 'w-32',
-      align: 'center',
-      render: (row: ConsultationRecord) => {
-        const statusLabels: Record<string, string> = {
-          PENDING: 'قيد الانتظار',
-          RESPONDED: 'تم الرد',
-          CANCELLED: 'ملغاة',
-          DRAFT: 'مسودة',
-        };
-        const statusLabel = statusLabels[row.status] || row.status;
-        return (
-          <div className="flex justify-center">
-            <StatusBadge status={row.status} label={statusLabel} />
-          </div>
-        );
-      },
     },
   ];
 
@@ -1935,19 +1837,126 @@ const GuidanceRequestDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Consultations Log Tab - سجلات الاستشارات */}
+          {/* Consultations Log Tab - سجلات الاستشارات - Same as meetingDetail */}
           {activeTab === 'consultations-log' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
-                <DataTable
-                  columns={consultationLogColumns}
-                  data={consultationRecords.items}
-                  rowPadding="py-3"
-                />
+                consultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                  const isExpanded = expandedConsultationId === row.consultation_id;
+                  const typeLabel = row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type;
+                  const requestDate = row.requested_at
+                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '-';
+                  const answers = row.consultation_answers ?? [];
+
+                  return (
+                    <div key={`consultation-${row.consultation_id}-${index}`} className="flex flex-col gap-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedConsultationId((id) => (id === row.consultation_id ? null : row.consultation_id))}
+                        className={`
+                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
+                          ${isExpanded
+                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
+                        `}
+                        style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                      >
+                        <div className="flex flex-row items-start justify-between gap-4">
+                          <div className="flex flex-col items-start flex-1 min-w-0">
+                            <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{row.consultation_question || '-'}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span>تاريخ الطلب : {requestDate}</span>
+                            </span>
+                            <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {isExpanded && answers.length > 0 && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
+                            {answers.map((answer) => {
+                              const responseDate = answer.responded_at
+                                ? new Date(answer.responded_at).toLocaleDateString('ar-SA', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—';
+                              const statusLabels: Record<string, string> = {
+                                PENDING: 'قيد الانتظار',
+                                RESPONDED: 'تم الرد',
+                                CANCELLED: 'ملغاة',
+                                DRAFT: 'مسودة',
+                                COMPLETED: 'مكتمل',
+                              };
+                              const statusLabel = statusLabels[answer.status] || answer.status;
+                              return (
+                                <div
+                                  key={answer.consultation_id}
+                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
+                                  style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                                >
+                                  <div className="flex w-full flex-row items-center justify-between gap-4">
+                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
+                                      {answer.consultation_answer?.trim() || '—'}
+                                    </p>
+                                    <StatusBadge status={answer.status} label={statusLabel} />
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
+                                      {row.consultant_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.consultant_name || '—'}</span>
+                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                                      <Clock className="h-4 w-4 flex-shrink-0" />
+                                      <span>تاريخ الرد : {responseDate}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {isExpanded && answers.length === 0 && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div
+                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
+                            style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                          >
+                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
@@ -1959,19 +1968,126 @@ const GuidanceRequestDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Content Consultation Records Tab - سجلات الاستشارات المحتوى */}
+          {/* Content Consultation Records Tab - سجلات الاستشارات المحتوى - Same as meetingDetail */}
           {activeTab === 'consultations-log-content' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" dir="rtl">
               {isLoadingContentConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : contentConsultationRecords && contentConsultationRecords.items.length > 0 ? (
-                <DataTable
-                  columns={consultationLogColumns}
-                  data={contentConsultationRecords.items}
-                  rowPadding="py-3"
-                />
+                contentConsultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                  const isExpanded = expandedConsultationId === row.consultation_id;
+                  const typeLabel = row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type;
+                  const requestDate = row.requested_at
+                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '-';
+                  const answers = row.consultation_answers ?? [];
+
+                  return (
+                    <div key={`consultation-content-${row.consultation_id}-${index}`} className="flex flex-col gap-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedConsultationId((id) => (id === row.consultation_id ? null : row.consultation_id))}
+                        className={`
+                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
+                          ${isExpanded
+                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
+                        `}
+                        style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                      >
+                        <div className="flex flex-row items-start justify-between gap-4">
+                          <div className="flex flex-col items-start flex-1 min-w-0">
+                            <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{row.consultation_question || '-'}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span>تاريخ الطلب : {requestDate}</span>
+                            </span>
+                            <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {isExpanded && answers.length > 0 && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
+                            {answers.map((answer) => {
+                              const responseDate = answer.responded_at
+                                ? new Date(answer.responded_at).toLocaleDateString('ar-SA', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—';
+                              const statusLabels: Record<string, string> = {
+                                PENDING: 'قيد الانتظار',
+                                RESPONDED: 'تم الرد',
+                                CANCELLED: 'ملغاة',
+                                DRAFT: 'مسودة',
+                                COMPLETED: 'مكتمل',
+                              };
+                              const statusLabel = statusLabels[answer.status] || answer.status;
+                              return (
+                                <div
+                                  key={answer.consultation_id}
+                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
+                                  style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                                >
+                                  <div className="flex w-full flex-row items-center justify-between gap-4">
+                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
+                                      {answer.consultation_answer?.trim() || '—'}
+                                    </p>
+                                    <StatusBadge status={answer.status} label={statusLabel} />
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
+                                      {row.consultant_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.consultant_name || '—'}</span>
+                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                                      <Clock className="h-4 w-4 flex-shrink-0" />
+                                      <span>تاريخ الرد : {responseDate}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {isExpanded && answers.length === 0 && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div
+                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
+                            style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                          >
+                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">

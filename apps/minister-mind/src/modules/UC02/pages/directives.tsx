@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs } from '@shared';
+import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, ChevronLeft } from 'lucide-react';
@@ -400,9 +400,9 @@ const Directives: React.FC = () => {
       width: 'w-[500px]',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.title}>
           {row.title}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -412,9 +412,9 @@ const Directives: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={row.coordinator || '-'}>
             {row.coordinator || '-'}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -429,9 +429,9 @@ const Directives: React.FC = () => {
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            <TruncatedWithTooltip title={meeting?.meeting_subject || '-'}>
               {meeting?.meeting_subject || '-'}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -447,9 +447,9 @@ const Directives: React.FC = () => {
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            <TruncatedWithTooltip title={getClassificationLabel(meeting?.meeting_classification || null)}>
               {getClassificationLabel(meeting?.meeting_classification || null)}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -484,9 +484,9 @@ const Directives: React.FC = () => {
         const displayName = firstPerson?.name ?? '-';
         return (
           <div className="w-full flex justify-end">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+            <TruncatedWithTooltip title={displayName}>
               {displayName}
-            </span>
+            </TruncatedWithTooltip>
           </div>
         );
       },
@@ -546,16 +546,21 @@ const Directives: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="ltr">
-            <div className="flex flex-row items-center gap-9">
+          {/* Left side - Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              
+              dir="rtl"
+            >
               <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
                 value={searchValue}
                 onChange={setSearchValue}
                 placeholder="بحث"
                 variant="default"
-                className="w-[300px]"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
           </div>

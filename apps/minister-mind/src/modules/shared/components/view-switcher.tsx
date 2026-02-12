@@ -16,14 +16,15 @@ export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({
   className = '',
 }) => {
   return (
-    <div 
+    <div
       className={`
         flex flex-col justify-center items-center
-        p-1
-        gap-2
+        p-1 gap-2
         w-[44px] h-[88px]
-        bg-[#ECEFF3]
-        rounded-[100px]
+        bg-white
+        rounded-full
+        shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)]
+        border border-gray-200/80
         ${className}
       `}
       style={{
@@ -35,25 +36,24 @@ export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({
         onClick={() => onViewChange('table')}
         className={`
           flex flex-row justify-center items-center
-          p-2
-          gap-1.5
+          p-2 gap-1.5
           w-[36px] h-[36px]
-          rounded-[100px]
+          rounded-full
           transition-all
-          ${view === 'table' 
-            ? 'bg-[#F8FAFB] shadow-[0px_1px_3px_rgba(16,24,40,0.1),0px_1px_2px_rgba(16,24,40,0.06)]' 
-            : 'bg-transparent'
-          }
+          ${view === 'table'
+            ? 'bg-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+            : 'bg-transparent hover:bg-gray-50'}
         `}
         style={{
           transform: 'rotate(-90deg)',
         }}
         aria-label="Table view"
       >
-        <img 
-          src={ListIcon} 
-          alt="List view" 
+        <img
+          src={ListIcon}
+          alt=""
           className="w-4 h-4"
+          aria-hidden
         />
       </button>
 
@@ -62,25 +62,24 @@ export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({
         onClick={() => onViewChange('cards')}
         className={`
           flex flex-row justify-center items-center
-          p-2
-          gap-1.5
+          p-2 gap-1.5
           w-[36px] h-[36px]
-          rounded-[100px]
+          rounded-full
           transition-all
-          ${view === 'cards' 
-            ? 'bg-[#F8FAFB] shadow-[0px_1px_3px_rgba(16,24,40,0.1),0px_1px_2px_rgba(16,24,40,0.06)]' 
-            : 'bg-transparent'
-          }
+          ${view === 'cards'
+            ? 'bg-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+            : 'bg-transparent hover:bg-gray-50'}
         `}
         style={{
           transform: 'rotate(90deg)',
         }}
         aria-label="Cards view"
       >
-        <img 
-          src={CardIcon} 
-          alt="Card view" 
+        <img
+          src={CardIcon}
+          alt=""
           className="w-4 h-4"
+          aria-hidden
         />
       </button>
     </div>

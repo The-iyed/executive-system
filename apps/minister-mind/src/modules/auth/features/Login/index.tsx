@@ -108,7 +108,7 @@ const Login = () => {
 
       {/* Right column - Login form */}
       <div
-        className="min-h-screen w-[50%] flex justify-center items-center px-6 py-10 rounded-r-[14px] lg:rounded-r-none"
+        className="min-h-screen w-[50%] flex justify-start items-center px-6 py-10 rounded-r-[14px] lg:rounded-r-none"
       >
         {/* Mobile: brief branding bar */}
         <div className="lg:hidden flex items-center gap-2 justify-end py-3 mb-4 rounded-lg" style={{ backgroundColor: TEAL_DARK }}>
@@ -117,7 +117,7 @@ const Login = () => {
             وزارة البلديات والإسكان
           </span>
         </div>
-        <div className="w-full max-w-[420px] text-right">
+        <div className="w-full max-w-[520px] text-right">
           {/* Calendar section: icon + title (calendar.svg to left of title in RTL) */}
           <div className="flex items-center gap-3 justify-end flex-row-reverse mb-1">
             <span className="text-black font-bold text-xl" style={{ fontFamily: "'Almarai', sans-serif" }}>
