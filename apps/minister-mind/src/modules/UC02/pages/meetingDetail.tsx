@@ -2334,7 +2334,14 @@ const MeetingDetail: React.FC = () => {
                       {isExpanded && answers.length > 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                           {answers.map((_, index) =>
-                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 " + (index > 0 ? `absolute mt-[${47 * index}px] h-[${136 * index}px]` : '')}>
+                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 "} 
+                              
+                              style={index > 0 ? {
+                                position: 'absolute',
+                                top: `${47 * index}px`,
+                                height: `${136 * index}px`,
+                              } : {}}
+                              >
                               <div className={`w-[50px] -ml-[30px]  min-h-[8px] flex-1  border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]`} />
                               <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                             </div>
