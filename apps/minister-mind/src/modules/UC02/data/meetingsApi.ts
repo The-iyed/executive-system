@@ -530,17 +530,30 @@ export const cancelDirective = async (directiveId: string): Promise<void> => {
 };
 
 // Consultation Records API
+export interface ConsultationAnswer {
+  consultation_id: string;
+  consultation_answer: string;
+  responded_at: string;
+  status: string;
+  is_draft: boolean;
+  external_id: string | null;
+}
+
 export interface ConsultationRecord {
   consultation_id: string;
   consultation_type: string;
   consultation_question: string;
-  consultation_answer: string | null;
   consultant_user_id: string;
   consultant_name: string;
   requested_at: string;
-  is_draft: boolean;
-  responded_at: string | null;
-  status: string;
+  consultation_answers: ConsultationAnswer[];
+  /** @deprecated Use consultation_answers[0] - kept for backward compatibility */
+  consultation_answer?: string | null;
+  /** @deprecated Use consultation_answers[0].responded_at */
+  responded_at?: string | null;
+  /** @deprecated Use consultation_answers[0].status */
+  status?: string;
+  is_draft?: boolean;
 }
 
 export interface ConsultationRecordsResponse {

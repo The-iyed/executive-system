@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import '@shared/styles';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
@@ -138,9 +138,9 @@ const WorkBasket: React.FC = () => {
       width: 'min-w-[220px] flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.meeting_subject ?? '-'}>
           {row.meeting_subject ?? '-'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -163,9 +163,9 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}>
             {row.submitter_name || (row.current_owner_user ? `${row.current_owner_user.first_name} ${row.current_owner_user.last_name}` : '-')}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -176,9 +176,9 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+          <TruncatedWithTooltip title={getClassificationLabel(row.meeting_classification)}>
             {getClassificationLabel(row.meeting_classification)}
-          </span>
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -235,14 +235,21 @@ const WorkBasket: React.FC = () => {
             <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
           </div>
 
-          <div className="flex-shrink-0 flex items-center gap-6" dir="ltr">
-            <ViewSwitcher view={view} onViewChange={setView} />
-            <SearchFilterBar
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+          {/* Search and View Switcher (bar styled to match table area) */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+              />
+            </div>
           </div>
         </div>
 
