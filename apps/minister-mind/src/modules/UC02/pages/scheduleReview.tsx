@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput } from '@shared';
+import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import type { MeetingClassification } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -177,9 +177,9 @@ const ScheduleReview: React.FC = () => {
       width: 'flex-1', // Flexible width to fill remaining space
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.title}>
           {row.title}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -188,9 +188,9 @@ const ScheduleReview: React.FC = () => {
       width: 'w-56', // Fixed width for coordinator
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.coordinator || 'أحمد محمد'}>
           {row.coordinator || 'أحمد محمد'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -257,7 +257,9 @@ const ScheduleReview: React.FC = () => {
       width: 'flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{row.meeting_subject}</span>
+        <TruncatedWithTooltip title={row.meeting_subject}>
+          {row.meeting_subject}
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -267,7 +269,9 @@ const ScheduleReview: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{getClassificationLabel(row.meeting_classification)}</span>
+          <TruncatedWithTooltip title={getClassificationLabel(row.meeting_classification)}>
+            {getClassificationLabel(row.meeting_classification)}
+          </TruncatedWithTooltip>
         </div>
       ),
     },
@@ -277,7 +281,9 @@ const ScheduleReview: React.FC = () => {
       width: 'w-56',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">{row.submitter_name || '-'}</span>
+        <TruncatedWithTooltip title={row.submitter_name || '-'}>
+          {row.submitter_name || '-'}
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -325,11 +331,7 @@ const ScheduleReview: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Tabs and View Switcher */}
-        <div className="flex flex-row items-center justify-between mb-8" dir="ltr">
-          <div className="pl-4 flex items-center gap-10">
-            <ViewSwitcher view={view} onViewChange={setView} />
-          </div>
+        <div className="flex flex-row items-center justify-between mb-6" dir="rtl">
           <Tabs
             items={tabs}
             activeTab={activeTab}
@@ -337,42 +339,43 @@ const ScheduleReview: React.FC = () => {
           />
         </div>
 
-        {/* Page Title, Description, and Search/Filter Bar */}
+        {/* Page Title, Description, and Search/View Switcher Bar */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          {/* Left side - Title and Description */}
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">
               {activeTab === 'work-basket' ? 'الطلبات الحالية' : 'الاجتماعات المجدولة'}
             </h1>
             <p className="text-base text-gray-600 text-right">
-              {activeTab === 'work-basket' 
-                ? 'الاطلاع على الطلبات الحالية' 
+              {activeTab === 'work-basket'
+                ? 'الاطلاع على الطلبات الحالية'
                 : 'الاطلاع على الاجتماعات المجدولة'}
             </p>
           </div>
-
-          {/* Right side - Search and Filter Bar */}
-          <div className="flex-shrink-0">
-            {activeTab === 'scheduled-meetings' ? (
-              // For scheduled meetings, only show search input (no status filter)
-              <div className="w-[240px] h-[32px]">
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              style={{ backgroundColor: '#E9ECEF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              {activeTab === 'scheduled-meetings' ? (
                 <SearchInput
                   value={searchValue}
                   onChange={setSearchValue}
                   placeholder="ادخل البحث"
                   variant="default"
-                  className="w-full h-[32px]"
+                  className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
                 />
-              </div>
-            ) : (
-              // For work-basket, show full SearchFilterBar with status filter
-              <SearchFilterBar
-                searchValue={searchValue}
-                onSearchChange={setSearchValue}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-              />
-            )}
+              ) : (
+                <SearchFilterBar
+                  searchValue={searchValue}
+                  onSearchChange={setSearchValue}
+                  statusFilter={statusFilter}
+                  onStatusFilterChange={setStatusFilter}
+                />
+              )}
+            </div>
           </div>
         </div>
 

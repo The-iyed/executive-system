@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus } from '@shared';
 import '@shared/styles';
 import { Eye, Calendar } from 'lucide-react';
@@ -106,9 +106,9 @@ const WorkBasket: React.FC = () => {
       width: 'flex-1',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.title}>
           {row.title}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -117,9 +117,9 @@ const WorkBasket: React.FC = () => {
       width: 'w-56',
       align: 'end',
       render: (row) => (
-        <span className="text-base font-normal text-right text-gray-600 leading-5 block w-full">
+        <TruncatedWithTooltip title={row.coordinator || 'أحمد محمد'}>
           {row.coordinator || 'أحمد محمد'}
-        </span>
+        </TruncatedWithTooltip>
       ),
     },
     {
@@ -173,27 +173,27 @@ const WorkBasket: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* View Switcher */}
-        <div className="flex flex-row items-center justify-between mb-8" dir="ltr">
-          <div className="pl-4 flex items-center gap-10">
-            <ViewSwitcher view={view} onViewChange={setView} />
-          </div>
-        </div>
-
-        {/* Page Title, Description, and Search/Filter Bar */}
+        {/* Page Title, Description, and Search/View Switcher Bar */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">سلة العمل - طلبات قيد المراجعة</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
           </div>
-
-          <div className="flex-shrink-0">
-            <SearchFilterBar
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              style={{ backgroundColor: '#E9ECEF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+              />
+            </div>
           </div>
         </div>
 

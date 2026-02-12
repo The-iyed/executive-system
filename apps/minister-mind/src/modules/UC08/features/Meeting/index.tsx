@@ -39,33 +39,41 @@ const Meeting: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        <div className="flex flex-row items-center justify-between mb-8">
+        <div className="flex flex-row items-center justify-between mb-6" dir="rtl">
           <Tabs
             items={MEETING_TABS}
             activeTab={activeTab}
             onTabChange={handleTabChange}
           />
-          <div className="pl-4">
-            <ViewSwitcher view={view} onViewChange={setView} />
-          </div>
         </div>
 
-        {/* Page Title, Description, and Search/Filter Bar */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6">
-          {/* Left side - Title and Description */}
+        {/* Page Title, Description, and Search/View Switcher Bar */}
+        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
-            سلة العمل - طلبات قيد المراجعة'
+              سلة العمل - طلبات قيد المراجعة
             </h1>
             <p className="text-base text-gray-600 text-right">
-            يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
+              يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
-          <SearchInput
-            value={searchValue}
-            onChange={setSearchValue}
-            variant="default"
-          />
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              style={{ backgroundColor: '#E9ECEF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchInput
+                value={searchValue}
+                onChange={setSearchValue}
+                placeholder="بحث"
+                variant="default"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="mt-4">
