@@ -32,23 +32,19 @@ const WorkBasket: React.FC = () => {
     setCurrentPage(1);
   }, [debouncedSearch, statusFilter]);
 
-  // Determine API status based on status filter
+  // API status: only send when a specific status is selected (like before redesign)
   const apiStatus = useMemo(() => {
-    if (statusFilter === 'all') {
-      return undefined;
-    }
+    if (statusFilter === 'all') return undefined;
     return statusFilter;
   }, [statusFilter]);
 
-  // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch assigned scheduling requests from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
     queryKey: ['work-basket', 'uc02', apiStatus, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        skip: skip,
+        skip,
         limit: ITEMS_PER_PAGE,
       };
       if (apiStatus) {
@@ -228,28 +224,20 @@ const WorkBasket: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar and View Switcher */}
+        {/* Page Title, Description, Search/Filter Bar and View Switcher (like before redesign) */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div>
             <h1 className="text-3xl font-bold mb-2 text-right">الطلبات الحالية</h1>
             <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
           </div>
-
-          {/* Search and View Switcher (bar styled to match table area) */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              dir="rtl"
-            >
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchFilterBar
-                searchValue={searchValue}
-                onSearchChange={setSearchValue}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-              />
-            </div>
+          <div className="flex-shrink-0 flex items-center gap-6" dir="ltr">
+            <ViewSwitcher view={view} onViewChange={setView} />
+            <SearchFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+            />
           </div>
         </div>
 
