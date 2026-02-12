@@ -159,7 +159,7 @@ export function Drawer({
 
                 <DialogPrimitive.Close
                   className={cn(
-                    'absolute right-5 top-5 z-20',
+                    'absolute left-5 top-5 z-20',
                     'flex h-7 w-7 items-center justify-center rounded-lg',
                     'bg-white border-0 border-[#E4E7EC]',
                     'shadow-[0_1px_2px_rgba(16,24,40,0.05)]',

@@ -70,6 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({
   
   const hideContentBarFilterTabs = pathname === PATH.WORK_BASKET || pathname === PATH.SCHEDULE_REVIEW;
   const isMeetingDetail = pathname.startsWith('/meeting/') && pathname.split('/').filter(Boolean).length >= 2;
+  const isCalendar = pathname === PATH.CALENDAR;
 
   return (
     <SharedLayout
@@ -78,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
       navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
       useDynamicNavigation={false}
       contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
-      hideContentBar={isMeetingDetail}
+      hideContentBar={isMeetingDetail || isCalendar}
       contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
     />
   );
