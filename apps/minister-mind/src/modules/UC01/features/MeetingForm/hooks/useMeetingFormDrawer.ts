@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PATH } from '../../../routes/paths';
+import { clearDraftData } from '../utils';
 
 const FORM_PARAM = 'form';
 const ID_PARAM = 'id';
@@ -38,11 +39,13 @@ export function useMeetingFormDrawer() {
   );
 
   const openCreateDrawer = useCallback(() => {
+    clearDraftData();
     navigate(`${PATH.MEETINGS}?${FORM_PARAM}=create`);
   }, [navigate]);
 
   const openEditDrawer = useCallback(
     (meetingId: string) => {
+      clearDraftData();
       const currentPath = window.location.pathname;
       const isPreviewOrDetail = currentPath.includes('/meeting/') && currentPath.includes('/preview');
       if (isPreviewOrDetail && params.id) {
