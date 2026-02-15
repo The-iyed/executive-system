@@ -30,6 +30,30 @@ const routes: RouteConfig[] = [
     layout: Layout,
     useCase: 'UC-04',
   },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.EXCEPTION_REQUEST,
+    component: lazy(() => import('../pages/exceptionRequest')),
+    layout: Layout,
+    useCase: 'UC-04',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.EXCEPTION_REQUEST_DETAIL,
+    component: lazy(() => import('../pages/guidanceRequestDetail')),
+    layout: Layout,
+    useCase: 'UC-04',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.EVALUATION,
+    component: lazy(() => import('../pages/evaluation')),
+    layout: Layout,
+    useCase: 'UC-04',
+  },
 ];
 
 export default routes;

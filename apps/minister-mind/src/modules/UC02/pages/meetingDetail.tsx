@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -28,6 +28,7 @@ import {
 import {
   getMeetingById,
   getMeetings,
+  searchMeetings,
   rejectMeeting,
   sendToContent,
   requestGuidance,
@@ -36,6 +37,7 @@ import {
   requestSchedulingConsultation,
   returnMeetingForInfo,
   scheduleMeeting,
+  rescheduleMeeting,
   createWebexMeeting,
   type MinisterAttendee,
   getConsultationRecords,
@@ -105,6 +107,43 @@ const fieldLabels: Record<string, string> = {
   general_notes: 'ملاحظات',
 };
 
+/** Normalize minister attendees so all API-required fields are present (no undefined). */
+function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array<{
+  username: string;
+  external_name: string;
+  external_email: string;
+  is_required: boolean;
+  justification: string;
+  access_permission: string;
+  position: string;
+  phone: string;
+  attendance_channel: 'PHYSICAL' | 'REMOTE';
+}> {
+  return (list || []).map((a) => ({
+    username: a.username ?? '',
+    external_name: a.external_name ?? '',
+    external_email: a.external_email ?? '',
+    is_required: a.is_required ?? false,
+    justification: a.justification ?? '',
+    access_permission: a.access_permission ?? 'FULL',
+    position: a.position ?? '',
+    phone: a.phone ?? '',
+    attendance_channel: (a.attendance_channel ?? 'PHYSICAL') as 'PHYSICAL' | 'REMOTE',
+  }));
+}
+
+/** Simple email format validation */
+function isValidEmail(value: string): boolean {
+  if (!value || typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(trimmed);
+}
+
+/** Field keys sent as editable_fields to return-for-info API (same order as in form) */
+const EDITABLE_FIELD_IDS = Object.keys(fieldLabels) as string[];
+
 const DIRECTIVE_METHOD_OPTIONS = [
   { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
   { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
@@ -131,13 +170,71 @@ function getGeneralNotesList(
   return [];
 }
 
+function ActionBubble({
+  icon,
+  label,
+  onClick,
+  disabled,
+  variant,
+  disabledReason,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'danger';
+  /** Shown as tooltip when disabled (explains why the action is disabled) */
+  disabledReason?: string;
+}) {
+  const button = (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
+    >
+      <span
+        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
+        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+      >
+        {label}
+      </span>
+      <span
+        className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
+          variant === 'danger'
+            ? 'bg-red-50 border-red-200 text-red-600'
+            : 'bg-white border-gray-200/80 text-gray-800'
+        }`}
+      >
+        {icon}
+      </span>
+    </button>
+  );
+
+  if (disabled && disabledReason) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex w-full min-w-0">{button}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+            {disabledReason}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return button;
+}
+
 const MeetingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
-  const [directiveSubTab, setDirectiveSubTab] = useState<'current' | 'previous'>('current');
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
 
   // Fetch meeting data from API
@@ -332,10 +429,14 @@ const MeetingDetail: React.FC = () => {
     search: '',
   });
 
-  // Return for info modal state
+  // Return for info modal state (editable_fields: which fields submitter can edit)
   const [isReturnForInfoModalOpen, setIsReturnForInfoModalOpen] = useState(false);
-  const [returnForInfoForm, setReturnForInfoForm] = useState({
+  const [returnForInfoForm, setReturnForInfoForm] = useState<{
+    notes: string;
+    editable_fields: Record<string, boolean>;
+  }>({
     notes: '',
+    editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>),
   });
 
   // Schedule modal state
@@ -462,11 +563,22 @@ const MeetingDetail: React.FC = () => {
     setLocalInvitees((prev) => [...prev, newInvitee]);
   };
 
-  // Update local invitee
+  // Update local invitee (clear validation error for this field when user edits)
   const updateLocalInvitee = (inviteeId: string, field: string, value: string | boolean | AttendanceChannel) => {
     setLocalInvitees((prev) =>
       prev.map((inv) => (inv.id === inviteeId ? { ...inv, [field]: value } : inv))
     );
+    setInviteeValidationErrors((prev) => {
+      const row = prev[inviteeId];
+      if (!row || !(field in row)) return prev;
+      const nextRow = { ...row };
+      delete (nextRow as any)[field];
+      if (Object.keys(nextRow).length === 0) {
+        const { [inviteeId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [inviteeId]: nextRow };
+    });
   };
 
   // Get combined invitees (API + local) with UI fields
@@ -565,8 +677,13 @@ const MeetingDetail: React.FC = () => {
   }, [activeTab, id, queryClient]);
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+  const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
+  /** Validation errors per local invitee id (قائمة المدعوين مقدّم الطلب) */
+  const [inviteeValidationErrors, setInviteeValidationErrors] = useState<Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>>>>({});
+  /** Validation errors per minister attendee index (قائمة المدعوين الوزير) */
+  const [ministerAttendeeValidationErrors, setMinisterAttendeeValidationErrors] = useState<Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>>>>({});
 
   // Build payload of changed fields
   const changedPayload = React.useMemo(() => {
@@ -616,16 +733,43 @@ const MeetingDetail: React.FC = () => {
     if ((scheduleForm.is_data_complete ?? true) !== (originalSnapshot.scheduleForm.is_data_complete ?? true)) payload.is_data_complete = scheduleForm.is_data_complete;
     if ((scheduleForm.selected_time_slot_id || null) !== (originalSnapshot.scheduleForm.selected_time_slot_id || null)) payload.selected_time_slot_id = scheduleForm.selected_time_slot_id;
 
-    // minister attendees and invitees
+    // minister attendees (قائمة المدعوين الوزير) – all fields required in payload
     if (JSON.stringify(scheduleForm.minister_attendees || []) !== JSON.stringify(originalSnapshot.scheduleForm.minister_attendees || [])) {
-      payload.minister_attendees = scheduleForm.minister_attendees;
+      payload.minister_attendees = normalizeMinisterAttendees(scheduleForm.minister_attendees);
     }
+    // invitees (قائمة المدعوين مقدّم الطلب) – full list in API shape when changed
     if (JSON.stringify(localInvitees || []) !== JSON.stringify(originalSnapshot.localInvitees || [])) {
-      payload.invitees = localInvitees.map((i) => ({
+      const existingInvitees = (meeting?.invitees || []).map((inv: any) => ({
+        id: inv.id,
+        user_id: inv.user_id ?? null,
+        external_email: inv.external_email ?? null,
+        external_name: inv.external_name ?? null,
+        position: inv.position ?? null,
+        mobile: inv.mobile ?? inv.phone ?? null,
+        item_number: inv.item_number,
+        attendance_mechanism: inv.attendance_mechanism ?? inv.attendance_channel ?? null,
+        is_required: inv.is_required ?? false,
+        response_status: inv.response_status ?? null,
+        attendee_source: inv.attendee_source ?? null,
+        justification: inv.justification ?? null,
+        access_permission: inv.access_permission ?? null,
+      }));
+      const newInvitees = localInvitees.map((i, idx) => ({
+        id: i.id,
+        user_id: null,
         external_email: i.external_email || null,
         external_name: i.external_name || null,
+        position: i.position || null,
+        mobile: i.phone || null,
+        item_number: idx + 1,
+        attendance_mechanism: i.attendance_channel ?? null,
         is_required: i.is_required,
+        response_status: null,
+        attendee_source: null,
+        justification: null,
+        access_permission: i.access_permission != null ? String(i.access_permission) : null,
       }));
+      payload.invitees = [...existingInvitees, ...newInvitees];
     }
 
     if ((contentTabForm.general_notes || '') !== (originalSnapshot.contentTabForm?.general_notes || '')) {
@@ -645,6 +789,48 @@ const MeetingDetail: React.FC = () => {
   }, [originalSnapshot, formData, contentForm, contentTabForm, scheduleForm, localInvitees, deletedAttachmentIds]);
 
   const hasChanges = Object.keys(changedPayload).length > 0 || deletedAttachmentIds.length > 0 || newAttachments.length > 0 || newPresentationAttachments.length > 0;
+
+  /** Validate local invitees (قائمة المدعوين مقدّم الطلب): all required, email format. Returns true if valid. */
+  const validateInvitees = useCallback((): boolean => {
+    const errors: Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>>> = {};
+    localInvitees.forEach((inv) => {
+      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>> = {};
+      const name = (inv.external_name ?? '').trim();
+      const email = (inv.external_email ?? '').trim();
+      const position = (inv.position ?? '').trim();
+      const phone = (inv.phone ?? '').trim();
+      if (!name) row.external_name = 'مطلوب';
+      if (!email) row.external_email = 'مطلوب';
+      else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+      if (!position) row.position = 'مطلوب';
+      if (!phone) row.phone = 'مطلوب';
+      if (Object.keys(row).length > 0) errors[inv.id] = row;
+    });
+    setInviteeValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [localInvitees]);
+
+  /** Validate minister attendees (قائمة المدعوين الوزير): all required, email format. Returns true if valid. */
+  const validateMinisterAttendees = useCallback((): boolean => {
+    const errors: Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>>> = {};
+    (scheduleForm.minister_attendees || []).forEach((att, index) => {
+      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>> = {};
+      const name = (att.external_name ?? '').trim();
+      const email = (att.external_email ?? '').trim();
+      const position = (att.position ?? '').trim();
+      const phone = (att.phone ?? '').trim();
+      const justification = (att.justification ?? '').trim();
+      if (!name) row.external_name = 'مطلوب';
+      if (!email) row.external_email = 'مطلوب';
+      else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+      if (!position) row.position = 'مطلوب';
+      if (!phone) row.phone = 'مطلوب';
+      if (!justification) row.justification = 'مطلوب';
+      if (Object.keys(row).length > 0) errors[index] = row;
+    });
+    setMinisterAttendeeValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [scheduleForm.minister_attendees]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ payload, presentationFiles }: { payload: any; presentationFiles?: File[] }) => {
@@ -833,25 +1019,30 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
-  // Return for info mutation
+  // Return for info mutation (POST with notes + editable_fields)
   const returnForInfoMutation = useMutation({
-    mutationFn: (payload: { notes: string }) => returnMeetingForInfo(id!, payload),
+    mutationFn: (payload: { notes: string; editable_fields: string[] }) => returnMeetingForInfo(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsReturnForInfoModalOpen(false);
-      setReturnForInfoForm({ notes: '' });
+      setReturnForInfoForm({
+        notes: '',
+        editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>),
+      });
       navigate(-1);
     },
   });
 
   const handleReturnForInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const editable_fields = EDITABLE_FIELD_IDS.filter((id) => returnForInfoForm.editable_fields[id]);
     returnForInfoMutation.mutate({
       notes: returnForInfoForm.notes || 'يرجى توفير معلومات إضافية حول الموضوع',
+      editable_fields,
     });
   };
 
-  // Schedule meeting mutation
+  // Schedule meeting mutation (uses reschedule API when meeting is already SCHEDULED)
   const scheduleMutation = useMutation({
     mutationFn: (payload: {
       scheduled_at: string;
@@ -863,7 +1054,10 @@ const MeetingDetail: React.FC = () => {
       location?: string;
       meeting_link?: string;
       minister_attendees: MinisterAttendee[];
-    }) => scheduleMeeting(id!, payload),
+    }) =>
+      meeting?.status === MeetingStatus.SCHEDULED
+        ? rescheduleMeeting(id!, payload)
+        : scheduleMeeting(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       // Keep modal open if Webex details exist so user can see them
@@ -904,6 +1098,12 @@ const MeetingDetail: React.FC = () => {
       return;
     }
 
+    // Validate minister attendees (قائمة المدعوين الوزير)
+    if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
+      setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+      return;
+    }
+
     setValidationError(null);
 
     // Convert datetime-local to ISO string (UTC)
@@ -922,7 +1122,6 @@ const MeetingDetail: React.FC = () => {
       setWebexMeetingDetails(null);
     }
 
-    // Prepare the payload - always include meeting_link field
     const schedulePayload = {
       scheduled_at: scheduledAtISO,
       meeting_channel: scheduleForm.meeting_channel,
@@ -931,8 +1130,8 @@ const MeetingDetail: React.FC = () => {
       is_data_complete: scheduleForm.is_data_complete,
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
       location: scheduleForm.location || undefined,
-      online_link: meetingLink, // Always include meeting_link field (undefined for non-ONLINE channels)
-      minister_attendees: scheduleForm.minister_attendees,
+      online_link: meetingLink,
+      minister_attendees: normalizeMinisterAttendees(scheduleForm.minister_attendees),
     };
 
     scheduleMutation.mutate(schedulePayload);
@@ -972,6 +1171,17 @@ const MeetingDetail: React.FC = () => {
         i === index ? { ...attendee, [field]: value } : attendee
       ),
     }));
+    setMinisterAttendeeValidationErrors((prev) => {
+      const row = prev[index];
+      if (!row || !(field in row)) return prev;
+      const nextRow = { ...row };
+      delete (nextRow as any)[field];
+      if (Object.keys(nextRow).length === 0) {
+        const { [index]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [index]: nextRow };
+    });
   };
 
   // Initialize form data when meeting loads
@@ -1184,7 +1394,13 @@ const MeetingDetail: React.FC = () => {
   // Map status to MeetingStatus enum
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
-  
+
+  // المحتوى: objectives/agenda and at least one presentation file (العرض التقديمي)
+  const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
+  const hasPresentation = presentationAttachments.length > 0 || newPresentationAttachments.length > 0;
+  const hasObjectivesOrAgenda = (contentForm.objectives?.length ?? 0) > 0 || (contentForm.agendaItems?.length ?? 0) > 0;
+  const hasContent = hasObjectivesOrAgenda && hasPresentation;
+
   // Handle form field changes
   const handleFieldChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -1193,29 +1409,37 @@ const MeetingDetail: React.FC = () => {
     }));
   };
 
-  /** Async load options for "الاجتماع السابق" – getMeetings with status CLOSED */
+  /** Async load options for "الاجتماع السابق" – searchMeetings by original_title */
   const loadClosedMeetingsOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
-      const res = await getMeetings({
-        status: MeetingStatus.CLOSED,
-        search: search || undefined,
-        skip,
-        limit,
+      if (!search || search.trim().length === 0) {
+        return {
+          items: [],
+          total: 0,
+          skip: 0,
+          limit,
+          has_next: false,
+          has_previous: false,
+        };
+      }
+      const results = await searchMeetings({
+        q: search.trim(),
+        limit: Math.min(limit, 100), // API max is 100
       });
       const currentId = meeting?.id;
-      const items = res.items
-        .filter((m) => m.id !== currentId)
+      const items = results
+        .filter((m) => String(m.id) !== currentId)
         .map((m) => ({
-          value: m.id,
-          label: `${m.request_number || m.id} – ${m.meeting_title || m.meeting_subject || ''}`.trim() || m.id,
+          value: String(m.id),
+          label: m.meeting_title || m.original_title || String(m.id),
         }));
       return {
         items,
-        total: res.total,
-        skip: res.skip,
-        limit: res.limit,
-        has_next: res.skip + res.limit < res.total,
-        has_previous: res.skip > 0,
+        total: items.length,
+        skip: 0, // API doesn't support pagination
+        limit: results.length,
+        has_next: false, // API doesn't support pagination
+        has_previous: false,
       };
     },
     [meeting?.id]
@@ -1250,7 +1474,7 @@ const MeetingDetail: React.FC = () => {
 
   // Tabs per Excel "الجدولة - مراجعة الطلب": التبويب (column التبويب)
   // When status is SCHEDULED (مجدول), hide 4 tabs and add "توثيق الاجتماع"
-  const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive', 'content-consultation', 'request-notes'];
+  const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive', 'content-consultation'];
   const tabs = useMemo(() => {
     const all = [
       { id: 'request-info', label: 'معلومات الطلب' },
@@ -1260,7 +1484,6 @@ const MeetingDetail: React.FC = () => {
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
       { id: 'directive', label: 'التوجيه' },
       { id: 'content-consultation', label: 'استشارة المحتوى' },
-      { id: 'request-notes', label: 'الملاحظات على الطلب' },
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
@@ -1275,8 +1498,63 @@ const MeetingDetail: React.FC = () => {
       setActiveTab('request-info');
     } else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') {
       setActiveTab('request-info');
+    } else if (activeTab === 'request-notes') {
+      setActiveTab('request-info');
     }
   }, [meetingStatus, activeTab]);
+
+  /** Renders a field label with an optional "editable when return for info" checkbox beside it (only when status is UNDER_REVIEW) */
+  const renderFieldLabel = (fieldId: string, labelContent: React.ReactNode, labelClassName?: string) => {
+    const baseLabelClass = labelClassName ?? 'text-sm font-medium text-gray-700 text-[#344054]';
+    const showEditable = meetingStatus === MeetingStatus.UNDER_REVIEW && EDITABLE_FIELD_IDS.includes(fieldId);
+    const isChecked = returnForInfoForm.editable_fields[fieldId] ?? false;
+    if (!showEditable) {
+      return <label className={baseLabelClass} style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{labelContent}</label>;
+    }
+    return (
+      <div className="flex flex-row items-center justify-end gap-3 w-full min-w-0 flex-nowrap">
+        <span className={`${baseLabelClass} flex-1 min-w-0 truncate`} style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{labelContent}</span>
+        <label
+          className={`
+            inline-flex items-center gap-2 cursor-pointer flex-shrink-0
+            px-2.5 py-1 rounded-full border transition-all duration-200
+            ${isChecked
+              ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]'
+              : 'bg-gray-100/80 border-gray-200 text-gray-500 hover:bg-gray-100 hover:border-gray-300'
+            }
+          `}
+          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+        >
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={(e) =>
+              setReturnForInfoForm((p) => ({
+                ...p,
+                editable_fields: { ...p.editable_fields, [fieldId]: e.target.checked },
+              }))
+            }
+            className="sr-only"
+            aria-label={`قابل للتعديل: ${typeof labelContent === 'string' ? labelContent : fieldId}`}
+          />
+          <span
+            className={`
+              w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors
+              ${isChecked ? 'border-[#048F86] bg-[#048F86]' : 'border-gray-400 bg-white'}
+            `}
+            aria-hidden
+          >
+            {isChecked && (
+              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </span>
+          <span className="text-xs font-medium whitespace-nowrap">قابل للتعديل</span>
+        </label>
+      </div>
+    );
+  };
 
   // Loading state
   if (isLoading) {
@@ -1449,7 +1727,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل نطلب الاجتماع نيابة عن غيرك؟</label>
+                  {renderFieldLabel('is_on_behalf_of', 'هل نطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <div className="flex items-center gap-2 w-full justify-start">
                     <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
@@ -1462,34 +1740,34 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>مالك الاجتماع</label>
+                  {renderFieldLabel('meeting_owner', 'مالك الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="مالك الاجتماع" />
                 </div>
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>عنوان الاجتماع</label>
+                  {renderFieldLabel('meeting_title', 'عنوان الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل عنوان الاجتماع" />
                 </div>
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>وصف الاجتماع</label>
+                  {renderFieldLabel('meeting_subject', 'وصف الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="أدخل وصف الاجتماع" />
                 </div>
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>القطاع</label>
+                  {renderFieldLabel('sector', 'القطاع', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <Input type="text" value={formData.sector} onChange={(e) => handleFieldChange('sector', e.target.value)} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="القطاع" />
                 </div>
                 <div className="flex flex-col gap-[3.53px]">
-                  <label className="text-sm font-medium text-gray-700  text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>نوع الاجتماع</label>
+                  {renderFieldLabel('meeting_type', 'نوع الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <Select value={formData.meeting_type} onValueChange={(v) => handleFieldChange('meeting_type', v)}>
                     <SelectTrigger className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right flex-row-reverse text-[9.42px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر نوع الاجتماع" /></SelectTrigger>
                     <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>السبب</label>
+                  {renderFieldLabel('meeting_justification', 'السبب', 'text-sm font-medium text-gray-700')}
                   <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className="w-full min-h-11 px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="السبب" />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>آلية انعقاد الاجتماع</label>
+                  {renderFieldLabel('meeting_channel', 'آلية انعقاد الاجتماع', 'text-sm font-medium text-gray-700')}
                   <Select
                     value={scheduleForm.meeting_channel}
                     onValueChange={(value) => setScheduleForm((p) => ({ ...p, meeting_channel: value as typeof p.meeting_channel }))}
@@ -1511,7 +1789,7 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 )}
                 <div className="flex flex-col items-end gap-[6.89px]">
-                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل يتطلب بروتوكول؟</label>
+                  {renderFieldLabel('requires_protocol', 'هل يتطلب بروتوكول؟', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
                   <div className="flex items-center gap-2 justify-end">
                     <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
                     <button type="button" onClick={() => setScheduleForm((p) => ({ ...p, requires_protocol: !p.requires_protocol }))} className={`w-7 h-[15.34px] rounded-full flex transition-all cursor-pointer flex-shrink-0 ${scheduleForm.requires_protocol ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'} p-[1.28px]`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
@@ -1521,7 +1799,7 @@ const MeetingDetail: React.FC = () => {
                   )}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>فئة الاجتماع</label>
+                  {renderFieldLabel('meeting_classification_type', 'فئة الاجتماع', 'text-sm font-medium text-gray-700')}
                   <Select value={formData.meeting_classification_type || ''} onValueChange={(v) => handleFieldChange('meeting_classification_type', v)}>
                     <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر فئة الاجتماع" /></SelectTrigger>
                     <SelectContent dir="rtl">{Object.values(MeetingClassificationType).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationTypeLabels[c]}</SelectItem>)}</SelectContent>
@@ -1532,11 +1810,11 @@ const MeetingDetail: React.FC = () => {
                   <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className="w-full min-h-11 px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="مبرّر اللقاء" />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>موضوع التكليف المرتبط</label>
+                  {renderFieldLabel('related_topic', 'موضوع التكليف المرتبط', 'text-sm font-medium text-gray-700')}
                   <Input type="text" value={formData.related_topic} onChange={(e) => handleFieldChange('related_topic', e.target.value)} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }} placeholder="موضوع التكليف المرتبط" />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تاريخ الاستحقاق</label>
+                  {renderFieldLabel('deadline', 'تاريخ الاستحقاق', 'text-sm font-medium text-gray-700')}
                   <FormDatePicker
                     value={formData.deadline}
                     onChange={(value) => handleFieldChange('deadline', value)}
@@ -1546,21 +1824,21 @@ const MeetingDetail: React.FC = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تصنيف الاجتماع</label>
+                  {renderFieldLabel('meeting_classification', 'تصنيف الاجتماع', 'text-sm font-medium text-gray-700')}
                   <Select value={formData.meeting_classification} onValueChange={(v) => handleFieldChange('meeting_classification', v)}>
                     <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر تصنيف الاجتماع" /></SelectTrigger>
                     <SelectContent dir="rtl">{Object.values(MeetingClassification).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationLabels[c]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>سريّة الاجتماع</label>
+                  {renderFieldLabel('meeting_confidentiality', 'سريّة الاجتماع', 'text-sm font-medium text-gray-700')}
                   <Select value={formData.meeting_confidentiality || ''} onValueChange={(v) => handleFieldChange('meeting_confidentiality', v)}>
                     <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}><SelectValue placeholder="اختر سريّة الاجتماع" /></SelectTrigger>
                     <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col items-end gap-[6.89px]">
-                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>اجتماع متسلسل؟</label>
+                  {renderFieldLabel('is_sequential', 'اجتماع متسلسل؟', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
                   <div className="flex items-center gap-2 justify-end">
                     <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_sequential ? 'نعم' : 'لا'}</span>
                     <button
@@ -1578,9 +1856,7 @@ const MeetingDetail: React.FC = () => {
                 </div>
                 {formData.is_sequential && (
                   <div className="flex flex-col gap-2 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      الاجتماع السابق <span className="text-red-500">*</span>
-                    </label>
+                    {renderFieldLabel('previous_meeting_id', <>الاجتماع السابق <span className="text-red-500">*</span></>, 'text-sm font-medium text-gray-700')}
                     <FormAsyncSelectV2
                       value={previousMeetingOption}
                       onValueChange={(opt) => {
@@ -1611,7 +1887,7 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-[6.89px] md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 leading-[11px] text-[#344054]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>هل طلب الاجتماع بناء على توجيه من معالي الوزير</label>
+                  {renderFieldLabel('is_based_on_directive', 'هل طلب الاجتماع بناء على توجيه من معالي الوزير', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
                   <div className="flex items-center gap-2 justify-end">
                     <span className="text-[10.23px] text-[#667085]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
                     <button
@@ -1624,7 +1900,7 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طريقة التوجيه</label>
+                  {renderFieldLabel('directive_method', 'طريقة التوجيه', 'text-sm font-medium text-gray-700')}
                   <Select value={formData.directive_method || ''} onValueChange={(v) => handleFieldChange('directive_method', v)}>
                     <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                       <SelectValue placeholder="اختر طريقة التوجيه" />
@@ -1637,7 +1913,7 @@ const MeetingDetail: React.FC = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>محضر الاجتماع</label>
+                  {renderFieldLabel('previous_meeting_minutes_id', 'محضر الاجتماع', 'text-sm font-medium text-gray-700')}
                   <FormAsyncSelectV2
                     value={previousMeetingMinutesOption}
                     onValueChange={(opt) => {
@@ -1653,7 +1929,7 @@ const MeetingDetail: React.FC = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>التوجيه</label>
+                  {renderFieldLabel('related_guidance', 'التوجيه', 'text-sm font-medium text-gray-700')}
                   <Textarea
                     value={formData.related_guidance}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((p) => ({ ...p, related_guidance: e.target.value }))}
@@ -1665,7 +1941,9 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
               <div className="flex flex-col gap-[8px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[19px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>موعد الاجتماع</h3>
+                <div style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  {renderFieldLabel('selected_time_slot_id', 'موعد الاجتماع', 'text-right text-[12.69px] leading-[19px] text-[#101828]')}
+                </div>
                 <div className="flex flex-row gap-4 flex-wrap items-center">
                   {suggestedTimes.length === 0 ? (
                     <div className="w-full text-center py-4 text-[#667085] text-sm">لا توجد أوقات متاحة</div>
@@ -1683,7 +1961,9 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* الأهداف – Figma: table border #EAECF0, header #F9FAFB, trash #FFF4F4, add button gradient. Columns RTL: رقم البند | الهدف | إجراء */}
               <div className="flex flex-col gap-[10px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>الأهداف</h3>
+                <div className="text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  {renderFieldLabel('objectives', 'الأهداف', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
+                </div>
                 {contentForm.objectives.length > 0 ? (
                   <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
                     <DataTable
@@ -1706,7 +1986,9 @@ const MeetingDetail: React.FC = () => {
               </div>
               {/* أجندة الاجتماع – Figma: same table style, "+ إضافة أجندة" */}
               <div className="flex flex-col gap-[10px] w-full">
-                <h3 className="text-right text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>أجندة الاجتماع</h3>
+                <div className="text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  {renderFieldLabel('agenda_items', 'أجندة الاجتماع', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
+                </div>
                 {contentForm.agendaItems.length > 0 ? (
                   <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
                     <DataTable
@@ -1809,7 +2091,7 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>ملاحظات</label>
+                {renderFieldLabel('general_notes', 'ملاحظات', 'text-sm font-medium text-gray-700')}
                 <div className="w-full min-h-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                   {generalNotesList.length > 0
                     ? generalNotesList.map((n) => n.text).join('\n\n')
@@ -1906,9 +2188,11 @@ const MeetingDetail: React.FC = () => {
           {activeTab === 'attendees' && (
             <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
               <div className="flex flex-col gap-6 w-full">
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>قائمة المدعوين (مقدّم الطلب)</h2>
-                  <div className="w-full overflow-x-auto table-scroll">
+                <div className="flex flex-col gap-2 w-full min-w-0">
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                    {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
+                  </div>
+                  <div className="w-full overflow-x-auto table-scroll min-w-0">
                     <div className="min-w-full">
                       <DataTable
                         columns={[
@@ -1928,16 +2212,20 @@ const MeetingDetail: React.FC = () => {
                             align: 'end',
                             render: (row: any) => {
                               if (row.isLocal) {
+                                const err = inviteeValidationErrors[row.id]?.external_name;
                                 return (
-                                  <Input
-                                    type="text"
-                                    value={row.external_name || ''}
-                                    onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="الإسم"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
+                                  <div className="flex flex-col gap-0.5 w-full">
+                                    <Input
+                                      type="text"
+                                      value={row.external_name || ''}
+                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder="الإسم *"
+                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    />
+                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                  </div>
                                 );
                               }
                               return <span className="text-sm text-[#475467]">{row.external_name || row.user_id || '—'}</span>;
@@ -1950,16 +2238,20 @@ const MeetingDetail: React.FC = () => {
                             align: 'end',
                             render: (row: any) => {
                               if (row.isLocal) {
+                                const err = inviteeValidationErrors[row.id]?.position;
                                 return (
-                                  <Input
-                                    type="text"
-                                    value={row.position || ''}
-                                    onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="المنصب"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
+                                  <div className="flex flex-col gap-0.5 w-full">
+                                    <Input
+                                      type="text"
+                                      value={row.position || ''}
+                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder="المنصب *"
+                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    />
+                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                  </div>
                                 );
                               }
                               return <span className="text-sm text-[#475467]">{row.position || '—'}</span>;
@@ -1972,16 +2264,20 @@ const MeetingDetail: React.FC = () => {
                             align: 'end',
                             render: (row: any) => {
                               if (row.isLocal) {
+                                const err = inviteeValidationErrors[row.id]?.phone;
                                 return (
-                                  <Input
-                                    type="text"
-                                    value={row.phone || ''}
-                                    onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'phone', e.target.value); }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="الجوال"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
+                                  <div className="flex flex-col gap-0.5 w-full">
+                                    <Input
+                                      type="text"
+                                      value={row.phone || ''}
+                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'phone', e.target.value); }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder="الجوال *"
+                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    />
+                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                  </div>
                                 );
                               }
                               return <span className="text-sm text-[#475467]">{row.phone || '—'}</span>;
@@ -1994,16 +2290,20 @@ const MeetingDetail: React.FC = () => {
                             align: 'end',
                             render: (row: any) => {
                               if (row.isLocal) {
+                                const err = inviteeValidationErrors[row.id]?.external_email;
                                 return (
-                                  <Input
-                                    type="email"
-                                    value={row.external_email || ''}
-                                    onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder="البريد الإلكتروني"
-                                    className="h-9 text-right w-full"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                                  />
+                                  <div className="flex flex-col gap-0.5 w-full">
+                                    <Input
+                                      type="email"
+                                      value={row.external_email || ''}
+                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder="البريد الإلكتروني *"
+                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    />
+                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                  </div>
                                 );
                               }
                               return <span className="text-sm text-[#475467]">{row.external_email || '—'}</span>;
@@ -2099,98 +2399,144 @@ const MeetingDetail: React.FC = () => {
                 </div>
 
                 {/* قائمة المدعوين (الوزير) */}
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>قائمة المدعوين (الوزير)</h2>
-                  <div className="w-full overflow-x-auto table-scroll">
-                    <div className="min-w-[1085px]">
+                <div className="flex flex-col gap-2 w-full min-w-0">
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Ping AR + LT', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                    {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
+                  </div>
+                  <div className="w-full overflow-x-auto table-scroll min-w-0">
+                    <div className="min-w-[1400px]">
                       <DataTable
                         columns={[
                           {
                             id: 'index',
                             header: 'رقم البند',
-                            width: 'w-[100px]',
+                            width: 'w-[80px]',
                             align: 'center',
                             render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
                           },
                           {
-                            id: 'name',
-                            header: 'الإسم',
-                            width: 'w-[180px]',
+                            id: 'username',
+                            header: 'اسم المستخدم',
+                            width: 'w-[140px]',
                             align: 'end',
                             render: (row: any, index: number) => (
                               <Input
                                 type="text"
-                                value={row.external_name || row.username || ''}
+                                value={row.username || ''}
                                 onChange={(e) => {
                                   e.stopPropagation();
-                                  updateMinisterAttendee(index, 'external_name', e.target.value);
+                                  updateMinisterAttendee(index, 'username', e.target.value);
                                 }}
                                 onClick={(e) => e.stopPropagation()}
-                                placeholder="الإسم"
+                                placeholder="اسم المستخدم"
                                 className="h-9 text-right w-full"
                                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                               />
                             ),
+                          },
+                          {
+                            id: 'name',
+                            header: 'الإسم (خارجي)',
+                            width: 'w-[160px]',
+                            align: 'end',
+                            render: (row: any, index: number) => {
+                              const err = ministerAttendeeValidationErrors[index]?.external_name;
+                              return (
+                                <div className="flex flex-col gap-0.5 w-full">
+                                  <Input
+                                    type="text"
+                                    value={row.external_name || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateMinisterAttendee(index, 'external_name', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="الإسم *"
+                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                </div>
+                              );
+                            },
                           },
                           {
                             id: 'position',
                             header: 'المنصب',
                             width: 'w-[160px]',
                             align: 'end',
-                            render: (row: any, index: number) => (
-                              <Input
-                                type="text"
-                                value={row.position || ''}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  updateMinisterAttendee(index, 'position', e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                placeholder="المنصب"
-                                className="h-9 text-right w-full"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              />
-                            ),
+                            render: (row: any, index: number) => {
+                              const err = ministerAttendeeValidationErrors[index]?.position;
+                              return (
+                                <div className="flex flex-col gap-0.5 w-full">
+                                  <Input
+                                    type="text"
+                                    value={row.position || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateMinisterAttendee(index, 'position', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="المنصب *"
+                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                </div>
+                              );
+                            },
                           },
                           {
                             id: 'phone',
                             header: 'الجوال',
                             width: 'w-[140px]',
                             align: 'end',
-                            render: (row: any, index: number) => (
-                              <Input
-                                type="text"
-                                value={row.phone || ''}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  updateMinisterAttendee(index, 'phone', e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                placeholder="الجوال"
-                                className="h-9 text-right w-full"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              />
-                            ),
+                            render: (row: any, index: number) => {
+                              const err = ministerAttendeeValidationErrors[index]?.phone;
+                              return (
+                                <div className="flex flex-col gap-0.5 w-full">
+                                  <Input
+                                    type="text"
+                                    value={row.phone || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateMinisterAttendee(index, 'phone', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="الجوال *"
+                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                </div>
+                              );
+                            },
                           },
                           {
                             id: 'email',
                             header: 'البريد الإلكتروني',
                             width: 'w-[200px]',
                             align: 'end',
-                            render: (row: any, index: number) => (
-                              <Input
-                                type="email"
-                                value={row.external_email || ''}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  updateMinisterAttendee(index, 'external_email', e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                placeholder="البريد الإلكتروني"
-                                className="h-9 text-right w-full"
-                                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                              />
-                            ),
+                            render: (row: any, index: number) => {
+                              const err = ministerAttendeeValidationErrors[index]?.external_email;
+                              return (
+                                <div className="flex flex-col gap-0.5 w-full">
+                                  <Input
+                                    type="email"
+                                    value={row.external_email || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateMinisterAttendee(index, 'external_email', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="البريد الإلكتروني *"
+                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
+                                </div>
+                              );
+                            },
                           },
                           {
                             id: 'attendance_channel',
@@ -2229,6 +2575,48 @@ const MeetingDetail: React.FC = () => {
                                     onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')}
                                     className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
                                   />
+                                </div>
+                              );
+                            },
+                          },
+                          {
+                            id: 'is_required',
+                            header: 'مطلوب',
+                            width: 'w-[90px]',
+                            align: 'center',
+                            render: (row: any, index: number) => (
+                              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!row.is_required}
+                                  onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)}
+                                  className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
+                                />
+                              </div>
+                            ),
+                          },
+                          {
+                            id: 'justification',
+                            header: 'المبرر',
+                            width: 'w-[160px]',
+                            align: 'end',
+                            render: (row: any, index: number) => {
+                              const err = ministerAttendeeValidationErrors[index]?.justification;
+                              return (
+                                <div className="flex flex-col gap-0.5 w-full">
+                                  <Input
+                                    type="text"
+                                    value={row.justification || ''}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateMinisterAttendee(index, 'justification', e.target.value);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="المبرر *"
+                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  />
+                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{err}</span>}
                                 </div>
                               );
                             },
@@ -2287,6 +2675,19 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
+              {meetingStatus !== MeetingStatus.WAITING && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsConsultationModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                  >
+                    <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
+                    طلب استشارة
+                  </button>
+                </div>
+              )}
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
@@ -2334,7 +2735,14 @@ const MeetingDetail: React.FC = () => {
                       {isExpanded && answers.length > 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                           {answers.map((_, index) =>
-                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 " + (index > 0 ? `absolute mt-[${47 * index}px] h-[${136 * index}px]` : '')}>
+                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 "} 
+                              
+                              style={index > 0 ? {
+                                position: 'absolute',
+                                top: `${47 * index}px`,
+                                height: `${136 * index}px`,
+                              } : {}}
+                              >
                               <div className={`w-[50px] -ml-[30px]  min-h-[8px] flex-1  border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]`} />
                               <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                             </div>
@@ -2415,22 +2823,20 @@ const MeetingDetail: React.FC = () => {
           {/* التوجيه tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4">
-              {/* Sub-tabs: التوجيهات السابقة / التوجيهات الحالية */}
-              <div className="flex justify-center">
-                <Tabs
-                  items={[
-                    { id: 'previous', label: 'التوجيهات السابقة' },
-                    { id: 'current', label: 'التوجيهات الحالية' },
-                  ]}
-                  activeTab={directiveSubTab}
-                  onTabChange={(id) => setDirectiveSubTab(id as 'current' | 'previous')}
-                />
-              </div>
-              {directiveSubTab === 'previous' ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center text-gray-600">لا توجد توجيهات سابقة</div>
+              {meetingStatus !== MeetingStatus.WAITING && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestGuidanceModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                  >
+                    <FileCheck className="w-5 h-5" strokeWidth={1.26} />
+                    طلب توجيه
+                  </button>
                 </div>
-              ) : isLoadingGuidanceRecords ? (
+              )}
+              {isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
@@ -2723,43 +3129,97 @@ const MeetingDetail: React.FC = () => {
                         {
                           id: 'index',
                           header: 'رقم البند',
-                          width: 'w-28',
+                          width: 'w-20',
                           align: 'center',
                           render: (_row: MinisterAttendee, index: number) => (
                             <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{index + 1}</span>
                           ),
                         },
                         {
-                          id: 'name',
-                          header: 'الاسم',
-                          width: 'flex-1',
+                          id: 'username',
+                          header: 'اسم المستخدم',
+                          width: 'w-32',
                           align: 'end',
                           render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.username || '-'}</span>
+                          ),
+                        },
+                        {
+                          id: 'external_name',
+                          header: 'الإسم (خارجي)',
+                          width: 'w-36',
+                          align: 'end',
+                          render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.external_name || '-'}</span>
+                          ),
+                        },
+                        {
+                          id: 'external_email',
+                          header: 'البريد الإلكتروني',
+                          width: 'w-44',
+                          align: 'end',
+                          render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.external_email || '-'}</span>
+                          ),
+                        },
+                        {
+                          id: 'position',
+                          header: 'المنصب',
+                          width: 'w-32',
+                          align: 'end',
+                          render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.position || '-'}</span>
+                          ),
+                        },
+                        {
+                          id: 'phone',
+                          header: 'الجوال',
+                          width: 'w-28',
+                          align: 'end',
+                          render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.phone || '-'}</span>
+                          ),
+                        },
+                        {
+                          id: 'attendance_channel',
+                          header: 'آلية الحضور',
+                          width: 'w-24',
+                          align: 'center',
+                          render: (row: MinisterAttendee) => (
                             <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              {row.external_name || row.username || row.external_email || '-'}
+                              {row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-'}
+                            </span>
+                          ),
+                        },
+                        {
+                          id: 'access_permission',
+                          header: 'صلاحية الاطلاع',
+                          width: 'w-28',
+                          align: 'center',
+                          render: (row: MinisterAttendee) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              {row.access_permission === 'FULL' ? 'كامل' : row.access_permission === 'READ_ONLY' ? 'قراءة فقط' : row.access_permission || '-'}
                             </span>
                           ),
                         },
                         {
                           id: 'is_required',
-                          header: 'نوع الحضور',
-                          width: 'w-32',
+                          header: 'مطلوب',
+                          width: 'w-24',
                           align: 'center',
                           render: (row: MinisterAttendee) => (
                             <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              {row.is_required != null ? (row.is_required ? 'أساسي' : 'اختياري') : '-'}
+                              {row.is_required != null ? (row.is_required ? 'نعم' : 'لا') : '-'}
                             </span>
                           ),
                         },
                         {
                           id: 'justification',
-                          header: 'التبرير',
-                          width: 'w-48',
+                          header: 'المبرر',
+                          width: 'w-40',
                           align: 'end',
                           render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              {row.justification || '-'}
-                            </span>
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{row.justification || '-'}</span>
                           ),
                         },
                       ]}
@@ -2807,197 +3267,75 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Tab: الملاحظات على الطلب – list of notes (card design) + editable new note */}
-          {activeTab === 'request-notes' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {generalNotesList.length > 0 && (
-                <div className="flex flex-col gap-[10px] w-full">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    الملاحظات المسجلة
-                  </label>
-                  {generalNotesList.map((note) => (
-                    <div
-                      key={note.id}
-                      className="flex flex-col justify-center items-center p-[3px] gap-[10px] w-full rounded-[9.26px]"
-                      style={{ background: '#E6ECF5' }}
-                    >
-                      <div
-                        className="flex flex-col items-end w-full py-[10px] px-[8.5px] gap-[7.13px] rounded-[8.05px] bg-white"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        <div className="flex flex-row justify-between items-start w-full gap-[15px]">
-                          {/* Right in RTL: heading + question/text */}
-                          <div className="flex flex-col justify-center items-end gap-[4.28px] min-w-0 flex-1">
-                            <span className="text-[15.67px] font-bold leading-5 text-right" style={{ color: '#383838', fontFamily: "'Almarai', sans-serif" }}>
-                              {note.author_name || note.author_type || note.note_type || 'ملاحظة'}
-                            </span>
-                            <p className="text-[10px] leading-[11px] text-right whitespace-pre-wrap" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
-                              {note.text}
-                            </p>
-                          </div>
-                          {/* Left in RTL: date + clock and status pill */}
-                          <div className="flex flex-row justify-between items-center gap-3 flex-shrink-0">
-                            <div className="flex flex-row justify-center items-center gap-2 px-2.5 py-1.5 rounded-full" style={{ background: 'rgba(0, 167, 157, 0.06)' }}>
-                              <span className="text-[10px] leading-[11px]" style={{ color: '#00A79D', fontFamily: "'Almarai', sans-serif" }}>
-                                مكتمل
-                              </span>
-                            </div>
-                            <div className="flex flex-row justify-center items-center gap-2">
-                              <span className="text-[9px] leading-[10px] text-right" style={{ color: '#2C2C2C', fontFamily: "'Almarai', sans-serif" }}>
-                                تاريخ الطلب : {note.created_at ? new Date(note.created_at).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                              </span>
-                              <Clock className="w-3 h-3 text-[#475467]" strokeWidth={1.08} aria-hidden />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+        </div>
+
+        {/* Corner FAB: fixed in corner (RTL-aware), tap to show action bubbles */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
+          <>
+            {actionsBarOpen && (
+              <button
+                type="button"
+                aria-label="إغلاق"
+                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+                onClick={() => setActionsBarOpen(false)}
+              />
+            )}
+            {/* Anchor: fixed size so main FAB stays in exact same spot open or closed */}
+            <div
+              className="fixed bottom-6 z-50 w-14 h-14 right-6 rtl:right-auto rtl:left-6"
+              dir="ltr"
+            >
+              {/* Action bubbles: absolutely above main FAB, same corner alignment */}
+              {actionsBarOpen && (
+                <div
+                  className="absolute bottom-full flex flex-col-reverse gap-3 mb-2 right-0 rtl:right-auto rtl:left-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
+                >
+                  {/* SCHEDULED */}
+                  {meetingStatus === MeetingStatus.SCHEDULED && (
+                    <>
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة مجدداً" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                    </>
+                  )}
+                  {/* WAITING */}
+                  {meetingStatus === MeetingStatus.WAITING && (
+                    <>
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                    </>
+                  )}
+                  {/* UNDER_REVIEW */}
+                  {meetingStatus === MeetingStatus.UNDER_REVIEW && (
+                    <>
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                      <ActionBubble icon={<Pencil className="w-5 h-5" strokeWidth={1.26} />} label="تعديل" onClick={() => { setActionsBarOpen(false); setIsEditConfirmOpen(true); }} disabled={!hasChanges} disabledReason="لا يوجد تغييرات لحفظها" />
+                      <ActionBubble icon={<RotateCcw className="w-5 h-5" strokeWidth={1.26} />} label="إعادة للطلب" onClick={() => { setActionsBarOpen(false); setIsReturnForInfoModalOpen(true); }} />
+                      <ActionBubble icon={<Send className="w-5 h-5" strokeWidth={1.26} />} label="إرسال للمحتوى" onClick={() => { setActionsBarOpen(false); hasContent && setIsSendToContentModalOpen(true); }} disabled={!hasContent} disabledReason="أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال" />
+                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="رفض" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                    </>
+                  )}
                 </div>
               )}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  {generalNotesList.length > 0 ? 'إضافة ملاحظة جديدة' : 'الملاحظات'}
-                </label>
-                <Textarea
-                  value={contentTabForm.general_notes ?? ''}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setContentTabForm((p) => ({ ...p, general_notes: e.target.value }))
-                  }
-                  placeholder="أدخل الملاحظات..."
-                  className="w-full min-h-[200px] px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                />
-              </div>
+              {/* Main FAB: always same position (absolute to corner of anchor) */}
+              <button
+                type="button"
+                aria-label={actionsBarOpen ? 'إغلاق القائمة' : 'إجراءات سريعة'}
+                aria-expanded={actionsBarOpen}
+                onClick={() => setActionsBarOpen((o) => !o)}
+                className="absolute bottom-0 right-0 rtl:right-auto rtl:left-0 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
+                style={{
+                  background: actionsBarOpen ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.6)',
+                  boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(12px)',
+                }}
+              >
+                <Zap className="w-6 h-6 text-[#048F86]" strokeWidth={2} />
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Action Buttons - iPhone-style liquid glass: blur + saturate, frost, layered shadow */}
-        {meeting && meeting.status === MeetingStatus.UNDER_REVIEW && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-            <div
-              className="flex flex-col items-center justify-center py-2.5 px-3 min-h-[50px] rounded-[32px] transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] overflow-visible"
-              style={{
-                isolation: 'isolate',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.02), 0 2px 8px rgba(0, 0, 0, 0.06), 0 12px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                backdropFilter: 'blur(48px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(48px) saturate(200%)',
-              }}
-            >
-              <div className="flex flex-row items-center justify-center gap-2 flex-wrap max-w-[90vw]">
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsScheduleModalOpen(true)}
-                    aria-label="جدولة"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <CalendarMinus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsEditConfirmOpen(true)}
-                  disabled={!hasChanges}
-                  aria-disabled={!hasChanges}
-                  aria-label="تعديل"
-                  className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                >
-                  <Pencil className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                  <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تعديل</span>
-                </button>
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsReturnForInfoModalOpen(true)}
-                    aria-label="إعادة للطلب"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <RotateCcw className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إعادة للطلب</span>
-                  </button>
-                )}
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    aria-label="طلب استشارة"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <ClipboardCheck className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب استشارة</span>
-                  </button>
-                )}
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRequestGuidanceModalOpen(true)}
-                    aria-label="طلب توجيه"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <FileCheck className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>طلب توجيه</span>
-                  </button>
-                )}
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSendToContentModalOpen(true)}
-                    aria-label="إرسال للمحتوى"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <Send className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إرسال للمحتوى</span>
-                  </button>
-                )}
-
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => moveToWaitingListMutation.mutate()}
-                    disabled={moveToWaitingListMutation.isPending}
-                    aria-label="إضافة إلى قائمة الانتظار"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <Plus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}</span>
-                  </button>
-                )}
-                {meetingStatus !== MeetingStatus.WAITING && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRejectModalOpen(true)}
-                    aria-label="رفض"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-red-300/40 hover:ring-offset-2 hover:bg-red-50/30"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <X className="w-[15px] h-[15px] text-red-600 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-red-700 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>رفض</span>
-                  </button>
-                )}
-
-             
-       
-
-            
-
-      
-
-         
-            </div>
-          </div>
-        </div>
+          </>
         )}
         </div>
       </div>
@@ -3178,7 +3516,23 @@ const MeetingDetail: React.FC = () => {
                   setValidationError('يجب اختيار الاجتماع السابق عند تفعيل خيار "اجتماع متسلسل؟"');
                   return;
                 }
+                // Validate invitees (قائمة المدعوين مقدّم الطلب) when payload includes them
+                if (changedPayload.invitees && localInvitees.length > 0 && !validateInvitees()) {
+                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+                  setIsEditConfirmOpen(false);
+                  setActiveTab('attendees');
+                  return;
+                }
+                // Validate minister attendees (قائمة المدعوين الوزير) when payload includes them
+                if (changedPayload.minister_attendees && (scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
+                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+                  setIsEditConfirmOpen(false);
+                  setActiveTab('attendees');
+                  return;
+                }
                 setValidationError(null);
+                setInviteeValidationErrors({});
+                setMinisterAttendeeValidationErrors({});
                 const hasPresentationFiles = newPresentationAttachments.length > 0;
                 updateMutation.mutate({
                   payload: changedPayload,
@@ -3288,22 +3642,35 @@ const MeetingDetail: React.FC = () => {
         </form>
       </Drawer>
 
-      {/* Return for Info – Drawer */}
+      {/* Return for Info – Drawer (notes + editable_fields for POST return-for-info) */}
       <Drawer
         open={isReturnForInfoModalOpen}
-        onOpenChange={setIsReturnForInfoModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReturnForInfoForm({
+              notes: '',
+              editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>),
+            });
+          }
+          setIsReturnForInfoModalOpen(open);
+        }}
         title={<span className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إعادة للطلب</span>}
         side="left"
         width={500}
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsReturnForInfoModalOpen(false); setReturnForInfoForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
+            <button type="button" onClick={() => { setIsReturnForInfoModalOpen(false); setReturnForInfoForm({ notes: '', editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>) }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</button>
             <button type="submit" form="return-for-info-form" disabled={returnForInfoMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{returnForInfoMutation.isPending ? 'جاري الإرسال...' : 'إعادة للطلب'}</button>
           </div>
         }
       >
         <form id="return-for-info-form" onSubmit={handleReturnForInfoSubmit} className="flex flex-col gap-4">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
+            <p className="text-sm text-gray-700 text-right leading-relaxed" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              حدّد الحقول القابلة للتعديل بجانب كل حقل في النموذج عبر علامة <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#048F86]/10 text-[#048F86] text-xs font-medium">قابل للتعديل</span>. أدخل الملاحظات ثم اضغط إعادة للطلب.
+            </p>
+          </div>
           <div className="flex flex-col gap-2">
             <label
               className="text-sm font-medium text-gray-700 text-right"
@@ -3314,7 +3681,7 @@ const MeetingDetail: React.FC = () => {
             <Textarea
               value={returnForInfoForm.notes}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setReturnForInfoForm({ notes: e.target.value })
+                setReturnForInfoForm((p) => ({ ...p, notes: e.target.value }))
               }
               placeholder="يرجى توفير معلومات إضافية حول الموضوع"
               className="w-full min-h-[100px] text-right"
@@ -3663,7 +4030,6 @@ const MeetingDetail: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Username or External Email/Name */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
@@ -3680,7 +4046,23 @@ const MeetingDetail: React.FC = () => {
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          البريد الإلكتروني الخارجي
+                          الاسم (خارجي)
+                        </label>
+                        <Input
+                          type="text"
+                          value={attendee.external_name || ''}
+                          onChange={(e) => updateMinisterAttendee(index, 'external_name', e.target.value)}
+                          placeholder="الاسم الخارجي"
+                          className="w-full h-9 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          البريد الإلكتروني
                         </label>
                         <Input
                           type="email"
@@ -3691,23 +4073,53 @@ const MeetingDetail: React.FC = () => {
                           style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                         />
                       </div>
-                    </div>
-
-                    {attendee.external_email && (
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          الاسم الخارجي
+                          المنصب
                         </label>
                         <Input
                           type="text"
-                          value={attendee.external_name || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'external_name', e.target.value)}
-                          placeholder="External Attendee"
+                          value={attendee.position || ''}
+                          onChange={(e) => updateMinisterAttendee(index, 'position', e.target.value)}
+                          placeholder="المنصب"
                           className="w-full h-9 text-right"
                           style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                         />
                       </div>
-                    )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          الجوال
+                        </label>
+                        <Input
+                          type="text"
+                          value={attendee.phone || ''}
+                          onChange={(e) => updateMinisterAttendee(index, 'phone', e.target.value)}
+                          placeholder="الجوال"
+                          className="w-full h-9 text-right"
+                          style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          آلية الحضور
+                        </label>
+                        <Select
+                          value={attendee.attendance_channel || 'PHYSICAL'}
+                          onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v)}
+                        >
+                          <SelectTrigger className="w-full h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent dir="rtl">
+                            <SelectItem value="PHYSICAL">حضوري</SelectItem>
+                            <SelectItem value="REMOTE">عن بعد</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1">
@@ -3731,7 +4143,7 @@ const MeetingDetail: React.FC = () => {
                           صلاحية الوصول
                         </label>
                         <Select
-                          value={attendee.access_permission}
+                          value={attendee.access_permission || 'FULL'}
                           onValueChange={(value) => updateMinisterAttendee(index, 'access_permission', value)}
                         >
                           <SelectTrigger className="w-full h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
@@ -3752,9 +4164,9 @@ const MeetingDetail: React.FC = () => {
                       </label>
                       <Input
                         type="text"
-                        value={attendee.justification}
+                        value={attendee.justification || ''}
                         onChange={(e) => updateMinisterAttendee(index, 'justification', e.target.value)}
-                        placeholder="Required for decision making"
+                        placeholder="المبرر"
                         className="w-full h-9 text-right"
                         style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                       />
