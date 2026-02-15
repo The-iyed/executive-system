@@ -59,9 +59,10 @@ export const ContentBar: React.FC<ContentBarProps> = ({
       <span>
       {filterTabs.length > 0 && (
         <Tabs
-        items={filterTabs}
-        activeTab={currentFilter}
-        onTabChange={handleFilterClick}
+          items={filterTabs}
+          activeTab={currentFilter}
+          onTabChange={handleFilterClick}
+          variant="pill"
         />
       )}
       </span>

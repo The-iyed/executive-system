@@ -44,7 +44,7 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد استشارة المحتوى',
   // Scheduled States
   [MeetingStatus.SCHEDULED]: 'مجدول',
-  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول (جدولة)',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'جدولة معلومات إضافية',
   [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول (محتوى)',
   [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول (استشارة محتوى)',
   [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول (تحديث محتوى)',
