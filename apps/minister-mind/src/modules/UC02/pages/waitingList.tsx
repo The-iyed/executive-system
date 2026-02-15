@@ -12,7 +12,7 @@ const ITEMS_PER_PAGE = 10;
 
 const WaitingList: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewType>('table');
+  const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
