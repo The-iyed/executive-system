@@ -91,6 +91,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         label: 'طلبات تقديم توجيه',
         path: UC04_PATH.GUIDANCE_REQUESTS,
       },
+      {
+        id: 'exception-request',
+        icon: 'solar:hand-stars-outline',
+        label: 'طلب استثناء',
+        path: UC04_PATH.EXCEPTION_REQUEST,
+      },
+      {
+        id: 'evaluation',
+        icon: 'solar:hand-stars-outline',
+        label: 'تقييم',
+        path: UC04_PATH.EVALUATION,
+      },
     ],
   },
   'UC-05': {
