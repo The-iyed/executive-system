@@ -10,6 +10,7 @@ import {
   isAttachmentTimingVisible,
   type Step2ContentSchemaOptions,
 } from '../schemas/step2Content.schema';
+import { getStep2EditableMap } from '../utils/editableFields';
 
 interface UseStep2ContentProps {
   draftId: string;
@@ -20,6 +21,8 @@ interface UseStep2ContentProps {
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
+  /** From get meeting details: API editable_fields. Used to disable non-editable fields in edit. */
+  editableFields?: string[] | null;
 }
 
 interface SubmitStep2ContentPayload {
@@ -143,7 +146,12 @@ export const useStep2Content = ({
   onSuccess,
   onError,
   isEditMode = false,
+  editableFields,
 }: UseStep2ContentProps) => {
+  const step2EditableMap = useMemo(
+    () => getStep2EditableMap(editableFields ?? undefined),
+    [editableFields]
+  );
   const [formData, setFormData] = useState<Partial<Step2ContentFormData>>({
     presentation_files: [],
     additional_files: [],
@@ -376,5 +384,6 @@ export const useStep2Content = ({
     handleClearReplacementAdditional,
     validateAll,
     submitStep,
+    step2EditableMap,
   };
 };

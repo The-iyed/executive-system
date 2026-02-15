@@ -1,54 +1,27 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
-import { getWeekStart, getWeekEnd } from '../utils';
-import { getDraftAvailableTimeSlots } from '../../../data/calendarApi';
+import { getStep1EditableMap } from '../utils';
 import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 
-export interface Step1SchedulingState {
-  selected_time_slot_id: string | null;
-  alternative_time_slot_id_1: string | null;
-  alternative_time_slot_id_2: string | null;
-}
-
-export type Step1ErrorKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
-
-export type TimeSlotField = 'main' | 'alt1' | 'alt2';
-
-/** Slot shape from get-details API (draft); used in edit to avoid fetching availability. */
-export type DraftTimeSlot = {
-  id: string;
-  slot_start: string;
-  slot_end?: string | null;
-  is_available?: boolean;
-  is_selected?: boolean;
-};
+export type Step1ErrorKey = keyof Step1BasicInfoFormData;
 
 interface UseStep1BasicInfoProps {
   draftId?: string;
   initialData?: Partial<Step1BasicInfoFormData>;
-  initialScheduling?: Partial<Step1SchedulingState>;
-  /** In edit mode, use these slots from get-details instead of fetching available-time-slots. */
-  draftSlots?: DraftTimeSlot[];
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
+  /** From get meeting details: list of API field names (snake_case) that are editable. Used to disable non-editable fields in edit. */
+  editableFields?: string[] | null;
 }
-
-/** One time slot for API: create = { slot_start, slot_end }; edit from get-details = { id, slot_start, slot_end }. */
-export type TimeSlotPayload = { id?: string; slot_start: string; slot_end: string };
 
 export interface SubmitStep1BasicInfoPayload {
   formData: Partial<Step1BasicInfoFormData>;
   isDraft: boolean;
   draftId?: string;
-  timeSlots?: {
-    selected_time_slot?: TimeSlotPayload;
-    alternative_time_slot_1?: TimeSlotPayload;
-    alternative_time_slot_2?: TimeSlotPayload;
-  };
 }
 
 /** Validates form, builds FormData via data layer, submits draft basic-info. */
@@ -56,7 +29,7 @@ async function submitStep1BasicInfoData(
   payload: SubmitStep1BasicInfoPayload,
   isEditMode: boolean
 ): Promise<string> {
-  const { formData, isDraft, draftId, timeSlots } = payload;
+  const { formData, isDraft, draftId } = payload;
 
   if (!isDraft) {
     const result = validateStep1BasicInfo(formData);
@@ -68,55 +41,21 @@ async function submitStep1BasicInfoData(
   }
 
   const fd = buildDraftBasicInfoFormData(formData);
-  return submitDraftBasicInfo({ formData: fd, draftId, timeSlots, isEditMode });
-}
-
-function slotToCalendarEvent(slot: { id?: string | null; slot_start: string; slot_end?: string | null; is_available?: boolean }) {
-  const startDate = new Date(slot.slot_start);
-  const endDate = slot.slot_end ? new Date(slot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
-  const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
-  const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-  return {
-    // When availability API returns id = null, fall back to slot_start as a stable identifier.
-    id: slot.id ?? slot.slot_start,
-    date: startDate,
-    startTime,
-    endTime,
-    is_available: slot.is_available ?? true,
-  };
-}
-
-/** Build API slot payload: with id when from draft (edit), without id when from availability (create). */
-function buildSlotPayload(
-  slotId: string,
-  fromDraft: DraftTimeSlot[] | undefined,
-  fromAvailability: { id?: string | null; slot_start: string; slot_end?: string | null }[] | undefined
-): TimeSlotPayload | null {
-  if (fromDraft?.length) {
-    const s = fromDraft.find((x) => x.id === slotId || x.slot_start === slotId);
-    if (!s) return null;
-    const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
-    return { id: s.id, slot_start: s.slot_start, slot_end };
-  }
-  if (fromAvailability?.length) {
-    // Availability suggestions can have id = null, so we also match on slot_start (used as fallback value).
-    const s = fromAvailability.find((x) => x.id === slotId || x.slot_start === slotId);
-    if (!s) return null;
-    const slot_end = s.slot_end ?? (s.slot_start ? new Date(new Date(s.slot_start).getTime() + 60 * 60 * 1000).toISOString() : '');
-    return { slot_start: s.slot_start, slot_end };
-  }
-  return null;
+  return submitDraftBasicInfo({ formData: fd, draftId, isEditMode });
 }
 
 export const useStep1BasicInfo = ({
   draftId,
   initialData,
-  initialScheduling,
-  draftSlots,
   onSuccess,
   onError,
   isEditMode = false,
+  editableFields,
 }: UseStep1BasicInfoProps = {}) => {
+  const step1EditableMap = useMemo(
+    () => getStep1EditableMap(editableFields ?? undefined),
+    [editableFields]
+  );
   const [formData, setFormData] = useState<Partial<Step1BasicInfoFormData>>({
     meetingAgenda: [],
     is_urgent: false,
@@ -124,17 +63,6 @@ export const useStep1BasicInfo = ({
     is_based_on_directive: false,
     ...initialData,
   });
-
-  // Time slots (required when draftId exists and not urgent)
-  const [selected_time_slot_id, setSelectedTimeSlotId] = useState<string | null>(
-    initialScheduling?.selected_time_slot_id ?? null
-  );
-  const [alternative_time_slot_id_1, setAlternativeTimeSlotId1] = useState<string | null>(
-    initialScheduling?.alternative_time_slot_id_1 ?? null
-  );
-  const [alternative_time_slot_id_2, setAlternativeTimeSlotId2] = useState<string | null>(
-    initialScheduling?.alternative_time_slot_id_2 ?? null
-  );
 
   // Update form data when initialData changes (edit mode or create flow after refresh when draft is fetched)
   useEffect(() => {
@@ -146,164 +74,35 @@ export const useStep1BasicInfo = ({
     }
   }, [initialData]);
 
-  // Sync time slot state from initialScheduling only when draft provided slot objects (so ids exist in options).
-  // When edit has no slot objects in get-details, we fetch suggestions and ids from draft are not in that list — don't apply them so user can select from suggestions.
-  const hasDraftSlots = Boolean(draftSlots && draftSlots.length > 0);
-  useEffect(() => {
-    if (!initialScheduling) return;
-    if (isEditMode && !hasDraftSlots) {
-      setSelectedTimeSlotId(null);
-      setAlternativeTimeSlotId1(null);
-      setAlternativeTimeSlotId2(null);
-      return;
-    }
-    if (initialScheduling.selected_time_slot_id != null) setSelectedTimeSlotId(initialScheduling.selected_time_slot_id);
-    if (initialScheduling.alternative_time_slot_id_1 != null) setAlternativeTimeSlotId1(initialScheduling.alternative_time_slot_id_1);
-    if (initialScheduling.alternative_time_slot_id_2 != null) setAlternativeTimeSlotId2(initialScheduling.alternative_time_slot_id_2);
-  }, [isEditMode, hasDraftSlots, initialScheduling?.selected_time_slot_id, initialScheduling?.alternative_time_slot_id_1, initialScheduling?.alternative_time_slot_id_2]);
-
-  // Clear time slots when meeting is urgent
+  // Clear meeting date range (main + alternatives) when meeting is urgent
   useEffect(() => {
     if (formData.is_urgent === true) {
-      setSelectedTimeSlotId(null);
-      setAlternativeTimeSlotId1(null);
-      setAlternativeTimeSlotId2(null);
+      setFormData((prev) => ({
+        ...prev,
+        meeting_start_date: '',
+        meeting_end_date: '',
+        alternative_1_start_date: '',
+        alternative_1_end_date: '',
+        alternative_2_start_date: '',
+        alternative_2_end_date: '',
+      }));
       setErrors((prev) => {
         const next = { ...prev };
-        delete next.selected_time_slot_id;
+        delete next.meeting_start_date;
+        delete next.meeting_end_date;
+        delete next.alternative_1_start_date;
+        delete next.alternative_1_end_date;
+        delete next.alternative_2_start_date;
+        delete next.alternative_2_end_date;
         return next;
       });
     }
   }, [formData.is_urgent]);
 
-  const weekStart = useMemo(() => getWeekStart(new Date()), []);
-  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
-  const showTimeSlots = formData.is_urgent !== true;
-
-  const startDateStr = useMemo(() => {
-    const d = weekStart;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, [weekStart]);
-  const endDateStr = useMemo(() => {
-    const d = weekEnd;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, [weekEnd]);
-
-  const useSlotsFromDraft = Boolean(isEditMode && draftSlots && draftSlots.length > 0);
-
-  const queryClient = useQueryClient();
-  const timeSlotsQueryKey = ['draft-available-time-slots', startDateStr, endDateStr];
-
-  // In edit mode with draft slots from get-details, do not fetch availability
-  useEffect(() => {
-    if (!showTimeSlots || useSlotsFromDraft) return;
-    queryClient.prefetchQuery({
-      queryKey: timeSlotsQueryKey,
-      queryFn: () => getDraftAvailableTimeSlots(),
-    });
-  }, [showTimeSlots, useSlotsFromDraft, startDateStr, endDateStr, queryClient]);
-
-  const { data: slotsData = [], isLoading: isLoadingSlots } = useQuery({
-    queryKey: timeSlotsQueryKey,
-    queryFn: () => getDraftAvailableTimeSlots(),
-    enabled: showTimeSlots && !useSlotsFromDraft,
-  });
-
-  const calendarEvents = useMemo(() => {
-    // In edit mode with slots coming from draft details, use them directly.
-    if (useSlotsFromDraft && draftSlots?.length) {
-      return draftSlots.map(slotToCalendarEvent);
-    }
-
-    // Otherwise use availability/suggestions API. Some fields like `slot_end` or
-    // `is_available` may be missing; `slotToCalendarEvent` already handles:
-    // - missing `slot_end` by falling back to +60 minutes
-    // - missing `is_available` by defaulting to true
-    return slotsData.map((slot) => slotToCalendarEvent(slot));
-  }, [useSlotsFromDraft, draftSlots, slotsData]);
-
-  const slotOptions = useMemo(() => {
-    const events = useSlotsFromDraft
-      ? calendarEvents
-      : calendarEvents.filter((e) => e.is_available);
-    return events.map((event) => {
-      const d = event.date;
-      const dateLabel = d.toLocaleDateString('ar-SA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-      const label = `${dateLabel} ${event.startTime}–${event.endTime}`;
-      return { value: event.id, label };
-    });
-  }, [calendarEvents, useSlotsFromDraft]);
-
-  const slotOptionsAlt1 = useMemo(() => {
-    const main = selected_time_slot_id ?? '';
-    if (!main) return slotOptions;
-    return slotOptions.filter((o) => o.value !== main);
-  }, [slotOptions, selected_time_slot_id]);
-
-  const slotOptionsAlt2 = useMemo(() => {
-    const main = selected_time_slot_id ?? '';
-    const alt1 = alternative_time_slot_id_1 ?? '';
-    if (!main && !alt1) return slotOptions;
-    return slotOptions.filter((o) => o.value !== main && o.value !== alt1);
-  }, [slotOptions, selected_time_slot_id, alternative_time_slot_id_1]);
+  const showMeetingDates = formData.is_urgent !== true;
 
   const [errors, setErrors] = useState<Partial<Record<Step1ErrorKey, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<Step1ErrorKey, boolean>>>({});
-
-  const clearTimeSlotError = useCallback(() => {
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.selected_time_slot_id;
-      return next;
-    });
-  }, []);
-
-  const markTimeSlotTouched = useCallback((field: TimeSlotField) => {
-    if (field === 'main') {
-      setTouched((prev) => ({ ...prev, selected_time_slot_id: true }));
-    }
-  }, []);
-
-  const handleTimeSlotChange = useCallback(
-    (field: TimeSlotField, value: string) => {
-      clearTimeSlotError();
-      markTimeSlotTouched(field);
-      if (field === 'main') {
-        if (!value) {
-          setSelectedTimeSlotId(null);
-          setAlternativeTimeSlotId1(null);
-          setAlternativeTimeSlotId2(null);
-          return;
-        }
-        const nextAlt1 = alternative_time_slot_id_1 === value ? null : alternative_time_slot_id_1;
-        const nextAlt2 = alternative_time_slot_id_2 === value ? null : alternative_time_slot_id_2;
-        setSelectedTimeSlotId(value);
-        setAlternativeTimeSlotId1(nextAlt1);
-        setAlternativeTimeSlotId2(nextAlt2);
-      } else if (field === 'alt1') {
-        if (!value || value === selected_time_slot_id) {
-          setAlternativeTimeSlotId1(null);
-          return;
-        }
-        const nextAlt2 = value === alternative_time_slot_id_2 ? null : alternative_time_slot_id_2;
-        setAlternativeTimeSlotId1(value);
-        setAlternativeTimeSlotId2(nextAlt2);
-      } else {
-        if (!value || value === selected_time_slot_id || value === alternative_time_slot_id_1) {
-          setAlternativeTimeSlotId2(null);
-          return;
-        }
-        setAlternativeTimeSlotId2(value);
-      }
-    },
-    [
-      selected_time_slot_id,
-      alternative_time_slot_id_1,
-      alternative_time_slot_id_2,
-      clearTimeSlotError,
-      markTimeSlotTouched,
-    ]
-  );
 
   const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
   const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
@@ -354,7 +153,7 @@ export const useStep1BasicInfo = ({
     [formData]
   );
 
-  // Validate all fields (including time slot when applicable)
+  // Validate all fields (including meeting date range when applicable)
   const validateAll = useCallback(
     (markTouched: boolean = true): boolean => {
       const allFormFields: Step1ErrorKey[] = [
@@ -374,7 +173,16 @@ export const useStep1BasicInfo = ({
         'is_on_behalf_of',
         'is_based_on_directive',
       ];
-      if (showTimeSlots) allFormFields.push('selected_time_slot_id');
+      if (showMeetingDates) {
+        allFormFields.push(
+          'meeting_start_date',
+          'meeting_end_date',
+          'alternative_1_start_date',
+          'alternative_1_end_date',
+          'alternative_2_start_date',
+          'alternative_2_end_date'
+        );
+      }
 
       const buildTouched = (): Partial<Record<Step1ErrorKey, boolean>> => {
         const allTouched: Partial<Record<Step1ErrorKey, boolean>> = {};
@@ -396,15 +204,10 @@ export const useStep1BasicInfo = ({
           validationResult,
           formData
         );
-        // Include time slot error when required and empty (same check as other required fields)
-        const errorsToSet =
-          showTimeSlots && !selected_time_slot_id
-            ? { ...formErrors, selected_time_slot_id: 'اختر الموعد الرئيسي للاجتماع' }
-            : formErrors;
-        setErrors(errorsToSet);
+        setErrors(formErrors);
         setTableErrors(extractedTableErrors);
         if (markTouched) {
-          setTouched((prev) => ({ ...prev, ...buildTouched(), selected_time_slot_id: true }));
+          setTouched((prev) => ({ ...prev, ...buildTouched() }));
           setTableTouched(
             Object.fromEntries(
               [
@@ -416,28 +219,10 @@ export const useStep1BasicInfo = ({
             )
           );
           setTimeout(() => {
-            const timeSlotEl = document.querySelector('[data-time-slot-error]');
-            if (timeSlotEl && showTimeSlots && !selected_time_slot_id) {
-              timeSlotEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-              document.querySelector('[data-error-field]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) ??
-                document.querySelector('[data-form-container]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            document.querySelector('[data-error-field]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) ??
+              document.querySelector('[data-form-container]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 100);
         }
-        return false;
-      }
-
-      // Form valid – check time slot when required (same pattern as other fields: set error + mark touched)
-      if (showTimeSlots && !selected_time_slot_id) {
-        setErrors((prev) => ({ ...prev, selected_time_slot_id: 'مطلوب – اختر الموعد الرئيسي للاجتماع' }));
-        if (markTouched) {
-          setTouched((prev) => ({ ...prev, ...buildTouched(), selected_time_slot_id: true }));
-        }
-        setTimeout(() => {
-          document.querySelector('[data-time-slot-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) ??
-            document.querySelector('[data-form-container]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
         return false;
       }
 
@@ -445,7 +230,7 @@ export const useStep1BasicInfo = ({
       setTableErrors({});
       return true;
     },
-    [validationResult, formData, showTimeSlots, selected_time_slot_id]
+    [validationResult, formData, showMeetingDates]
   );
 
   // Form field handlers
@@ -462,11 +247,16 @@ export const useStep1BasicInfo = ({
             return newErrors;
           });
         }
-        // Clear time slot error when is_urgent is true
+        // Clear meeting date errors when is_urgent is true
         if (field === 'is_urgent' && value === true) {
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
-            delete newErrors.selected_time_slot_id;
+            delete newErrors.meeting_start_date;
+            delete newErrors.meeting_end_date;
+            delete newErrors.alternative_1_start_date;
+            delete newErrors.alternative_1_end_date;
+            delete newErrors.alternative_2_start_date;
+            delete newErrors.alternative_2_end_date;
             return newErrors;
           });
         }
@@ -523,21 +313,9 @@ export const useStep1BasicInfo = ({
   const handleBlur = useCallback(
     (field: Step1ErrorKey) => {
       setTouched((prev) => ({ ...prev, [field]: true }));
-      if (field === 'selected_time_slot_id') {
-        if (showTimeSlots && !selected_time_slot_id) {
-          setErrors((prev) => ({ ...prev, selected_time_slot_id: 'مطلوب – اختر الموعد الرئيسي للاجتماع' }));
-        } else if (selected_time_slot_id) {
-          setErrors((prev) => {
-            const next = { ...prev };
-            delete next.selected_time_slot_id;
-            return next;
-          });
-        }
-        return;
-      }
       validateField(field, formData[field]);
     },
-    [formData, validateField, showTimeSlots, selected_time_slot_id]
+    [formData, validateField]
   );
 
   // Table handlers - Agenda (includes minister support per requirement)
@@ -607,44 +385,18 @@ export const useStep1BasicInfo = ({
   // Submit step
   const submitStep = useCallback(
     async (isDraft: boolean = false): Promise<string | null> => {
-      // Validate if not draft (includes time slot when showTimeSlots) - sets errors and touched
       if (!isDraft && !validateAll(true)) {
         return null;
       }
 
       try {
-        const fromDraft = useSlotsFromDraft ? draftSlots : undefined;
-        const fromAvailability = !useSlotsFromDraft ? slotsData : undefined;
-        const selectedSlot =
-          showTimeSlots && selected_time_slot_id
-            ? buildSlotPayload(selected_time_slot_id, fromDraft, fromAvailability)
-            : undefined;
-        const alt1Slot =
-          showTimeSlots && alternative_time_slot_id_1
-            ? buildSlotPayload(alternative_time_slot_id_1, fromDraft, fromAvailability)
-            : undefined;
-        const alt2Slot =
-          showTimeSlots && alternative_time_slot_id_2
-            ? buildSlotPayload(alternative_time_slot_id_2, fromDraft, fromAvailability)
-            : undefined;
-        const timeSlotsPayload =
-          selectedSlot || alt1Slot || alt2Slot
-            ? {
-                ...(selectedSlot && { selected_time_slot: selectedSlot }),
-                ...(alt1Slot && { alternative_time_slot_1: alt1Slot }),
-                ...(alt2Slot && { alternative_time_slot_2: alt2Slot }),
-              }
-            : undefined;
-
         const newDraftId = await submitMutation.mutateAsync({
           formData,
           isDraft,
           draftId,
-          timeSlots: timeSlotsPayload,
         });
         return newDraftId;
       } catch (error: any) {
-        // If validation error, extract and set errors
         if (error?.validationErrors) {
           const { formErrors, tableErrors: extractedTableErrors } = extractStep1BasicInfoErrors(
             {
@@ -656,26 +408,13 @@ export const useStep1BasicInfo = ({
           setErrors(formErrors);
           setTableErrors(extractedTableErrors);
         }
-        // Error is also handled by mutation onError
         return null;
       }
     },
-    [
-      formData,
-      draftId,
-      showTimeSlots,
-      useSlotsFromDraft,
-      draftSlots,
-      slotsData,
-      selected_time_slot_id,
-      alternative_time_slot_id_1,
-      alternative_time_slot_id_2,
-      validateAll,
-      submitMutation,
-    ]
+    [formData, draftId, validateAll, submitMutation]
   );
 
-  // Helper to check if a field is required (form fields + time slot)
+  // Helper to check if a field is required (form fields + meeting date range)
   const getIsFieldRequired = useCallback(
     (field: Step1ErrorKey) => {
       return isStep1BasicInfoFieldRequired(field, formData);
@@ -702,19 +441,6 @@ export const useStep1BasicInfo = ({
     handleUpdateAgenda,
     validateAll,
     submitStep,
-    // Time slots (step 1 scheduling)
-    timeSlots: {
-      selected_time_slot_id,
-      alternative_time_slot_id_1,
-      alternative_time_slot_id_2,
-      slotOptions,
-      slotOptionsAlt1,
-      slotOptionsAlt2,
-      isLoadingSlots: useSlotsFromDraft ? false : isLoadingSlots,
-      showTimeSlots,
-    },
-    handleSelectMainSlot: (v: string) => handleTimeSlotChange('main', v),
-    handleSelectAlt1: (v: string) => handleTimeSlotChange('alt1', v),
-    handleSelectAlt2: (v: string) => handleTimeSlotChange('alt2', v),
+    step1EditableMap,
   };
 };
