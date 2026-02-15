@@ -177,6 +177,7 @@ function ActionBubble({
   disabled,
   variant,
   disabledReason,
+  compact,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -185,7 +186,47 @@ function ActionBubble({
   variant?: 'danger';
   /** Shown as tooltip when disabled (explains why the action is disabled) */
   disabledReason?: string;
+  /** Compact: icon-only for arc layout, label in tooltip */
+  compact?: boolean;
 }) {
+  const iconCircle = (
+    <span
+      className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
+        variant === 'danger'
+          ? 'bg-red-50 border-red-200 text-red-600'
+          : 'bg-white border-gray-200/80 text-gray-800'
+      }`}
+    >
+      {icon}
+    </span>
+  );
+
+  if (compact) {
+    const btn = (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {iconCircle}
+      </button>
+    );
+    const tooltipText = disabled && disabledReason ? disabledReason : label;
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">{btn}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+            {tooltipText}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   const button = (
     <button
       type="button"
@@ -199,15 +240,7 @@ function ActionBubble({
       >
         {label}
       </span>
-      <span
-        className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
-          variant === 'danger'
-            ? 'bg-red-50 border-red-200 text-red-600'
-            : 'bg-white border-gray-200/80 text-gray-800'
-        }`}
-      >
-        {icon}
-      </span>
+      {iconCircle}
     </button>
   );
 
@@ -1514,7 +1547,17 @@ const MeetingDetail: React.FC = () => {
     return (
       <div className="flex flex-row items-center justify-end gap-3 w-full min-w-0 flex-nowrap">
         <span className={`${baseLabelClass} flex-1 min-w-0 truncate`} style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{labelContent}</span>
-        <label
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={isChecked}
+          aria-label={`قابل للتعديل: ${typeof labelContent === 'string' ? labelContent : fieldId}`}
+          onClick={() => {
+            setReturnForInfoForm((p) => ({
+              ...p,
+              editable_fields: { ...p.editable_fields, [fieldId]: !(p.editable_fields[fieldId] ?? false) },
+            }));
+          }}
           className={`
             inline-flex items-center gap-2 cursor-pointer flex-shrink-0
             px-2.5 py-1 rounded-full border transition-all duration-200
@@ -1525,18 +1568,6 @@ const MeetingDetail: React.FC = () => {
           `}
           style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
         >
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={(e) =>
-              setReturnForInfoForm((p) => ({
-                ...p,
-                editable_fields: { ...p.editable_fields, [fieldId]: e.target.checked },
-              }))
-            }
-            className="sr-only"
-            aria-label={`قابل للتعديل: ${typeof labelContent === 'string' ? labelContent : fieldId}`}
-          />
           <span
             className={`
               w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors
@@ -1551,7 +1582,7 @@ const MeetingDetail: React.FC = () => {
             )}
           </span>
           <span className="text-xs font-medium whitespace-nowrap">قابل للتعديل</span>
-        </label>
+        </button>
       </div>
     );
   };
@@ -3269,7 +3300,7 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Corner FAB: fixed in corner (RTL-aware), tap to show action bubbles */}
+        {/* Centered FAB: tap to show action bubbles in half-circle above */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
           <>
             {actionsBarOpen && (
@@ -3280,51 +3311,83 @@ const MeetingDetail: React.FC = () => {
                 onClick={() => setActionsBarOpen(false)}
               />
             )}
-            {/* Anchor: fixed size so main FAB stays in exact same spot open or closed */}
+            {/* Anchor: centered at bottom */}
             <div
-              className="fixed bottom-6 z-50 w-14 h-14 right-6 rtl:right-auto rtl:left-6"
+              className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2 w-14 h-14"
               dir="ltr"
             >
-              {/* Action bubbles: absolutely above main FAB, same corner alignment */}
-              {actionsBarOpen && (
-                <div
-                  className="absolute bottom-full flex flex-col-reverse gap-3 mb-2 right-0 rtl:right-auto rtl:left-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
-                >
-                  {/* SCHEDULED */}
-                  {meetingStatus === MeetingStatus.SCHEDULED && (
-                    <>
-                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة مجدداً" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
-                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
-                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
-                    </>
-                  )}
-                  {/* WAITING */}
-                  {meetingStatus === MeetingStatus.WAITING && (
-                    <>
-                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
-                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
-                    </>
-                  )}
-                  {/* UNDER_REVIEW */}
-                  {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                    <>
-                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
-                      <ActionBubble icon={<Pencil className="w-5 h-5" strokeWidth={1.26} />} label="تعديل" onClick={() => { setActionsBarOpen(false); setIsEditConfirmOpen(true); }} disabled={!hasChanges} disabledReason="لا يوجد تغييرات لحفظها" />
-                      <ActionBubble icon={<RotateCcw className="w-5 h-5" strokeWidth={1.26} />} label="إعادة للطلب" onClick={() => { setActionsBarOpen(false); setIsReturnForInfoModalOpen(true); }} />
-                      <ActionBubble icon={<Send className="w-5 h-5" strokeWidth={1.26} />} label="إرسال للمحتوى" onClick={() => { setActionsBarOpen(false); hasContent && setIsSendToContentModalOpen(true); }} disabled={!hasContent} disabledReason="أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال" />
-                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
-                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="رفض" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
-                    </>
-                  )}
-                </div>
-              )}
-              {/* Main FAB: always same position (absolute to corner of anchor) */}
+              {/* Action bubbles: half-circle arc above the FAB */}
+              {actionsBarOpen && (() => {
+                const R = 100;
+                const ARC_SPAN = 200;
+                const close = () => setActionsBarOpen(false);
+                const actions =
+                  meetingStatus === MeetingStatus.SCHEDULED
+                    ? [
+                        { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); setIsScheduleModalOpen(true); } },
+                        { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); moveToWaitingListMutation.mutate(); }, disabled: moveToWaitingListMutation.isPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+                        { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
+                      ]
+                    : meetingStatus === MeetingStatus.WAITING
+                      ? [
+                          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
+                          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); setIsScheduleModalOpen(true); } },
+                        ]
+                      : [
+                          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); setIsScheduleModalOpen(true); } },
+                          { icon: <Pencil className="w-5 h-5" strokeWidth={1.26} />, label: 'تعديل', onClick: () => { close(); setIsEditConfirmOpen(true); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' },
+                          { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة للطلب', onClick: () => { close(); setIsReturnForInfoModalOpen(true); } },
+                          { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && setIsSendToContentModalOpen(true); }, disabled: !hasContent, disabledReason: 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' },
+                          { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); moveToWaitingListMutation.mutate(); }, disabled: moveToWaitingListMutation.isPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+                          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
+                        ];
+                const n = actions.length;
+                return (
+                  <div
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
+                    style={{ width: R * 2, height: R + 28 }}
+                  >
+                    <div className="absolute inset-0">
+                      {actions.map((action, i) => {
+                        const angle = 170 + (i / Math.max(1, n - 1)) * ARC_SPAN;
+                        const rad = (angle * Math.PI) / 180;
+                        const x = R * Math.cos(rad);
+                        const y = R * Math.sin(rad);
+                        const leftPx = R + x;
+                        const topPx = R + y;
+                        return (
+                          <div
+                            key={i}
+                            className="absolute"
+                            style={{
+                              left: leftPx,
+                              top: topPx,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                          >
+                            <ActionBubble
+                              compact
+                              icon={action.icon}
+                              label={action.label}
+                              onClick={action.onClick}
+                              disabled={action.disabled}
+                              variant={action.variant}
+                              disabledReason={action.disabledReason}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* Main FAB: centered */}
               <button
                 type="button"
                 aria-label={actionsBarOpen ? 'إغلاق القائمة' : 'إجراءات سريعة'}
                 aria-expanded={actionsBarOpen}
                 onClick={() => setActionsBarOpen((o) => !o)}
-                className="absolute bottom-0 right-0 rtl:right-auto rtl:left-0 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
                 style={{
                   background: actionsBarOpen ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
                   border: '1px solid rgba(255, 255, 255, 0.6)',
