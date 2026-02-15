@@ -172,7 +172,7 @@ const ScheduledMeetings: React.FC = () => {
           <div className="flex flex-col items-end gap-4 flex-shrink-0">
             <div
               className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              style={{ backgroundColor: '#E9ECEF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+              
               dir="rtl"
             >
               <ViewSwitcher view={view} onViewChange={setView} />

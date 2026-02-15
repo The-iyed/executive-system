@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
@@ -13,7 +13,7 @@ import {
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
 } from '@shared/types';
-import { getGuidanceRequestById, provideGuidance, saveGuidanceAsDraft, completeGuidance, ProvideGuidanceRequest } from '../data/guidanceApi';
+import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
@@ -39,6 +39,8 @@ function formatRelatedGuidance(value: unknown): string {
 const GuidanceRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isExceptionMode = location.pathname.startsWith('/exception-request/');
   const [activeTab, setActiveTab] = useState<string>('guidance-request');
   const [guidanceResponse, setGuidanceResponse] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
@@ -46,11 +48,17 @@ const GuidanceRequestDetail: React.FC = () => {
   const [queriesDisabled, setQueriesDisabled] = useState<boolean>(false);
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
+  const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
+
+  // Exception mode state
+  const [isExceptionModalOpen, setIsExceptionModalOpen] = useState<boolean>(false);
+  const [contentException, setContentException] = useState<boolean>(false);
+  const [grantedDurationHours, setGrantedDurationHours] = useState<number>(0);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
-    queryKey: ['guidance-request', id],
-    queryFn: () => getGuidanceRequestById(id!),
+    queryKey: [isExceptionMode ? 'content-exception' : 'guidance-request', id],
+    queryFn: () => isExceptionMode ? getContentExceptionById(id!) : getGuidanceRequestById(id!),
     enabled: !!id && !queriesDisabled,
   });
 
@@ -233,6 +241,37 @@ const GuidanceRequestDetail: React.FC = () => {
     });
   };
 
+  // Exception handling mutation
+  const exceptionMutation = useMutation({
+    mutationFn: (data: HandleContentExceptionRequest) => {
+      if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
+      return handleContentException(meetingRequest.id, data);
+    },
+    onSuccess: () => {
+      setQueriesDisabled(true);
+      queryClient.cancelQueries({ queryKey: ['content-exception', id] });
+      queryClient.removeQueries({ queryKey: ['content-exception', id] });
+      queryClient.invalidateQueries({ queryKey: ['exception-requests'] });
+      setIsExceptionModalOpen(false);
+      setContentException(false);
+      setGrantedDurationHours(0);
+      navigate(PATH.EXCEPTION_REQUEST);
+    },
+    onError: (error) => {
+      console.error('Error submitting exception:', error);
+    },
+  });
+
+  const handleSubmitException = () => {
+    if (!meetingRequest?.id) return;
+    if (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72)) return;
+
+    exceptionMutation.mutate({
+      content_exception: contentException,
+      granted_duration_hours: contentException ? grantedDurationHours : 0,
+    });
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -285,7 +324,7 @@ const GuidanceRequestDetail: React.FC = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex justify-start">
+          <div className="flex justify-center w-full ">
             <Tabs
               items={tabs}
               activeTab={activeTab}
@@ -297,7 +336,7 @@ const GuidanceRequestDetail: React.FC = () => {
           {activeTab === 'guidance-request' && (
             <div className="flex flex-col gap-6">
               {/* Consultation Question Section */}
-              <div
+             {!isExceptionMode && <div
                 className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
                 style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
               >
@@ -355,7 +394,7 @@ const GuidanceRequestDetail: React.FC = () => {
                     </div>
                   </button>
                 </div>
-              </div>
+              </div>}
                   {/* Request Info Section */}
                   <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
                 <div className="flex flex-row items-center justify-between gap-4">
@@ -1708,124 +1747,122 @@ const GuidanceRequestDetail: React.FC = () => {
 
           {/* Directives Log Tab */}
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                <DataTable
-                  columns={[
-                    {
-                      id: 'guidance_question',
-                      header: 'السؤال',
-                      width: 'flex-1',
-                      render: (row: GuidanceRecord) => (
-                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.guidance_question}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'guidance_answer',
-                      header: 'الإجابة',
-                      width: 'flex-1',
-                      render: (row: GuidanceRecord) => (
-                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.guidance_answer || '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'requested_by_name',
-                      header: 'طلب بواسطة',
-                      width: 'w-40',
-                      render: (row: GuidanceRecord) => (
-                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.requested_by_name}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'responded_by_name',
-                      header: 'رد بواسطة',
-                      width: 'w-40',
-                      render: (row: GuidanceRecord) => (
-                        <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                          {row.responded_by_name || '-'}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'requested_at',
-                      header: 'تاريخ الطلب',
-                      width: 'w-40',
-                      render: (row: GuidanceRecord) => {
-                        const date = new Date(row.requested_at);
-                        const formattedDate = date.toLocaleDateString('ar-SA', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        });
-                        return (
-                          <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                            {formattedDate}
-                          </span>
-                        );
-                      },
-                    },
-                    {
-                      id: 'responded_at',
-                      header: 'تاريخ الرد',
-                      width: 'w-40',
-                      render: (row: GuidanceRecord) => {
-                        if (!row.responded_at) {
-                          return (
-                            <span className="text-sm text-gray-400" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                              -
-                            </span>
-                          );
-                        }
-                        const date = new Date(row.responded_at);
-                        const formattedDate = date.toLocaleDateString('ar-SA', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        });
-                        return (
-                          <span className="text-sm whitespace-nowrap text-gray-700" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                            {formattedDate}
-                          </span>
-                        );
-                      },
-                    },
-                    {
-                      id: 'status',
-                      header: 'الحالة',
-                      width: 'w-32',
-                      align: 'center',
-                      render: (row: GuidanceRecord) => {
-                        const statusLabels: Record<string, string> = {
-                          PENDING: 'قيد الانتظار',
-                          RESPONDED: 'تم الرد',
-                          CANCELLED: 'ملغاة',
-                        };
-                        const statusLabel = statusLabels[row.status] || row.status;
-                        return (
-                          <div className="flex justify-center">
-                            <StatusBadge status={row.status} label={statusLabel} />
+                guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
+                  const isExpanded = expandedGuidanceId === row.guidance_id;
+                  const requestDate = row.requested_at
+                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '-';
+                  const hasAnswer = !!row.guidance_answer;
+
+                  return (
+                    <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedGuidanceId((id) => (id === row.guidance_id ? null : row.guidance_id))}
+                        className={`
+                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
+                          ${isExpanded
+                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
+                        `}
+                        style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                      >
+                        <div className="flex flex-row items-start justify-between gap-4">
+                          <div className="flex flex-col items-start flex-1 min-w-0">
+                            <p className="text-base font-bold text-[#048F86] mb-1">توجيه</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
                           </div>
-                        );
-                      },
-                    },
-                  ]}
-                  data={guidanceRecords.items}
-                  rowPadding="py-3"
-                />
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span>تاريخ الطلب : {requestDate}</span>
+                            </span>
+                            <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {isExpanded && hasAnswer && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
+                            {(() => {
+                              const responseDate = row.responded_at
+                                ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—';
+                              const statusLabels: Record<string, string> = {
+                                PENDING: 'قيد الانتظار',
+                                RESPONDED: 'تم الرد',
+                                CANCELLED: 'ملغاة',
+                                DRAFT: 'مسودة',
+                                COMPLETED: 'مكتمل',
+                              };
+                              const statusLabel = statusLabels[row.status] || row.status;
+                              return (
+                                <div
+                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
+                                  style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                                >
+                                  <div className="flex w-full flex-row items-center justify-between gap-4">
+                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
+                                      {row.guidance_answer?.trim() || '—'}
+                                    </p>
+                                    <StatusBadge status={row.status} label={statusLabel} />
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
+                                      {row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.responded_by_name || '—'}</span>
+                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                                      <Clock className="h-4 w-4 flex-shrink-0" />
+                                      <span>تاريخ الرد : {responseDate}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                      {isExpanded && !hasAnswer && (
+                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
+                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
+                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
+                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          </div>
+                          <div
+                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
+                            style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                          >
+                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
@@ -1891,10 +1928,19 @@ const GuidanceRequestDetail: React.FC = () => {
 
                       {isExpanded && answers.length > 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
+                         {answers.map((_, index) =>
+                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 "} 
+                              
+                              style={index > 0 ? {
+                                position: 'absolute',
+                                top: `${47 * index}px`,
+                                height: `${136 * index}px`,
+                              } : {}}
+                              >
+                              <div className={`w-[50px] -ml-[30px]  min-h-[8px] flex-1  border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]`} />
+                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                            </div>
+                        )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {answers.map((answer) => {
                               const responseDate = answer.responded_at
@@ -1970,7 +2016,7 @@ const GuidanceRequestDetail: React.FC = () => {
 
           {/* Content Consultation Records Tab - سجلات الاستشارات المحتوى - Same as meetingDetail */}
           {activeTab === 'consultations-log-content' && (
-            <div className="flex flex-col gap-4" dir="rtl">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {isLoadingContentConsultationRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
@@ -2516,6 +2562,129 @@ const GuidanceRequestDetail: React.FC = () => {
               style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
             >
               إغلاق
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exception Mode: Sticky Footer */}
+      {isExceptionMode && (
+        <div
+          className="sticky bottom-4 left-0 right-0 z-10 flex items-center justify-center "
+          dir="rtl"
+        >
+          <button
+            onClick={() => setIsExceptionModalOpen(true)}
+            className="flex flex-row items-center px-6 py-3 gap-2 bg-[#29615C] rounded-[85px] transition-colors hover:bg-[#1e4a46]"
+            style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+          >
+            <ClipboardCheck className="w-5 h-5 text-white" strokeWidth={2} />
+            <span
+              className="font-bold text-base leading-6 text-white"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif", fontWeight: 700, fontSize: '16px' }}
+            >
+              تقديم استثناء
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Exception Modal */}
+      <Dialog open={isExceptionModalOpen} onOpenChange={setIsExceptionModalOpen}>
+        <DialogContent className="sm:max-w-[600px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle
+              className="text-right"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+            >
+              تقديم استثناء
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            {/* content_exception toggle */}
+            <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <div className="flex flex-row items-center justify-between w-full">
+                <span
+                  className="text-sm font-semibold text-gray-900"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  استثناء المحتوى؟
+                </span>
+                <div className="flex flex-row items-center gap-3">
+                  <span
+                    className="text-base text-[#667085]"
+                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  >
+                    {contentException ? 'نعم' : 'لا'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setContentException((prev) => !prev)}
+                    className={`w-11 h-6 rounded-full flex items-center transition-all cursor-pointer ${
+                      contentException
+                        ? 'bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] justify-end'
+                        : 'bg-[#F2F4F7] justify-start'
+                    } px-0.5`}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* granted_duration_hours (shown only when content_exception is true) */}
+            {contentException && (
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-gray-700 text-right"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                >
+                  المدة الممنوحة (بالساعات)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={72}
+                  value={grantedDurationHours}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val >= 0 && val <= 72) setGrantedDurationHours(val);
+                  }}
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-right ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#048F86] focus-visible:ring-offset-2"
+                  dir="rtl"
+                  placeholder="0 - 72 ساعة"
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                />
+                <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  الحد الأقصى 72 ساعة
+                </span>
+              </div>
+            )}
+
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsExceptionModalOpen(false)}
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitException}
+              disabled={
+                exceptionMutation.isPending ||
+                !meetingRequest?.id ||
+                (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72))
+              }
+              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: "'Ping AR + LT', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}
+            >
+              <span className="text-white">
+                {exceptionMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
+              </span>
             </button>
           </DialogFooter>
         </DialogContent>
