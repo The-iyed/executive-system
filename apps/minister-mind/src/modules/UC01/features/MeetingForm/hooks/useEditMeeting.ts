@@ -26,19 +26,8 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
 
   const initialData = useMemo(() => {
     if (!draftData) return undefined;
-    const slotsFromDraft = [
-      draftData.selected_time_slot,
-      draftData.alternative_time_slot_1,
-      draftData.alternative_time_slot_2,
-    ].filter((s): s is NonNullable<typeof s> => s != null);
     return {
       step1BasicInfo: transformDraftToStep1Data(draftData),
-      step1Scheduling: {
-        selected_time_slot_id: draftData.selected_time_slot_id ?? null,
-        alternative_time_slot_id_1: draftData.alternative_time_slot_id_1 ?? null,
-        alternative_time_slot_id_2: draftData.alternative_time_slot_id_2 ?? null,
-      },
-      step1SchedulingSlotsFromDraft: slotsFromDraft.length > 0 ? slotsFromDraft : undefined,
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
       step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
@@ -62,6 +51,7 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     draftId: id ?? '',
     isEditMode: true,
     currentStep,
+    editableFields: draftData?.editable_fields ?? null,
     initialData,
     onStep2ContentSuccess: (isDraft) => {
       if (isDraft) handleSaveDraft();

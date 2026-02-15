@@ -10,6 +10,8 @@ export interface FormDatePickerProps {
   className?: string;
   disabled?: boolean;
   fullWidth?: boolean;
+  /** First selectable date; dates before this are disabled. */
+  fromDate?: Date;
 }
 
 export const FormDatePicker: React.FC<FormDatePickerProps> = ({
@@ -19,7 +21,9 @@ export const FormDatePicker: React.FC<FormDatePickerProps> = ({
   placeholder = "dd/mm/yyyy",
   error,
   className,
+  disabled,
   fullWidth = false,
+  fromDate,
 }) => {
   return (
     <DatePicker
@@ -29,6 +33,8 @@ export const FormDatePicker: React.FC<FormDatePickerProps> = ({
       placeholder={placeholder}
       error={error}
       className={fullWidth ? `${className || ''} w-full`.trim() : className}
+      disabled={disabled}
+      fromDate={fromDate}
     />
   );
 };

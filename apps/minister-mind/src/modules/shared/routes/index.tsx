@@ -12,7 +12,8 @@ type RouteConfig = {
   component: React.ComponentType<any>;
   guard?: React.ComponentType<any> | typeof Fragment;
   layout?: React.ComponentType<any> | typeof Fragment;
-  useCase?: string; // Optional use case requirement
+  useCase?: string; // Optional single use case requirement
+  useCases?: string[]; // Optional multiple use case codes (OR logic)
 } & RouteProps;
 
 export const renderRoutes = (routes: RouteConfig[] = []) => {
