@@ -12,7 +12,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       welcomeSection={{
         title: 'طلبات تقديم توجيه',
         description: 'يمكنك الاطلاع على الطلبات التي تتطلب تقديم توجيه',
-        breadcrumbs: [{ label: 'طلبات تقديم توجيه', onClick: () => {} }],
+        breadcrumbs: [
+          { label: 'طلبات تقديم توجيه', onClick: () => {} }
+          ],
       }}
       useDynamicNavigation={true}
     />
