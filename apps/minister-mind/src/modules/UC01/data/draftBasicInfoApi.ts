@@ -17,7 +17,6 @@ export interface DraftBasicInfoTimeSlots {
 export interface SubmitDraftBasicInfoParams {
   formData: FormData;
   draftId?: string;
-  timeSlots?: DraftBasicInfoTimeSlots;
   isEditMode: boolean;
 }
 
@@ -28,10 +27,11 @@ function appendIf(value: string | undefined, key: string, fd: FormData): void {
   if (value != null && String(value).trim() !== '') fd.append(key, value.trim());
 }
 
-/** Appends an ISO date from YYYY-MM-DD string. */
+/** Appends an ISO datetime string (accepts YYYY-MM-DD or full ISO 8601). */
 function appendDateIf(value: string | undefined, key: string, fd: FormData): void {
   if (!value || value.trim() === '') return;
-  const date = new Date(value.trim() + 'T00:00:00');
+  const raw = value.trim();
+  const date = raw.includes('T') ? new Date(raw) : new Date(raw + 'T00:00:00');
   if (!Number.isNaN(date.getTime())) fd.append(key, date.toISOString());
 }
 
@@ -85,6 +85,14 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
   if (form.is_urgent && form.urgent_reason) fd.append('urgent_reason', form.urgent_reason);
   if (form.is_on_behalf_of && form.meeting_manager_id) fd.append('meeting_manager_id', form.meeting_manager_id);
 
+  // Meeting date range: main slot + two alternatives (each start/end)
+  appendDateIf(form.meeting_start_date, 'meeting_start_date', fd);
+  appendDateIf(form.meeting_end_date, 'meeting_end_date', fd);
+  appendDateIf(form.alternative_1_start_date, 'alternative_1_start_date', fd);
+  appendDateIf(form.alternative_1_end_date, 'alternative_1_end_date', fd);
+  appendDateIf(form.alternative_2_start_date, 'alternative_2_start_date', fd);
+  appendDateIf(form.alternative_2_end_date, 'alternative_2_end_date', fd);
+
   // Directive
   if (form.is_based_on_directive && form.directive_method) {
     fd.append('directive_method', form.directive_method);
@@ -101,19 +109,7 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
 
 /** Submits draft basic-info (POST create or PATCH update). Returns the draft id. */
 export async function submitDraftBasicInfo(params: SubmitDraftBasicInfoParams): Promise<string> {
-  const { formData, draftId, timeSlots, isEditMode } = params;
-
-  if (timeSlots) {
-    if (timeSlots.selected_time_slot) {
-      formData.append('selected_time_slot', JSON.stringify(timeSlots.selected_time_slot));
-    }
-    if (timeSlots.alternative_time_slot_1) {
-      formData.append('alternative_time_slot_1', JSON.stringify(timeSlots.alternative_time_slot_1));
-    }
-    if (timeSlots.alternative_time_slot_2) {
-      formData.append('alternative_time_slot_2', JSON.stringify(timeSlots.alternative_time_slot_2));
-    }
-  }
+  const { formData, draftId, isEditMode } = params;
 
   const url = isEditMode && draftId
     ? `/api/meeting-requests/drafts/${draftId}/basic-info`

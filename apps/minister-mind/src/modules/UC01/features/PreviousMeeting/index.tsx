@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination } from '@shared';
+import { DataTable, SearchInput, Pagination, ContentBar, ViewSwitcher, ViewType, CardsGrid } from '@shared';
+import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PAGINATION, createTableColumns } from '../../utils';
 import { usePreviousMeetings } from '../../hooks';
 import { PATH } from '../../routes/paths';
@@ -8,9 +9,12 @@ import '@shared/styles';
 
 const PreviousMeeting: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewType>('table');
+  const {
+    openCreateDrawer,
+  } = useMeetingFormDrawer();
   const [searchValue, setSearchValue] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
+  const [view, setView] = useState<ViewType>('cards');
 
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
@@ -27,6 +31,14 @@ const PreviousMeeting: React.FC = () => {
   }, [navigate, currentPage]);
 
   return (
+    <>
+    <ContentBar
+      primaryAction={{
+        label: 'إنشاء اجتماع',
+        variant: 'primary',
+        onClick: openCreateDrawer,
+      }}
+  />
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
@@ -39,11 +51,7 @@ const PreviousMeeting: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              
-              dir="rtl"
-            >
+            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
@@ -51,7 +59,7 @@ const PreviousMeeting: React.FC = () => {
                 onChange={setSearchValue}
                 placeholder="بحث"
                 variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
               />
             </div>
           </div>
@@ -105,6 +113,7 @@ const PreviousMeeting: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

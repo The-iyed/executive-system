@@ -22,6 +22,10 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(236,253,243,1)]',
     textClass: 'text-[#027A48]',
   },
+  [MeetingStatus.SCHEDULED_SCHEDULING]: {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
+  },
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: {
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',

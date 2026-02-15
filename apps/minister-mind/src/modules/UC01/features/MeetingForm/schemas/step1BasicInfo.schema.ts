@@ -5,6 +5,13 @@ const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as cons
 const MEETING_TYPE_REQUIRING_SECTOR = 'INTERNAL' as const;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Accepts YYYY-MM-DD or full ISO 8601 datetime. Exported for use in UI (e.g. hide required error when value is valid). */
+export const isValidDateOrDateTime = (val: string): boolean => {
+  if (!val || val.trim() === '') return false;
+  const d = new Date(val.trim());
+  return !Number.isNaN(d.getTime());
+};
+
 const requiredString = (message: string, minLength = 1, maxLength?: number) => {
   const schema = z.string({
     required_error: message,
@@ -13,7 +20,7 @@ const requiredString = (message: string, minLength = 1, maxLength?: number) => {
   return maxLength ? schema.max(maxLength, `${message} يجب أن يكون أقل من ${maxLength} حرف`) : schema;
 };
 
-const optionalString = (invalidTypeMessage: string) => 
+const optionalString = (invalidTypeMessage: string) =>
   z.string({ invalid_type_error: invalidTypeMessage }).optional().or(z.literal(''));
 
 const dateSchema = (required: boolean, fieldName: string) => {
@@ -28,6 +35,22 @@ const dateSchema = (required: boolean, fieldName: string) => {
       );
   return base;
 };
+
+/** Date or datetime (ISO) for meeting start/end - required when meeting dates are required. */
+const dateTimeSchema = (required: boolean, fieldName: string) => {
+  const base = required
+    ? requiredString(fieldName).refine(isValidDateOrDateTime, 'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح')
+    : optionalString(`${fieldName} يجب أن يكون نصاً`).refine(
+        (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
+        'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
+      );
+  return base;
+};
+
+const MAX_MEETING_DURATION_MS = 24 * 60 * 60 * 1000;
+
+const isSameCalendarDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const MINISTER_SUPPORT_TYPE_OTHER = 'أخرى';
 const MINISTER_SUPPORT_TYPE_VALUES = ['إحاطة', 'تحديث', 'قرار', 'توجيه', 'اعتماد', 'أخرى'] as const;
@@ -94,6 +117,12 @@ export const step1BasicInfoBaseSchema = z.object({
   directive_method: z.string().optional().or(z.literal('')),
   previous_meeting_minutes_file: z.union([z.instanceof(File), z.null()]).optional(),
   directive_text: z.string().optional().or(z.literal('')),
+  meeting_start_date: z.string().optional().or(z.literal('')),
+  meeting_end_date: z.string().optional().or(z.literal('')),
+  alternative_1_start_date: z.string().optional().or(z.literal('')),
+  alternative_1_end_date: z.string().optional().or(z.literal('')),
+  alternative_2_start_date: z.string().optional().or(z.literal('')),
+  alternative_2_end_date: z.string().optional().or(z.literal('')),
 });
 
 export type Step1BasicInfoFormData = z.infer<typeof step1BasicInfoBaseSchema>;
@@ -138,6 +167,8 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     is_based_on_directive: z.boolean().optional().default(false),
   });
 
+  const requiresMeetingDates = data.is_urgent !== true;
+
   return baseSchema.extend({
     meetingReason: requiresReason
       ? requiredString('مبرر اللقاء مطلوب')
@@ -160,6 +191,24 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     directive_text: requiresDirectiveText
       ? requiredString('التوجيه مطلوب')
       : optionalString('التوجيه يجب أن يكون نصاً'),
+    meeting_start_date: dateTimeSchema(requiresMeetingDates, 'تاريخ ووقت بداية الاجتماع مطلوب'),
+    meeting_end_date: dateTimeSchema(requiresMeetingDates, 'تاريخ ووقت نهاية الاجتماع مطلوب'),
+    alternative_1_start_date: optionalString('تاريخ بداية الموعد البديل الأول').refine(
+      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
+      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
+    ),
+    alternative_1_end_date: optionalString('تاريخ نهاية الموعد البديل الأول').refine(
+      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
+      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
+    ),
+    alternative_2_start_date: optionalString('تاريخ بداية الموعد البديل الثاني').refine(
+      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
+      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
+    ),
+    alternative_2_end_date: optionalString('تاريخ نهاية الموعد البديل الثاني').refine(
+      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
+      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.directive_method === 'PREVIOUS_MEETING') {
@@ -170,6 +219,74 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
           message: 'محضر الاجتماع مطلوب (PDF، Word، Excel)',
           path: ['previous_meeting_minutes_file'],
         });
+      }
+    }
+    if (requiresMeetingDates && data.meeting_start_date && data.meeting_end_date) {
+      const start = new Date(data.meeting_start_date);
+      const end = new Date(data.meeting_end_date);
+      if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+        if (end < start) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية',
+            path: ['meeting_end_date'],
+          });
+        } else if (!isSameCalendarDay(start, end)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'وقت النهاية يجب أن يكون في نفس يوم البداية',
+            path: ['meeting_end_date'],
+          });
+        } else if (end.getTime() - start.getTime() > MAX_MEETING_DURATION_MS) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'مدة الاجتماع يجب ألا تتجاوز 24 ساعة',
+            path: ['meeting_end_date'],
+          });
+        }
+      }
+    }
+    // Alternative 1: if either date set, both required and end >= start
+    const alt1StartSet = !!(data.alternative_1_start_date?.trim());
+    const alt1EndSet = !!(data.alternative_1_end_date?.trim());
+    if (alt1StartSet || alt1EndSet) {
+      if (!alt1StartSet) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ بداية الموعد البديل الأول مطلوب', path: ['alternative_1_start_date'] });
+      } else if (!alt1EndSet) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ نهاية الموعد البديل الأول مطلوب', path: ['alternative_1_end_date'] });
+      } else {
+        const s = new Date(data.alternative_1_start_date!);
+        const e = new Date(data.alternative_1_end_date!);
+        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
+          if (e < s) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية', path: ['alternative_1_end_date'] });
+          } else if (!isSameCalendarDay(s, e)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون في نفس يوم البداية', path: ['alternative_1_end_date'] });
+          } else if (e.getTime() - s.getTime() > MAX_MEETING_DURATION_MS) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'مدة الموعد البديل يجب ألا تتجاوز 24 ساعة', path: ['alternative_1_end_date'] });
+          }
+        }
+      }
+    }
+    const alt2StartSet = !!(data.alternative_2_start_date?.trim());
+    const alt2EndSet = !!(data.alternative_2_end_date?.trim());
+    if (alt2StartSet || alt2EndSet) {
+      if (!alt2StartSet) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ بداية الموعد البديل الثاني مطلوب', path: ['alternative_2_start_date'] });
+      } else if (!alt2EndSet) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ نهاية الموعد البديل الثاني مطلوب', path: ['alternative_2_end_date'] });
+      } else {
+        const s = new Date(data.alternative_2_start_date!);
+        const e = new Date(data.alternative_2_end_date!);
+        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
+          if (e < s) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية', path: ['alternative_2_end_date'] });
+          } else if (!isSameCalendarDay(s, e)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون في نفس يوم البداية', path: ['alternative_2_end_date'] });
+          } else if (e.getTime() - s.getTime() > MAX_MEETING_DURATION_MS) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'مدة الموعد البديل يجب ألا تتجاوز 24 ساعة', path: ['alternative_2_end_date'] });
+          }
+        }
       }
     }
   });
@@ -207,7 +324,7 @@ export const extractStep1BasicInfoErrors = (
 
 const CATEGORY_PRIVATE_MEETING = 'PRIVATE_MEETING' as const;
 
-export type Step1FieldKey = keyof Step1BasicInfoFormData | 'selected_time_slot_id';
+export type Step1FieldKey = keyof Step1BasicInfoFormData;
 
 export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partial<Step1BasicInfoFormData>): boolean => {
   switch (field) {
@@ -236,7 +353,8 @@ export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partia
       return data.directive_method === 'DIRECT_DIRECTIVE';
     case 'meetingAgenda':
       return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
-    case 'selected_time_slot_id':
+    case 'meeting_start_date':
+    case 'meeting_end_date':
       return data.is_urgent !== true;
     default:
       return false;

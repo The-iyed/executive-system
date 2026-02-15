@@ -48,4 +48,5 @@ export interface AsyncSelectV2Props {
   className?: string;
   fullWidth?: boolean;
   searchPlaceholder?: string;
+  menuPortalTarget?: HTMLElement | null;
 }

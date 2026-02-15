@@ -36,6 +36,8 @@ export interface Step3InviteesProps {
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
+  /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
+  step3EditableMap?: Record<string, boolean>;
 }
 
 export const Step3Invitees: React.FC<Step3InviteesProps> = ({
@@ -53,7 +55,11 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
+  step3EditableMap,
 }) => {
+  const isFieldDisabled = (fieldKey: string) =>
+    step3EditableMap != null && step3EditableMap[fieldKey] === false;
+
   const [selectedUserId, setSelectedUserId] = useState<OptionType | null>(null);
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { 
@@ -155,6 +161,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           limit={10}
           searchPlaceholder="ابحث عن مستخدم..."
           emptyMessage="لم يتم العثور على مستخدمين"
+          isDisabled={isFieldDisabled('invitees')}
         />
         {/* Table */}
         <FormTable
@@ -169,6 +176,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           errors={errors}
           touched={touched}
           errorMessage={tableErrorMessage}
+          disabled={isFieldDisabled('invitees')}
         />
 
         {/* Action Buttons */}

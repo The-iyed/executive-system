@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
 import { Send } from 'lucide-react';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchInput, ViewType, Pagination, MeetingStatus } from '@shared';
-import { MEETING_TABS, PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
+import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
+import { DataTable, Pagination, MeetingStatus, ContentBar, SearchFilterBar, CardsGrid, ViewSwitcher, ViewType } from '@shared';      
+import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
+import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
 
@@ -17,29 +18,24 @@ const Meeting: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const {
+    openCreateDrawer,
+  } = useMeetingFormDrawer();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
-  const [activeTab, setActiveTab] = useState<MeetingStatus>(MeetingStatus.DRAFT);
-  const [view, setView] = useState<ViewType>('table');
   const [searchValue, setSearchValue] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
-
+  const [view, setView] = useState<ViewType>('cards');
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
-  }, [searchValue, activeTab, statusFilter]);
-
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId as MeetingStatus);
-    setCurrentPage(PAGINATION.DEFAULT_PAGE);
-    setStatusFilter('all');
-  };
+  }, [searchValue, statusFilter]);
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
-    activeTab,
     searchValue,
     statusFilter,
     currentPage,
+    activeTab: undefined,
   });
 
   const submitDraftMutation = useMutation({
@@ -121,7 +117,16 @@ const Meeting: React.FC = () => {
   ]);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+    <>
+      <ContentBar
+        title="الطلبات الحالية"
+        primaryAction={{
+            label: 'إنشاء اجتماع',
+            variant: 'primary',
+            onClick: openCreateDrawer,
+          }}
+      />
+     <div className="w-full h-full flex flex-col overflow-hidden">
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
           <DialogHeader className="text-right gap-2">
@@ -157,15 +162,6 @@ const Meeting: React.FC = () => {
         </DialogContent>
       </Dialog>
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        <div className="flex flex-row items-center justify-between mb-6" dir="rtl">
-          <Tabs
-            items={MEETING_TABS}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
-        </div>
-
-        {/* Page Title, Description, and Search/View Switcher Bar */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
@@ -176,22 +172,21 @@ const Meeting: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              
-              dir="rtl"
-            >
+            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                searchPlaceholder="بحث"
+                statusFilter={statusFilter}
+                onStatusFilterChange={(v) => setStatusFilter(v === 'all' ? MeetingStatus.DRAFT : v)}
+                hideAllOption
+                className="flex-shrink-0"
               />
             </div>
           </div>
+         
         </div>
 
         <div className="mt-4">
@@ -241,7 +236,8 @@ const Meeting: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+     </div>
+    </>
   );
 };
 
