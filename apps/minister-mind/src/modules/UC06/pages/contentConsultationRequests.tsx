@@ -287,7 +287,7 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
 
 const ContentConsultationRequests: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewType>('table');
+  const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);

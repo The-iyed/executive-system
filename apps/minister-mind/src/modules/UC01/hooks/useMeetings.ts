@@ -3,14 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@shared/types';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
-import { PAGINATION, TAB_FILTER_MAP } from '../utils/constants';
+import { PAGINATION, TAB_FILTER_MAP, MeetingOwnerType } from '../utils/constants';
 
 interface UseMeetingsOptions {
-  activeTab: MeetingStatus;
   searchValue: string;
   statusFilter: MeetingStatus | 'all';
   currentPage: number;
   itemsPerPage?: number;
+  /** Optional: when not provided, uses SUBMITTER and status from statusFilter (or all when statusFilter is 'all') */
+  activeTab?: MeetingStatus;
 }
 
 interface UseMeetingsReturn {
@@ -22,11 +23,11 @@ interface UseMeetingsReturn {
 }
 
 export const useMeetings = ({
-  activeTab,
   searchValue,
   statusFilter,
   currentPage,
   itemsPerPage = PAGINATION.ITEMS_PER_PAGE,
+  activeTab,
 }: UseMeetingsOptions): UseMeetingsReturn => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
@@ -39,7 +40,7 @@ export const useMeetings = ({
   }, [searchValue]);
 
   const tabFilter = useMemo(() => {
-    return TAB_FILTER_MAP[activeTab];
+    return activeTab != null ? TAB_FILTER_MAP[activeTab] : undefined;
   }, [activeTab]);
 
   const mapStatusToApi = (status: MeetingStatus | string | undefined): string | undefined => {
@@ -55,24 +56,31 @@ export const useMeetings = ({
 
   const apiFilters = useMemo(() => {
     let status: string | undefined;
-    
-    if (statusFilter && statusFilter !== 'all') {
-      status = mapStatusToApi(statusFilter);
-    } else {
-      if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_CONTENT) {
-        status = 'RETURNED_FROM_CONTENT';
-      } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING) {
-        status = 'RETURNED_FROM_SCHEDULING';
+    let owner_type: string | undefined;
+
+    if (tabFilter) {
+      owner_type = tabFilter.owner_type as string;
+      if (statusFilter && statusFilter !== 'all') {
+        status = mapStatusToApi(statusFilter);
       } else {
-        status = tabFilter?.status;
+        if (activeTab === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_CONTENT) {
+          status = 'RETURNED_FROM_CONTENT';
+        } else if (activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER || activeTab === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+          status = 'RETURNED_FROM_SCHEDULING';
+        } else {
+          status = tabFilter.status as string;
+        }
+      }
+    } else {
+      owner_type = MeetingOwnerType.SUBMITTER;
+      if (statusFilter && statusFilter !== 'all') {
+        status = mapStatusToApi(statusFilter);
       }
     }
-    
-    const owner_type = tabFilter?.owner_type;
 
     return {
       status: status as string | undefined,
-      owner_type: owner_type as string | undefined,
+      owner_type,
     };
   }, [tabFilter, statusFilter, activeTab]);
 
@@ -94,7 +102,7 @@ export const useMeetings = ({
       }
       return getMeetings(params);
     },
-    enabled: !!apiFilters.status && !!apiFilters.owner_type,
+    enabled: !!apiFilters.owner_type,
   });
 
   // Map API response to MeetingDisplayData

@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { GuidanceRequestApiResponse } from '../data/guidanceApi';
-import { MeetingStatus, getMeetingStatusLabel } from '@shared/types';
+import { MeetingStatus, getMeetingStatusLabel, getMeetingClassificationLabel } from '@shared/types';
 import { GuidanceRequestCardData } from '../components/guidance-request-card';
 
 /**
@@ -96,6 +96,9 @@ export const mapGuidanceRequestToCardViewData = (
     submitter: request.submitter_name ?? undefined,
     status: status,
     statusLabel: statusLabel,
+    meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
+    meetingDate: request.scheduled_at ? formatDate(request.scheduled_at) : undefined,
+    isDataComplete: request.is_data_complete == null ? undefined : Boolean(request.is_data_complete),
   };
 };
 

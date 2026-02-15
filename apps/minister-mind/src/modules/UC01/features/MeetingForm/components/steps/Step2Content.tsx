@@ -40,6 +40,8 @@ export interface Step2ContentProps {
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
+  /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
+  step2EditableMap?: Record<string, boolean>;
 }
 
 export const Step2Content: React.FC<Step2ContentProps> = ({
@@ -66,7 +68,11 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
+  step2EditableMap,
 }) => {
+  const isFieldDisabled = (fieldKey: string) =>
+    step2EditableMap != null && step2EditableMap[fieldKey] === false;
+
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
@@ -87,6 +93,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
                 label="العرض التقديمي"
                 acceptedTypes={PRESENTATION_ACCEPTED_TYPES}
                 acceptedExtensions={PRESENTATION_ACCEPTED_EXTENSIONS}
+                disabled={isFieldDisabled('presentation_files')}
               />
             </div>
           )}
@@ -104,6 +111,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
                   onBlur={() => handleBlur('presentation_attachment_timing')}
                   placeholder="dd/mm/yyyy"
                   error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
+                  disabled={isFieldDisabled('presentation_attachment_timing')}
                 />
               </FormField>
             </FormRow>
@@ -122,6 +130,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
               label="مرفقات اختيارية (PDF، Word، Excel)"
               acceptedTypes={ADDITIONAL_ACCEPTED_TYPES}
               acceptedExtensions={ADDITIONAL_ACCEPTED_EXTENSIONS}
+              disabled={isFieldDisabled('additional_files')}
             />
           </div>
         </div>
