@@ -22,6 +22,8 @@ export interface DatePickerProps {
   onBlur?: () => void
   /** First selectable date; dates before this are disabled. */
   fromDate?: Date
+  /** Last selectable date; dates after this are disabled. */
+  toDate?: Date
   disabled?: boolean
 }
 
@@ -43,6 +45,7 @@ export function DatePicker({
   onChange,
   onBlur,
   fromDate,
+  toDate,
   disabled,
 }: DatePickerProps) {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -116,7 +119,15 @@ export function DatePicker({
           selected={selectedDate}
           onSelect={handleDateSelect}
           initialFocus
-          disabled={fromDate != null ? { before: fromDate } : undefined}
+          disabled={
+            fromDate != null && toDate != null
+              ? [{ before: fromDate }, { after: toDate }]
+              : fromDate != null
+                ? { before: fromDate }
+                : toDate != null
+                  ? { after: toDate }
+                  : undefined
+          }
         />
       </PopoverContent>
     </Popover>
