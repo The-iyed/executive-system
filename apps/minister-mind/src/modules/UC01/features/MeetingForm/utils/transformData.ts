@@ -28,6 +28,12 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       notes: draft.general_note || draft.general_notes?.[0] || '',
       is_urgent: draft.is_urgent ?? false,
       urgent_reason: draft.urgent_reason ?? '',
+      meeting_start_date: draft.meeting_start_date ? formatDateStringToISO(draft.meeting_start_date) : '',
+      meeting_end_date: draft.meeting_end_date ? formatDateStringToISO(draft.meeting_end_date) : '',
+      alternative_1_start_date: draft.alternative_1_start_date ? formatDateStringToISO(draft.alternative_1_start_date) : '',
+      alternative_1_end_date: draft.alternative_1_end_date ? formatDateStringToISO(draft.alternative_1_end_date) : '',
+      alternative_2_start_date: draft.alternative_2_start_date ? formatDateStringToISO(draft.alternative_2_start_date) : '',
+      alternative_2_end_date: draft.alternative_2_end_date ? formatDateStringToISO(draft.alternative_2_end_date) : '',
     };
   };
 
