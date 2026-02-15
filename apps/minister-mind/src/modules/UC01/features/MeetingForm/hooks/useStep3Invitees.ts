@@ -6,6 +6,7 @@ import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schema
 import { AttendanceMechanism } from '@shared/types';
 import { mapUserToFormData } from '../utils/inviteeMappers';
 import type { UserApiResponse } from '../../../data/usersApi';
+import { getStep3EditableMap } from '../utils/editableFields';
 
 interface UseStep3InviteesProps {
   draftId: string;
@@ -15,6 +16,8 @@ interface UseStep3InviteesProps {
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
+  /** From get meeting details: API editable_fields. Used to disable non-editable fields in edit. */
+  editableFields?: string[] | null;
 }
 
 interface SubmitStep3InviteesPayload {
@@ -78,7 +81,12 @@ export const useStep3Invitees = ({
   onSuccess,
   onError,
   isEditMode = false,
+  editableFields,
 }: UseStep3InviteesProps) => {
+  const step3EditableMap = useMemo(
+    () => getStep3EditableMap(editableFields ?? undefined),
+    [editableFields]
+  );
   const [formData, setFormData] = useState<Partial<Step3InviteesFormData>>({
     invitees: [],
     ...initialData,
@@ -279,5 +287,6 @@ export const useStep3Invitees = ({
     handleAddUserFromSelect,
     validateAll,
     submitStep,
+    step3EditableMap,
   };
 };

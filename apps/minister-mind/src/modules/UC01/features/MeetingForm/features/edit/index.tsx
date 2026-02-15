@@ -68,10 +68,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
             isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
-            timeSlots={step1BasicInfoHook.timeSlots}
-            handleSelectMainSlot={step1BasicInfoHook.handleSelectMainSlot}
-            handleSelectAlt1={step1BasicInfoHook.handleSelectAlt1}
-            handleSelectAlt2={step1BasicInfoHook.handleSelectAlt2}
+            step1EditableMap={step1BasicInfoHook.step1EditableMap}
           />
         );
       case 1:
@@ -100,6 +97,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleNextClick={handleStep2ContentNext}
             handleSaveDraftClick={handleStep2ContentSaveDraft}
             handleCancelClick={handleCancel}
+            step2EditableMap={step2ContentHook.step2EditableMap}
           />
         );
       case 2:
@@ -119,6 +117,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
             handleCancelClick={handleCancel}
+            step3EditableMap={step3InviteesHook.step3EditableMap}
           />
         );
       case 3:

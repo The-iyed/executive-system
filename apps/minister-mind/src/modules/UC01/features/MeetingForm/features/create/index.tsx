@@ -61,10 +61,6 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
             isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
-            timeSlots={step1BasicInfoHook.timeSlots}
-            handleSelectMainSlot={step1BasicInfoHook.handleSelectMainSlot}
-            handleSelectAlt1={step1BasicInfoHook.handleSelectAlt1}
-            handleSelectAlt2={step1BasicInfoHook.handleSelectAlt2}
           />
         );
       case 1:

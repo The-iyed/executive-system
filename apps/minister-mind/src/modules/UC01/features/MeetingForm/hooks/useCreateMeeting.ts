@@ -40,11 +40,6 @@ export const useCreateMeeting = () => {
     if (!draftData) return undefined;
     return {
       step1BasicInfo: transformDraftToStep1Data(draftData),
-      step1Scheduling: {
-        selected_time_slot_id: draftData.selected_time_slot_id ?? null,
-        alternative_time_slot_id_1: draftData.alternative_time_slot_id_1 ?? null,
-        alternative_time_slot_id_2: draftData.alternative_time_slot_id_2 ?? null,
-      },
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
       step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
