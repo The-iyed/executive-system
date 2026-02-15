@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { Send } from 'lucide-react';
 import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, SearchInput, Pagination, MeetingStatus, ContentBar } from '@shared';
+import { DataTable, SearchInput, Pagination, MeetingStatus, ContentBar, ViewSwitcher, ViewType, CardsGrid } from '@shared';
 import { MEETING_TABS, PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
@@ -27,7 +27,7 @@ const Meeting: React.FC = () => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
-
+  const [view, setView] = useState<ViewType>('cards');
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
   }, [searchValue, activeTab, statusFilter]);
@@ -181,13 +181,20 @@ const Meeting: React.FC = () => {
               يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
-          <SearchInput
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchInput
             value={searchValue}
             onChange={setSearchValue}
             placeholder="بحث"
             variant="default"
             className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
           />
+            </div>
+          </div>
+         
         </div>
 
         <div className="mt-4">
@@ -205,28 +212,25 @@ const Meeting: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* {view === 'table' ? ( */}
+              {view === 'table' ? (
                 <div className="w-full overflow-x-auto table-scroll">
                   <div className="min-w-[1400px]">
                     <DataTable
                       columns={tableColumns}
                       data={meetings}
-                      // onRowClick={(row) =>
-                      //   navigate(UC02_PATH.MEETING_DETAIL.replace(':id', row.id))
-                      // }
                       onRowClick={(row) =>
                         navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
                       }
                     />
                   </div>
                 </div>
-              {/* ) : (
+              ) : (
                 <CardsGrid
                   meetings={meetings}
-                  onView={(meeting) => navigate(UC02_PATH.MEETING_DETAIL.replace(':id', meeting.id))}
-                  onDetails={(meeting) => navigate(UC02_PATH.MEETING_DETAIL.replace(':id', meeting.id))}
+                  onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                 />
-              )} */}
+              )}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination

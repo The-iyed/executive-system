@@ -100,7 +100,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'evaluation',
         icon: 'solar:hand-stars-outline',
-        label: 'تقييم',
+        label: 'تقويم',
         path: UC04_PATH.EVALUATION,
       },
     ],
