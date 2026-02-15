@@ -261,7 +261,7 @@ const ConsultationRequestDetail: React.FC = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex justify-start">
+          <div className="flex justify-center w-full ">
             <Tabs
               items={tabs}
               activeTab={activeTab}
