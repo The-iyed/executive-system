@@ -152,6 +152,27 @@ export const getAssignedGuidanceRequests = async (
   return response.data;
 };
 
+export const getContentExceptions = async (
+  params: GetGuidanceRequestsParams = {}
+): Promise<GuidanceRequestsListResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params.skip !== undefined) {
+    queryParams.append('skip', params.skip.toString());
+  }
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search) {
+    queryParams.append('search', params.search);
+  }
+
+  const response = await axiosInstance.get<GuidanceRequestsListResponse>(
+    `/api/guidance/content-exceptions?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
 export interface GuidanceRequestDetailResponse {
   meeting_request: GuidanceRequestApiResponse;
   guidance_question: string | null;
@@ -162,6 +183,15 @@ export const getGuidanceRequestById = async (
 ): Promise<GuidanceRequestDetailResponse> => {
   const response = await axiosInstance.get<GuidanceRequestDetailResponse>(
     `/api/guidance/assigned-requests/${meetingRequestId}`
+  );
+  return response.data;
+};
+
+export const getContentExceptionById = async (
+  meetingRequestId: string
+): Promise<GuidanceRequestDetailResponse> => {
+  const response = await axiosInstance.get<GuidanceRequestDetailResponse>(
+    `/api/guidance/content-exceptions/${meetingRequestId}`
   );
   return response.data;
 };
@@ -200,6 +230,21 @@ export const completeGuidance = async (
 ): Promise<void> => {
   await axiosInstance.post(
     `/api/guidance/${guidanceId}/complete`
+  );
+};
+
+export interface HandleContentExceptionRequest {
+  content_exception: boolean;
+  granted_duration_hours: number;
+}
+
+export const handleContentException = async (
+  meetingRequestId: string,
+  data: HandleContentExceptionRequest
+): Promise<void> => {
+  await axiosInstance.post(
+    `/api/guidance/content-exceptions/${meetingRequestId}/handle`,
+    data
   );
 };
 

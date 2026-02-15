@@ -169,7 +169,8 @@ export const getConsultationRequestById = async (
 
 export interface SubmitConsultationRequest {
   feasibility_answer: boolean;
-  consultation_notes: string;
+  /** Sent as consultation_answers to API (user response text) */
+  consultation_answers: string;
 }
 
 export const submitConsultationResponse = async (
@@ -201,6 +202,8 @@ export interface PendingConsultation {
   feasibility_answer: boolean | null;
   recommendation: string | null;
   consultation_notes: string | null;
+  /** Question text to show in تقديم استشارة tab (from pending API) */
+  consultation_question?: string | null;
   requested_at: string;
   responded_at: string | null;
   content_exception: string | null;
