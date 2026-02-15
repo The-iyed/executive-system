@@ -37,6 +37,7 @@ import {
   requestSchedulingConsultation,
   returnMeetingForInfo,
   scheduleMeeting,
+  rescheduleMeeting,
   createWebexMeeting,
   type MinisterAttendee,
   getConsultationRecords,
@@ -1041,7 +1042,7 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
-  // Schedule meeting mutation
+  // Schedule meeting mutation (uses reschedule API when meeting is already SCHEDULED)
   const scheduleMutation = useMutation({
     mutationFn: (payload: {
       scheduled_at: string;
@@ -1053,7 +1054,10 @@ const MeetingDetail: React.FC = () => {
       location?: string;
       meeting_link?: string;
       minister_attendees: MinisterAttendee[];
-    }) => scheduleMeeting(id!, payload),
+    }) =>
+      meeting?.status === MeetingStatus.SCHEDULED
+        ? rescheduleMeeting(id!, payload)
+        : scheduleMeeting(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       // Keep modal open if Webex details exist so user can see them
