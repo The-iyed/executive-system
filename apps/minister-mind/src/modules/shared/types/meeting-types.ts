@@ -77,6 +77,8 @@ export enum MeetingClassification {
   PRIVATE_MEETING = 'PRIVATE_MEETING',
   BUSINESS = 'BUSINESS',
   GOVERNMENT_CENTER_TOPICS = 'GOVERNMENT_CENTER_TOPICS',
+  WORKSHOP = 'WORKSHOP',
+  DISCUSSION_WITHOUT_PRESENTATION = 'DISCUSSION_WITHOUT_PRESENTATION',
 }
 
 /**
@@ -87,8 +89,10 @@ export const MeetingClassificationLabels: Record<MeetingClassification, string> 
   [MeetingClassification.EVENTS_AND_VISITS]: 'الفعاليات والزيارات',
   [MeetingClassification.BILATERAL_MEETING]: 'لقاء ثنائي',
   [MeetingClassification.PRIVATE_MEETING]: 'لقاء خاص',
-  [MeetingClassification.BUSINESS]: 'أعمال',
+  [MeetingClassification.BUSINESS]: 'اجتماعات الأعمال',
   [MeetingClassification.GOVERNMENT_CENTER_TOPICS]: 'مواضيع مركز الحكومة',
+  [MeetingClassification.WORKSHOP]: 'ورشة عمل',
+  [MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION]: 'مناقشة (بدون عرض تقديمي)',
 };
 
 /**
@@ -198,6 +202,7 @@ export const DirectiveMethodLabels: Record<string, string> = {
 export const MeetingClassificationLabelsExtra: Record<string, string> = {
   WORKSHOP: 'ورشة عمل',
   DISCUSSION: 'مناقشة (بدون عرض تقديمي)',
+  DISCUSSION_WITHOUT_PRESENTATION: 'مناقشة (بدون عرض تقديمي)',
 };
 
 /**

@@ -31,7 +31,7 @@ const ITEMS_PER_PAGE = 10;
 
 const GuidanceRequests: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewType>('table');
+  const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);

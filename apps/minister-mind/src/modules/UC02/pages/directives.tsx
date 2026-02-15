@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { MoreVertical, X, ChevronLeft } from 'lucide-react';
+import { MoreVertical, X, CalendarDays, User } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 import { getDirectives, getPreviousDirectives, GetDirectivesParams, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
@@ -20,6 +21,32 @@ interface DirectivesCardsGridProps {
   dropdownRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
   onCloseDirective: (directiveId: string, directiveText: string, relatedMeeting: string) => void | Promise<void>;
 }
+
+const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+
+const pillStyle = {
+  borderRadius: '12px',
+  background: '#FFFFFF',
+  boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)',
+} as const;
+
+const iconCircleStyle = {
+  background: '#FFFFFF',
+  border: '1px solid #EAECF0',
+  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+} as const;
+
+/** Tooltip wrapper for card values */
+const CardTooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => (
+  <TooltipProvider delayDuration={300}>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[280px] text-right z-50">
+        <p className="whitespace-pre-wrap break-words text-[12px]">{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => Promise<any> }> = ({
   directives,
@@ -39,12 +66,13 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
             e.preventDefault();
             setOpenDropdownId(isOpen ? null : directive.id);
           }}
-          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-200 transition-colors bg-[#F6F6F6]"
+          className="flex items-center justify-center rounded-full w-8 h-8 hover:bg-[#F2F4F7] transition-colors"
+          style={{ background: '#F9FAFB', border: '1px solid #EAECF0' }}
         >
-          <MoreVertical className="w-5 h-5 text-[#475467]" strokeWidth={1.67} />
+          <MoreVertical className="w-[18px] h-[18px] text-[#475467]" strokeWidth={1.67} />
         </button>
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[140px]" dir="rtl" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute left-0 top-full mt-2 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[140px]" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={async (e) => {
                 e.stopPropagation();
@@ -58,10 +86,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
                 }
               }}
               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: '#F59E0B',
-                boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-              }}
+              style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
             >
               <span>إلغاء التوجيه</span>
               <X className="w-4 h-4" />
@@ -73,10 +98,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
                 setOpenDropdownId(null);
               }}
               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: '#DC2626',
-                boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-              }}
+              style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
             >
               <span>إغلاق التوجيه</span>
               <X className="w-4 h-4" />
@@ -90,68 +112,60 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
       {directives.map((directive) => (
-        <div key={directive.id} className="w-full flex justify-center">
-          <div
-            className="box-border flex flex-col items-start bg-white rounded-[11.36px] w-full max-w-[432.79px] p-1 gap-2 shadow-[0px_2.52357px_20.8195px_rgba(58,168,124,0.25)] cursor-pointer hover:shadow-[0px_4px_24px_rgba(58,168,124,0.35)] transition-shadow"
-            dir="rtl"
-          >
-            <div className="flex flex-col items-start p-0 w-full gap-1.5">
-              <div className="relative bg-white rounded-lg overflow-hidden w-full h-36">
-                <div
-                  className="absolute rounded-full bg-[#A6D8C1]"
-                  style={{
-                    width: '194px',
-                    height: '182px',
-                    left: '-35px',
-                    top: '4px',
-                    filter: 'blur(54px)',
-                    transform: 'rotate(-90deg)',
-                  }}
-                />
-                <div className="absolute flex flex-col items-end p-0 w-[calc(100%-22px)] max-w-[338px] h-[110px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-4">
-                  <div className="flex flex-col items-end p-0 w-full gap-2.5">
-                    <div className="flex flex-row justify-between items-center p-0 w-full gap-3">
-                      <h3 className="text-right flex-1 text-black font-semibold leading-7" style={{ fontFamily: "'Somar Sans', sans-serif", fontSize: '18px' }}>
-                        {directive.title}
-                      </h3>
-                      <div className="flex flex-row justify-center items-center px-2.5 py-0.5 h-5 rounded-[77px] bg-[rgba(255,162,162,0.12)] flex-shrink-0">
-                        <span className="text-xs font-medium text-[#D13C3C] leading-4" style={{ fontFamily: "'Somar Sans', sans-serif" }}>
-                          {directive.statusLabel}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-start p-0 w-full">
-                      <p className="text-right w-full text-[#2C2C2C] font-normal text-xs leading-[19px]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                        {directive.date}
-                      </p>
-                    </div>
-                    {directive.coordinator && (
-                      <div className="flex flex-row items-center justify-start w-full">
-                        <span className="text-right text-sm font-medium text-[#344054] leading-5" style={{ fontFamily: "'Somar Sans', sans-serif" }}>
-                          {directive.coordinator}
-                        </span>
-                      </div>
-                    )}
+        <div
+          key={directive.id}
+          className="relative flex flex-col bg-white w-full overflow-visible cursor-pointer hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)] transition-all duration-200 border-[1.5px] border-[rgba(230,236,245,1)]"
+          style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}
+          dir="rtl"
+        >
+          {/* Three-dots menu - fixed top left */}
+          <div className="absolute bottom-3 left-3 z-10">
+            {renderActionsDropdown(directive)}
+          </div>
+
+          {/* Card Body */}
+          <div className="flex flex-col gap-4 p-5" style={fontStyle}>
+            {/* Title + Status */}
+            <div className="flex flex-row items-start justify-between gap-3">
+              <CardTooltip text={directive.title}>
+                <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2" style={{ ...fontStyle, fontSize: '15px' }}>
+                  {directive.title}
+                </h3>
+              </CardTooltip>
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap flex-shrink-0"
+                style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
+              >
+                {directive.statusLabel}
+              </span>
+            </div>
+
+            {/* Date pill */}
+            <div className="flex flex-row items-center gap-2.5">
+              <CardTooltip text={directive.date}>
+                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={pillStyle}>
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                    <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
+                    <span className="text-[12px] text-[#344054] truncate leading-4">{directive.date}</span>
                   </div>
                 </div>
-              </div>
-              <div className="box-border flex flex-col justify-center items-center bg-white border border-[#EDEDED] rounded-lg w-full h-9 p-1.5 gap-1.5 shadow-[0px_2.52357px_11.4192px_rgba(0,0,0,0.1)]">
-                <div className="flex flex-row justify-between items-center p-0 w-full h-7 gap-1.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    className="flex flex-row items-center gap-1.5 p-0 hover:opacity-80 transition-opacity"
-                  >
-                    <span className="text-right text-sm font-normal text-[#344054] leading-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                      تفاصيل
-                    </span>
-                    <ChevronLeft className="w-[15px] h-[15px] text-[#344054]" />
-                  </button>
-                  {renderActionsDropdown(directive)}
-                </div>
-              </div>
+              </CardTooltip>
             </div>
+
+            {/* Coordinator */}
+            {directive.coordinator && (
+              <CardTooltip text={directive.coordinator}>
+                <div className="flex flex-row items-center gap-3">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                    <User className="h-4 w-4 text-[#98A2B3]" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-[13px] font-medium text-[#344054] leading-5 truncate">{directive.coordinator}</span>
+                </div>
+              </CardTooltip>
+            )}
           </div>
         </div>
       ))}
@@ -161,7 +175,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
 
 const Directives: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewType>('table');
+  const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
