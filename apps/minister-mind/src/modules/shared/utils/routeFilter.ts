@@ -7,7 +7,8 @@ type RouteConfig = {
   component: React.ComponentType<any>;
   guard?: React.ComponentType<any> | typeof Fragment | any;
   layout?: React.ComponentType<any> | typeof Fragment;
-  useCase?: string; // Optional use case requirement
+  useCase?: string; // Optional single use case requirement
+  useCases?: string[]; // Optional multiple use case codes (OR logic)
 };
 
 /**
@@ -20,18 +21,28 @@ export const filterRoutesByUseCase = (
   userUseCases?: string[]
 ): RouteConfig[] => {
   if (!userUseCases || userUseCases.length === 0) {
-    // If user has no use cases, only return routes without useCase requirement
-    return routes.filter((route) => !route.useCase);
+    // If user has no use cases, only return routes without any useCase requirements
+    return routes.filter(
+      (route) => !route.useCase && (!route.useCases || route.useCases.length === 0)
+    );
   }
 
   return routes.filter((route) => {
-    // Include routes without use case requirement
-    if (!route.useCase) {
+    const hasMultipleUseCases = Array.isArray(route.useCases) && route.useCases.length > 0;
+    const hasSingleUseCase = !!route.useCase;
+
+    // Include routes without any use case requirement
+    if (!hasSingleUseCase && !hasMultipleUseCases) {
       return true;
     }
 
-    // Include routes if user has access to the required use case
-    return hasUseCaseAccess(userUseCases, route.useCase);
+    // If route specifies multiple allowed use cases, allow if user has ANY of them
+    if (hasMultipleUseCases) {
+      return route.useCases!.some((code) => hasUseCaseAccess(userUseCases, code));
+    }
+
+    // Fallback to single useCase check
+    return hasUseCaseAccess(userUseCases, route.useCase!);
   });
 };
 

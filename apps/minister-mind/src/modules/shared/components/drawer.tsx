@@ -1,34 +1,24 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@sanad-ai/ui';
+import { SelectMenuPortalContext } from './SelectMenuPortalContext';
 
 const BACKDROP_DURATION_MS = 300;
 const CONTENT_DURATION_MS = 300;
 const EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
 export interface DrawerProps {
-  /** Controlled open state */
   open: boolean;
-  /** Called when open state should change (e.g. close button or overlay click) */
   onOpenChange: (open: boolean) => void;
-  /** Optional title shown in the drawer header */
   title?: React.ReactNode;
-  /** Drawer content */
   children?: React.ReactNode;
-  /** Optional footer content (e.g. action buttons) */
   footer?: React.ReactNode;
-  /** Max width of the inner content panel (default: 850px) */
   width?: number | string;
-  /** Side from which drawer slides in */
   side?: 'left' | 'right';
-  /** Accessibility label for the close button */
   closeAriaLabel?: string;
-  /** Whether to show the subtle decorative background (default: true) */
   showDecoration?: boolean;
-  /** Additional class names for the inner content wrapper */
   className?: string;
-  /** Additional class names for the scrollable body */
   bodyClassName?: string;
 }
 
@@ -46,6 +36,10 @@ export function Drawer({
   bodyClassName,
 }: DrawerProps) {
   const maxWidth = typeof width === 'number' ? `${width}px` : width;
+  const [menuPortalTarget, setMenuPortalTarget] = useState<HTMLElement | null>(null);
+  const contentRef = useCallback((node: HTMLDivElement | null) => {
+    setMenuPortalTarget(node);
+  }, []);
 
   return (
     <>
@@ -97,6 +91,7 @@ export function Drawer({
             )}
           />
           <DialogPrimitive.Content
+            ref={contentRef}
             className={cn(
               'shared-drawer-content fixed top-0 bottom-0 z-50',
               'flex flex-col',
@@ -159,7 +154,7 @@ export function Drawer({
 
                 <DialogPrimitive.Close
                   className={cn(
-                    'absolute left-5 top-5 z-20',
+                    'absolute right-5 top-5 z-20',
                     'flex h-7 w-7 items-center justify-center rounded-lg',
                     'bg-white border-0 border-[#E4E7EC]',
                     'shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
@@ -185,15 +180,17 @@ export function Drawer({
                   </div>
                 )}
 
-                <div
-                  className={cn(
-                    'relative z-[1] flex-1 overflow-y-auto overflow-x-hidden min-h-0',
-                    'py-3 px-4 mt-4 mb-4',
-                    bodyClassName
-                  )}
-                >
-                  {children}
-                </div>
+                <SelectMenuPortalContext.Provider value={menuPortalTarget}>
+                  <div
+                    className={cn(
+                      'relative z-[1] flex-1 overflow-y-auto overflow-x-hidden min-h-0',
+                      'py-3 px-4 mt-4 mb-4',
+                      bodyClassName
+                    )}
+                  >
+                    {children}
+                  </div>
+                </SelectMenuPortalContext.Provider>
 
                 {footer != null && (
                   <div className="relative z-[1] shrink-0 border-t border-[#EAECF0] px-4 py-4">

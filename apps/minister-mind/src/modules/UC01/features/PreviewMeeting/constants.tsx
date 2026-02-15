@@ -1,18 +1,18 @@
 import { TabItem } from "@shared";
 
-
+// Tab ids used in code; labels match UC02 detail tabs for consistency
 export enum MeetingPreviewTabs {
-  MEETING_PREVIEW = 'عرض الاجتماع',
-  REQUEST_INFO = 'معلومات الطلب',
-  INVITEES = 'قائمة المدعوين',
-  CONTENT = 'المحتوى',
-  NOTES = 'الملاحظات',
+  MEETING_PREVIEW = 'meeting-info',
+  REQUEST_INFO = 'request-info',
+  INVITEES = 'attendees',
+  CONTENT = 'content',
+  NOTES = 'request-notes',
 }
 
 export const MEETING_PREVIEW_TABS: TabItem[] = [
-  { id: MeetingPreviewTabs.REQUEST_INFO, label: MeetingPreviewTabs.REQUEST_INFO },
-  { id: MeetingPreviewTabs.MEETING_PREVIEW, label: MeetingPreviewTabs.MEETING_PREVIEW },
-  { id: MeetingPreviewTabs.CONTENT, label: MeetingPreviewTabs.CONTENT },
-  { id: MeetingPreviewTabs.INVITEES, label: MeetingPreviewTabs.INVITEES },
-  { id: MeetingPreviewTabs.NOTES, label: MeetingPreviewTabs.NOTES },
+  { id: MeetingPreviewTabs.REQUEST_INFO, label: 'معلومات الطلب' },
+  { id: MeetingPreviewTabs.MEETING_PREVIEW, label: 'معلومات الاجتماع' },
+  { id: MeetingPreviewTabs.CONTENT, label: 'المحتوى' },
+  { id: MeetingPreviewTabs.INVITEES, label: 'قائمة المدعوين' },
+  { id: MeetingPreviewTabs.NOTES, label: 'الملاحظات على الطلب' },
 ];

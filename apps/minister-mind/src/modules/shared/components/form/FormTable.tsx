@@ -39,6 +39,7 @@ export interface FormTableProps {
   maxWidth?: string; // Max width for table container
   emptyStateMessage?: string; // Custom message when no rows
   showErrorList?: boolean; // Whether to show detailed error list
+  disabled?: boolean; // When true, add/delete/update and row inputs are disabled
 }
 
 export const FormTable: React.FC<FormTableProps> = ({
@@ -57,6 +58,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   maxWidth = '1200px',
   emptyStateMessage = 'لا توجد بيانات',
   showErrorList = true,
+  disabled = false,
 }) => {
   const hasRowErrors = Object.keys(errors).length > 0;
   const hasTableError =
@@ -142,8 +144,12 @@ export const FormTable: React.FC<FormTableProps> = ({
                         ) : column.id === 'action' ? (
                           <button
                             type="button"
-                            onClick={() => onDeleteRow(row.id)}
-                            className="flex items-center justify-center w-8 h-8 text-[#D13C3C] bg-[#FEF3F2] rounded-lg hover:w-9 hover:h-9 transition-colors"
+                            onClick={() => !disabled && onDeleteRow(row.id)}
+                            disabled={disabled}
+                            className={cn(
+                              "flex items-center justify-center w-8 h-8 text-[#D13C3C] bg-[#FEF3F2] rounded-lg transition-colors",
+                              disabled ? "opacity-50 cursor-not-allowed" : "hover:w-9 hover:h-9"
+                            )}
                             aria-label="حذف"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -163,6 +169,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                               }
                               className="w-full"
                               fullWidth
+                              disabled={disabled}
                             />
                           </div>
                         ) : column.type === 'select' ? (
@@ -176,6 +183,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                                 !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
                               }
                               fullWidth
+                              disabled={disabled}
                             />
                           </div>
                         ) : column.type === 'switch' ? (
@@ -186,6 +194,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                                 onCheckedChange={(checked) => onUpdateRow(row.id, column.id, checked)}
                                 label=""
                                 className="!flex-row !items-center !gap-0"
+                                disabled={disabled}
                               />
                             </div>
                           </div>
@@ -195,7 +204,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                               // Check if field should be disabled based on row.disabled field
                               const isDisabled = row.disabled === true;
                               const disabledFields = ['name', 'position', 'mobile', 'email'];
-                              const shouldDisable = isDisabled && disabledFields.includes(column.id);
+                              const shouldDisable = (disabled || (isDisabled && disabledFields.includes(column.id)));
                               
                               // Determine display value
                               let displayValue = '';
@@ -266,8 +275,12 @@ export const FormTable: React.FC<FormTableProps> = ({
       {/* Add Button */}
       <button
         type="button"
-        onClick={onAddRow}
-        className="flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg hover:bg-[#F9FAFB] transition-colors"
+        onClick={() => !disabled && onAddRow()}
+        disabled={disabled}
+        className={cn(
+          "flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors",
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F9FAFB]"
+        )}
         style={{
           boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
         }}

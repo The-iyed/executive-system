@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { AsyncPaginate, LoadOptions } from 'react-select-async-paginate';
 import { GroupBase, SingleValue, ActionMeta, OptionsOrGroups } from 'react-select';
 import { cn } from '@sanad-ai/ui';
+import { useSelectMenuPortalTarget } from '../SelectMenuPortalContext';
 import type { SelectOption, PaginatedResponse, AdditionalOptions, AsyncSelectV2Props, OptionType } from './types';
 
 const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
@@ -20,7 +21,10 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   emptyMessage = 'No options found',
   className,
   fullWidth = false,
+  menuPortalTarget: menuPortalTargetProp,
 }) => {
+  const portalTargetFromContext = useSelectMenuPortalTarget();
+  const menuPortalTarget = menuPortalTargetProp ?? portalTargetFromContext ?? (typeof document !== 'undefined' ? document.body : undefined);
   const currentPageRef = useRef(1);
   const currentSearchRef = useRef('');
   const previousSearchRef = useRef('');
@@ -300,7 +304,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
             );
           }}
           classNamePrefix="async-select-v2"
-          menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+          menuPortalTarget={menuPortalTarget ?? undefined}
           menuPosition="fixed"
           noOptionsMessage={() => {
             if (isLoading) return 'Loading...';

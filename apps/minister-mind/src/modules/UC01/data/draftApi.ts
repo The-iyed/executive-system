@@ -80,6 +80,14 @@ export interface DraftApiResponse {
   selected_time_slot?:TimeSlotApiResponse;
   alternative_time_slot_1?:TimeSlotApiResponse;
   alternative_time_slot_2?:TimeSlotApiResponse;
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  alternative_1_start_date?: string | null;
+  alternative_1_end_date?: string | null;
+  alternative_2_start_date?: string | null;
+  alternative_2_end_date?: string | null;
+  /** API-defined list of field names that the user is allowed to edit (snake_case). Omitted or empty = all editable. */
+  editable_fields?: string[];
 }
 
 export const getDraftById = async (draftId: string): Promise<DraftApiResponse> => {
