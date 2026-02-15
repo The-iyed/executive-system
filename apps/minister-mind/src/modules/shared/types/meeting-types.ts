@@ -38,31 +38,31 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.NEW]: 'جديد',
   // Review States
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
-  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد استشارة الجدولة',
-  [MeetingStatus.UNDER_GUIDANCE]: 'قيد التوجيه',
-  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد مراجعة المحتوى',
-  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد استشارة المحتوى',
+  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'تحت استشارة الجدولة',
+  [MeetingStatus.UNDER_GUIDANCE]: 'تحت التوجيه',
+  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'تحت مراجعة المحتوى',
+  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'تحت استشارة المحتوى',
   // Scheduled States
   [MeetingStatus.SCHEDULED]: 'مجدول',
-  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول (جدولة)',
-  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول (محتوى)',
-  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول (استشارة محتوى)',
-  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول (تحديث محتوى)',
-  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول (معلومات إضافية)',
-  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول (متأخر)',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - جدولة',
+  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - محتوى',
+  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة محتوى',
+  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث محتوى',
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
+  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - مؤجل',
   // Returned States
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من المحتوى',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'مرجع من الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'مرجع من المحتوى',
   // Legacy returned states (kept for backward compatibility)
   [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
   [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
-  // Final States
-  [MeetingStatus.REJECTED]: 'مرفوض',
-  [MeetingStatus.CANCELLED]: 'ملغي',
-  [MeetingStatus.CLOSED]: 'مغلق',
   // Waiting State
   [MeetingStatus.WAITING]: 'قيد الانتظار',
   [MeetingStatus.READY]: 'جاهز',
+  // Final States
+  [MeetingStatus.REJECTED]: 'مرفوض',
+  [MeetingStatus.CANCELLED]: 'ملغى',
+  [MeetingStatus.CLOSED]: 'منتهي',
 };
 
 
