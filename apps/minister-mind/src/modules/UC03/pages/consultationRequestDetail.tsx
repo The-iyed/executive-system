@@ -94,7 +94,11 @@ const ConsultationRequestDetail: React.FC = () => {
   });
 
   const meetingRequest = consultationData?.meeting_request;
-  const consultationQuestion = consultationData?.consultation_question || '';
+  // Show consultation_question from pending API response; fallback to detail API
+  const consultationQuestion =
+    pendingConsultation?.consultation_question ??
+    consultationData?.consultation_question ??
+    '';
 
   // Attachments grouping
   const presentationAttachments =
@@ -127,9 +131,9 @@ const ConsultationRequestDetail: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Submit consultation mutation
+  // Submit consultation mutation (sends consultation_answers to API)
   const submitMutation = useMutation({
-    mutationFn: (data: { feasibility_answer: boolean; consultation_notes: string }) => {
+    mutationFn: (data: { feasibility_answer: boolean; consultation_answers: string }) => {
       if (!pendingConsultation?.id) throw new Error('Consultation ID is required');
       return submitConsultationResponse(pendingConsultation.id, data);
     },
@@ -161,9 +165,9 @@ const ConsultationRequestDetail: React.FC = () => {
     },
   });
 
-  // Save as draft mutation
+  // Save as draft mutation (sends consultation_answers to API)
   const saveDraftMutation = useMutation({
-    mutationFn: (data: { feasibility_answer: boolean; consultation_notes: string }) => {
+    mutationFn: (data: { feasibility_answer: boolean; consultation_answers: string }) => {
       if (!pendingConsultation?.id) throw new Error('Consultation ID is required');
       return saveConsultationAsDraft(pendingConsultation.id, data);
     },
@@ -198,14 +202,14 @@ const ConsultationRequestDetail: React.FC = () => {
 
     submitMutation.mutate({
       feasibility_answer: isSuitableForScheduling,
-      consultation_notes: consultationResponse,
+      consultation_answers: consultationResponse,
     });
   };
 
   const handleSaveAsDraft = () => {
     saveDraftMutation.mutate({
       feasibility_answer: isSuitableForScheduling,
-      consultation_notes: consultationResponse,
+      consultation_answers: consultationResponse,
     });
   };
 
