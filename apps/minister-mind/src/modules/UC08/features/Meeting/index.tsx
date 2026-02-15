@@ -9,7 +9,7 @@ import '@shared/styles';
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MeetingStatus>(MeetingStatus.UNDER_REVIEW);
-  const [view, setView] = useState<ViewType>('table');
+  const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);

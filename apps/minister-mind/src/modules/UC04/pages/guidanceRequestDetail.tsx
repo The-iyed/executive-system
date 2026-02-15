@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2 } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
 import type { TableColumn } from '@shared';
 import {
@@ -2149,7 +2149,7 @@ const GuidanceRequestDetail: React.FC = () => {
           {activeTab === 'invitees' && (
             <div className="flex flex-col gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
               {/* قائمة المدعوين (مقدّم الطلب) */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-4">
                 <h2
                   className="text-right"
                   style={{
@@ -2163,84 +2163,90 @@ const GuidanceRequestDetail: React.FC = () => {
                   قائمة المدعوين (مقدّم الطلب)
                 </h2>
                 {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
-                  <div className="w-full overflow-x-auto table-scroll">
-                    <div className="w-full min-w-0">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
-                            width: 'min-w-[6rem] flex-shrink-0',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <div className="flex items-center justify-center w-full">
-                                <span className="text-sm text-[#475467]">{index + 1}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {meetingRequest.invitees.map((invitee: any, idx: number) => {
+                      const name = invitee.external_name || invitee.user_id || '-';
+                      const position = invitee.position || '-';
+                      const email = invitee.external_email || '-';
+                      const mobile = invitee.mobile || '-';
+                      const v = invitee.attendance_mechanism;
+                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+
+                      return (
+                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                          {/* Delete strip - overlays on hover (left side in RTL) */}
+                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(1.62px)' }}>
+                            <button
+                              type="button"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors bg-white shadow-md"
+                              aria-label="حذف"
+                            >
+                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
+                            </button>
+                          </div>
+                          <div
+                            className="flex flex-col gap-4 p-5"
+                            style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                          >
+                          {/* Top Row: Avatar + Name/Position + Tags */}
+                          <div className="flex flex-row items-center justify-between gap-3">
+                            <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217, 217, 217, 1)]">
+                                <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
                               </div>
-                            ),
-                          },
-                          {
-                            id: 'name',
-                            header: 'الإسم',
-                            width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_name || row.user_id || '-'}
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                              <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">
+                                {accessLabel}
                               </span>
-                            ),
-                          },
-                          {
-                            id: 'position',
-                            header: 'المنصب',
-                            width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.position || '-'}
+                              <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">
+                                {attendanceLabel}
                               </span>
-                            ),
-                          },
-                          {
-                            id: 'mobile',
-                            header: 'الجوال',
-                            width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.mobile || '-'}
-                              </span>
-                            ),
-                          },
-                          {
-                            id: 'email',
-                            header: 'البريد الإلكتروني',
-                            width: 'min-w-0 flex-1',
-                            align: 'end',
-                            render: (row: any) => (
-                              <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                {row.external_email || '-'}
-                              </span>
-                            ),
-                          },
-                          {
-                            id: 'attendance_mechanism',
-                            header: 'آلية الحضور',
-                            width: 'min-w-[8rem] flex-shrink-0',
-                            align: 'end',
-                            render: (row: any) => {
-                              const v = row.attendance_mechanism;
-                              const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                              return (
-                                <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                  {label}
-                                </span>
-                              );
-                            },
-                          },
-                        ] as TableColumn<any>[]}
-                        data={meetingRequest.invitees}
-                      />
-                    </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom Row: Email + Phone pills */}
+                          <div className="flex flex-row items-center gap-2.5">
+                            <div
+                              className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
+                              style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}
+                            >
+                              <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                              </div>
+                              <div className="flex flex-col gap-1 min-w-0">
+                                <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                              </div>
+                            </div>
+                            <div
+                              className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
+                              style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}
+                            >
+                              <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                              </div>
+                              <div className="flex flex-col gap-1 min-w-0">
+                                <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                              </div>
+                            </div>
+                          </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
@@ -2250,105 +2256,111 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
 
               {/* الحضور من جهة الوزير */}
-                  <div className="flex flex-col gap-2">
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
-                      }}
-                    >
-                      الحضور من جهة الوزير
-                    </h2>
+              <div className="flex flex-col gap-4">
+                <h2
+                  className="text-right"
+                  style={{
+                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '22px',
+                    lineHeight: '38px',
+                    color: '#101828',
+                  }}
+                >
+                  الحضور من جهة الوزير
+                </h2>
                 {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
-                  <div className="w-full overflow-x-auto table-scroll">
-                    <div className="w-full min-w-0">
-                      <DataTable
-                            columns={[
-                              {
-                                id: 'index',
-                                header: 'رقم البند',
-                                width: 'min-w-[6rem] flex-shrink-0',
-                                align: 'center',
-                                render: (_row: any, index: number) => (
-                                  <div className="flex items-center justify-center w-full">
-                                    <span className="text-sm text-[#475467]">{index + 1}</span>
-                                  </div>
-                                ),
-                              },
-                              {
-                                id: 'name',
-                                header: 'الإسم',
-                                width: 'min-w-0 flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_name || row.user_id || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'position',
-                                header: 'المنصب',
-                                width: 'min-w-0 flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.position || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'mobile',
-                                header: 'الجوال',
-                                width: 'min-w-0 flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.mobile || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'email',
-                                header: 'البريد الإلكتروني',
-                                width: 'min-w-0 flex-1',
-                                align: 'end',
-                                render: (row: any) => (
-                                  <span className="text-sm text-[#475467] text-right block truncate" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                    {row.external_email || '-'}
-                                  </span>
-                                ),
-                              },
-                              {
-                                id: 'attendance_mechanism',
-                                header: 'آلية الحضور',
-                                width: 'min-w-[8rem] flex-shrink-0',
-                                align: 'end',
-                                render: (row: any) => {
-                                  const v = row.attendance_mechanism;
-                                  const label = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                                  return (
-                                    <span className="text-sm text-[#475467] text-right whitespace-nowrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-                                      {label}
-                                    </span>
-                                  );
-                                },
-                              },
-                            ] as TableColumn<any>[]}
-                            data={meetingRequest.minister_attendees}
-                          />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {meetingRequest.minister_attendees.map((invitee: any, idx: number) => {
+                      const name = invitee.external_name || invitee.user_id || '-';
+                      const position = invitee.position || '-';
+                      const email = invitee.external_email || '-';
+                      const mobile = invitee.mobile || '-';
+                      const v = invitee.attendance_mechanism;
+                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+
+                      return (
+                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                          {/* Delete strip - overlays on hover (left side in RTL) */}
+                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(1.62px)' }}>
+                            <button
+                              type="button"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors bg-white shadow-md"
+                              aria-label="حذف"
+                            >
+                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
+                            </button>
+                          </div>
+                          <div
+                            className="flex flex-col gap-4 p-5"
+                            style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                          >
+                          {/* Top Row: Avatar + Name/Position + Tags */}
+                          <div className="flex flex-row items-center justify-between gap-3">
+                            <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7]">
+                                <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                              <span className="inline-flex items-center rounded-full bg-[#F9FAFB] border border-[#EAECF0] px-2.5 py-1 text-[11px] text-[#344054] whitespace-nowrap">
+                                {accessLabel}
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-[#F9FAFB] border border-[#EAECF0] px-2.5 py-1 text-[11px] text-[#344054] whitespace-nowrap">
+                                {attendanceLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Bottom Row: Email + Phone pills */}
+                          <div className="flex flex-row items-center gap-2.5">
+                            <div
+                              className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
+                              style={{ borderRadius: '8px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}
+                            >
+                              <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <Mail className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] text-[#98A2B3] leading-3">البريد الإلكتروني</span>
+                                <span className="text-[12px] text-[#344054] truncate leading-4">{email}</span>
+                              </div>
+                            </div>
+                            <div
+                              className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
+                              style={{ borderRadius: '8px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}
+                            >
+                              <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <Phone className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] text-[#98A2B3] leading-3">الجوال</span>
+                                <span className="text-[12px] text-[#344054] truncate leading-4" dir="ltr">{mobile}</span>
+                              </div>
+                            </div>
+                          </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
                     لا يوجد حضور من جهة الوزير
                   </p>
                 )}
-                  </div>
+              </div>
             </div>
           )}
         </div>

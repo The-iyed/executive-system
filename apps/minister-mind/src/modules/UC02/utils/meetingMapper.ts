@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { MeetingApiResponse } from '../data/meetingsApi';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '@shared/types';
 
 /**
  * Format date to Arabic format
@@ -77,13 +77,17 @@ export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingCardDa
   
   return {
     id: meeting.id,
+    requestNumber: meeting.request_number,
     title: meeting.meeting_title || meeting.meeting_subject,
     date: formatDate(dateToUse),
     coordinator: meeting.submitter_name,
-    coordinatorAvatar: undefined, // API doesn't provide avatar
+    coordinatorAvatar: undefined,
     status: status,
     statusLabel: statusLabel,
     location: meeting.meeting_channel,
+    meetingCategory: getMeetingClassificationLabel(meeting.meeting_classification),
+    meetingDate: meeting.scheduled_at ? formatDate(meeting.scheduled_at) : undefined,
+    isDataComplete: meeting.is_data_complete == null ? undefined : Boolean(meeting.is_data_complete),
   };
 };
 
