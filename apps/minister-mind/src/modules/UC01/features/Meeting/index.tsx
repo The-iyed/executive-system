@@ -4,8 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { Send } from 'lucide-react';
 import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, SearchInput, Pagination, MeetingStatus, ContentBar } from '@shared';
-import { MEETING_TABS, PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
+import { DataTable, Pagination, MeetingStatus, ContentBar, SearchFilterBar } from '@shared';
+import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
@@ -23,26 +23,19 @@ const Meeting: React.FC = () => {
   } = useMeetingFormDrawer();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
-  const [activeTab, setActiveTab] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [searchValue, setSearchValue] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
 
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
-  }, [searchValue, activeTab, statusFilter]);
-
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId as MeetingStatus);
-    setCurrentPage(PAGINATION.DEFAULT_PAGE);
-    setStatusFilter('all');
-  };
+  }, [searchValue, statusFilter]);
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
-    activeTab,
     searchValue,
     statusFilter,
     currentPage,
+    activeTab: undefined,
   });
 
   const submitDraftMutation = useMutation({
@@ -132,9 +125,6 @@ const Meeting: React.FC = () => {
             variant: 'primary',
             onClick: openCreateDrawer,
           }}
-        filterTabs={MEETING_TABS}
-        activeFilterId={activeTab}
-        onFilterChange={handleTabChange}
       />
      <div className="w-full h-full flex flex-col overflow-hidden">
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
@@ -181,12 +171,14 @@ const Meeting: React.FC = () => {
               يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
-          <SearchInput
-            value={searchValue}
-            onChange={setSearchValue}
-            placeholder="بحث"
-            variant="default"
-            className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
+          <SearchFilterBar
+            searchValue={searchValue}
+            onSearchChange={setSearchValue}
+            searchPlaceholder="بحث"
+            statusFilter={statusFilter}
+            onStatusFilterChange={(v) => setStatusFilter(v === 'all' ? MeetingStatus.DRAFT : v)}
+            hideAllOption
+            className="flex-shrink-0"
           />
         </div>
 
