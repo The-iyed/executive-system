@@ -20,7 +20,7 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onTabChange,
   className = '',
-  variant = 'pill',
+  variant = 'underline',
 }) => {
   const defaultActive = activeTab || items[0]?.id;
 
