@@ -469,6 +469,14 @@ export const scheduleMeeting = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/schedule`, payload);
 };
 
+/** Reschedule an already scheduled meeting (status SCHEDULED). Uses same payload as schedule. */
+export const rescheduleMeeting = async (
+  meetingId: string,
+  payload: ScheduleMeetingRequest
+): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/reschedule`, payload);
+};
+
 // Webex Meeting API
 export interface CreateWebexMeetingRequest {
   meeting_title: string;
