@@ -18,6 +18,8 @@ export interface SearchFilterBarProps {
   searchPlaceholder?: string;
   statusFilter?: MeetingStatus | 'all';
   onStatusFilterChange?: (value: MeetingStatus | 'all') => void;
+  /** When true, hide "جميع الحالات" and only show status options (e.g. default to draft elsewhere) */
+  hideAllOption?: boolean;
   className?: string;
 }
 
@@ -27,23 +29,25 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   searchPlaceholder = 'ادخل البحث',
   statusFilter,
   onStatusFilterChange,
+  hideAllOption = false,
   className = '',
 }) => {
+  const selectValue = hideAllOption ? (statusFilter ?? MeetingStatus.DRAFT) : (statusFilter || 'all');
+
   return (
     <div className={`flex flex-row items-center gap-3 ${className}`} dir="rtl">
       {/* Status Filter Select - right in RTL */}
       <Select
-        value={statusFilter || 'all'}
+        value={selectValue}
         onValueChange={(value) => onStatusFilterChange?.(value as MeetingStatus | 'all')}
       >
         <SelectTrigger
-          className="w-[130px] h-10 bg-white border border-gray-200/80 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-sm font-medium text-gray-700 px-4"
-          style={{ fontFamily: "'Almarai', sans-serif" }}
+          className="min-w-[180px] w-[200px] h-10 bg-white border border-gray-200/80 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-sm font-medium text-gray-700 px-4"
         >
-          <SelectValue placeholder="جميع الحالات" />
+          <SelectValue placeholder={hideAllOption ? undefined : 'جميع الحالات'} />
         </SelectTrigger>
         <SelectContent dir="rtl">
-          <SelectItem value="all">جميع الحالات</SelectItem>
+          {!hideAllOption && <SelectItem value="all">جميع الحالات</SelectItem>}
           {Object.values(MeetingStatus)
             .filter((status) =>
               status !== MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER &&

@@ -1,4 +1,11 @@
 import { formatDateStringToISO } from "@shared";
+
+/** Preserves time if present, otherwise returns YYYY-MM-DD. For draft datetime fields. */
+function toISOOrDateString(val: string | null | undefined): string {
+  if (!val || val.trim() === '') return '';
+  const d = new Date(val.trim());
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+}
 import type { Step1BasicInfoFormData } from "../schemas/step1BasicInfo.schema";
 import type { Step2ContentFormData } from "../schemas/step2Content.schema";
 import type { Step3InviteesFormData } from "../schemas/step3Invitees.schema";
@@ -28,6 +35,12 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       notes: draft.general_note || draft.general_notes?.[0] || '',
       is_urgent: draft.is_urgent ?? false,
       urgent_reason: draft.urgent_reason ?? '',
+      meeting_start_date: draft.meeting_start_date ? toISOOrDateString(draft.meeting_start_date) : '',
+      meeting_end_date: draft.meeting_end_date ? toISOOrDateString(draft.meeting_end_date) : '',
+      alternative_1_start_date: draft.alternative_1_start_date ? toISOOrDateString(draft.alternative_1_start_date) : '',
+      alternative_1_end_date: draft.alternative_1_end_date ? toISOOrDateString(draft.alternative_1_end_date) : '',
+      alternative_2_start_date: draft.alternative_2_start_date ? toISOOrDateString(draft.alternative_2_start_date) : '',
+      alternative_2_end_date: draft.alternative_2_end_date ? toISOOrDateString(draft.alternative_2_end_date) : '',
     };
   };
 

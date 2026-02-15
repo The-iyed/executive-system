@@ -33,6 +33,7 @@ export interface FileUploadProps {
   dropzoneClassName?: string;
   showProgress?: boolean;
   multiple?: boolean;
+  disabled?: boolean;
 }
 const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024; 
 const DEFAULT_ACCEPTED_TYPES = [
@@ -65,6 +66,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   dropzoneClassName,
   showProgress = true,
   multiple = false,
+  disabled = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -207,6 +209,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, [handleFileSelect, isMultiple]);
 
   const handleBrowseClick = () => {
+    if (disabled) return;
     fileInputRef.current?.click();
   };
 
@@ -281,16 +284,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         {/* Upload Area */}
         <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          onDragOver={disabled ? undefined : handleDragOver}
+          onDragLeave={disabled ? undefined : handleDragLeave}
+          onDrop={disabled ? undefined : handleDrop}
           className={cn(
-            'relative border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer',
-            isDragging
+            'relative border-2 border-dashed rounded-lg p-12 text-center transition-colors',
+            disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+            !disabled && (isDragging
               ? 'border-[#009883] bg-[#009883]/5'
               : currentFiles.length > 0
               ? 'border-[#009883] bg-[#009883]/5'
-              : 'border-[#D0D5DD] bg-white hover:border-[#009883] hover:bg-[#009883]/5',
+              : 'border-[#D0D5DD] bg-white hover:border-[#009883] hover:bg-[#009883]/5'),
             error && currentFiles.length === 0 && "border-[#D13C3C]",
             dropzoneClassName
           )}
@@ -303,6 +307,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             onChange={handleInputChange}
             multiple={isMultiple}
             className="hidden"
+            disabled={disabled}
           />
 
           {/* Upload Icon */}

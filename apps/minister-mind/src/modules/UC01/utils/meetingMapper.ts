@@ -37,6 +37,7 @@ const STATUS_MAP: Record<string, MeetingStatus> = {
   [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
   [MeetingStatus.UNDER_REVIEW]: MeetingStatus.UNDER_REVIEW,
   [MeetingStatus.SCHEDULED]: MeetingStatus.SCHEDULED,
+  [MeetingStatus.SCHEDULED_SCHEDULING]: MeetingStatus.SCHEDULED_SCHEDULING,
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
   [MeetingStatus.REJECTED]: MeetingStatus.REJECTED,
   [MeetingStatus.CANCELLED]: MeetingStatus.CANCELLED,
