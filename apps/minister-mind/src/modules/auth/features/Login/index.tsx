@@ -94,7 +94,7 @@ const Login = () => {
     <div className="min-h-screen w-full flex bg-[#ECF0F1] flex-row-reverse justify-center items-center" dir="rtl">
       {/* Left column - Branding with bg-auth.svg */}
       <div
-        className="w-[43%] min-h-screen hidden lg:flex flex-col rounded-l-[14px] overflow-hidden relative"
+        className="w-[43%] my-6 h-[90vh] hidden lg:flex flex-col rounded-l-[14px] overflow-hidden relative"
         style={{
 
           backgroundImage: `url('/assets/bg-auth.svg')`,
