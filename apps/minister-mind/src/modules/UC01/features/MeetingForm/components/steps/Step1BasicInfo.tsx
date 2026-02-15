@@ -11,6 +11,7 @@ import {
   ActionButtons,
   FormAsyncSelectV2,
   FileUpload,
+  MeetingDateTimeRangePicker,
 } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
@@ -21,6 +22,7 @@ import {
   MEETING_AGENDA_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
+import { isValidDateOrDateTime } from '../../schemas/step1BasicInfo.schema';
 import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
@@ -128,7 +130,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   value={formData.meeting_manager_id ? { label: formData.meeting_manager_id, value: formData.meeting_manager_id } : null}
                   onValueChange={(option) => handleChange('meeting_manager_id', option?.value || '')}
                   loadOptions={loadMeetingManagerOptions}
-                  placeholder="-------"
+                  placeholder="مالك الاجتماع"
                   error={!!(touched.meeting_manager_id && errors.meeting_manager_id)}
                   errorMessage={touched.meeting_manager_id ? errors.meeting_manager_id : undefined}
                   fullWidth
@@ -147,7 +149,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.meetingSubject || ''}
                 onChange={(e) => handleChange('meetingSubject', e.target.value)}
                 onBlur={() => handleBlur('meetingSubject')}
-                placeholder="-------"
+                placeholder="عنوان الاجتماع"
                 error={!!(touched.meetingSubject && errors.meetingSubject)}
                 disabled={isFieldDisabled('meetingSubject')}
               />
@@ -162,7 +164,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.meetingDescription || ''}
                 onChange={(e) => handleChange('meetingDescription', e.target.value)}
                 onBlur={() => handleBlur('meetingDescription')}
-                placeholder="-------"
+                placeholder="وصف الاجتماع"
                 error={!!(touched.meetingDescription && errors.meetingDescription)}
                 disabled={isFieldDisabled('meetingDescription')}
               />
@@ -177,7 +179,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.sector || ''}
                 onChange={(e) => handleChange('sector', e.target.value)}
                 onBlur={() => handleBlur('sector')}
-                placeholder="-------"
+                placeholder="القطاع"
                 error={!!(touched.sector && errors.sector)}
                 disabled={isFieldDisabled('sector')}
               />
@@ -192,7 +194,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.meetingType}
                 onValueChange={(value) => handleChange('meetingType', value)}
                 options={MEETING_TYPE_OPTIONS}
-                placeholder="-------"
+                placeholder="نوع الاجتماع"
                 error={!!(touched.meetingType && errors.meetingType)}
                 disabled={isFieldDisabled('meetingType')}
               />
@@ -217,7 +219,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   value={formData.urgent_reason || ''}
                   onChange={(e) => handleChange('urgent_reason', e.target.value)}
                   onBlur={() => handleBlur('urgent_reason')}
-                  placeholder="-------"
+                  placeholder="السبب"
                   error={!!(touched.urgent_reason && errors.urgent_reason)}
                   disabled={isFieldDisabled('urgent_reason')}
                 />
@@ -228,130 +230,56 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               const now = new Date();
               const oneWeekFromNow = new Date(now);
               oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-              const mainEndMin =
-                formData.meeting_start_date && !Number.isNaN(new Date(formData.meeting_start_date).getTime())
-                  ? new Date(formData.meeting_start_date)
-                  : oneWeekFromNow;
-              const alt1EndMin =
-                formData.alternative_1_start_date && !Number.isNaN(new Date(formData.alternative_1_start_date).getTime())
-                  ? new Date(formData.alternative_1_start_date)
-                  : oneWeekFromNow;
-              const alt2EndMin =
-                formData.alternative_2_start_date && !Number.isNaN(new Date(formData.alternative_2_start_date).getTime())
-                  ? new Date(formData.alternative_2_start_date)
-                  : oneWeekFromNow;
               return (
                 <>
-                  {/* موعد الاجتماع */}
-                  <div className="w-full min-w-0 sm:col-span-2 flex flex-col gap-2">
-                    <span className="text-sm font-medium text-foreground">موعد الاجتماع</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ البداية"
-                        required
-                        error={touched.meeting_start_date ? errors.meeting_start_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.meeting_start_date || ''}
-                          onChange={(value) => handleChange('meeting_start_date', value)}
-                          onBlur={() => handleBlur('meeting_start_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.meeting_start_date && errors.meeting_start_date)}
-                          disabled={isFieldDisabled('meeting_start_date')}
-                          fromDate={oneWeekFromNow}
-                        />
-                      </FormField>
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ النهاية"
-                        required
-                        error={touched.meeting_end_date ? errors.meeting_end_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.meeting_end_date || ''}
-                          onChange={(value) => handleChange('meeting_end_date', value)}
-                          onBlur={() => handleBlur('meeting_end_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.meeting_end_date && errors.meeting_end_date)}
-                          disabled={isFieldDisabled('meeting_end_date')}
-                          fromDate={mainEndMin}
-                        />
-                      </FormField>
-                    </div>
-                  </div>
-                  {/* الموعد البديل الأول */}
-                  <div className="w-full min-w-0 sm:col-span-2 flex flex-col gap-2">
-                    <span className="text-sm font-medium text-foreground">الموعد البديل الأول (اختياري)</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ البداية"
-                        error={touched.alternative_1_start_date ? errors.alternative_1_start_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.alternative_1_start_date || ''}
-                          onChange={(value) => handleChange('alternative_1_start_date', value)}
-                          onBlur={() => handleBlur('alternative_1_start_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.alternative_1_start_date && errors.alternative_1_start_date)}
-                          disabled={isFieldDisabled('alternative_1_start_date')}
-                          fromDate={oneWeekFromNow}
-                        />
-                      </FormField>
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ النهاية"
-                        error={touched.alternative_1_end_date ? errors.alternative_1_end_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.alternative_1_end_date || ''}
-                          onChange={(value) => handleChange('alternative_1_end_date', value)}
-                          onBlur={() => handleBlur('alternative_1_end_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.alternative_1_end_date && errors.alternative_1_end_date)}
-                          disabled={isFieldDisabled('alternative_1_end_date')}
-                          fromDate={alt1EndMin}
-                        />
-                      </FormField>
-                    </div>
-                  </div>
-                  {/* الموعد البديل الثاني */}
-                  <div className="w-full min-w-0 sm:col-span-2 flex flex-col gap-2">
-                    <span className="text-sm font-medium text-foreground">الموعد البديل الثاني (اختياري)</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ البداية"
-                        error={touched.alternative_2_start_date ? errors.alternative_2_start_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.alternative_2_start_date || ''}
-                          onChange={(value) => handleChange('alternative_2_start_date', value)}
-                          onBlur={() => handleBlur('alternative_2_start_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.alternative_2_start_date && errors.alternative_2_start_date)}
-                          disabled={isFieldDisabled('alternative_2_start_date')}
-                          fromDate={oneWeekFromNow}
-                        />
-                      </FormField>
-                      <FormField
-                        className="w-full min-w-0"
-                        label="تاريخ النهاية"
-                        error={touched.alternative_2_end_date ? errors.alternative_2_end_date : undefined}
-                      >
-                        <FormDatePicker
-                          value={formData.alternative_2_end_date || ''}
-                          onChange={(value) => handleChange('alternative_2_end_date', value)}
-                          onBlur={() => handleBlur('alternative_2_end_date')}
-                          placeholder="dd/mm/yyyy"
-                          error={!!(touched.alternative_2_end_date && errors.alternative_2_end_date)}
-                          disabled={isFieldDisabled('alternative_2_end_date')}
-                          fromDate={alt2EndMin}
-                        />
-                      </FormField>
-                    </div>
-                  </div>
+                  <MeetingDateTimeRangePicker
+                    sectionTitle="موعد الاجتماع (الحد الأقصى 24 ساعة)"
+                    startValue={formData.meeting_start_date || ''}
+                    endValue={formData.meeting_end_date || ''}
+                    onStartChange={(value) => handleChange('meeting_start_date', value)}
+                    onEndChange={(value) => handleChange('meeting_end_date', value)}
+                    onStartBlur={() => handleBlur('meeting_start_date')}
+                    onEndBlur={() => handleBlur('meeting_end_date')}
+                    minStartDate={oneWeekFromNow}
+                    required
+                    disabled={isFieldDisabled('meeting_start_date')}
+                    startError={formData.meeting_start_date && isValidDateOrDateTime(formData.meeting_start_date) ? undefined : errors.meeting_start_date}
+                    endError={formData.meeting_end_date && isValidDateOrDateTime(formData.meeting_end_date) ? undefined : errors.meeting_end_date}
+                    startTouched={touched.meeting_start_date}
+                    endTouched={touched.meeting_end_date}
+                  />
+                  <MeetingDateTimeRangePicker
+                    sectionTitle="الموعد البديل الأول (الحد الأقصى 24 ساعة)"
+                    startValue={formData.alternative_1_start_date || ''}
+                    endValue={formData.alternative_1_end_date || ''}
+                    onStartChange={(value) => handleChange('alternative_1_start_date', value)}
+                    onEndChange={(value) => handleChange('alternative_1_end_date', value)}
+                    onStartBlur={() => handleBlur('alternative_1_start_date')}
+                    onEndBlur={() => handleBlur('alternative_1_end_date')}
+                    minStartDate={oneWeekFromNow}
+                    required={false}
+                    disabled={isFieldDisabled('alternative_1_start_date')}
+                    startError={formData.alternative_1_start_date && isValidDateOrDateTime(formData.alternative_1_start_date) ? undefined : errors.alternative_1_start_date}
+                    endError={formData.alternative_1_end_date && isValidDateOrDateTime(formData.alternative_1_end_date) ? undefined : errors.alternative_1_end_date}
+                    startTouched={touched.alternative_1_start_date}
+                    endTouched={touched.alternative_1_end_date}
+                  />
+                  <MeetingDateTimeRangePicker
+                    sectionTitle="الموعد البديل الثاني (الحد الأقصى 24 ساعة)"
+                    startValue={formData.alternative_2_start_date || ''}
+                    endValue={formData.alternative_2_end_date || ''}
+                    onStartChange={(value) => handleChange('alternative_2_start_date', value)}
+                    onEndChange={(value) => handleChange('alternative_2_end_date', value)}
+                    onStartBlur={() => handleBlur('alternative_2_start_date')}
+                    onEndBlur={() => handleBlur('alternative_2_end_date')}
+                    minStartDate={oneWeekFromNow}
+                    required={false}
+                    disabled={isFieldDisabled('alternative_2_start_date')}
+                    startError={formData.alternative_2_start_date && isValidDateOrDateTime(formData.alternative_2_start_date) ? undefined : errors.alternative_2_start_date}
+                    endError={formData.alternative_2_end_date && isValidDateOrDateTime(formData.alternative_2_end_date) ? undefined : errors.alternative_2_end_date}
+                    startTouched={touched.alternative_2_start_date}
+                    endTouched={touched.alternative_2_end_date}
+                  />
                 </>
               );
           })()}
@@ -379,7 +307,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.meetingCategory}
                 onValueChange={(value) => handleChange('meetingCategory', value)}
                 options={MEETING_CATEGORY_OPTIONS}
-                placeholder="-------"
+                placeholder="فئة الاجتماع"
                 error={!!(touched.meetingCategory && errors.meetingCategory)}
                 disabled={isFieldDisabled('meetingCategory')}
               />
@@ -395,7 +323,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 value={formData.meetingReason || ''}
                 onChange={(e) => handleChange('meetingReason', e.target.value)}
                 onBlur={() => handleBlur('meetingReason')}
-                placeholder="-------"
+                placeholder="مبرر اللقاء"
                 error={!!(touched.meetingReason && errors.meetingReason)}
                 disabled={isFieldDisabled('meetingReason')}
               />
@@ -412,7 +340,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   value={formData.relatedTopic || ''}
                   onChange={(e) => handleChange('relatedTopic', e.target.value)}
                   onBlur={() => handleBlur('relatedTopic')}
-                  placeholder="-------"
+                  placeholder="موضوع التكليف المرتبط"
                   error={!!(touched.relatedTopic && errors.relatedTopic)}
                   disabled={isFieldDisabled('relatedTopic')}
                 />
@@ -501,7 +429,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   value={formData.directive_method}
                   onValueChange={(value) => handleChange('directive_method', value)}
                   options={DIRECTIVE_METHOD_OPTIONS}
-                  placeholder="-------"
+                  placeholder="طريقة التوجيه"
                   error={!!(touched.directive_method && errors.directive_method)}
                   disabled={isFieldDisabled('directive_method')}
                 />
@@ -531,7 +459,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     value={formData.directive_text || ''}
                     onChange={(e) => handleChange('directive_text', e.target.value)}
                     onBlur={() => handleBlur('directive_text')}
-                    placeholder="-------"
+                    placeholder="التوجيه"
                     error={!!(touched.directive_text && errors.directive_text)}
                     disabled={isFieldDisabled('directive_text')}
                   />
