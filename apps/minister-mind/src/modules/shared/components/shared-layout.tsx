@@ -5,8 +5,9 @@ import { Icon } from '@iconify/react';
 import { NavigationActions, NavItem } from './navigation-actions';
 import { UserAvatar } from './user-avatar';
 import { WelcomeSectionProps } from './welcome-section';
-import { ContentBar, type ContentBarFilterTab } from './content-bar';
+import { type ContentBarFilterTab } from './content-bar';
 import { useUserNavigation } from '../hooks/useUserNavigation';
+import { Logo } from './logo';
 
 export interface SharedLayoutProps {
   children: React.ReactNode;
@@ -15,25 +16,16 @@ export interface SharedLayoutProps {
   welcomeSection: WelcomeSectionProps;
   navigationItems?: NavItem[];
   useDynamicNavigation?: boolean;
-  /** When empty array, ContentBar filter tabs are hidden (e.g. page has its own status tabs) */
   contentBarFilterTabs?: ContentBarFilterTab[];
-  /** When true, hide the entire ContentBar (e.g. on meeting detail page) */
   hideContentBar?: boolean;
-  /** Optional class for the main content wrapper (e.g. bg-transparent so only inner cards have bg) */
   contentContainerClassName?: string;
 }
-
-const HEADER_BG = '#E5E7EB';
 
 export const SharedLayout: React.FC<SharedLayoutProps> = ({
   children,
   headerClassName,
-  bgHeaderClassName,
-  welcomeSection,
   navigationItems,
   useDynamicNavigation = false,
-  contentBarFilterTabs,
-  hideContentBar = false,
   contentContainerClassName,
 }) => {
   const { isAuthenticated, user } = useAuth();
@@ -43,7 +35,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
     if (useDynamicNavigation || !navigationItems) {
       return dynamicNavItems;
     }
-    // Old way: filter passed navigationItems by user permissions (requiresUseCase)
+
     const useCases = user?.use_cases ?? [];
     return navigationItems
       .filter((item) => {
@@ -56,33 +48,10 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   return (
     <div className="h-screen flex flex-col relative w-full overflow-hidden" dir="rtl">
       <div className={twMerge('relative flex flex-col flex-1 min-h-0 z-10 my-0', headerClassName)}>
-        {/* Single horizontal header bar - same UI as image */}
         <header
           className="flex flex-row items-center justify-between gap-4 p-10 rounded-t-[14px]"
-          style={{
-            fontFamily: "'Almarai', sans-serif",
-          }}
         >
-          {/* Right: Branding - calendar icon + title */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <img
-              src="/assets/calendar.svg"
-              alt=""
-              className="w-[34px] h-[34px] flex-shrink-0"
-              width={34}
-              height={34}
-            />
-            <div className="flex flex-col items-start">
-              <h1 className="text-lg font-bold text-gray-800 leading-tight">
-                المنصة الموحدة
-              </h1>
-              <p className="text-sm text-gray-500 leading-tight">
-                للمكتب التنفيذي
-              </p>
-            </div>
-          </div>
-
-          {/* Center: Search (circle) + Pill nav - match image: search left, pill right, Almarai */}
+          <Logo />
           <div
             className="flex flex-row-reverse items-center gap-4 flex-1 justify-center min-w-0"
             style={{ fontFamily: "'Almarai', sans-serif" }}
@@ -99,7 +68,6 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             )}
           </div>
 
-          {/* Left: Settings, Avatar, Notifications */}
           {isAuthenticated && (
             <div className="flex flex-row items-center gap-2 flex-shrink-0">
               <button
@@ -122,25 +90,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             </div>
           )}
         </header>
-
-        {/* Sub-header / Content bar: title, primary action, filter pill, search — hidden on meeting detail */}
-        {isAuthenticated && !hideContentBar && (
-          <div className="px-4 pt-2 pb-0">
-            <ContentBar
-              title={welcomeSection.title}
-              primaryAction={
-                welcomeSection.actions?.find((a) => a.variant === 'primary' || !a.variant) ??
-                welcomeSection.actions?.[0]
-              }
-              filterTabs={contentBarFilterTabs}
-            />
-          </div>
-        )}
-
-        {/* Main content — flex-1 min-h-0 so it takes remaining height below header/content bar */}
-        <div
-          className={twMerge('children-container flex-1 min-h-0 flex flex-col rounded-t-[31px] pl-5', contentContainerClassName)}
-        >
+        <div className={twMerge('children-container flex-1 min-h-0 flex flex-col rounded-t-[31px] pl-5', contentContainerClassName)} >
           {children}
         </div>
       </div>

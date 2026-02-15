@@ -20,6 +20,9 @@ export interface DatePickerProps {
   value?: string
   onChange?: (value: string) => void
   onBlur?: () => void
+  /** First selectable date; dates before this are disabled. */
+  fromDate?: Date
+  disabled?: boolean
 }
 
 const formatDate = (date: Date | undefined): string => {
@@ -39,6 +42,8 @@ export function DatePicker({
   value,
   onChange,
   onBlur,
+  fromDate,
+  disabled,
 }: DatePickerProps) {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     date || (value ? new Date(value) : undefined)
@@ -83,6 +88,7 @@ export function DatePicker({
         <Button
           type="button"
           variant="outline"
+          disabled={disabled}
           className={cn(
             "w-full max-w-full h-[44px] px-[14px] py-[10px]",
             "flex items-center justify-start gap-2 bg-white", 
@@ -110,6 +116,7 @@ export function DatePicker({
           selected={selectedDate}
           onSelect={handleDateSelect}
           initialFocus
+          disabled={fromDate != null ? { before: fromDate } : undefined}
         />
       </PopoverContent>
     </Popover>
