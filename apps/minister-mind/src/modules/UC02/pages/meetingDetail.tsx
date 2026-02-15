@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -167,6 +167,65 @@ function getGeneralNotesList(
     return [{ id: '', note_type: 'GENERAL', text: generalNotes, author_id: '', author_type: '', author_name: null, created_at: '', updated_at: '' }];
   }
   return [];
+}
+
+function ActionBubble({
+  icon,
+  label,
+  onClick,
+  disabled,
+  variant,
+  disabledReason,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'danger';
+  /** Shown as tooltip when disabled (explains why the action is disabled) */
+  disabledReason?: string;
+}) {
+  const button = (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
+    >
+      <span
+        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
+        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+      >
+        {label}
+      </span>
+      <span
+        className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
+          variant === 'danger'
+            ? 'bg-red-50 border-red-200 text-red-600'
+            : 'bg-white border-gray-200/80 text-gray-800'
+        }`}
+      >
+        {icon}
+      </span>
+    </button>
+  );
+
+  if (disabled && disabledReason) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex w-full min-w-0">{button}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+            {disabledReason}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return button;
 }
 
 const MeetingDetail: React.FC = () => {
@@ -617,6 +676,7 @@ const MeetingDetail: React.FC = () => {
   }, [activeTab, id, queryClient]);
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+  const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
   /** Validation errors per local invitee id (قائمة المدعوين مقدّم الطلب) */
@@ -3205,174 +3265,73 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Action Buttons - iPhone-style liquid glass: blur + saturate, frost, layered shadow */}
+        {/* Corner FAB: fixed in corner (RTL-aware), tap to show action bubbles */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <>
+            {actionsBarOpen && (
+              <button
+                type="button"
+                aria-label="إغلاق"
+                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+                onClick={() => setActionsBarOpen(false)}
+              />
+            )}
+            {/* Anchor: fixed size so main FAB stays in exact same spot open or closed */}
             <div
-              className="flex flex-col items-center justify-center py-2.5 px-3 min-h-[50px] rounded-[32px] transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] overflow-visible"
-              style={{
-                isolation: 'isolate',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.02), 0 2px 8px rgba(0, 0, 0, 0.06), 0 12px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                backdropFilter: 'blur(48px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(48px) saturate(200%)',
-              }}
+              className="fixed bottom-6 z-50 w-14 h-14 right-6 rtl:right-auto rtl:left-6"
+              dir="ltr"
             >
-              <div className="flex flex-row items-center justify-center gap-2 flex-wrap max-w-[90vw]">
-                {/* When SCHEDULED: Schedule again, Cancel, Add to waiting list */}
-                {meetingStatus === MeetingStatus.SCHEDULED && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsScheduleModalOpen(true)}
-                      aria-label="جدولة مجدداً"
-                      className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <CalendarMinus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                      <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة مجدداً</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveToWaitingListMutation.mutate()}
-                      disabled={moveToWaitingListMutation.isPending}
-                      aria-label="إضافة إلى قائمة الانتظار"
-                      className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <Plus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                      <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsRejectModalOpen(true)}
-                      aria-label="إلغاء"
-                      className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-red-300/40 hover:ring-offset-2 hover:bg-red-50/30"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <X className="w-[15px] h-[15px] text-red-600 flex-shrink-0" strokeWidth={1.26} />
-                      <span className="text-sm font-medium text-red-700 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</span>
-                    </button>
-                  </>
-                )}
-                {/* When WAITING: show only Cancel and Schedule */}
-                {meetingStatus === MeetingStatus.WAITING && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsRejectModalOpen(true)}
-                      aria-label="إلغاء"
-                      className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-red-300/40 hover:ring-offset-2 hover:bg-red-50/30"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <X className="w-[15px] h-[15px] text-red-600 flex-shrink-0" strokeWidth={1.26} />
-                      <span className="text-sm font-medium text-red-700 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إلغاء</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsScheduleModalOpen(true)}
-                      aria-label="جدولة"
-                      className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <CalendarMinus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                      <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة</span>
-                    </button>
-                  </>
-                )}
-                {/* When UNDER_REVIEW: show full action set (not for SCHEDULED or WAITING) */}
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => setIsScheduleModalOpen(true)}
-                    aria-label="جدولة"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <CalendarMinus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>جدولة</span>
-                  </button>
-                )}
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditConfirmOpen(true)}
-                  disabled={!hasChanges}
-                  aria-disabled={!hasChanges}
-                  aria-label="تعديل"
-                  className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
+              {/* Action bubbles: absolutely above main FAB, same corner alignment */}
+              {actionsBarOpen && (
+                <div
+                  className="absolute bottom-full flex flex-col-reverse gap-3 mb-2 right-0 rtl:right-auto rtl:left-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
                 >
-                  <Pencil className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                  <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>تعديل</span>
-                </button>
-                )}
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => setIsReturnForInfoModalOpen(true)}
-                    aria-label="إعادة للطلب"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <RotateCcw className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إعادة للطلب</span>
-                  </button>
-                )}
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => hasContent && setIsSendToContentModalOpen(true)}
-                    disabled={!hasContent}
-                    aria-disabled={!hasContent}
-                    aria-label="إرسال للمحتوى"
-                    title={!hasContent ? 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' : undefined}
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <Send className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>إرسال للمحتوى</span>
-                  </button>
-                )}
-
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => moveToWaitingListMutation.mutate()}
-                    disabled={moveToWaitingListMutation.isPending}
-                    aria-label="إضافة إلى قائمة الانتظار"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-[#048F86]/30 hover:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:min-w-[30px] disabled:hover:w-[30px] disabled:hover:ring-0 disabled:hover:justify-center disabled:hover:pl-0 disabled:hover:pr-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <Plus className="w-[15px] h-[15px] text-gray-800 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>{moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'}</span>
-                  </button>
-                )}
-                {meetingStatus === MeetingStatus.UNDER_REVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRejectModalOpen(true)}
-                    aria-label="رفض"
-                    className="group flex items-center justify-center gap-2 h-[30px] min-w-[30px] w-[30px] rounded-full overflow-visible transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:min-w-max hover:w-auto hover:justify-start hover:pl-3 hover:pr-3 hover:ring-2 hover:ring-red-300/40 hover:ring-offset-2 hover:bg-red-50/30"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                  >
-                    <X className="w-[15px] h-[15px] text-red-600 flex-shrink-0" strokeWidth={1.26} />
-                    <span className="text-sm font-medium text-red-700 whitespace-nowrap max-w-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:max-w-none group-hover:opacity-100 w-max" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>رفض</span>
-                  </button>
-                )}
-
-             
-       
-
-            
-
-      
-
-         
+                  {/* SCHEDULED */}
+                  {meetingStatus === MeetingStatus.SCHEDULED && (
+                    <>
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة مجدداً" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                    </>
+                  )}
+                  {/* WAITING */}
+                  {meetingStatus === MeetingStatus.WAITING && (
+                    <>
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="إلغاء" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                    </>
+                  )}
+                  {/* UNDER_REVIEW */}
+                  {meetingStatus === MeetingStatus.UNDER_REVIEW && (
+                    <>
+                      <ActionBubble icon={<CalendarMinus className="w-5 h-5" strokeWidth={1.26} />} label="جدولة" onClick={() => { setActionsBarOpen(false); setIsScheduleModalOpen(true); }} />
+                      <ActionBubble icon={<Pencil className="w-5 h-5" strokeWidth={1.26} />} label="تعديل" onClick={() => { setActionsBarOpen(false); setIsEditConfirmOpen(true); }} disabled={!hasChanges} disabledReason="لا يوجد تغييرات لحفظها" />
+                      <ActionBubble icon={<RotateCcw className="w-5 h-5" strokeWidth={1.26} />} label="إعادة للطلب" onClick={() => { setActionsBarOpen(false); setIsReturnForInfoModalOpen(true); }} />
+                      <ActionBubble icon={<Send className="w-5 h-5" strokeWidth={1.26} />} label="إرسال للمحتوى" onClick={() => { setActionsBarOpen(false); hasContent && setIsSendToContentModalOpen(true); }} disabled={!hasContent} disabledReason="أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال" />
+                      <ActionBubble icon={<Plus className="w-5 h-5" strokeWidth={1.26} />} label={moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار'} onClick={() => { setActionsBarOpen(false); moveToWaitingListMutation.mutate(); }} disabled={moveToWaitingListMutation.isPending} disabledReason="جاري المعالجة، انتظر قليلاً" />
+                      <ActionBubble icon={<X className="w-5 h-5" strokeWidth={1.26} />} label="رفض" variant="danger" onClick={() => { setActionsBarOpen(false); setIsRejectModalOpen(true); }} />
+                    </>
+                  )}
+                </div>
+              )}
+              {/* Main FAB: always same position (absolute to corner of anchor) */}
+              <button
+                type="button"
+                aria-label={actionsBarOpen ? 'إغلاق القائمة' : 'إجراءات سريعة'}
+                aria-expanded={actionsBarOpen}
+                onClick={() => setActionsBarOpen((o) => !o)}
+                className="absolute bottom-0 right-0 rtl:right-auto rtl:left-0 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
+                style={{
+                  background: actionsBarOpen ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.6)',
+                  boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(12px)',
+                }}
+              >
+                <Zap className="w-6 h-6 text-[#048F86]" strokeWidth={2} />
+              </button>
             </div>
-          </div>
-        </div>
+          </>
         )}
         </div>
       </div>
