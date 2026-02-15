@@ -232,6 +232,32 @@ export const getMeetingById = async (meetingId: string): Promise<MeetingApiRespo
   return response.data;
 };
 
+/** Meeting search result from /api/v1/business-cards/meetings-search */
+export interface MeetingSearchResult {
+  id: number;
+  uep_id: string;
+  adam_id: string;
+  original_title: string;
+  meeting_title: string;
+  group_id: number;
+}
+
+/** Search meetings by original_title */
+export interface SearchMeetingsParams {
+  q: string; // Search query (minLength: 1)
+  limit?: number; // Default: 20, min: 1, max: 100
+}
+
+export const searchMeetings = async (params: SearchMeetingsParams): Promise<MeetingSearchResult[]> => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('q', params.q);
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  const response = await axiosInstance.get<MeetingSearchResult[]>(`/api/v1/business-cards/meetings-search?${queryParams.toString()}`);
+  return response.data;
+};
+
 export interface RejectMeetingRequest {
   reason: string;
   notes: string;
@@ -347,7 +373,22 @@ export interface UpdateMeetingRequestPayload {
   objectives?: Array<{ objective: string }>;
   agenda_items?: Array<{ agenda_item: string; presentation_duration_minutes?: number }>;
   minister_support?: Array<{ support_description: string }>;
-  invitees?: Array<{ user_id?: string | null; external_email?: string | null; is_required?: boolean }>;
+  /** قائمة المدعوين (مقدّم الطلب) – full list when updating */
+  invitees?: Array<{
+    id?: string;
+    user_id?: string | null;
+    external_email?: string | null;
+    external_name?: string | null;
+    position?: string | null;
+    mobile?: string | null;
+    item_number?: number;
+    attendance_mechanism?: string | null;
+    is_required?: boolean;
+    response_status?: string | null;
+    attendee_source?: string | null;
+    justification?: string | null;
+    access_permission?: string | null;
+  }>;
   minister_attendees?: Array<any>;
   related_directive_ids?: string[];
   general_notes?: string | null;
@@ -386,6 +427,8 @@ export const updateMeetingRequestWithAttachments = async (
 
 export interface ReturnForInfoRequest {
   notes: string;
+  /** Field names the submitter is allowed to edit when request is returned for info */
+  editable_fields?: string[];
 }
 
 export const returnMeetingForInfo = async (
@@ -424,6 +467,14 @@ export const scheduleMeeting = async (
   payload: ScheduleMeetingRequest
 ): Promise<void> => {
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/schedule`, payload);
+};
+
+/** Reschedule an already scheduled meeting (status SCHEDULED). Uses same payload as schedule. */
+export const rescheduleMeeting = async (
+  meetingId: string,
+  payload: ScheduleMeetingRequest
+): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/reschedule`, payload);
 };
 
 // Webex Meeting API
