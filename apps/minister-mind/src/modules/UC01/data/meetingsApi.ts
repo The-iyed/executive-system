@@ -64,6 +64,18 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   return response.data;
 };
 
+export interface SubmitterMeetingApiResponse {
+  editable_fields?: string[];
+  [key: string]: unknown;
+}
+
+export const getSubmitterMeeting = async (meetingId: string): Promise<SubmitterMeetingApiResponse> => {
+  const response = await axiosInstance.get<SubmitterMeetingApiResponse>(
+    `/api/meetings/my/${meetingId}`
+  );
+  return response.data;
+};
+
 // Fetch assigned scheduling requests (for "سلة العمل" view)
 export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();

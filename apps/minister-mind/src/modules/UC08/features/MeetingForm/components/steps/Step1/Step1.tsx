@@ -1,106 +1,76 @@
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Tabs, ActionButtons } from '@shared';
+import { ActionButtons } from '@shared';
 import type { OptionType } from '@shared';
-import {
-  getDirectivesPaginated,
-  getUsers,
-  getMeetings,
-  getMeetingById,
-  type DirectiveApiResponse,
-  type UserApiResponse,
-  type MeetingApiResponse,
-} from '../../../../../data';
+import { getMeetingById, type MeetingApiResponse } from '../../../../../data';
 import type { Step1FormData } from '../../../schemas/step1.schema';
 import { useStep1BusinessRules } from '../../../hooks/useStep1BusinessRules';
-import { STEP1_TABS, STEP1_ASYNC_SELECT_PAGE_SIZE, SUBMITTER_ROLE_CODE } from '../../../constants/step1.constants';
-import { MeetingInfoTab } from './MeetingInfoTab';
-import { OtherSectionsTab } from './OtherSectionsTab';
+import {
+  MeetingNatureField,
+  PreviousMeetingField,
+  ApplicantField,
+  MeetingOwnerField,
+  MeetingTitleField,
+  MeetingDescriptionField,
+  SectorField,
+  MeetingTypeField,
+  UrgentMeetingField,
+  UrgentReasonField,
+  MeetingDateTimeField,
+  MeetingChannelField,
+  LocationField,
+  RequiresProtocolField,
+  MeetingCategoryField,
+  MeetingReasonField,
+  RelatedTopicField,
+  DueDateField,
+  MeetingClassificationField,
+  MeetingConfidentialityField,
+  NotesField,
+  GuidanceField,
+} from './components';
 
 export interface Step1Props {
   formData: Partial<Step1FormData>;
   errors: Partial<Record<keyof Step1FormData, string>>;
   touched: Partial<Record<keyof Step1FormData, boolean>>;
-  tableErrors: Record<string, Record<string, string>>;
-  tableTouched: Record<string, Record<string, boolean>>;
-  setTableErrors: Dispatch<SetStateAction<Record<string, Record<string, string>>>>;
-  setTableTouched: Dispatch<SetStateAction<Record<string, Record<string, boolean>>>>;
   isSubmitting: boolean;
   isDeleting: boolean;
   handleChange: (field: keyof Step1FormData, value: unknown) => void;
   handleBlur: (field: keyof Step1FormData) => void;
   fillFormFromPreviousMeeting?: (meeting: MeetingApiResponse) => void;
-  handleAddGoal: () => void;
-  handleDeleteGoal: (id: string) => void;
-  handleUpdateGoal: (id: string, field: string, value: unknown) => void;
-  handleAddAgenda: () => void;
-  handleDeleteAgenda: (id: string) => void;
-  handleUpdateAgenda: (id: string, field: string, value: unknown) => void;
-  handleAddSupport: () => void;
-  handleDeleteSupport: (id: string) => void;
-  handleUpdateSupport: (id: string, field: string, value: unknown) => void;
-  handleAddPreviousMeeting: () => void;
-  handleDeletePreviousMeeting: (id: string) => void;
-  handleUpdatePreviousMeeting: (id: string, field: string, value: unknown) => void;
-  handleAddDirective: () => void;
-  handleDeleteDirective: (id: string) => void;
-  handleUpdateDirective: (id: string, field: string, value: unknown) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
   isFieldRequired: (field: keyof Step1FormData) => boolean;
 }
 
-/**
- * Step 1: Meeting Scheduling Form (refactored).
- *
- * Architecture:
- * - Tabs: Meeting Info (always editable when Normal; only editable tab when Follow-up/Recurring), Other Sections.
- * - Business rules: useStep1BusinessRules drives visibility/disabled state from Nature.
- * - Reusable field components in ./fields. Loaders for async selects defined here and passed to tabs.
- */
 export function Step1({
   formData,
   errors,
   touched,
-  tableErrors,
-  tableTouched,
-  setTableErrors,
-  setTableTouched,
   isSubmitting,
   isDeleting,
   handleChange,
   handleBlur,
   fillFormFromPreviousMeeting,
-  handleAddGoal,
-  handleDeleteGoal,
-  handleUpdateGoal,
-  handleAddAgenda,
-  handleDeleteAgenda,
-  handleUpdateAgenda,
-  handleAddSupport,
-  handleDeleteSupport,
-  handleUpdateSupport,
-  handleAddPreviousMeeting,
-  handleDeletePreviousMeeting,
-  handleUpdatePreviousMeeting,
-  handleAddDirective,
-  handleDeleteDirective,
-  handleUpdateDirective,
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
   isFieldRequired,
 }: Step1Props) {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<string>(STEP1_TABS[0].id);
-
   const {
     isPreviousMeetingVisible,
     isPreviousMeetingRequired,
     isFieldDisabled,
-    isOtherSectionsDisabled,
   } = useStep1BusinessRules(formData);
+
+  const minStartDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
+  }, []);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -115,103 +85,7 @@ export function Step1({
       });
       handleChange('previousMeeting', relatedMeeting);
     }
-  }, [location.search]);
-
-  const loadDirectivesOptions = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      const response = await getDirectivesPaginated({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-      const items = (response?.items ?? []).map((d: DirectiveApiResponse) => ({
-        value: d?.id ?? '',
-        label: d?.directive_text ?? '',
-        description: d?.related_meeting ?? '',
-      }));
-      return {
-        items,
-        total: response?.total ?? 0,
-        skip: response?.skip ?? 0,
-        limit: response?.limit ?? limit,
-        has_next: response?.has_next ?? false,
-        has_previous: response?.has_previous ?? false,
-      };
-    },
-    []
-  );
-
-  const loadUsersOptions = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        role_code: SUBMITTER_ROLE_CODE,
-        skip,
-        limit,
-      });
-      const items = (response?.items ?? []).map((u: UserApiResponse) => {
-        const fullName =
-          ([u.first_name, u.last_name].filter(Boolean).join(' ') || u?.username || u?.email) ?? '';
-        return { value: u?.id ?? '', label: fullName };
-      });
-      return {
-        items,
-        total: response?.total ?? 0,
-        skip: response?.skip ?? 0,
-        limit: response?.limit ?? limit,
-        has_next: response?.has_next ?? false,
-        has_previous: response?.has_previous ?? false,
-      };
-    },
-    []
-  );
-
-  const loadMeetingOwnerOptions = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-      const items = (response?.items ?? []).map((u: UserApiResponse) => {
-        const fullName =
-          ([u.first_name, u.last_name].filter(Boolean).join(' ') || u?.username || u?.email) ?? '';
-        return { value: u?.id ?? '', label: fullName };
-      });
-      return {
-        items,
-        total: response?.total ?? 0,
-        skip: response?.skip ?? 0,
-        limit: response?.limit ?? limit,
-        has_next: response?.has_next ?? false,
-        has_previous: response?.has_previous ?? false,
-      };
-    },
-    []
-  );
-
-  const loadPreviousMeetingsOptions = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      const response = await getMeetings({
-        search: search.trim() || undefined,
-        skip,
-        limit: limit || STEP1_ASYNC_SELECT_PAGE_SIZE,
-      });
-      const items = (response?.items ?? []).map((m: MeetingApiResponse) => ({
-        value: m.id,
-        label: m.meeting_title || m.meeting_subject || m.request_number || m.id,
-      }));
-      return {
-        items,
-        total: response?.total ?? 0,
-        skip: response?.skip ?? 0,
-        limit: response?.limit ?? limit,
-        has_next: (response?.total ?? 0) > (response?.skip ?? 0) + items.length,
-        has_previous: (response?.skip ?? 0) > 0,
-      };
-    },
-    []
-  );
+  }, [location.search, handleChange]);
 
   const onPreviousMeetingSelect = useCallback(
     async (option: OptionType | null) => {
@@ -232,66 +106,261 @@ export function Step1({
     [handleChange, fillFormFromPreviousMeeting]
   );
 
-  const tabItems = STEP1_TABS.map((t) => ({ id: t.id, label: t.label }));
+  const handleDirectiveChange = useCallback(
+    (value: OptionType | null) => {
+      handleChange('relatedDirective', value);
+      handleChange('previousMeeting', value?.description ?? '');
+    },
+    [handleChange]
+  );
+
+  const previousMeetingValue =
+    formData.previousMeeting != null && formData.previousMeeting !== ''
+      ? typeof formData.previousMeeting === 'object'
+        ? formData.previousMeeting
+        : { value: formData.previousMeeting, label: formData.previousMeeting }
+      : null;
+
+  const toOption = (v: unknown): OptionType | null => {
+    if (v == null || v === '') return null;
+    if (typeof v === 'object' && v !== null && 'value' in v && 'label' in v) return v as OptionType;
+    return { value: String(v), label: String(v) };
+  };
 
   return (
     <div className="w-full min-w-0 flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center w-full min-w-0 max-w-full">
-        <Tabs
-          items={tabItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          className="w-full max-w-full mx-auto"
-        />
-
-        {activeTab === 'meeting-info' && (
-          <MeetingInfoTab
-            formData={formData}
-            errors={errors}
-            touched={touched}
-            handleChange={handleChange}
-            handleBlur={handleBlur}
-            isFieldRequired={isFieldRequired}
-            isFieldDisabled={isFieldDisabled}
-            isPreviousMeetingVisible={isPreviousMeetingVisible}
-            isPreviousMeetingRequired={isPreviousMeetingRequired}
-            loadDirectivesOptions={loadDirectivesOptions}
-            loadUsersOptions={loadUsersOptions}
-            loadMeetingOwnerOptions={loadMeetingOwnerOptions}
-            loadPreviousMeetingsOptions={loadPreviousMeetingsOptions}
-            onPreviousMeetingSelect={onPreviousMeetingSelect}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full space-y-0">
+          <MeetingNatureField
+            value={formData.meetingNature ?? ''}
+            onChange={(v) => handleChange('meetingNature', v)}
+            onBlur={() => handleBlur('meetingNature')}
+            error={errors.meetingNature}
+            touched={touched.meetingNature}
+            disabled={isFieldDisabled('meetingNature')}
+            required
           />
-        )}
 
-        {activeTab === 'other-sections' && (
-          <OtherSectionsTab
-            formData={formData}
-            errors={errors}
-            tableErrors={tableErrors}
-            tableTouched={tableTouched}
-            setTableErrors={setTableErrors}
-            setTableTouched={setTableTouched}
-            handleChange={handleChange}
-            handleBlur={handleBlur}
-            handleAddGoal={handleAddGoal}
-            handleDeleteGoal={handleDeleteGoal}
-            handleUpdateGoal={handleUpdateGoal}
-            handleAddAgenda={handleAddAgenda}
-            handleDeleteAgenda={handleDeleteAgenda}
-            handleUpdateAgenda={handleUpdateAgenda}
-            handleAddSupport={handleAddSupport}
-            handleDeleteSupport={handleDeleteSupport}
-            handleUpdateSupport={handleUpdateSupport}
-            handleAddPreviousMeeting={handleAddPreviousMeeting}
-            handleDeletePreviousMeeting={handleDeletePreviousMeeting}
-            handleUpdatePreviousMeeting={handleUpdatePreviousMeeting}
-            handleAddDirective={handleAddDirective}
-            handleDeleteDirective={handleDeleteDirective}
-            handleUpdateDirective={handleUpdateDirective}
-            isFieldRequired={isFieldRequired}
-            disabled={isOtherSectionsDisabled}
+          {isPreviousMeetingVisible && (
+            <PreviousMeetingField
+              value={previousMeetingValue}
+              onChange={(v) => {
+                if (v !== null && typeof v === 'object' && 'value' in v) {
+                  onPreviousMeetingSelect(v);
+                } else {
+                  handleChange('previousMeeting', v ?? '');
+                }
+              }}
+              visible
+              required={isPreviousMeetingRequired}
+              readOnly={false}
+              error={errors.previousMeeting}
+              touched={touched.previousMeeting}
+              disabled={isFieldDisabled('previousMeeting')}
+            />
+          )}
+
+          <ApplicantField
+            value={toOption(formData.requester)}
+            onChange={(v) => handleChange('requester', v)}
+            error={errors.requester}
+            touched={touched.requester}
+            disabled={isFieldDisabled('requester')}
+            required={isFieldRequired('requester')}
           />
-        )}
+
+          <MeetingOwnerField
+            value={toOption(formData.meetingOwner)}
+            onChange={(v) => handleChange('meetingOwner', v)}
+            error={errors.meetingOwner as string | undefined}
+            touched={touched.meetingOwner}
+            disabled={isFieldDisabled('meetingOwner')}
+            required={isFieldRequired('meetingOwner')}
+          />
+
+          <MeetingTitleField
+            value={formData.meetingTitle ?? ''}
+            onChange={(v) => handleChange('meetingTitle', v)}
+            onBlur={() => handleBlur('meetingTitle')}
+            error={errors.meetingTitle}
+            touched={touched.meetingTitle}
+            disabled={isFieldDisabled('meetingTitle')}
+            required={isFieldRequired('meetingTitle')}
+          />
+
+          <MeetingDescriptionField
+            value={formData.meetingDescription ?? ''}
+            onChange={(v) => handleChange('meetingDescription', v)}
+            onBlur={() => handleBlur('meetingDescription')}
+            error={errors.meetingDescription}
+            touched={touched.meetingDescription}
+            disabled={isFieldDisabled('meetingDescription')}
+          />
+
+          <SectorField
+            value={formData.sector ?? ''}
+            onChange={(v) => handleChange('sector', v)}
+            error={errors.sector}
+            touched={touched.sector}
+            disabled={isFieldDisabled('sector')}
+            required={isFieldRequired('sector')}
+          />
+
+          <MeetingTypeField
+            className="w-full min-w-0"
+            value={formData.meetingType ?? ''}
+            onChange={(v) => handleChange('meetingType', v)}
+            error={errors.meetingType}
+            touched={touched.meetingType}
+            disabled={isFieldDisabled('meetingType')}
+            required={isFieldRequired('meetingType')}
+          />
+
+          <UrgentMeetingField
+            className="w-full min-w-0 sm:col-span-2"
+            value={formData.isUrgent ?? false}
+            onChange={(v) => handleChange('isUrgent', v)}
+            error={errors.isUrgent}
+            touched={touched.isUrgent}
+            disabled={isFieldDisabled('isUrgent')}
+          />
+
+          {formData.isUrgent && (
+            <UrgentReasonField
+              className="sm:col-span-2 w-full min-w-0"
+              value={formData.urgentReason ?? ''}
+              onChange={(v) => handleChange('urgentReason', v)}
+              onBlur={() => handleBlur('urgentReason')}
+              error={errors.urgentReason}
+              touched={touched.urgentReason}
+              disabled={isFieldDisabled('urgentReason')}
+            />
+          )}
+
+          <MeetingDateTimeField
+            className="sm:col-span-2 w-full min-w-0"
+            startValue={formData.meetingStartDate ?? ''}
+            endValue={formData.meetingEndDate ?? ''}
+            onStartChange={(v) => handleChange('meetingStartDate', v)}
+            onEndChange={(v) => handleChange('meetingEndDate', v)}
+            onStartBlur={() => handleBlur('meetingStartDate')}
+            onEndBlur={() => handleBlur('meetingEndDate')}
+            minStartDate={minStartDate}
+            required
+            disabled={isFieldDisabled('meetingStartDate')}
+            startError={touched.meetingStartDate ? errors.meetingStartDate : undefined}
+            endError={touched.meetingEndDate ? errors.meetingEndDate : undefined}
+            startTouched={touched.meetingStartDate}
+            endTouched={touched.meetingEndDate}
+          />
+
+          <MeetingChannelField
+            className="w-full min-w-0"
+            value={formData.meeting_channel ?? ''}
+            onChange={(v) => handleChange('meeting_channel', v)}
+            error={errors.meeting_channel}
+            touched={touched.meeting_channel}
+            disabled={isFieldDisabled('meeting_channel')}
+            required={isFieldRequired('meeting_channel')}
+          />
+
+          {formData.meeting_channel === 'PHYSICAL' && (
+            <LocationField
+              className="w-full min-w-0"
+              value={formData.location ?? ''}
+              onChange={(v) => handleChange('location', v)}
+              onBlur={() => handleBlur('location')}
+              error={errors.location}
+              touched={touched.location}
+              disabled={isFieldDisabled('location')}
+              required={isFieldRequired('location')}
+            />
+          )}
+
+          <RequiresProtocolField
+            className="w-full min-w-0 sm:col-span-2"
+            value={formData.requiresProtocol ?? false}
+            onChange={(v) => handleChange('requiresProtocol', v)}
+            error={errors.requiresProtocol}
+            touched={touched.requiresProtocol}
+            disabled={isFieldDisabled('requiresProtocol')}
+          />
+
+          <MeetingCategoryField
+            className="w-full min-w-0"
+            value={formData.meetingCategory ?? ''}
+            onChange={(v) => handleChange('meetingCategory', v)}
+            error={errors.meetingCategory}
+            touched={touched.meetingCategory}
+            disabled={isFieldDisabled('meetingCategory')}
+            required={isFieldRequired('meetingCategory')}
+          />
+
+          <MeetingReasonField
+            className="sm:col-span-2 w-full min-w-0"
+            value={formData.meetingReason ?? ''}
+            onChange={(v) => handleChange('meetingReason', v)}
+            onBlur={() => handleBlur('meetingReason')}
+            error={errors.meetingReason}
+            touched={touched.meetingReason}
+            disabled={isFieldDisabled('meetingReason')}
+          />
+
+          <RelatedTopicField
+            className="sm:col-span-2 w-full min-w-0"
+            value={formData.relatedTopic ?? ''}
+            onChange={(v) => handleChange('relatedTopic', v)}
+            onBlur={() => handleBlur('relatedTopic')}
+            error={errors.relatedTopic}
+            touched={touched.relatedTopic}
+            disabled={isFieldDisabled('relatedTopic')}
+          />
+
+          <DueDateField
+            className="w-full min-w-0"
+            value={formData.dueDate ?? undefined}
+            onChange={(v) => handleChange('dueDate', v)}
+            onBlur={() => handleBlur('dueDate')}
+            error={errors.dueDate}
+            touched={touched.dueDate}
+            disabled={isFieldDisabled('dueDate')}
+          />
+
+          <MeetingClassificationField
+            className="w-full min-w-0"
+            value={formData.meetingClassification1 ?? ''}
+            onChange={(v) => handleChange('meetingClassification1', v)}
+            error={errors.meetingClassification1}
+            touched={touched.meetingClassification1}
+            disabled={isFieldDisabled('meetingClassification1')}
+            required={isFieldRequired('meetingClassification1')}
+          />
+
+          <MeetingConfidentialityField
+            className="w-full min-w-0"
+            value={formData.meetingConfidentiality ?? ''}
+            onChange={(v) => handleChange('meetingConfidentiality', v)}
+            error={errors.meetingConfidentiality}
+            touched={touched.meetingConfidentiality}
+            disabled={isFieldDisabled('meetingConfidentiality')}
+          />
+
+          <NotesField
+            className="sm:col-span-2 w-full min-w-0"
+            value={formData.notes ?? ''}
+            onChange={(v) => handleChange('notes', v)}
+            disabled={isFieldDisabled('notes')}
+          />
+
+          <GuidanceField
+            className="sm:col-span-2 w-full min-w-0"
+            value={toOption(formData.relatedDirective)}
+            onChange={handleDirectiveChange}
+            error={errors.relatedDirective}
+            touched={touched.relatedDirective}
+            disabled={isFieldDisabled('relatedDirective')}
+          />
+        </div>
 
         <ActionButtons
           onCancel={handleCancelClick}
