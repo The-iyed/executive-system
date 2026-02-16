@@ -24,7 +24,7 @@ export interface DraftApiResponse {
   related_topic?: string | null;
   deadline?: string | null;
   meeting_justification?: string | null;
-  meeting_description?: string | null;
+  description?: string | null;
   meeting_location?: string | null;
   objectives?: Array<{ id: string; objective: string }>;
   agenda_items?: Array<{
