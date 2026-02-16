@@ -117,7 +117,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
               <span
                 className="text-right w-full text-[#475467] font-normal text-sm leading-5 block truncate"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
                 title={request.meetingSubject || undefined}
               >
@@ -130,7 +130,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
               <p
                 className="text-right w-full text-[#2C2C2C] font-normal text-xs leading-[19px]"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
               >
                 {request.date}
@@ -165,7 +165,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
               <span
                 className="text-right text-sm font-normal text-[#344054] leading-4"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
               >
                 تفاصيل
