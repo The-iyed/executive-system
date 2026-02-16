@@ -130,7 +130,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
 
   const content = (
     <>
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
+      <div ref={scrollContainerRef} className="flex-1 p-6">
         <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
           قم بإضافة معلومات الاجتماع
         </h1>

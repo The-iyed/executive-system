@@ -8,6 +8,15 @@ import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data
 
 export type Step1ErrorKey = keyof Step1BasicInfoFormData;
 
+const STEP1_DATE_TIME_FIELDS: Step1ErrorKey[] = [
+  'meeting_start_date',
+  'meeting_end_date',
+  'alternative_1_start_date',
+  'alternative_1_end_date',
+  'alternative_2_start_date',
+  'alternative_2_end_date',
+];
+
 interface UseStep1BasicInfoProps {
   draftId?: string;
   initialData?: Partial<Step1BasicInfoFormData>;
@@ -233,9 +242,27 @@ export const useStep1BasicInfo = ({
     [validationResult, formData, showMeetingDates]
   );
 
+  const isValidDateTime = useCallback((val: unknown): boolean => {
+    if (val == null || typeof val !== 'string') return false;
+    const s = String(val).trim();
+    if (!s) return false;
+    const d = new Date(s);
+    return !Number.isNaN(d.getTime());
+  }, []);
+
   // Form field handlers
   const handleChange = useCallback(
     (field: keyof Step1BasicInfoFormData, value: any) => {
+      // Clear meeting date/time errors first (outside setFormData) so they disappear on first select and form re-renders correctly
+      if (STEP1_DATE_TIME_FIELDS.includes(field) && isValidDateTime(value)) {
+        setErrors((prevErrors) => {
+          const next = { ...prevErrors };
+          delete next[field];
+          if (field === 'meeting_start_date') delete next.meeting_end_date;
+          return next;
+        });
+      }
+
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
         // Clear urgent-related fields when is_urgent is false
@@ -302,12 +329,17 @@ export const useStep1BasicInfo = ({
         }
         return newData;
       });
-      // Validate field on change if it's been touched (like login form pattern)
+      // Validate field on change if it's been touched (like login form pattern).
+      // Skip validation for date/time fields when value is valid so we don't re-show "required" (e.g. end is set in next tick by start picker).
       if (touched[field]) {
-        validateField(field, value);
+        const skipValidation =
+          STEP1_DATE_TIME_FIELDS.includes(field) && isValidDateTime(value);
+        if (!skipValidation) {
+          validateField(field, value);
+        }
       }
     },
-    [touched, validateField]
+    [touched, validateField, isValidDateTime]
   );
 
   const handleBlur = useCallback(

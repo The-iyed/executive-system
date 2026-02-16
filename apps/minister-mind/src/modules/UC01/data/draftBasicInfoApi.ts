@@ -27,10 +27,11 @@ function appendIf(value: string | undefined, key: string, fd: FormData): void {
   if (value != null && String(value).trim() !== '') fd.append(key, value.trim());
 }
 
-/** Appends an ISO date from YYYY-MM-DD string. */
+/** Appends an ISO datetime string (accepts YYYY-MM-DD or full ISO 8601). */
 function appendDateIf(value: string | undefined, key: string, fd: FormData): void {
   if (!value || value.trim() === '') return;
-  const date = new Date(value.trim() + 'T00:00:00');
+  const raw = value.trim();
+  const date = raw.includes('T') ? new Date(raw) : new Date(raw + 'T00:00:00');
   if (!Number.isNaN(date.getTime())) fd.append(key, date.toISOString());
 }
 
