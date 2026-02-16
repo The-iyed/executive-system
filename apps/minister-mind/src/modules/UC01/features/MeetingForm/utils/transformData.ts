@@ -18,7 +18,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingType: draft.meeting_type || '',
       meetingCategory: draft.meeting_classification || '',
       meetingReason: draft.meeting_justification || '',
-      meetingDescription: draft.meeting_description || '',
+      meetingDescription: draft.description || '',
       relatedTopic: draft.related_topic || '',
       dueDate: formatDateStringToISO(draft.deadline),
       meetingClassification1: draft.meeting_classification_type || '',
@@ -35,12 +35,12 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       notes: draft.general_note || draft.general_notes?.[0] || '',
       is_urgent: draft.is_urgent ?? false,
       urgent_reason: draft.urgent_reason ?? '',
-      meeting_start_date: draft.meeting_start_date ? toISOOrDateString(draft.meeting_start_date) : '',
-      meeting_end_date: draft.meeting_end_date ? toISOOrDateString(draft.meeting_end_date) : '',
-      alternative_1_start_date: draft.alternative_1_start_date ? toISOOrDateString(draft.alternative_1_start_date) : '',
-      alternative_1_end_date: draft.alternative_1_end_date ? toISOOrDateString(draft.alternative_1_end_date) : '',
-      alternative_2_start_date: draft.alternative_2_start_date ? toISOOrDateString(draft.alternative_2_start_date) : '',
-      alternative_2_end_date: draft.alternative_2_end_date ? toISOOrDateString(draft.alternative_2_end_date) : '',
+      meeting_start_date: toISOOrDateString(draft.selected_time_slot?.slot_start ?? draft.meeting_start_date) || '',
+      meeting_end_date: toISOOrDateString(draft.selected_time_slot?.slot_end ?? draft.meeting_end_date) || '',
+      alternative_1_start_date: toISOOrDateString(draft.alternative_time_slot_1?.slot_start ?? draft.alternative_1_start_date) || '',
+      alternative_1_end_date: toISOOrDateString(draft.alternative_time_slot_1?.slot_end ?? draft.alternative_1_end_date) || '',
+      alternative_2_start_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_start ?? draft.alternative_2_start_date) || '',
+      alternative_2_end_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_end ?? draft.alternative_2_end_date) || '',
     };
   };
 
@@ -79,8 +79,11 @@ export const transformDraftToStep3InviteesData = (draft: DraftApiResponse): Part
 
 export const transformDraftToStep4SchedulingData = (draft: DraftApiResponse): string[] => {
   const slots: string[] = [];
-  if (draft?.selected_time_slot_id) slots.push(draft.selected_time_slot_id);
-  if (draft?.alternative_time_slot_id_1) slots.push(draft.alternative_time_slot_id_1);
-  if (draft?.alternative_time_slot_id_2) slots.push(draft.alternative_time_slot_id_2);
+  const selectedId = draft?.selected_time_slot?.id ?? draft?.selected_time_slot_id;
+  const alt1Id = draft?.alternative_time_slot_1?.id ?? draft?.alternative_time_slot_id_1;
+  const alt2Id = draft?.alternative_time_slot_2?.id ?? draft?.alternative_time_slot_id_2;
+  if (selectedId) slots.push(selectedId);
+  if (alt1Id) slots.push(alt1Id);
+  if (alt2Id) slots.push(alt2Id);
   return slots;
 };

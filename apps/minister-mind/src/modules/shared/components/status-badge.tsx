@@ -42,11 +42,11 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
   },
-  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: {
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: {
     bgClass: 'bg-[rgba(255,211,89,0.12)]',
     textClass: 'text-[#BE8E0B]',
   },
-  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: {
+  [MeetingStatus.RETURNED_FROM_CONTENT]: {
     bgClass: 'bg-[rgba(184,60,120,0.04)]',
     textClass: 'text-[#B83C78]',
   },
