@@ -1,4 +1,3 @@
-// Import axios instance - using relative path since @auth doesn't export it
 import axiosInstance from '../../auth/utils/axios';
 import { MeetingStatus } from '@shared/types';
 
@@ -20,7 +19,21 @@ export interface MeetingApiResponse {
   submitted_at: string;
   scheduled_at: string | null;
   submitter_name: string;
+  submitter_id?: string;
   meeting_channel: string;
+  meeting_type?: string;
+  meeting_classification?: string;
+  meeting_classification_type?: string;
+  meeting_confidentiality?: string;
+  meeting_justification?: string;
+  related_topic?: string | null;
+  deadline?: string | null;
+  sector?: string;
+  requires_protocol?: boolean;
+  current_owner_user_id?: string;
+  meeting_owner_name?: string;
+  location?: string;
+  [key: string]: unknown;
 }
 
 export interface MeetingsListResponse {
@@ -50,6 +63,11 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   }
 
   const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings?${queryParams.toString()}`);
+  return response.data;
+};
+
+export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
+  const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);
   return response.data;
 };
 
