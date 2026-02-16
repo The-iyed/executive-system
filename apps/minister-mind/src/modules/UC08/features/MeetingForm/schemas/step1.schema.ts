@@ -87,12 +87,44 @@ const agendaItemBaseSchema = z.object({
   id: z.string(),
   agenda_item: z.string().optional(),
   presentation_duration_minutes: z.string().optional(),
+  minister_support_type: z.string().optional().or(z.literal('')),
+  minister_support_other: z.string().optional().or(z.literal('')),
 });
 
+const MINISTER_SUPPORT_TYPE_VALUES = ['إحاطة', 'تحديث', 'قرار', 'توجيه', 'اعتماد', 'أخرى'] as const;
+const MINISTER_SUPPORT_TYPE_OTHER = 'أخرى';
+
 const agendaItemSchema = (required: boolean) =>
-  agendaItemBaseSchema.extend({
-    agenda_item: required ? z.string().min(1, 'عنصر الأجندة مطلوب') : z.string().optional(),
-  });
+  agendaItemBaseSchema
+    .extend({
+      agenda_item: required ? z.string().min(1, 'عنصر الأجندة مطلوب') : z.string().optional(),
+      presentation_duration_minutes: required ? z.string().min(1, 'مدة العرض (بالدقائق) مطلوبة') : z.string().optional(),
+      minister_support_type: required ? z.string().min(1, 'الدعم المطلوب من الوزير مطلوب') : z.string().optional().or(z.literal('')),
+    })
+    .refine(
+      (data) => {
+        const val = data.presentation_duration_minutes;
+        if (!val) return !required;
+        const num = parseInt(val, 10);
+        return !Number.isNaN(num) && num >= 0 && Number.isInteger(num);
+      },
+      { message: 'مدة العرض يجب أن تكون رقماً صحيحاً (بالدقائق)', path: ['presentation_duration_minutes'] }
+    )
+    .refine(
+      (data) => !data.minister_support_type || (MINISTER_SUPPORT_TYPE_VALUES as readonly string[]).includes(data.minister_support_type),
+      { message: 'اختر نوع الدعم من القائمة', path: ['minister_support_type'] }
+    )
+    .superRefine((data, ctx) => {
+      if (data.minister_support_type === MINISTER_SUPPORT_TYPE_OTHER) {
+        if (!data.minister_support_other || String(data.minister_support_other).trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'نص الدعم مطلوب عند اختيار "أخرى"',
+            path: ['minister_support_other'],
+          });
+        }
+      }
+    });
 
 const ministerSupportItemSchema = z.object({ id: z.string(), support_description: z.string() });
 const ministerSupportItemValidationSchema = z.object({ id: z.string(), support_description: z.string().min(1, 'الدعم مطلوب') });
@@ -145,8 +177,11 @@ export const step1BaseSchema = z.object({
   requester: optionTypeSchema,
   previousMeeting: z.string().optional().or(z.literal('')),
   meetingNature: z.string().optional().or(z.literal('')),
-  meetingSubject: z.string(),
+  meetingOwner: optionTypeSchema,
+  meetingTitle: z.string().optional().or(z.literal('')),
+  meetingSubject: z.string().optional().or(z.literal('')),
   meetingSubjectOptional: z.string().optional().or(z.literal('')),
+  meetingDescription: z.string().optional().or(z.literal('')),
   meetingType: z.string().optional().or(z.literal('')),
   meetingCategory: z.string(),
   meetingReason: z.string().optional().or(z.literal('')),
@@ -156,6 +191,13 @@ export const step1BaseSchema = z.object({
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string().optional().or(z.literal('')),
   sector: z.string().optional().or(z.literal('')),
+  isUrgent: z.boolean().optional().default(false),
+  urgentReason: z.string().optional().or(z.literal('')),
+  meetingStartDate: z.string().optional().or(z.literal('')),
+  meetingEndDate: z.string().optional().or(z.literal('')),
+  meeting_channel: z.string().optional().or(z.literal('')),
+  location: z.string().optional().or(z.literal('')),
+  requiresProtocol: z.boolean().optional().default(false),
   meetingGoals: z.array(meetingGoalItemSchema).optional().default([]),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
   ministerSupport: z.array(ministerSupportItemSchema).optional().default([]),
@@ -184,14 +226,19 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
   const requiresRelatedTopic = data.meetingCategory === CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE;
   const requiresAgenda = !!(data.presentation_files && data.presentation_files.length > 0) || !!data.presentationFile;
   const requiresPreviousDate = data.wasDiscussedPreviously === true;
-  const requiresPreviousMeeting = data.meetingNature === 'FORMAL';
+  const requiresPreviousMeeting =
+    data.meetingNature === 'SEQUENTIAL' || data.meetingNature === 'PERIODIC';
   const isFileOptional =
     (data.meetingCategory && (CATEGORIES_MAKING_FILE_OPTIONAL as readonly string[]).includes(data.meetingCategory)) ||
     data.meetingConfidentiality === CONFIDENTIALITY_MAKING_FILE_OPTIONAL;
 
+  const requiresLocation = data.meeting_channel === 'PHYSICAL';
   const baseSchema = z.object({
-    meetingSubject: requiredString('موضوع الاجتماع مطلوب', 1, 200),
+    meetingTitle: requiredString('عنوان الاجتماع مطلوب', 1, 200),
+    meetingSubject: optionalString('موضوع الاجتماع'),
     meetingCategory: requiredString('فئة الاجتماع مطلوبة'),
+    meeting_channel: requiredString('آلية انعقاد الاجتماع مطلوبة'),
+    requiresProtocol: z.boolean().optional().default(false),
     meetingClassification1: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: optionalString('سرية الاجتماع يجب أن تكون نصاً'),
@@ -209,14 +256,13 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     previousMeetings: z.array(previousMeetingItemValidationSchema).optional().default([]),
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
     meetingNature: z.string().optional().or(z.literal('')),
-    // isComplete is required and must be boolean (true/false)
-    isComplete: z.boolean({
-      required_error: 'يجب تحديد ما إذا كان الطلب مكتملاً',
-      invalid_type_error: 'يجب تحديد ما إذا كان الطلب مكتملاً (نعم/لا)',
-    }),
+    isComplete: z.boolean().optional().default(false),
   });
 
   return baseSchema.extend({
+    location: requiresLocation
+      ? requiredString('الموقع مطلوب عند اختيار حضوري')
+      : optionalString('الموقع يجب أن يكون نصاً'),
     meetingReason: requiresReason
       ? requiredString('مبرر اللقاء مطلوب')
       : optionalString('مبرر اللقاء يجب أن يكون نصاً'),
@@ -226,9 +272,9 @@ export const createConditionalSchema = (data: Partial<Step1FormData>) => {
     dueDate: dateSchema(requiresRelatedTopic, 'تاريخ الاستحقاق مطلوب'),
     // previousMeetingDate is deprecated - still validate if provided but prefer previousMeetings
     previousMeetingDate: dateSchema(requiresPreviousDate, 'تاريخ الاجتماع السابق مطلوب'),
-    // previousMeeting is required if is_sequential=true (meetingNature === 'FORMAL')
+    // previousMeeting is required when Nature = Follow-up (SEQUENTIAL) or Recurring (PERIODIC)
     previousMeeting: requiresPreviousMeeting
-      ? requiredString('الاجتماع السابق مطلوب عند اختيار طبيعة الاجتماع كرسمي')
+      ? requiredString('الاجتماع السابق مطلوب عند اختيار طبيعة الاجتماع إلحاقي أو دوري')
       : optionalString('الاجتماع السابق يجب أن يكون نصاً'),
     // presentation_files is optional file array
     presentation_files: fileArraySchema,
@@ -299,10 +345,14 @@ export const extractValidationErrors = (
 
 export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1FormData>): boolean => {
   switch (field) {
-    case 'meetingSubject':
+    case 'meetingTitle':
     case 'meetingCategory':
-    case 'isComplete':
+    case 'meeting_channel':
+    case 'requester':
+    case 'meetingOwner':
       return true;
+    case 'location':
+      return data.meeting_channel === 'PHYSICAL';
     case 'meetingReason':
       return !!data.meetingCategory && (CATEGORIES_REQUIRING_REASON as readonly string[]).includes(data.meetingCategory);
     case 'relatedTopic':
@@ -311,8 +361,7 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
     case 'previousMeetingDate':
       return data.wasDiscussedPreviously === true;
     case 'previousMeeting':
-      // Required if is_sequential=true (meetingNature === 'FORMAL')
-      return data.meetingNature === 'FORMAL';
+      return data.meetingNature === 'SEQUENTIAL' || data.meetingNature === 'PERIODIC';
     case 'presentation_files':
     case 'presentationFile':
       return !(
@@ -321,7 +370,6 @@ export const isFieldRequired = (field: keyof Step1FormData, data: Partial<Step1F
       );
     case 'meetingAgenda':
       return !!(data.presentation_files && data.presentation_files.length > 0) || !!data.presentationFile;
-    // meetingGoals and ministerSupport are now optional (no minimum required)
     case 'meetingGoals':
     case 'ministerSupport':
       return false;
