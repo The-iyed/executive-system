@@ -33,6 +33,10 @@ export const MEETING_TABS: TabItem[] = [
   //   label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
   // },
   {
+    id: MeetingStatus.SCHEDULED_SCHEDULING,
+    label: 'جدولة - معلومات إضافية',
+  },
+  {
     id: MeetingStatus.RETURNED_FROM_SCHEDULING,
     label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING],
   },
@@ -60,6 +64,10 @@ export interface TabFilterConfig {
   //   status: MeetingStatus.SCHEDULED,
   //   owner_type: MeetingOwnerType.SUBMITTER,
   // },
+  [MeetingStatus.SCHEDULED_SCHEDULING]: {
+    status: MeetingStatus.SCHEDULED_SCHEDULING,
+    owner_type: MeetingOwnerType.SUBMITTER,
+  },
   [MeetingStatus.RETURNED_FROM_SCHEDULING]: {
     status: MeetingStatus.UNDER_REVIEW,
     owner_type: MeetingOwnerType.SUBMITTER,

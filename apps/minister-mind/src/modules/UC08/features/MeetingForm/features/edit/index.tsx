@@ -11,10 +11,8 @@ import { useFormMeetingModal } from '../../hooks/useFormMeetingModal';
 import '@shared/styles';
 
 export interface EditMeetingProps {
-  /** When provided, drawer mode: use these and render content only (no modal wrapper) */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** When provided (drawer mode), use this meeting id instead of route param */
   meetingId?: string;
 }
 
@@ -55,10 +53,13 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             touched={step1Hook.touched}
             tableErrors={step1Hook.tableErrors}
             tableTouched={step1Hook.tableTouched}
+            setTableErrors={step1Hook.setTableErrors}
+            setTableTouched={step1Hook.setTableTouched}
             isSubmitting={step1Hook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
             handleChange={step1Hook.handleChange}
             handleBlur={step1Hook.handleBlur}
+            fillFormFromPreviousMeeting={step1Hook.fillFormFromPreviousMeeting}
             handleAddGoal={step1Hook.handleAddGoal}
             handleDeleteGoal={step1Hook.handleDeleteGoal}
             handleUpdateGoal={step1Hook.handleUpdateGoal}
@@ -120,19 +121,24 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     </div>
   ) : (
     <>
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
-        <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
-          تعديل معلومات الاجتماع
-        </h1>
-        <p className="text-[16px] text-[#475467] font-normal text-center mb-8">
-          يرجى تعديل الحقول المطلوبة
-        </p>
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 min-h-0 p-6"
+        >
+          <h1 className="text-[28px] text-[#101828] font-bold text-center mb-2">
+            تعديل معلومات الاجتماع
+          </h1>
+          <p className="text-[16px] text-[#475467] font-normal text-center mb-8">
+            يرجى تعديل الحقول المطلوبة
+          </p>
 
-        <div className="mb-8">
-          <Stepper steps={STEP_LABELS} currentStep={currentStep} />
+          <div className="mb-8">
+            <Stepper steps={STEP_LABELS} currentStep={currentStep} />
+          </div>
+
+          <div className="mt-8 min-w-0">{renderStepContent()}</div>
         </div>
-
-        <div className="mt-8">{renderStepContent()}</div>
       </div>
 
       <DeleteDraftConfirmationModal

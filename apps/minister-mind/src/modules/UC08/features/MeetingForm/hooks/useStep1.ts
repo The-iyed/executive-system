@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import axiosInstance from '@auth/utils/axios';
 import type { Step1FormData } from '../schemas/step1.schema';
 import { validateStep1, extractValidationErrors, isFieldRequired } from '../schemas/step1.schema';
+import type { MeetingApiResponse } from '../../../data/meetingsApi';
 
 interface UseStep1Props {
   draftId?: string;
@@ -27,8 +28,9 @@ interface SubmitStep1Response {
 const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   const formDataToSend = new FormData();
 
-  if (formData.meetingSubject) {
-    formDataToSend.append('meeting_title', formData.meetingSubject);
+  const titleToSend = formData.meetingTitle || formData.meetingSubject;
+  if (titleToSend) {
+    formDataToSend.append('meeting_title', titleToSend);
   }
 
   if (formData.meetingCategory) {
@@ -74,7 +76,34 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     formDataToSend.append('submitter_id', formData.requester.value);
   }
 
-  const isSequential = formData.meetingNature === 'FORMAL';
+  if (formData.meetingOwner && typeof formData.meetingOwner === 'object' && formData.meetingOwner.value) {
+    formDataToSend.append('owner_id', formData.meetingOwner.value);
+  }
+
+  if (formData.meetingDescription) {
+    formDataToSend.append('meeting_description', formData.meetingDescription);
+  }
+
+  formDataToSend.append('is_urgent', formData.isUrgent ? 'true' : 'false');
+  if (formData.isUrgent && formData.urgentReason) {
+    formDataToSend.append('urgent_reason', formData.urgentReason);
+  }
+
+  if (formData.meeting_channel) {
+    formDataToSend.append('meeting_channel', formData.meeting_channel);
+  }
+  if (formData.meetingStartDate) {
+    formDataToSend.append('meeting_start_date', formData.meetingStartDate);
+  }
+  if (formData.meetingEndDate) {
+    formDataToSend.append('meeting_end_date', formData.meetingEndDate);
+  }
+  if (formData.location) {
+    formDataToSend.append('location', formData.location);
+  }
+  formDataToSend.append('requires_protocol', formData.requiresProtocol ? 'true' : 'false');
+
+  const isSequential = formData.meetingNature === 'SEQUENTIAL';
   formDataToSend.append('is_sequential', isSequential ? 'true' : 'false');
 
   if (formData.previousMeeting) {
@@ -97,6 +126,8 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
         presentation_duration_minutes: a.presentation_duration_minutes
           ? parseInt(a.presentation_duration_minutes, 10) || 0
           : 0,
+        minister_support_type: a.minister_support_type || undefined,
+        minister_support_other: a.minister_support_other || undefined,
       }))
       .filter((a) => a.agenda_item && a.agenda_item.trim() !== '');
     if (agendaItems.length > 0) {
@@ -200,6 +231,16 @@ export const useStep1 = ({
     previousMeetings: [],
     wasDiscussedPreviously: false,
     meetingNature: '',
+    meetingOwner: null,
+    meetingTitle: '',
+    meetingDescription: '',
+    isUrgent: false,
+    urgentReason: '',
+    meeting_channel: '',
+    meetingStartDate: '',
+    meetingEndDate: '',
+    location: '',
+    requiresProtocol: false,
     isComplete: false,
     existingFiles: [],
     presentation_files: [],
@@ -280,8 +321,11 @@ export const useStep1 = ({
             'requester',
             'previousMeeting',
             'meetingNature',
+            'meetingOwner',
+            'meetingTitle',
             'meetingSubject',
             'meetingSubjectOptional',
+            'meetingDescription',
             'meetingType',
             'meetingCategory',
             'meetingReason',
@@ -291,6 +335,13 @@ export const useStep1 = ({
             'meetingClassification2',
             'meetingConfidentiality',
             'sector',
+            'isUrgent',
+            'urgentReason',
+            'meetingStartDate',
+            'meetingEndDate',
+            'meeting_channel',
+            'location',
+            'requiresProtocol',
             'wasDiscussedPreviously',
             'previousMeetingDate',
             'notes',
@@ -313,7 +364,12 @@ export const useStep1 = ({
             allTableTouched[support.id] = { support_description: true };
           });
           formData.meetingAgenda?.forEach((agenda) => {
-            allTableTouched[agenda.id] = { agenda_item: true, presentation_duration_minutes: true };
+            allTableTouched[agenda.id] = {
+              agenda_item: true,
+              presentation_duration_minutes: true,
+              minister_support_type: true,
+              minister_support_other: true,
+            };
           });
           formData.previousMeetings?.forEach((meeting) => {
             allTableTouched[meeting.id] = { meeting_subject: true, meeting_date: true };
@@ -376,7 +432,11 @@ export const useStep1 = ({
             return newTableErrors;
           });
         }
-        if (field === 'meetingNature' && value !== 'FORMAL') {
+        if (
+          field === 'meetingNature' &&
+          value !== 'SEQUENTIAL' &&
+          value !== 'PERIODIC'
+        ) {
           newData.previousMeeting = '';
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
@@ -453,10 +513,16 @@ export const useStep1 = ({
   }, []);
 
   const handleAddAgenda = useCallback(() => {
-    const newAgenda = { id: nanoid(), agenda_item: '', presentation_duration_minutes: '' };
+    const newAgenda = {
+      id: nanoid(),
+      agenda_item: '',
+      presentation_duration_minutes: '',
+      minister_support_type: '',
+      minister_support_other: '',
+    };
     setFormData((prev) => ({
       ...prev,
-      meetingAgenda: [newAgenda,...(prev.meetingAgenda || [])],
+      meetingAgenda: [newAgenda, ...(prev.meetingAgenda || [])],
     }));
   }, []);
 
@@ -610,6 +676,42 @@ export const useStep1 = ({
     }
   }, []);
 
+  /** Fill form from a previous meeting (do NOT set relatedDirective / Guidance per spec) */
+  const fillFormFromPreviousMeeting = useCallback((meeting: MeetingApiResponse) => {
+    const deadlineVal = meeting.deadline
+      ? (meeting.deadline.includes('T') ? meeting.deadline : `${meeting.deadline}T00:00:00`).slice(0, 10)
+      : '';
+    setFormData((prev) => ({
+      ...prev,
+      meetingTitle: meeting.meeting_title ?? prev.meetingTitle,
+      meetingSubject: meeting.meeting_title ?? meeting.meeting_subject ?? prev.meetingSubject,
+      meetingSubjectOptional: meeting.meeting_subject ?? prev.meetingSubjectOptional,
+      meetingDescription: (meeting as any).meeting_description ?? prev.meetingDescription,
+      meetingType: meeting.meeting_type ?? prev.meetingType,
+      meetingCategory: meeting.meeting_classification ?? prev.meetingCategory,
+      sector: meeting.sector ?? prev.sector,
+      meetingReason: meeting.meeting_justification ?? prev.meetingReason,
+      relatedTopic: meeting.related_topic ?? prev.relatedTopic,
+      dueDate: deadlineVal || prev.dueDate,
+      meetingClassification1: meeting.meeting_classification_type ?? prev.meetingClassification1,
+      meetingConfidentiality: meeting.meeting_confidentiality ?? prev.meetingConfidentiality,
+      meeting_channel: meeting.meeting_channel ?? prev.meeting_channel,
+      requiresProtocol: meeting.requires_protocol ?? prev.requiresProtocol,
+      location: meeting.location ?? prev.location,
+      requester:
+        meeting.submitter_id != null
+          ? { value: meeting.submitter_id, label: (meeting as any).submitter_name ?? meeting.submitter_name ?? '' }
+          : prev.requester,
+      meetingOwner:
+        meeting.current_owner_user_id != null
+          ? {
+              value: meeting.current_owner_user_id,
+              label: (meeting as any).meeting_owner_name ?? '',
+            }
+          : prev.meetingOwner,
+    }));
+  }, []);
+
   const submitStep = useCallback(
     async (isDraft: boolean = false): Promise<string | null> => {
       if (!isDraft && !validateAll(true)) {
@@ -654,6 +756,8 @@ export const useStep1 = ({
     touched,
     tableErrors,
     tableTouched,
+    setTableErrors,
+    setTableTouched,
     isSubmitting: submitMutation.isPending,
     isLoading: submitMutation.isPending,
     isError: submitMutation.isError,
@@ -678,6 +782,7 @@ export const useStep1 = ({
     handleAddDirective,
     handleDeleteDirective,
     handleUpdateDirective,
+    fillFormFromPreviousMeeting,
     validateAll,
     submitStep,
   };

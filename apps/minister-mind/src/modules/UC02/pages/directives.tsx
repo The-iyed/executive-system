@@ -2,14 +2,16 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip } from '@shared';
+import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, User } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 import { getDirectives, getPreviousDirectives, GetDirectivesParams, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
+import { PATH } from '../routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
+import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -546,8 +548,18 @@ const Directives: React.FC = () => {
     [originalPreviousDirectives, meetingsDataForPrevious]
   );
 
+  const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
+
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
+    <>
+      <ContentBar
+        primaryAction={{
+          label: 'إنشاء اجتماع',
+          variant: 'primary',
+          onClick: openCreateDrawer,
+        }}
+      />
+      <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
@@ -667,6 +679,7 @@ const Directives: React.FC = () => {
             ]}
             activeTab={directivesSubTab}
             onTabChange={(id) => setDirectivesSubTab(id as 'current' | 'previous')}
+            variant='pill'
           />
         </div>
 
@@ -801,6 +814,7 @@ const Directives: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

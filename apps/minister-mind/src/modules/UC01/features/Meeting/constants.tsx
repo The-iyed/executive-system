@@ -1,3 +1,4 @@
+
 import { NavigateFunction } from 'react-router-dom';
 import { Calendar, Send } from 'lucide-react';
 import { TableColumn, TruncatedWithTooltip } from '@shared';
