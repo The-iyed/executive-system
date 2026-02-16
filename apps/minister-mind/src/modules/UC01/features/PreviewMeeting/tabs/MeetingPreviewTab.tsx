@@ -13,7 +13,7 @@ import {
 
 const labelClass = 'text-sm font-medium text-gray-700 text-[#344054]';
 const valueClass = 'w-full min-h-[25.9px] py-[5.89px] px-[8.24px] flex items-center bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085]';
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 interface MeetingPreviewTabProps {
   meeting: MeetingApiResponse;

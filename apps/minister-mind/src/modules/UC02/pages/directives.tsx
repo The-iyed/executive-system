@@ -22,7 +22,7 @@ interface DirectivesCardsGridProps {
   onCloseDirective: (directiveId: string, directiveText: string, relatedMeeting: string) => void | Promise<void>;
 }
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 const pillStyle = {
   borderRadius: '12px',
@@ -685,13 +685,69 @@ const Directives: React.FC = () => {
               <div className="flex items-center justify-center py-12">
                 <div className="text-center text-gray-600">لا توجد توجيهات سابقة</div>
               </div>
-            ) : (
+            ) : view === 'table' ? (
               <div style={{ overflow: 'visible' }}>
                 <DataTable
                   columns={previousTableColumns}
                   data={previousDirectives}
                   rowPadding="py-2"
                 />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                {previousDirectives.map((directive) => (
+                  <div
+                    key={directive.id}
+                    className="relative flex flex-col bg-white w-full overflow-visible cursor-pointer hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)] transition-all duration-200 border-[1.5px] border-[rgba(230,236,245,1)]"
+                    style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}
+                    dir="rtl"
+                  >
+                    {/* Card Body */}
+                    <div className="flex flex-col gap-4 p-5" style={fontStyle}>
+                      {/* Title + Status */}
+                      <div className="flex flex-row items-start justify-between gap-3">
+                        <CardTooltip text={directive.title}>
+                          <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2" style={{ ...fontStyle, fontSize: '15px' }}>
+                            {directive.title}
+                          </h3>
+                        </CardTooltip>
+                        <span
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap flex-shrink-0"
+                          style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
+                        >
+                          {directive.statusLabel}
+                        </span>
+                      </div>
+
+                      {/* Date pill */}
+                      <div className="flex flex-row items-center gap-2.5">
+                        <CardTooltip text={directive.date}>
+                          <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={pillStyle}>
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                              <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                            </div>
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
+                              <span className="text-[12px] text-[#344054] truncate leading-4">{directive.date}</span>
+                            </div>
+                          </div>
+                        </CardTooltip>
+                      </div>
+
+                      {/* Coordinator */}
+                      {directive.coordinator && (
+                        <CardTooltip text={directive.coordinator}>
+                          <div className="flex flex-row items-center gap-3">
+                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                              <User className="h-4 w-4 text-[#98A2B3]" strokeWidth={1.5} />
+                            </div>
+                            <span className="text-[13px] font-medium text-[#344054] leading-5 truncate">{directive.coordinator}</span>
+                          </div>
+                        </CardTooltip>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )
           ) : isLoading ? (
