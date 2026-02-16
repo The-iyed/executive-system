@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+
+import { clearDraftData } from '../utils';
 import { PATH } from '../../../routes/paths';
 
 const FORM_PARAM = 'form';
@@ -7,10 +9,16 @@ const ID_PARAM = 'id';
 
 export type MeetingFormDrawerMode = 'create' | 'edit' | null;
 
-export function useMeetingFormDrawer() {
+export interface UseMeetingFormDrawerOptions {
+  createEditBasePath?: string;
+}
+
+export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams<{ id: string }>();
+
+  const basePath = options?.createEditBasePath ?? PATH.MEETINGS;
 
   const form = searchParams.get(FORM_PARAM) as MeetingFormDrawerMode;
   const idFromSearch = searchParams.get(ID_PARAM);
@@ -38,11 +46,13 @@ export function useMeetingFormDrawer() {
   );
 
   const openCreateDrawer = useCallback(() => {
-    navigate(`${PATH.MEETINGS}?${FORM_PARAM}=create`);
-  }, [navigate]);
+    clearDraftData();
+    navigate(`${basePath}?${FORM_PARAM}=create`);
+  }, [navigate, basePath]);
 
   const openEditDrawer = useCallback(
     (meetingId: string) => {
+      clearDraftData();
       const currentPath = window.location.pathname;
       const isPreviewOrDetail = currentPath.includes('/uc08/meeting/') && currentPath.includes('/preview');
       if (isPreviewOrDetail && params.id) {
@@ -52,10 +62,10 @@ export function useMeetingFormDrawer() {
           return next;
         });
       } else {
-        navigate(`${PATH.MEETINGS}?${FORM_PARAM}=edit&${ID_PARAM}=${meetingId}`);
+        navigate(`${basePath}?${FORM_PARAM}=edit&${ID_PARAM}=${meetingId}`);
       }
     },
-    [navigate, params.id, setSearchParams]
+    [navigate, basePath, params.id, setSearchParams]
   );
 
   return {
