@@ -1,20 +1,14 @@
-import React from 'react';
+import { useCallback } from 'react';
 import { FormField, FormAsyncSelectV2 } from '@shared';
 import type { OptionType } from '@shared';
-import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../constants/step1.constants';
+import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
+import { getUsers } from '../../../../../../data';
+import type { UserApiResponse } from '../../../../../../data';
 
 export interface MeetingOwnerFieldProps {
   value: OptionType | null;
   onChange: (value: OptionType | null) => void;
   onBlur?: () => void;
-  loadOptions: (search: string, skip: number, limit: number) => Promise<{
-    items: Array<OptionType>;
-    total: number;
-    skip: number;
-    limit: number;
-    has_next: boolean;
-    has_previous: boolean;
-  }>;
   error?: string;
   touched?: boolean;
   disabled?: boolean;
@@ -22,19 +16,39 @@ export interface MeetingOwnerFieldProps {
   className?: string;
 }
 
-/**
- * Meeting Owner (مالك الاجتماع). User select, required.
- */
 export function MeetingOwnerField({
   value,
   onChange,
-  loadOptions,
   error,
   touched,
   disabled = false,
   required = true,
   className,
 }: MeetingOwnerFieldProps) {
+  const loadOptions = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const response = await getUsers({
+        search: search.trim() || undefined,
+        skip,
+        limit,
+      });
+      const items = (response?.items ?? []).map((u: UserApiResponse) => {
+        const fullName =
+          ([u.first_name, u.last_name].filter(Boolean).join(' ') || u?.username || u?.email) ?? '';
+        return { value: u?.id ?? '', label: fullName };
+      });
+      return {
+        items,
+        total: response?.total ?? 0,
+        skip: response?.skip ?? 0,
+        limit: response?.limit ?? limit,
+        has_next: response?.has_next ?? false,
+        has_previous: response?.has_previous ?? false,
+      };
+    },
+    []
+  );
+
   return (
     <FormField
       className={className}

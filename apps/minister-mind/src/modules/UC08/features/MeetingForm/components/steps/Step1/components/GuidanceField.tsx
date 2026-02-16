@@ -1,18 +1,13 @@
+import { useCallback } from 'react';
 import { FormAsyncSelectV2 } from '@shared';
 import type { OptionType } from '@shared';
-import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../constants/step1.constants';
+import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
+import { getDirectivesPaginated } from '../../../../../../data';
+import type { DirectiveApiResponse } from '../../../../../../data';
 
 export interface GuidanceFieldProps {
   value: OptionType | null;
   onChange: (value: OptionType | null) => void;
-  loadOptions: (search: string, skip: number, limit: number) => Promise<{
-    items: Array<OptionType & { description?: string }>;
-    total: number;
-    skip: number;
-    limit: number;
-    has_next: boolean;
-    has_previous: boolean;
-  }>;
   error?: string;
   touched?: boolean;
   disabled?: boolean;
@@ -20,20 +15,39 @@ export interface GuidanceFieldProps {
   className?: string;
 }
 
-/**
- * Guidance (التوجيه). Async select to load all directives.
- * Does NOT auto-populate when Nature = Follow-up (إلحاقي) or Recurring (دوري).
- */
 export function GuidanceField({
   value,
   onChange,
-  loadOptions,
   error,
   touched,
   disabled = false,
   required = false,
   className,
 }: GuidanceFieldProps) {
+  const loadOptions = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const response = await getDirectivesPaginated({
+        search: search.trim() || undefined,
+        skip,
+        limit,
+      });
+      const items = (response?.items ?? []).map((d: DirectiveApiResponse) => ({
+        value: d?.id ?? '',
+        label: d?.directive_text ?? '',
+        description: d?.related_meeting ?? '',
+      }));
+      return {
+        items,
+        total: response?.total ?? 0,
+        skip: response?.skip ?? 0,
+        limit: response?.limit ?? limit,
+        has_next: response?.has_next ?? false,
+        has_previous: response?.has_previous ?? false,
+      };
+    },
+    []
+  );
+
   return (
     <div className={className}>
       <label className="block text-right text-[14px] font-medium text-[#344054] mb-1">

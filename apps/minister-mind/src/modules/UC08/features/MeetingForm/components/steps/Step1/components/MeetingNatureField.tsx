@@ -1,6 +1,5 @@
-import React from 'react';
 import { FormField, FormSelect } from '@shared';
-import { MEETING_NATURE_OPTIONS } from '../../../../constants/step1.constants';
+import { MEETING_NATURE_OPTIONS } from '../../../../utils';
 
 export interface MeetingNatureFieldProps {
   value: string;
@@ -13,14 +12,9 @@ export interface MeetingNatureFieldProps {
   className?: string;
 }
 
-/**
- * Nature of Meeting (طبيعة الاجتماع): Normal (عادي), Follow-up (إلحاقي), Recurring (دوري).
- * Required. Drives visibility of Previous Meeting and disabled state of other sections.
- */
 export function MeetingNatureField({
   value,
   onChange,
-  onBlur,
   error,
   touched,
   disabled = false,
