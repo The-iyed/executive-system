@@ -8,8 +8,10 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
     const allAttachments = draft.attachments || [];
   
     return {
+      meetingTitle: draft.meeting_title || '',
       meetingSubject: draft.meeting_title || draft.meeting_subject || '',
       meetingSubjectOptional: draft.meeting_subject || '',
+      meetingDescription: draft.meeting_description || '',
       meetingType: draft.meeting_type || '',
       meetingCategory: draft.meeting_classification || '',
       meetingReason: draft.meeting_justification || '',
@@ -19,16 +21,24 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingConfidentiality: draft.meeting_confidentiality || '',
       sector: draft.sector || '',
       relatedDirective: draft.related_directive_id ? { value: draft.related_directive_id, label: draft.related_directive_id } : null,
-      meetingNature: draft.is_sequential === true ? 'FORMAL' : 'INFORMAL',
+      meetingNature: draft.is_sequential === true ? 'SEQUENTIAL' : 'NORMAL',
       previousMeeting: draft.previous_meeting_id || '',
       meetingGoals: draft.objectives?.map((obj: { id: string; objective: string }) => ({
         id: obj.id,
         objective: obj.objective,
       })) || [],
-      meetingAgenda: draft.agenda_items?.map((item: { id: string; agenda_item: string; presentation_duration_minutes: number }) => ({
+      meetingAgenda: draft.agenda_items?.map((item: {
+        id: string;
+        agenda_item: string;
+        presentation_duration_minutes?: number;
+        minister_support_type?: string;
+        minister_support_other?: string;
+      }) => ({
         id: item.id,
         agenda_item: item.agenda_item || '',
-        presentation_duration_minutes: String(item.presentation_duration_minutes || ''),
+        presentation_duration_minutes: String(item.presentation_duration_minutes ?? ''),
+        minister_support_type: item.minister_support_type ?? '',
+        minister_support_other: item.minister_support_other ?? '',
       })) || [],
       ministerSupport: draft.minister_support?.map((support: { id: string; support_description: string }) => ({
         id: support.id,

@@ -1,5 +1,5 @@
-
 import { FormTableColumn } from "../form";
+import { SECTOR_OPTIONS } from "../../types";
 
 // Dropdown options - These should be fetched from API in production
 export const MEETING_CATEGORY_OPTIONS = [
@@ -32,10 +32,7 @@ export const MEETING_NATURE_OPTIONS = [
   { value: 'INFORMAL', label: 'غير رسمي' },
 ];
 
-export const SECTOR_OPTIONS = [
-  { value: 'SECTOR1', label: 'قطاع 1' },
-  { value: 'SECTOR2', label: 'قطاع 2' },
-];
+export { SECTOR_OPTIONS };
 
 // Table Column Definitions
 

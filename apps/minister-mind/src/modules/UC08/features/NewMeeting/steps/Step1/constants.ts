@@ -1,3 +1,5 @@
+import type { FormTableColumn } from '@shared';
+import { SECTOR_OPTIONS } from '@shared';
 // Dropdown options - These should be fetched from API in production
 export const REQUESTER_OPTIONS = [
   { value: 'USER1', label: 'مستخدم 1' },
@@ -9,9 +11,11 @@ export const RELATED_DIRECTIVE_OPTIONS = [
   { value: 'DIRECTIVE2', label: 'توجيه 2' },
 ];
 
+/** Meeting nature (طبيعة الاجتماع): NORMAL=عادي, SEQUENTIAL=إلحاقي, PERIODIC=دوري */
 export const MEETING_NATURE_OPTIONS = [
-  { value: 'FORMAL', label: 'رسمي' },
-  { value: 'INFORMAL', label: 'غير رسمي' },
+  { value: 'NORMAL', label: 'عادي' },
+  { value: 'SEQUENTIAL', label: 'إلحاقي' },
+  { value: 'PERIODIC', label: 'دوري' },
 ];
 
 export const PREVIOUS_MEETING_OPTIONS = [
@@ -44,13 +48,9 @@ export const MEETING_TYPE_OPTIONS = [
   { value: 'EXTERNAL', label: 'خارجي' },
 ];
 
-export const SECTOR_OPTIONS = [
-  { value: 'SECTOR1', label: 'قطاع 1' },
-  { value: 'SECTOR2', label: 'قطاع 2' },
-];
+export { SECTOR_OPTIONS };
 
 // Table Column Definitions
-import type { FormTableColumn } from '@shared';
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
