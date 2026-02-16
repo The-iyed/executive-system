@@ -1,9 +1,9 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { SharedLayout, WelcomeSectionProps } from '@shared';
 import { USE_CASE_CONFIGS } from '@shared';
 import { PATH } from '../routes/paths';
-import { PATH as UC08_PATH } from '../../UC08/routes/paths';
+import { MeetingFormDrawer } from '../../UC08/features/MeetingForm/components/MeetingFormDrawer';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -12,13 +12,7 @@ export interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
-  
-  // Show button on both schedule-review and directives pages
-  const showCreateMeetingButton = pathname === PATH.SCHEDULE_REVIEW || pathname === PATH.DIRECTIVES;
-  
-  // Configure welcome section based on path
   const getWelcomeConfig = (): WelcomeSectionProps => {
     if (pathname === PATH.SCHEDULED_MEETINGS) {
       return {
@@ -56,15 +50,6 @@ export const Layout: React.FC<LayoutProps> = ({
       title: 'مراجعة الجدولة',
       description: 'مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.',
       breadcrumbs: [{ label: 'مراجعة الجدولة', onClick: () => {} }],
-      actions: showCreateMeetingButton ? [
-        {
-          label: 'إنشاء اجتماع مباشر',
-          variant: 'primary',
-          onClick: () => {
-            navigate(`${UC08_PATH.MEETINGS}?form=create`);
-          }
-        }
-      ] : undefined,
     };
   };
   
@@ -73,14 +58,17 @@ export const Layout: React.FC<LayoutProps> = ({
   const isCalendar = pathname === PATH.CALENDAR;
 
   return (
-    <SharedLayout
-      children={children}
-      welcomeSection={getWelcomeConfig()}
-      navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
-      useDynamicNavigation={false}
-      contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
-      hideContentBar={isMeetingDetail || isCalendar}
-      contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
-    />
+    <>
+      <SharedLayout
+        children={children}
+        welcomeSection={getWelcomeConfig()}
+        navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
+        useDynamicNavigation={false}
+        contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
+        hideContentBar={isMeetingDetail || isCalendar}
+        contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
+      />
+      <MeetingFormDrawer createEditBasePath={PATH.DIRECTIVES} />
+    </>
   );
 };

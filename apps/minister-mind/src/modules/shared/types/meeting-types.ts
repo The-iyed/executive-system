@@ -1,15 +1,11 @@
 
 export enum MeetingStatus {
-  // Draft/Initial States
   DRAFT = 'DRAFT',
-  NEW = 'NEW',
-  // Review States
   UNDER_REVIEW = 'UNDER_REVIEW',
   UNDER_CONSULTATION_SCHEDULING = 'UNDER_CONSULTATION_SCHEDULING',
   UNDER_GUIDANCE = 'UNDER_GUIDANCE',
   UNDER_CONTENT_REVIEW = 'UNDER_CONTENT_REVIEW',
   UNDER_CONTENT_CONSULTATION = 'UNDER_CONTENT_CONSULTATION',
-  // Scheduled States
   SCHEDULED = 'SCHEDULED',
   SCHEDULED_SCHEDULING = 'SCHEDULED_SCHEDULING',
   SCHEDULED_CONTENT = 'SCHEDULED_CONTENT',
@@ -17,52 +13,36 @@ export enum MeetingStatus {
   SCHEDULED_UPDATE_CONTENT = 'SCHEDULED_UPDATE_CONTENT',
   SCHEDULED_ADDITIONAL_INFO = 'SCHEDULED_ADDITIONAL_INFO',
   SCHEDULED_DELAYED = 'SCHEDULED_DELAYED',
-  // Returned States
   RETURNED_FROM_SCHEDULING = 'RETURNED_FROM_SCHEDULING',
   RETURNED_FROM_CONTENT = 'RETURNED_FROM_CONTENT',
-  // Legacy returned states (kept for backward compatibility)
-  RETURNED_FROM_SCHEDULING_MANAGER = 'RETURNED_FROM_SCHEDULING_MANAGER',
-  RETURNED_FROM_CONTENT_MANAGER = 'RETURNED_FROM_CONTENT_MANAGER',
-  // Final States
+  WAITING = 'WAITING',
+  READY = 'READY',
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED',
-  // Waiting State
-  WAITING = 'WAITING',
-  READY = 'READY',
 }
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
-  // Draft/Initial States
-  [MeetingStatus.DRAFT]: 'مسودة',
-  [MeetingStatus.NEW]: 'جديد',
-  // Review States
+  [MeetingStatus.DRAFT]: 'جديد',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
-  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'تحت استشارة الجدولة',
-  [MeetingStatus.UNDER_GUIDANCE]: 'تحت التوجيه',
-  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'تحت مراجعة المحتوى',
-  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'تحت استشارة المحتوى',
-  // Scheduled States
+  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
+  [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',
+  [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
+  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد المراجعة - استشارة المحتوى',
   [MeetingStatus.SCHEDULED]: 'مجدول',
-  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - جدولة',
-  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - محتوى',
-  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة محتوى',
-  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث محتوى',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
+  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
+  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة المحتوى',
+  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث المحتوى',
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
-  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - مؤجل',
-  // Returned States
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'مرجع من الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'مرجع من المحتوى',
-  // Legacy returned states (kept for backward compatibility)
-  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: 'معاد من مسؤول الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: 'معاد من مسؤول المحتوى',
-  // Waiting State
+  [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من مسؤول الجدولة',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من مسؤول المحتوى',
   [MeetingStatus.WAITING]: 'قيد الانتظار',
   [MeetingStatus.READY]: 'جاهز',
-  // Final States
   [MeetingStatus.REJECTED]: 'مرفوض',
-  [MeetingStatus.CANCELLED]: 'ملغى',
-  [MeetingStatus.CLOSED]: 'منتهي',
+  [MeetingStatus.CANCELLED]: 'ملغي',
+  [MeetingStatus.CLOSED]: '',
 };
 
 
@@ -149,6 +129,41 @@ export const MeetingTypeLabels: Record<MeetingType, string> = {
   [MeetingType.EXTERNAL]: 'خارجي',
   [MeetingType.BUSINESS_OWNER]: 'مالك أعمال',
 };
+
+/**
+ * Sector (القطاع)
+ * Ministry sector for the meeting
+ */
+export enum Sector {
+  MUNICIPAL_AFFAIRS = 'MUNICIPAL_AFFAIRS',
+  HOUSING_AFFAIRS = 'HOUSING_AFFAIRS',
+  EMPOWERMENT_AND_COMPLIANCE = 'EMPOWERMENT_AND_COMPLIANCE',
+  PLANNING_AND_DEVELOPMENT = 'PLANNING_AND_DEVELOPMENT',
+  SUPPORT_SERVICES = 'SUPPORT_SERVICES',
+  MINISTER_AFFILIATED = 'MINISTER_AFFILIATED',
+}
+
+/**
+ * Sector Labels (Arabic)
+ */
+export const SectorLabels: Record<Sector, string> = {
+  [Sector.MUNICIPAL_AFFAIRS]: 'شؤون البلديات',
+  [Sector.HOUSING_AFFAIRS]: 'شؤون الإسكان',
+  [Sector.EMPOWERMENT_AND_COMPLIANCE]: 'التمكين والإمتثال',
+  [Sector.PLANNING_AND_DEVELOPMENT]: 'التخطيط والتطوير',
+  [Sector.SUPPORT_SERVICES]: 'الخدمات المساندة',
+  [Sector.MINISTER_AFFILIATED]: 'الجهات التابعة لمعالي الوزير',
+};
+
+/** Dropdown options for القطاع (Sector) */
+export const SECTOR_OPTIONS: { value: Sector; label: string }[] = [
+  { value: Sector.MUNICIPAL_AFFAIRS, label: SectorLabels[Sector.MUNICIPAL_AFFAIRS] },
+  { value: Sector.HOUSING_AFFAIRS, label: SectorLabels[Sector.HOUSING_AFFAIRS] },
+  { value: Sector.EMPOWERMENT_AND_COMPLIANCE, label: SectorLabels[Sector.EMPOWERMENT_AND_COMPLIANCE] },
+  { value: Sector.PLANNING_AND_DEVELOPMENT, label: SectorLabels[Sector.PLANNING_AND_DEVELOPMENT] },
+  { value: Sector.SUPPORT_SERVICES, label: SectorLabels[Sector.SUPPORT_SERVICES] },
+  { value: Sector.MINISTER_AFFILIATED, label: SectorLabels[Sector.MINISTER_AFFILIATED] },
+];
 
 /**
  * Meeting Channel (آلية انعقاد الاجتماع / قناة الاجتماع)

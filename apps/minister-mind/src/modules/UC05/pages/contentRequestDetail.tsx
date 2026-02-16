@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, GitCompare, MessageSquare, Clock, User, Mail, Phone, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, GitCompare, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash } from 'lucide-react';
 import { Tabs, StatusBadge } from '@shared/components';
 import {
   MeetingStatus,
@@ -561,7 +561,7 @@ const ContentRequestDetail: React.FC = () => {
               <div className="flex items-center gap-3">
                 <h1
                   className="text-2xl font-bold text-gray-900 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   {contentRequest.meeting_title} ({contentRequest.request_number})
                 </h1>
@@ -586,7 +586,7 @@ const ContentRequestDetail: React.FC = () => {
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '28px',
@@ -597,37 +597,37 @@ const ContentRequestDetail: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       رقم الطلب
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.request_number ?? '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       حالة الطلب
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {statusLabel}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       مقدم الطلب
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.submitter_name ?? '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       مالك الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.current_owner_user
                         ? `${contentRequest.current_owner_user.first_name} ${contentRequest.current_owner_user.last_name}`
                         : contentRequest.current_owner_role?.name_ar ?? '-'}
@@ -644,7 +644,7 @@ const ContentRequestDetail: React.FC = () => {
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '28px',
@@ -655,10 +655,10 @@ const ContentRequestDetail: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       هل تطلب الاجتماع نيابة عن غيرك؟
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {(contentRequest as { is_on_behalf_of?: boolean | null }).is_on_behalf_of === true
                         ? 'نعم'
                         : (contentRequest as { is_on_behalf_of?: boolean | null }).is_on_behalf_of === false
@@ -668,10 +668,10 @@ const ContentRequestDetail: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       مالك الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.current_owner_user
                         ? `${contentRequest.current_owner_user.first_name} ${contentRequest.current_owner_user.last_name}`
                         : contentRequest.current_owner_role?.name_ar ?? '-'}
@@ -679,181 +679,181 @@ const ContentRequestDetail: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       عنوان الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.meeting_title || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       وصف الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.meeting_subject || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       القطاع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.sector || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       نوع الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getMeetingTypeLabel(contentRequest.meeting_type) || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       اجتماع عاجل؟
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.is_direct_schedule === true ? 'نعم' : contentRequest.is_direct_schedule === false ? 'لا' : '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       السبب
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.meeting_justification || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       موعد الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.scheduled_at ? new Date(contentRequest.scheduled_at).toLocaleString('ar-SA') : '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       آلية انعقاد الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getMeetingChannelLabel(contentRequest.meeting_channel) || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       الموقع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {(contentRequest as { meeting_location?: string | null }).meeting_location || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       هل يتطلب بروتوكول؟
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.requires_protocol === true ? 'نعم' : contentRequest.requires_protocol === false ? 'لا' : '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       فئة الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getMeetingClassificationLabel(contentRequest.meeting_classification) || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       مبرّر اللقاء
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.meeting_justification || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       موضوع التكليف المرتبط
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.related_topic || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       تاريخ الاستحقاق
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.deadline ? new Date(contentRequest.deadline).toLocaleDateString('ar-SA') : '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       تصنيف الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getMeetingClassificationTypeLabel(contentRequest.meeting_classification_type) || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       سرية الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getMeetingConfidentialityLabel(contentRequest.meeting_confidentiality) || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       اجتماع متسلسل؟
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.is_sequential === true ? 'نعم' : contentRequest.is_sequential === false ? 'لا' : '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       الاجتماع السابق
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.previous_meeting_id || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       الرقم التسلسلي
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.sequential_number ?? '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       أجندة الاجتماع
                     </label>
-                    <div className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <div className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.agenda_items && contentRequest.agenda_items.length > 0 ? (
                         <ul className="list-disc list-inside space-y-1">
                           {contentRequest.agenda_items.map((item) => (
@@ -867,46 +867,46 @@ const ContentRequestDetail: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       هل طلب الاجتماع بناءً على توجيه من معالي الوزير
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {contentRequest.related_directive_ids && contentRequest.related_directive_ids.length > 0 ? 'نعم' : 'لا'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       طريقة التوجيه
                     </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {(contentRequest as { directive_method?: string | null }).directive_method || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       محضر الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {(contentRequest as { meeting_minutes?: string | null }).meeting_minutes || '-'}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       التوجيه
                     </label>
-                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {formatRelatedGuidance(contentRequest.related_guidance)}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       ملاحظات
                     </label>
-                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
                     </p>
                   </div>
@@ -921,7 +921,7 @@ const ContentRequestDetail: React.FC = () => {
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '28px',
@@ -932,7 +932,7 @@ const ContentRequestDetail: React.FC = () => {
 
                 {/* العرض التقديمي */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     العرض التقديمي
                   </label>
                   {presentationAttachments.length > 0 ? (
@@ -952,10 +952,10 @@ const ContentRequestDetail: React.FC = () => {
                               </div>
                             )}
                             <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                                 {att.file_name}
                               </span>
-                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                                 {formatFileSize(att.file_size || 0)}
                               </span>
                             </div>
@@ -1022,7 +1022,7 @@ const ContentRequestDetail: React.FC = () => {
                     </div>
                     </TooltipProvider>
                   ) : (
-                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       لا يوجد عرض تقديمي
                     </p>
                   )}
@@ -1030,17 +1030,17 @@ const ContentRequestDetail: React.FC = () => {
 
                 {/* متى سيتم إرفاق العرض؟ */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     متى سيتم إرفاق العرض؟
                   </label>
-                  <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     -
                   </p>
                 </div>
 
                 {/* مرفقات اختيارية */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     مرفقات اختيارية
                   </label>
                   {additionalAttachments.length > 0 ? (
@@ -1059,10 +1059,10 @@ const ContentRequestDetail: React.FC = () => {
                               </div>
                             )}
                             <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                                 {att.file_name}
                               </span>
-                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                                 {formatFileSize(att.file_size || 0)}
                               </span>
                             </div>
@@ -1092,7 +1092,7 @@ const ContentRequestDetail: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       لا توجد مرفقات اختيارية
                     </p>
                   )}
@@ -1100,10 +1100,10 @@ const ContentRequestDetail: React.FC = () => {
 
                 {/* ملاحظات */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     ملاحظات
                   </label>
-                  <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     {getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
                   </p>
                 </div>
@@ -1118,7 +1118,7 @@ const ContentRequestDetail: React.FC = () => {
                 <h2
                   className="text-right"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
                     fontSize: '22px',
                     lineHeight: '38px',
@@ -1139,12 +1139,12 @@ const ContentRequestDetail: React.FC = () => {
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
                       return (
                         <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
+                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
                             <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
                               <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
                             </button>
                           </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
                             <div className="flex flex-row items-center justify-between gap-3">
                               <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
@@ -1186,7 +1186,7 @@ const ContentRequestDetail: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     لا توجد قائمة مدعوين من مقدّم الطلب
                   </p>
                 )}
@@ -1197,7 +1197,7 @@ const ContentRequestDetail: React.FC = () => {
                 <h2
                   className="text-right"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
                     fontSize: '22px',
                     lineHeight: '38px',
@@ -1218,12 +1218,12 @@ const ContentRequestDetail: React.FC = () => {
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
                       return (
                         <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
+                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
                             <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
                               <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
                             </button>
                           </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
                             <div className="flex flex-row items-center justify-between gap-3">
                               <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
@@ -1265,7 +1265,7 @@ const ContentRequestDetail: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     لا توجد قائمة مدعوين من جهة الوزير
                   </p>
                 )}
@@ -1302,7 +1302,7 @@ const ContentRequestDetail: React.FC = () => {
                       }}
                       disabled={analyzeContradictionsMutation.isPending}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       {analyzeContradictionsMutation.isPending ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
                     </button>
@@ -1333,7 +1333,7 @@ const ContentRequestDetail: React.FC = () => {
                                 ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                                 : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
                             `}
-                            style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                            style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
                           >
                             <div className="flex flex-row items-start justify-between gap-4">
                               <div className="flex flex-col items-start flex-1 min-w-0">
@@ -1344,6 +1344,10 @@ const ContentRequestDetail: React.FC = () => {
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                                   <Clock className="w-4 h-4 flex-shrink-0" />
                                   <span>تاريخ الطلب : {requestDate}</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                                  <Hash className="w-4 h-4 flex-shrink-0" />
+                                  <span>رمز الطلب : {row?.consultation_request_number}</span>
                                 </span>
                                 <span className="flex-shrink-0 text-gray-500" aria-hidden>
                                   {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -1390,7 +1394,7 @@ const ContentRequestDetail: React.FC = () => {
                                     <div
                                       key={answer.consultation_id}
                                       className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
-                                      style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                                      style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
                                     >
                                       <div className="flex w-full flex-row items-center justify-between gap-4">
                                         <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
@@ -1420,7 +1424,7 @@ const ContentRequestDetail: React.FC = () => {
                               </div>
                               <div
                                 className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
-                                style={{ fontFamily: "'Almarai', 'Ping AR + LT', sans-serif" }}
+                                style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
                               >
                                 <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
                               </div>
@@ -1446,17 +1450,17 @@ const ContentRequestDetail: React.FC = () => {
           <Dialog open={isCompareModalOpen} onOpenChange={setIsCompareModalOpen}>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
               <DialogHeader>
-                <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   تقييم الاختلاف بين العروض
                 </DialogTitle>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto px-1 space-y-6">
                 {compareByAttachmentMutation.isPending ? (
-                  <p className="text-center text-gray-500 py-8" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-center text-gray-500 py-8" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     جاري تقييم الاختلاف بين العروض...
                   </p>
                 ) : compareByAttachmentMutation.isError ? (
-                  <div className="text-center py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <div className="text-center py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     <p className="text-red-600 font-medium mb-1">
                       حدث خطأ أثناء تقييم الاختلاف
                     </p>
@@ -1472,10 +1476,10 @@ const ContentRequestDetail: React.FC = () => {
                   <>
                     {/* Overall */}
                     <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
-                      <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
                         النتيجة العامة
                       </h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                         <span className="text-gray-600">معرف التقييم:</span>
                         <span className="text-gray-900">{compareResult.comparison_id}</span>
                         <span className="text-gray-600">الحالة:</span>
@@ -1492,10 +1496,10 @@ const ContentRequestDetail: React.FC = () => {
                     {/* Summary */}
                     {compareResult.summary && (
                       <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           ملخص الشرائح
                         </h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           <span className="text-gray-600">شرائح العرض الأصلي:</span>
                           <span className="text-gray-900">{compareResult.summary.total_slides_original}</span>
                           <span className="text-gray-600">شرائح العرض الجديد:</span>
@@ -1519,10 +1523,10 @@ const ContentRequestDetail: React.FC = () => {
                     {/* Regeneration decision */}
                     {compareResult.regeneration_decision && (
                       <div className="rounded-xl border border-gray-200 bg-amber-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           قرار إعادة التوليد
                         </h4>
-                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           <p><span className="text-gray-600 font-medium">التوصية:</span> {translateCompareValue(compareResult.regeneration_decision.recommendation, COMPARE_RECOMMENDATION)}</p>
                           <p><span className="text-gray-600 font-medium">الثقة:</span> {translateCompareValue(compareResult.regeneration_decision.confidence, COMPARE_CONFIDENCE_IMPACT)}</p>
                           {compareResult.regeneration_decision.reasoning && (
@@ -1550,10 +1554,10 @@ const ContentRequestDetail: React.FC = () => {
                     {/* AI insights */}
                     {compareResult.ai_insights && (
                       <div className="rounded-xl border border-gray-200 bg-blue-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           رؤى الذكاء الاصطناعي
                         </h4>
-                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           {compareResult.ai_insights.main_topics && compareResult.ai_insights.main_topics.length > 0 && (
                             <p><span className="text-gray-600 font-medium">المواضيع الرئيسية:</span> {compareResult.ai_insights.main_topics.join('، ')}</p>
                           )}
@@ -1573,7 +1577,7 @@ const ContentRequestDetail: React.FC = () => {
                     {compareResult.slide_by_slide && compareResult.slide_by_slide.length > 0 && (
                       <div className="rounded-xl border border-gray-200 overflow-hidden">
                         <div className="px-4 py-3 bg-[#009883]/10 border-b border-gray-200">
-                          <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                             تفاصيل كل شريحة
                           </h4>
                         </div>
@@ -1582,7 +1586,7 @@ const ContentRequestDetail: React.FC = () => {
                             <div
                               key={idx}
                               className="px-4 py-3 border-b border-gray-100 text-right text-sm last:border-b-0"
-                              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                              style={{ fontFamily: "'Almarai', sans-serif" }}
                             >
                               <span className="font-medium text-[#009883]">شريحة {slide.slide_number}:</span>{' '}
                               <span className="text-gray-700">{slide.details}</span>{' '}
@@ -1594,7 +1598,7 @@ const ContentRequestDetail: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     لا توجد نتيجة لعرضها.
                   </p>
                 )}
@@ -1604,7 +1608,7 @@ const ContentRequestDetail: React.FC = () => {
                   type="button"
                   onClick={() => setIsCompareModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   إغلاق
                 </button>
@@ -1616,7 +1620,7 @@ const ContentRequestDetail: React.FC = () => {
           <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
             <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
               <DialogHeader>
-                <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   تقييم التعارض بين افادات المستشارين
                 </DialogTitle>
               </DialogHeader>
@@ -1632,7 +1636,7 @@ const ContentRequestDetail: React.FC = () => {
                         className="rounded-xl border border-amber-200 bg-amber-50/30 overflow-hidden"
                       >
                         <div className="px-4 py-3 bg-amber-100/80 border-b border-amber-200">
-                          <h4 className="text-base font-semibold text-amber-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                          <h4 className="text-base font-semibold text-amber-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                             يوجد تعارض في: {category.category_name || `الفئة ${idx + 1}`}
                           </h4>
                         </div>
@@ -1644,7 +1648,7 @@ const ContentRequestDetail: React.FC = () => {
                                   <li
                                     key={i}
                                     className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-sm text-gray-800 text-right"
-                                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                    style={{ fontFamily: "'Almarai', sans-serif" }}
                                   >
                                     {item}
                                   </li>
@@ -1660,7 +1664,7 @@ const ContentRequestDetail: React.FC = () => {
                                 <li
                                   key={i}
                                   className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-right space-y-2"
-                                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                                  style={{ fontFamily: "'Almarai', sans-serif" }}
                                 >
                                   {statementsText && (
                                     <p className="text-sm text-gray-800">{statementsText}</p>
@@ -1681,11 +1685,11 @@ const ContentRequestDetail: React.FC = () => {
                       </div>
                     ))
                   ) : analyzeContradictionsMutation.isError ? (
-                    <p className="text-center text-red-600 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-center text-red-600 py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       حدث خطأ أثناء تحليل التعارضات. يرجى المحاولة لاحقاً.
                     </p>
                   ) : (
-                    <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       لا توجد تعارضات في النتيجة.
                     </p>
                   );
@@ -1696,7 +1700,7 @@ const ContentRequestDetail: React.FC = () => {
                   type="button"
                   onClick={() => setIsAnalyzeModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   إغلاق
                 </button>
@@ -1708,7 +1712,7 @@ const ContentRequestDetail: React.FC = () => {
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
             {/* Guidance Section */}
             <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 إضافة التوجيهات
               </h3>
               <Textarea
@@ -1722,7 +1726,7 @@ const ContentRequestDetail: React.FC = () => {
 
             {/* Executive Summary Upload Section */}
             <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 الملخص التنفيذي
               </h3>
 
@@ -1759,10 +1763,10 @@ const ContentRequestDetail: React.FC = () => {
                         </div>
                       )}
                       <div className="flex flex-col items-end">
-                        <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           {executiveSummaryFile.name}
                         </span>
-                        <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                        <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           {formatFileSize(executiveSummaryFile.size)}
                         </span>
                       </div>
@@ -1782,10 +1786,10 @@ const ContentRequestDetail: React.FC = () => {
                     <div className="flex justify-center mb-4">
                       <Upload className="w-10 h-10 text-gray-400" />
                     </div>
-                    <p className="text-base text-[#1A1A1A] mb-2" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-base text-[#1A1A1A] mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       اضغط للرفع أو اسحب الملف هنا
                     </p>
-                    <p className="text-sm text-[#666666]" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                    <p className="text-sm text-[#666666]" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       PDF, WORD, EXCEL (max. 20MB)
                     </p>
                   </>
@@ -1806,7 +1810,7 @@ const ContentRequestDetail: React.FC = () => {
               disabled={sendToSchedulingMutation.isPending || !executiveSummaryFile}
               className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 إرسال إلى مسؤول الجدولة
               </span>
               <Send className="w-5 h-5" />
@@ -1818,7 +1822,7 @@ const ContentRequestDetail: React.FC = () => {
               disabled={submitReturnMutation.isPending}
               className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 إعادة للطلب
               </span>
               <RotateCcw className="w-5 h-5" />
@@ -1830,7 +1834,7 @@ const ContentRequestDetail: React.FC = () => {
                 type="button"
                 onClick={() => setIsDraftsModalOpen(true)}
                 className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 مسودات ({draftsRecords.length})
               </button>
@@ -1842,7 +1846,7 @@ const ContentRequestDetail: React.FC = () => {
               disabled={submitConsultationMutation.isPending}
               className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="text-base font-bold" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 طلب استشارة
               </span>
               <ClipboardCheck className="w-5 h-5" />
@@ -1855,11 +1859,11 @@ const ContentRequestDetail: React.FC = () => {
       <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) setInsightsModalAttachment(null); }}>
         <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+            <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
               تقييم الاختلاف بين العروض {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
             {isLoadingInsights ? (
               <p className="text-gray-500">جاري التحميل...</p>
             ) : attachmentInsights != null ? (
@@ -1904,7 +1908,7 @@ const ContentRequestDetail: React.FC = () => {
               type="button"
               onClick={() => setInsightsModalAttachment(null)}
               className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               إغلاق
             </button>
@@ -1918,7 +1922,7 @@ const ContentRequestDetail: React.FC = () => {
           <DialogHeader>
             <DialogTitle
               className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               إعادة الطلب لمقدم الطلب
             </DialogTitle>
@@ -1927,7 +1931,7 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label
                 className="text-sm font-medium text-gray-700 text-right"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 الملاحظات *
               </label>
@@ -1945,7 +1949,7 @@ const ContentRequestDetail: React.FC = () => {
               onClick={handleSubmitReturn}
               disabled={submitReturnMutation.isPending || !returnNotes.trim()}
               className="px-4 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               {submitReturnMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
             </button>
@@ -1953,7 +1957,7 @@ const ContentRequestDetail: React.FC = () => {
               onClick={() => setIsReturnModalOpen(false)}
               disabled={submitReturnMutation.isPending}
               className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               إلغاء
             </button>
@@ -1967,7 +1971,7 @@ const ContentRequestDetail: React.FC = () => {
           <DialogHeader>
             <DialogTitle
               className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               طلب استشارة جدولة
             </DialogTitle>
@@ -1977,7 +1981,7 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label
                 className="text-sm font-medium text-gray-700 text-right"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 المستشار *
               </label>
@@ -1987,7 +1991,7 @@ const ContentRequestDetail: React.FC = () => {
               >
                 <SelectTrigger
                   className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
                 </SelectTrigger>
@@ -2000,7 +2004,7 @@ const ContentRequestDetail: React.FC = () => {
                       onChange={(e) => setConsultantSearch(e.target.value)}
                       placeholder="ابحث عن المستشار بالاسم أو البريد"
                       className="h-9 text-right"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     />
                   </div>
                   {consultants.length === 0 && !isLoadingConsultants ? (
@@ -2022,7 +2026,7 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label
                 className="text-sm font-medium text-gray-700 text-right"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 الملاحظات *
               </label>
@@ -2040,7 +2044,7 @@ const ContentRequestDetail: React.FC = () => {
               type="button"
               onClick={() => setIsConsultationModalOpen(false)}
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
               disabled={submitConsultationMutation.isPending}
             >
               إلغاء
@@ -2051,7 +2055,7 @@ const ContentRequestDetail: React.FC = () => {
                 onClick={() => handleSubmitConsultation('draft')}
                 disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 {submitConsultationMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
               </button>
@@ -2060,7 +2064,7 @@ const ContentRequestDetail: React.FC = () => {
                 onClick={() => handleSubmitConsultation('submit')}
                 disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 {submitConsultationMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
               </button>
@@ -2075,7 +2079,7 @@ const ContentRequestDetail: React.FC = () => {
           <DialogHeader>
             <DialogTitle
               className="text-right"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               مسودات الاستشارات
             </DialogTitle>
@@ -2099,20 +2103,20 @@ const ContentRequestDetail: React.FC = () => {
                     <div className="flex flex-row items-center justify-between">
                       <span
                         className="text-sm font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         سؤال الاستشارة:
                       </span>
                       <span
                         className="text-xs text-gray-500"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
                       </span>
                     </div>
                     <p
                       className="text-sm text-gray-900 text-right"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       {draft.consultation_question}
                     </p>
@@ -2122,13 +2126,13 @@ const ContentRequestDetail: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <span
                         className="text-sm font-medium text-gray-700 text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         الإجابة:
                       </span>
                       <p
                         className="text-sm text-gray-900 text-right whitespace-pre-wrap bg-white p-3 rounded border border-gray-200"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         {answerText}
                       </p>
@@ -2141,7 +2145,7 @@ const ContentRequestDetail: React.FC = () => {
                       onClick={() => handlePublishDraft(draft.consultation_id)}
                       disabled={publishDraftMutation.isPending}
                       className="flex flex-row justify-center items-center px-4 py-2 gap-2 h-9 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       {publishDraftMutation.isPending ? 'جاري النشر...' : 'نشر'}
                     </button>
@@ -2152,7 +2156,7 @@ const ContentRequestDetail: React.FC = () => {
               <div className="flex items-center justify-center py-8">
                 <p
                   className="text-gray-500 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   لا توجد مسودات
                 </p>
@@ -2165,7 +2169,7 @@ const ContentRequestDetail: React.FC = () => {
               type="button"
               onClick={() => setIsDraftsModalOpen(false)}
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
-              style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+              style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               إغلاق
             </button>

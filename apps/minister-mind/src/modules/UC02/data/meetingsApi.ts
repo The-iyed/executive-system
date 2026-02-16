@@ -604,6 +604,7 @@ export interface ConsultationRecord {
   responded_at?: string | null;
   /** @deprecated Use consultation_answers[0].status */
   status?: string;
+  consultation_request_number: string;
   is_draft?: boolean;
 }
 

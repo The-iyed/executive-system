@@ -116,7 +116,7 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
               <p
                 className="text-right w-full text-[#2C2C2C] font-normal text-xs leading-[19px]"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
               >
                 {request.date}
@@ -151,7 +151,7 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
               <span
                 className="text-right text-sm font-normal text-[#344054] leading-4"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
               >
                 تفاصيل
