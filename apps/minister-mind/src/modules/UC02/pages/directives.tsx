@@ -20,6 +20,7 @@ interface DirectivesCardsGridProps {
   setOpenDropdownId: (id: string | null) => void;
   dropdownRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
   onCloseDirective: (directiveId: string, directiveText: string, relatedMeeting: string) => void | Promise<void>;
+  onCreateMeeting: (directiveId: string, directiveText: string, relatedMeeting: string) => void;
 }
 
 const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
@@ -55,6 +56,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
   dropdownRefs,
   refetch,
   onCloseDirective,
+  onCreateMeeting,
 }) => {
   const renderActionsDropdown = (directive: MeetingCardData) => {
     const isOpen = openDropdownId === directive.id;
@@ -90,6 +92,18 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
             >
               <span>إلغاء التوجيه</span>
               <X className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateMeeting(directive.id, directive.title || '', directive.coordinator || '');
+                setOpenDropdownId(null);
+              }}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#048F86', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+            >
+              <span>طلب إجتماع</span>
+              <CalendarDays className="w-4 h-4" />
             </button>
             <button
               onClick={async (e) => {
@@ -187,7 +201,7 @@ const Directives: React.FC = () => {
   const handleCloseDirectiveNavigate = async (directiveId: string, directiveText: string, relatedMeeting: string) => {
     await closeDirective(directiveId);
     navigate(
-      ` ${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
+      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
     );
   };
 
@@ -260,6 +274,13 @@ const Directives: React.FC = () => {
 
   // Store original API response items for table columns
   const originalDirectives: Directive[] = directivesResponse?.items || [];
+
+  const handleCreateMeeting = (directiveId: string, directiveText: string, relatedMeeting: string) => {
+    const originalDirective = originalDirectives.find((d) => d.id === directiveId);
+    navigate(
+      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(originalDirective?.directive_text || directiveText)}&related_meeting=${encodeURIComponent(originalDirective?.related_meeting || relatedMeeting)}`
+    );
+  };
 
   // Fetch previous directives (التوجيهات السابقة)
   const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious } = useQuery({
@@ -626,6 +647,29 @@ const Directives: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
               <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (openDropdownId) {
+                    const d = originalDirectives.find((x) => x.id === openDropdownId);
+                    if (d) {
+                      navigate(
+                        `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
+                      );
+                    }
+                    setOpenDropdownId(null);
+                    setDropdownPosition(null);
+                  }
+                }}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: '#048F86',
+                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+                }}
+              >
+                <span>طلب إجتماع</span>
+                <CalendarDays className="w-4 h-4" />
+              </button>
+              <button
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (openDropdownId) {
@@ -727,6 +771,7 @@ const Directives: React.FC = () => {
                   dropdownRefs={dropdownRefs}
                   refetch={refetch}
                   onCloseDirective={handleCloseDirectiveNavigate}
+                  onCreateMeeting={handleCreateMeeting}
                 />
               )}
 
