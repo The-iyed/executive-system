@@ -390,7 +390,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               <div className="absolute top-2 right-2 z-10">
                 <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-200 flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                  <span className="text-xs text-gray-700 font-medium" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+                  <span className="text-xs text-gray-700 font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     جاري التحديث...
                   </span>
                 </div>
@@ -403,7 +403,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       {/* Error message overlay if there's an error but we have previous data */}
       {error && (timelineEvents || previousEvents.length > 0) && (
         <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-20">
-          <p className="text-sm text-red-600 text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <p className="text-sm text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
             حدث خطأ أثناء تحديث المواعيد. يرجى المحاولة مرة أخرى.
           </p>
         </div>
