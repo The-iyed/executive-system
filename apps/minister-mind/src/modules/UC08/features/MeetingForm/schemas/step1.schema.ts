@@ -4,7 +4,6 @@ const CATEGORIES_REQUIRING_REASON = ['PRIVATE_MEETING', 'BILATERAL_MEETING'] as 
 const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as const;
 const CATEGORIES_MAKING_FILE_OPTIONAL = ['BILATERAL_MEETING', 'PRIVATE_MEETING', 'GOVERNMENT_CENTER_TOPICS'] as const;
 const CONFIDENTIALITY_MAKING_FILE_OPTIONAL = 'CONFIDENTIAL' as const;
-// ISO 8601 date pattern - supports YYYY-MM-DD and full ISO 8601 format
 const ISO_8601_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:\d{2})?)?$/;
 const SIMPLE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -18,17 +17,14 @@ const ACCEPTED_FILE_TYPES = [
 ];
 const ACCEPTED_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
 
-// Helper to validate ISO 8601 date format
 const isValidISO8601Date = (dateString: string): boolean => {
   if (!dateString) return false;
   
-  // Check if it matches simple date pattern (YYYY-MM-DD)
   if (SIMPLE_DATE_PATTERN.test(dateString)) {
     const date = new Date(dateString + 'T00:00:00');
     return !isNaN(date.getTime());
   }
   
-  // Check if it matches full ISO 8601 pattern
   if (ISO_8601_DATE_PATTERN.test(dateString)) {
     const date = new Date(dateString);
     return !isNaN(date.getTime());
@@ -165,7 +161,6 @@ const previousMeetingItemValidationSchema = z.object({
     ),
 });
 
-// OptionType schema for relatedDirective and requester
 const optionTypeSchema = z.object({
   value: z.string(),
   label: z.string(),
