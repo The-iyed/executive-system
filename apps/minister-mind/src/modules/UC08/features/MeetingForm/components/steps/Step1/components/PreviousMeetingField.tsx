@@ -1,40 +1,27 @@
-import React from 'react';
+import { useCallback } from 'react';
 import { FormField, FormInput, FormAsyncSelectV2 } from '@shared';
 import type { OptionType } from '@shared';
-import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../constants/step1.constants';
+import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
+import { getMeetings } from '../../../../../../data';
+import type { MeetingApiResponse } from '../../../../../../data';
 
 export interface PreviousMeetingFieldProps {
-  /** When visible, use async select; value can be OptionType (id + label) or string (legacy display) */
   value: OptionType | string | null;
   onChange: (value: OptionType | string | null) => void;
   onBlur?: () => void;
-  loadOptions: (search: string, skip: number, limit: number) => Promise<{
-    items: Array<OptionType & { description?: string }>;
-    total: number;
-    skip: number;
-    limit: number;
-    has_next: boolean;
-    has_previous: boolean;
-  }>;
   error?: string;
   touched?: boolean;
   disabled?: boolean;
   required?: boolean;
   visible?: boolean;
-  /** When true, show as read-only text (e.g. from directive); when false and visible, show async select */
   readOnly?: boolean;
   className?: string;
 }
 
-/**
- * Previous Meeting (الاجتماع السابق). Hidden when Nature = Normal; required when Follow-up or Recurring.
- * Supports async search when visible and not read-only.
- */
 export function PreviousMeetingField({
   value,
   onChange,
   onBlur,
-  loadOptions,
   error,
   touched,
   disabled = false,
@@ -43,6 +30,29 @@ export function PreviousMeetingField({
   readOnly = false,
   className,
 }: PreviousMeetingFieldProps) {
+  const loadOptions = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const response = await getMeetings({
+        search: search.trim() || undefined,
+        skip,
+        limit: limit || STEP1_ASYNC_SELECT_PAGE_SIZE,
+      });
+      const items = (response?.items ?? []).map((m: MeetingApiResponse) => ({
+        value: m.id,
+        label: m.meeting_title || m.meeting_subject || m.request_number || m.id,
+      }));
+      return {
+        items,
+        total: response?.total ?? 0,
+        skip: response?.skip ?? 0,
+        limit: response?.limit ?? limit,
+        has_next: (response?.total ?? 0) > (response?.skip ?? 0) + items.length,
+        has_previous: (response?.skip ?? 0) > 0,
+      };
+    },
+    []
+  );
+
   if (!visible) return null;
 
   const displayValue = typeof value === 'object' && value !== null ? value.label : (value ?? '');
@@ -51,12 +61,7 @@ export function PreviousMeetingField({
 
   if (readOnly) {
     return (
-      <FormField
-        className={className}
-        label="الاجتماع السابق"
-        required={required}
-        error={touched ? error : undefined}
-      >
+      <FormField className={className} label="الاجتماع السابق" required={required} error={touched ? error : undefined}>
         <FormInput
           value={displayValue}
           onChange={(e) => onChange(e.target.value)}
@@ -71,12 +76,7 @@ export function PreviousMeetingField({
   }
 
   return (
-    <FormField
-      className={className}
-      label="الاجتماع السابق"
-      required={required}
-      error={touched ? error : undefined}
-    >
+    <FormField className={className} label="الاجتماع السابق" required={required} error={touched ? error : undefined}>
       <FormAsyncSelectV2
         value={optionValue as OptionType | null}
         onValueChange={(v) => onChange(v)}
