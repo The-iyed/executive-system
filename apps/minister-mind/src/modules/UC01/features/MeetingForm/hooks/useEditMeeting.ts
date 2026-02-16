@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getDraftById } from '../../../data';
+import { getDraftById, getSubmitterMeeting } from '../../../data';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData, transformDraftToStep4SchedulingData } from '../utils';
 import { useStepNavigation } from './useStepNavigation';
@@ -23,6 +23,17 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     queryFn: () => getDraftById(id!),
     enabled: !!id,
   });
+
+  const { data: submitterMeeting } = useQuery({
+    queryKey: ['submitterMeeting', id, 'edit'],
+    queryFn: () => getSubmitterMeeting(id!),
+    enabled: !!id,
+  });
+
+  const editableFields = useMemo(
+    () => submitterMeeting?.editable_fields ?? draftData?.editable_fields ?? null,
+    [submitterMeeting?.editable_fields, draftData?.editable_fields]
+  );
 
   const initialData = useMemo(() => {
     if (!draftData) return undefined;
@@ -51,7 +62,7 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     draftId: id ?? '',
     isEditMode: true,
     currentStep,
-    editableFields: draftData?.editable_fields ?? null,
+    editableFields,
     initialData,
     onStep2ContentSuccess: (isDraft) => {
       if (isDraft) handleSaveDraft();
