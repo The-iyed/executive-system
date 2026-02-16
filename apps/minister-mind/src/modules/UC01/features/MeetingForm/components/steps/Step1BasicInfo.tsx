@@ -12,6 +12,7 @@ import {
   FormAsyncSelectV2,
   FileUpload,
   MeetingDateTimeRangePicker,
+  SECTOR_OPTIONS,
 } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
@@ -175,10 +176,10 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               required={isStep1BasicInfoFieldRequired('sector')}
               error={touched.sector ? errors.sector : undefined}
             >
-              <FormInput
+              <FormSelect
                 value={formData.sector || ''}
-                onChange={(e) => handleChange('sector', e.target.value)}
-                onBlur={() => handleBlur('sector')}
+                onValueChange={(value) => handleChange('sector', value)}
+                options={SECTOR_OPTIONS}
                 placeholder="القطاع"
                 error={!!(touched.sector && errors.sector)}
                 disabled={isFieldDisabled('sector')}

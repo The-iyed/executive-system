@@ -183,7 +183,7 @@ export function Drawer({
                 <SelectMenuPortalContext.Provider value={menuPortalTarget}>
                   <div
                     className={cn(
-                      'relative z-[1] flex-1 overflow-y-auto overflow-x-hidden min-h-0',
+                      'relative z-[1] flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden',
                       'py-3 px-4 mt-4 mb-4',
                       bodyClassName
                     )}

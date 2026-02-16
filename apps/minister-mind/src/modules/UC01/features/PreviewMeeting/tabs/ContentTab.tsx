@@ -9,7 +9,7 @@ type MeetingWithContent = MeetingApiResponse & {
   presentation_attachment_timing?: string | null;
 };
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 interface ContentTabProps {
   meeting: MeetingApiResponse;
@@ -94,7 +94,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({ meeting }) => {
   const additionalAttachments = attachments.filter((a) => a.is_additional);
   const attachmentTiming = m.when_presentation_attached ?? m.presentation_attachment_timing ?? null;
   const showContentOfficerNotes =
-    meeting.status === MeetingStatus.RETURNED_FROM_CONTENT_MANAGER && meeting.content_officer_notes;
+    meeting.status === MeetingStatus.RETURNED_FROM_CONTENT && meeting.content_officer_notes;
 
   return (
     <div className="flex flex-col gap-6 w-full" dir="rtl">

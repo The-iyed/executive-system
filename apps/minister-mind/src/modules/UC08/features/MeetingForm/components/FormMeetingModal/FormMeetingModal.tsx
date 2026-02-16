@@ -20,7 +20,7 @@ export function FormMeetingModal({
       onOpenChange={onOpenChange}
       width={850}
       className={className}
-      bodyClassName="p-[10px]"
+      bodyClassName="p-4 min-w-0"
     >
       {children}
     </Drawer>
