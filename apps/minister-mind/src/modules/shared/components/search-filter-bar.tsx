@@ -48,12 +48,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         </SelectTrigger>
         <SelectContent dir="rtl">
           {!hideAllOption && <SelectItem value="all">جميع الحالات</SelectItem>}
-          {Object.values(MeetingStatus)
-            .filter((status) =>
-              status !== MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER &&
-              status !== MeetingStatus.RETURNED_FROM_CONTENT_MANAGER
-            )
-            .map((status) => (
+          {Object.values(MeetingStatus).map((status) => (
               <SelectItem key={status} value={status}>
                 {getMeetingStatusLabel(status)}
               </SelectItem>
