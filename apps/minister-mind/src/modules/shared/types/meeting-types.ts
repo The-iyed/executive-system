@@ -151,6 +151,41 @@ export const MeetingTypeLabels: Record<MeetingType, string> = {
 };
 
 /**
+ * Sector (القطاع)
+ * Ministry sector for the meeting
+ */
+export enum Sector {
+  MUNICIPAL_AFFAIRS = 'MUNICIPAL_AFFAIRS',
+  HOUSING_AFFAIRS = 'HOUSING_AFFAIRS',
+  EMPOWERMENT_AND_COMPLIANCE = 'EMPOWERMENT_AND_COMPLIANCE',
+  PLANNING_AND_DEVELOPMENT = 'PLANNING_AND_DEVELOPMENT',
+  SUPPORT_SERVICES = 'SUPPORT_SERVICES',
+  MINISTER_AFFILIATED = 'MINISTER_AFFILIATED',
+}
+
+/**
+ * Sector Labels (Arabic)
+ */
+export const SectorLabels: Record<Sector, string> = {
+  [Sector.MUNICIPAL_AFFAIRS]: 'شؤون البلديات',
+  [Sector.HOUSING_AFFAIRS]: 'شؤون الإسكان',
+  [Sector.EMPOWERMENT_AND_COMPLIANCE]: 'التمكين والإمتثال',
+  [Sector.PLANNING_AND_DEVELOPMENT]: 'التخطيط والتطوير',
+  [Sector.SUPPORT_SERVICES]: 'الخدمات المساندة',
+  [Sector.MINISTER_AFFILIATED]: 'الجهات التابعة لمعالي الوزير',
+};
+
+/** Dropdown options for القطاع (Sector) */
+export const SECTOR_OPTIONS: { value: Sector; label: string }[] = [
+  { value: Sector.MUNICIPAL_AFFAIRS, label: SectorLabels[Sector.MUNICIPAL_AFFAIRS] },
+  { value: Sector.HOUSING_AFFAIRS, label: SectorLabels[Sector.HOUSING_AFFAIRS] },
+  { value: Sector.EMPOWERMENT_AND_COMPLIANCE, label: SectorLabels[Sector.EMPOWERMENT_AND_COMPLIANCE] },
+  { value: Sector.PLANNING_AND_DEVELOPMENT, label: SectorLabels[Sector.PLANNING_AND_DEVELOPMENT] },
+  { value: Sector.SUPPORT_SERVICES, label: SectorLabels[Sector.SUPPORT_SERVICES] },
+  { value: Sector.MINISTER_AFFILIATED, label: SectorLabels[Sector.MINISTER_AFFILIATED] },
+];
+
+/**
  * Meeting Channel (آلية انعقاد الاجتماع / قناة الاجتماع)
  */
 export const MeetingChannelLabels: Record<string, string> = {
