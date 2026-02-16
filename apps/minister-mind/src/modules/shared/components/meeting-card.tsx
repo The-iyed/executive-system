@@ -4,7 +4,7 @@ import { Eye, CalendarDays, MapPin, User, Hash, Layers, CheckCircle2, XCircle } 
 import { MeetingStatus, MeetingChannelLabels } from '../types';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 const getLocationLabel = (value?: string): string | undefined => {
   if (!value) return undefined;

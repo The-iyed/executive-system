@@ -3,7 +3,7 @@ import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 import { AttendanceMechanism } from '@shared/types';
 import { User, Mail, Phone, Trash2 } from 'lucide-react';
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 /** API may return extra invitee fields */
 type InviteeDisplay = MeetingApiResponse['invitees'][number] & {
@@ -74,7 +74,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
               >
                 {/* Delete strip - overlays on hover (left side in RTL) */}
                 <div
-                  className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12"
+                  className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden"
                   style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}
                 >
                   <button
