@@ -1,8 +1,4 @@
-import type { FormTableColumn } from '@shared';
-
-// ============================================================================
-// STEP 1 CONSTANTS
-// ============================================================================
+import { SECTOR_OPTIONS, type  FormTableColumn } from '@shared';
 
 export const MEETING_CATEGORY_OPTIONS = [
   { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
@@ -30,56 +26,75 @@ export const MEETING_TYPE_OPTIONS = [
 ];
 
 export const MEETING_NATURE_OPTIONS = [
-  { value: 'FORMAL', label: 'رسمي' },
-  { value: 'INFORMAL', label: 'غير رسمي' },
+  { value: 'NORMAL', label: 'عادي' },
+  { value: 'SEQUENTIAL', label: 'إلحاقي' },
+  { value: 'PERIODIC', label: 'دوري' },
 ];
 
-export const SECTOR_OPTIONS = [
-  { value: 'SECTOR1', label: 'قطاع 1' },
-  { value: 'SECTOR2', label: 'قطاع 2' },
-];
+export { SECTOR_OPTIONS };
 
 export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: 'موضوع الاجتماع', width: 'w-full' },
   { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
-// Table Column Definitions for Step 1
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'objective', header: 'الهدف', type: 'text', placeholder: 'الهدف', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
+];
+
+export const MINISTER_SUPPORT_TYPE_OPTIONS = [
+  { value: 'إحاطة', label: 'إحاطة' },
+  { value: 'تحديث', label: 'تحديث' },
+  { value: 'قرار', label: 'قرار' },
+  { value: 'توجيه', label: 'توجيه' },
+  { value: 'اعتماد', label: 'اعتماد' },
+  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
+];
+
+export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
+  { value: '0', label: '0 دقيقة' },
+  { value: '5', label: '5 دقائق' },
+  { value: '10', label: '10 دقائق' },
+  { value: '15', label: '15 دقيقة' },
+  { value: '20', label: '20 دقيقة' },
+  { value: '25', label: '25 دقيقة' },
+  { value: '30', label: '30 دقيقة' },
+  { value: '45', label: '45 دقيقة' },
+  { value: '60', label: '60 دقيقة' },
+  { value: '90', label: '90 دقيقة' },
+  { value: '120', label: '120 دقيقة' },
+  { value: '180', label: '180 دقيقة' },
 ];
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: 'عنصر الأجندة', width: 'w-full' },
+  { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: 'إحاطة / تحديث / قرار / توجيه / اعتماد / أخرى', width: 'w-full' },
+  { id: 'presentation_duration_minutes', header: 'مدة العرض (بالدقائق)', type: 'select', selectOptions: PRESENTATION_DURATION_MINUTES_OPTIONS, placeholder: 'اختر المدة', width: 'w-40' },
+  { id: 'minister_support_other', header: 'نص الدعم (عند اختيار أخرى)', type: 'text', placeholder: 'أدخل نص الدعم', width: 'w-full', showWhen: { field: 'minister_support_type', value: 'أخرى' } },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
-  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'support_description', header: 'الدعم', type: 'text', placeholder: 'الدعم', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
-  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
-  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'directive', header: 'التوجيه', type: 'text', placeholder: 'التوجيه', width: 'w-full' },
+  { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: 'الاجتماع السابق', width: 'w-full' },
   { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
-  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'directiveStatus', header: 'حالة التوجيه', type: 'text', placeholder: 'حالة التوجيه', width: 'w-full' },
   { id: 'dueDate', header: 'تاريخ الاستحقاق', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
-  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: '-------', width: 'w-full' },
+  { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: 'المسؤول', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
-
-// ============================================================================
-// STEP 3 CONSTANTS
-// ============================================================================
 
 export enum MeetingChannel {
   PHYSICAL = 'PHYSICAL',
@@ -93,10 +108,6 @@ export const MEETING_CHANNEL_OPTIONS = [
   { value: MeetingChannel.HYBRID, label: 'مختلط' },
 ];
 
-// ============================================================================
-// STEP 2 CONSTANTS
-// ============================================================================
-
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   {
     id: 'itemNumber',
@@ -107,28 +118,28 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     id: 'name',
     header: 'الإسم',
     type: 'text',
-    placeholder: '-------',
+    placeholder: 'الإسم',
     width: 'min-w-[210px]',
   },
   {
     id: 'position',
     header: 'المنصب',
     type: 'text',
-    placeholder: '-------',
+    placeholder: 'المنصب',
     width: 'min-w-[210px]',
   },
   {
     id: 'mobile',
     header: 'الجوال',
     type: 'text',
-    placeholder: '-------',
+    placeholder: 'الجوال',
     width: 'min-w-[210px]',
   },
   {
     id: 'email',
     header: 'البريد الإلكتروني',
     type: 'text',
-    placeholder: '-------',
+    placeholder: 'البريد الإلكتروني',
     width: 'min-w-[210px]',
   },
   {
@@ -148,12 +159,15 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
 export const INVITEES_TABLE_TITLE = 'قائمة المدعوين';
 export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو جديد';
 
-// ============================================================================
-// STEP LABELS
-// ============================================================================
-
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
   { id: 'step2', label: 'قائمة المدعوين' },
   { id: 'step3', label: 'موعد الاجتماع' },
 ];
+
+export const STEP1_TABS = [
+  { id: 'meeting-info' as const, label: 'معلومات الاجتماع' },
+  { id: 'other-sections' as const, label: 'باقي الأقسام' },
+];
+
+export const STEP1_ASYNC_SELECT_PAGE_SIZE = 10;

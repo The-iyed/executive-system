@@ -4,7 +4,7 @@ import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 
 const labelClass = 'text-sm font-medium text-gray-700';
 const valueClass = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right';
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 interface RequestInfoTabProps {
   meeting: MeetingApiResponse;
