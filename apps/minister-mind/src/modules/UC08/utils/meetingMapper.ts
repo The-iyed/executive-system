@@ -20,8 +20,8 @@ const STATUS_MAP: Record<string, MeetingStatus> = {
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
   [MeetingStatus.REJECTED]: MeetingStatus.REJECTED,
   [MeetingStatus.CANCELLED]: MeetingStatus.CANCELLED,
-  [MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER]: MeetingStatus.RETURNED_FROM_SCHEDULING_MANAGER,
-  [MeetingStatus.RETURNED_FROM_CONTENT_MANAGER]: MeetingStatus.RETURNED_FROM_CONTENT_MANAGER,
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: MeetingStatus.RETURNED_FROM_SCHEDULING,
+  [MeetingStatus.RETURNED_FROM_CONTENT]: MeetingStatus.RETURNED_FROM_CONTENT,
 };
 
 const mapStatus = (apiStatus: string): MeetingStatus | string => {
