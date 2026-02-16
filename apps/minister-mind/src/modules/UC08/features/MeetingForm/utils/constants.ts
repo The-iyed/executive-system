@@ -1,9 +1,4 @@
-import type { FormTableColumn } from '@shared';
-import { SECTOR_OPTIONS } from '@shared';
-
-// ============================================================================
-// STEP 1 CONSTANTS
-// ============================================================================
+import { SECTOR_OPTIONS, type  FormTableColumn } from '@shared';
 
 export const MEETING_CATEGORY_OPTIONS = [
   { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
@@ -30,7 +25,6 @@ export const MEETING_TYPE_OPTIONS = [
   { value: 'EXTERNAL', label: 'خارجي' },
 ];
 
-/** Meeting nature (طبيعة الاجتماع): NORMAL=عادي, SEQUENTIAL=إلحاقي (Follow-up), PERIODIC=دوري (Recurring) */
 export const MEETING_NATURE_OPTIONS = [
   { value: 'NORMAL', label: 'عادي' },
   { value: 'SEQUENTIAL', label: 'إلحاقي' },
@@ -46,14 +40,12 @@ export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
-// Table Column Definitions for Step 1
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'objective', header: 'الهدف', type: 'text', placeholder: 'الهدف', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
-// Minister support type per agenda item (like UC01 Step1)
 export const MINISTER_SUPPORT_TYPE_OPTIONS = [
   { value: 'إحاطة', label: 'إحاطة' },
   { value: 'تحديث', label: 'تحديث' },
@@ -78,7 +70,6 @@ export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
   { value: '180', label: '180 دقيقة' },
 ];
 
-// جدول أجندة الاجتماع (like UC01 Step1): رقم البند، الأجندة، الدعم المطلوب من الوزير، مدة العرض، ونص الدعم عند اختيار أخرى
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
   { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: 'عنصر الأجندة', width: 'w-full' },
@@ -105,10 +96,6 @@ export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
-// ============================================================================
-// STEP 3 CONSTANTS
-// ============================================================================
-
 export enum MeetingChannel {
   PHYSICAL = 'PHYSICAL',
   VIRTUAL = 'VIRTUAL',
@@ -120,10 +107,6 @@ export const MEETING_CHANNEL_OPTIONS = [
   { value: MeetingChannel.VIRTUAL, label: 'افتراضي' },
   { value: MeetingChannel.HYBRID, label: 'مختلط' },
 ];
-
-// ============================================================================
-// STEP 2 CONSTANTS
-// ============================================================================
 
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   {
@@ -176,12 +159,15 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
 export const INVITEES_TABLE_TITLE = 'قائمة المدعوين';
 export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو جديد';
 
-// ============================================================================
-// STEP LABELS
-// ============================================================================
-
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
   { id: 'step2', label: 'قائمة المدعوين' },
   { id: 'step3', label: 'موعد الاجتماع' },
 ];
+
+export const STEP1_TABS = [
+  { id: 'meeting-info' as const, label: 'معلومات الاجتماع' },
+  { id: 'other-sections' as const, label: 'باقي الأقسام' },
+];
+
+export const STEP1_ASYNC_SELECT_PAGE_SIZE = 10;
