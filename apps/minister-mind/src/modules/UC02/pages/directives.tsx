@@ -7,7 +7,7 @@ import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels }
 import { cn } from '@sanad-ai/ui';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
-import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
@@ -27,8 +27,8 @@ const Directives: React.FC = () => {
   const [expandedDirectiveId, setExpandedDirectiveId] = useState<string | null>(null);
 
   /** Close directive via API only; no navigation. */
-  const handleCloseDirective = async (directiveId: string) => {
-    await closeDirective(directiveId);
+  const handleCloseDirective = async (directive: Directive) => {
+    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
     await refetch();
   };
 
@@ -616,15 +616,18 @@ const Directives: React.FC = () => {
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (openDropdownId) {
-                    try {
-                      await cancelDirective(openDropdownId);
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
-                      await refetch();
-                    } catch (error) {
-                      console.error('Error cancelling directive:', error);
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
+                    const d = originalDirectives.find((x) => x.id === openDropdownId);
+                    if (d) {
+                      try {
+                        await cancelDirective(d.id, directiveToExternalDirectiveBody(d));
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
+                        await refetch();
+                      } catch (error) {
+                        console.error('Error cancelling directive:', error);
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
+                      }
                     }
                   }
                 }}
@@ -644,7 +647,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       try {
-                        await closeDirective(d.id);
+                        await closeDirective(d.id, directiveToExternalDirectiveBody(d));
                         navigate(
                           `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
                         );
@@ -672,7 +675,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       try {
-                        await handleCloseDirective(d.id);
+                        await handleCloseDirective(d);
                       } catch (err) {
                         console.error('Error closing directive:', err);
                       }
@@ -872,7 +875,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await cancelDirective(original.id);
+                                      await cancelDirective(original.id, directiveToExternalDirectiveBody(original));
                                       setExpandedDirectiveId(null);
                                       await refetch();
                                     } catch (err) {
@@ -890,7 +893,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await closeDirective(original.id);
+                                      await closeDirective(original.id, directiveToExternalDirectiveBody(original));
                                       navigate(
                                         `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(original.assignees || '')}`
                                       );
@@ -910,7 +913,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await handleCloseDirective(original.id);
+                                      await handleCloseDirective(original);
                                     } catch (err) {
                                       console.error('Error closing directive:', err);
                                     }
