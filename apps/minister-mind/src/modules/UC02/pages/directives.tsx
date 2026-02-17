@@ -144,7 +144,7 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
             {/* Title + Status */}
             <div className="flex flex-row items-start justify-between gap-3">
               <CardTooltip text={directive.title}>
-                <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2" style={{ ...fontStyle, fontSize: '15px' }}>
+                <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap" style={{ ...fontStyle, fontSize: '15px' }}>
                   {directive.title}
                 </h3>
               </CardTooltip>
@@ -157,9 +157,9 @@ const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => 
             </div>
 
             {/* Date pill */}
-            <div className="flex flex-row items-center gap-2.5">
+            <div className="flex flex-row items-center gap-2.5 w-full">
               <CardTooltip text={directive.date}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={pillStyle}>
+                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                     <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                   </div>
@@ -764,7 +764,7 @@ const Directives: React.FC = () => {
                       {/* Title + Status */}
                       <div className="flex flex-row items-start justify-between gap-3">
                         <CardTooltip text={directive.title}>
-                          <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2" style={{ ...fontStyle, fontSize: '15px' }}>
+                          <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap" style={{ ...fontStyle, fontSize: '15px' }}>
                             {directive.title}
                           </h3>
                         </CardTooltip>
@@ -777,9 +777,9 @@ const Directives: React.FC = () => {
                       </div>
 
                       {/* Date pill */}
-                      <div className="flex flex-row items-center gap-2.5">
+                      <div className="flex flex-row items-center gap-2.5 w-full">
                         <CardTooltip text={directive.date}>
-                          <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={pillStyle}>
+                          <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
                             <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                               <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                             </div>
