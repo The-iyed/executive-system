@@ -122,7 +122,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   onEventShowDetails,
   onTimeSlotClick,
   startHour = 8,
-  endHour = 18,
+  endHour = 24,
 }) => {
   const weekDates = getWeekDates(weekStart);
 
