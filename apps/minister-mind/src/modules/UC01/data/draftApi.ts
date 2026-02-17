@@ -42,6 +42,8 @@ export interface DraftApiResponse {
   urgent_reason?: string | null;
   general_notes?: string | string[] | null;
   general_note?: string | null;
+  /** ملاحظات – used for edit form and accepted in payload as `note` */
+  note?: string | null;
   content_officer_notes?: string | null;
   attachments?: Array<{
     id: string;
