@@ -167,6 +167,8 @@ export interface MeetingApiResponse {
   meeting_classification_type: string;
   meeting_confidentiality: string;
   sector: string;
+  description?: string | null;
+  note?: string | null;
 }
 
 export interface MeetingsListResponse {
@@ -481,14 +483,17 @@ export interface MinisterAttendee {
 }
 
 export interface ScheduleMeetingRequest {
-  scheduled_at: string;
+  /** ISO datetime string (e.g. 2026-02-17T20:23:44.728Z) */
+  scheduled_start: string;
+  /** ISO datetime string (e.g. 2026-02-17T21:23:44.728Z) */
+  scheduled_end: string;
   meeting_channel: string;
   requires_protocol: boolean;
   protocol_type: string | null;
   is_data_complete: boolean;
   notes: string;
   location?: string;
-  meeting_link?: string;
+  meeting_url?: string;
   minister_attendees: MinisterAttendee[];
 }
 
