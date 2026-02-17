@@ -51,7 +51,7 @@ export function GuidanceField({
       });
       const items = (response?.items ?? []).map((d: DirectiveApiResponse) => ({
         value: String(d?.id ?? ''),
-        label: String(d?.title ?? ''), //[d?.directive_text, d?.directive_number, d?.id].find(Boolean) ?? '',
+        label: String(d?.title || d?.directive_text || ''),
         description: d?.related_meeting ?? '',
       })).filter((o) => o.value);
       return {
