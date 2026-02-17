@@ -18,6 +18,16 @@ export interface MinisterSupport {
   support_description: string;
 }
 
+export interface AssigneeSection {
+  user_id: string;
+  assignee_name: string;
+  responded_at: string | null;
+  status: string;
+  answers: string[];
+  assignee_role: string | null;
+  consultation_record_number: string;
+}
+
 export interface Attachment {
   id: string;
   file_name: string;
@@ -649,6 +659,26 @@ export const cancelDirective = async (directiveId: string): Promise<void> => {
 };
 
 // Consultation Records API
+
+/** New format: individual answer within an assignee */
+export interface ConsultationAssigneeAnswer {
+  answer_id: string;
+  text: string;
+  responded_at: string | null;
+}
+
+/** New format: assignee with nested answers */
+export interface ConsultationAssignee {
+  user_id: string;
+  name: string;
+  role: string | null;
+  status: string;
+  responded_at: string | null;
+  request_number: string | null;
+  answers: ConsultationAssigneeAnswer[];
+}
+
+/** Old format answer (backward compatibility) */
 export interface ConsultationAnswer {
   consultation_id: string;
   consultation_answer: string;
@@ -659,20 +689,28 @@ export interface ConsultationAnswer {
 }
 
 export interface ConsultationRecord {
-  consultation_id: string;
-  consultation_type: string;
-  consultation_question: string;
-  consultant_user_id: string;
-  consultant_name: string;
+  // New format fields
+  id?: string;
+  type?: string;
+  question?: string;
+  round_number?: number;
+  assignees?: ConsultationAssignee[];
+
+  // Old format fields (backward compatibility)
+  consultation_id?: string;
+  consultation_type?: string;
+  consultation_question?: string;
+  consultant_user_id?: string;
+  consultant_name?: string;
   requested_at: string;
-  consultation_answers: ConsultationAnswer[];
+  assignee_sections?: AssigneeSection[];
+  consultation_answers?: ConsultationAnswer[];
   /** @deprecated Use consultation_answers[0] - kept for backward compatibility */
   consultation_answer?: string | null;
   /** @deprecated Use consultation_answers[0].responded_at */
   responded_at?: string | null;
-  /** @deprecated Use consultation_answers[0].status */
   status?: string;
-  consultation_request_number: string;
+  consultation_request_number?: string;
   is_draft?: boolean;
 }
 
