@@ -122,12 +122,7 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
               {request.is_data_complete ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
               {request.is_data_complete ? 'مكتمل' : 'غير مكتمل'}
             </span>
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap"
-              style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
-            >
-              {cardData.statusLabel}
-            </span>
+            <StatusBadge status={cardData.status} label={cardData.statusLabel} />
           </div>
         </div>
 

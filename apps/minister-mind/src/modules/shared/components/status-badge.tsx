@@ -26,9 +26,25 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(236,253,243,1)]',
     textClass: 'text-[#027A48]',
   },
+  [MeetingStatus.SCHEDULED_CONTENT]: {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
+  },
+  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
+  },
+  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
+  },
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: {
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
+  },
+  [MeetingStatus.SCHEDULED_DELAYED]: {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
   },
   [MeetingStatus.REJECTED]: {
     bgClass: 'bg-[rgba(255,162,162,0.12)]',
@@ -69,6 +85,38 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
   'UNDER_GUIDANCE': {
     bgClass: 'bg-[rgba(255,211,89,0.12)]',
     textClass: 'text-[#BE8E0B]',
+  },
+  [MeetingStatus.UNDER_CONTENT_REVIEW]: {
+    bgClass: 'bg-[rgba(89,146,255,0.12)]',
+    textClass: 'text-[#3C6FD1]',
+  },
+  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
+  [MeetingStatus.READY]: {
+    bgClass: 'bg-[rgba(4,143,134,0.08)]',
+    textClass: 'text-[#048F86]',
+  },
+  'UNDER_CONTENT_CONSULTATION': {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
+  'SCHEDULED_CONTENT_CONSULTATION': {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
+  },
+  'PENDING': {
+    bgClass: 'bg-[rgba(255,211,89,0.12)]',
+    textClass: 'text-[#BE8E0B]',
+  },
+  'RESPONDED': {
+    bgClass: 'bg-[rgba(4,143,134,0.08)]',
+    textClass: 'text-[#048F86]',
+  },
+  'COMPLETED': {
+    bgClass: 'bg-[rgba(236,253,243,1)]',
+    textClass: 'text-[#027A48]',
   },
 };
 
