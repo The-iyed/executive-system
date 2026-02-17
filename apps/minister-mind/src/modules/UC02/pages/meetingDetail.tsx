@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap, Hash } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Hash, Pencil } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -40,7 +40,7 @@ import {
   rescheduleMeeting,
   createWebexMeeting,
   type MinisterAttendee,
-  getConsultationRecords,
+  getConsultationRecordsWithParams,
   type ConsultationRecord,
   getGuidanceRecords,
   type GuidanceRecord,
@@ -68,9 +68,10 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@sanad-ai/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, type ComparePresentationsResponse } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, type ComparePresentationsResponse, type RelatedDirective } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
+import { MeetingActionsBar } from '@shared';
 import { type CalendarEventData } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 
@@ -78,7 +79,7 @@ import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 const fieldLabels: Record<string, string> = {
   meeting_type: 'نوع الاجتماع',
   meeting_title: 'عنوان الاجتماع',
-  meeting_subject: 'موضوع الاجتماع',
+  meeting_subject: 'وصف الاجتماع',
   meeting_classification: 'تصنيف الاجتماع',
   meeting_owner: 'مالك الاجتماع',
   is_on_behalf_of: 'هل تطلب الاجتماع نيابة عن غيرك؟',
@@ -170,98 +171,6 @@ function getGeneralNotesList(
   return [];
 }
 
-function ActionBubble({
-  icon,
-  label,
-  onClick,
-  disabled,
-  variant,
-  disabledReason,
-  compact,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: 'danger';
-  /** Shown as tooltip when disabled (explains why the action is disabled) */
-  disabledReason?: string;
-  /** Compact: icon-only for arc layout, label in tooltip */
-  compact?: boolean;
-}) {
-  const iconCircle = (
-    <span
-      className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
-        variant === 'danger'
-          ? 'bg-red-50 border-red-200 text-red-600'
-          : 'bg-white border-gray-200/80 text-gray-800'
-      }`}
-    >
-      {icon}
-    </span>
-  );
-
-  if (compact) {
-    const btn = (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {iconCircle}
-      </button>
-    );
-    const tooltipText = disabled && disabledReason ? disabledReason : label;
-    return (
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">{btn}</span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
-            {tooltipText}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  const button = (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
-    >
-      <span
-        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
-        style={{ fontFamily: "'Almarai', sans-serif" }}
-      >
-        {label}
-      </span>
-      {iconCircle}
-    </button>
-  );
-
-  if (disabled && disabledReason) {
-    return (
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex w-full min-w-0">{button}</span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-            {disabledReason}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return button;
-}
-
 const MeetingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -282,10 +191,10 @@ const MeetingDetail: React.FC = () => {
     [meeting?.general_notes]
   );
 
-  // Fetch consultation records (استشارة الجدولة tab)
+  // Fetch consultation records (استشارة الجدولة tab) – scheduling consultation type
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
-    queryKey: ['consultation-records', id],
-    queryFn: () => getConsultationRecords(id!),
+    queryKey: ['consultation-records', id, 'SCHEDULING'],
+    queryFn: () => getConsultationRecordsWithParams(id!, { consultation_type: 'SCHEDULING' }),
     enabled: !!id && activeTab === 'scheduling-consultation',
   });
 
@@ -299,8 +208,8 @@ const MeetingDetail: React.FC = () => {
   // Fetch content officer notes records (استشارة المحتوى tab)
   // Only fetch when tab is active to prevent unnecessary data loading
   const { data: contentOfficerNotesRecordsRaw, isLoading: isLoadingContentOfficerNotes } = useQuery({
-    queryKey: ['content-officer-notes-records', id],
-    queryFn: () => getContentOfficerNotesRecords(id!, { skip: 0, limit: 100 }),
+    queryKey: ['content-officer-notes-records', id, 'CONTENT'],
+    queryFn: () => getContentOfficerNotesRecords(id!, { skip: 0, limit: 100, consultation_type: 'CONTENT' }),
     enabled: !!id && activeTab === 'content-consultation',
     // Don't keep previous data when disabled to prevent rendering stale objects
     placeholderData: undefined,
@@ -705,11 +614,13 @@ const MeetingDetail: React.FC = () => {
   // Clear content officer notes query cache when tab is not active to prevent stale data
   React.useEffect(() => {
     if (activeTab !== 'content-consultation') {
-      queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id] });
+      queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id, 'CONTENT'] });
     }
   }, [activeTab, id, queryClient]);
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+  const [isAddDirectiveOpen, setIsAddDirectiveOpen] = useState(false);
+  const [addDirectiveValue, setAddDirectiveValue] = useState('');
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
@@ -900,6 +811,17 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
+  const addDirectiveMutation = useMutation({
+    mutationFn: async (guidanceText: string) => {
+      await updateMeetingRequest(id!, { related_guidance: guidanceText.trim() || null });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      setIsAddDirectiveOpen(false);
+      setAddDirectiveValue('');
+    },
+  });
+
   // Move to waiting list mutation
   const moveToWaitingListMutation = useMutation({
     mutationFn: () => moveToWaitingList(id!),
@@ -1020,7 +942,7 @@ const MeetingDetail: React.FC = () => {
       consultation_question: string;
       is_draft?: boolean;
     }) => requestSchedulingConsultation(id!, payload),
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsConsultationModalOpen(false);
       setConsultationForm({
@@ -1028,7 +950,6 @@ const MeetingDetail: React.FC = () => {
         consultation_question: '',
         search: '',
       });
-      if (!variables.is_draft) navigate(-1);
     },
   });
 
@@ -1960,14 +1881,58 @@ const MeetingDetail: React.FC = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  {renderFieldLabel('related_guidance', 'التوجيه', 'text-sm font-medium text-gray-700')}
-                  <Textarea
-                    value={formData.related_guidance}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((p) => ({ ...p, related_guidance: e.target.value }))}
-                    className="w-full min-h-24 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                    placeholder="أدخل التوجيه..."
-                  />
+                  <div className="flex items-center justify-between gap-2">
+                    {renderFieldLabel('related_guidance', 'التوجيه', 'text-sm font-medium text-gray-700')}
+                    <button
+                      type="button"
+                      onClick={() => setIsAddDirectiveOpen(true)}
+                      className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors shrink-0"
+                      title="إضافة توجيه"
+                      aria-label="إضافة توجيه"
+                    >
+                      <Plus className="w-5 h-5" strokeWidth={1.26} />
+                    </button>
+                  </div>
+                  {(() => {
+                    const directives = meeting?.related_directives ?? [];
+                    const hasDirectives = directives.length > 0;
+                    const hasOnlyIds = !hasDirectives && (meeting?.related_directive_ids?.length ?? 0) > 0;
+                    if (hasDirectives) {
+                      return (
+                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                          <DataTable
+                            columns={[
+                              { id: 'index', header: 'رقم البند', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
+                              { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_number}</span> },
+                              { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+                              { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_text || '—'}</span> },
+                              { id: 'related_meeting', header: 'الاجتماع المرتبط', width: 'w-40', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.related_meeting || '—'}</span> },
+                              { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+                              { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{names.length ? names.join('، ') : '—'}</span>; } },
+                              { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_status || '—'}</span> },
+                            ]}
+                            data={meeting?.related_directives ?? []}
+                            rowPadding="py-3"
+                          />
+                        </div>
+                      );
+                    }
+                    if (hasOnlyIds) {
+                      return (
+                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                          <DataTable
+                            columns={[
+                              { id: 'index', header: 'رقم البند', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                              { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
+                            ]}
+                            data={(meeting?.related_directive_ids ?? []).map((id) => ({ id }))}
+                            rowPadding="py-3"
+                          />
+                        </div>
+                      );
+                    }
+                    return <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد توجيهات مرتبطة</div>;
+                  })()}
                 </div>
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
@@ -3272,24 +3237,8 @@ const MeetingDetail: React.FC = () => {
                   <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                     <DataTable
                       columns={[
-                        {
-                          id: 'index',
-                          header: 'رقم البند',
-                          width: 'w-28',
-                          align: 'center',
-                          render: (_row: { id: string }, index: number) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span>
-                          ),
-                        },
-                        {
-                          id: 'directive_id',
-                          header: 'معرف التوجيه',
-                          width: 'flex-1',
-                          align: 'end',
-                          render: (row: { id: string }) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span>
-                          ),
-                        },
+                        { id: 'index', header: 'رقم البند', width: 'w-28', align: 'center', render: (_row: { id: string }, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
+                        { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
                       ]}
                       data={meeting.related_directive_ids.map((id) => ({ id }))}
                       rowPadding="py-3"
@@ -3304,105 +3253,38 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
+        {/* Edit button: bottom-left, only when there are no unsaved changes */}
+        {meeting && hasChanges && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
+          <div className="fixed bottom-6 left-6 z-40" dir="rtl">
+            <button
+              type="button"
+              onClick={() => setIsEditConfirmOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors shadow-sm"
+              style={{ fontFamily: "'Almarai', sans-serif" }}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.26} />
+              تعديل
+            </button>
+          </div>
+        )}
+
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
-          <>
-            {actionsBarOpen && (
-              <button
-                type="button"
-                aria-label="إغلاق"
-                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
-                onClick={() => setActionsBarOpen(false)}
-              />
-            )}
-            {/* Anchor: centered at bottom */}
-            <div
-              className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2 w-14 h-14"
-              dir="ltr"
-            >
-              {/* Action bubbles: half-circle arc above the FAB */}
-              {actionsBarOpen && (() => {
-                const R = 100;
-                const ARC_SPAN = 200;
-                const close = () => setActionsBarOpen(false);
-                const actions =
-                  meetingStatus === MeetingStatus.SCHEDULED
-                    ? [
-                        { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); setIsScheduleModalOpen(true); } },
-                        { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); moveToWaitingListMutation.mutate(); }, disabled: moveToWaitingListMutation.isPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-                        { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
-                      ]
-                    : meetingStatus === MeetingStatus.WAITING
-                      ? [
-                          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
-                          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); setIsScheduleModalOpen(true); } },
-                        ]
-                      : [
-                          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); setIsScheduleModalOpen(true); } },
-                          { icon: <Pencil className="w-5 h-5" strokeWidth={1.26} />, label: 'تعديل', onClick: () => { close(); setIsEditConfirmOpen(true); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' },
-                          { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة للطلب', onClick: () => { close(); setIsReturnForInfoModalOpen(true); } },
-                          { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && setIsSendToContentModalOpen(true); }, disabled: !hasContent, disabledReason: 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' },
-                          { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: moveToWaitingListMutation.isPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); moveToWaitingListMutation.mutate(); }, disabled: moveToWaitingListMutation.isPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-                          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); setIsRejectModalOpen(true); } },
-                        ];
-                const n = actions.length;
-                return (
-                  <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
-                    style={{ width: R * 2, height: R + 28 }}
-                  >
-                    <div className="absolute inset-0">
-                      {actions.map((action, i) => {
-                        const angle = 170 + (i / Math.max(1, n - 1)) * ARC_SPAN;
-                        const rad = (angle * Math.PI) / 180;
-                        const x = R * Math.cos(rad);
-                        const y = R * Math.sin(rad);
-                        const leftPx = R + x;
-                        const topPx = R + y;
-                        return (
-                          <div
-                            key={i}
-                            className="absolute"
-                            style={{
-                              left: leftPx,
-                              top: topPx,
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          >
-                            <ActionBubble
-                              compact
-                              icon={action.icon}
-                              label={action.label}
-                              onClick={action.onClick}
-                              disabled={action.disabled}
-                              variant={action.variant}
-                              disabledReason={action.disabledReason}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-              {/* Main FAB: centered */}
-              <button
-                type="button"
-                aria-label={actionsBarOpen ? 'إغلاق القائمة' : 'إجراءات سريعة'}
-                aria-expanded={actionsBarOpen}
-                onClick={() => setActionsBarOpen((o) => !o)}
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-                style={{
-                  background: actionsBarOpen ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
-                  border: '1px solid rgba(255, 255, 255, 0.6)',
-                  boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <Zap className="w-6 h-6 text-[#048F86]" strokeWidth={2} />
-              </button>
-            </div>
-          </>
+          <MeetingActionsBar
+            meetingStatus={meetingStatus}
+            open={actionsBarOpen}
+            onOpenChange={setActionsBarOpen}
+            onOpenSchedule={() => setIsScheduleModalOpen(true)}
+            onOpenReject={() => setIsRejectModalOpen(true)}
+            onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
+            onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
+            onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
+            onAddToWaitingList={() => moveToWaitingListMutation.mutate()}
+            isAddToWaitingListPending={moveToWaitingListMutation.isPending}
+            hasChanges={hasChanges}
+            hasContent={hasContent}
+            hideEdit
+          />
         )}
         </div>
       </div>
@@ -3615,6 +3497,52 @@ const MeetingDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Add related directive – string (id or directive number) */}
+      <Dialog open={isAddDirectiveOpen} onOpenChange={(open) => { setIsAddDirectiveOpen(open); if (!open) setAddDirectiveValue(''); }}>
+        <DialogContent className="sm:max-w-[420px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              إضافة توجيه مرتبط
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="block text-sm font-medium text-gray-700 text-right mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              التوجيه
+            </label>
+            <Input
+              type="text"
+              value={addDirectiveValue}
+              onChange={(e) => setAddDirectiveValue(e.target.value)}
+              placeholder="أدخل التوجيه..."
+              className="w-full text-right"
+              style={{ fontFamily: "'Almarai', sans-serif" }}
+            />
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <button
+              type="button"
+              onClick={() => { setIsAddDirectiveOpen(false); setAddDirectiveValue(''); }}
+              className="px-4 py-2 rounded-lg border border-[#D0D5DD] text-[#344054] bg-white hover:bg-[#F9FAFB] transition-colors"
+              style={{ fontFamily: "'Almarai', sans-serif" }}
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const v = addDirectiveValue.trim();
+                if (v) addDirectiveMutation.mutate(v);
+              }}
+              disabled={!addDirectiveValue.trim() || addDirectiveMutation.isPending}
+              className="px-4 py-2 rounded-lg bg-[#048F86] text-white hover:bg-[#047a6f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: "'Almarai', sans-serif" }}
+            >
+              {addDirectiveMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Send to Content – Drawer */}
       <Drawer
         open={isSendToContentModalOpen}
@@ -3713,12 +3641,6 @@ const MeetingDetail: React.FC = () => {
       <Drawer
         open={isReturnForInfoModalOpen}
         onOpenChange={(open) => {
-          if (!open) {
-            setReturnForInfoForm({
-              notes: '',
-              editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>),
-            });
-          }
           setIsReturnForInfoModalOpen(open);
         }}
         title={<span className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>إعادة للطلب</span>}
@@ -3727,7 +3649,7 @@ const MeetingDetail: React.FC = () => {
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsReturnForInfoModalOpen(false); setReturnForInfoForm({ notes: '', editable_fields: EDITABLE_FIELD_IDS.reduce((acc, id) => ({ ...acc, [id]: false }), {} as Record<string, boolean>) }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
+            <button type="button" onClick={() => setIsReturnForInfoModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
             <button type="submit" form="return-for-info-form" disabled={returnForInfoMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{returnForInfoMutation.isPending ? 'جاري الإرسال...' : 'إعادة للطلب'}</button>
           </div>
         }
