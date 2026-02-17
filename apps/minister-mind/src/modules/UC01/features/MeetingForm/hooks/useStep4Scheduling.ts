@@ -12,6 +12,7 @@ interface UseStep4SchedulingProps {
   initialSlots?: string[];
   /** When false, the calendar events fetch (GET .../drafts/available-time-slots) is disabled. Set true only when user is on step 4. */
   enableCalendarFetch?: boolean;
+  isEditMode?: boolean;
 }
 
 interface SchedulingPayload {
@@ -53,6 +54,7 @@ export const useStep4Scheduling = ({
   onError,
   initialSlots = [],
   enableCalendarFetch = true,
+  isEditMode = false,
 }: UseStep4SchedulingProps): Step4SchedulingHook => {
   const [currentDate, setCurrentDate] = useState<Date>(() => getWeekStart(new Date()));
   const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
@@ -112,8 +114,18 @@ export const useStep4Scheduling = ({
     onSuccess: () => {
       onSuccess?.();
     },
-    onError: (error: any) => {
-      const err = error instanceof Error ? error : new Error('حدث خطأ أثناء الحفظ');
+    onError: (error: unknown) => {
+      const editStateMessage = 'لا يمكنك التعديل على هذا الاجتماع في حالته الحالية';
+      let message = isEditMode ? editStateMessage : 'حدث خطأ أثناء الحفظ';
+      if (!isEditMode) {
+        if (error && typeof error === 'object') {
+          const anyError = error as { detail?: unknown };
+          if (typeof anyError.detail === 'string') message = anyError.detail;
+        } else if (typeof error === 'string') {
+          message = error;
+        }
+      }
+      const err = error instanceof Error ? error : new Error(message);
       onError?.(err);
     },
   });

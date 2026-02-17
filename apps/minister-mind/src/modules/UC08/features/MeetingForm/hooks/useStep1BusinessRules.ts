@@ -1,30 +1,12 @@
 import { useMemo } from 'react';
 import type { Step1FormData } from '../schemas/step1.schema';
 import { MEETING_INFO_FIELDS } from '../types/step1.types';
-
-const FOLLOW_UP_OR_RECURRING_NATURES = ['SEQUENTIAL', 'PERIODIC'] as const;
+import { isStep1FieldVisible } from '../utils/step1FieldConditions';
 
 export function useStep1BusinessRules(formData: Partial<Step1FormData>) {
-  const nature = formData.meetingNature;
-
   const isFollowUpOrRecurring = useMemo(
-    () => Boolean(nature && FOLLOW_UP_OR_RECURRING_NATURES.includes(nature as (typeof FOLLOW_UP_OR_RECURRING_NATURES)[number])),
-    [nature]
-  );
-
-  const isPreviousMeetingVisible = useMemo(
-    () => isFollowUpOrRecurring,
-    [isFollowUpOrRecurring]
-  );
-
-  const isPreviousMeetingRequired = useMemo(
-    () => isFollowUpOrRecurring,
-    [isFollowUpOrRecurring]
-  );
-
-  const isOtherSectionsDisabled = useMemo(
-    () => isFollowUpOrRecurring,
-    [isFollowUpOrRecurring]
+    () => isStep1FieldVisible('previousMeeting', formData),
+    [formData.meetingNature]
   );
 
   const isFieldDisabled = useMemo(() => {
@@ -34,14 +16,8 @@ export function useStep1BusinessRules(formData: Partial<Step1FormData>) {
     };
   }, [isFollowUpOrRecurring]);
 
-  const isGuidanceDisabled = isOtherSectionsDisabled;
-
   return {
     isFollowUpOrRecurring,
-    isPreviousMeetingVisible,
-    isPreviousMeetingRequired,
-    isOtherSectionsDisabled,
     isFieldDisabled,
-    isGuidanceDisabled,
   };
 }

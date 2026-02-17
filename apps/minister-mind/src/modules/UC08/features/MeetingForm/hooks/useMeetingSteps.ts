@@ -6,6 +6,7 @@ import { useStep3 } from './useStep3';
 import { useDeleteDraft } from './useDeleteDraft';
 import type { Step1FormData } from '../schemas/step1.schema';
 import type { Step2FormData } from '../schemas/step2.schema';
+import type { Step3FormData } from '../schemas/step3.schema';
 import { clearDraftData } from '../utils';
 
 interface UseMeetingStepsProps {
@@ -14,7 +15,7 @@ interface UseMeetingStepsProps {
   initialData?: {
     step1?: Partial<Step1FormData>;
     step2?: Partial<Step2FormData>;
-    step3?: { initialSlots?: string[] };
+    step3?: Partial<Step3FormData>;
   };
   onStep1Success?: (newDraftId: string) => void;
   onStep2Success?: (isDraft: boolean) => void;
@@ -51,6 +52,7 @@ export const useMeetingSteps = ({
   const step2Hook = useStep2({
     draftId: draftId || '',
     initialData: initialData?.step2,
+    step1FormData: step1Hook.formData,
     onSuccess: onStep2Success || ((isDraft) => {
       if (isDraft) {
         navigate(PATH.MEETINGS);
@@ -60,18 +62,21 @@ export const useMeetingSteps = ({
       console.error('Step2 error:', error);
     },
     isEditMode,
+    isNewMeeting: true,
   });
 
   const step3Hook = useStep3({
     draftId: draftId || '',
-    initialSlots: initialData?.step3?.initialSlots,
-    onSuccess: onStep3Success || (() => {
+    initialData: initialData?.step3,
+    step1FormData: step1Hook.formData,
+    onSuccess: onStep3Success || ((isDraft) => {
       clearDraftData();
       navigate(PATH.MEETINGS);
     }),
     onError: (error) => {
       console.error('Step3 error:', error);
     },
+    isEditMode,
   });
 
   return {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ActionButtons } from '@shared';
-import type { OptionType } from '@shared';
+import { ActionButtons, MeetingDateTimeRangePicker, type OptionType } from '@shared';
 import { getMeetingById, type MeetingApiResponse } from '../../../../../data';
 import type { Step1FormData } from '../../../schemas/step1.schema';
 import { useStep1BusinessRules } from '../../../hooks/useStep1BusinessRules';
@@ -16,7 +15,6 @@ import {
   MeetingTypeField,
   UrgentMeetingField,
   UrgentReasonField,
-  MeetingDateTimeField,
   MeetingChannelField,
   LocationField,
   RequiresProtocolField,
@@ -30,6 +28,14 @@ import {
   GuidanceField,
 } from './components';
 
+const REQUIRED_INDICATOR_FIELDS = new Set<keyof Step1FormData>([
+  'meetingTitle',
+  'meetingCategory',
+  'meeting_channel',
+  'requester',
+  'meetingOwner',
+]);
+
 export interface Step1Props {
   formData: Partial<Step1FormData>;
   errors: Partial<Record<keyof Step1FormData, string>>;
@@ -42,7 +48,7 @@ export interface Step1Props {
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
-  isFieldRequired: (field: keyof Step1FormData) => boolean;
+  isFieldVisible: (field: keyof Step1FormData) => boolean;
 }
 
 export function Step1({
@@ -57,18 +63,27 @@ export function Step1({
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
-  isFieldRequired,
+  isFieldVisible,
 }: Step1Props) {
   const location = useLocation();
-  const {
-    isPreviousMeetingVisible,
-    isPreviousMeetingRequired,
-    isFieldDisabled,
-  } = useStep1BusinessRules(formData);
+  const { isFieldDisabled } = useStep1BusinessRules(formData);
 
+  const isRequired = useCallback(
+    (field: keyof Step1FormData): boolean => {
+      if (REQUIRED_INDICATOR_FIELDS.has(field)) return true;
+      if (field === 'location') return formData.meeting_channel === 'PHYSICAL';
+      if (field === 'previousMeeting' || field === 'urgentReason' || field === 'meetingReason' || field === 'relatedTopic' || field === 'dueDate' || field === 'meetingClassification1') {
+        return isFieldVisible(field);
+      }
+      if (field === 'meetingStartDate') return isFieldVisible('meetingStartDate');
+      return false;
+    },
+    [formData.meeting_channel, isFieldVisible]
+  );
+  
   const minStartDate = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 1);
+    d.setDate(d.getDate() + 7);
     return d;
   }, []);
 
@@ -141,7 +156,7 @@ export function Step1({
             required
           />
 
-          {isPreviousMeetingVisible && (
+          {isFieldVisible('previousMeeting') && (
             <PreviousMeetingField
               value={previousMeetingValue}
               onChange={(v) => {
@@ -152,7 +167,7 @@ export function Step1({
                 }
               }}
               visible
-              required={isPreviousMeetingRequired}
+              required={isRequired('previousMeeting')}
               readOnly={false}
               error={errors.previousMeeting}
               touched={touched.previousMeeting}
@@ -166,7 +181,7 @@ export function Step1({
             error={errors.requester}
             touched={touched.requester}
             disabled={isFieldDisabled('requester')}
-            required={isFieldRequired('requester')}
+            required={isRequired('requester')}
           />
 
           <MeetingOwnerField
@@ -175,7 +190,7 @@ export function Step1({
             error={errors.meetingOwner as string | undefined}
             touched={touched.meetingOwner}
             disabled={isFieldDisabled('meetingOwner')}
-            required={isFieldRequired('meetingOwner')}
+            required={isRequired('meetingOwner')}
           />
 
           <MeetingTitleField
@@ -185,7 +200,7 @@ export function Step1({
             error={errors.meetingTitle}
             touched={touched.meetingTitle}
             disabled={isFieldDisabled('meetingTitle')}
-            required={isFieldRequired('meetingTitle')}
+            required={isRequired('meetingTitle')}
           />
 
           <MeetingDescriptionField
@@ -203,7 +218,7 @@ export function Step1({
             error={errors.sector}
             touched={touched.sector}
             disabled={isFieldDisabled('sector')}
-            required={isFieldRequired('sector')}
+            required={isRequired('sector')}
           />
 
           <MeetingTypeField
@@ -213,11 +228,11 @@ export function Step1({
             error={errors.meetingType}
             touched={touched.meetingType}
             disabled={isFieldDisabled('meetingType')}
-            required={isFieldRequired('meetingType')}
+            required={isRequired('meetingType')}
           />
 
           <UrgentMeetingField
-            className="w-full min-w-0 sm:col-span-2"
+            className="gap-4"
             value={formData.isUrgent ?? false}
             onChange={(v) => handleChange('isUrgent', v)}
             error={errors.isUrgent}
@@ -225,7 +240,7 @@ export function Step1({
             disabled={isFieldDisabled('isUrgent')}
           />
 
-          {formData.isUrgent && (
+          {isFieldVisible('urgentReason') && (
             <UrgentReasonField
               className="sm:col-span-2 w-full min-w-0"
               value={formData.urgentReason ?? ''}
@@ -234,37 +249,73 @@ export function Step1({
               error={errors.urgentReason}
               touched={touched.urgentReason}
               disabled={isFieldDisabled('urgentReason')}
+              required={isRequired('urgentReason')}
             />
           )}
 
-          <MeetingDateTimeField
-            className="sm:col-span-2 w-full min-w-0"
-            startValue={formData.meetingStartDate ?? ''}
-            endValue={formData.meetingEndDate ?? ''}
-            onStartChange={(v) => handleChange('meetingStartDate', v)}
-            onEndChange={(v) => handleChange('meetingEndDate', v)}
-            onStartBlur={() => handleBlur('meetingStartDate')}
-            onEndBlur={() => handleBlur('meetingEndDate')}
-            minStartDate={minStartDate}
-            required
-            disabled={isFieldDisabled('meetingStartDate')}
-            startError={touched.meetingStartDate ? errors.meetingStartDate : undefined}
-            endError={touched.meetingEndDate ? errors.meetingEndDate : undefined}
-            startTouched={touched.meetingStartDate}
-            endTouched={touched.meetingEndDate}
-          />
+          {isFieldVisible('meetingStartDate') && (
+            <>
+              <MeetingDateTimeRangePicker
+                sectionTitle="موعد الاجتماع (الحد الأقصى 24 ساعة)"
+                startValue={formData.meetingStartDate ?? ''}
+                endValue={formData.meetingEndDate ?? ''}
+                onStartChange={(v) => handleChange('meetingStartDate', v)}
+                onEndChange={(v) => handleChange('meetingEndDate', v)}
+                onStartBlur={() => handleBlur('meetingStartDate')}
+                onEndBlur={() => handleBlur('meetingEndDate')}
+                minStartDate={minStartDate}
+                required
+                disabled={isFieldDisabled('meetingStartDate')}
+                startError={touched.meetingStartDate ? errors.meetingStartDate : undefined}
+                endError={touched.meetingEndDate ? errors.meetingEndDate : undefined}
+                startTouched={touched.meetingStartDate}
+                endTouched={touched.meetingEndDate}
+              />
+              <MeetingDateTimeRangePicker
+                sectionTitle="الموعد البديل الأول (الحد الأقصى 24 ساعة)"
+                startValue={formData.alternative1StartDate ?? ''}
+                endValue={formData.alternative1EndDate ?? ''}
+                onStartChange={(v) => handleChange('alternative1StartDate', v)}
+                onEndChange={(v) => handleChange('alternative1EndDate', v)}
+                onStartBlur={() => handleBlur('alternative1StartDate')}
+                onEndBlur={() => handleBlur('alternative1EndDate')}
+                minStartDate={minStartDate}
+                required={false}
+                disabled={isFieldDisabled('alternative1StartDate')}
+                startError={touched.alternative1StartDate ? errors.alternative1StartDate : undefined}
+                endError={touched.alternative1EndDate ? errors.alternative1EndDate : undefined}
+                startTouched={touched.alternative1StartDate}
+                endTouched={touched.alternative1EndDate}
+              />
+              <MeetingDateTimeRangePicker
+                sectionTitle="الموعد البديل الثاني (الحد الأقصى 24 ساعة)"
+                startValue={formData.alternative2StartDate ?? ''}
+                endValue={formData.alternative2EndDate ?? ''}
+                onStartChange={(v) => handleChange('alternative2StartDate', v)}
+                onEndChange={(v) => handleChange('alternative2EndDate', v)}
+                onStartBlur={() => handleBlur('alternative2StartDate')}
+                onEndBlur={() => handleBlur('alternative2EndDate')}
+                minStartDate={minStartDate}
+                required={false}
+                disabled={isFieldDisabled('alternative2StartDate')}
+                startError={touched.alternative2StartDate ? errors.alternative2StartDate : undefined}
+                endError={touched.alternative2EndDate ? errors.alternative2EndDate : undefined}
+                startTouched={touched.alternative2StartDate}
+                endTouched={touched.alternative2EndDate}
+              />
+            </>
+          )}
 
           <MeetingChannelField
-            className="w-full min-w-0"
             value={formData.meeting_channel ?? ''}
             onChange={(v) => handleChange('meeting_channel', v)}
             error={errors.meeting_channel}
             touched={touched.meeting_channel}
             disabled={isFieldDisabled('meeting_channel')}
-            required={isFieldRequired('meeting_channel')}
+            required={isRequired('meeting_channel')}
           />
 
-          {formData.meeting_channel === 'PHYSICAL' && (
+          {isFieldVisible('location') && (
             <LocationField
               className="w-full min-w-0"
               value={formData.location ?? ''}
@@ -273,12 +324,12 @@ export function Step1({
               error={errors.location}
               touched={touched.location}
               disabled={isFieldDisabled('location')}
-              required={isFieldRequired('location')}
+              required={isRequired('location')}
             />
           )}
 
           <RequiresProtocolField
-            className="w-full min-w-0 sm:col-span-2"
+            className="gap-4"
             value={formData.requiresProtocol ?? false}
             onChange={(v) => handleChange('requiresProtocol', v)}
             error={errors.requiresProtocol}
@@ -287,44 +338,51 @@ export function Step1({
           />
 
           <MeetingCategoryField
-            className="w-full min-w-0"
             value={formData.meetingCategory ?? ''}
             onChange={(v) => handleChange('meetingCategory', v)}
             error={errors.meetingCategory}
             touched={touched.meetingCategory}
             disabled={isFieldDisabled('meetingCategory')}
-            required={isFieldRequired('meetingCategory')}
+            required={isRequired('meetingCategory')}
           />
 
-          <MeetingReasonField
-            className="sm:col-span-2 w-full min-w-0"
-            value={formData.meetingReason ?? ''}
-            onChange={(v) => handleChange('meetingReason', v)}
-            onBlur={() => handleBlur('meetingReason')}
-            error={errors.meetingReason}
-            touched={touched.meetingReason}
-            disabled={isFieldDisabled('meetingReason')}
-          />
+          {isFieldVisible('meetingReason') && (
+            <MeetingReasonField
+              className="sm:col-span-2 w-full min-w-0"
+              value={formData.meetingReason ?? ''}
+              onChange={(v) => handleChange('meetingReason', v)}
+              onBlur={() => handleBlur('meetingReason')}
+              error={errors.meetingReason}
+              touched={touched.meetingReason}
+              disabled={isFieldDisabled('meetingReason')}
+              required={isRequired('meetingReason')}
+            />
+          )}
 
-          <RelatedTopicField
-            className="sm:col-span-2 w-full min-w-0"
-            value={formData.relatedTopic ?? ''}
-            onChange={(v) => handleChange('relatedTopic', v)}
-            onBlur={() => handleBlur('relatedTopic')}
-            error={errors.relatedTopic}
-            touched={touched.relatedTopic}
-            disabled={isFieldDisabled('relatedTopic')}
-          />
+          {isFieldVisible('relatedTopic') && (
+            <RelatedTopicField
+              value={formData.relatedTopic ?? ''}
+              onChange={(v) => handleChange('relatedTopic', v)}
+              onBlur={() => handleBlur('relatedTopic')}
+              error={errors.relatedTopic}
+              touched={touched.relatedTopic}
+              disabled={isFieldDisabled('relatedTopic')}
+              required={isRequired('relatedTopic')}
+            />
+          )}
 
-          <DueDateField
-            className="w-full min-w-0"
-            value={formData.dueDate ?? undefined}
-            onChange={(v) => handleChange('dueDate', v)}
-            onBlur={() => handleBlur('dueDate')}
-            error={errors.dueDate}
-            touched={touched.dueDate}
-            disabled={isFieldDisabled('dueDate')}
-          />
+          {isFieldVisible('dueDate') && (
+            <DueDateField
+              className="w-full min-w-0"
+              value={formData.dueDate ?? undefined}
+              onChange={(v) => handleChange('dueDate', v)}
+              onBlur={() => handleBlur('dueDate')}
+              error={errors.dueDate}
+              touched={touched.dueDate}
+              disabled={isFieldDisabled('dueDate')}
+              required={isRequired('dueDate')}
+            />
+          )}
 
           <MeetingClassificationField
             className="w-full min-w-0"
@@ -333,7 +391,7 @@ export function Step1({
             error={errors.meetingClassification1}
             touched={touched.meetingClassification1}
             disabled={isFieldDisabled('meetingClassification1')}
-            required={isFieldRequired('meetingClassification1')}
+            required={isRequired('meetingClassification1')}
           />
 
           <MeetingConfidentialityField
@@ -353,7 +411,6 @@ export function Step1({
           />
 
           <GuidanceField
-            className="sm:col-span-2 w-full min-w-0"
             value={toOption(formData.relatedDirective)}
             onChange={handleDirectiveChange}
             error={errors.relatedDirective}

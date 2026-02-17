@@ -30,6 +30,8 @@ export interface MeetingDateTimeRangePickerProps {
   onEndChange: (value: string) => void;
   onStartBlur?: () => void;
   onEndBlur?: () => void;
+  onStartFocus?: () => void;
+  onEndFocus?: () => void;
   /** e.g. one week from now; dates before this are disabled for start */
   minStartDate: Date;
   /** Both start and end required (e.g. main slot) */
@@ -52,6 +54,8 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
   onEndChange,
   onStartBlur,
   onEndBlur,
+  onStartFocus,
+  onEndFocus,
   minStartDate,
   required = false,
   disabled = false,
@@ -109,7 +113,8 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
           required={required}
           error={startTouched ? startError : undefined}
         >
-          <FormDateTimePicker
+          <div onFocus={onStartFocus} className="w-full min-w-0">
+            <FormDateTimePicker
             value={startValue || ''}
             onChange={handleStartChange}
             onBlur={onStartBlur}
@@ -118,6 +123,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
             disabled={disabled}
             minDate={minStartDate}
           />
+          </div>
         </FormField>
         <FormField
           className="w-full min-w-0"
@@ -125,7 +131,8 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
           required={required}
           error={endTouched ? endError : undefined}
         >
-          <FormDateTimePicker
+          <div onFocus={onEndFocus} className="w-full min-w-0">
+            <FormDateTimePicker
             value={endValue || ''}
             onChange={onEndChange}
             onBlur={onEndBlur}
@@ -137,6 +144,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
             defaultDate={startDate ?? undefined}
             lockedDate={startDate ?? undefined}
           />
+          </div>
         </FormField>
       </div>
       {durationLabel != null && (
