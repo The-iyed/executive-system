@@ -378,7 +378,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               weekStart={weekStart}
               events={events}
               startHour={8}
-              endHour={18}
+              endHour={24}
               onEventClick={(event) => {
                 window.open(`/meeting/${event.id}`, '_blank');
               }}
