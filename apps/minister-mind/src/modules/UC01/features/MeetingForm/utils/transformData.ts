@@ -32,7 +32,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
         minister_support_type: item.minister_support_type ?? '',
         minister_support_other: item.minister_support_other ?? '',
       })) || [],
-      notes: draft?.general_note ?? '',
+      notes: draft?.note ?? '',
       is_urgent: draft.is_urgent ?? false,
       urgent_reason: draft.urgent_reason ?? '',
       meeting_start_date: toISOOrDateString(draft.selected_time_slot?.slot_start ?? draft.meeting_start_date) || '',
