@@ -40,6 +40,7 @@ export interface FormTableProps {
   emptyStateMessage?: string; // Custom message when no rows
   showErrorList?: boolean; // Whether to show detailed error list
   disabled?: boolean; // When true, add/delete/update and row inputs are disabled
+  nonDeletableRowIds?: string[]; // Row ids for which delete button is hidden
 }
 
 export const FormTable: React.FC<FormTableProps> = ({
@@ -59,7 +60,12 @@ export const FormTable: React.FC<FormTableProps> = ({
   emptyStateMessage = 'لا توجد بيانات',
   showErrorList = true,
   disabled = false,
+  nonDeletableRowIds = [],
 }) => {
+  const nonDeletableSet = useMemo(
+    () => new Set(nonDeletableRowIds),
+    [nonDeletableRowIds]
+  );
   const hasRowErrors = Object.keys(errors).length > 0;
   const hasTableError =
   required &&
@@ -142,6 +148,9 @@ export const FormTable: React.FC<FormTableProps> = ({
                         {!showCell ? (
                           <span className="text-[14px] text-[#98A2B3]">—</span>
                         ) : column.id === 'action' ? (
+                          nonDeletableSet.has(row.id) ? (
+                            <span className="text-[14px] text-[#98A2B3]">—</span>
+                          ) : (
                           <button
                             type="button"
                             onClick={() => !disabled && onDeleteRow(row.id)}
@@ -154,6 +163,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                          )
                         ) : column.id === 'itemNumber' ? (
                           <span className="font-normal text-[16px] leading-[24px] text-[#344054] whitespace-nowrap">
                             {rowIndex + 1}

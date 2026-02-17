@@ -16,6 +16,8 @@ export interface DraftApiResponse {
   meeting_title: string;
   meeting_type: string;
   meeting_subject: string;
+  meeting_description: string;
+  description: string;
   meeting_classification: string;
   meeting_classification_type: string;
   meeting_confidentiality: string;
@@ -55,6 +57,7 @@ export interface DraftApiResponse {
     version?: number;
     is_latest?: boolean;
   }>;
+  presentation_required?: boolean | null;
   invitees?: Array<{
     id: string;
     user_id?: string | null;
