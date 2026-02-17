@@ -1,5 +1,5 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
-import { Directive } from '../data/meetingsApi';
+import { Directive, PreviousDirectiveItem } from '../data/meetingsApi';
 import { MeetingStatus } from '@shared/types';
 
 /**
@@ -34,7 +34,7 @@ const formatDate = (dateString: string | null): string => {
 };
 
 /**
- * Map directive to MeetingCardData for table/card display
+ * Map directive to MeetingCardData for table/card display (current directives)
  */
 export const mapDirectiveToCardData = (directive: Directive): MeetingCardData => {
   return {
@@ -46,6 +46,31 @@ export const mapDirectiveToCardData = (directive: Directive): MeetingCardData =>
     status: directive.status as MeetingStatus,
     statusLabel: directive.status === 'CURRENT' ? 'جاري' : directive.status,
     location: directive.due_date ? formatDate(directive.due_date) : undefined,
+  };
+};
+
+const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
+  CLOSED: 'مغلق',
+  CURRENT: 'جاري',
+  CANCELLED: 'ملغي',
+};
+
+/**
+ * Map previous directive API item to MeetingCardData for table/card display
+ */
+export const mapPreviousDirectiveToCardData = (item: PreviousDirectiveItem): MeetingCardData => {
+  const coordinator = item.responsible_persons?.length
+    ? item.responsible_persons.map((p) => p.name).filter(Boolean).join('، ')
+    : item.related_meeting ?? undefined;
+  return {
+    id: item.id,
+    title: item.directive_text,
+    date: formatDate(item.deadline ?? item.directive_date),
+    coordinator: coordinator || undefined,
+    coordinatorAvatar: undefined,
+    status: (item.directive_status as MeetingStatus) ?? undefined,
+    statusLabel: DIRECTIVE_STATUS_LABELS[item.directive_status] ?? item.directive_status ?? '—',
+    location: item.deadline ? formatDate(item.deadline) : undefined,
   };
 };
 

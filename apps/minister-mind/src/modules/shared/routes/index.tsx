@@ -5,6 +5,8 @@ import { ScreenLoader } from '../components';
 import { filterRoutesByUseCase } from '../utils/routeFilter';
 import { getDefaultRouteForUser } from '../utils/useCaseConfig';
 import pages from './routes';
+import uc02Routes from '../../UC02/routes/routes';
+import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
 
 type RouteConfig = {
   exact: boolean | null;
@@ -16,10 +18,16 @@ type RouteConfig = {
   useCases?: string[]; // Optional multiple use case codes (OR logic)
 } & RouteProps;
 
+/** Paths handled by UC02 persistent layout (so we don't render them as separate routes). */
+const UC02_PATHS = new Set(uc02Routes.map((r) => r.path));
+
 export const renderRoutes = (routes: RouteConfig[] = []) => {
   const { user, isInitialised, isAuthenticated } = useAuth();
   // Filter routes based on user's use cases
   const filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases);
+  // Exclude UC-02 routes so they are rendered inside UC02LayoutRouter (persistent layout)
+  const routesWithoutUC02 = filteredRoutes.filter((route) => !UC02_PATHS.has(route.path));
+  const hasUC02Access = filterRoutesByUseCase(uc02Routes, user?.use_cases).length > 0;
   const defaultRoute = getDefaultRouteForUser(user?.use_cases);
 
   // Show loader while auth is initializing to prevent redirect issues
@@ -32,7 +40,7 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
 
   return (
     <Routes>
-      {filteredRoutes.map((route, index) => {
+      {routesWithoutUC02.map((route, index) => {
         const Component = route.component;
         const Guard = route?.guard || Fragment;
         const Layout = route?.layout || Fragment;
@@ -53,6 +61,10 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
           />
         );
       })}
+      {/* UC-02 persistent layout: one Route so layout stays mounted when switching directives/calendar/etc. */}
+      {hasUC02Access && (
+        <Route path="*" element={<UC02LayoutRouter />} />
+      )}
       {/* Catch-all route: redirect to login if not authenticated, otherwise to user's default route */}
       <Route
         path="*"
