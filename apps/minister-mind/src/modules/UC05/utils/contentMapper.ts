@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { ContentRequestApiResponse } from '../data/contentApi';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingStatus, MeetingStatusLabels, getMeetingChannelLabel, getMeetingClassificationLabel } from '@shared/types';
 import { ContentRequestCardData } from '../components/content-request-card';
 
 /**
@@ -111,6 +111,10 @@ export const mapContentRequestToCardViewData = (
     submitter: request.submitter_name ?? undefined,
     status: status,
     statusLabel: statusLabel,
+    meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
+    location: getMeetingChannelLabel(request.meeting_channel),
+    meetingDate: request.scheduled_at ? formatDate(request.scheduled_at) : undefined,
+    isDataComplete: request.is_data_complete,
   };
 };
 
