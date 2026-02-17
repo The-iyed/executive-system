@@ -206,24 +206,37 @@ export const getDirectivesPaginated = async (params: GetDirectivesParams = {}): 
     queryParams.append('limit', params.limit.toString());
   }
 
-  const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives?${queryParams.toString()}`);
-  
-  // Combine current and previous directives
-  const allDirectives = [
-    ...(response.data.current_directives?.items || []),
-    ...(response.data.previous_directives?.items || []),
+  const response = await axiosInstance.get(`/api/scheduling/directives?${queryParams.toString()}`);
+  const data = response.data as Record<string, unknown>;
+  const skip = params.skip ?? 0;
+  const limit = params.limit ?? 10;
+
+  if (Array.isArray(data.items)) {
+    return {
+      items: data.items as DirectiveApiResponse[],
+      total: Number(data.total) || 0,
+      skip: Number(data.skip) ?? skip,
+      limit: Number(data.limit) ?? limit,
+      has_next: Boolean(data.has_next),
+      has_previous: Boolean(data.has_previous),
+    };
+  }
+
+  const current = (data.current_directives as DirectivesGroupResponse | undefined);
+  const previous = (data.previous_directives as DirectivesGroupResponse | undefined);
+  const allDirectives: DirectiveApiResponse[] = [
+    ...(current?.items || []),
+    ...(previous?.items || []),
   ];
-  
-  // Use current_directives metadata for pagination
-  const currentMeta = response.data.current_directives || response.data.previous_directives;
-  
+  const currentMeta = current || previous;
+
   return {
     items: allDirectives,
-    total: (currentMeta?.total || 0) + (response.data.previous_directives?.total || 0),
-    skip: response.data.skip,
-    limit: response.data.limit,
-    has_next: currentMeta?.has_next || false,
-    has_previous: currentMeta?.has_previous || false,
+    total: (currentMeta?.total ?? 0) + (previous?.total ?? 0),
+    skip: typeof data.skip === 'number' ? data.skip : skip,
+    limit: typeof data.limit === 'number' ? data.limit : limit,
+    has_next: currentMeta?.has_next ?? false,
+    has_previous: currentMeta?.has_previous ?? false,
   };
 };
 

@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { PATH } from '../../../routes/paths';
 
 interface Step1Hook {
   submitStep: (isDraft: boolean) => Promise<string | null>;
@@ -10,8 +9,7 @@ interface Step2Hook {
 }
 
 interface Step3Hook {
-  submitStep: (isDraft: boolean, slots: string[]) => Promise<void>;
-  selectedSlots: string[];
+  submitStep: (isDraft: boolean) => Promise<void>;
 }
 
 interface UseStepHandlersProps {
@@ -29,7 +27,6 @@ export const useStepHandlers = ({
   step3Hook,
   onNext,
   onSaveDraft,
-  navigate,
 }: UseStepHandlersProps) => {
   const handleStep1Next = useCallback(async () => {
     try {
@@ -62,15 +59,12 @@ export const useStepHandlers = ({
   }, [step2Hook]);
 
   const handleStep3Next = useCallback(async () => {
-    await step3Hook.submitStep(false, step3Hook.selectedSlots);
+    await step3Hook.submitStep(false);
   }, [step3Hook]);
 
   const handleStep3SaveDraft = useCallback(async () => {
-    await step3Hook.submitStep(true, step3Hook.selectedSlots);
-    if (step3Hook.selectedSlots.length === 0) {
-      navigate(PATH.MEETINGS);
-    }
-  }, [step3Hook, navigate]);
+    await step3Hook.submitStep(true);
+  }, [step3Hook]);
 
   return {
     handleStep1Next,
