@@ -81,7 +81,7 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
   if (form.is_based_on_directive !== undefined) fd.append('is_based_on_directive', form.is_based_on_directive ? 'true' : 'false');
 
   // Optional text / ids
-  appendIf(form.notes, 'general_notes', fd);
+  appendIf(form.notes, 'note', fd);
   if (form.is_urgent && form.urgent_reason) fd.append('urgent_reason', form.urgent_reason);
   if (form.is_on_behalf_of && form.meeting_manager_id) fd.append('meeting_manager_id', form.meeting_manager_id);
 
