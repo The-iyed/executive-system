@@ -124,6 +124,10 @@ export interface MeetingApiResponse {
   updated_at: string;
   submitted_at: string;
   scheduled_at: string | null;
+  /** Start of scheduled meeting (API response). */
+  scheduled_start?: string | null;
+  /** End of scheduled meeting (API response). */
+  scheduled_end?: string | null;
   closed_at: string | null;
   version: number;
   meeting_title: string;

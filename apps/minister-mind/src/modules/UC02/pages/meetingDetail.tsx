@@ -888,11 +888,10 @@ const MeetingDetail: React.FC = () => {
   // Request guidance mutation
   const requestGuidanceMutation = useMutation({
     mutationFn: (payload: { notes: string; is_draft?: boolean }) => requestGuidance(id!, payload),
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsRequestGuidanceModalOpen(false);
       setRequestGuidanceForm({ notes: '' });
-      if (!variables.is_draft) navigate(-1);
     },
   });
 
@@ -1009,25 +1008,21 @@ const MeetingDetail: React.FC = () => {
         : scheduleMeeting(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-      // Keep modal open if Webex details exist so user can see them
-      // The modal will close when user clicks "تم" button
-      if (!webexMeetingDetails) {
-        setIsScheduleModalOpen(false);
-        setScheduleForm({
-          scheduled_at: '',
-          scheduled_end_at: '',
-          meeting_channel: 'PHYSICAL',
-          requires_protocol: false,
-          protocol_type: null,
-          protocol_type_text: '',
-          is_data_complete: true,
-          notes: '',
-          location: '',
-          selected_time_slot_id: null,
-          minister_attendees: [],
-        });
-        navigate(-1); // Navigate back after successful scheduling
-      }
+      // Close the form; do not navigate
+      setIsScheduleModalOpen(false);
+      setScheduleForm({
+        scheduled_at: '',
+        scheduled_end_at: '',
+        meeting_channel: 'PHYSICAL',
+        requires_protocol: false,
+        protocol_type: null,
+        protocol_type_text: '',
+        is_data_complete: true,
+        notes: '',
+        location: '',
+        selected_time_slot_id: null,
+        minister_attendees: [],
+      });
     },
   });
 
@@ -1274,8 +1269,8 @@ const MeetingDetail: React.FC = () => {
       
       return {
         ...prev,
-        scheduled_at: meeting.scheduled_at || '',
-        scheduled_end_at: (meeting as any).scheduled_end_at || '',
+        scheduled_at: meeting.scheduled_start ?? meeting.scheduled_at ?? '',
+        scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
         protocol_type: meeting.protocol_type || prev.protocol_type,
@@ -2786,15 +2781,27 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-4 w-full" dir="rtl">
               {meetingStatus !== MeetingStatus.WAITING && (
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                  >
-                    <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <button
+                            type="button"
+                            onClick={() => hasContent && setIsConsultationModalOpen(true)}
+                            disabled={!hasContent}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                          >
+                            <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
+                            طلب استشارة
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        {!hasContent ? 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' : 'طلب استشارة'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               )}
               {isLoadingConsultationRecords ? (
@@ -3644,7 +3651,18 @@ const MeetingDetail: React.FC = () => {
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_id: '', consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
             <button type="button" onClick={handleConsultationDraft} disabled={consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
-            <button type="submit" form="consultation-form" disabled={!consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button type="submit" form="consultation-form" disabled={!hasContent || !consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  {!hasContent ? 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' : !consultationForm.consultant_user_id ? 'اختر المستشار' : 'طلب استشارة'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         }
       >
