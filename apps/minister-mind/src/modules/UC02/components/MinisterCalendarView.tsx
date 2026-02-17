@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { ScreenLoader, Drawer } from '@shared';
+import { Loader, Drawer } from '@shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
@@ -222,13 +222,13 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     }
   }, [timelineEvents, isFetching]);
 
-  // Show full loader only on the very first load when we've never loaded data before
+  // Show inline loader only on the very first load (keeps layout visible, no full-page overlay)
   const isInitialLoad = isLoading && !hasLoadedOnce.current && previousEvents.length === 0 && !error;
 
   if (isInitialLoad) {
     return (
-      <div className="w-full h-[600px] flex items-center justify-center" dir="rtl">
-        <ScreenLoader />
+      <div className="w-full flex-1 min-h-[400px] flex items-center justify-center" dir="rtl">
+        <Loader />
       </div>
     );
   }
