@@ -146,7 +146,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
   // Submit consultation mutation
   const submitMutation = useMutation({
-    mutationFn: (data: { feasibility_answer: boolean; consultation_notes: string; is_draft: boolean }) => {
+    mutationFn: (data: { feasibility_answer: boolean; consultation_answers: string; is_draft: boolean }) => {
       if (!consultationId) throw new Error('Consultation ID is required');
       return submitConsultation(consultationId, data);
     },
@@ -175,7 +175,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
     }
     submitMutation.mutate({
       feasibility_answer: isSuitableForScheduling,
-      consultation_notes: consultationNotes.trim(),
+      consultation_answers: consultationNotes.trim(),
       is_draft: type === 'draft',
     });
   };
@@ -1273,8 +1273,9 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       const v = invitee.attendance_mechanism;
                       const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                      const isConsultant = invitee.is_consultant === true;
                       return (
-                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                           <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
                             <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
                               <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
@@ -1353,8 +1354,9 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       const v = invitee.attendance_mechanism;
                       const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                      const isConsultant = invitee.is_consultant === true;
                       return (
-                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                           <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
                             <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
                               <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
