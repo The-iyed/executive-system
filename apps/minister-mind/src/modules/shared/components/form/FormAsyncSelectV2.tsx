@@ -28,6 +28,8 @@ export interface FormAsyncSelectV2Props {
   fullWidth?: boolean;
   searchPlaceholder?: string;
   menuPortalTarget?: HTMLElement | null;
+  /** Called when the menu opens (first click). Use to mark touched and show errors. */
+  onFocus?: () => void;
 }
 
 export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
@@ -48,6 +50,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
   fullWidth = false,
   searchPlaceholder = 'ابحث...',
   menuPortalTarget,
+  onFocus,
 }) => {
   return (
     <AsyncSelectV2
@@ -72,6 +75,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
       fullWidth={fullWidth}
       searchPlaceholder={searchPlaceholder}
       menuPortalTarget={menuPortalTarget}
+      onFocus={onFocus}
     />
   );
 };

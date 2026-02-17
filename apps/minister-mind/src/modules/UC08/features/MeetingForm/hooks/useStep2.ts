@@ -1,17 +1,27 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { nanoid } from 'nanoid';
-import { UserApiResponse } from 'apps/minister-mind/src/modules/UC01/data/usersApi';
 import axiosInstance from '@auth/utils/axios';
-import { step2Schema, type Step2FormData } from '../schemas/step2.schema';
-import { mapUserToFormData } from '../utils/inviteeMappers';
+import {
+  validateStep2,
+  type Step2FormData,
+  type Step2ValidationContext,
+} from '../schemas/step2.schema';
+import { getMeetingTimeDifferenceHours } from '../utils/date';
+import { MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION } from '../utils/constants';
+import type { Step1FormData } from '../schemas/step1.schema';
+
+const MEETING_NATURE_NO_PREFILL = new Set(['SEQUENTIAL', 'PERIODIC']);
 
 interface UseStep2Props {
   draftId: string;
   initialData?: Partial<Step2FormData>;
+  /** Step 1 data for dynamic validation and for not auto-filling presentation when nature is SEQUENTIAL/PERIODIC */
+  step1FormData?: Partial<Step1FormData>;
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
+  /** Only NEW meetings may allow auto-prefill of presentation_file; when false, do not prefill from initialData when nature is SEQUENTIAL/PERIODIC */
+  isNewMeeting?: boolean;
 }
 
 interface SubmitStep2Payload {
@@ -20,76 +30,106 @@ interface SubmitStep2Payload {
   draftId: string;
 }
 
-interface SubmitStep2Response {
-  success: boolean;
-}
+const submitStep2Data = async (payload: SubmitStep2Payload): Promise<{ success: boolean }> => {
+  const { formData, draftId } = payload;
 
-const submitStep2Data = async (payload: SubmitStep2Payload): Promise<SubmitStep2Response> => {
-  const { formData, isDraft, draftId } = payload;
+  const hasPresentationFile =
+    formData.presentation_file instanceof File && formData.presentation_file.size > 0;
+  const hasOptionalAttachments =
+    Array.isArray(formData.optional_attachments) && formData.optional_attachments.length > 0;
 
-  // Validate if not draft
-  if (!isDraft) {
-    const validationResult = step2Schema.safeParse(formData);
-    if (!validationResult.success) {
-      const error = new Error('Validation failed');
-      (error as any).validationErrors = validationResult.error;
-      throw error;
+  if (hasPresentationFile || hasOptionalAttachments) {
+    const body = new FormData();
+    body.append('presentation_required', String(formData.presentation_required === true));
+    if (hasPresentationFile) {
+      body.append('presentation_file', formData.presentation_file!);
     }
+    (formData.optional_attachments ?? []).forEach((file) => {
+      body.append('optional_attachments', file);
+    });
+    await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/step2`, body, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  } else {
+    await axiosInstance.put(
+      `/api/meeting-requests/direct-schedule/${draftId}/step2`,
+      {
+        presentation_required: formData.presentation_required === true,
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
   }
-
-  const body = {
-    invitees: formData.invitees?.map((invitee, index) => {
-      // If user exists in system (has user_id), send only user_id and is_required
-      if (invitee.user_id) {
-        return {
-          user_id: invitee.user_id,
-          is_required: invitee.is_required || false,
-        };
-      }
-      
-      // If external user (no user_id), send all fields
-      return {
-        name: invitee.name || '',
-        position: invitee.position || '',
-        mobile: invitee.mobile || '',
-        email: invitee.email || '',
-        item_number: index + 1,
-        is_required: invitee.is_required || false,
-      };
-    }) || [],
-  };
-
-  // Use PATCH for both create and update (same endpoint)
-  await axiosInstance.put(
-    `/api/meeting-requests/direct-schedule/${draftId}/step2`,
-    body
-  );
 
   return { success: true };
 };
 
+function buildValidationContext(step1FormData?: Partial<Step1FormData>): Step2ValidationContext {
+  const is_urgent = step1FormData?.isUrgent ?? false;
+  const meetingStartDate =
+    typeof step1FormData?.meetingStartDate === 'string'
+      ? step1FormData.meetingStartDate
+      : undefined;
+  const meeting_time_difference_hours = getMeetingTimeDifferenceHours(meetingStartDate ?? undefined);
+  return {
+    is_urgent,
+    meeting_time_difference_hours,
+    max_allowed_hours_without_presentation: MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION,
+  };
+}
+
 export const useStep2 = ({
   draftId,
   initialData,
+  step1FormData,
   onSuccess,
   onError,
   isEditMode = false,
+  isNewMeeting = true,
 }: UseStep2Props) => {
+  const sanitizedInitial = useMemo(() => {
+    if (!initialData) return undefined;
+    const nature = step1FormData?.meetingNature;
+    const shouldNotPrefillPresentation =
+      typeof nature === 'string' &&
+      MEETING_NATURE_NO_PREFILL.has(nature) &&
+      !isNewMeeting;
+    if (shouldNotPrefillPresentation) {
+      const { presentation_file: _, ...rest } = initialData;
+      return { ...rest, presentation_file: undefined };
+    }
+    return initialData;
+  }, [initialData, step1FormData?.meetingNature, isNewMeeting]);
+
   const [formData, setFormData] = useState<Partial<Step2FormData>>({
-    invitees: [],
-    ...initialData,
+    presentation_file: undefined,
+    presentation_required: undefined,
+    optional_attachments: [],
+    ...sanitizedInitial,
   });
-  const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
-  const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof Step2FormData, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof Step2FormData, boolean>>>({});
 
   useEffect(() => {
-    if (initialData && isEditMode) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+    if (sanitizedInitial && isEditMode) {
+      setFormData((prev) => {
+        const nature = step1FormData?.meetingNature;
+        const shouldNotPrefillPresentation =
+          typeof nature === 'string' &&
+          MEETING_NATURE_NO_PREFILL.has(nature) &&
+          !isNewMeeting;
+        const merged = { ...prev, ...sanitizedInitial };
+        if (shouldNotPrefillPresentation) {
+          return { ...merged, presentation_file: undefined };
+        }
+        return merged;
+      });
     }
-  }, [initialData, isEditMode]);
+  }, [sanitizedInitial, isEditMode, isNewMeeting, step1FormData?.meetingNature]);
+
+  const validationContext = useMemo(
+    () => buildValidationContext(step1FormData),
+    [step1FormData]
+  );
 
   const submitMutation = useMutation({
     mutationFn: (payload: { formData: Partial<Step2FormData>; isDraft: boolean }) =>
@@ -103,170 +143,77 @@ export const useStep2 = ({
     },
   });
 
-  const validationResult = useMemo(() => {
-    return step2Schema.safeParse(formData);
-  }, [formData]);
-
   const validateAll = useCallback((): boolean => {
-    if (!validationResult.success) {
-      const newErrors: Record<string, Record<string, string>> = {};
-      validationResult.error.errors.forEach((err) => {
-        if (err.path[0] === 'invitees' && err.path[1] !== undefined) {
-          const inviteeIndex = err.path[1] as number;
-          const field = err.path[2] as string;
-          const invitee = formData.invitees?.[inviteeIndex];
-          
-          // Skip validation for name, position, mobile if user_id exists
-          if (invitee?.user_id && ['name', 'position', 'mobile'].includes(field)) {
-            return; // Skip this error
-          }
-          
-          if (invitee?.id) {
-            if (!newErrors[invitee.id]) {
-              newErrors[invitee.id] = {};
-            }
-            newErrors[invitee.id][field] = err.message;
-          }
+    const result = validateStep2(formData, validationContext);
+    if (!result.success) {
+      const newErrors: Partial<Record<keyof Step2FormData, string>> = {};
+      result.error.errors.forEach((err) => {
+        const path0 = err.path[0];
+        if (typeof path0 === 'string' && path0 in formData) {
+          newErrors[path0 as keyof Step2FormData] = err.message;
         }
       });
       setErrors(newErrors);
+      setTouched({
+        presentation_file: true,
+        presentation_required: true,
+        optional_attachments: true,
+      });
       return false;
     }
-    
     setErrors({});
     return true;
-  }, [formData, validationResult]);
+  }, [formData, validationContext]);
 
-  const handleAddAttendee = useCallback(() => {
-    const newAttendee = {
-      id: nanoid(),
-      name: '',
-      position: '',
-      mobile: '',
-      email: '',
-      is_required: false,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      invitees: [newAttendee, ...(prev.invitees || [])],
-    }));
-  }, []);
-
-  const handleDeleteAttendee = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      invitees: (prev.invitees || []).filter((a) => a.id !== id),
-    }));
+  const handleChange = useCallback((field: keyof Step2FormData, value: unknown) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-    setTouched((prev) => {
-      const newTouched = { ...prev };
-      delete newTouched[id];
-      return newTouched;
+      const next = { ...prev };
+      delete next[field];
+      return next;
     });
   }, []);
 
-  const handleUpdateAttendee = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      invitees: (prev.invitees || []).map((a) =>
-        a.id === id ? { ...a, [field]: value } : a
-      ),
-    }));
-    
-    // Mark field as touched
-    setTouched((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [field]: true,
-      },
-    }));
-    
-    // Clear error if field is valid
-    if (field === 'name' && value) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
+  const handleBlur = useCallback((field: keyof Step2FormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }, []);
+
+  const submitStep = useCallback(
+    async (isDraft: boolean = false): Promise<void> => {
+      if (!isDraft && !validateAll()) {
+        return;
+      }
+      submitMutation.mutate({
+        formData,
+        isDraft,
       });
-    }
-  }, []);
+    },
+    [formData, validateAll, submitMutation]
+  );
 
-  const handleAddUserFromSelect = useCallback((userOption: { 
-    value: string; 
-    label: string; 
-    description?: string; 
-    username?: string; 
-    position?: string; 
-    phone_number?: string;
-    first_name?: string;
-    last_name?: string;
-  }) => {
-    const userId = userOption.value;
-    const existingUser = formData.invitees?.find((inv) => inv.user_id === userId);
-    if (existingUser) return false;
-
-    const userData: UserApiResponse = {
-      id: userId,
-      username: userOption.username,
-      email: userOption.description,
-      first_name: userOption.first_name,
-      last_name: userOption.last_name,
-      position: userOption.position || null,
-      phone_number: userOption.phone_number || null,
-    };
-
-    const mappedUser = mapUserToFormData(userData);
-
-    const newInvitee = {
-      ...mappedUser,
-      id: nanoid(),
-    };
-
-    setFormData((prev) => ({
-      ...prev,
-      invitees: [newInvitee, ...(prev.invitees || [])],
-    }));
-    return true;
-  }, [formData.invitees]);
-
-  const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
-    const hasInvitees = formData.invitees && formData.invitees.length > 0;
-
-    if (!hasInvitees) {
-      onSuccess?.(isDraft);
-      return;
-    }
-
-    if (!isDraft && !validateAll()) {
-      return;
-    }
-
-    submitMutation.mutate({
-      formData,
-      isDraft,
-    });
-  }, [formData, validateAll, submitMutation, onSuccess]);
+  const isPresentationRequiredRequired = useMemo(() => {
+    const hasFile =
+      formData.presentation_file != null &&
+      formData.presentation_file !== undefined &&
+      (formData.presentation_file instanceof File ? formData.presentation_file.size > 0 : true);
+    if (hasFile) return false;
+    const { is_urgent, meeting_time_difference_hours, max_allowed_hours_without_presentation } =
+      validationContext;
+    const timeExceeds =
+      meeting_time_difference_hours != null &&
+      meeting_time_difference_hours > max_allowed_hours_without_presentation;
+    return is_urgent || timeExceeds;
+  }, [formData.presentation_file, validationContext]);
 
   return {
     formData,
     errors,
     touched,
     isSubmitting: submitMutation.isPending,
-    handleAddAttendee,
-    handleDeleteAttendee,
-    handleUpdateAttendee,
-    handleAddUserFromSelect,
+    handleChange,
+    handleBlur,
     validateAll,
     submitStep,
+    isPresentationRequiredRequired,
   };
 };

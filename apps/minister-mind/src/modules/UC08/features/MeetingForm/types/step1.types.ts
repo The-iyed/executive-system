@@ -1,4 +1,5 @@
 import type { Step1FormData as SchemaStep1FormData } from '../schemas/step1.schema';
+
 export type Step1FormData = SchemaStep1FormData;
 
 export interface SelectOption {
@@ -24,9 +25,46 @@ export interface PreviousMeetingSummary {
 }
 
 export type Step1TabId = 'meeting-info' | 'other-sections';
-
 export type MeetingNatureValue = 'NORMAL' | 'SEQUENTIAL' | 'PERIODIC';
 
+/** All Step1 top-level form field keys (for validation touch-all). */
+export const STEP1_FORM_FIELDS: readonly (keyof Step1FormData)[] = [
+  'relatedDirective',
+  'requester',
+  'previousMeeting',
+  'meetingNature',
+  'meetingOwner',
+  'meetingTitle',
+  'meetingSubject',
+  'meetingSubjectOptional',
+  'meetingDescription',
+  'meetingType',
+  'meetingCategory',
+  'meetingReason',
+  'relatedTopic',
+  'dueDate',
+  'meetingClassification1',
+  'meetingClassification2',
+  'meetingConfidentiality',
+  'sector',
+  'isUrgent',
+  'urgentReason',
+  'meetingStartDate',
+  'meetingEndDate',
+  'alternative1StartDate',
+  'alternative1EndDate',
+  'alternative2StartDate',
+  'alternative2EndDate',
+  'meeting_channel',
+  'location',
+  'requiresProtocol',
+  'wasDiscussedPreviously',
+  'previousMeetingDate',
+  'notes',
+  'isComplete',
+] as const;
+
+/** Fields that stay enabled when meeting is follow-up/recurring (nature SEQUENTIAL/PERIODIC). */
 export const MEETING_INFO_FIELDS: readonly (keyof Step1FormData)[] = [
   'meetingNature',
   'previousMeeting',
@@ -42,6 +80,10 @@ export const MEETING_INFO_FIELDS: readonly (keyof Step1FormData)[] = [
   'urgentReason',
   'meetingStartDate',
   'meetingEndDate',
+  'alternative1StartDate',
+  'alternative1EndDate',
+  'alternative2StartDate',
+  'alternative2EndDate',
   'meeting_channel',
   'location',
   'requiresProtocol',

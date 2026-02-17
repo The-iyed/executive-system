@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@sanad-ai/ui';
 import { PATH } from '../../../routes/paths';
 import { useStep1BasicInfo } from './useStep1BasicInfo';
 import { useStep2Content } from './useStep2Content';
@@ -16,9 +17,7 @@ const STEP_4_INDEX = 3;
 interface UseMeetingStepsProps {
   draftId: string | undefined;
   isEditMode: boolean;
-  /** Current stepper step (0-based). When not step 4, the calendar fetch in step 4 is disabled. */
   currentStep?: number;
-  /** From get meeting details: API editable_fields (snake_case). When set, non-listed fields are disabled in edit. */
   editableFields?: string[] | null;
   initialData?: {
     step1BasicInfo?: Partial<Step1BasicInfoFormData>;
@@ -44,11 +43,25 @@ export const useMeetingSteps = ({
   onStep4SchedulingSuccess,
 }: UseMeetingStepsProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const showErrorToast = useCallback(
+    (error: Error) => {
+      const description = error?.message || 'حدث خطأ أثناء الحفظ';
+      toast({
+        title: 'حدث خطأ',
+        description,
+        variant: 'destructive',
+      });
+    },
+    [toast],
+  );
 
   const deleteDraft = useDeleteDraft({
     draftId: draftId || '',
     onError: (error) => {
       console.error('Delete draft error:', error);
+      showErrorToast(error);
     },
   });
 
@@ -58,6 +71,7 @@ export const useMeetingSteps = ({
     onSuccess: onStep1Success,
     onError: (error) => {
       console.error('Step1BasicInfo error:', error);
+      showErrorToast(error);
     },
     isEditMode,
     editableFields,
@@ -103,6 +117,7 @@ export const useMeetingSteps = ({
     onSuccess: onStep2ContentSuccess,
     onError: (error:any) => {
       console.error('Step2Content error:', error);
+      showErrorToast(error);
     },
     isEditMode,
     editableFields,
@@ -119,6 +134,7 @@ export const useMeetingSteps = ({
     }),
     onError: (error) => {
       console.error('Step3Invitees error:', error);
+      showErrorToast(error);
     },
     isEditMode,
     editableFields,
@@ -128,12 +144,14 @@ export const useMeetingSteps = ({
     draftId: draftId || '',
     initialSlots: initialData?.step4Scheduling?.initialSlots,
     enableCalendarFetch: currentStep === STEP_4_INDEX,
+    isEditMode,
     onSuccess: onStep4SchedulingSuccess || (() => {
       clearDraftData();
       navigate(PATH.MEETINGS);
     }),
     onError: (error) => {
       console.error('Step4Scheduling error:', error);
+      showErrorToast(error);
     },
   });
 
