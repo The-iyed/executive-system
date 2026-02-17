@@ -137,6 +137,8 @@ export const getAssignedConsultationRequests = async (
 ): Promise<ConsultationsListResponse> => {
   const queryParams = new URLSearchParams();
 
+  queryParams.append('consultation_status', 'PENDING');
+
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
@@ -148,7 +150,7 @@ export const getAssignedConsultationRequests = async (
   }
 
   const response = await axiosInstance.get<ConsultationsListResponse>(
-    `/api/consultations/assigned-requests?${queryParams.toString()}`
+    `/api/consultations/my-meetings?${queryParams.toString()}`
   );
   return response.data;
 };
