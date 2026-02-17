@@ -1349,8 +1349,8 @@ const MeetingDetail: React.FC = () => {
   // Map status to MeetingStatus enum
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
-  /** When false, all form fields are read-only (status is not UNDER_REVIEW). */
-  const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW;
+  /** When true, form is editable and all actions (FAB) are enabled (قيد المراجعة or قيد المراجعة - المكتب التنفيذي). */
+  const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW || meeting?.status === MeetingStatus.UNDER_GUIDANCE;
 
   // المحتوى: objectives/agenda and at least one presentation file (العرض التقديمي)
   const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
@@ -1460,10 +1460,10 @@ const MeetingDetail: React.FC = () => {
     }
   }, [meetingStatus, activeTab]);
 
-  /** Renders a field label with an optional "editable when return for info" checkbox beside it (only when status is UNDER_REVIEW) */
+  /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
   const renderFieldLabel = (fieldId: string, labelContent: React.ReactNode, labelClassName?: string) => {
     const baseLabelClass = labelClassName ?? 'text-sm font-medium text-gray-700 text-[#344054]';
-    const showEditable = meetingStatus === MeetingStatus.UNDER_REVIEW && EDITABLE_FIELD_IDS.includes(fieldId);
+    const showEditable = (meetingStatus === MeetingStatus.UNDER_REVIEW || meetingStatus === MeetingStatus.UNDER_GUIDANCE) && EDITABLE_FIELD_IDS.includes(fieldId);
     const isChecked = returnForInfoForm.editable_fields[fieldId] ?? false;
     if (!showEditable) {
       return <label className={baseLabelClass} style={{ fontFamily: "'Almarai', sans-serif" }}>{labelContent}</label>;
@@ -3267,8 +3267,8 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Edit button: bottom-left, only when status allows edit (UNDER_REVIEW, as in FAB); disabled when no changes */}
-        {meeting && meeting.status === MeetingStatus.UNDER_REVIEW && (
+        {/* Edit button: bottom-left, when status allows edit (UNDER_REVIEW or UNDER_GUIDANCE); disabled when no changes */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE) && (
           <div className="fixed bottom-6 left-6 z-40" dir="rtl">
             <TooltipProvider>
               <Tooltip>
@@ -3295,7 +3295,7 @@ const MeetingDetail: React.FC = () => {
         )}
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
           <MeetingActionsBar
             meetingStatus={meetingStatus}
             open={actionsBarOpen}
