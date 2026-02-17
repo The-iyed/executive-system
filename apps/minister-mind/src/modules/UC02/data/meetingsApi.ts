@@ -68,6 +68,24 @@ export interface GeneralNoteItem {
   updated_at: string;
 }
 
+/** Related directive as returned in get meeting details (related_directives). */
+export interface RelatedDirective {
+  id: string;
+  directive_number: string;
+  directive_date: string;
+  directive_text: string;
+  related_meeting: string | null;
+  deadline: string | null;
+  responsible_persons: Array<{ id: string | null; name: string; position: string | null }>;
+  directive_status: string;
+  created_at: string;
+  created_by: string;
+  closed_at: string | null;
+  closed_by: string | null;
+  related_meeting_request_id: string | null;
+  related_meeting_request: string | null;
+}
+
 export interface MeetingApiResponse {
   id: string;
   request_number: string;
@@ -125,6 +143,8 @@ export interface MeetingApiResponse {
   attachments: Attachment[];
   invitees: Invitee[];
   related_directive_ids: string[];
+  /** Full directive objects returned by get meeting details (when available). */
+  related_directives?: RelatedDirective[];
   related_guidance: string | null;
   /** API returns array of note objects; legacy may be string */
   general_notes: GeneralNoteItem[] | string | null;
@@ -513,7 +533,7 @@ export const createWebexMeeting = async (
   return response.data;
 };
 
-// Directives API (matches /scheduling/directives/current and /previous response)
+// Directives API – current (matches /scheduling/directives/current)
 export interface Directive {
   id: string;
   action_number: string;
@@ -530,6 +550,45 @@ export interface Directive {
 
 export interface DirectivesListResponse {
   items: Directive[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+// Previous directives API (matches /scheduling/directives/previous response)
+export interface ResponsiblePerson {
+  id: string | null;
+  name: string;
+  position: string | null;
+}
+
+export interface PreviousDirectiveItem {
+  id: string;
+  directive_number: string;
+  directive_date: string;
+  directive_text: string;
+  related_meeting: string | null;
+  deadline: string | null;
+  responsible_persons: ResponsiblePerson[];
+  directive_status: string;
+  related_meeting_request_id: string | null;
+  meeting_nature: string | null;
+  meeting_subject: string | null;
+  description: string | null;
+  meeting_classification: string | null;
+  meeting_date: string | null;
+  status: string | null;
+  is_completed: boolean | null;
+  meeting_id: string | null;
+  created_date: string | null;
+  mod_date: string | null;
+  completed_at: string | null;
+}
+
+export interface PreviousDirectivesListResponse {
+  items: PreviousDirectiveItem[];
   total: number;
   skip: number;
   limit: number;
@@ -556,7 +615,7 @@ export const getDirectives = async (params: GetDirectivesParams = {}): Promise<D
   return response.data;
 };
 
-export const getPreviousDirectives = async (params: GetDirectivesParams = {}): Promise<DirectivesListResponse> => {
+export const getPreviousDirectives = async (params: GetDirectivesParams = {}): Promise<PreviousDirectivesListResponse> => {
   const queryParams = new URLSearchParams();
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
@@ -564,8 +623,21 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
   }
-  const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
+  const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
   return response.data;
+};
+
+/** Request body for POST /api/scheduling/directives (Create Scheduling Directive - UC-07) */
+export interface CreateDirectivePayload {
+  directive_date: string; // ISO date-time
+  directive_text: string;
+  related_meeting: string;
+  deadline: string; // ISO date-time
+  responsible_persons: string[];
+}
+
+export const createDirective = async (payload: CreateDirectivePayload): Promise<void> => {
+  await axiosInstance.post('/api/scheduling/directives', payload);
 };
 
 export const closeDirective = async (directiveId: string): Promise<void> => {
@@ -714,6 +786,8 @@ export interface ContentOfficerNotesRecordsResponse {
 export interface GetContentOfficerNotesParams {
   skip?: number;
   limit?: number;
+  /** Filter by consultation type, e.g. 'CONTENT' for استشارة المحتوى tab */
+  consultation_type?: string;
 }
 
 export const getContentOfficerNotesRecords = async (
@@ -721,12 +795,15 @@ export const getContentOfficerNotesRecords = async (
   params: GetContentOfficerNotesParams = {}
 ): Promise<ContentOfficerNotesRecordsResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
+  }
+  if (params.consultation_type) {
+    queryParams.append('consultation_type', params.consultation_type);
   }
 
   const response = await axiosInstance.get<ContentOfficerNotesRecordsResponse>(
