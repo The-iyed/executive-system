@@ -7,6 +7,7 @@ export interface DueDateFieldProps {
   error?: string;
   touched?: boolean;
   disabled?: boolean;
+  required?: boolean;
   className?: string;
 }
 
@@ -17,12 +18,14 @@ export function DueDateField({
   error,
   touched,
   disabled = false,
+  required = false,
   className,
 }: DueDateFieldProps) {
   return (
     <FormField
       className={className}
       label="تاريخ الاستحقاق"
+      required={required}
       error={touched ? error : undefined}
     >
       <FormDatePicker

@@ -1,381 +1,298 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { nanoid } from 'nanoid';
 import axiosInstance from '@auth/utils/axios';
-import { useCalendarEvents } from './useCalendarEvents';
-import type { CalendarEventData } from '@shared';
-import { getWeekStart, getWeekEnd } from '../utils';
-import type { Step3FormData } from '../schemas/step3.schema';
-import { step3Schema } from '../schemas/step3.schema';
+import { getUsers } from '../../../data/usersApi';
+import {
+  step3Schema,
+  type Step3FormData,
+  type InviteeFormRow,
+} from '../schemas/step3.schema';
+import {
+  mapUserToStep3InviteeRow,
+  createEmptyStep3InviteeRow,
+} from '../utils/inviteeMappers';
+
+type MeetingOwnerOption = { value: string; label: string } | null | undefined;
 
 interface UseStep3Props {
   draftId: string;
-  onSuccess?: () => void;
+  initialData?: Partial<Step3FormData>;
+  /** Step1 meeting owner (value = user id). Used to auto-insert owner as first invitee. */
+  step1FormData?: { meetingOwner?: MeetingOwnerOption };
+  onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
-  initialSlots?: string[];
+  isEditMode?: boolean;
 }
 
-interface SchedulingPayload {
-  selected_time_slot_id: string; // Required
-  meeting_channel?: string; // Required for final submission, optional for draft
-  scheduled_at?: string; // Required - ISO 8601 datetime string
-  requires_protocol?: boolean;
-  notes?: string;
-}
-
-export interface Step3Hook {
-  // calendar state
-  currentDate: Date;
-  weekStart: Date;
-  weekEnd: Date;
-  events: CalendarEventData[];
-  isLoadingEvents: boolean;
-  eventsError: unknown;
-  validationError: string | null;
-
-  // calendar handlers
-  handlePreviousWeek: () => void;
-  handleNextWeek: () => void;
-  clearValidationError: () => void;
-  handleBookEvent: (event: CalendarEventData) => void;
-  handleTimeSlotClick: (date: Date, time: string) => void;
-  handleEventClick: (event: CalendarEventData) => void;
-  handleAIGenerate: () => void;
-
-  // selection + submit
-  selectedSlots: string[];
-  toggleSlotSelection: (slotId: string) => void;
-  submitStep: (isDraft: boolean, selectedSlotIds: string[]) => Promise<void>;
-  isSubmitting: boolean;
-  setSelectedSlots: (slots: string[]) => void;
-
-  // form data
+interface SubmitStep3Payload {
   formData: Partial<Step3FormData>;
-  handleChange: (field: keyof Step3FormData, value: any) => void;
-  handleBlur: (field: keyof Step3FormData) => void;
-  
-  // validation
-  errors: Partial<Record<keyof Step3FormData, string>>;
-  touched: Partial<Record<keyof Step3FormData, boolean>>;
+  isDraft: boolean;
+  draftId: string;
 }
+
+function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
+  return {
+    full_name: row.full_name,
+    position_title: row.position_title,
+    mobile_number: row.mobile_number,
+    email: row.email,
+    attendance_mode: row.attendance_mode,
+    view_permission: row.view_permission,
+  };
+}
+
+const submitStep3Data = async (payload: SubmitStep3Payload): Promise<{ success: boolean }> => {
+  const { formData, isDraft, draftId } = payload;
+
+  if (!isDraft) {
+    const validationResult = step3Schema.safeParse(formData);
+    if (!validationResult.success) {
+      const error = new Error('Validation failed');
+      (error as Error & { validationErrors: unknown }).validationErrors = validationResult.error;
+      throw error;
+    }
+  }
+
+  const body: Record<string, unknown> = {
+    invitees: (formData.invitees ?? []).map(toBackendInvitee),
+  };
+  if ((formData.minister_invitees?.length ?? 0) > 0) {
+    body.minister_invitees = formData.minister_invitees.map(toBackendInvitee);
+  }
+  if ((formData.proposer_user_ids?.length ?? 0) > 0) {
+    body.proposer_user_ids = formData.proposer_user_ids;
+  }
+
+  await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/step3`, body);
+  return { success: true };
+};
 
 export const useStep3 = ({
   draftId,
+  initialData,
+  step1FormData,
   onSuccess,
   onError,
-  initialSlots = [],
-}: UseStep3Props): Step3Hook => {
-  const [currentDate, setCurrentDate] = useState<Date>(() => getWeekStart(new Date()));
-  const [selectedSlots, setSelectedSlots] = useState<string[]>(initialSlots);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  isEditMode = false,
+}: UseStep3Props) => {
   const [formData, setFormData] = useState<Partial<Step3FormData>>({
-    meeting_channel: undefined,
-    scheduled_at: undefined,
-    requires_protocol: false,
-    notes: '',
+    invitees: [],
+    minister_invitees: [],
+    proposer_user_ids: [],
+    ...initialData,
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof Step3FormData, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof Step3FormData, boolean>>>({});
+  const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
+  const [touched, setTouched] = useState<Record<string, Record<string, boolean>>>({});
+  const ownerSeededRef = useRef(false);
+
+  // Seed owner as first invitee when we have meeting owner and no invitees yet (create mode only)
+  useEffect(() => {
+    const ownerOption = step1FormData?.meetingOwner;
+    const value = ownerOption && typeof ownerOption === 'object' && ownerOption.value;
+    if (!value || ownerSeededRef.current) return;
+    const invitees = formData.invitees ?? [];
+    const hasExistingInvitees = invitees.length > 0 || (initialData?.invitees?.length ?? 0) > 0;
+    if (hasExistingInvitees) {
+      ownerSeededRef.current = true;
+      return;
+    }
+    ownerSeededRef.current = true;
+    getUsers({ search: value, limit: 5 })
+      .then((res) => {
+        const user = res.items.find((u) => u.id === value);
+        const ownerRow: InviteeFormRow = user
+          ? mapUserToStep3InviteeRow(user, { isOwner: true })
+          : {
+              ...createEmptyStep3InviteeRow(),
+              full_name: typeof ownerOption === 'object' && ownerOption.label ? ownerOption.label : '',
+              isOwner: true,
+            };
+        setFormData((prev) => ({
+          ...prev,
+          invitees: [ownerRow],
+        }));
+      })
+      .catch(() => {
+        const label = typeof ownerOption === 'object' && ownerOption.label ? ownerOption.label : '';
+        setFormData((prev) => ({
+          ...prev,
+          invitees: [
+            {
+              ...createEmptyStep3InviteeRow(),
+              full_name: label,
+              isOwner: true,
+            },
+          ],
+        }));
+      });
+  }, [step1FormData?.meetingOwner, formData.invitees?.length, initialData?.invitees?.length]);
 
   useEffect(() => {
-    if (initialSlots.length > 0) {
-      setSelectedSlots(initialSlots);
+    if (initialData && isEditMode) {
+      setFormData((prev) => ({ ...prev, ...initialData }));
+      if ((initialData.invitees?.length ?? 0) > 0) ownerSeededRef.current = true;
     }
-  }, [initialSlots]);
+  }, [initialData, isEditMode]);
 
-  const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
-  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
-
-  const {
-    events: fetchedEvents,
-    isLoading: isLoadingEvents,
-    error: eventsError,
-  } = useCalendarEvents({
-    startDate: weekStart,
-    endDate: weekEnd,
-    durationMinutes: 60,
-    enabled: true,
-  });
-
-  const events: CalendarEventData[] = useMemo(
-    () =>
-      fetchedEvents.map((event) => {
-        const isSelected = selectedSlots.includes(event.id);
-
-        if (isSelected) {
-          return {
-            ...event,
-            type: 'optional' as const,
-            label: 'تم الحجز',
-            is_selected: true,
-          };
-        }
-
-        return {
-          ...event,
-          is_selected: false,
-        };
-      }),
-    [fetchedEvents, selectedSlots],
-  );
-
-  // React Query mutation for submitting scheduling
   const submitMutation = useMutation({
-    mutationFn: async (payload: SchedulingPayload) => {
-      const response = await axiosInstance.put(
-        `/api/meeting-requests/direct-schedule/${draftId}/step3`,
-        payload
-      );
-      return response.data;
+    mutationFn: (payload: { formData: Partial<Step3FormData>; isDraft: boolean }) =>
+      submitStep3Data({ ...payload, draftId }),
+    onSuccess: (_, variables) => {
+      onSuccess?.(variables.isDraft);
     },
-    onSuccess: () => {
-      onSuccess?.();
-    },
-    onError: (error: any) => {
+    onError: (error) => {
       const err = error instanceof Error ? error : new Error('حدث خطأ أثناء الحفظ');
       onError?.(err);
     },
   });
 
-  const toggleSlotSelection = useCallback((slotId: string) => {
-    setSelectedSlots((prev) => {
-      // If slot is already selected, remove it (allow deselection)
-      if (prev.includes(slotId)) {
-        return [];
-      }
-      // Only allow one selection - replace any existing selection
-      return [slotId];
-    });
-    setValidationError(null);
-  }, []);
-
-  const handlePreviousWeek = useCallback(() => {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() - 7);
-      return newDate;
-    });
-  }, []);
-
-  const handleNextWeek = useCallback(() => {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + 7);
-      return newDate;
-    });
-  }, []);
-
-  const clearValidationError = useCallback(() => {
-    setValidationError(null);
-  }, []);
-
-  const handleBookEvent = useCallback(
-    (event: CalendarEventData) => {
-      if (event.is_available) {
-        toggleSlotSelection(event.id);
-        setValidationError(null);
-      }
-    },
-    [toggleSlotSelection],
-  );
-
-  const handleTimeSlotClick = useCallback(
-    (date: Date, time: string) => {
-      const availableEvent = events.find(
-        (e) =>
-          e.date.toDateString() === date.toDateString() &&
-          e.startTime === time &&
-          e.is_available &&
-          !e.is_selected,
-      );
-
-      if (availableEvent) {
-        toggleSlotSelection(availableEvent.id);
-        setValidationError(null);
-      }
-    },
-    [events, toggleSlotSelection],
-  );
-
-  const handleEventClick = useCallback(
-    (event: CalendarEventData) => {
-      if (event.is_available && !event.is_selected) {
-        toggleSlotSelection(event.id);
-        clearValidationError();
-      } else if (event.is_selected) {
-        toggleSlotSelection(event.id);
-      }
-    },
-    [toggleSlotSelection, clearValidationError],
-  );
-
-  const handleAIGenerate = useCallback(() => {
-    console.log('AI Generate clicked');
-    // TODO: Implement AI generation logic
-  }, []);
-
-  const handleChange = useCallback((field: keyof Step3FormData, value: any) => {
-    setFormData((prev) => {
-      const updated = {
-        ...prev,
-        [field]: value,
-      };
-      
-      // Validate field on change
-      const result = step3Schema.safeParse(updated);
-      if (result.success) {
-        setErrors((prevErrors) => {
-          const newErrors = { ...prevErrors };
-          delete newErrors[field];
-          return newErrors;
-        });
-      } else {
-        const fieldError = result.error.errors.find((err) => err.path[0] === field);
-        if (fieldError) {
-          setErrors((prevErrors) => ({
-            ...prevErrors,
-            [field]: fieldError.message,
-          }));
+  const validateAll = useCallback((): boolean => {
+    const result = step3Schema.safeParse(formData);
+    if (result.success) {
+      setErrors({});
+      return true;
+    }
+    const newErrors: Record<string, Record<string, string>> = {};
+    result.error.errors.forEach((err) => {
+      const path = err.path as (string | number)[];
+      if (path[0] === 'invitees') {
+        if (path.length === 1) {
+          newErrors['__invitees_table__'] = { _: err.message };
+        } else if (typeof path[1] === 'number') {
+          const row = formData.invitees?.[path[1]];
+          const field = (path[2] as string) ?? '_';
+          if (row?.id) {
+            if (!newErrors[row.id]) newErrors[row.id] = {};
+            newErrors[row.id][field] = err.message;
+          }
         }
       }
-      
-      return updated;
+      if (path[0] === 'minister_invitees' && typeof path[1] === 'number') {
+        const row = formData.minister_invitees?.[path[1]];
+        const field = (path[2] as string) ?? '_';
+        if (row?.id) {
+          if (!newErrors[row.id]) newErrors[row.id] = {};
+          newErrors[row.id][field] = err.message;
+        }
+      }
+    });
+    setErrors(newErrors);
+    return false;
+  }, [formData]);
+
+  const handleAddInvitee = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      invitees: [...(prev.invitees ?? []), createEmptyStep3InviteeRow()],
+    }));
+  }, []);
+
+  const handleDeleteInvitee = useCallback((id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      invitees: (prev.invitees ?? []).filter((r) => r.id !== id),
+    }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setTouched((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
     });
   }, []);
 
-  const handleBlur = useCallback((field: keyof Step3FormData) => {
+  const handleUpdateInvitee = useCallback((id: string, field: string, value: unknown) => {
+    setFormData((prev) => ({
+      ...prev,
+      invitees: (prev.invitees ?? []).map((r) =>
+        r.id === id ? { ...r, [field]: value } : r
+      ),
+    }));
     setTouched((prev) => ({
       ...prev,
-      [field]: true,
+      [id]: { ...prev[id], [field]: true },
     }));
-    
-    // Validate field on blur
-    const result = step3Schema.safeParse(formData);
-    if (!result.success) {
-      const fieldError = result.error.errors.find((err) => err.path[0] === field);
-      if (fieldError) {
-        setErrors((prevErrors) => ({
-          ...prevErrors,
-          [field]: fieldError.message,
-        }));
-      }
-    }
-  }, [formData]);
+  }, []);
 
-  const submitStep = useCallback(async (
-    isDraft: boolean,
-    selectedSlotIds: string[]
-  ): Promise<void> => {
-    // If draft and no slots, skip API call
-    if (isDraft && selectedSlotIds.length === 0) {
-      clearValidationError();
-      onSuccess?.();
-      return;
-    }
+  const handleAddMinisterInvitee = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      minister_invitees: [...(prev.minister_invitees ?? []), createEmptyStep3InviteeRow()],
+    }));
+  }, []);
 
-    // Validate: need exactly 1 slot if not draft
-    if (!isDraft && selectedSlotIds.length === 0) {
-      const err = new Error('يرجى اختيار موعد الاجتماع');
-      onError?.(err);
-      setValidationError(err.message);
-      return;
-    }
+  const handleDeleteMinisterInvitee = useCallback((id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      minister_invitees: (prev.minister_invitees ?? []).filter((r) => r.id !== id),
+    }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setTouched((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
-    // Validate form data using schema
-    const validationResult = step3Schema.safeParse(formData);
-    if (!isDraft && !validationResult.success) {
-      const formErrors: Partial<Record<keyof Step3FormData, string>> = {};
-      validationResult.error.errors.forEach((err) => {
-        const field = err.path[0] as keyof Step3FormData;
-        formErrors[field] = err.message;
-      });
-      setErrors(formErrors);
-      setTouched({
-        meeting_channel: true,
-        scheduled_at: true,
-      });
-      const firstError = validationResult.error.errors[0];
-      const err = new Error(firstError.message);
-      onError?.(err);
-      return;
-    }
+  const handleUpdateMinisterInvitee = useCallback((id: string, field: string, value: unknown) => {
+    setFormData((prev) => ({
+      ...prev,
+      minister_invitees: (prev.minister_invitees ?? []).map((r) =>
+        r.id === id ? { ...r, [field]: value } : r
+      ),
+    }));
+    setTouched((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: true },
+    }));
+  }, []);
 
-    // Build payload - always include selected_time_slot_id if we have a selection
-    const payload: SchedulingPayload = {
-      selected_time_slot_id: selectedSlotIds[0],
-    };
+  const setProposerUserIds = useCallback((ids: string[]) => {
+    setFormData((prev) => ({ ...prev, proposer_user_ids: ids }));
+  }, []);
 
-    // meeting_channel is required only for final submission (not draft)
-    if (!isDraft) {
-      if (!formData.meeting_channel) {
-        const err = new Error('قناة الاجتماع مطلوبة');
-        onError?.(err);
+  const submitStep = useCallback(
+    async (isDraft: boolean = false): Promise<void> => {
+      const hasInvitees = (formData.invitees?.length ?? 0) > 0;
+      if (!hasInvitees) {
+        if (isDraft) {
+          onSuccess?.(true);
+          return;
+        }
+        setErrors({ __invitees_table__: { _: 'يجب إضافة مدعو واحد على الأقل' } });
         return;
       }
-      payload.meeting_channel = formData.meeting_channel;
-    } else if (formData.meeting_channel) {
-      // Include meeting_channel in draft if provided, but don't require it
-      payload.meeting_channel = formData.meeting_channel;
-    }
+      if (!isDraft && !validateAll()) return;
+      submitMutation.mutate({ formData, isDraft });
+    },
+    [formData, validateAll, submitMutation, onSuccess]
+  );
 
-    // scheduled_at is required for final submission (date only, no time)
-    if (!isDraft) {
-      if (!formData.scheduled_at) {
-        const err = new Error('تاريخ الاجتماع مطلوب');
-        onError?.(err);
-        setValidationError(err.message);
-        return;
-      }
-      payload.scheduled_at = formData.scheduled_at;
-    } else if (formData.scheduled_at) {
-      // Include scheduled_at in draft if provided
-      payload.scheduled_at = formData.scheduled_at;
-    }
-    
-    // Add optional form fields to payload
-    if (formData.requires_protocol !== undefined) {
-      payload.requires_protocol = formData.requires_protocol;
-    }
-    if (formData.notes && formData.notes.trim() !== '') {
-      payload.notes = formData.notes;
-    }
-
-    clearValidationError();
-    submitMutation.mutate(payload);
-  }, [submitMutation, onSuccess, onError, formData]);
+  const ownerRowId = formData.invitees?.[0]?.isOwner ? formData.invitees[0].id : null;
+  const nonDeletableInviteeIds = ownerRowId ? [ownerRowId] : [];
 
   return {
-    // calendar state
-    currentDate,
-    weekStart,
-    weekEnd,
-    events,
-    isLoadingEvents,
-    eventsError,
-    validationError,
-
-    // calendar handlers
-    handlePreviousWeek,
-    handleNextWeek,
-    clearValidationError,
-    handleBookEvent,
-    handleTimeSlotClick,
-    handleEventClick,
-    handleAIGenerate,
-
-    // selection
-    selectedSlots,
-    toggleSlotSelection,
-    submitStep,
-    isSubmitting: submitMutation.isPending,
-    setSelectedSlots,
-
-    // form data
     formData,
-    handleChange,
-    handleBlur,
-    
-    // validation
     errors,
     touched,
+    isSubmitting: submitMutation.isPending,
+    handleAddInvitee,
+    handleDeleteInvitee,
+    handleUpdateInvitee,
+    handleAddMinisterInvitee,
+    handleDeleteMinisterInvitee,
+    handleUpdateMinisterInvitee,
+    setProposerUserIds,
+    validateAll,
+    submitStep,
+    nonDeletableInviteeIds,
   };
 };
