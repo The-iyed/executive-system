@@ -1781,7 +1781,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       >
                         <div className="flex flex-row items-start justify-between gap-4">
                           <div className="flex flex-col items-start flex-1 min-w-0">
-                            <p className="text-base font-bold text-[#048F86] mb-1">توجيه</p>
+                          <p className="text-base font-bold text-[#048F86] mb-1">السؤال</p>
                             <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1883,24 +1883,35 @@ const GuidanceRequestDetail: React.FC = () => {
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 consultationRecords.items.map((row: ConsultationRecord, index: number) => {
-                  const isExpanded = expandedConsultationId === row.consultation_id;
-                  const typeLabel = row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type;
-                  const requestDate = row.requested_at
-                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : '-';
-                  const answers = row.consultation_answers ?? [];
+                  const recordId = row.id || row.consultation_id || `${index}`;
+                  const recordType = row.type || row.consultation_type || '';
+                  const recordQuestion = row.question || row.consultation_question || '';
+                  const isExpanded = expandedConsultationId === recordId;
+                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
+                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+
+                  const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
+                  if (row.assignees?.length) {
+                    row.assignees.forEach(a => {
+                      if (a.answers?.length) {
+                        a.answers.forEach(ans => flatItems.push({ id: ans.answer_id, text: ans.text, status: a.status, name: a.name, respondedAt: ans.responded_at, requestNumber: a.request_number }));
+                      } else {
+                        flatItems.push({ id: a.user_id, text: '', status: a.status, name: a.name, respondedAt: a.responded_at, requestNumber: a.request_number });
+                      }
+                    });
+                  } else if (row.consultation_answers?.length) {
+                    row.consultation_answers.forEach(a => flatItems.push({ id: a.consultation_id || a.external_id || `ans-${index}`, text: a.consultation_answer, status: a.status, name: row.consultant_name || '', respondedAt: a.responded_at, requestNumber: row.consultation_request_number || null }));
+                  } else if (row.assignee_sections?.length) {
+                    row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at, requestNumber: a.consultation_record_number || null }));
+                  }
 
                   return (
-                    <div key={`consultation-${row.consultation_id}-${index}`} className="flex flex-col gap-0">
+                    <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
                       <button
                         type="button"
-                        onClick={() => setExpandedConsultationId((id) => (id === row.consultation_id ? null : row.consultation_id))}
+                        onClick={() => setExpandedConsultationId((prev) => (prev === recordId ? null : recordId))}
                         className={`
                           w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
                           ${isExpanded
@@ -1912,17 +1923,27 @@ const GuidanceRequestDetail: React.FC = () => {
                         <div className="flex flex-row items-start justify-between gap-4">
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{row.consultation_question || '-'}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
+                            {row.round_number != null && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-sm text-blue-700 font-medium">
+                                <span>الجولة {row.round_number}</span>
+                              </span>
+                            )}
+                            {row.status && (
+                              <StatusBadge status={row.status} label={overallStatusLabels[row.status] || row.status} />
+                            )}
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Clock className="w-4 h-4 flex-shrink-0" />
                               <span>تاريخ الطلب : {requestDate}</span>
                             </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                              <Hash className="w-4 h-4 flex-shrink-0" />
-                              <span>رمز الطلب : {row?.consultation_request_number}</span>
-                            </span>
+                            {displayRequestNumber && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                                <Hash className="w-4 h-4 flex-shrink-0" />
+                                <span>رمز الطلب : {displayRequestNumber}</span>
+                              </span>
+                            )}
                             <span className="flex-shrink-0 text-gray-500" aria-hidden>
                               {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                             </span>
@@ -1930,58 +1951,33 @@ const GuidanceRequestDetail: React.FC = () => {
                         </div>
                       </button>
 
-                      {isExpanded && answers.length > 0 && (
+                      {isExpanded && flatItems.length > 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                         {answers.map((_, index) =>
-                             <div className={"flex flex-shrink-0 w-12 flex-col items-center pt-1 "} 
-                              
-                              style={index > 0 ? {
-                                position: 'absolute',
-                                top: `${47 * index}px`,
-                                height: `${136 * index}px`,
-                              } : {}}
-                              >
-                              <div className={`w-[50px] -ml-[30px]  min-h-[8px] flex-1  border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]`} />
+                          {flatItems.map((_, idx) =>
+                            <div key={`line-${idx}`} className="flex flex-shrink-0 w-12 flex-col items-center pt-1"
+                              style={idx > 0 ? { position: 'absolute', top: `${47 * idx}px`, height: `${136 * idx}px` } : {}}
+                            >
+                              <div className={`w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] max-h-[60%] ${flatItems.length > 1 ? '-mt-[38px]' : '-mt-[10px]'} `} />
                               <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                             </div>
-                        )}
+                          )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                            {answers.map((answer) => {
-                              const responseDate = answer.responded_at
-                                ? new Date(answer.responded_at).toLocaleDateString('ar-SA', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—';
-                              const statusLabels: Record<string, string> = {
-                                PENDING: 'قيد الانتظار',
-                                RESPONDED: 'تم الرد',
-                                CANCELLED: 'ملغاة',
-                                DRAFT: 'مسودة',
-                                COMPLETED: 'مكتمل',
-                              };
-                              const statusLabel = statusLabels[answer.status] || answer.status;
+                            {flatItems.map((item) => {
+                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
                               return (
-                                <div
-                                  key={answer.consultation_id}
-                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
-                                  style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                                >
+                                <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
-                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
-                                      {answer.consultation_answer?.trim() || '—'}
-                                    </p>
-                                    <StatusBadge status={answer.status} label={statusLabel} />
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
-                                      {row.consultant_name?.charAt(0)?.toUpperCase() || '?'}
-                                    </div>
-                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.consultant_name || '—'}</span>
+                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
+                                    <StatusBadge status={item.status} label={overallStatusLabels[item.status] || item.status} />
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{item.name?.charAt(0)?.toUpperCase() || '?'}</div>
+                                    <span className="flex-shrink-0 text-sm text-gray-700">{item.name || '—'}</span>
+                                    {item.requestNumber && (
+                                      <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                                        <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
+                                      </span>
+                                    )}
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" />
-                                      <span>تاريخ الرد : {responseDate}</span>
+                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
                                     </span>
                                   </div>
                                 </div>
@@ -1990,16 +1986,13 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      {isExpanded && answers.length === 0 && (
+                      {isExpanded && flatItems.length === 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                           <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
                             <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
                             <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                           </div>
-                          <div
-                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
-                            style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                          >
+                          <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                             <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
                           </div>
                         </div>
@@ -2027,24 +2020,35 @@ const GuidanceRequestDetail: React.FC = () => {
                 </div>
               ) : contentConsultationRecords && contentConsultationRecords.items.length > 0 ? (
                 contentConsultationRecords.items.map((row: ConsultationRecord, index: number) => {
-                  const isExpanded = expandedConsultationId === row.consultation_id;
-                  const typeLabel = row.consultation_type === 'SCHEDULING' ? 'جدولة' : row.consultation_type === 'CONTENT' ? 'محتوى' : row.consultation_type;
-                  const requestDate = row.requested_at
-                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : '-';
-                  const answers = row.consultation_answers ?? [];
+                  const recordId = row.id || row.consultation_id || `c-${index}`;
+                  const recordType = row.type || row.consultation_type || '';
+                  const recordQuestion = row.question || row.consultation_question || '';
+                  const isExpanded = expandedConsultationId === recordId;
+                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
+                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+
+                  const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
+                  if (row.assignees?.length) {
+                    row.assignees.forEach(a => {
+                      if (a.answers?.length) {
+                        a.answers.forEach(ans => flatItems.push({ id: ans.answer_id, text: ans.text, status: a.status, name: a.name, respondedAt: ans.responded_at, requestNumber: a.request_number }));
+                      } else {
+                        flatItems.push({ id: a.user_id, text: '', status: a.status, name: a.name, respondedAt: a.responded_at, requestNumber: a.request_number });
+                      }
+                    });
+                  } else if (row.consultation_answers?.length) {
+                    row.consultation_answers.forEach(a => flatItems.push({ id: a.consultation_id || a.external_id || `ans-c-${index}`, text: a.consultation_answer, status: a.status, name: row.consultant_name || '', respondedAt: a.responded_at, requestNumber: row.consultation_request_number || null }));
+                  } else if (row.assignee_sections?.length) {
+                    row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at, requestNumber: a.consultation_record_number || null }));
+                  }
 
                   return (
-                    <div key={`consultation-content-${row.consultation_id}-${index}`} className="flex flex-col gap-0">
+                    <div key={`consultation-content-${recordId}-${index}`} className="flex flex-col gap-0">
                       <button
                         type="button"
-                        onClick={() => setExpandedConsultationId((id) => (id === row.consultation_id ? null : row.consultation_id))}
+                        onClick={() => setExpandedConsultationId((prev) => (prev === recordId ? null : recordId))}
                         className={`
                           w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
                           ${isExpanded
@@ -2056,17 +2060,27 @@ const GuidanceRequestDetail: React.FC = () => {
                         <div className="flex flex-row items-start justify-between gap-4">
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{row.consultation_question || '-'}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
+                            {row.round_number != null && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-sm text-blue-700 font-medium">
+                                <span>الجولة {row.round_number}</span>
+                              </span>
+                            )}
+                            {row.status && (
+                              <StatusBadge status={row.status} label={overallStatusLabels[row.status] || row.status} />
+                            )}
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Clock className="w-4 h-4 flex-shrink-0" />
                               <span>تاريخ الطلب : {requestDate}</span>
                             </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                              <Hash className="w-4 h-4 flex-shrink-0" />
-                              <span>رمز الطلب : {row?.consultation_request_number}</span>
-                            </span>
+                            {displayRequestNumber && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                                <Hash className="w-4 h-4 flex-shrink-0" />
+                                <span>رمز الطلب : {displayRequestNumber}</span>
+                              </span>
+                            )}
                             <span className="flex-shrink-0 text-gray-500" aria-hidden>
                               {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                             </span>
@@ -2074,49 +2088,33 @@ const GuidanceRequestDetail: React.FC = () => {
                         </div>
                       </button>
 
-                      {isExpanded && answers.length > 0 && (
+                      {isExpanded && flatItems.length > 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
+                          {flatItems.map((_, idx) =>
+                            <div key={`line-c-${idx}`} className="flex flex-shrink-0 w-12 flex-col items-center pt-1"
+                              style={idx > 0 ? { position: 'absolute', top: `${47 * idx}px`, height: `${136 * idx}px` } : {}}
+                            >
+                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[10px] max-h-[60%]" />
+                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                            </div>
+                          )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                            {answers.map((answer) => {
-                              const responseDate = answer.responded_at
-                                ? new Date(answer.responded_at).toLocaleDateString('ar-SA', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—';
-                              const statusLabels: Record<string, string> = {
-                                PENDING: 'قيد الانتظار',
-                                RESPONDED: 'تم الرد',
-                                CANCELLED: 'ملغاة',
-                                DRAFT: 'مسودة',
-                                COMPLETED: 'مكتمل',
-                              };
-                              const statusLabel = statusLabels[answer.status] || answer.status;
+                            {flatItems.map((item) => {
+                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
                               return (
-                                <div
-                                  key={answer.consultation_id}
-                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
-                                  style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                                >
+                                <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
-                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
-                                      {answer.consultation_answer?.trim() || '—'}
-                                    </p>
-                                    <StatusBadge status={answer.status} label={statusLabel} />
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
-                                      {row.consultant_name?.charAt(0)?.toUpperCase() || '?'}
-                                    </div>
-                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.consultant_name || '—'}</span>
+                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
+                                    <StatusBadge status={item.status} label={overallStatusLabels[item.status] || item.status} />
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{item.name?.charAt(0)?.toUpperCase() || '?'}</div>
+                                    <span className="flex-shrink-0 text-sm text-gray-700">{item.name || '—'}</span>
+                                    {item.requestNumber && (
+                                      <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                                        <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
+                                      </span>
+                                    )}
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" />
-                                      <span>تاريخ الرد : {responseDate}</span>
+                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
                                     </span>
                                   </div>
                                 </div>
@@ -2125,16 +2123,13 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      {isExpanded && answers.length === 0 && (
+                      {isExpanded && flatItems.length === 0 && (
                         <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
                           <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
                             <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
                             <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                           </div>
-                          <div
-                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
-                            style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                          >
+                          <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                             <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
                           </div>
                         </div>
@@ -2219,7 +2214,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
 
                           {/* Bottom Row: Email + Phone pills */}
-                          <div className="flex flex-row items-center gap-2.5">
+                          <div className="flex flex-row items-center gap-2.5 w-full">
                             <div
                               className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
                               style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}
@@ -2326,7 +2321,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
 
                           {/* Bottom Row: Email + Phone pills */}
-                          <div className="flex flex-row items-center gap-2.5">
+                          <div className="flex flex-row items-center gap-2.5 w-full">
                             <div
                               className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
                               style={{ borderRadius: '8px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}

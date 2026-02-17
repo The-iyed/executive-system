@@ -221,6 +221,32 @@ const Meeting: React.FC = () => {
                   meetings={meetings}
                   onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                   onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onAction={(meeting) => {
+                    if (meeting.status === MeetingStatus.DRAFT) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => submitDraftMutation.mutate(meeting.id));
+                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToSchedulingMutation.mutate(meeting.id));
+                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToContentMutation.mutate(meeting.id));
+                    }
+                  }}
+                  getActionLabel={(meeting) => {
+                    if (meeting.status === MeetingStatus.DRAFT) {
+                      return submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إرسال المسودة';
+                    }
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+                      return resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمسؤول';
+                    }
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
+                      return resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمحتوى';
+                    }
+                    return undefined;
+                  }}
+                  getActionLoading={(meeting) =>
+                    (submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id) ||
+                    (resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id) ||
+                    (resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id)
+                  }
                 />
               )}
               {totalPages > 1 && (

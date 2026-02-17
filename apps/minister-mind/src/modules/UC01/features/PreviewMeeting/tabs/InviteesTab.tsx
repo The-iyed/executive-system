@@ -109,7 +109,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
                   </div>
 
                   {/* Bottom Row: Email + Phone pills */}
-                  <div className="flex flex-row items-center gap-2.5">
+                  <div className="flex flex-row items-center gap-2.5 w-full">
                     <div
                       className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2"
                       style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}

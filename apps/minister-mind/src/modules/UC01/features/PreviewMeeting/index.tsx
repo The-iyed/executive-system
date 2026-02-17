@@ -89,7 +89,7 @@ const PreviewMeeting: React.FC = () => {
             </div>
             {/* Tabs row: underline tabs centered + help icon (match UC02) */}
             <div className="flex flex-row items-center w-full gap-2.5">
-              <div className="flex-1 flex min-w-0">
+              <div className="flex-1 flex min-w-0 justify-center">
                 <Tabs
                   items={MEETING_PREVIEW_TABS}
                   activeTab={activeTab}
