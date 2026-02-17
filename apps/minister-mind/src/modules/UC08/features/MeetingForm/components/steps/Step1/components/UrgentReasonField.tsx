@@ -7,6 +7,7 @@ export interface UrgentReasonFieldProps {
   error?: string;
   touched?: boolean;
   disabled?: boolean;
+  required?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export function UrgentReasonField({
   error,
   touched,
   disabled = false,
+  required = false,
   className,
 }: UrgentReasonFieldProps) {
   return (
@@ -29,6 +31,7 @@ export function UrgentReasonField({
         label="السبب"
         placeholder="السبب..."
         disabled={disabled}
+        required={required}
       />
     </div>
   );
