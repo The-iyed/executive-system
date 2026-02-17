@@ -49,4 +49,6 @@ export interface AsyncSelectV2Props {
   fullWidth?: boolean;
   searchPlaceholder?: string;
   menuPortalTarget?: HTMLElement | null;
+  /** Called when the menu opens (first click). Use to mark touched and show errors. */
+  onFocus?: () => void;
 }

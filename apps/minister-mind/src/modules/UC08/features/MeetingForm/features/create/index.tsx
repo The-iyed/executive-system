@@ -52,7 +52,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleNextClick={handleStep1Next}
             handleSaveDraftClick={handleStep1SaveDraft}
             handleCancelClick={handleCancel}
-            isFieldRequired={step1Hook.isFieldRequired}
+            isFieldVisible={step1Hook.isFieldVisible}
           />
         );
       case 1:
@@ -64,24 +64,34 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             touched={step2Hook.touched}
             isSubmitting={step2Hook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
-            handleAddAttendee={step2Hook.handleAddAttendee}
-            handleDeleteAttendee={step2Hook.handleDeleteAttendee}
-            handleUpdateAttendee={step2Hook.handleUpdateAttendee}
-            handleAddUserFromSelect={step2Hook.handleAddUserFromSelect}
+            handleChange={step2Hook.handleChange}
+            handleBlur={step2Hook.handleBlur}
             handleNextClick={handleStep2Next}
             handleSaveDraftClick={handleStep2SaveDraft}
             handleCancelClick={handleCancel}
+            isPresentationRequiredRequired={step2Hook.isPresentationRequiredRequired}
           />
         );
       case 2:
         if (!draftId) return null;
         return (
           <Step3
-            step3Hook={step3Hook}
+            formData={step3Hook.formData}
+            errors={step3Hook.errors}
+            touched={step3Hook.touched}
+            isSubmitting={step3Hook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
+            handleAddInvitee={step3Hook.handleAddInvitee}
+            handleDeleteInvitee={step3Hook.handleDeleteInvitee}
+            handleUpdateInvitee={step3Hook.handleUpdateInvitee}
+            handleAddMinisterInvitee={step3Hook.handleAddMinisterInvitee}
+            handleDeleteMinisterInvitee={step3Hook.handleDeleteMinisterInvitee}
+            handleUpdateMinisterInvitee={step3Hook.handleUpdateMinisterInvitee}
+            setProposerUserIds={step3Hook.setProposerUserIds}
             handleNextClick={handleStep3Next}
             handleSaveDraftClick={handleStep3SaveDraft}
             handleCancelClick={handleCancel}
+            nonDeletableInviteeIds={step3Hook.nonDeletableInviteeIds}
           />
         );
       default:
