@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StatusType } from '@shared/components/status-badge';
+import { StatusBadge, StatusType } from '@shared/components/status-badge';
 import { MeetingStatus } from '@shared/types';
 import { Eye, CalendarDays, User, Hash, Layers, CheckCircle2, XCircle } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
@@ -114,12 +114,7 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
                 {request.isDataComplete ? 'مكتمل' : 'غير مكتمل'}
               </span>
             )}
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap"
-              style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
-            >
-              {request.statusLabel}
-            </span>
+            <StatusBadge status={request.status} label={request.statusLabel} />
           </div>
         </div>
 
