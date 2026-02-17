@@ -2033,29 +2033,28 @@ const MeetingDetail: React.FC = () => {
                       {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                       <div className="flex items-center gap-2 mr-auto">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setComparePresentationsResult(null);
-                                setCompareErrorDetail(null);
-                                setCompareOpenedWithoutReplace(att.replaces_attachment_id == null);
-                                setIsComparePresentationsModalOpen(true);
-                                if (att.replaces_attachment_id != null) {
+                        {att.replaces_attachment_id != null && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setComparePresentationsResult(null);
+                                  setCompareErrorDetail(null);
+                                  setIsComparePresentationsModalOpen(true);
                                   compareByAttachmentMutation.mutate(att.id);
-                                }
-                              }}
-                              disabled={compareByAttachmentMutation.isPending}
-                              className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
-                            >
-                              <GitCompare className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="text-right">
-                            <p>تقييم الاختلاف بين العروض</p>
-                          </TooltipContent>
-                        </Tooltip>
+                                }}
+                                disabled={compareByAttachmentMutation.isPending}
+                                className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
+                              >
+                                <GitCompare className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-right">
+                              <p>تقييم الاختلاف بين العروض</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
