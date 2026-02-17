@@ -17,6 +17,7 @@ export { MeetingCard, type MeetingCardProps, type MeetingCardData } from './meet
 export { CardsGrid, type CardsGridProps } from './cards-grid';
 export { ViewSwitcher, type ViewSwitcherProps, type ViewType } from './view-switcher';
 export { SearchFilterBar, type SearchFilterBarProps } from './search-filter-bar';
+export { MeetingActionsBar, type MeetingActionsBarProps, type ActionBarItem } from './MeetingActionsBar';
 export { Pagination, type PaginationProps } from './pagination';
 export { ScreenLoader, Loader } from './screen-loader';
 export { Stepper, type StepperProps, type StepperStep } from './stepper';
