@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip } from '@shared';
 import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import '@shared/styles';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
@@ -15,7 +15,6 @@ const WorkBasket: React.FC = () => {
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<MeetingStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Debounce search input
@@ -27,29 +26,20 @@ const WorkBasket: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Reset to page 1 when search or status filter changes
+  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, statusFilter]);
-
-  // API status: only send when a specific status is selected (like before redesign)
-  const apiStatus = useMemo(() => {
-    if (statusFilter === 'all') return undefined;
-    return statusFilter;
-  }, [statusFilter]);
+  }, [debouncedSearch]);
 
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['work-basket', 'uc02', apiStatus, debouncedSearch.trim(), currentPage],
+    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
         skip,
         limit: ITEMS_PER_PAGE,
       };
-      if (apiStatus) {
-        params.status = apiStatus;
-      }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
@@ -224,20 +214,30 @@ const WorkBasket: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar and View Switcher (like before redesign) */}
+        {/* Page Title, Description, Search and View Switcher – same header as other routes */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">الطلبات الحالية</h1>
-            <p className="text-base text-gray-600 text-right">الاطلاع على الطلبات قيد المراجعة</p>
+            <p className="text-base text-gray-600 text-right">
+              الاطلاع على الطلبات قيد المراجعة
+            </p>
           </div>
-          <div className="flex-shrink-0 flex items-center gap-6" dir="ltr">
-            <ViewSwitcher view={view} onViewChange={setView} />
-            <SearchFilterBar
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+
+          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+            <div
+              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
+              dir="rtl"
+            >
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchInput
+                value={searchValue}
+                onChange={setSearchValue}
+                placeholder="بحث"
+                variant="default"
+                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              />
+            </div>
           </div>
         </div>
 
