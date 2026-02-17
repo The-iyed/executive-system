@@ -22,6 +22,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   className,
   fullWidth = false,
   menuPortalTarget: menuPortalTargetProp,
+  onFocus,
 }) => {
   const portalTargetFromContext = useSelectMenuPortalTarget();
   const menuPortalTarget = menuPortalTargetProp ?? portalTargetFromContext ?? (typeof document !== 'undefined' ? document.body : undefined);
@@ -283,6 +284,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
           isLoading={isLoading}
           debounceTimeout={debounceTimeout}
           defaultOptions={true}
+          onMenuOpen={onFocus}
           additional={{
             page: 1,
           }}

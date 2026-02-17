@@ -7,7 +7,7 @@ import { PAGINATION, TAB_FILTER_MAP, MeetingOwnerType } from '../utils/constants
 
 interface UseMeetingsOptions {
   searchValue: string;
-  statusFilter: MeetingStatus | 'all';
+  statusFilter?: MeetingStatus | 'all';
   currentPage: number;
   itemsPerPage?: number;
   /** Optional: when not provided, uses SUBMITTER and status from statusFilter (or all when statusFilter is 'all') */

@@ -72,10 +72,8 @@ const PreviewMeeting: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-8 pr-5">
-        {/* Head: white card (match UC02 detail) */}
         <div className="flex flex-col flex-shrink-0 pb-3">
           <div className="w-full flex flex-col pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white">
-            {/* Top row: back + title + status, Edit on end */}
             <div className="flex flex-row justify-between items-center gap-2.5 w-full">
               <GoBackHeader
                 title={`عرض الطلب (${meeting?.request_number ?? ''})`}
@@ -83,11 +81,17 @@ const PreviewMeeting: React.FC = () => {
                 statusLabel={statusLabel}
                 onBack={handleBack}
               />
-              {meeting.status !== MeetingStatus.UNDER_REVIEW && (
+              {[
+                MeetingStatus.DRAFT,
+                MeetingStatus.SCHEDULED_UPDATE_CONTENT,
+                MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
+                MeetingStatus.SCHEDULED_DELAYED,
+                MeetingStatus.RETURNED_FROM_SCHEDULING,
+                MeetingStatus.RETURNED_FROM_CONTENT,
+              ].includes(meeting.status as MeetingStatus) && (
                 <EditButton onClick={() => openEditDrawer(meeting.id)} />
               )}
             </div>
-            {/* Tabs row: underline tabs centered + help icon (match UC02) */}
             <div className="flex flex-row items-center w-full gap-2.5">
               <div className="flex-1 flex min-w-0 justify-center">
                 <Tabs
@@ -118,7 +122,6 @@ const PreviewMeeting: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* Content: white card (match UC02 detail) */}
         <div
           className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}

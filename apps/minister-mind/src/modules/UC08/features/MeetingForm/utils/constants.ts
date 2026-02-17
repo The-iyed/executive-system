@@ -108,61 +108,73 @@ export const MEETING_CHANNEL_OPTIONS = [
   { value: MeetingChannel.HYBRID, label: 'مختلط' },
 ];
 
+/** Attendance mode options for invitees (backend: IN_PERSON | REMOTE). */
+export const ATTENDANCE_MODE_OPTIONS = [
+  { value: 'IN_PERSON', label: 'حضوري' },
+  { value: 'REMOTE', label: 'عن بُعد' },
+] as const;
+
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[80px]' },
   {
-    id: 'itemNumber',
-    header: 'رقم البند',
-    width: 'min-w-[100px]',
+    id: 'full_name',
+    header: 'الاسم الكامل',
+    type: 'text',
+    placeholder: 'الاسم الكامل',
+    width: 'min-w-[180px]',
   },
   {
-    id: 'name',
-    header: 'الإسم',
+    id: 'position_title',
+    header: 'المسمى الوظيفي',
     type: 'text',
-    placeholder: 'الإسم',
-    width: 'min-w-[210px]',
+    placeholder: 'المسمى الوظيفي',
+    width: 'min-w-[180px]',
   },
   {
-    id: 'position',
-    header: 'المنصب',
+    id: 'mobile_number',
+    header: 'رقم الجوال',
     type: 'text',
-    placeholder: 'المنصب',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'mobile',
-    header: 'الجوال',
-    type: 'text',
-    placeholder: 'الجوال',
-    width: 'min-w-[210px]',
+    placeholder: 'رقم الجوال',
+    width: 'min-w-[160px]',
   },
   {
     id: 'email',
     header: 'البريد الإلكتروني',
     type: 'text',
     placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[210px]',
+    width: 'min-w-[200px]',
   },
   {
-    id: 'is_required',
-    header: 'الحضور أساسي',
+    id: 'attendance_mode',
+    header: 'آلية الحضور',
+    type: 'select',
+    selectOptions: [...ATTENDANCE_MODE_OPTIONS],
+    placeholder: 'اختر',
+    width: 'min-w-[140px]',
+  },
+  {
+    id: 'view_permission',
+    header: 'صلاحية العرض',
     type: 'switch',
     label: false,
-    width: 'min-w-[210px]',
+    width: 'min-w-[120px]',
   },
-  {
-    id: 'action',
-    header: 'إجراء',
-    width: 'w-[60px]',
-  },
+  { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
-export const INVITEES_TABLE_TITLE = 'قائمة المدعوين';
-export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو جديد';
+export const INVITEES_TABLE_TITLE = 'قائمة المدعوين (مقدّم الطلب)';
+export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو';
+
+export const MINISTER_INVITEES_TABLE_TITLE = 'مدعوو الوزير';
+export const ADD_MINISTER_INVITEE_BUTTON_LABEL = 'إضافة مدعو للوزير';
+
+/** Max hours between now and meeting start without requiring presentation_required to be set when no file is uploaded. */
+export const MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION = 48;
 
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
-  { id: 'step2', label: 'قائمة المدعوين' },
-  { id: 'step3', label: 'موعد الاجتماع' },
+  { id: 'step2', label: 'العرض والمرفقات' },
+  { id: 'step3', label: 'قائمة المدعوين' },
 ];
 
 export const STEP1_TABS = [
