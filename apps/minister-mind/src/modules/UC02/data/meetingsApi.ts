@@ -947,3 +947,60 @@ export const runCompareByAttachment = async (
   await pollPost();
   return getComparisonByAttachment(attachmentId);
 };
+
+// LLM notes/insights for a presentation attachment – icon on each attachment (ملاحظات على العرض)
+const INSIGHTS_API_BASE =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EXECUTION_SYSTEM_URL) ||
+  'https://execution-system.momrahai.com';
+
+const INSIGHTS_POLL_INTERVAL_MS = 2000;
+const INSIGHTS_MAX_POLL_ATTEMPTS = 60; // 2 minutes at 2s interval
+
+export interface AttachmentInsightsResponse {
+  attachment_id: string;
+  presentation_id: string;
+  extraction_status: string;
+  llm_processing_status: string;
+  llm_notes?: string[];
+  llm_suggestions?: string[];
+}
+
+/** GET presentations/by-attachment/{id}/insights from execution-system (single call). */
+export const getAttachmentInsights = async (
+  attachmentId: string
+): Promise<AttachmentInsightsResponse> => {
+  const url = `${INSIGHTS_API_BASE}/api/presentations/by-attachment/${attachmentId}/insights`;
+  const response = await axiosInstance.get<AttachmentInsightsResponse>(url);
+  return response.data;
+};
+
+/** Returns true when insights are ready (no need to poll further). */
+function isInsightsReady(data: AttachmentInsightsResponse): boolean {
+  const extDone = (data.extraction_status || '').toLowerCase() === 'completed';
+  const llmDone = (data.llm_processing_status || '').toLowerCase() === 'completed';
+  const hasContent =
+    (Array.isArray(data.llm_notes) && data.llm_notes.length > 0) ||
+    (Array.isArray(data.llm_suggestions) && data.llm_suggestions.length > 0);
+  return (extDone && llmDone) || hasContent;
+}
+
+/** Poll GET insights until extraction_status and llm_processing_status are completed (or we have notes/suggestions). */
+export const getAttachmentInsightsWithPolling = async (
+  attachmentId: string,
+  options?: { pollIntervalMs?: number; maxAttempts?: number }
+): Promise<AttachmentInsightsResponse> => {
+  const intervalMs = options?.pollIntervalMs ?? INSIGHTS_POLL_INTERVAL_MS;
+  const maxAttempts = options?.maxAttempts ?? INSIGHTS_MAX_POLL_ATTEMPTS;
+
+  let lastData = await getAttachmentInsights(attachmentId);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (isInsightsReady(lastData)) {
+      return lastData;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+    lastData = await getAttachmentInsights(attachmentId);
+  }
+
+  // Return last response even if not fully completed (e.g. timeout)
+  return lastData;
+};
