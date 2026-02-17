@@ -45,7 +45,6 @@ import {
   getGuidanceRecords,
   type GuidanceRecord,
   getContentOfficerNotesRecords,
-  type ContentOfficerNoteRecord,
   type GeneralNoteItem,
   moveToWaitingList,
 } from '../data/meetingsApi';
@@ -228,25 +227,6 @@ const MeetingDetail: React.FC = () => {
     return contentOfficerNotesRecordsRaw;
   }, [activeTab, contentOfficerNotesRecordsRaw]);
 
-  const contentOfficerNotesTableData = React.useMemo(() => {
-    if (!contentOfficerNotesRecords?.items?.length) return [];
-    return contentOfficerNotesRecords.items
-      .filter((item: any) => item && typeof item === 'object' && !Array.isArray(item))
-      .map((item: any) => {
-        const safeString = (v: any, f: string = '') => (v == null || typeof v === 'object' ? f : typeof v === 'string' ? v : String(v));
-        const safeNoteQuestion = (v: any): string | null => (v == null || typeof v === 'object' ? null : typeof v === 'string' ? v : String(v));
-        const getSafeValue = (v: any, f: any = null) => (v == null || typeof v === 'object' ? f : v);
-        return {
-          id: safeString(getSafeValue(item.id, item.note_id), ''),
-          note_question: safeNoteQuestion(getSafeValue(item.note_question, item.text)),
-          note_answer: safeString(getSafeValue(item.note_answer, item.text), ''),
-          author_name: safeString(getSafeValue(item.author_name), ''),
-          created_at: safeString(getSafeValue(item.created_at), ''),
-          updated_at: safeString(getSafeValue(item.updated_at), ''),
-        } as ContentOfficerNoteRecord;
-      });
-  }, [contentOfficerNotesRecords]);
-
   // Form state
   const [formData, setFormData] = useState({
     meeting_type: '',
@@ -394,6 +374,7 @@ const MeetingDetail: React.FC = () => {
   } | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     scheduled_at: '',
+    scheduled_end_at: '',
     meeting_channel: 'PHYSICAL' as 'PHYSICAL' | 'PHYSICAL_LOCATION_1' | 'PHYSICAL_LOCATION_2' | 'PHYSICAL_LOCATION_3' | 'VIRTUAL' | 'HYBRID',
     requires_protocol: false,
     protocol_type: null as string | null,
@@ -438,6 +419,8 @@ const MeetingDetail: React.FC = () => {
   const [isComparePresentationsModalOpen, setIsComparePresentationsModalOpen] = useState(false);
   const [comparePresentationsResult, setComparePresentationsResult] = useState<ComparePresentationsResponse | null>(null);
   const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
+  /** True when user opened compare modal for an attachment that has no previous version (replaces_attachment_id is null). */
+  const [compareOpenedWithoutReplace, setCompareOpenedWithoutReplace] = useState(false);
   /** LLM notes/insights modal for a presentation attachment (ملاحظات على العرض) – icon on each attachment */
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
 
@@ -1031,6 +1014,7 @@ const MeetingDetail: React.FC = () => {
         setIsScheduleModalOpen(false);
         setScheduleForm({
           scheduled_at: '',
+          scheduled_end_at: '',
           meeting_channel: 'PHYSICAL',
           requires_protocol: false,
           protocol_type: null,
@@ -1048,12 +1032,17 @@ const MeetingDetail: React.FC = () => {
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scheduleForm.scheduled_at) return;
+    if (!scheduleForm.scheduled_at || !scheduleForm.scheduled_end_at) return;
 
     // Reject past date/time
     const scheduledAt = new Date(scheduleForm.scheduled_at);
     if (scheduledAt.getTime() <= Date.now()) {
-      setValidationError('لا يمكن اختيار تاريخ أو وقت في الماضي');
+      setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي');
+      return;
+    }
+    const scheduledEndAt = new Date(scheduleForm.scheduled_end_at);
+    if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
+      setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية');
       return;
     }
 
@@ -1206,7 +1195,7 @@ const MeetingDetail: React.FC = () => {
 
   // Auto-create Webex meeting when ONLINE channel is selected and date/time is set
   useEffect(() => {
-      // Only create if modal is open, channel is VIRTUAL, date/time is set, and we don't already have details
+      // Only create if modal is open, channel is VIRTUAL, start date is set, and we don't already have details
     if (
       !isScheduleModalOpen ||
       scheduleForm.meeting_channel !== 'VIRTUAL' ||
@@ -1233,9 +1222,11 @@ const MeetingDetail: React.FC = () => {
         const seconds = String(scheduledDateUTC.getUTCSeconds()).padStart(2, '0');
         const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
-        // Get meeting title and duration from meeting data
         const meetingTitle = meeting?.meeting_title || 'اجتماع';
-        const durationMinutes = meeting?.presentation_duration || 60;
+        const durationMinutes =
+          scheduleForm.scheduled_end_at && scheduleForm.scheduled_at
+            ? Math.max(1, Math.round((new Date(scheduleForm.scheduled_end_at).getTime() - new Date(scheduleForm.scheduled_at).getTime()) / (60 * 1000)))
+            : (meeting?.presentation_duration || 60);
 
         const webexResponse = await createWebexMeeting({
           meeting_title: meetingTitle,
@@ -1266,7 +1257,7 @@ const MeetingDetail: React.FC = () => {
     }, 500); // Wait 500ms after user stops typing/selecting
 
     return () => clearTimeout(timeoutId);
-  }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, webexMeetingDetails, isCreatingWebex, meeting]);
+  }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
 
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
@@ -1281,6 +1272,7 @@ const MeetingDetail: React.FC = () => {
       return {
         ...prev,
         scheduled_at: meeting.scheduled_at || '',
+        scheduled_end_at: (meeting as any).scheduled_end_at || '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
         protocol_type: meeting.protocol_type || prev.protocol_type,
@@ -2048,23 +2040,29 @@ const MeetingDetail: React.FC = () => {
                       {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                       <div className="flex items-center gap-2 mr-auto">
-                        {att.replaces_attachment_id != null && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => { setComparePresentationsResult(null); setCompareErrorDetail(null); setIsComparePresentationsModalOpen(true); compareByAttachmentMutation.mutate(att.id); }}
-                                disabled={compareByAttachmentMutation.isPending}
-                                className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
-                              >
-                                <GitCompare className="w-4 h-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-right">
-                              <p>مقارنة</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setComparePresentationsResult(null);
+                                setCompareErrorDetail(null);
+                                setCompareOpenedWithoutReplace(att.replaces_attachment_id == null);
+                                setIsComparePresentationsModalOpen(true);
+                                if (att.replaces_attachment_id != null) {
+                                  compareByAttachmentMutation.mutate(att.id);
+                                }
+                              }}
+                              disabled={compareByAttachmentMutation.isPending}
+                              className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
+                            >
+                              <GitCompare className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-right">
+                            <p>تقييم الاختلاف بين العروض</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
@@ -2136,7 +2134,7 @@ const MeetingDetail: React.FC = () => {
               </div>
 
               {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
-              <Dialog open={isComparePresentationsModalOpen} onOpenChange={setIsComparePresentationsModalOpen}>
+              <Dialog open={isComparePresentationsModalOpen} onOpenChange={(open) => { if (!open) setCompareOpenedWithoutReplace(false); setIsComparePresentationsModalOpen(!!open); }}>
                 <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
                   <DialogHeader>
                     <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -2146,6 +2144,8 @@ const MeetingDetail: React.FC = () => {
                   <div className="flex flex-col gap-4 py-4 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     {compareByAttachmentMutation.isPending ? (
                       <p className="text-center text-gray-500 py-6">جاري تقييم الاختلاف بين العروض...</p>
+                    ) : compareOpenedWithoutReplace ? (
+                      <p className="text-center text-gray-600 py-6">المقارنة متاحة فقط للعروض التي تحل محل نسخة سابقة.</p>
                     ) : compareByAttachmentMutation.isError ? (
                       <div className="text-center py-4">
                         <p className="text-red-600 font-medium mb-1">حدث خطأ أثناء تقييم الاختلاف</p>
@@ -2208,7 +2208,7 @@ const MeetingDetail: React.FC = () => {
                   <DialogFooter className="flex-row-reverse gap-2">
                     <button
                       type="button"
-                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); setCompareErrorDetail(null); }}
+                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); setCompareErrorDetail(null); setCompareOpenedWithoutReplace(false); }}
                       className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
@@ -2938,7 +2938,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* التوجيه tab */}
           {activeTab === 'directive' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
               {meetingStatus !== MeetingStatus.WAITING && (
                 <div className="flex justify-end">
                   <button
@@ -3126,72 +3126,6 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Content officer notes – card design (same as الملاحظات على الطلب) */}
-                  {contentOfficerNotesTableData.length === 0 ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="text-center">
-                        <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>ملاحظات مسؤول المحتوى</p>
-                        <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد ملاحظات مسجلة</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-[10px] w-full">
-                      <h3 className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        ملاحظات مسؤول المحتوى
-                      </h3>
-                      {contentOfficerNotesTableData.map((row) => {
-                        const question = (row.note_question && typeof row.note_question === 'string') ? row.note_question : '';
-                        const answer = (row.note_answer && typeof row.note_answer === 'string') ? row.note_answer : '';
-                        const authorName = typeof row.author_name === 'string' ? row.author_name : String(row.author_name || '—');
-                        const createdAt = typeof row.created_at === 'string' ? row.created_at : String(row.created_at || '');
-                        const dateValid = createdAt ? !isNaN(new Date(createdAt).getTime()) : false;
-                        const formattedDate = dateValid ? new Date(createdAt).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' }) : '—';
-                        return (
-                          <div
-                            key={row.id}
-                            className="flex flex-col justify-center items-center p-[3px] gap-[10px] w-full rounded-[9.26px]"
-                            style={{ background: '#E6ECF5' }}
-                          >
-                            <div
-                              className="flex flex-col items-end w-full py-[10px] px-[8.5px] gap-[7.13px] rounded-[8.05px] bg-white"
-                              style={{ fontFamily: "'Almarai', sans-serif" }}
-                            >
-                              <div className="flex flex-row justify-between items-start w-full gap-[15px]">
-                                <div className="flex flex-col justify-center items-end gap-[4.28px] min-w-0 flex-1">
-                                  <span className="text-[15.67px] font-bold leading-5 text-right" style={{ color: '#383838', fontFamily: "'Almarai', sans-serif" }}>
-                                    {authorName}
-                                  </span>
-                                  {question ? (
-                                    <p className="text-[10px] leading-[11px] text-right" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
-                                      {question}
-                                    </p>
-                                  ) : null}
-                                  {answer ? (
-                                    <p className="text-[10px] leading-[11px] text-right whitespace-pre-wrap" style={{ color: '#18192B', fontFamily: "'Almarai', sans-serif" }}>
-                                      {answer}
-                                    </p>
-                                  ) : null}
-                                </div>
-                                <div className="flex flex-row justify-between items-center gap-3 flex-shrink-0">
-                                  <div className="flex flex-row justify-center items-center gap-2 px-2.5 py-1.5 rounded-full" style={{ background: 'rgba(0, 167, 157, 0.06)' }}>
-                                    <span className="text-[10px] leading-[11px]" style={{ color: '#00A79D', fontFamily: "'Almarai', sans-serif" }}>
-                                      مكتمل
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-row justify-center items-center gap-2">
-                                    <span className="text-[9px] leading-[10px] text-right" style={{ color: '#2C2C2C', fontFamily: "'Almarai', sans-serif" }}>
-                                      تاريخ الطلب : {formattedDate}
-                                    </span>
-                                    <Clock className="w-3 h-3 text-[#475467]" strokeWidth={1.08} aria-hidden />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -3864,6 +3798,7 @@ const MeetingDetail: React.FC = () => {
                   setIsScheduleModalOpen(false);
                   setScheduleForm({
                     scheduled_at: '',
+                    scheduled_end_at: '',
                     meeting_channel: 'PHYSICAL',
                     requires_protocol: false,
                     protocol_type: null,
@@ -3890,6 +3825,7 @@ const MeetingDetail: React.FC = () => {
                     setIsScheduleModalOpen(false);
                     setScheduleForm({
                       scheduled_at: '',
+                      scheduled_end_at: '',
                       meeting_channel: 'PHYSICAL',
                       requires_protocol: false,
                       protocol_type: null,
@@ -3912,6 +3848,7 @@ const MeetingDetail: React.FC = () => {
                   form="schedule-meeting-form"
                   disabled={
                     !scheduleForm.scheduled_at ||
+                    !scheduleForm.scheduled_end_at ||
                     scheduleMutation.isPending ||
                     isCreatingWebex ||
                     (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
@@ -3919,7 +3856,7 @@ const MeetingDetail: React.FC = () => {
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
-                  {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري التحميل...' : 'السؤال'}
+                  {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
                 </button>
               </>
             )}
@@ -3941,33 +3878,72 @@ const MeetingDetail: React.FC = () => {
               </p>
             </div>
           )}
-          {/* Scheduled Date/Time */}
-          <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  تاريخ ووقت الاجتماع <span className="text-red-500">*</span>
-                </label>
-                <DateTimePicker
-                  value={scheduleForm.scheduled_at ? (scheduleForm.scheduled_at.includes('T') && !scheduleForm.scheduled_at.includes('Z') ? new Date(scheduleForm.scheduled_at).toISOString() : scheduleForm.scheduled_at) : undefined}
-                  onChange={(isoString) => {
-                    // Convert ISO string to datetime-local format for the form state
-                    const date = new Date(isoString)
-                    const year = date.getFullYear()
-                    const month = String(date.getMonth() + 1).padStart(2, '0')
-                    const day = String(date.getDate()).padStart(2, '0')
-                    const hours = String(date.getHours()).padStart(2, '0')
-                    const minutes = String(date.getMinutes()).padStart(2, '0')
-                    const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`
-                    setScheduleForm((prev) => ({ ...prev, scheduled_at: datetimeLocal }))
-                  }}
-                  placeholder="اختر التاريخ والوقت"
-                  className="w-full"
-                  required
-                  minDate={(() => {
-                    const d = new Date();
-                    d.setHours(0, 0, 0, 0);
-                    return d;
-                  })()}
-                />
+          {/* Scheduled Date/Time – Start and End */}
+          <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    تاريخ ووقت البداية <span className="text-red-500">*</span>
+                  </label>
+                  <DateTimePicker
+                    value={scheduleForm.scheduled_at ? (scheduleForm.scheduled_at.includes('T') && !scheduleForm.scheduled_at.includes('Z') ? new Date(scheduleForm.scheduled_at).toISOString() : scheduleForm.scheduled_at) : undefined}
+                    onChange={(isoString) => {
+                      const date = new Date(isoString);
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const hours = String(date.getHours()).padStart(2, '0');
+                      const minutes = String(date.getMinutes()).padStart(2, '0');
+                      const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
+                      setScheduleForm((prev) => {
+                        const next = { ...prev, scheduled_at: datetimeLocal };
+                        if (!prev.scheduled_end_at || new Date(prev.scheduled_end_at).getTime() < date.getTime()) {
+                          const endDefault = new Date(date.getTime() + 60 * 60 * 1000);
+                          const endYear = endDefault.getFullYear();
+                          const endMonth = String(endDefault.getMonth() + 1).padStart(2, '0');
+                          const endDay = String(endDefault.getDate()).padStart(2, '0');
+                          const endHours = String(endDefault.getHours()).padStart(2, '0');
+                          const endMinutes = String(endDefault.getMinutes()).padStart(2, '0');
+                          next.scheduled_end_at = `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}`;
+                        }
+                        return next;
+                      });
+                    }}
+                    placeholder="اختر تاريخ ووقت البداية"
+                    className="w-full"
+                    required
+                    minDate={(() => {
+                      const d = new Date();
+                      d.setHours(0, 0, 0, 0);
+                      return d;
+                    })()}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    تاريخ ووقت النهاية <span className="text-red-500">*</span>
+                  </label>
+                  <DateTimePicker
+                    value={scheduleForm.scheduled_end_at ? (scheduleForm.scheduled_end_at.includes('T') && !scheduleForm.scheduled_end_at.includes('Z') ? new Date(scheduleForm.scheduled_end_at).toISOString() : scheduleForm.scheduled_end_at) : undefined}
+                    onChange={(isoString) => {
+                      const date = new Date(isoString);
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const hours = String(date.getHours()).padStart(2, '0');
+                      const minutes = String(date.getMinutes()).padStart(2, '0');
+                      const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
+                      setScheduleForm((prev) => ({ ...prev, scheduled_end_at: datetimeLocal }));
+                    }}
+                    placeholder="اختر تاريخ ووقت النهاية"
+                    className="w-full"
+                    required
+                    minDate={scheduleForm.scheduled_at ? (() => {
+                      const d = new Date(scheduleForm.scheduled_at);
+                      d.setSeconds(0, 0);
+                      return d;
+                    })() : undefined}
+                  />
+                </div>
               </div>
 
               {/* Meeting Channel */}

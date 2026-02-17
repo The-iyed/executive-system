@@ -56,13 +56,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             className="flex flex-row-reverse items-center gap-4 flex-1 justify-center min-w-0"
             style={{ fontFamily: "'Almarai', sans-serif" }}
           >
-            <button
-              type="button"
-              className="w-12 h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 border border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-              aria-label="بحث"
-            >
-              <Icon icon="mynaui:search" width={30} height={30} className="text-gray-700" />
-            </button>
+         
             {isAuthenticated && (
               <NavigationActions items={finalNavigationItems} variant="pill" className="flex-shrink-0" />
             )}
@@ -70,23 +64,11 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
           {isAuthenticated && (
             <div className="flex flex-row items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                className="w-14 h-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-200"
-                aria-label="الإعدادات"
-              >
-                <Icon icon="solar:settings-outline" width={20} height={20} className="text-gray-700" />
-              </button>
+            
               <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-gray-200 p-0.5">
                 <UserAvatar compact />
               </div>
-              <button
-                type="button"
-                className="w-14 h-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-200"
-                aria-label="الإشعارات"
-              >
-                <Icon icon="solar:bell-outline" width={20} height={20} className="text-gray-700" />
-              </button>
+         
             </div>
           )}
         </header>
