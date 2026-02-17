@@ -24,7 +24,7 @@ const STEP1_FORM_TO_API_FIELDS: Record<string, string[]> = {
   is_urgent: ['is_urgent'],
   urgent_reason: ['is_urgent'],
   meetingAgenda: ['agenda_items'],
-  notes: ['general_notes', 'general_note'],
+  notes: ['note', 'general_notes', 'general_note'],
   is_based_on_directive: ['is_based_on_directive'],
   directive_method: ['directive_method'],
   directive_text: ['directive_text'],
