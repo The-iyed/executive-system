@@ -117,7 +117,7 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
                 <p
                   className="text-right w-full text-[#2C2C2C] font-normal text-xs leading-[19px]"
                   style={{
-                    fontFamily: "'Ping AR + LT', sans-serif",
+                    fontFamily: "'Almarai', sans-serif",
                   }}
                 >
                   {cardData.date}
@@ -147,7 +147,7 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
             <div className="flex flex-row items-center justify-between w-full">
               <h4
                 className="text-sm font-medium text-gray-700"
-                style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 المرفقات ({attachments.length})
               </h4>
@@ -192,14 +192,14 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
                   <div className="flex flex-col items-end flex-1 min-w-0">
                     <span
                       className="text-sm font-medium text-[#344054] text-right truncate w-full"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                       title={attachments[currentAttachmentIndex].file_name}
                     >
                       {attachments[currentAttachmentIndex].file_name}
                     </span>
                     <span
                       className="text-xs text-[#475467] text-right"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       {formatFileSize(attachments[currentAttachmentIndex].file_size)}
                     </span>
@@ -257,7 +257,7 @@ const ContentConsultationCard: React.FC<ContentConsultationCardProps> = ({
               <span
                 className="text-right text-sm font-normal text-[#344054] leading-4"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                 }}
               >
                 تفاصيل
