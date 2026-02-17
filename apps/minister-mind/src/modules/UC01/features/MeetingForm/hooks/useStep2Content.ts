@@ -219,8 +219,20 @@ export const useStep2Content = ({
     onSuccess: (_, variables) => {
       onSuccess?.(variables.isDraft);
     },
-    onError: (error) => {
-      const err = error instanceof Error ? error : new Error('حدث خطأ أثناء الحفظ');
+    onError: (error: unknown) => {
+      const editStateMessage = 'لا يمكنك التعديل على هذا الاجتماع في حالته الحالية';
+      let message = isEditMode ? editStateMessage : 'حدث خطأ أثناء الحفظ';
+
+      if (!isEditMode) {
+        if (error && typeof error === 'object') {
+          const anyError = error as { detail?: unknown };
+          if (typeof anyError.detail === 'string') message = anyError.detail;
+        } else if (typeof error === 'string') {
+          message = error;
+        }
+      }
+
+      const err = error instanceof Error ? error : new Error(message);
       onError?.(err);
     },
   });

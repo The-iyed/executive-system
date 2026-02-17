@@ -7,6 +7,7 @@ export interface MeetingReasonFieldProps {
   error?: string;
   touched?: boolean;
   disabled?: boolean;
+  required?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export function MeetingReasonField({
   error,
   touched,
   disabled = false,
+  required = false,
   className,
 }: MeetingReasonFieldProps) {
   return (
@@ -29,6 +31,7 @@ export function MeetingReasonField({
         label="مبرّر اللقاء"
         placeholder="مبرّر اللقاء..."
         disabled={disabled}
+        required={required}
       />
     </div>
   );

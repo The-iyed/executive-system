@@ -25,6 +25,8 @@ export interface FormSelectProps {
   disabled?: boolean;
   /** Called when the select closes (blur / click outside). Use for touched/validation. */
   onBlur?: () => void;
+  /** Called when the select opens (first click). Use to mark touched and show errors. */
+  onFocus?: () => void;
   /** When true, shows a spinner in the trigger and disables the select. */
   loading?: boolean;
 }
@@ -38,6 +40,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
   className,
   disabled = false,
   onBlur,
+  onFocus,
   loading = false,
 }) => {
   return (
@@ -45,7 +48,8 @@ export const FormSelect: React.FC<FormSelectProps> = ({
       value={value}
       onValueChange={onValueChange}
       onOpenChange={(open) => {
-        if (!open) onBlur?.();
+        if (open) onFocus?.();
+        else onBlur?.();
       }}
       disabled={disabled || loading}
     >
