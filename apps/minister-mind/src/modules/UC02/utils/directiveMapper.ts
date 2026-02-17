@@ -39,13 +39,13 @@ const formatDate = (dateString: string | null): string => {
 export const mapDirectiveToCardData = (directive: Directive): MeetingCardData => {
   return {
     id: directive.id,
-    title: directive.directive_text,
-    date: formatDate(directive.directive_date),
-    coordinator: directive.related_meeting,
+    title: directive.title,
+    date: formatDate(directive.due_date),
+    coordinator: directive.assignees || undefined,
     coordinatorAvatar: undefined,
-    status: directive.directive_status as MeetingStatus,
-    statusLabel: directive.directive_status === 'CURRENT' ? 'جاري' : directive.directive_status,
-    location: directive.deadline ? formatDate(directive.deadline) : undefined,
+    status: directive.status as MeetingStatus,
+    statusLabel: directive.status === 'CURRENT' ? 'جاري' : directive.status,
+    location: directive.due_date ? formatDate(directive.due_date) : undefined,
   };
 };
 
