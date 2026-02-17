@@ -323,7 +323,7 @@ const ConsultationRequestDetail: React.FC = () => {
                      <span
                         className="w-[98px] h-5 font-bold text-base leading-6 text-white"
                         style={{
-                          fontFamily: "'Ping AR + LT', sans-serif",
+                          fontFamily: "'Almarai', sans-serif",
                           fontWeight: 700,
                           fontSize: '16px',
                           lineHeight: '24px',
@@ -718,7 +718,7 @@ const ConsultationRequestDetail: React.FC = () => {
                   <div className="flex flex-col gap-3">
                     <h3
                       className="text-lg font-semibold text-right text-[#101828]"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       العرض التقديمي
                     </h3>
@@ -773,7 +773,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     ) : (
                       <p
                         className="text-sm text-[#667085] text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         لا يوجد عرض تقديمي مرفق
                       </p>
@@ -784,7 +784,7 @@ const ConsultationRequestDetail: React.FC = () => {
                   <div className="flex flex-col gap-3">
                     <h3
                       className="text-lg font-semibold text-right text-[#101828]"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       مرفقات اختيارية
                     </h3>
@@ -839,7 +839,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     ) : (
                       <p
                         className="text-sm text-[#667085] text-right"
-                        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         لا توجد مرفقات اختيارية
                       </p>
@@ -851,13 +851,13 @@ const ConsultationRequestDetail: React.FC = () => {
                 <div className="flex flex-col gap-2 max-w-sm">
                   <label
                     className="text-lg font-semibold text-gray-900 text-right"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
                     متى سيتم إرفاق العرض؟
                   </label>
                   <p
                     className="text-base text-gray-900 text-right"
-                    style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                    style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
                     {meetingRequest.presentation_attachment_timing
                       ? new Date(meetingRequest.presentation_attachment_timing).toLocaleDateString('ar-SA', {
@@ -886,7 +886,7 @@ const ConsultationRequestDetail: React.FC = () => {
                       <h2
                         className="text-right"
                         style={{
-                          fontFamily: "'Ping AR + LT', sans-serif",
+                          fontFamily: "'Almarai', sans-serif",
                           fontWeight: 700,
                           fontSize: '22px',
                           lineHeight: '38px',
@@ -983,7 +983,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     <h2
                       className="text-right"
                       style={{
-                        fontFamily: "'Ping AR + LT', sans-serif",
+                        fontFamily: "'Almarai', sans-serif",
                         fontWeight: 700,
                         fontSize: '22px',
                         lineHeight: '38px',
@@ -1154,7 +1154,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 disabled={submitMutation.isPending || !consultationResponse.trim() || !pendingConsultation?.id}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                   fontWeight: 700,
                   fontSize: '16px',
                   lineHeight: '24px',
@@ -1170,7 +1170,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 disabled={saveDraftMutation.isPending || !pendingConsultation?.id}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  fontFamily: "'Ping AR + LT', sans-serif",
+                  fontFamily: "'Almarai', sans-serif",
                   fontWeight: 700,
                   fontSize: '16px',
                   lineHeight: '24px',
