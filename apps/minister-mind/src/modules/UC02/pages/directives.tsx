@@ -3,191 +3,16 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
-import { MeetingClassification, MeetingClassificationLabels } from '@shared';
+import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
+import { cn } from '@sanad-ai/ui';
 import '@shared/styles'; // Import shared styles including scrollbar
-import { MoreVertical, X, CalendarDays, User } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
-import { getDirectives, getPreviousDirectives, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
-import { mapDirectiveToCardData } from '../utils/directiveMapper';
+import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
-import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
 
 const ITEMS_PER_PAGE = 10;
-
-// Custom Directives Cards Grid Component with Actions
-interface DirectivesCardsGridProps {
-  directives: MeetingCardData[];
-  openDropdownId: string | null;
-  setOpenDropdownId: (id: string | null) => void;
-  dropdownRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
-  onCloseDirective: (directiveId: string, directiveText: string, relatedMeeting: string) => void | Promise<void>;
-  onCreateMeeting: (directiveId: string, directiveText: string, relatedMeeting: string) => void;
-}
-
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
-
-const pillStyle = {
-  borderRadius: '12px',
-  background: '#FFFFFF',
-  boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)',
-} as const;
-
-const iconCircleStyle = {
-  background: '#FFFFFF',
-  border: '1px solid #EAECF0',
-  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-} as const;
-
-/** Tooltip wrapper for card values */
-const CardTooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => (
-  <TooltipProvider delayDuration={300}>
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[280px] text-right z-50">
-        <p className="whitespace-pre-wrap break-words text-[12px]">{text}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
-
-const DirectivesCardsGrid: React.FC<DirectivesCardsGridProps & { refetch: () => Promise<any> }> = ({
-  directives,
-  openDropdownId,
-  setOpenDropdownId,
-  dropdownRefs,
-  refetch,
-  onCloseDirective,
-  onCreateMeeting,
-}) => {
-  const renderActionsDropdown = (directive: MeetingCardData) => {
-    const isOpen = openDropdownId === directive.id;
-    return (
-      <div className="relative" ref={(el) => (dropdownRefs.current[directive.id] = el)} onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setOpenDropdownId(isOpen ? null : directive.id);
-          }}
-          className="flex items-center justify-center rounded-full w-8 h-8 hover:bg-[#F2F4F7] transition-colors"
-          style={{ background: '#F9FAFB', border: '1px solid #EAECF0' }}
-        >
-          <MoreVertical className="w-[18px] h-[18px] text-[#475467]" strokeWidth={1.67} />
-        </button>
-        {isOpen && (
-          <div className="absolute left-0 top-full mt-2 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 w-[140px]" dir="rtl" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  await cancelDirective(directive.id);
-                  setOpenDropdownId(null);
-                  await refetch();
-                } catch (error) {
-                  console.error('Error cancelling directive:', error);
-                  setOpenDropdownId(null);
-                }
-              }}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-            >
-              <span>إلغاء التوجيه</span>
-              <X className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCreateMeeting(directive.id, directive.title || '', directive.coordinator || '');
-                setOpenDropdownId(null);
-              }}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#048F86', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-            >
-              <span>طلب إجتماع</span>
-              <CalendarDays className="w-4 h-4" />
-            </button>
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                await onCloseDirective(directive.id, directive.title || '', directive.coordinator || '');
-                setOpenDropdownId(null);
-              }}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-            >
-              <span>إغلاق التوجيه</span>
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-      {directives.map((directive) => (
-        <div
-          key={directive.id}
-          className="relative flex flex-col bg-white w-full overflow-visible cursor-pointer hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)] transition-all duration-200 border-[1.5px] border-[rgba(230,236,245,1)]"
-          style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}
-          dir="rtl"
-        >
-          {/* Three-dots menu - fixed top left */}
-          <div className="absolute bottom-3 left-3 z-10">
-            {renderActionsDropdown(directive)}
-          </div>
-
-          {/* Card Body */}
-          <div className="flex flex-col gap-4 p-5" style={fontStyle}>
-            {/* Title + Status */}
-            <div className="flex flex-row items-start justify-between gap-3">
-              <CardTooltip text={directive.title}>
-                <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap" style={{ ...fontStyle, fontSize: '15px' }}>
-                  {directive.title}
-                </h3>
-              </CardTooltip>
-              <span
-                className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap flex-shrink-0"
-                style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
-              >
-                {directive.statusLabel}
-              </span>
-            </div>
-
-            {/* Date pill */}
-            <div className="flex flex-row items-center gap-2.5 w-full">
-              <CardTooltip text={directive.date}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{directive.date}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            </div>
-
-            {/* Coordinator */}
-            {directive.coordinator && (
-              <CardTooltip text={directive.coordinator}>
-                <div className="flex flex-row items-center gap-3">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                    <User className="h-4 w-4 text-[#98A2B3]" strokeWidth={1.5} />
-                  </div>
-                  <span className="text-[13px] font-medium text-[#344054] leading-5 truncate">{directive.coordinator}</span>
-                </div>
-              </CardTooltip>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const Directives: React.FC = () => {
   const navigate = useNavigate();
@@ -199,12 +24,12 @@ const Directives: React.FC = () => {
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
   const [directivesSubTab, setDirectivesSubTab] = useState<'current' | 'previous'>('current');
+  const [expandedDirectiveId, setExpandedDirectiveId] = useState<string | null>(null);
 
-  const handleCloseDirectiveNavigate = async (directiveId: string, directiveText: string, relatedMeeting: string) => {
+  /** Close directive via API only; no navigation. */
+  const handleCloseDirective = async (directiveId: string) => {
     await closeDirective(directiveId);
-    navigate(
-      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(directiveText)}&related_meeting=${encodeURIComponent(relatedMeeting)}`
-    );
+    await refetch();
   };
 
   // Debounce search input
@@ -220,6 +45,11 @@ const Directives: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch]);
+
+  // Collapse expanded item when switching tabs
+  useEffect(() => {
+    setExpandedDirectiveId(null);
+  }, [directivesSubTab]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -270,31 +100,17 @@ const Directives: React.FC = () => {
   const allOriginalDirectives: Directive[] = directivesResponse?.items || [];
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  const handleCreateMeeting = (directiveId: string, directiveText: string, relatedMeeting: string) => {
-    const originalDirective = allOriginalDirectives.find((d) => d.id === directiveId);
-    navigate(
-      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(originalDirective?.title ?? directiveText)}&related_meeting=${encodeURIComponent(originalDirective?.assignees ?? relatedMeeting)}`
-    );
-  };
-
   // Fetch previous directives (التوجيهات السابقة)
   const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious } = useQuery({
     queryKey: ['directives-previous', 0, 100],
     queryFn: () => getPreviousDirectives({ skip: 0, limit: 100 }),
     enabled: directivesSubTab === 'previous',
   });
-  const originalPreviousDirectives: Directive[] = previousDirectivesResponse?.items || [];
+  const originalPreviousDirectives: PreviousDirectiveItem[] = previousDirectivesResponse?.items || [];
   const previousDirectives: MeetingCardData[] = useMemo(() => {
     if (!previousDirectivesResponse?.items) return [];
-    return previousDirectivesResponse.items.map(mapDirectiveToCardData);
+    return previousDirectivesResponse.items.map(mapPreviousDirectiveToCardData);
   }, [previousDirectivesResponse]);
-
-  const previousMeetingIds = useMemo(() => {
-    return originalPreviousDirectives
-      .filter((d) => d.meeting_id)
-      .map((d) => d.meeting_id!)
-      .filter((id, index, self) => self.indexOf(id) === index);
-  }, [originalPreviousDirectives]);
 
   // Map API response to MeetingCardData
   // Full list mapped and filtered by search; then paginate for display
@@ -303,11 +119,11 @@ const Directives: React.FC = () => {
     let mapped = directivesResponse.items.map(mapDirectiveToCardData);
     if (debouncedSearch.trim()) {
       const searchLower = debouncedSearch.trim().toLowerCase();
-      mapped = mapped.filter(
-        (d) =>
-          d.title?.toLowerCase().includes(searchLower) ||
-          d.coordinator?.toLowerCase().includes(searchLower)
-      );
+      mapped = mapped.filter((d) => {
+        const titleStr = typeof d.title === 'string' ? d.title : String(d.title ?? '');
+        const coordinatorStr = typeof d.coordinator === 'string' ? d.coordinator : String(d.coordinator ?? '');
+        return titleStr.toLowerCase().includes(searchLower) || coordinatorStr.toLowerCase().includes(searchLower);
+      });
     }
     return mapped;
   }, [directivesResponse, debouncedSearch]);
@@ -328,9 +144,11 @@ const Directives: React.FC = () => {
     [allOriginalDirectives, directives]
   );
 
+  // Only fetch meeting details for IDs that look like UUIDs (api/meetings/:id expects UUID, not numeric/legacy ids)
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const meetingIds = useMemo(() => {
     return originalDirectives
-      .filter((d) => d.meeting_id)
+      .filter((d) => d.meeting_id && UUID_REGEX.test(d.meeting_id))
       .map((d) => d.meeting_id!)
       .filter((id, index, self) => self.indexOf(id) === index);
   }, [originalDirectives]);
@@ -352,25 +170,6 @@ const Directives: React.FC = () => {
       return meetings;
     },
     enabled: meetingIds.length > 0,
-  });
-
-  const { data: meetingsDataForPrevious } = useQuery({
-    queryKey: ['directives-previous-meetings', previousMeetingIds],
-    queryFn: async () => {
-      const meetings: Record<string, MeetingApiResponse> = {};
-      await Promise.all(
-        previousMeetingIds.map(async (id) => {
-          try {
-            const meeting = await getMeetingById(id);
-            meetings[id] = meeting;
-          } catch (error) {
-            console.error(`Error fetching meeting ${id}:`, error);
-          }
-        })
-      );
-      return meetings;
-    },
-    enabled: directivesSubTab === 'previous' && previousMeetingIds.length > 0,
   });
 
   // Format date helper
@@ -403,7 +202,7 @@ const Directives: React.FC = () => {
     {
       id: 'item_number',
       header: 'رقم البند',
-      width: 'w-32',
+      width: 'flex-none min-w-16 w-16',
       align: 'end',
       render: (_row, index) => (
         <div className="w-full flex justify-end">
@@ -416,12 +215,12 @@ const Directives: React.FC = () => {
     {
       id: 'directive_date',
       header: 'تاريخ التوجيه',
-      width: 'w-40',
+      width: 'flex-none min-w-24 w-24',
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end min-w-0">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
               {formatDate(originalDirective?.due_date ?? null)}
             </span>
@@ -432,38 +231,46 @@ const Directives: React.FC = () => {
     {
       id: 'directive_text',
       header: 'التوجيه',
-      width: 'w-[500px]',
+      width: 'min-w-0 flex-1',
       align: 'end',
       render: (row) => (
-        <TruncatedWithTooltip title={row.title}>
-          {row.title}
-        </TruncatedWithTooltip>
-      ),
-    },
-    {
-      id: 'meeting_nature',
-      header: 'طبيعة الاجتماع',
-      width: 'w-56',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <TruncatedWithTooltip title={row.coordinator || '-'}>
-            {row.coordinator || '-'}
+        <div className="w-full min-w-0">
+          <TruncatedWithTooltip title={row.title}>
+            {row.title}
           </TruncatedWithTooltip>
         </div>
       ),
     },
     {
+      id: 'meeting_nature',
+      header: 'طبيعة الاجتماع',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const originalDirective = originalList.find((d) => d.id === row.id);
+        const meetingId = originalDirective?.meeting_id;
+        const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
+        const natureLabel = meeting?.meeting_type ? (MeetingTypeLabels[meeting.meeting_type as keyof typeof MeetingTypeLabels] ?? meeting.meeting_type) : '-';
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={natureLabel}>
+              {natureLabel}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+    {
       id: 'meeting_subject',
       header: 'موضوع الاجتماع',
-      width: 'w-56',
+      width: 'min-w-0 flex-1',
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end min-w-0">
             <TruncatedWithTooltip title={meeting?.meeting_subject || '-'}>
               {meeting?.meeting_subject || '-'}
             </TruncatedWithTooltip>
@@ -474,14 +281,14 @@ const Directives: React.FC = () => {
     {
       id: 'meeting_classification',
       header: 'فئة الاجتماع',
-      width: 'w-56',
+      width: 'min-w-0 flex-1',
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end min-w-0">
             <TruncatedWithTooltip title={getClassificationLabel(meeting?.meeting_classification || null)}>
               {getClassificationLabel(meeting?.meeting_classification || null)}
             </TruncatedWithTooltip>
@@ -492,14 +299,14 @@ const Directives: React.FC = () => {
     {
       id: 'meeting_date',
       header: 'تاريخ الاجتماع',
-      width: 'w-40',
+      width: 'flex-none min-w-24 w-24',
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
         const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end min-w-0">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
               {formatDate(meeting?.scheduled_at || null)}
             </span>
@@ -510,15 +317,195 @@ const Directives: React.FC = () => {
     {
       id: 'responsible_person',
       header: 'الشخص المسؤول',
-      width: 'w-56',
+      width: 'min-w-0 flex-1',
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
         const displayName = originalDirective?.assignees ?? '-';
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end min-w-0">
             <TruncatedWithTooltip title={displayName}>
               {displayName}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Previous directives table columns (agenda-like, from /directives/previous API shape)
+  const buildPreviousTableColumns = (
+    previousList: PreviousDirectiveItem[],
+    pageOffset: number
+  ): TableColumn<MeetingCardData>[] => [
+    {
+      id: 'item_number',
+      header: 'رقم البند',
+      width: 'flex-none min-w-16 w-16',
+      align: 'end',
+      render: (_row, index) => (
+        <div className="w-full flex justify-end">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {index + 1 + pageOffset}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'directive_number',
+      header: 'رقم التوجيه',
+      width: 'flex-none min-w-20 w-20',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {item?.directive_number ?? '-'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'directive_date',
+      header: 'تاريخ التوجيه',
+      width: 'flex-none min-w-24 w-24',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {formatDate(item?.directive_date ?? null)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'directive_text',
+      header: 'التوجيه',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full min-w-0">
+          <TruncatedWithTooltip title={row.title}>
+            {row.title}
+          </TruncatedWithTooltip>
+        </div>
+      ),
+    },
+    {
+      id: 'related_meeting',
+      header: 'الاجتماع المرتبط',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        const text = item?.related_meeting ?? '-';
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={text}>
+              {text}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meeting_nature',
+      header: 'طبيعة الاجتماع',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        const text = item?.meeting_nature ?? '-';
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={text}>
+              {text}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'directive_status',
+      header: 'حالة التوجيه',
+      width: 'flex-none min-w-24 w-24',
+      align: 'end',
+      render: (row) => (
+        <div className="w-full flex justify-end min-w-0">
+          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+            {row.statusLabel ?? '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'meeting_subject',
+      header: 'موضوع الاجتماع',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        const text = item?.meeting_subject ?? '-';
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={text}>
+              {text}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meeting_classification',
+      header: 'فئة الاجتماع',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={getClassificationLabel(item?.meeting_classification ?? null)}>
+              {getClassificationLabel(item?.meeting_classification ?? null)}
+            </TruncatedWithTooltip>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'meeting_date',
+      header: 'تاريخ الاجتماع',
+      width: 'flex-none min-w-24 w-24',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {formatDate(item?.meeting_date ?? null)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'responsible_person',
+      header: 'الشخص المسؤول',
+      width: 'min-w-0 flex-1',
+      align: 'end',
+      render: (row) => {
+        const item = previousList.find((d) => d.id === row.id);
+        const names = item?.responsible_persons?.length
+          ? item.responsible_persons.map((p) => p.name).filter(Boolean).join('، ')
+          : '-';
+        return (
+          <div className="w-full flex justify-end min-w-0">
+            <TruncatedWithTooltip title={names}>
+              {names}
             </TruncatedWithTooltip>
           </div>
         );
@@ -533,7 +520,7 @@ const Directives: React.FC = () => {
       {
         id: 'actions',
         header: '',
-        width: 'w-20',
+        width: 'flex-none w-14 min-w-14',
         align: 'center' as const,
         render: (row: MeetingCardData) => (
           <div
@@ -561,8 +548,8 @@ const Directives: React.FC = () => {
     ];
   }, [originalDirectives, meetingsData, currentPage]);
   const previousTableColumns = useMemo(
-    () => buildTableColumns(originalPreviousDirectives, meetingsDataForPrevious, 0),
-    [originalPreviousDirectives, meetingsDataForPrevious]
+    () => buildPreviousTableColumns(originalPreviousDirectives, 0),
+    [originalPreviousDirectives]
   );
 
   const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
@@ -589,13 +576,9 @@ const Directives: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher (bar styled to match table area) */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              
-              dir="rtl"
-            >
+          {/* Left side - Search and View Switcher */}
+          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="rtl">
+            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
@@ -655,14 +638,19 @@ const Directives: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
               <button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                      navigate(
-                        `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
-                      );
+                      try {
+                        await closeDirective(d.id);
+                        navigate(
+                          `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
+                        );
+                      } catch (err) {
+                        console.error('Error closing directive:', err);
+                      }
                     }
                     setOpenDropdownId(null);
                     setDropdownPosition(null);
@@ -684,10 +672,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       try {
-                        await closeDirective(d.id);
-                        navigate(
-                          `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
-                        );
+                        await handleCloseDirective(d.id);
                       } catch (err) {
                         console.error('Error closing directive:', err);
                       }
@@ -747,60 +732,70 @@ const Directives: React.FC = () => {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                {previousDirectives.map((directive) => (
-                  <div
-                    key={directive.id}
-                    className="relative flex flex-col bg-white w-full overflow-visible cursor-pointer hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)] transition-all duration-200 border-[1.5px] border-[rgba(230,236,245,1)]"
-                    style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}
-                    dir="rtl"
-                  >
-                    {/* Card Body */}
-                    <div className="flex flex-col gap-4 p-5" style={fontStyle}>
-                      {/* Title + Status */}
-                      <div className="flex flex-row items-start justify-between gap-3">
-                        <CardTooltip text={directive.title}>
-                          <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap" style={{ ...fontStyle, fontSize: '15px' }}>
-                            {directive.title}
-                          </h3>
-                        </CardTooltip>
-                        <span
-                          className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap flex-shrink-0"
-                          style={{ background: 'rgba(255, 162, 162, 0.12)', color: '#D13C3C', ...fontStyle }}
-                        >
-                          {directive.statusLabel}
-                        </span>
-                      </div>
-
-                      {/* Date pill */}
-                      <div className="flex flex-row items-center gap-2.5 w-full">
-                        <CardTooltip text={directive.date}>
-                          <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                              <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                            </div>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
-                              <span className="text-[12px] text-[#344054] truncate leading-4">{directive.date}</span>
-                            </div>
+              <div className="flex flex-col gap-4 w-full" dir="rtl">
+                {previousDirectives.map((directive) => {
+                  const isExpanded = expandedDirectiveId === directive.id;
+                  const original = originalPreviousDirectives.find((d) => d.id === directive.id);
+                  const directiveDate = original?.directive_date
+                    ? formatDate(original.directive_date)
+                    : directive.date;
+                  return (
+                    <div key={directive.id} className="flex flex-col gap-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedDirectiveId((id) => (id === directive.id ? null : directive.id))}
+                        className={cn(
+                          'w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2',
+                          isExpanded
+                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'
+                        )}
+                        style={{ fontFamily: "'Almarai', sans-serif" }}
+                      >
+                        <div className="flex flex-row items-start justify-between gap-4">
+                          <div className="flex flex-col items-start flex-1 min-w-0">
+                            <p className="text-base font-bold text-[#048F86] mb-1">{directive.statusLabel}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{directive.title || '-'}</p>
                           </div>
-                        </CardTooltip>
-                      </div>
-
-                      {/* Coordinator */}
-                      {directive.coordinator && (
-                        <CardTooltip text={directive.coordinator}>
-                          <div className="flex flex-row items-center gap-3">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                              <User className="h-4 w-4 text-[#98A2B3]" strokeWidth={1.5} />
-                            </div>
-                            <span className="text-[13px] font-medium text-[#344054] leading-5 truncate">{directive.coordinator}</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span>تاريخ التوجيه : {directiveDate}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                              <Hash className="w-4 h-4 flex-shrink-0" />
+                              <span>رقم التوجيه : {original?.directive_number ?? '-'}</span>
+                            </span>
+                            <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </span>
                           </div>
-                        </CardTooltip>
+                        </div>
+                      </button>
+                      {isExpanded && original && (
+                        <div className="mt-0 rounded-b-xl border-2 border-t-0 border-[#048F86] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          <div className="flex flex-col gap-3 text-right">
+                            {original.related_meeting && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">الاجتماع المرتبط :</span> {original.related_meeting}</p>
+                            )}
+                            {directive.coordinator && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">المسؤولون :</span> {directive.coordinator}</p>
+                            )}
+                            {original.meeting_subject && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">موضوع الاجتماع :</span> {original.meeting_subject}</p>
+                            )}
+                            {original.meeting_date && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">تاريخ الاجتماع :</span> {formatDate(original.meeting_date)}</p>
+                            )}
+                            {original.deadline && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">الموعد النهائي :</span> {formatDate(original.deadline)}</p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )
           ) : isLoading ? (
@@ -823,24 +818,120 @@ const Directives: React.FC = () => {
                     columns={tableColumns}
                     data={directives}
                     rowPadding="py-2"
-                    onRowClick={() => {
-                      // Row click can be used for navigation if needed
-                    }}
                   />
                 </div>
               ) : (
-                <DirectivesCardsGrid
-                  directives={directives}
-                  openDropdownId={openDropdownId}
-                  setOpenDropdownId={setOpenDropdownId}
-                  dropdownRefs={dropdownRefs}
-                  refetch={refetch}
-                  onCloseDirective={handleCloseDirectiveNavigate}
-                  onCreateMeeting={handleCreateMeeting}
-                />
+                <div className="flex flex-col gap-4 w-full" dir="rtl">
+                  {directives.map((directive) => {
+                    const isExpanded = expandedDirectiveId === directive.id;
+                    const original = originalDirectives.find((d) => d.id === directive.id);
+                    const directiveDate = original?.due_date ? formatDate(original.due_date) : directive.date;
+                    const typeLabel = original?.status === 'CURRENT' ? 'جاري' : 'توجيه';
+                    return (
+                      <div key={directive.id} className="flex flex-col gap-0">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedDirectiveId((id) => (id === directive.id ? null : directive.id))}
+                          className={cn(
+                            'w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2',
+                            isExpanded
+                              ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                              : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'
+                          )}
+                          style={{ fontFamily: "'Almarai', sans-serif" }}
+                        >
+                          <div className="flex flex-row items-start justify-between gap-4">
+                            <div className="flex flex-col items-start flex-1 min-w-0">
+                              <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{directive.title || '-'}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                <span>تاريخ التوجيه : {directiveDate}</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
+                                <Hash className="w-4 h-4 flex-shrink-0" />
+                                <span>رقم التوجيه : {original?.action_number ?? '-'}</span>
+                              </span>
+                              <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                        {isExpanded && original && (
+                          <div className="mt-0 rounded-b-xl border-2 border-t-0 border-[#048F86] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                            <div className="flex flex-col gap-3 text-right">
+                              {directive.coordinator && (
+                                <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">المسؤولون :</span> {directive.coordinator}</p>
+                              )}
+                              <div className="flex flex-wrap gap-2 justify-end mt-2">
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await cancelDirective(original.id);
+                                      setExpandedDirectiveId(null);
+                                      await refetch();
+                                    } catch (err) {
+                                      console.error('Error cancelling directive:', err);
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                  style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                                >
+                                  <span>إلغاء التوجيه</span>
+                                  <X className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await closeDirective(original.id);
+                                      navigate(
+                                        `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(original.assignees || '')}`
+                                      );
+                                    } catch (err) {
+                                      console.error('Error closing directive:', err);
+                                    }
+                                    setExpandedDirectiveId(null);
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                  style={{ background: '#048F86', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                                >
+                                  <span>طلب إجتماع</span>
+                                  <CalendarDays className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await handleCloseDirective(original.id);
+                                    } catch (err) {
+                                      console.error('Error closing directive:', err);
+                                    }
+                                    setExpandedDirectiveId(null);
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                  style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                                >
+                                  <span>إغلاق التوجيه</span>
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
@@ -851,6 +942,25 @@ const Directives: React.FC = () => {
                 </div>
               )}
             </>
+          )}
+
+          {/* Add Directive button – opens create meeting/directive drawer */}
+          {directivesSubTab === 'current' && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={openCreateDrawer}
+                className={cn(
+                  'flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors hover:bg-[#F9FAFB]'
+                )}
+                style={{ boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+              >
+                <Plus className="w-4 h-4 text-[#008774] mt-[3px]" />
+                <span className="font-medium text-[14px] leading-[20px] font-normal text-[#344054]">
+                  إضافة توجيه
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>
