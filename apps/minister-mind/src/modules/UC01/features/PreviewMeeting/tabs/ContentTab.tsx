@@ -9,7 +9,7 @@ type MeetingWithContent = MeetingApiResponse & {
   presentation_attachment_timing?: string | null;
 };
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 interface ContentTabProps {
   meeting: MeetingApiResponse;

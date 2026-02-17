@@ -5,7 +5,7 @@ import { MeetingStatus } from '@shared/types';
 import { Eye, CalendarDays, User, Hash, Layers, CheckCircle2, XCircle } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
-const fontStyle = { fontFamily: "'Ping AR + LT', sans-serif" } as const;
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 const pillStyle = {
   borderRadius: '12px',
