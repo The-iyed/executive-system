@@ -15,6 +15,7 @@ export interface MeetingNatureFieldProps {
 export function MeetingNatureField({
   value,
   onChange,
+  onBlur,
   error,
   touched,
   disabled = false,
@@ -31,6 +32,7 @@ export function MeetingNatureField({
       <FormSelect
         value={value || ''}
         onValueChange={onChange}
+        onBlur={onBlur}
         options={MEETING_NATURE_OPTIONS}
         placeholder="طبيعة الاجتماع"
         error={!!(touched && error)}

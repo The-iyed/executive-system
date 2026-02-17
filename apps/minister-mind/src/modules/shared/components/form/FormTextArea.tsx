@@ -5,6 +5,7 @@ import { cn } from '@sanad-ai/ui';
 export interface FormTextAreaProps extends Omit<React.ComponentProps<'textarea'>, 'size'> {
   error?: string;
   label?: string;
+  required?: boolean;
   fullWidth?: boolean;
   containerClassName?: string;
 }
@@ -12,7 +13,7 @@ export interface FormTextAreaProps extends Omit<React.ComponentProps<'textarea'>
 export const FormTextArea = React.forwardRef<
   HTMLTextAreaElement,
   FormTextAreaProps
->(({ className, error, label, fullWidth = true, containerClassName, ...props }, ref) => {
+>(({ className, error, label, required, fullWidth = true, containerClassName, ...props }, ref) => {
   return (
     <div className={cn(
       'flex flex-col gap-2',
@@ -22,6 +23,7 @@ export const FormTextArea = React.forwardRef<
       {label && (
         <label className="text-right text-[14px] font-medium text-[#344054]">
           {label}
+          {required && <span className="text-red-500 mr-1">*</span>}
         </label>
       )}
 
@@ -45,6 +47,7 @@ export const FormTextArea = React.forwardRef<
           
           className
         )}
+        required={required}
         {...props}
       />
       {error && (

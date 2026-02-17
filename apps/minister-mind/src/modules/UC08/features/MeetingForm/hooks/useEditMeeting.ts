@@ -10,7 +10,6 @@ import { useMeetingSteps } from './useMeetingSteps';
 import { useScrollToTop } from './useScrollToTop';
 
 export interface UseEditMeetingOptions {
-  /** When provided (e.g. drawer mode), use this instead of route param id */
   meetingIdOverride?: string;
 }
 
@@ -30,7 +29,7 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     return {
       step1: transformDraftToStep1Data(draftData),
       step2: transformDraftToStep2Data(draftData),
-      step3: { initialSlots: transformDraftToStep3Data(draftData) },
+      step3: transformDraftToStep3Data(draftData),
     };
   }, [draftData]);
 
