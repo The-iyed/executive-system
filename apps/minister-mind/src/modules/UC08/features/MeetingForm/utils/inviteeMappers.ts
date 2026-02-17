@@ -1,44 +1,43 @@
-import type { Step2FormData } from '../schemas/step2.schema';
+import { nanoid } from 'nanoid';
 import { UserApiResponse } from '../../../data/usersApi';
 import { DraftApiResponse } from '../../../data';
+import type { InviteeFormRow } from '../schemas/step3.schema';
 
 /**
- * Form data structure for an invitee
+ * Form data structure for an invitee (used by draft/invitees API, not by Step 2 Presentation form).
  */
-export type InviteeFormData = Step2FormData['invitees'][number];
+export interface InviteeFormData {
+  id: string;
+  name?: string;
+  position?: string;
+  mobile?: string;
+  email?: string;
+  is_required?: boolean;
+  user_id?: string;
+  username?: string;
+  disabled?: boolean;
+}
 
-/**
- * Invitee from draft API response
- */
 type DraftInvitee = NonNullable<DraftApiResponse['invitees']>[number];
 
-/**
- * Maps an invitee from draft API response to form data format
- * 
- * @param invitee - Invitee from draft API response
- * @returns Form data for the invitee
- */
 export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => {
-  // Convert null to undefined for user_id to match schema type
   const userId = invitee.user_id ?? undefined;
   const hasUserId = !!userId;
   
-  // System user (has user_id)
   if (hasUserId) {
     return {
       id: invitee.id,
-      name: invitee.external_name || '', // Will be populated from user data if available
-      position: invitee.position || '', // Use position from invitee if available
-      mobile: invitee.mobile || '', // Use mobile from invitee if available
-      email: invitee.external_email || '', // Will be populated from user data if available
+      name: invitee.external_name || '', 
+      position: invitee.position || '', 
+      mobile: invitee.mobile || '', 
+      email: invitee.external_email || '', 
       is_required: invitee.is_required || false,
-      user_id: userId, // Already converted null to undefined
-      username: undefined, // Will be populated from user data if available
-      disabled: true, // System users have disabled fields
+      user_id: userId, 
+      username: undefined, 
+      disabled: true, 
     };
   }
   
-  // External/Guest user (no user_id)
   return {
     id: invitee.id,
     name: invitee.external_name || '',
@@ -48,25 +47,17 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
     is_required: invitee.is_required || false,
     user_id: undefined,
     username: undefined,
-    disabled: false, // External users have editable fields
+    disabled: false, 
   };
 };
 
-/**
- * Maps a user from users API response to form data format
- * Used when adding a new system user to the invitees list
- * 
- * @param user - User from users API response
- * @returns Form data for the user as an invitee
- */
 export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 'id'> => {
-  // Construct full name from first_name and last_name
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
     .join(' ') || user.username || '';
   
   return {
-    name: '', // Not required for system users (will show username)
+    name: '', 
     position: user.position || '',
     mobile: user.phone_number || '',
     email: user.email || '',
@@ -77,12 +68,6 @@ export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 
   };
 };
 
-/**
- * Maps multiple invitees from draft API response to form data format
- * 
- * @param invitees - Array of invitees from draft API response
- * @returns Array of form data for invitees
- */
 export const mapInviteesToFormData = (
   invitees: DraftApiResponse['invitees']
 ): InviteeFormData[] => {
@@ -93,29 +78,19 @@ export const mapInviteesToFormData = (
   return invitees.map(mapInviteeToFormData);
 };
 
-/**
- * Enriches form data with user details from users API
- * Used to populate missing fields for system users
- * 
- * @param invitee - Invitee form data
- * @param user - User from users API response
- * @returns Enriched invitee form data
- */
+
 export const enrichInviteeWithUserData = (
   invitee: InviteeFormData,
   user: UserApiResponse
 ): InviteeFormData => {
-  // Only enrich if this is a system user and the user_id matches
   if (!invitee.user_id || invitee.user_id !== user.id) {
     return invitee;
   }
   
-  // Construct full name from first_name and last_name
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
     .join(' ') || user.username || '';
   
-  // Update only missing or empty fields
   const currentUsername = invitee.username?.trim() || '';
   const currentPosition = invitee.position?.trim() || '';
   const currentMobile = invitee.mobile?.trim() || '';
@@ -129,3 +104,35 @@ export const enrichInviteeWithUserData = (
     email: currentEmail || (user.email || ''),
   };
 };
+
+export const mapUserToStep3InviteeRow = (
+  user: UserApiResponse,
+  options: { isOwner?: boolean; id?: string } = {}
+): InviteeFormRow => {
+  const fullName =
+    [user.first_name, user.last_name].filter(Boolean).join(' ') ||
+    user.username ||
+    user.name ||
+    '';
+  return {
+    id: options.id ?? nanoid(),
+    full_name: fullName,
+    position_title: user.position ?? '',
+    mobile_number: user.phone_number ?? '',
+    email: user.email ?? '',
+    attendance_mode: 'IN_PERSON',
+    view_permission: false,
+    ...(options.isOwner && { isOwner: true }),
+  };
+};
+
+/** Step3: create empty invitee form row (for add row). */
+export const createEmptyStep3InviteeRow = (): InviteeFormRow => ({
+  id: nanoid(),
+  full_name: '',
+  position_title: '',
+  mobile_number: '',
+  email: '',
+  attendance_mode: 'IN_PERSON',
+  view_permission: false,
+});

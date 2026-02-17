@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { Send } from 'lucide-react';
 import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, Pagination, MeetingStatus, ContentBar, SearchFilterBar, CardsGrid, ViewSwitcher, ViewType } from '@shared';      
+import { DataTable, Pagination, MeetingStatus, ContentBar, SearchFilterBar, CardsGrid, ViewSwitcher, ViewType, SearchInput } from '@shared';      
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings } from '../../hooks';
 import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
@@ -24,16 +24,16 @@ const Meeting: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
+  // const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
-  }, [searchValue, statusFilter]);
+  }, [searchValue]);
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,
-    statusFilter,
+    // statusFilter,
     currentPage,
     activeTab: undefined,
   });
@@ -175,7 +175,14 @@ const Meeting: React.FC = () => {
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchFilterBar
+             <SearchInput
+              value={searchValue}
+              onChange={setSearchValue}
+              placeholder="بحث"
+              variant="default"
+              className="flex-shrink-0"
+             />
+              {/* <SearchFilterBar
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 searchPlaceholder="بحث"
@@ -183,7 +190,7 @@ const Meeting: React.FC = () => {
                 onStatusFilterChange={(v) => setStatusFilter(v === 'all' ? MeetingStatus.DRAFT : v)}
                 hideAllOption
                 className="flex-shrink-0"
-              />
+              /> */}
             </div>
           </div>
          
@@ -221,6 +228,32 @@ const Meeting: React.FC = () => {
                   meetings={meetings}
                   onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                   onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
+                  onAction={(meeting) => {
+                    if (meeting.status === MeetingStatus.DRAFT) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => submitDraftMutation.mutate(meeting.id));
+                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToSchedulingMutation.mutate(meeting.id));
+                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToContentMutation.mutate(meeting.id));
+                    }
+                  }}
+                  getActionLabel={(meeting) => {
+                    if (meeting.status === MeetingStatus.DRAFT) {
+                      return submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إرسال المسودة';
+                    }
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+                      return resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمسؤول';
+                    }
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
+                      return resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمحتوى';
+                    }
+                    return undefined;
+                  }}
+                  getActionLoading={(meeting) =>
+                    (submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id) ||
+                    (resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id) ||
+                    (resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id)
+                  }
                 />
               )}
               {totalPages > 1 && (

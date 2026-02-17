@@ -7,6 +7,7 @@ export interface RelatedTopicFieldProps {
   error?: string;
   touched?: boolean;
   disabled?: boolean;
+  required?: boolean;
   className?: string;
 }
 
@@ -17,12 +18,14 @@ export function RelatedTopicField({
   error,
   touched,
   disabled = false,
+  required = false,
   className,
 }: RelatedTopicFieldProps) {
   return (
     <FormField
       className={className}
       label="موضوع التكليف المرتبط"
+      required={required}
       error={touched ? error : undefined}
     >
       <FormInput

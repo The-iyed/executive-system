@@ -1,6 +1,6 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { ConsultationRequestApiResponse } from '../data/consultationsApi';
-import { MeetingStatus, getMeetingStatusLabel, getMeetingChannelLabel } from '@shared/types';
+import { MeetingStatus, getMeetingStatusLabel, getMeetingChannelLabel, getMeetingClassificationLabel } from '@shared/types';
 import { ConsultationRequestCardData } from '../components/consultation-request-card';
 
 /**
@@ -85,6 +85,7 @@ export const mapConsultationRequestToCardViewData = (
 ): ConsultationRequestCardData => {
   const status = mapStatus(request.status);
   const statusLabel = getMeetingStatusLabel(status);
+  const locationLabel = getMeetingChannelLabel(request.meeting_channel);
 
   // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
@@ -97,6 +98,10 @@ export const mapConsultationRequestToCardViewData = (
     submitter: request.submitter_name ?? undefined,
     status: status,
     statusLabel: statusLabel,
+    meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
+    location: locationLabel,
+    meetingDate: request.scheduled_at ? formatDate(request.scheduled_at) : undefined,
+    isDataComplete: request.is_data_complete,
   };
 };
 

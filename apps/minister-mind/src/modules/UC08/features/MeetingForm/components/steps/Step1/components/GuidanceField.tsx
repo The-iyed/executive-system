@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { FormAsyncSelectV2 } from '@shared';
 import type { OptionType } from '@shared';
 import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
-import { getDirectivesPaginated } from '../../../../../../data';
+import { getDirectivesPaginated, getDirectiveById } from '../../../../../../data';
 import type { DirectiveApiResponse } from '../../../../../../data';
 
 export interface GuidanceFieldProps {
@@ -24,6 +24,24 @@ export function GuidanceField({
   required = false,
   className,
 }: GuidanceFieldProps) {
+  const resolvingRef = useRef(false);
+
+  useEffect(() => {
+    if (!value?.value || resolvingRef.current) return;
+    const label = value.label?.trim();
+    if (label && label !== value.value) return; // already has real label
+    resolvingRef.current = true;
+    getDirectiveById(value.value)
+      .then((d: DirectiveApiResponse) => {
+        const resolvedLabel = [d?.directive_text, d?.directive_number, d?.id].find(Boolean) ?? value.value;
+        onChange({ value: value.value, label: resolvedLabel, description: d?.related_meeting });
+      })
+      .catch(() => {})
+      .finally(() => {
+        resolvingRef.current = false;
+      });
+  }, [value?.value]); // only when id changes; avoid loop from onChange
+
   const loadOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
       const response = await getDirectivesPaginated({
@@ -32,10 +50,10 @@ export function GuidanceField({
         limit,
       });
       const items = (response?.items ?? []).map((d: DirectiveApiResponse) => ({
-        value: d?.id ?? '',
-        label: d?.directive_text ?? '',
+        value: String(d?.id ?? ''),
+        label: String(d?.title ?? ''), //[d?.directive_text, d?.directive_number, d?.id].find(Boolean) ?? '',
         description: d?.related_meeting ?? '',
-      }));
+      })).filter((o) => o.value);
       return {
         items,
         total: response?.total ?? 0,
@@ -54,9 +72,6 @@ export function GuidanceField({
         التوجيه
         {required && <span className="text-red-500 mr-1">*</span>}
       </label>
-      <p className="text-right text-[12px] text-[#64748B] mb-[6px]" aria-hidden>
-        (لا تتم تعبئته آليًا في حال كان الاجتماع إلحاقي أو دوري)
-      </p>
       <div className="w-full">
         <FormAsyncSelectV2
           value={value ?? null}
