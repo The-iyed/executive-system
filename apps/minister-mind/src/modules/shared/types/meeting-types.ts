@@ -45,7 +45,6 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.CLOSED]: '',
 };
 
-
 /**
  * Meeting Classification (فئة الاجتماع)
  * Category/Classification of the meeting

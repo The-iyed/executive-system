@@ -40,8 +40,19 @@ export const useDeleteDraft = ({
       // Call custom success callback if provided
       onSuccess?.();
     },
-    onError: (error) => {
-      const err = error instanceof Error ? error : new Error('حدث خطأ أثناء حذف المسودة');
+    onError: (error: unknown) => {
+      let message = 'حدث خطأ أثناء حذف المسودة';
+
+      if (error && typeof error === 'object') {
+        const anyError = error as { detail?: unknown };
+        if (typeof anyError.detail === 'string') {
+          message = anyError.detail;
+        }
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+
+      const err = error instanceof Error ? error : new Error(message);
       onError?.(err);
     },
   });

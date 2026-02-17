@@ -523,23 +523,19 @@ export const createWebexMeeting = async (
   return response.data;
 };
 
-// Directives API
-export interface DirectiveResponsiblePerson {
-  id: string;
-  name: string;
-  position: string | null;
-}
-
+// Directives API (matches /scheduling/directives/current and /previous response)
 export interface Directive {
   id: string;
-  directive_number: string;
-  directive_date: string;
-  directive_text: string;
-  related_meeting: string;
-  deadline: string | null;
-  responsible_persons: DirectiveResponsiblePerson[];
-  directive_status: string;
-  related_meeting_request_id: string | null;
+  action_number: string;
+  title: string;
+  due_date: string;
+  status: string;
+  is_completed: boolean;
+  meeting_id: string | null;
+  created_date: string;
+  mod_date: string | null;
+  completed_at: string | null;
+  assignees: string;
 }
 
 export interface DirectivesListResponse {

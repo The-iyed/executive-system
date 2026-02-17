@@ -7,7 +7,7 @@ import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, User } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
-import { getDirectives, getPreviousDirectives, GetDirectivesParams, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { getDirectives, getPreviousDirectives, Directive, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
@@ -259,28 +259,21 @@ const Directives: React.FC = () => {
     };
   }, [openDropdownId]);
 
-  // Calculate pagination values
-  const skip = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  // Fetch directives from API
+  // Fetch current directives (التوجيهات الحالية) from /scheduling/directives/current?skip=0&limit=100
   const { data: directivesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['directives', debouncedSearch.trim(), currentPage],
-    queryFn: () => {
-      const params: GetDirectivesParams = {
-        skip: skip,
-        limit: ITEMS_PER_PAGE,
-      };
-      return getDirectives(params);
-    },
+    queryKey: ['directives', 'current'],
+    queryFn: () => getDirectives({ skip: 0, limit: 100 }),
+    enabled: directivesSubTab === 'current',
   });
 
-  // Store original API response items for table columns
-  const originalDirectives: Directive[] = directivesResponse?.items || [];
+  // Full list from API; pagination is client-side
+  const allOriginalDirectives: Directive[] = directivesResponse?.items || [];
+  const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const handleCreateMeeting = (directiveId: string, directiveText: string, relatedMeeting: string) => {
-    const originalDirective = originalDirectives.find((d) => d.id === directiveId);
+    const originalDirective = allOriginalDirectives.find((d) => d.id === directiveId);
     navigate(
-      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(originalDirective?.directive_text || directiveText)}&related_meeting=${encodeURIComponent(originalDirective?.related_meeting || relatedMeeting)}`
+      `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(directiveId)}&directive_text=${encodeURIComponent(originalDirective?.title ?? directiveText)}&related_meeting=${encodeURIComponent(originalDirective?.assignees ?? relatedMeeting)}`
     );
   };
 
@@ -296,22 +289,52 @@ const Directives: React.FC = () => {
     return previousDirectivesResponse.items.map(mapDirectiveToCardData);
   }, [previousDirectivesResponse]);
 
-  // Fetch related meeting data for directives that have related_meeting_request_id
-  const meetingIds = useMemo(() => {
-    return originalDirectives
-      .filter(d => d.related_meeting_request_id)
-      .map(d => d.related_meeting_request_id!)
-      .filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
-  }, [originalDirectives]);
-
   const previousMeetingIds = useMemo(() => {
     return originalPreviousDirectives
-      .filter(d => d.related_meeting_request_id)
-      .map(d => d.related_meeting_request_id!)
+      .filter((d) => d.meeting_id)
+      .map((d) => d.meeting_id!)
       .filter((id, index, self) => self.indexOf(id) === index);
   }, [originalPreviousDirectives]);
 
-  // Fetch meetings data for current directives
+  // Map API response to MeetingCardData
+  // Full list mapped and filtered by search; then paginate for display
+  const allDirectivesFiltered: MeetingCardData[] = useMemo(() => {
+    if (!directivesResponse?.items) return [];
+    let mapped = directivesResponse.items.map(mapDirectiveToCardData);
+    if (debouncedSearch.trim()) {
+      const searchLower = debouncedSearch.trim().toLowerCase();
+      mapped = mapped.filter(
+        (d) =>
+          d.title?.toLowerCase().includes(searchLower) ||
+          d.coordinator?.toLowerCase().includes(searchLower)
+      );
+    }
+    return mapped;
+  }, [directivesResponse, debouncedSearch]);
+
+  const totalItems = allDirectivesFiltered.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const directives: MeetingCardData[] = useMemo(
+    () => allDirectivesFiltered.slice(skip, skip + ITEMS_PER_PAGE),
+    [allDirectivesFiltered, skip]
+  );
+
+  // Original directives for current page in display order (for table columns)
+  const originalDirectives: Directive[] = useMemo(
+    () =>
+      directives
+        .map((d) => allOriginalDirectives.find((o) => o.id === d.id))
+        .filter((o): o is Directive => o != null),
+    [allOriginalDirectives, directives]
+  );
+
+  const meetingIds = useMemo(() => {
+    return originalDirectives
+      .filter((d) => d.meeting_id)
+      .map((d) => d.meeting_id!)
+      .filter((id, index, self) => self.indexOf(id) === index);
+  }, [originalDirectives]);
+
   const { data: meetingsData } = useQuery({
     queryKey: ['directives-meetings', meetingIds],
     queryFn: async () => {
@@ -331,7 +354,6 @@ const Directives: React.FC = () => {
     enabled: meetingIds.length > 0,
   });
 
-  // Fetch meetings data for previous directives
   const { data: meetingsDataForPrevious } = useQuery({
     queryKey: ['directives-previous-meetings', previousMeetingIds],
     queryFn: async () => {
@@ -350,30 +372,6 @@ const Directives: React.FC = () => {
     },
     enabled: directivesSubTab === 'previous' && previousMeetingIds.length > 0,
   });
-
-  // Map API response to MeetingCardData
-  const directives: MeetingCardData[] = useMemo(() => {
-    if (!directivesResponse?.items) return [];
-    
-    let mapped = directivesResponse.items.map(mapDirectiveToCardData);
-    
-    // Client-side search filtering
-    if (debouncedSearch.trim()) {
-      const searchLower = debouncedSearch.trim().toLowerCase();
-      mapped = mapped.filter((directive) => {
-        return (
-          directive.title?.toLowerCase().includes(searchLower) ||
-          directive.coordinator?.toLowerCase().includes(searchLower)
-        );
-      });
-    }
-    
-    return mapped;
-  }, [directivesResponse, debouncedSearch]);
-
-  // Calculate total pages from API response
-  const totalItems = directivesResponse?.total || 0;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   // Format date helper
   const formatDate = (dateString: string | null): string => {
@@ -425,7 +423,7 @@ const Directives: React.FC = () => {
         return (
           <div className="w-full flex justify-end">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {formatDate(originalDirective?.directive_date || null)}
+              {formatDate(originalDirective?.due_date ?? null)}
             </span>
           </div>
         );
@@ -462,7 +460,7 @@ const Directives: React.FC = () => {
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
-        const meetingId = originalDirective?.related_meeting_request_id;
+        const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
@@ -480,7 +478,7 @@ const Directives: React.FC = () => {
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
-        const meetingId = originalDirective?.related_meeting_request_id;
+        const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
@@ -498,7 +496,7 @@ const Directives: React.FC = () => {
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
-        const meetingId = originalDirective?.related_meeting_request_id;
+        const meetingId = originalDirective?.meeting_id;
         const meeting: MeetingApiResponse | undefined = meetingId && meetingsMap ? meetingsMap[meetingId] : undefined;
         return (
           <div className="w-full flex justify-end">
@@ -516,9 +514,7 @@ const Directives: React.FC = () => {
       align: 'end',
       render: (row) => {
         const originalDirective = originalList.find((d) => d.id === row.id);
-        const responsiblePersons = originalDirective?.responsible_persons || [];
-        const firstPerson = responsiblePersons.length > 0 ? responsiblePersons[0] : null;
-        const displayName = firstPerson?.name ?? '-';
+        const displayName = originalDirective?.assignees ?? '-';
         return (
           <div className="w-full flex justify-end">
             <TruncatedWithTooltip title={displayName}>
@@ -665,7 +661,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       navigate(
-                        `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
+                        `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
                       );
                     }
                     setOpenDropdownId(null);
@@ -690,7 +686,7 @@ const Directives: React.FC = () => {
                       try {
                         await closeDirective(d.id);
                         navigate(
-                          `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.directive_text)}&related_meeting=${encodeURIComponent(d.related_meeting || '')}`
+                          `${UC08_PATH.MEETINGS}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
                         );
                       } catch (err) {
                         console.error('Error closing directive:', err);
