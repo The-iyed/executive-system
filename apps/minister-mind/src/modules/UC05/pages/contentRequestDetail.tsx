@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, GitCompare, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash } from 'lucide-react';
-import { Tabs, StatusBadge } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -185,6 +185,9 @@ const ContentRequestDetail: React.FC = () => {
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [compareResult, setCompareResult] = useState<ComparePresentationsResponse | null>(null);
   const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
+
+  // Actions bar (FAB) open state – same pattern as meeting detail
+  const [actionsBarOpen, setActionsBarOpen] = useState(false);
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -1800,60 +1803,49 @@ const ContentRequestDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Action Buttons - Fixed at bottom */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full  px-4">
-        <div className="mx-auto bg-white/60 backdrop-blur-md rounded-full p-2.5 shadow-lg border border-gray-200 flex justify-center">
-          <div className="flex flex-row items-center gap-1.5 justify-center flex-wrap">
-            {/* Send to Scheduling Officer Button */}
-            <button
-              onClick={handleSendToScheduling}
-              disabled={sendToSchedulingMutation.isPending || !executiveSummaryFile}
-              className="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                إرسال إلى مسؤول الجدولة
-              </span>
-              <Send className="w-5 h-5" />
-            </button>
-
-            {/* Return Request Button */}
-            <button
-              onClick={handleReturnRequest}
-              disabled={submitReturnMutation.isPending}
-              className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                إعادة للطلب
-              </span>
-              <RotateCcw className="w-5 h-5" />
-            </button>
-
-            {/* Drafts Button */}
-            {draftsRecords && draftsRecords.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsDraftsModalOpen(true)}
-                className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                مسودات ({draftsRecords.length})
-              </button>
-            )}
-
-            {/* Request Consultation Button */}
-            <button
-              onClick={handleRequestConsultation}
-              disabled={submitConsultationMutation.isPending}
-              className="flex items-center gap-2 px-3 py-2 bg-[#29615C] hover:bg-[#1f4a45] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-base font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                طلب استشارة
-              </span>
-              <ClipboardCheck className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Actions bar – same FAB + arc as meeting detail */}
+      <MeetingActionsBar
+        meetingStatus={MeetingStatus.UNDER_REVIEW}
+        open={actionsBarOpen}
+        onOpenChange={setActionsBarOpen}
+        onOpenSchedule={() => {}}
+        onOpenReject={() => {}}
+        onOpenEditConfirm={() => {}}
+        onOpenReturnForInfo={() => {}}
+        onOpenSendToContent={() => {}}
+        onAddToWaitingList={() => {}}
+        isAddToWaitingListPending={false}
+        hasChanges={false}
+        hasContent={false}
+        customActions={[
+          {
+            icon: <Send className="w-5 h-5" strokeWidth={1.26} />,
+            label: 'إرسال إلى مسؤول الجدولة',
+            onClick: handleSendToScheduling,
+            disabled: sendToSchedulingMutation.isPending || !executiveSummaryFile,
+            disabledReason: !executiveSummaryFile ? 'يرجى إرفاق الملخص التنفيذي أولاً' : undefined,
+          },
+          {
+            icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />,
+            label: 'إعادة للطلب',
+            onClick: handleReturnRequest,
+            disabled: submitReturnMutation.isPending,
+          },
+          ...(draftsRecords && draftsRecords.length > 0
+            ? [{
+                icon: <MessageSquare className="w-5 h-5" strokeWidth={1.26} />,
+                label: `مسودات (${draftsRecords.length})`,
+                onClick: () => setIsDraftsModalOpen(true),
+              }]
+            : []),
+          {
+            icon: <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />,
+            label: 'طلب استشارة',
+            onClick: handleRequestConsultation,
+            disabled: submitConsultationMutation.isPending,
+          },
+        ]}
+      />
 
       {/* Attachment LLM notes/insights modal (presentation) */}
       <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) setInsightsModalAttachment(null); }}>
