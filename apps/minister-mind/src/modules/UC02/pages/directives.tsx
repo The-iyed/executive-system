@@ -929,24 +929,7 @@ const Directives: React.FC = () => {
             </>
           )}
 
-          {/* Add Directive button – opens create meeting/directive drawer */}
-          {directivesSubTab === 'current' && (
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={openCreateDrawer}
-                className={cn(
-                  'flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors hover:bg-[#F9FAFB]'
-                )}
-                style={{ boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-              >
-                <Plus className="w-4 h-4 text-[#008774] mt-[3px]" />
-                <span className="font-medium text-[14px] leading-[20px] font-normal text-[#344054]">
-                  إضافة توجيه
-                </span>
-              </button>
-            </div>
-          )}
+     
         </div>
       </div>
     </div>

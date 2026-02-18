@@ -277,13 +277,17 @@ export const useStep1BasicInfo = ({
 
       setFormData((prev) => {
         const newData = { ...prev, [field]: value };
-        // Clear urgent-related fields when is_urgent is false
         if (field === 'is_urgent' && value === false) {
           newData.urgent_reason = '';
           setErrors((prevErrors) => {
-            const newErrors = { ...prevErrors };
-            delete newErrors.urgent_reason;
-            return newErrors;
+            const next = { ...prevErrors };
+            delete next.urgent_reason;
+            return next;
+          });
+          setTouched((prevTouched) => {
+            const next = { ...prevTouched };
+            delete next.urgent_reason;
+            return next;
           });
         }
         // Clear meeting date errors when is_urgent is true
