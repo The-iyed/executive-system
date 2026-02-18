@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getDraftById, getSubmitterMeeting } from '../../../data';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData, transformDraftToStep4SchedulingData } from '../utils';
@@ -15,6 +15,7 @@ export interface UseEditMeetingOptions {
 
 export const useEditMeeting = (options?: UseEditMeetingOptions) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id: idFromParams } = useParams<{ id: string }>();
   const id = options?.meetingIdOverride ?? idFromParams ?? undefined;
 
@@ -69,6 +70,7 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
       else handleNext();
     },
     onStep3InviteesSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       handleSaveDraft();
     },
   });
