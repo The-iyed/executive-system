@@ -23,7 +23,7 @@ export enum MeetingStatus {
 }
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
-  [MeetingStatus.DRAFT]: 'جديد',
+  [MeetingStatus.DRAFT]: 'مسودة',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
   [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
   [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',

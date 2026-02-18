@@ -127,6 +127,9 @@ export const step1BasicInfoBaseSchema = z.object({
 
 export type Step1BasicInfoFormData = z.infer<typeof step1BasicInfoBaseSchema>;
 
+export const isUrgentReasonRequired = (data: Partial<Step1BasicInfoFormData>): boolean =>
+  data.is_urgent === true;
+
 z.setErrorMap(() => ({
   message: 'هناك خطأ ما في هذا الحقل',
 }));
@@ -138,7 +141,7 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
   const requiresRelatedTopic = data.meetingCategory === CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE;
   const requiresSector = data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
 
-  const requiresUrgentReason = data.is_urgent === true;
+  const requiresUrgentReason = isUrgentReasonRequired(data);
   const requiresMeetingManager = data.is_on_behalf_of === true;
   const requiresDirectiveMethod = data.is_based_on_directive === true;
   const requiresDirectiveText = data.directive_method === 'DIRECT_DIRECTIVE';
@@ -342,7 +345,7 @@ export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partia
     case 'sector':
       return data.meetingType === MEETING_TYPE_REQUIRING_SECTOR;
     case 'urgent_reason':
-      return data.is_urgent === true;
+      return isUrgentReasonRequired(data);
     case 'meeting_manager_id':
       return data.is_on_behalf_of === true;
     case 'directive_method':
