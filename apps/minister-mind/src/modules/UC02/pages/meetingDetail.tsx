@@ -2587,7 +2587,7 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
                 <div className="flex justify-end">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -2740,7 +2740,7 @@ const MeetingDetail: React.FC = () => {
           {/* التوجيه tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
                 <div className="flex justify-end">
                   <button
                     type="button"
