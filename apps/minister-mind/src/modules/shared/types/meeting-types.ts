@@ -42,7 +42,7 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.READY]: 'جاهز',
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
-  [MeetingStatus.CLOSED]: '',
+  [MeetingStatus.CLOSED]: 'مغلق',
 };
 
 /**
