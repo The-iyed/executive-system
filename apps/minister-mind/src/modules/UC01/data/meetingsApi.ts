@@ -44,9 +44,9 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
   if (params.status) {
     queryParams.append('status', params.status);
   }
-  if (params.owner_type) {
-    queryParams.append('owner_type', params.owner_type);
-  }
+  // if (params.owner_type) {
+  //   queryParams.append('owner_type', params.owner_type);
+  // }
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
@@ -60,7 +60,7 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
     queryParams.append('date_now', params.date_now);
   }
 
-  const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings?${queryParams.toString()}`);
+  const response = await axiosInstance.get<MeetingsListResponse>(`/api/meetings/submitter-meetings?${queryParams.toString()}`);
   return response.data;
 };
 

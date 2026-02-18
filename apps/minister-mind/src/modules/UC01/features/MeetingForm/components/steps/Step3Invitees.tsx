@@ -163,7 +163,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           emptyMessage="لم يتم العثور على مستخدمين"
           isDisabled={isFieldDisabled('invitees')}
         />
-        {/* Table */}
         <FormTable
           title={INVITEES_TABLE_TITLE}
           columns={INVITEES_TABLE_COLUMNS}
@@ -178,13 +177,12 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           errorMessage={tableErrorMessage}
           disabled={isFieldDisabled('invitees')}
         />
-
-        {/* Action Buttons */}
         <ActionButtons
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
+          nextLabel='إرسال'
         />
       </div>
     </div>
