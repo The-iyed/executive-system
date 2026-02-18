@@ -65,11 +65,12 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
               (invitee as { attendance_channel?: string }).attendance_channel
             );
             const accessLabel = getAccessLabel((invitee as InviteeDisplay).access_permission);
+            const isConsultant = (invitee as any).is_consultant === true;
 
             return (
               <div
                 key={invitee.id || idx}
-                className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]"
+                className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`}
                 style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}
               >
                 {/* Delete strip - overlays on hover (left side in RTL) */}

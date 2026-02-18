@@ -67,6 +67,8 @@ export const getAssignedContentConsultationRequests = async (
 ): Promise<ContentConsultationRequestsListResponse> => {
   const queryParams = new URLSearchParams();
 
+  queryParams.append('consultation_status', 'PENDING');
+
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
@@ -78,7 +80,7 @@ export const getAssignedContentConsultationRequests = async (
   }
 
   const response = await axiosInstance.get<ContentConsultationRequestsListResponse>(
-    `/api/content-consultant/assigned-requests?${queryParams.toString()}`
+    `/api/consultations/my-meetings?${queryParams.toString()}`
   );
   return response.data;
 };
@@ -152,7 +154,7 @@ export const getContentConsultationRequestById = async (
 
 export interface SubmitConsultationRequest {
   feasibility_answer: boolean;
-  consultation_notes: string;
+  consultation_answers: string;
 }
 
 export const submitConsultation = async (
