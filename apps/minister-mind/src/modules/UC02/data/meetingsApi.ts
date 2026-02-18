@@ -620,16 +620,21 @@ export interface PreviousDirectivesListResponse {
 export interface GetDirectivesParams {
   skip?: number;
   limit?: number;
+  /** Search query – applied by the API, not the frontend */
+  search?: string;
 }
 
 export const getDirectives = async (params: GetDirectivesParams = {}): Promise<DirectivesListResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search != null && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
   }
 
   const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/current?${queryParams.toString()}`);
@@ -643,6 +648,9 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   }
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search != null && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
   }
   const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
   return response.data;
