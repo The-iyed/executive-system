@@ -156,7 +156,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
       setConsultationNotes('');
       setIsSuitableForScheduling(true);
       setIsConsultationModalOpen(false);
-
+      navigate(PATH.CONTENT_CONSULTATION_REQUESTS);
     },
     onError: (error) => {
       console.error('Error submitting consultation:', error);
