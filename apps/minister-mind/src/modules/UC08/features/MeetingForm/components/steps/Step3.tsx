@@ -10,6 +10,7 @@ import {
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers } from '../../../../data/usersApi';
 import { cn } from '@sanad-ai/ui';
+import { Check } from 'lucide-react';
 
 export interface Step3Props {
   formData: Partial<Step3FormData>;
@@ -39,6 +40,7 @@ interface ProposerUser {
 export const Step3: React.FC<Step3Props> = ({
   formData,
   errors,
+  touched,
   isSubmitting,
   isDeleting,
   handleAddInvitee,
@@ -57,7 +59,7 @@ export const Step3: React.FC<Step3Props> = ({
   const [proposerLoading, setProposerLoading] = useState(true);
 
   useEffect(() => {
-    getUsers({ limit: 200 })
+    getUsers({ limit: 10 })
       .then((res) => {
         setProposerUsers(
           res.items.map((u) => ({
@@ -147,23 +149,41 @@ export const Step3: React.FC<Step3Props> = ({
                 <p className="text-right text-[14px] text-[#667085]">لا يوجد مستخدمون متاحون.</p>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {proposerUsers.map((u) => (
-                    <li
-                      key={u.id}
-                      className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
-                      onClick={() => toggleProposer(u.id)}
-                    >
-                      <span className="text-[14px] text-[#344054]">
-                        {u.label}
-                        {u.email ? ` (${u.email})` : ''}
-                      </span>
-                      <Checkbox
-                        checked={selectedProposerIds.has(u.id)}
-                        onCheckedChange={() => toggleProposer(u.id)}
-                        aria-label={u.label}
-                      />
-                    </li>
-                  ))}
+                  {proposerUsers.map((u) => {
+                    const isChecked = selectedProposerIds.has(u.id);
+                    return (
+                      <li
+                        key={u.id}
+                        className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
+                        onClick={() => toggleProposer(u.id)}
+                      >
+                        <span className="text-[14px] text-[#344054]">
+                          {u.label}
+                          {u.email ? ` (${u.email})` : ''}
+                        </span>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={isChecked}
+                          aria-label={u.label}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleProposer(u.id);
+                          }}
+                          className={cn(
+                            'flex items-center justify-center shrink-0',
+                            'w-5 h-5 rounded border-2 transition-all',
+                            'focus:outline-none focus:ring-2 focus:ring-[#008774] focus:ring-offset-2',
+                            isChecked
+                              ? 'bg-[#008774] border-[#008774]'
+                              : 'bg-white border-[#D0D5DD] hover:border-[#008774]'
+                          )}
+                        >
+                          {isChecked && <Check className="w-4 h-4 text-white" />}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
