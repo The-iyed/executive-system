@@ -3157,6 +3157,7 @@ const MeetingDetail: React.FC = () => {
                 is_consultant: false,
                 attendance_channel: 'PHYSICAL',
               }));
+              // work
 
               // Add the mapped attendees to the existing list
               setScheduleForm((prev) => ({
