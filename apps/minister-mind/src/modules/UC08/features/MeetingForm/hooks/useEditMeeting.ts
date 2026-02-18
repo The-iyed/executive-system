@@ -53,10 +53,9 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     onStep2Success: (isDraft) => {
       if (isDraft) {
         handleSaveDraft();
-      } else {
-        handleNext();
       }
     },
+    onStep2SuccessGoToStep3: handleNext,
     // onStep3Success: () => {
     //   clearDraftData();
     // },
