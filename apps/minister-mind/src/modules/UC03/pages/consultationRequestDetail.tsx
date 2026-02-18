@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ClipboardCheck, Download, Eye } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable } from '@shared/components';
-import type { TableColumn } from '@shared';
+import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone } from 'lucide-react';
+import { Tabs, StatusBadge } from '@shared/components';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -13,42 +12,12 @@ import {
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
   getDirectiveMethodLabel,
-  getInviteeResponseStatusLabel,
 } from '@shared/types';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
 import pdfIcon from '../../shared/assets/pdf.svg';
 
-const formatTextValue = (value: unknown): string => {
-  if (value == null) return '-';
-  if (Array.isArray(value)) {
-    const lines = value
-      .map((v) => (v == null ? '' : String(v)).trim())
-      .filter(Boolean);
-    return lines.length > 0 ? lines.join('\n') : '-';
-  }
-  const text = String(value).trim();
-  return text.length > 0 ? text : '-';
-};
-
-const normalizeTextLines = (value: unknown): string[] => {
-  if (value == null) return [];
-  if (Array.isArray(value)) {
-    return value
-      .map((v) => (v == null ? '' : String(v)).trim())
-      .filter(Boolean);
-  }
-
-  const text = String(value).trim();
-  if (!text) return [];
-
-  // Support already-joined strings that contain newlines
-  return text
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
-};
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -321,7 +290,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     <ClipboardCheck className="w-6 h-6 text-white" strokeWidth={2} />
 
                      <span
-                        className="w-[98px] h-5 font-bold text-base leading-6 text-white"
+                        className="w-[138px] whitespace-nowrap h-5 font-bold text-base leading-6 text-white"
                         style={{
                           fontFamily: "'Almarai', sans-serif",
                           fontWeight: 700,
@@ -416,67 +385,67 @@ const ConsultationRequestDetail: React.FC = () => {
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       هل تطلب الاجتماع نيابة عن غيرك؟
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.is_on_behalf_of === true
                         ? 'نعم'
                         : meetingRequest.is_on_behalf_of === false
                           ? 'لا'
                           : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* مالك الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       مالك الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.current_owner_user
                         ? `${meetingRequest.current_owner_user.first_name ?? ''} ${meetingRequest.current_owner_user.last_name ?? ''}`.trim()
                         : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.submitter_name ?? '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* عنوان الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       عنوان الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.meeting_title || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* القطاع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       القطاع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.sector || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* نوع الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       نوع الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* وصف الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       وصف الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.meeting_subject || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* اجتماع عاجل؟ */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       اجتماع عاجل؟
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.is_urgent === true
                         ? 'نعم'
                         : meetingRequest.is_urgent === false
@@ -486,167 +455,188 @@ const ConsultationRequestDetail: React.FC = () => {
                             : meetingRequest.is_direct_schedule === false
                               ? 'لا'
                               : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* السبب */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       السبب
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.urgent_reason || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* موعد الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       موعد الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.scheduled_at
                         ? new Date(meetingRequest.scheduled_at).toLocaleString('ar-SA')
                         : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* آلية انعقاد الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       آلية انعقاد الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* الموقع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       الموقع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.location ?? (meetingRequest.selected_time_slot?.location ?? '-')}
-                    </p>
+                    </div>
                   </div>
                   {/* هل يتطلب بروتوكول؟ */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       هل يتطلب بروتوكول؟
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.requires_protocol === true
                         ? 'نعم'
                         : meetingRequest.requires_protocol === false
                           ? 'لا'
                           : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* فئة الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       فئة الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* مبرّر اللقاء */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       مبرّر اللقاء
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.meeting_justification || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* موضوع التكليف المرتبط */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       موضوع التكليف المرتبط
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.related_topic || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* تاريخ الاستحقاق */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       تاريخ الاستحقاق
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.deadline
                         ? new Date(meetingRequest.deadline).toLocaleDateString('ar-SA')
                         : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* تصنيف الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       تصنيف الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* سريّة الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       سريّة الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* اجتماع متسلسل؟ */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       اجتماع متسلسل؟
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.is_sequential === true
                         ? 'نعم'
                         : meetingRequest.is_sequential === false
                           ? 'لا'
                           : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* الاجتماع السابق */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       الاجتماع السابق
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.previous_meeting_id || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* الرقم التسلسلي */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       الرقم التسلسلي
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.sequential_number != null
                         ? String(meetingRequest.sequential_number)
                         : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* أجندة الاجتماع */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 md:col-span-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       أجندة الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right flex flex-col gap-2">
-                      {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0
-                        ? meetingRequest.agenda_items.map((item) =>
-                          <span key={item.id}>{`• ${item.agenda_item}`} </span>
-                        )
-                        : '-'}
-                    </p>
+                    {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
+                      <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
+                        <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          <thead>
+                            <tr className="border-b border-gray-300 bg-[#F2F4F7]">
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[100px] text-center">رقم البند</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold">بند جدول الأعمال</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[160px] text-center">مدة العرض (دقيقة)</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">نوع دعم الوزير</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {meetingRequest.agenda_items.map((item: any, idx: number) => (
+                              <tr key={item.id} className={idx < (meetingRequest.agenda_items?.length ?? 0) - 1 ? 'border-b border-gray-200' : ''}>
+                                <td className="px-4 py-3 text-[#475467] text-center">{idx + 1}</td>
+                                <td className="px-4 py-3 text-[#101828]">{item.agenda_item || '-'}</td>
+                                <td className="px-4 py-3 text-[#475467] text-center">{item.presentation_duration_minutes ?? '-'}</td>
+                                <td className="px-4 py-3 text-[#475467] text-center">{item.minister_support_type || item.minister_support_other || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
+                        -
+                      </div>
+                    )}
                   </div>
                   {/* هل طلب الاجتماع بناءً على توجيه من معالي الوزير */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       هل طلب الاجتماع بناءً على توجيه من معالي الوزير
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0
                         ? 'نعم'
                         : meetingRequest.is_direct_schedule === true
@@ -654,53 +644,67 @@ const ConsultationRequestDetail: React.FC = () => {
                           : meetingRequest.is_direct_schedule === false
                             ? 'لا'
                             : '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* طريقة التوجيه */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       طريقة التوجيه
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {getDirectiveMethodLabel(meetingRequest.directive_method) || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* محضر الاجتماع */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       محضر الاجتماع
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {meetingRequest.protocol_type || '-'}
-                    </p>
+                    </div>
                   </div>
                   {/* التوجيه */}
                   <div className="flex flex-col gap-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       التوجيه
                     </label>
-                    <p className="text-base text-gray-900 text-right">
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
                       {formatRelatedGuidance(meetingRequest.related_guidance)}
-                    </p>
+                    </div>
                   </div>
                   {/* ملاحظات */}
                   <div className="flex flex-col gap-2 md:col-span-2">
                     <label className="text-lg font-semibold text-gray-900 text-right">
                       ملاحظات
                     </label>
-                    {normalizeTextLines(meetingRequest.general_notes).length > 0 ? (
-                      <ul className="text-base text-gray-900 text-right space-y-1">
-                        {normalizeTextLines(meetingRequest.general_notes).map((line, idx) => (
-                          <li key={idx} className="flex gap-2">
-                            <span className="mt-1 select-none">-</span>
-                            <span className="whitespace-pre-wrap">{line}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    {Array.isArray(meetingRequest.general_notes) && meetingRequest.general_notes.length > 0 ? (
+                      <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
+                        <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          <thead>
+                            <tr className="border-b border-gray-300 bg-[#F2F4F7]">
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[80px] text-center">رقم</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold">الملاحظة</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[150px] text-center">المصدر</th>
+                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">التاريخ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {meetingRequest.general_notes.map((note: any, idx: number) => (
+                              <tr key={note.id || idx} className={idx < (meetingRequest.general_notes?.length ?? 0) - 1 ? 'border-b border-gray-200' : ''}>
+                                <td className="px-4 py-3 text-[#475467] text-center">{idx + 1}</td>
+                                <td className="px-4 py-3 text-[#101828] whitespace-pre-wrap">{note.text || '-'}</td>
+                                <td className="px-4 py-3 text-[#475467] text-center">{note.author_name || ({ SCHEDULING: 'الجدولة', CONTENT: 'المحتوى', CONTENT_CONSULTATION: 'استشارة المحتوى', EXECUTIVE_OFFICE: 'المكتب التنفيذي', GUIDANCE: 'التوجيه', SYSTEM: 'النظام', SUBMITTER: 'مقدّم الطلب', MINISTER: 'الوزير' } as Record<string, string>)[note.author_type] || note.author_type || '-'}</td>
+                                <td className="px-4 py-3 text-[#475467] text-center">{note.created_at ? new Date(note.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : (
-                      <p className="text-base text-gray-900 text-right whitespace-pre-wrap">
-                        {formatTextValue(meetingRequest.general_notes)}
-                      </p>
+                      <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
+                        -
+                      </div>
                     )}
                   </div>
                 </div>
@@ -879,211 +883,155 @@ const ConsultationRequestDetail: React.FC = () => {
               dir="rtl"
             >
               <div className="flex flex-col gap-6 w-full max-w-[1085px]">
-                {/* Invitees table */}
-                {meetingRequest.invitees && meetingRequest.invitees.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <h2
-                        className="text-right"
-                        style={{
-                          fontFamily: "'Almarai', sans-serif",
-                          fontWeight: 700,
-                          fontSize: '22px',
-                          lineHeight: '38px',
-                          color: '#101828',
-                        }}
-                      >
-                        قائمة المدعوين (مقدم الطلب)
-                      </h2>
-                    </div>
-                    <div className="w-full overflow-x-auto table-scroll">
-                      <div className="min-w-full">
-                        <DataTable
-                          columns={[
-                            {
-                              id: 'index',
-                              header: 'رقم البند',
-                              width: 'w-[120px]',
-                              align: 'center',
-                              render: (_row: any, index: number) => (
-                                <div className="flex items-center justify-center w-full">
-                                  <span className="text-sm text-[#475467]">{index + 1}</span>
+                {/* Invitees cards - قائمة المدعوين (مقدم الطلب) */}
+                <div className="flex flex-col gap-4">
+                  <h2
+                    className="text-right"
+                    style={{
+                      fontFamily: "'Almarai', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '22px',
+                      lineHeight: '38px',
+                      color: '#101828',
+                    }}
+                  >
+                    قائمة المدعوين (مقدم الطلب)
+                  </h2>
+                  {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {meetingRequest.invitees.map((invitee: any, idx: number) => {
+                        const name = invitee.external_name || invitee.user_id || '-';
+                        const position = invitee.position || '-';
+                        const email = invitee.external_email || '-';
+                        const mobile = invitee.mobile || '-';
+                        const v = invitee.attendance_mechanism;
+                        const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                        const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                        const isConsultant = invitee.is_consultant === true;
+                        return (
+                          <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                            <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              <div className="flex flex-row items-center justify-between gap-3">
+                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                    <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                                  </div>
                                 </div>
-                              ),
-                            },
-                            {
-                              id: 'name',
-                              header: 'الاسم',
-                              width: 'w-[300px]',
-                              align: 'end',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467] text-right"
-                                  
-                                >
-                                  {row.external_name || row.user_id || '--------------'}
-                                </span>
-                              ),
-                            },
-                            {
-                              id: 'email',
-                              header: 'البريد الإلكتروني',
-                              width: 'w-[250px]',
-                              align: 'end',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467] text-right"
-                                  
-                                >
-                                  {row.external_email || '--------------'}
-                                </span>
-                              ),
-                            },
-                            {
-                              id: 'is_required',
-                              header: 'الحضور أساسي',
-                              width: 'w-[180px]',
-                              align: 'center',
-                              render: (row: any) => (
-                                <div className="flex items-center justify-center gap-2 w-full">
-                                  <span
-                                    className="text-sm text-[#667085]"
-                                    
-                                  >
-                                    {row.is_required ? 'نعم' : 'لا'}
-                                  </span>
+                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                                  <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
+                                  <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
                                 </div>
-                              ),
-                            },
-                            {
-                              id: 'response_status',
-                              header: 'الحالة',
-                              width: 'w-[150px]',
-                              align: 'center',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467]"
-                                  
-                                >
-                                  {getInviteeResponseStatusLabel(row.response_status)}
-                                </span>
-                              ),
-                            },
-                          ] as TableColumn<any>[]}
-                          data={meetingRequest.invitees}
-                        />
-                      </div>
+                              </div>
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      لا توجد قائمة مدعوين من مقدّم الطلب
+                    </p>
+                  )}
+                </div>
 
-                {/* Minister attendees table */}
-                {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <h2
-                      className="text-right"
-                      style={{
-                        fontFamily: "'Almarai', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '22px',
-                        lineHeight: '38px',
-                        color: '#101828',
-                      }}
-                    >
-                      قائمة المدعوين (الوزير)
-                    </h2>
-                    <div className="w-full overflow-x-auto table-scroll">
-                      <div className="min-w-[1085px]">
-                        <DataTable
-                          columns={[
-                            {
-                              id: 'index',
-                              header: 'رقم البند',
-                              width: 'w-[114px]',
-                              align: 'center',
-                              render: (_row: any, index: number) => (
-                                <span className="text-sm text-[#475467]">{index + 1}</span>
-                              ),
-                            },
-                            {
-                              id: 'name',
-                              header: 'اسم المستخدم',
-                              width: 'w-[227px]',
-                              align: 'end',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467] text-right"
-                                  
-                                >
-                                  {row.external_name || row.user_id || '--------------'}
-                                </span>
-                              ),
-                            },
-                            {
-                              id: 'email',
-                              header: 'البريد الإلكتروني الخارجي',
-                              width: 'w-[227px]',
-                              align: 'end',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467] text-right"
-                                  
-                                >
-                                  {row.external_email || '--------------'}
-                                </span>
-                              ),
-                            },
-                            {
-                              id: 'is_required',
-                              header: 'الحضور أساسي',
-                              width: 'w-[136px]',
-                              align: 'center',
-                              render: (row: any) => (
-                                <div className="flex items-center justify-center gap-2">
-                                  <span
-                                    className="text-sm text-[#667085]"
-                                    
-                                  >
-                                    {row.is_required ? 'نعم' : 'لا'}
-                                  </span>
+                {/* Minister attendees cards - قائمة المدعوين (الوزير) */}
+                <div className="flex flex-col gap-4">
+                  <h2
+                    className="text-right"
+                    style={{
+                      fontFamily: "'Almarai', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '22px',
+                      lineHeight: '38px',
+                      color: '#101828',
+                    }}
+                  >
+                    قائمة المدعوين (الوزير)
+                  </h2>
+                  {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {meetingRequest.minister_attendees.map((invitee: any, idx: number) => {
+                        const name = invitee.external_name || invitee.user_id || '-';
+                        const position = invitee.position || '-';
+                        const email = invitee.external_email || '-';
+                        const mobile = invitee.mobile || '-';
+                        const v = invitee.attendance_mechanism;
+                        const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                        const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                        const isConsultant = invitee.is_consultant === true;
+                        return (
+                          <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                            <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              <div className="flex flex-row items-center justify-between gap-3">
+                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                    <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                                  </div>
                                 </div>
-                              ),
-                            },
-                            {
-                              id: 'access_permission',
-                              header: 'صلاحية الوصول',
-                              width: 'w-[165px]',
-                              align: 'center',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467]"
-                                  
-                                >
-                                  {row.access_permission || '-'}
-                                </span>
-                              ),
-                            },
-                            {
-                              id: 'justification',
-                              header: 'المبرر',
-                              width: 'w-[300px]',
-                              align: 'end',
-                              render: (row: any) => (
-                                <span
-                                  className="text-sm text-[#475467] text-right"
-                                  
-                                >
-                                  {row.justification || '-'}
-                                </span>
-                              ),
-                            },
-                          ] as TableColumn<any>[]}
-                          data={meetingRequest.minister_attendees}
-                        />
-                      </div>
+                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                                  <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
+                                  <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      لا توجد قائمة مدعوين من الوزير
+                    </p>
+                  )}
+                </div>
 
               </div>
             </div>
