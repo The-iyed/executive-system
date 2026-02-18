@@ -89,21 +89,31 @@ const Directives: React.FC = () => {
     };
   }, [openDropdownId]);
 
-  // Fetch current directives (التوجيهات الحالية) from /scheduling/directives/current?skip=0&limit=100
+  // Fetch current directives (التوجيهات الحالية); search is sent to API, not done on frontend
   const { data: directivesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['directives', 'current'],
-    queryFn: () => getDirectives({ skip: 0, limit: 100 }),
+    queryKey: ['directives', 'current', debouncedSearch],
+    queryFn: () =>
+      getDirectives({
+        skip: 0,
+        limit: 100,
+        search: debouncedSearch.trim() || undefined,
+      }),
     enabled: directivesSubTab === 'current',
   });
 
-  // Full list from API; pagination is client-side
+  // Full list from API (already filtered by API when search is used); pagination is client-side
   const allOriginalDirectives: Directive[] = directivesResponse?.items || [];
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch previous directives (التوجيهات السابقة)
+  // Fetch previous directives (التوجيهات السابقة); search is sent to API, not done on frontend
   const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious } = useQuery({
-    queryKey: ['directives-previous', 0, 100],
-    queryFn: () => getPreviousDirectives({ skip: 0, limit: 100 }),
+    queryKey: ['directives-previous', 0, 100, debouncedSearch],
+    queryFn: () =>
+      getPreviousDirectives({
+        skip: 0,
+        limit: 100,
+        search: debouncedSearch.trim() || undefined,
+      }),
     enabled: directivesSubTab === 'previous',
   });
   const originalPreviousDirectives: PreviousDirectiveItem[] = previousDirectivesResponse?.items || [];
@@ -112,21 +122,11 @@ const Directives: React.FC = () => {
     return previousDirectivesResponse.items.map(mapPreviousDirectiveToCardData);
   }, [previousDirectivesResponse]);
 
-  // Map API response to MeetingCardData
-  // Full list mapped and filtered by search; then paginate for display
+  // Map API response to MeetingCardData (no frontend search – API handles search)
   const allDirectivesFiltered: MeetingCardData[] = useMemo(() => {
     if (!directivesResponse?.items) return [];
-    let mapped = directivesResponse.items.map(mapDirectiveToCardData);
-    if (debouncedSearch.trim()) {
-      const searchLower = debouncedSearch.trim().toLowerCase();
-      mapped = mapped.filter((d) => {
-        const titleStr = typeof d.title === 'string' ? d.title : String(d.title ?? '');
-        const coordinatorStr = typeof d.coordinator === 'string' ? d.coordinator : String(d.coordinator ?? '');
-        return titleStr.toLowerCase().includes(searchLower) || coordinatorStr.toLowerCase().includes(searchLower);
-      });
-    }
-    return mapped;
-  }, [directivesResponse, debouncedSearch]);
+    return directivesResponse.items.map(mapDirectiveToCardData);
+  }, [directivesResponse]);
 
   const totalItems = allDirectivesFiltered.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
