@@ -914,14 +914,6 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
-  const handleRequestGuidanceDraft = (e: React.MouseEvent) => {
-    e.preventDefault();
-    requestGuidanceMutation.mutate({
-      notes: requestGuidanceForm.notes || 'يرجى توفير التوجيهات اللازمة حول هذا الطلب',
-      is_draft: true,
-    });
-  };
-
   // Consultants query for async select (طلب استشارة جدولة) – EXECUTIVE_OFFICE_MANAGER only
   const {
     data: consultantsResponse,
@@ -966,16 +958,6 @@ const MeetingDetail: React.FC = () => {
       consultant_user_id: consultationForm.consultant_user_id,
       consultation_question:
         consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
-    });
-  };
-
-  const handleConsultationDraft = (e: React.MouseEvent) => {
-    e.preventDefault();
-    consultationMutation.mutate({
-      consultant_user_id: consultationForm.consultant_user_id || '',
-      consultation_question:
-        consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
-      is_draft: true,
     });
   };
 
@@ -2353,7 +2335,7 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full">
                 {/* قائمة المدعوين (مقدّم الطلب) */}
                 <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start text-right" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
@@ -2474,7 +2456,7 @@ const MeetingDetail: React.FC = () => {
 
                 {/* قائمة المدعوين (الوزير) */}
                 <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start text-right" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
@@ -2624,7 +2606,7 @@ const MeetingDetail: React.FC = () => {
                   const typeLabel = recordType === 'SCHEDULING' ? 'جدولة' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                   const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'مستبدل' };
 
                   const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
                   if (row.assignees?.length) {
@@ -2762,7 +2744,7 @@ const MeetingDetail: React.FC = () => {
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                     const isExpanded = expandedGuidanceId === row.guidance_id;
                     const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'مستبدل' };
 
                     return (
                       <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
@@ -3434,7 +3416,6 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
-            <button type="button" onClick={handleRequestGuidanceDraft} disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
             <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب توجيه'}</button>
           </div>
         }
@@ -3458,7 +3439,6 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_id: '', consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
-            <button type="button" onClick={handleConsultationDraft} disabled={consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>

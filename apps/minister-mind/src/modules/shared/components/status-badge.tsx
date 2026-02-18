@@ -118,6 +118,10 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(236,253,243,1)]',
     textClass: 'text-[#027A48]',
   },
+  'SUPERSEDED': {
+    bgClass: 'bg-[rgba(126,126,126,0.12)]',
+    textClass: 'text-[#636363]',
+  },
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, className = '' }) => {
