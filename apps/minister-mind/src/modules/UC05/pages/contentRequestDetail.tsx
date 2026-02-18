@@ -173,6 +173,7 @@ const ContentRequestDetail: React.FC = () => {
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [isAnalyzeModalOpen, setIsAnalyzeModalOpen] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResponse | null>(null);
+  const [analyzingRecordId, setAnalyzingRecordId] = useState<string | null>(null);
   const [returnNotes, setReturnNotes] = useState<string>('');
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
@@ -415,11 +416,13 @@ const ContentRequestDetail: React.FC = () => {
     onSuccess: (data) => {
       setAnalyzeResult(data);
       setIsAnalyzeModalOpen(true);
+      setAnalyzingRecordId(null);
     },
     onError: (error) => {
       console.error('Error analyzing contradictions:', error);
       setAnalyzeResult(null);
       setIsAnalyzeModalOpen(true);
+      setAnalyzingRecordId(null);
     },
   });
 
@@ -537,7 +540,7 @@ const ContentRequestDetail: React.FC = () => {
     },
     {
       id: 'directives-log',
-      label: 'سجلات التوجيهات',
+      label: 'الاستشارات',
     },
     {
       id: 'invitees',
@@ -572,6 +575,14 @@ const ContentRequestDetail: React.FC = () => {
                 <StatusBadge status={meetingStatus} label={statusLabel} />
               </div>
             </div>
+            <button
+            type="button"
+            className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleRequestConsultation}
+            >
+              <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
+              طلب استشارة
+            </button>
           </div>
 
           {/* Tabs */}
@@ -1287,41 +1298,7 @@ const ContentRequestDetail: React.FC = () => {
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 <>
-                  <div className="flex justify-end w-full" dir="rtl">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const typeLabel = (t: string) =>
-                          t === 'SCHEDULING' ? 'السؤال' : t === 'CONTENT' ? 'محتوى' : t;
-                        const sentences: string[] = [];
-                        consultationRecords.items.forEach((row: ConsultationRecord) => {
-                          const rType = row.type || row.consultation_type || '';
-                          const prefix = typeLabel(rType);
-                          if (row.assignees?.length) {
-                            row.assignees.forEach(a => {
-                              a.answers?.forEach(ans => {
-                                if (ans.text?.trim()) sentences.push(`${prefix} ${ans.text.trim()}`);
-                              });
-                            });
-                          } else {
-                            (row.consultation_answers ?? []).forEach((a) => {
-                              if (a.consultation_answer?.trim()) {
-                                sentences.push(`${prefix} ${a.consultation_answer.trim()}`);
-                              }
-                            });
-                          }
-                        });
-                        if (sentences.length > 0) {
-                          analyzeContradictionsMutation.mutate(sentences);
-                        }
-                      }}
-                      disabled={analyzeContradictionsMutation.isPending}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {analyzeContradictionsMutation.isPending ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
-                    </button>
-                  </div>
+                 
                   <div className="flex flex-col gap-4" dir="rtl">
                     {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
@@ -1379,13 +1356,46 @@ const ContentRequestDetail: React.FC = () => {
                                   <Clock className="w-4 h-4 flex-shrink-0" />
                                   <span>تاريخ الطلب : {requestDate}</span>
                                 </span>
-                                {displayRequestNumber && (
+                                {/* {displayRequestNumber && (
                                   <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                                     <Hash className="w-4 h-4 flex-shrink-0" />
                                     <span>رمز الطلب : {displayRequestNumber}</span>
                                   </span>
-                                )}
-                                <span className="flex-shrink-0 text-gray-500" aria-hidden>
+                                )} */}
+                               
+                                {flatItems?.length>1&&
+                                <div className="flex justify-end" dir="rtl">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const typeLabel = (t: string) =>
+                                      t === 'SCHEDULING' ? 'السؤال' : t === 'CONTENT' ? 'محتوى' : t;
+                                    const sentences: string[] = [];
+                                    flatItems.forEach((row:  {
+                                      id: string;
+                                      text: string;
+                                      status: string;
+                                      name: string;
+                                      respondedAt: string | null;
+                                      requestNumber: string | null;
+                                  }) => {
+
+                                            sentences.push(`${row.text}`);
+                                      
+                                    });
+                                    if (sentences.length > 0) {
+                                      setAnalyzingRecordId(recordId);
+                                      analyzeContradictionsMutation.mutate(sentences);
+                                    }
+                                  }}
+                                  disabled={analyzeContradictionsMutation.isPending && analyzingRecordId === recordId}
+                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                                >
+                                  {analyzeContradictionsMutation.isPending && analyzingRecordId === recordId ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
+                                </button>
+                               </div>}
+                               <span className="flex-shrink-0 text-gray-500" aria-hidden>
                                   {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                                 </span>
                               </div>
@@ -1843,12 +1853,6 @@ const ContentRequestDetail: React.FC = () => {
                 onClick: () => setIsDraftsModalOpen(true),
               }]
             : []),
-          {
-            icon: <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />,
-            label: 'طلب استشارة',
-            onClick: handleRequestConsultation,
-            disabled: submitConsultationMutation.isPending,
-          },
         ]}
       />
 
@@ -1970,7 +1974,7 @@ const ContentRequestDetail: React.FC = () => {
               className="text-right"
               style={{ fontFamily: "'Almarai', sans-serif" }}
             >
-              طلب استشارة جدولة
+              طلب استشارة محتوى
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
