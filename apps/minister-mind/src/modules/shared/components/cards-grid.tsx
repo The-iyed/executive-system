@@ -9,6 +9,7 @@ export interface CardsGridProps {
   getActionLabel?: (meeting: MeetingCardData) => string | undefined;
   getActionLoading?: (meeting: MeetingCardData) => boolean;
   className?: string;
+  hideStatus?: boolean;
 }
 
 export const CardsGrid: React.FC<CardsGridProps> = ({
@@ -19,6 +20,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
   getActionLabel,
   getActionLoading,
   className = '',
+  hideStatus = false,
 }) => {
   return (
     <div
@@ -39,6 +41,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
               onDetails={() => onDetails?.(meeting)}
               onAction={onAction && label ? () => onAction(meeting) : undefined}
               actionLabel={label}
+              hideStatus={hideStatus}
               actionLoading={getActionLoading?.(meeting)}
               className="w-full max-w-[432.79px]"
             />
