@@ -650,13 +650,12 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
 
 /** Request body for POST /api/external-directives (Create/Close/Cancel – same body) */
 export interface CreateDirectivePayload {
-  external_id: string;
+  external_id: number;
   action_number: string;
   title: string;
   due_date: string; // ISO date-time
   status: string;
   is_completed: boolean;
-  meeting_id: number;
   created_date: string; // ISO date-time
   mod_date?: string; // ISO date-time, optional on create
   completed_at?: string | null; // ISO date-time, optional when not completed
@@ -674,14 +673,14 @@ export const directiveToExternalDirectiveBody = (d: Directive): CreateDirectiveP
       : Array.isArray(d.assignees)
         ? d.assignees
         : [];
+  const externalId = Number(d.id);
   return {
-    external_id: d.id,
+    external_id: Number.isFinite(externalId) ? externalId : 0,
     action_number: d.action_number,
     title: d.title,
     due_date: d.due_date,
     status: d.status,
     is_completed: d.is_completed,
-    meeting_id: d.meeting_id != null ? Number(d.meeting_id) : 0,
     created_date: d.created_date,
     mod_date: d.mod_date ?? undefined,
     completed_at: d.completed_at ?? undefined,
@@ -693,12 +692,12 @@ export const createDirective = async (payload: CreateDirectivePayload): Promise<
   await axiosInstance.post('/api/external-directives', payload);
 };
 
-export const closeDirective = async (directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post(`/api/external-directives/${directiveId}/close`, payload);
+export const closeDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
+  await axiosInstance.post(`/api/external-directives/close`, payload);
 };
 
-export const cancelDirective = async (directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post(`/api/external-directives/${directiveId}/cancel`, payload);
+export const cancelDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
+  await axiosInstance.post(`/api/external-directives/cancel`, payload);
 };
 
 // Consultation Records API
