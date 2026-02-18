@@ -1436,7 +1436,7 @@ const MeetingDetail: React.FC = () => {
       { id: 'content', label: 'المحتوى' },
       { id: 'attendees', label: 'قائمة المدعوين' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
-      { id: 'directive', label: 'التوجيه' },
+      { id: 'directive', label: 'سؤال' },
       ...(hasContent ? [{ id: 'content-consultation', label: 'استشارة المحتوى' }] : []),
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
