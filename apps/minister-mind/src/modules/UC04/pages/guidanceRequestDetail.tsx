@@ -215,6 +215,7 @@ const GuidanceRequestDetail: React.FC = () => {
       feasibility_answer: isSuitableForScheduling,
       is_draft: false,
     });
+    navigate(PATH.GUIDANCE_REQUESTS);
   };
 
   // Publish draft mutation
@@ -1921,7 +1922,21 @@ const GuidanceRequestDetail: React.FC = () => {
                             style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
                           >
                             <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
+                            { isExecutiveManager&&
+                           <>
+                          <StatusBadge status={row.status} label={statusLabel} />
+                          <div className="flex mr-2 h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
+                            E
                           </div>
+                          <span className="flex-shrink-0 ml-2 text-sm text-gray-700">Executive Manager</span>
+                          <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                            <Clock className="h-4 w-4 flex-shrink-0" />
+                            <span>تاريخ الرد : -</span>
+                          </span>
+                          </>
+                          }
+                          </div>
+                      
                         </div>
                       )}
                     </div>
