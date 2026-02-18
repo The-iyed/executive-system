@@ -1,7 +1,7 @@
 import React from 'react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 import { AttendanceMechanism } from '@shared/types';
-import { User, Mail, Phone, Trash2 } from 'lucide-react';
+import { User, Mail, Phone, Trash2, Building2 } from 'lucide-react';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
@@ -54,10 +54,11 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
         <h2 className="text-right font-bold text-[#101828]" style={{ ...fontStyle, fontSize: '22px', lineHeight: '38px' }}>
           قائمة المدعوين
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {invitees.map((invitee, idx) => {
             const name = invitee.external_name || '-';
             const position = (invitee as InviteeDisplay).position || '-';
+            const sector = (invitee as any).sector || '-';
             const email = invitee.external_email || '-';
             const mobile = (invitee as InviteeDisplay).mobile ?? (invitee as { phone?: string }).phone ?? '-';
             const attendanceLabel = getAttendanceLabel(
@@ -142,6 +143,19 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
                       </div>
                     </div>
                   </div>
+                  {sector !== '-' && (
+                    <div className="flex flex-row items-center gap-2.5 w-full">
+                      <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                          <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                        </div>
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                          <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
