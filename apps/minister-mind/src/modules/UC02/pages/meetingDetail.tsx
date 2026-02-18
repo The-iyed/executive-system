@@ -2470,7 +2470,7 @@ const MeetingDetail: React.FC = () => {
                 </div>
 
                 {/* قائمة المدعوين (الوزير) */}
-                <div className="flex flex-col gap-4 w-full">
+                <div className="flex pb-[30px] flex-col gap-4 w-full">
                   <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
@@ -3145,7 +3145,6 @@ const MeetingDetail: React.FC = () => {
             },
           }}
           onSuccess={(data) => {
-            // Map suggested attendees to MinisterAttendee format and add to the table
             if (data?.suggestions && Array.isArray(data.suggestions)) {
               const mappedAttendees: MinisterAttendee[] = data.suggestions.map((suggestion: SuggestedAttendee) => ({
                 username: `${suggestion.first_name} ${suggestion.last_name}`,
@@ -3154,11 +3153,12 @@ const MeetingDetail: React.FC = () => {
                 is_required: suggestion.importance_level === 'مناسب جدا',
                 justification: suggestion.suggestion_reason,
                 access_permission: 'FULL',
-                position: '',
+                position: suggestion.position_name || suggestion.job_description || '',
+                phone: suggestion.phone || '',
                 is_consultant: false,
-                phone: '',
                 attendance_channel: 'PHYSICAL',
               }));
+              // work
 
               // Add the mapped attendees to the existing list
               setScheduleForm((prev) => ({
