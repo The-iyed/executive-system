@@ -61,8 +61,9 @@ axiosInstance.interceptors.response.use(
     }
     const currentPath = window.location.pathname
     if (error?.response?.status >= 500 && currentPath !== '/500') {
+      console.log('error', error)
       clearTokens()
-      window.location.href = '/500'
+      // window.location.href = '/500'
     }
 
     // if ((!error.response || error.code === 'ERR_NETWORK') && currentPath !== '/network-error') {

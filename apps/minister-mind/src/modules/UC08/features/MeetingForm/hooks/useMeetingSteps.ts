@@ -19,6 +19,8 @@ interface UseMeetingStepsProps {
   };
   onStep1Success?: (newDraftId: string) => void;
   onStep2Success?: (isDraft: boolean) => void;
+  /** When step 2 submit succeeds (non-draft), call this to switch to step 3 */
+  onStep2SuccessGoToStep3?: () => void;
   onStep3Success?: () => void;
 }
 
@@ -28,6 +30,7 @@ export const useMeetingSteps = ({
   initialData,
   onStep1Success,
   onStep2Success,
+  onStep2SuccessGoToStep3,
   onStep3Success,
 }: UseMeetingStepsProps) => {
   const navigate = useNavigate();
@@ -53,11 +56,14 @@ export const useMeetingSteps = ({
     draftId: draftId || '',
     initialData: initialData?.step2,
     step1FormData: step1Hook.formData,
-    onSuccess: onStep2Success || ((isDraft) => {
-      if (isDraft) {
+    onSuccess: (isDraft) => {
+      onStep2Success?.(isDraft);
+      if (!isDraft) {
+        onStep2SuccessGoToStep3?.();
+      } else if (!onStep2Success) {
         navigate(PATH.MEETINGS);
       }
-    }),
+    },
     onError: (error) => {
       console.error('Step2 error:', error);
     },
@@ -69,7 +75,7 @@ export const useMeetingSteps = ({
     draftId: draftId || '',
     initialData: initialData?.step3,
     step1FormData: step1Hook.formData,
-    onSuccess: onStep3Success || ((isDraft) => {
+    onSuccess: onStep3Success || ((_isDraft) => {
       clearDraftData();
       navigate(PATH.MEETINGS);
     }),

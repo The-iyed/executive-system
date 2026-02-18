@@ -12,14 +12,13 @@ import {
   mapUserToStep3InviteeRow,
   createEmptyStep3InviteeRow,
 } from '../utils/inviteeMappers';
-
-type MeetingOwnerOption = { value: string; label: string } | null | undefined;
+import type { Step1FormData } from '../schemas/step1.schema';
 
 interface UseStep3Props {
   draftId: string;
   initialData?: Partial<Step3FormData>;
   /** Step1 meeting owner (value = user id). Used to auto-insert owner as first invitee. */
-  step1FormData?: { meetingOwner?: MeetingOwnerOption };
+  step1FormData?: Pick<Partial<Step1FormData>, 'meetingOwner'>;
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
