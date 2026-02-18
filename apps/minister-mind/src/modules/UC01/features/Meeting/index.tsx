@@ -1,30 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useMutation } from '@tanstack/react-query';
 import { Send } from 'lucide-react';
-import { useToast, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, Pagination, MeetingStatus, ContentBar, SearchFilterBar, CardsGrid, ViewSwitcher, ViewType, SearchInput } from '@shared';      
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
+import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewSwitcher, ViewType, SearchInput } from '@shared';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
-import { useMeetings } from '../../hooks';
-import { submitDraft, resubmitToScheduling, resubmitToContent } from '../../data/draftApi';
+import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
 import '@shared/styles';
 
-const MEETING_ACTION_SUCCESS_MESSAGE = 'تم الإرسال بنجاح';
-
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const {
-    openCreateDrawer,
-  } = useMeetingFormDrawer();
+  const { openCreateDrawer } = useMeetingFormDrawer();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
-  // const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
   useEffect(() => {
@@ -33,43 +23,29 @@ const Meeting: React.FC = () => {
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,
-    // statusFilter,
     currentPage,
     activeTab: undefined,
   });
 
-  const submitDraftMutation = useMutation({
-    mutationFn: submitDraft,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
-    },
-    onError: (err) => {
-      console.error('Submit draft error:', err);
-    },
-  });
+  const {
+    submitMeeting,
+    isSubmitting,
+    submittingMeetingId,
+    submittingStatus,
+  } = useSubmitMeeting();
 
-  const resubmitToSchedulingMutation = useMutation({
-    mutationFn: resubmitToScheduling,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
-    },
-    onError: (err) => {
-      console.error('Resubmit to scheduling error:', err);
-    },
-  });
-
-  const resubmitToContentMutation = useMutation({
-    mutationFn: resubmitToContent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-      toast({ title: MEETING_ACTION_SUCCESS_MESSAGE });
-    },
-    onError: (err) => {
-      console.error('Resubmit to content error:', err);
-    },
-  });
+  const onSubmitDraft = useCallback(
+    (draftId: string) => submitMeeting({ meetingId: draftId, status: MeetingStatus.DRAFT }),
+    [submitMeeting]
+  );
+  const onResubmitToScheduling = useCallback(
+    (draftId: string) => submitMeeting({ meetingId: draftId, status: MeetingStatus.RETURNED_FROM_SCHEDULING }),
+    [submitMeeting]
+  );
+  const onResubmitToContent = useCallback(
+    (draftId: string) => submitMeeting({ meetingId: draftId, status: MeetingStatus.RETURNED_FROM_CONTENT }),
+    [submitMeeting]
+  );
 
   const openConfirmModal = useCallback((_message: string, onConfirm: () => void) => {
     pendingConfirmRef.current = onConfirm;
@@ -93,26 +69,22 @@ const Meeting: React.FC = () => {
     const startIndex = (currentPage - 1) * PAGINATION.ITEMS_PER_PAGE;
     return createTableColumns(navigate, {
       startIndex,
-      onSubmitDraft: submitDraftMutation.mutate,
-      submittingDraftId: submitDraftMutation.isPending && submitDraftMutation.variables !== undefined ? submitDraftMutation.variables : null,
-      onResubmitToScheduling: resubmitToSchedulingMutation.mutate,
-      submittingResubmitToSchedulingId: resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables !== undefined ? resubmitToSchedulingMutation.variables : null,
-      onResubmitToContent: resubmitToContentMutation.mutate,
-      submittingResubmitToContentId: resubmitToContentMutation.isPending && resubmitToContentMutation.variables !== undefined ? resubmitToContentMutation.variables : null,
+      onSubmitDraft,
+      submittingDraftId: submittingStatus === MeetingStatus.DRAFT ? submittingMeetingId : null,
+      onResubmitToScheduling,
+      submittingResubmitToSchedulingId: submittingStatus === MeetingStatus.RETURNED_FROM_SCHEDULING ? submittingMeetingId : null,
+      onResubmitToContent,
+      submittingResubmitToContentId: submittingStatus === MeetingStatus.RETURNED_FROM_CONTENT ? submittingMeetingId : null,
       openConfirmModal,
     });
   }, [
     navigate,
     currentPage,
-    submitDraftMutation.mutate,
-    submitDraftMutation.isPending,
-    submitDraftMutation.variables,
-    resubmitToSchedulingMutation.mutate,
-    resubmitToSchedulingMutation.isPending,
-    resubmitToSchedulingMutation.variables,
-    resubmitToContentMutation.mutate,
-    resubmitToContentMutation.isPending,
-    resubmitToContentMutation.variables,
+    onSubmitDraft,
+    onResubmitToScheduling,
+    onResubmitToContent,
+    submittingMeetingId,
+    submittingStatus,
     openConfirmModal,
   ]);
 
@@ -229,31 +201,29 @@ const Meeting: React.FC = () => {
                   onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                   onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                   onAction={(meeting) => {
-                    if (meeting.status === MeetingStatus.DRAFT) {
-                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => submitDraftMutation.mutate(meeting.id));
-                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
-                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToSchedulingMutation.mutate(meeting.id));
-                    } else if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
-                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () => resubmitToContentMutation.mutate(meeting.id));
+                    if (
+                      meeting.status === MeetingStatus.DRAFT ||
+                      meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING ||
+                      meeting.status === MeetingStatus.RETURNED_FROM_CONTENT
+                    ) {
+                      openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () =>
+                        submitMeeting({ meetingId: meeting.id, status: meeting.status })
+                      );
                     }
                   }}
                   getActionLabel={(meeting) => {
                     if (meeting.status === MeetingStatus.DRAFT) {
-                      return submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إرسال المسودة';
+                      return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إرسال المسودة';
                     }
                     if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
-                      return resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمسؤول';
+                      return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إحالة للمسؤول';
                     }
                     if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
-                      return resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id ? 'جاري الإرسال...' : 'إحالة للمحتوى';
+                      return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إحالة للمحتوى';
                     }
                     return undefined;
                   }}
-                  getActionLoading={(meeting) =>
-                    (submitDraftMutation.isPending && submitDraftMutation.variables === meeting.id) ||
-                    (resubmitToSchedulingMutation.isPending && resubmitToSchedulingMutation.variables === meeting.id) ||
-                    (resubmitToContentMutation.isPending && resubmitToContentMutation.variables === meeting.id)
-                  }
+                  getActionLoading={(meeting) => isSubmitting && submittingMeetingId === meeting.id}
                 />
               )}
               {totalPages > 1 && (
