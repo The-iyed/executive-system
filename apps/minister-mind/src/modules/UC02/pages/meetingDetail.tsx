@@ -949,6 +949,7 @@ const MeetingDetail: React.FC = () => {
     }) => requestSchedulingConsultation(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['consultation-records', id, 'SCHEDULING'] });
       setIsConsultationModalOpen(false);
       setConsultationForm({
         consultant_user_id: '',
