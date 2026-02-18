@@ -57,10 +57,9 @@ export const useCreateMeeting = () => {
     onStep2Success: (isDraft) => {
       if (isDraft) {
         handleSaveDraft();
-      } else {
-        handleNext();
       }
     },
+    onStep2SuccessGoToStep3: handleNext,
   });
 
   const handleCancel = useCallback(() => {

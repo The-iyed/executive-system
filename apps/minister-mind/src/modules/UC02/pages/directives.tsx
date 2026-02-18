@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
@@ -15,7 +14,6 @@ import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useM
 const ITEMS_PER_PAGE = 10;
 
 const Directives: React.FC = () => {
-  const navigate = useNavigate();
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
@@ -493,7 +491,7 @@ const Directives: React.FC = () => {
         primaryAction={{
           label: 'إنشاء اجتماع',
           variant: 'primary',
-          onClick: openCreateDrawer,
+          onClick: () => openCreateDrawer(),
         }}
       />
       <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
@@ -581,9 +579,11 @@ const Directives: React.FC = () => {
                     if (d) {
                       try {
                         await closeDirective(d.id, directiveToExternalDirectiveBody(d));
-                        navigate(
-                          `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
-                        );
+                        openCreateDrawer({
+                          directive_id: d.id,
+                          directive_text: d.title,
+                          related_meeting: d.assignees || '',
+                        });
                       } catch (err) {
                         console.error('Error closing directive:', err);
                       }
@@ -742,9 +742,11 @@ const Directives: React.FC = () => {
                                   e.stopPropagation();
                                   try {
                                     await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
-                                    navigate(
-                                      `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(Array.isArray(original.assignees) ? original.assignees.join(', ') : '')}`
-                                    );
+                                    openCreateDrawer({
+                                      directive_id: original.id,
+                                      directive_text: original.title,
+                                      related_meeting: Array.isArray(original.assignees) ? original.assignees.join(', ') : '',
+                                    });
                                   } catch (err) {
                                     console.error('Error closing directive:', err);
                                   }
@@ -876,9 +878,11 @@ const Directives: React.FC = () => {
                                     e.stopPropagation();
                                     try {
                                       await closeDirective(original.id, directiveToExternalDirectiveBody(original));
-                                      navigate(
-                                        `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(original.assignees || '')}`
-                                      );
+                                      openCreateDrawer({
+                                        directive_id: original.id,
+                                        directive_text: original.title,
+                                        related_meeting: original.assignees || '',
+                                      });
                                     } catch (err) {
                                       console.error('Error closing directive:', err);
                                     }
@@ -928,8 +932,6 @@ const Directives: React.FC = () => {
               )}
             </>
           )}
-
-     
         </div>
       </div>
     </div>
