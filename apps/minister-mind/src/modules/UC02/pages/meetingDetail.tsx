@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone, Building2, Check } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -410,6 +410,8 @@ const MeetingDetail: React.FC = () => {
 
   // Delete minister attendee confirmation modal state
   const [deleteAttendeeIndex, setDeleteAttendeeIndex] = useState<number | null>(null);
+  // Track which minister attendee cards are in edit mode
+  const [editingMinisterAttendees, setEditingMinisterAttendees] = useState<Set<number>>(new Set());
   
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
@@ -1103,24 +1105,28 @@ const MeetingDetail: React.FC = () => {
   };
 
   const addMinisterAttendee = () => {
-    setScheduleForm((prev) => ({
-      ...prev,
-      minister_attendees: [
-        ...prev.minister_attendees,
-        {
-          username: '',
-          external_name: '',
-          external_email: '',
-          is_required: false,
-          justification: '',
-          access_permission: 'FULL',
-          position: '',
-          phone: '',
-          attendance_channel: 'PHYSICAL',
-          is_consultant: false,
-        },
-      ],
-    }));
+    setScheduleForm((prev) => {
+      const newIndex = prev.minister_attendees.length;
+      setEditingMinisterAttendees((s) => new Set(s).add(newIndex));
+      return {
+        ...prev,
+        minister_attendees: [
+          ...prev.minister_attendees,
+          {
+            username: '',
+            external_name: '',
+            external_email: '',
+            is_required: false,
+            justification: '',
+            access_permission: 'FULL',
+            position: '',
+            phone: '',
+            attendance_channel: 'PHYSICAL',
+            is_consultant: false,
+          },
+        ],
+      };
+    });
   };
 
   const removeMinisterAttendee = (index: number) => {
@@ -1128,6 +1134,11 @@ const MeetingDetail: React.FC = () => {
       ...prev,
       minister_attendees: prev.minister_attendees.filter((_, i) => i !== index),
     }));
+    setEditingMinisterAttendees((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => { if (i < index) next.add(i); else if (i > index) next.add(i - 1); });
+      return next;
+    });
   };
 
   const updateMinisterAttendee = (index: number, field: string, value: any) => {
@@ -2350,16 +2361,17 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full">
                 {/* قائمة المدعوين (مقدّم الطلب) */}
                 <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                       {allInvitees.map((row: any, idx: number) => {
                         const isLocal = row.isLocal;
                         const isConsultant = row.is_consultant === true;
                         const name = row.external_name || row.user_id || '-';
                         const position = row.position || '-';
+                        const sector = row.sector || '-';
                         const email = row.external_email || '-';
                         const mobile = row.phone || '-';
                         const attendVal = row.attendance_channel || 'PHYSICAL';
@@ -2453,6 +2465,19 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </div>
                               </div>
+                              {sector !== '-' && (
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -2471,24 +2496,114 @@ const MeetingDetail: React.FC = () => {
 
                 {/* قائمة المدعوين (الوزير) */}
                 <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                       {scheduleForm.minister_attendees.map((row: any, index: number) => {
                         const isConsultant = row.is_consultant === true;
+                        const isEditing = editingMinisterAttendees.has(index);
+                        const attendVal = row.attendance_channel || 'PHYSICAL';
+                        const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
+                        const accessChecked = row.access_permission === 'FULL';
+                        const name = row.external_name || row.username || '-';
+                        const position = row.position || '-';
+                        const sector = row.sector || '-';
+                        const email = row.external_email || '-';
+                        const mobile = row.phone || '-';
+
+                        if (!isEditing) {
+                          return (
+                            <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                              <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                                <div className="flex flex-row items-center justify-between gap-3">
+                                  <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                      <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                      <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-row items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                                    {isConsultant && <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">مستشار</span>}
+                                    <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية'}</span>
+                                    <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
+                                    {row.is_required && <span className="inline-flex items-center rounded-full bg-[#F2F4F7] px-2.5 py-1 text-[13px] text-[#475467] whitespace-nowrap">مطلوب</span>}
+                                    {canEdit && (
+                                      <>
+                                        <button type="button" onClick={() => setEditingMinisterAttendees((s) => new Set(s).add(index))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F6FF] hover:bg-[#DCEAFF] transition-colors">
+                                          <Pencil className="w-3.5 h-3.5 text-[#3C6FD1]" />
+                                        </button>
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
+                                          <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {sector !== '-' && (
+                                  <div className="flex flex-row items-center gap-2.5 w-full">
+                                    <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                        <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                      </div>
+                                      <div className="flex flex-col gap-1 min-w-0">
+                                        <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                        <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                {row.justification && (
+                                  <TooltipProvider delayDuration={200}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-[12px] text-[#475467] bg-[#F9FAFB] rounded-lg px-3 py-2 border border-gray-200 cursor-default overflow-hidden" style={{ lineHeight: '20px', maxHeight: '74px' }}>
+                                          <span className="font-semibold text-[#101828]">المبرر: </span>{row.justification}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-[350px] text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif", lineHeight: '2.5' }}>
+                                        {row.justification}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         const errName = ministerAttendeeValidationErrors[index]?.external_name;
                         const errPos = ministerAttendeeValidationErrors[index]?.position;
                         const errPhone = ministerAttendeeValidationErrors[index]?.phone;
                         const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
                         const errJust = ministerAttendeeValidationErrors[index]?.justification;
-                        const attendVal = row.attendance_channel || 'PHYSICAL';
-                        const accessChecked = row.access_permission === 'FULL';
                         return (
-                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'} ring-2 ring-[#048F86]/20`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                             <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                              {/* Header: Avatar + Name/Position inputs + Delete */}
                               <div className="flex flex-row items-start justify-between gap-3">
                                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                   <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
@@ -2496,35 +2611,34 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errName && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errName}</span>}
+                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errName && <span className="text-xs text-red-600 text-right">{errName}</span>}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errPos && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errPos}</span>}
+                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errPos && <span className="text-xs text-red-600 text-right">{errPos}</span>}
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
                                   <div onClick={(e) => e.stopPropagation()}>
-                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')} disabled={!canEdit}>
+                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}>
                                       <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue /></SelectTrigger>
                                       <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
                                     </Select>
                                   </div>
-                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
                                     <Trash2 className="w-4 h-4 text-[#CA4545]" />
                                   </button>
                                 </div>
                               </div>
-                              {/* Contact: Email + Phone */}
                               <div className="flex flex-row items-center gap-2.5 w-full">
                                 <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                     {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
                                   </div>
                                 </div>
@@ -2533,30 +2647,71 @@ const MeetingDetail: React.FC = () => {
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                    <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                     {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
                                   </div>
                                 </div>
                               </div>
-                              {/* Bottom row: Checkboxes + Justification */}
+                              {sector !== '-' && (
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-row items-center gap-3 flex-wrap">
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={accessChecked} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية الاطلاع</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#F2F4F7] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_required} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={!!row.is_required} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#475467] whitespace-nowrap">مطلوب</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_consultant} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={!!row.is_consultant} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#048F86] whitespace-nowrap">مستشار</span>
                                 </div>
                                 <div className="flex-1 min-w-[120px]">
-                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                   {errJust && <span className="text-[10px] text-red-600 text-right">{errJust}</span>}
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rowErrors: Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>> = {};
+                                  const rName = (row.external_name ?? '').trim();
+                                  const rEmail = (row.external_email ?? '').trim();
+                                  const rPos = (row.position ?? '').trim();
+                                  const rPhone = (row.phone ?? '').trim();
+                                  const rJust = (row.justification ?? '').trim();
+                                  if (!rName) rowErrors.external_name = 'مطلوب';
+                                  if (!rEmail) rowErrors.external_email = 'مطلوب';
+                                  else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+                                  if (!rPos) rowErrors.position = 'مطلوب';
+                                  if (!rPhone) rowErrors.phone = 'مطلوب';
+                                  if (!rJust) rowErrors.justification = 'مطلوب';
+                                  if (Object.keys(rowErrors).length > 0) {
+                                    setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
+                                    return;
+                                  }
+                                  setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
+                                  setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#048F86] text-white hover:bg-[#037a71] transition-colors text-[14px] font-bold"
+                                style={{ fontFamily: "'Almarai', sans-serif" }}
+                              >
+                                <Check className="w-4 h-4" />
+                                حفظ
+                              </button>
                             </div>
                           </div>
                         );
@@ -2619,7 +2774,7 @@ const MeetingDetail: React.FC = () => {
                   const recordType = row.type || row.consultation_type || '';
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
-                  const typeLabel = recordType === 'SCHEDULING' ? 'جدولة' : recordType === 'CONTENT' ? 'محتوى' : recordType;
+                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                   const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
@@ -2658,9 +2813,6 @@ const MeetingDetail: React.FC = () => {
                             <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {row.status && (
-                              <StatusBadge status={row.status} label={overallStatusLabels[row.status] || row.status} />
-                            )}
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Clock className="w-4 h-4 flex-shrink-0" />
                               <span>تاريخ الطلب : {requestDate}</span>
@@ -3160,11 +3312,18 @@ const MeetingDetail: React.FC = () => {
               }));
               // work
 
-              // Add the mapped attendees to the existing list
-              setScheduleForm((prev) => ({
-                ...prev,
-                minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
-              }));
+              setScheduleForm((prev) => {
+                const startIdx = prev.minister_attendees.length;
+                setEditingMinisterAttendees((s) => {
+                  const next = new Set(s);
+                  mappedAttendees.forEach((_, i) => next.add(startIdx + i));
+                  return next;
+                });
+                return {
+                  ...prev,
+                  minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
+                };
+              });
             }
           }}
         />

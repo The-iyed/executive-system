@@ -59,6 +59,7 @@ export interface MeetingCardProps {
   actionLabel?: string;
   actionLoading?: boolean;
   className?: string;
+  hideStatus?: boolean;
 }
 
 export const MeetingCard: React.FC<MeetingCardProps> = ({
@@ -68,6 +69,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   onAction,
   actionLabel,
   actionLoading,
+  hideStatus = false,
   className = '',
 }) => {
   const handleCardClick = () => {
@@ -123,7 +125,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 {meeting.isDataComplete ? 'مكتمل' : 'غير مكتمل'}
               </span>
             )}
-            {meeting.statusLabel != null && (
+            {meeting.statusLabel != null && !hideStatus && (
               <StatusBadge status={meeting.status} label={meeting.statusLabel} />
             )}
           </div>
