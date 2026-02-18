@@ -458,6 +458,7 @@ const ContentRequestDetail: React.FC = () => {
       file: executiveSummaryFile,
       notes: guidanceNotes.trim() || undefined,
     });
+    navigate(PATH.CONTENT_REQUESTS);
   };
 
   const handleReturnRequest = () => {
