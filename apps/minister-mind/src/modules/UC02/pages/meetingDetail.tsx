@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap, Hash, User, MessageSquare, Mail, Phone } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -118,6 +118,7 @@ function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array
   position: string;
   phone: string;
   attendance_channel: 'PHYSICAL' | 'REMOTE';
+  is_consultant: boolean;
 }> {
   return (list || []).map((a) => ({
     username: a.username ?? '',
@@ -129,6 +130,7 @@ function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array
     position: a.position ?? '',
     phone: a.phone ?? '',
     attendance_channel: (a.attendance_channel ?? 'PHYSICAL') as 'PHYSICAL' | 'REMOTE',
+    is_consultant: a.is_consultant ?? false,
   }));
 }
 
@@ -423,6 +425,10 @@ const MeetingDetail: React.FC = () => {
   const [compareOpenedWithoutReplace, setCompareOpenedWithoutReplace] = useState(false);
   /** LLM notes/insights modal for a presentation attachment (ملاحظات على العرض) – icon on each attachment */
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
+  /** AbortController for insights polling – abort when modal closes to stop polling */
+  const insightsAbortControllerRef = useRef<AbortController | null>(null);
+  /** AbortController for compare (تقييم الاختلاف) polling – abort when modal closes */
+  const compareAbortControllerRef = useRef<AbortController | null>(null);
 
   // Handle invitee deletion
   const handleDeleteInvitee = () => {
@@ -817,29 +823,35 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  // Compare by attachment (تقييم الاختلاف بين العروض) – only for attachments with replaces_attachment_id
+  // Compare by attachment (تقييم الاختلاف بين العروض) – only for attachments with replaces_attachment_id; stops when modal closes (signal aborted)
   const compareByAttachmentMutation = useMutation({
-    mutationFn: (attachmentId: string) => runCompareByAttachment(attachmentId),
+    mutationFn: (payload: { attachmentId: string; signal?: AbortSignal }) =>
+      runCompareByAttachment(payload.attachmentId, { signal: payload.signal }),
     onSuccess: (data) => {
       setComparePresentationsResult(data);
       setCompareErrorDetail(null);
       setIsComparePresentationsModalOpen(true);
     },
     onError: (err: unknown) => {
-      console.error('Compare presentations error:', err);
-      setComparePresentationsResult(null);
-      const e = err as { response?: { data?: { detail?: string } }; detail?: string };
-      const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : typeof e?.detail === 'string' ? e.detail : null;
-      setCompareErrorDetail(detail);
-      setIsComparePresentationsModalOpen(true);
+      if ((err as DOMException)?.name !== 'AbortError') {
+        console.error('Compare presentations error:', err);
+        setComparePresentationsResult(null);
+        const e = err as { response?: { data?: { detail?: string } }; detail?: string };
+        const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : typeof e?.detail === 'string' ? e.detail : null;
+        setCompareErrorDetail(detail);
+        setIsComparePresentationsModalOpen(true);
+      }
     },
   });
 
-  // LLM notes/insights for presentation attachment (ملاحظات على العرض) – poll until ready
+  // LLM notes/insights for presentation attachment (ملاحظات على العرض) – poll until ready; stops when modal closes (signal aborted)
   const insightsMutation = useMutation({
-    mutationFn: (attachmentId: string) => getAttachmentInsightsWithPolling(attachmentId),
+    mutationFn: (payload: { attachmentId: string; signal?: AbortSignal }) =>
+      getAttachmentInsightsWithPolling(payload.attachmentId, { signal: payload.signal }),
     onError: (err) => {
-      console.error('Attachment insights error:', err);
+      if ((err as DOMException)?.name !== 'AbortError') {
+        console.error('Attachment insights error:', err);
+      }
     },
   });
 
@@ -1104,6 +1116,7 @@ const MeetingDetail: React.FC = () => {
           position: '',
           phone: '',
           attendance_channel: 'PHYSICAL',
+          is_consultant: false,
         },
       ],
     }));
@@ -2028,47 +2041,59 @@ const MeetingDetail: React.FC = () => {
                       {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                       <div className="flex items-center gap-2 mr-auto">
-                        {att.replaces_attachment_id != null && (
+                        <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 p-0.5">
+                          {att.replaces_attachment_id != null && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    compareAbortControllerRef.current?.abort();
+                                    compareAbortControllerRef.current = new AbortController();
+                                    setComparePresentationsResult(null);
+                                    setCompareErrorDetail(null);
+                                    setIsComparePresentationsModalOpen(true);
+                                    compareByAttachmentMutation.mutate({
+                                      attachmentId: att.id,
+                                      signal: compareAbortControllerRef.current.signal,
+                                    });
+                                  }}
+                                  disabled={compareByAttachmentMutation.isPending}
+                                  className="p-2 rounded-md hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50 transition-colors"
+                                >
+                                  <Scale className="w-4 h-4" strokeWidth={1.26} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-right">
+                                <p>تقييم الاختلاف بين العروض</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setComparePresentationsResult(null);
-                                  setCompareErrorDetail(null);
-                                  setIsComparePresentationsModalOpen(true);
-                                  compareByAttachmentMutation.mutate(att.id);
+                                  insightsAbortControllerRef.current?.abort();
+                                  insightsAbortControllerRef.current = new AbortController();
+                                  setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
+                                  insightsMutation.reset();
+                                  insightsMutation.mutate({
+                                    attachmentId: att.id,
+                                    signal: insightsAbortControllerRef.current.signal,
+                                  });
                                 }}
-                                disabled={compareByAttachmentMutation.isPending}
-                                className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50"
+                                disabled={insightsMutation.isPending}
+                                className="p-2 rounded-md hover:bg-[rgba(71,84,103,0.08)] text-[#475467] disabled:opacity-50 transition-colors"
                               >
-                                <GitCompare className="w-4 h-4" />
+                                <Sparkles className="w-4 h-4" strokeWidth={1.5} />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-right">
-                              <p>تقييم الاختلاف بين العروض</p>
+                              <p>ملاحظات على العرض</p>
                             </TooltipContent>
                           </Tooltip>
-                        )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
-                                insightsMutation.reset();
-                                insightsMutation.mutate(att.id);
-                              }}
-                              disabled={insightsMutation.isPending}
-                              className="p-2 rounded-lg hover:bg-[rgba(71,84,103,0.08)] text-[#475467] disabled:opacity-50"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="text-right">
-                            <p>ملاحظات على العرض</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        </div>
                         <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
@@ -2121,7 +2146,7 @@ const MeetingDetail: React.FC = () => {
               </div>
 
               {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
-              <Dialog open={isComparePresentationsModalOpen} onOpenChange={(open) => { if (!open) setCompareOpenedWithoutReplace(false); setIsComparePresentationsModalOpen(!!open); }}>
+              <Dialog open={isComparePresentationsModalOpen} onOpenChange={(open) => { if (!open) { compareAbortControllerRef.current?.abort(); compareAbortControllerRef.current = null; setCompareOpenedWithoutReplace(false); setComparePresentationsResult(null); setCompareErrorDetail(null); } setIsComparePresentationsModalOpen(!!open); }}>
                 <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
                   <DialogHeader>
                     <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -2180,11 +2205,59 @@ const MeetingDetail: React.FC = () => {
                           </div>
                         ) : null}
                         {comparePresentationsResult.ai_insights && Object.keys(comparePresentationsResult.ai_insights).length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-gray-500 text-sm">رؤى الذكاء الاصطناعي</span>
-                            <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
-                              {JSON.stringify(comparePresentationsResult.ai_insights, null, 2)}
-                            </pre>
+                          <div className="flex flex-col gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                            <span className="text-gray-700 font-medium">رؤى الذكاء الاصطناعي</span>
+                            {(() => {
+                              const ai = comparePresentationsResult.ai_insights as {
+                                main_topics?: string[];
+                                business_impact?: string;
+                                risk_assessment?: string;
+                                presentation_coherence?: string;
+                                slide_count_comparison?: { original_count?: number; new_count?: number; difference?: number };
+                              };
+                              return (
+                                <div className="flex flex-col gap-2 text-sm text-right">
+                                  {ai.main_topics && Array.isArray(ai.main_topics) && ai.main_topics.length > 0 ? (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-gray-500">المواضيع الرئيسية</span>
+                                      <ul className="list-disc list-inside text-gray-900">
+                                        {ai.main_topics.map((t, i) => (
+                                          <li key={i}>{t}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ) : null}
+                                  {ai.business_impact != null && ai.business_impact !== '' ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-500">الأثر على الأعمال</span>
+                                      <span className="text-gray-900">{String(ai.business_impact)}</span>
+                                    </div>
+                                  ) : null}
+                                  {ai.risk_assessment != null && ai.risk_assessment !== '' ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-500">تقييم المخاطر</span>
+                                      <span className="text-gray-900">{String(ai.risk_assessment)}</span>
+                                    </div>
+                                  ) : null}
+                                  {ai.presentation_coherence != null && ai.presentation_coherence !== '' ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-500">تماسك العرض</span>
+                                      <span className="text-gray-900">{String(ai.presentation_coherence)}</span>
+                                    </div>
+                                  ) : null}
+                                  {ai.slide_count_comparison && typeof ai.slide_count_comparison === 'object' ? (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-gray-500">مقارنة عدد الشرائح</span>
+                                      <div className="grid grid-cols-2 gap-2 text-gray-900">
+                                        <span>الأصلي: {ai.slide_count_comparison.original_count ?? '—'}</span>
+                                        <span>الجديد: {ai.slide_count_comparison.new_count ?? '—'}</span>
+                                        <span>الفرق: {ai.slide_count_comparison.difference != null ? ai.slide_count_comparison.difference : '—'}</span>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })()}
                           </div>
                         ) : null}
                       </>
@@ -2195,7 +2268,7 @@ const MeetingDetail: React.FC = () => {
                   <DialogFooter className="flex-row-reverse gap-2">
                     <button
                       type="button"
-                      onClick={() => { setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); setCompareErrorDetail(null); setCompareOpenedWithoutReplace(false); }}
+                      onClick={() => { compareAbortControllerRef.current?.abort(); compareAbortControllerRef.current = null; setIsComparePresentationsModalOpen(false); setComparePresentationsResult(null); setCompareErrorDetail(null); setCompareOpenedWithoutReplace(false); }}
                       className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
@@ -2206,7 +2279,7 @@ const MeetingDetail: React.FC = () => {
               </Dialog>
 
               {/* Attachment LLM notes/insights modal (ملاحظات على العرض) – triggered by icon on each presentation */}
-              <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
+              <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
                 <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
                   <DialogHeader>
                     <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -2218,7 +2291,7 @@ const MeetingDetail: React.FC = () => {
                       <p className="text-gray-500">جاري التحميل...</p>
                     ) : insightsMutation.isError ? (
                       <p className="text-red-600">حدث خطأ أثناء جلب الملاحظات. يرجى المحاولة لاحقاً.</p>
-                    ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables ? (
+                    ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
                       (() => {
                         const d = insightsMutation.data as AttachmentInsightsResponse;
                         const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
@@ -2258,7 +2331,7 @@ const MeetingDetail: React.FC = () => {
                   <DialogFooter className="flex-row-reverse gap-2">
                     <button
                       type="button"
-                      onClick={() => { setInsightsModalAttachment(null); insightsMutation.reset(); }}
+                      onClick={() => { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); }}
                       className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
@@ -2305,11 +2378,11 @@ const MeetingDetail: React.FC = () => {
                                     <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                                       <div className="flex flex-col gap-0.5">
                                         <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].external_name}</span>}
+                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{inviteeValidationErrors[row.id].external_name}</span>}
                                       </div>
                                       <div className="flex flex-col gap-0.5">
                                         <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.position ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                        {inviteeValidationErrors[row.id]?.position && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].position}</span>}
+                                        {inviteeValidationErrors[row.id]?.position && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{inviteeValidationErrors[row.id].position}</span>}
                                       </div>
                                     </div>
                                   ) : (
@@ -2423,17 +2496,17 @@ const MeetingDetail: React.FC = () => {
                                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errName && <span className="text-xs text-red-600 text-right">{errName}</span>}
+                                      {errName && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errName}</span>}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errPos && <span className="text-xs text-red-600 text-right">{errPos}</span>}
+                                      {errPos && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errPos}</span>}
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
                                   <div onClick={(e) => e.stopPropagation()}>
-                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v)} disabled={!canEdit}>
+                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')} disabled={!canEdit}>
                                       <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue /></SelectTrigger>
                                       <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
                                     </Select>
@@ -2474,6 +2547,10 @@ const MeetingDetail: React.FC = () => {
                                   <input type="checkbox" checked={!!row.is_required} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
                                   <span className="text-[12px] text-[#475467] whitespace-nowrap">مطلوب</span>
                                 </div>
+                                <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
+                                  <input type="checkbox" checked={!!row.is_consultant} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <span className="text-[12px] text-[#048F86] whitespace-nowrap">مستشار</span>
+                                </div>
                                 <div className="flex-1 min-w-[120px]">
                                   <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                   {errJust && <span className="text-[10px] text-red-600 text-right">{errJust}</span>}
@@ -2488,7 +2565,7 @@ const MeetingDetail: React.FC = () => {
                     <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد قائمة مدعوين</p>
                   )}
                   <div className="flex items-center justify-start mt-3 gap-4">
-                    <button type="button" disabled={!canEdit} onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
+                    <button type="button" disabled={!canEdit} onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
@@ -3005,8 +3082,8 @@ const MeetingDetail: React.FC = () => {
                       type="button"
                       onClick={() => hasChanges && setIsEditConfirmOpen(true)}
                       disabled={!hasChanges}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
+                      style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
                     >
                       <Pencil className="w-4 h-4" strokeWidth={1.26} />
                       تعديل
@@ -3077,6 +3154,7 @@ const MeetingDetail: React.FC = () => {
                 access_permission: 'FULL',
                 position: suggestion.position_name || suggestion.job_description || '',
                 phone: suggestion.phone || '',
+                is_consultant: false,
                 attendance_channel: 'PHYSICAL',
               }));
 
@@ -3983,7 +4061,7 @@ const MeetingDetail: React.FC = () => {
                         <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           مطلوب
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 justify-end">
                           <input
                             type="checkbox"
                             checked={attendee.is_required}
@@ -3992,6 +4070,22 @@ const MeetingDetail: React.FC = () => {
                           />
                           <span className="text-xs text-gray-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
                             {attendee.is_required ? 'نعم' : 'لا'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          مستشار
+                        </label>
+                        <div className="flex items-center gap-2 justify-end">
+                          <input
+                            type="checkbox"
+                            checked={!!attendee.is_consultant}
+                            onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300"
+                          />
+                          <span className="text-xs text-gray-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                            {attendee.is_consultant ? 'نعم' : 'لا'}
                           </span>
                         </div>
                       </div>
