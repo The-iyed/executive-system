@@ -579,33 +579,19 @@ export interface DirectivesListResponse {
 }
 
 // Previous directives API (matches /scheduling/directives/previous response)
-export interface ResponsiblePerson {
-  id: string | null;
-  name: string;
-  position: string | null;
-}
-
 export interface PreviousDirectiveItem {
   id: string;
-  directive_number: string;
-  directive_date: string;
-  directive_text: string;
-  related_meeting: string | null;
-  deadline: string | null;
-  responsible_persons: ResponsiblePerson[];
-  directive_status: string;
-  related_meeting_request_id: string | null;
-  meeting_nature: string | null;
-  meeting_subject: string | null;
-  description: string | null;
-  meeting_classification: string | null;
-  meeting_date: string | null;
-  status: string | null;
-  is_completed: boolean | null;
+  external_id: string;
+  action_number: string;
+  title: string;
+  due_date: string;
+  status: string;
+  is_completed: boolean;
   meeting_id: string | null;
-  created_date: string | null;
-  mod_date: string | null;
+  created_date: string;
+  mod_date: string;
   completed_at: string | null;
+  assignees: string[];
 }
 
 export interface PreviousDirectivesListResponse {
@@ -693,6 +679,23 @@ export const directiveToExternalDirectiveBody = (d: Directive): CreateDirectiveP
     mod_date: d.mod_date ?? undefined,
     completed_at: d.completed_at ?? undefined,
     assignees: assigneesArray,
+  };
+};
+
+/** Build external-directives body from a PreviousDirectiveItem (for close/cancel). */
+export const previousDirectiveToExternalDirectiveBody = (d: PreviousDirectiveItem): CreateDirectivePayload => {
+  const externalId = Number(d.external_id);
+  return {
+    external_id: Number.isFinite(externalId) ? externalId : 0,
+    action_number: d.action_number,
+    title: d.title,
+    due_date: d.due_date,
+    status: d.status,
+    is_completed: d.is_completed,
+    created_date: d.created_date,
+    mod_date: d.mod_date ?? undefined,
+    completed_at: d.completed_at ?? undefined,
+    assignees: Array.isArray(d.assignees) ? d.assignees.filter(Boolean) : [],
   };
 };
 
