@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap, Hash, User, MessageSquare } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Zap, Hash, User, MessageSquare, Mail, Phone } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -2274,217 +2274,121 @@ const MeetingDetail: React.FC = () => {
           {activeTab === 'attendees' && (
             <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
               <div className="flex flex-col gap-6 w-full">
-                <div className="flex flex-col gap-2 w-full min-w-0">
+                {/* قائمة المدعوين (مقدّم الطلب) */}
+                <div className="flex flex-col gap-4 w-full">
                   <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
-                  <div className="w-full overflow-x-auto table-scroll min-w-0">
-                    <div className="min-w-full">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
-                            width: 'w-[100px]',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <span className="text-sm text-[#475467]">{index + 1}</span>
-                            ),
-                          },
-                          {
-                            id: 'name',
-                            header: 'الإسم',
-                            width: 'w-[180px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                const err = inviteeValidationErrors[row.id]?.external_name;
-                                return (
-                                  <div className="flex flex-col gap-0.5 w-full">
-                                    <Input
-                                      type="text"
-                                      value={row.external_name || ''}
-                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      disabled={!canEdit}
-                                      placeholder="الإسم *"
-                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                                    />
-                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
+                  {allInvitees && allInvitees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {allInvitees.map((row: any, idx: number) => {
+                        const isLocal = row.isLocal;
+                        const isConsultant = row.is_consultant === true;
+                        const name = row.external_name || row.user_id || '-';
+                        const position = row.position || '-';
+                        const email = row.external_email || '-';
+                        const mobile = row.phone || '-';
+                        const attendVal = row.attendance_channel || 'PHYSICAL';
+                        const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
+                        const accessChecked = !!row.access_permission;
+                        const accessLabel = accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية';
+                        return (
+                          <div key={row.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                            <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              {/* Header: Avatar + Name/Position + Badges + Delete */}
+                              <div className="flex flex-row items-start justify-between gap-3">
+                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
                                   </div>
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.external_name || row.user_id || '—'}</span>;
-                            },
-                          },
-                          {
-                            id: 'position',
-                            header: 'المنصب',
-                            width: 'w-[160px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                const err = inviteeValidationErrors[row.id]?.position;
-                                return (
-                                  <div className="flex flex-col gap-0.5 w-full">
-                                    <Input
-                                      type="text"
-                                      value={row.position || ''}
-                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      disabled={!canEdit}
-                                      placeholder="المنصب *"
-                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                                    />
-                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
-                                  </div>
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.position || '—'}</span>;
-                            },
-                          },
-                          {
-                            id: 'phone',
-                            header: 'الجوال',
-                            width: 'w-[140px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                const err = inviteeValidationErrors[row.id]?.phone;
-                                return (
-                                  <div className="flex flex-col gap-0.5 w-full">
-                                    <Input
-                                      type="text"
-                                      value={row.phone || ''}
-                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'phone', e.target.value); }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      disabled={!canEdit}
-                                      placeholder="الجوال *"
-                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                                    />
-                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
-                                  </div>
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.phone || '—'}</span>;
-                            },
-                          },
-                          {
-                            id: 'email',
-                            header: 'البريد الإلكتروني',
-                            width: 'w-[200px]',
-                            align: 'end',
-                            render: (row: any) => {
-                              if (row.isLocal) {
-                                const err = inviteeValidationErrors[row.id]?.external_email;
-                                return (
-                                  <div className="flex flex-col gap-0.5 w-full">
-                                    <Input
-                                      type="email"
-                                      value={row.external_email || ''}
-                                      onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      disabled={!canEdit}
-                                      placeholder="البريد الإلكتروني *"
-                                      className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                                    />
-                                    {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
-                                  </div>
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{row.external_email || '—'}</span>;
-                            },
-                          },
-                          {
-                            id: 'attendance_channel',
-                            header: 'آلية الحضور',
-                            width: 'w-[140px]',
-                            align: 'center',
-                            render: (row: any) => {
-                              const val = row.attendance_channel || 'PHYSICAL';
-                              if (row.isLocal) {
-                                return (
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <Select value={val} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
-                                      <SelectTrigger className="h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent dir="rtl">
-                                        <SelectItem value="PHYSICAL">حضوري</SelectItem>
-                                        <SelectItem value="REMOTE">عن بعد</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                );
-                              }
-                              return <span className="text-sm text-[#475467]">{val === 'REMOTE' ? 'عن بعد' : 'حضوري'}</span>;
-                            },
-                          },
-                          {
-                            id: 'access_permission',
-                            header: 'صلاحية الاطلاع',
-                            width: 'w-[120px]',
-                            align: 'center',
-                            render: (row: any) => {
-                              const checked = !!row.access_permission;
-                              if (row.isLocal) {
-                                return (
-                                  <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                    <input
-                                      type="checkbox"
-                                      checked={checked}
-                                      disabled={!canEdit}
-                                      onChange={(e) => updateLocalInvitee(row.id, 'access_permission', e.target.checked)}
-                                      className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60"
-                                    />
-                                  </div>
-                                );
-                              }
-                              return (
-                                <span className="text-sm text-[#475467]">{checked ? 'نعم' : 'لا'}</span>
-                              );
-                            },
-                          },
-                          {
-                            id: 'action',
-                            header: 'إجراء',
-                            width: 'w-[100px]',
-                            align: 'center',
-                            render: (row: any) => (
-                              <div className="flex items-center justify-center w-full">
-                                <button
-                                  type="button"
-                                  disabled={!canEdit}
-                                  onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }}
-                                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                  <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                </button>
+                                  {isLocal ? (
+                                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                      <div className="flex flex-col gap-0.5">
+                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].external_name}</span>}
+                                      </div>
+                                      <div className="flex flex-col gap-0.5">
+                                        <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.position ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                        {inviteeValidationErrors[row.id]?.position && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].position}</span>}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                      <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                                  {isLocal ? (
+                                    <>
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <Select value={attendVal} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
+                                          <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue /></SelectTrigger>
+                                          <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="flex items-center gap-1 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
+                                        <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateLocalInvitee(row.id, 'access_permission', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                        <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية</span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
+                                      <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
+                                    </>
+                                  )}
+                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                    <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                  </button>
+                                </div>
                               </div>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
-                        data={allInvitees}
-                      />
+                              {/* Contact: Email + Phone */}
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  {isLocal ? (
+                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].external_email}</span>}
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  {isLocal ? (
+                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                      <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {inviteeValidationErrors[row.id]?.phone && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].phone}</span>}
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد قائمة مدعوين</p>
+                  )}
                   <div className="flex items-center justify-start mt-3">
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={addInvitee}
-                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        fontFamily: "'Almarai', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        lineHeight: '24px',
-                      }}
-                    >
+                    <button type="button" disabled={!canEdit} onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
@@ -2492,285 +2396,108 @@ const MeetingDetail: React.FC = () => {
                 </div>
 
                 {/* قائمة المدعوين (الوزير) */}
-                <div className="flex flex-col gap-2 w-full min-w-0">
+                <div className="flex flex-col gap-4 w-full">
                   <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
-                  <div className="w-full overflow-x-auto table-scroll min-w-0">
-                    <div className="min-w-[1400px]">
-                      <DataTable
-                        columns={[
-                          {
-                            id: 'index',
-                            header: 'رقم البند',
-                            width: 'w-[80px]',
-                            align: 'center',
-                            render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
-                          },
-                          {
-                            id: 'username',
-                            header: 'اسم المستخدم',
-                            width: 'w-[140px]',
-                            align: 'end',
-                            render: (row: any, index: number) => (
-                              <Input
-                                type="text"
-                                value={row.username || ''}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  updateMinisterAttendee(index, 'username', e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                disabled={!canEdit}
-                                placeholder="اسم المستخدم"
-                                className="h-9 text-right w-full"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              />
-                            ),
-                          },
-                          {
-                            id: 'name',
-                            header: 'الإسم (خارجي)',
-                            width: 'w-[160px]',
-                            align: 'end',
-                            render: (row: any, index: number) => {
-                              const err = ministerAttendeeValidationErrors[index]?.external_name;
-                              return (
-                                <div className="flex flex-col gap-0.5 w-full">
-                                  <Input
-                                    type="text"
-                                    value={row.external_name || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateMinisterAttendee(index, 'external_name', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    disabled={!canEdit}
-                                    placeholder="الإسم *"
-                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                                  />
-                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
+                  {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {scheduleForm.minister_attendees.map((row: any, index: number) => {
+                        const isConsultant = row.is_consultant === true;
+                        const errName = ministerAttendeeValidationErrors[index]?.external_name;
+                        const errPos = ministerAttendeeValidationErrors[index]?.position;
+                        const errPhone = ministerAttendeeValidationErrors[index]?.phone;
+                        const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
+                        const errJust = ministerAttendeeValidationErrors[index]?.justification;
+                        const attendVal = row.attendance_channel || 'PHYSICAL';
+                        const accessChecked = row.access_permission === 'FULL';
+                        return (
+                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                            <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              {/* Header: Avatar + Name/Position inputs + Delete */}
+                              <div className="flex flex-row items-start justify-between gap-3">
+                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                                  </div>
+                                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errName && <span className="text-xs text-red-600 text-right">{errName}</span>}
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errPos && <span className="text-xs text-red-600 text-right">{errPos}</span>}
+                                    </div>
+                                  </div>
                                 </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'position',
-                            header: 'المنصب',
-                            width: 'w-[160px]',
-                            align: 'end',
-                            render: (row: any, index: number) => {
-                              const err = ministerAttendeeValidationErrors[index]?.position;
-                              return (
-                                <div className="flex flex-col gap-0.5 w-full">
-                                  <Input
-                                    type="text"
-                                    value={row.position || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateMinisterAttendee(index, 'position', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    disabled={!canEdit}
-                                    placeholder="المنصب *"
-                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                                  />
-                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
+                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+                                  <div onClick={(e) => e.stopPropagation()}>
+                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v)} disabled={!canEdit}>
+                                      <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue /></SelectTrigger>
+                                      <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
+                                    </Select>
+                                  </div>
+                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                    <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                  </button>
                                 </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'phone',
-                            header: 'الجوال',
-                            width: 'w-[140px]',
-                            align: 'end',
-                            render: (row: any, index: number) => {
-                              const err = ministerAttendeeValidationErrors[index]?.phone;
-                              return (
-                                <div className="flex flex-col gap-0.5 w-full">
-                                  <Input
-                                    type="text"
-                                    value={row.phone || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateMinisterAttendee(index, 'phone', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    disabled={!canEdit}
-                                    placeholder="الجوال *"
-                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                                  />
-                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
-                                </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'email',
-                            header: 'البريد الإلكتروني',
-                            width: 'w-[200px]',
-                            align: 'end',
-                            render: (row: any, index: number) => {
-                              const err = ministerAttendeeValidationErrors[index]?.external_email;
-                              return (
-                                <div className="flex flex-col gap-0.5 w-full">
-                                  <Input
-                                    type="email"
-                                    value={row.external_email || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateMinisterAttendee(index, 'external_email', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    disabled={!canEdit}
-                                    placeholder="البريد الإلكتروني *"
-                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                                  />
-                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
-                                </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'attendance_channel',
-                            header: 'آلية الحضور',
-                            width: 'w-[140px]',
-                            align: 'center',
-                            render: (row: any, index: number) => {
-                              const val = row.attendance_channel || 'PHYSICAL';
-                              return (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <Select value={val} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v)} disabled={!canEdit}>
-                                    <SelectTrigger className="h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent dir="rtl">
-                                      <SelectItem value="PHYSICAL">حضوري</SelectItem>
-                                      <SelectItem value="REMOTE">عن بعد</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'access_permission',
-                            header: 'صلاحية الاطلاع',
-                            width: 'w-[120px]',
-                            align: 'center',
-                            render: (row: any, index: number) => {
-                              const checked = row.access_permission === 'FULL';
-                              return (
-                                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    disabled={!canEdit}
-                                    onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')}
-                                    className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60"
-                                  />
-                                </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'is_required',
-                            header: 'مطلوب',
-                            width: 'w-[90px]',
-                            align: 'center',
-                            render: (row: any, index: number) => (
-                              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={!!row.is_required}
-                                  disabled={!canEdit}
-                                  onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)}
-                                  className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60"
-                                />
                               </div>
-                            ),
-                          },
-                          {
-                            id: 'justification',
-                            header: 'المبرر',
-                            width: 'w-[160px]',
-                            align: 'end',
-                            render: (row: any, index: number) => {
-                              const err = ministerAttendeeValidationErrors[index]?.justification;
-                              return (
-                                <div className="flex flex-col gap-0.5 w-full">
-                                  <Input
-                                    type="text"
-                                    value={row.justification || ''}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateMinisterAttendee(index, 'justification', e.target.value);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    disabled={!canEdit}
-                                    placeholder="المبرر *"
-                                    className={`h-9 text-right w-full ${err ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                                  />
-                                  {err && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{err}</span>}
+                              {/* Contact: Email + Phone */}
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
+                                  </div>
                                 </div>
-                              );
-                            },
-                          },
-                          {
-                            id: 'action',
-                            header: 'إجراء',
-                            width: 'w-[100px]',
-                            align: 'center',
-                            render: (_row: any, index: number) => (
-                              <button
-                                type="button"
-                                disabled={!canEdit}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteAttendeeIndex(index);
-                                }}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                              >
-                                <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                              </button>
-                            ),
-                          },
-                        ] as TableColumn<any>[]}
-                        data={scheduleForm.minister_attendees}
-                      />
+                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Bottom row: Checkboxes + Justification */}
+                              <div className="flex flex-row items-center gap-3 flex-wrap">
+                                <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
+                                  <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية الاطلاع</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 rounded-full bg-[#F2F4F7] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
+                                  <input type="checkbox" checked={!!row.is_required} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <span className="text-[12px] text-[#475467] whitespace-nowrap">مطلوب</span>
+                                </div>
+                                <div className="flex-1 min-w-[120px]">
+                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                  {errJust && <span className="text-[10px] text-red-600 text-right">{errJust}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div className="flex items-center justify-start mt-3">
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={addMinisterAttendee}
-                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        lineHeight: '24px',
-                      }}
-                    >
+                  ) : (
+                    <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد قائمة مدعوين</p>
+                  )}
+                  <div className="flex items-center justify-start mt-3 gap-4">
+                    <button type="button" disabled={!canEdit} onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
-                    <AIGenerateButton 
-                    className='mr-4'
-                    label='	إضافة مدعوين آليًا'
-                    disabled={!canEdit}
-                    onClick={() => {
-                      setIsSuggestAttendeesModalOpen(true);
-                    }} 
+                    <AIGenerateButton
+                      label="إضافة مدعوين آليًا"
+                      disabled={!canEdit}
+                      onClick={() => { setIsSuggestAttendeesModalOpen(true); }}
                     />
                   </div>
-               
                 </div>
               </div>
             </div>
