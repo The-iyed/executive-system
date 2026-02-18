@@ -107,6 +107,23 @@ const fieldLabels: Record<string, string> = {
   general_notes: 'ملاحظات',
 };
 
+/** Map API attendance_mechanism (Arabic) to attendance_channel enum */
+function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
+  if (!v || typeof v !== 'string') return 'PHYSICAL';
+  const s = v.trim().toLowerCase();
+  if (s === 'عن بعد' || s === 'remote' || s === 'remot') return 'REMOTE';
+  return 'PHYSICAL'; // حضوري, physical, etc.
+}
+
+/** Map API minister_attendees (mobile, attendance_mechanism) to form format (phone, attendance_channel) */
+function mapApiMinisterAttendeesToForm(list: any[] | undefined): MinisterAttendee[] {
+  return (list || []).map((a) => ({
+    ...a,
+    phone: a.phone ?? a.mobile ?? '',
+    attendance_channel: (a.attendance_channel ?? mapAttendanceMechanismToChannel(a.attendance_mechanism)) as 'PHYSICAL' | 'REMOTE',
+  }));
+}
+
 /** Normalize minister attendees so all API-required fields are present (no undefined). */
 function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array<{
   username: string;
@@ -128,7 +145,7 @@ function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array
     justification: a.justification ?? '',
     access_permission: a.access_permission ?? 'FULL',
     position: a.position ?? '',
-    phone: a.phone ?? '',
+    phone: a.phone ?? (a as any).mobile ?? '',
     attendance_channel: (a.attendance_channel ?? 'PHYSICAL') as 'PHYSICAL' | 'REMOTE',
     is_consultant: a.is_consultant ?? false,
   }));
@@ -754,7 +771,7 @@ const MeetingDetail: React.FC = () => {
       const name = (att.external_name ?? '').trim();
       const email = (att.external_email ?? '').trim();
       const position = (att.position ?? '').trim();
-      const phone = (att.phone ?? '').trim();
+      const phone = (att.phone ?? (att as any).mobile ?? '').trim();
       const justification = (att.justification ?? '').trim();
       if (!name) row.external_name = 'مطلوب';
       if (!email) row.external_email = 'مطلوب';
@@ -1275,7 +1292,7 @@ const MeetingDetail: React.FC = () => {
         is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
         location: meeting.meeting_channel || prev.location,
         selected_time_slot_id: meeting.selected_time_slot_id || null,
-        minister_attendees: ((meeting as any).minister_attendees as any) || prev.minister_attendees,
+        minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
     });
 
@@ -1322,7 +1339,7 @@ const MeetingDetail: React.FC = () => {
         is_data_complete: meeting.is_data_complete ?? true,
         location: meeting.meeting_channel || '',
         meeting_channel: ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel) ? meeting.meeting_channel : 'PHYSICAL',
-        minister_attendees: ((meeting as any).minister_attendees as any) || [],
+        minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || [],
       },
       contentForm: {
         objectives: (meeting.objectives || []).map((obj) => ({
@@ -3004,21 +3021,12 @@ const MeetingDetail: React.FC = () => {
                           ),
                         },
                         {
-                          id: 'username',
-                          header: 'اسم المستخدم',
-                          width: 'w-32',
-                          align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.username || '-'}</span>
-                          ),
-                        },
-                        {
                           id: 'external_name',
-                          header: 'الإسم (خارجي)',
+                          header: 'الإسم',
                           width: 'w-36',
                           align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.external_name || '-'}</span>
+                          render: (row: MinisterAttendee & { mobile?: string; attendance_mechanism?: string; response_status?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.external_name || row.username || '-'}</span>
                           ),
                         },
                         {
@@ -3044,18 +3052,29 @@ const MeetingDetail: React.FC = () => {
                           header: 'الجوال',
                           width: 'w-28',
                           align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.phone || '-'}</span>
+                          render: (row: MinisterAttendee & { mobile?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.phone || row.mobile || '-'}</span>
                           ),
                         },
                         {
-                          id: 'attendance_channel',
+                          id: 'attendance_mechanism',
                           header: 'آلية الحضور',
                           width: 'w-24',
                           align: 'center',
-                          render: (row: MinisterAttendee) => (
+                          render: (row: MinisterAttendee & { attendance_mechanism?: string }) => (
                             <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                              {row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-'}
+                              {row.attendance_mechanism || (row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-')}
+                            </span>
+                          ),
+                        },
+                        {
+                          id: 'response_status',
+                          header: 'حالة الرد',
+                          width: 'w-24',
+                          align: 'center',
+                          render: (row: MinisterAttendee & { response_status?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              {row.response_status === 'PENDING' ? 'قيد الانتظار' : row.response_status === 'RESPONDED' ? 'تم الرد' : row.response_status || '-'}
                             </span>
                           ),
                         },
