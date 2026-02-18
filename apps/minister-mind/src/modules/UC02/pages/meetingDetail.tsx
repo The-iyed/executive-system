@@ -1445,6 +1445,7 @@ const MeetingDetail: React.FC = () => {
 
   // Tabs per Excel "الجدولة - مراجعة الطلب": التبويب (column التبويب)
   // When status is SCHEDULED (مجدول), hide 4 tabs and add "توثيق الاجتماع"
+  // When !hasContent (no objectives/agenda + presentation), hide "استشارة المحتوى" tab
   const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive', 'content-consultation'];
   const tabs = useMemo(() => {
     const all = [
@@ -1454,16 +1455,16 @@ const MeetingDetail: React.FC = () => {
       { id: 'attendees', label: 'قائمة المدعوين' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
       { id: 'directive', label: 'التوجيه' },
-      { id: 'content-consultation', label: 'استشارة المحتوى' },
+      ...(hasContent ? [{ id: 'content-consultation', label: 'استشارة المحتوى' }] : []),
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
       return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
     return all;
-  }, [meetingStatus]);
+  }, [meetingStatus, hasContent]);
 
-  // When status is SCHEDULED and current tab is hidden, switch to request-info; when not SCHEDULED and on meeting-documentation, switch away
+  // When status is SCHEDULED and current tab is hidden, switch to request-info; when not SCHEDULED and on meeting-documentation, switch away; when !hasContent and on content-consultation, switch away
   useEffect(() => {
     if (meetingStatus === MeetingStatus.SCHEDULED && TABS_HIDDEN_WHEN_SCHEDULED.includes(activeTab)) {
       setActiveTab('request-info');
@@ -1471,8 +1472,10 @@ const MeetingDetail: React.FC = () => {
       setActiveTab('request-info');
     } else if (activeTab === 'request-notes') {
       setActiveTab('request-info');
+    } else if (!hasContent && activeTab === 'content-consultation') {
+      setActiveTab('request-info');
     }
-  }, [meetingStatus, activeTab]);
+  }, [meetingStatus, activeTab, hasContent]);
 
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
   const renderFieldLabel = (fieldId: string, labelContent: React.ReactNode, labelClassName?: string) => {
@@ -2592,8 +2595,7 @@ const MeetingDetail: React.FC = () => {
                         <span className="inline-flex">
                           <button
                             type="button"
-                            onClick={() => hasContent && setIsConsultationModalOpen(true)}
-                            disabled={!hasContent}
+                            onClick={() => setIsConsultationModalOpen(true)}
                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
                           >
@@ -2603,7 +2605,7 @@ const MeetingDetail: React.FC = () => {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {!hasContent ? 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' : 'طلب استشارة'}
+                        طلب استشارة
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -3461,11 +3463,11 @@ const MeetingDetail: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={!hasContent || !consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+                    <button type="submit" form="consultation-form" disabled={!consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  {!hasContent ? 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' : !consultationForm.consultant_user_id ? 'اختر المستشار' : 'طلب استشارة'}
+                  {!consultationForm.consultant_user_id ? 'اختر المستشار' : 'طلب استشارة'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
