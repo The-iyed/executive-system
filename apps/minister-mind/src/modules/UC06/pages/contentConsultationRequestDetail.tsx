@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge } from '@shared/components';
 import {
   MeetingStatus,
@@ -1264,10 +1264,11 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   قائمة المدعوين (مقدّم الطلب)
                 </h2>
                 {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {meetingRequest.invitees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
+                      const sector = invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
@@ -1317,6 +1318,19 @@ const ContentConsultationRequestDetail: React.FC = () => {
                                 </div>
                               </div>
                             </div>
+                            {sector !== '-' && (
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -1345,10 +1359,11 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       </h2>
                 {(meetingRequest as { minister_attendees?: any[] }).minister_attendees &&
                 (meetingRequest as { minister_attendees?: any[] }).minister_attendees!.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {(meetingRequest as { minister_attendees?: any[] }).minister_attendees!.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
+                      const sector = invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
@@ -1398,6 +1413,19 @@ const ContentConsultationRequestDetail: React.FC = () => {
                                 </div>
                               </div>
                             </div>
+                            {sector !== '-' && (
+                              <div className="flex flex-row items-center gap-2.5 w-full">
+                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -1428,7 +1456,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                   const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                   const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
                   if (row.assignees?.length) {
