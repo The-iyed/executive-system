@@ -66,7 +66,7 @@ const prepareContentFormData = (
     formDataToSend.append('presentation_files', file);
   });
   if (presentationReplacesIds.length > 0) {
-    formDataToSend.append('replaces_attachment_id', JSON.stringify(presentationReplacesIds));
+    formDataToSend.append('replaces_attachment_ids', JSON.stringify(presentationReplacesIds));
   }
 
   const existingAdditional = formData.existingAdditionalFiles ?? [];

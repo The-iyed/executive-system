@@ -5,27 +5,28 @@ const attendanceMechanismSchema = z.nativeEnum(AttendanceMechanism);
 
 const inviteeSchema = z
   .object({
-    // UI row id (not part of API payload)
     id: z.string(),
-
-    // API fields
-    user_id: z.string().optional().or(z.literal('')), // internal invitee
-    email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')), // external invitee
-    name: z.string().optional().or(z.literal('')), // external invitee
-    position: z.string().optional().or(z.literal('')), // optional
-    mobile: z.string().optional().or(z.literal('')), // optional
+    user_id: z.string().optional().or(z.literal('')), 
+    email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')), 
+    name: z.string().optional().or(z.literal('')), 
+    position: z.string().optional().or(z.literal('')), 
+    mobile: z.string().optional().or(z.literal('')), 
+    sector: z.string().optional().or(z.literal('')),
     attendance_mechanism: attendanceMechanismSchema.optional().default(AttendanceMechanism.PHYSICAL),
-
-    // UI-only fields
     is_required: z.boolean().optional().default(false),
     username: z.string().optional(),
     disabled: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
+    if (!data.sector || String(data.sector).trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'الموقع مطلوب',
+        path: ['sector'],
+      });
+    }
     const hasUserId = !!data.user_id && data.user_id.trim().length > 0;
     if (hasUserId) return;
-
-    // External invitee: name + email required (position/mobile optional per doc)
     if (!data.name || data.name.trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

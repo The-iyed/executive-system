@@ -2,11 +2,13 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import axiosInstance from '@auth/utils/axios';
+import { useToast } from '@sanad-ai/ui';
 import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { AttendanceMechanism } from '@shared/types';
 import { mapUserToFormData } from '../utils/inviteeMappers';
 import type { UserApiResponse } from '../../../data/usersApi';
 import { getStep3EditableMap } from '../utils/editableFields';
+import { executeStep3SubmitFlow } from '../utils/step3SubmitFlow';
 
 interface UseStep3InviteesProps {
   draftId: string;
@@ -16,7 +18,6 @@ interface UseStep3InviteesProps {
   onSuccess?: (isDraft: boolean) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
-  /** From get meeting details: API editable_fields. Used to disable non-editable fields in edit. */
   editableFields?: string[] | null;
 }
 
@@ -48,6 +49,7 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
       if (invitee.user_id) {
         return {
           user_id: invitee.user_id,
+          sector: invitee.sector?.trim() || '',
           attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
           is_required: invitee.is_required || false,
         };
@@ -58,6 +60,7 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
         position: invitee.position || '',
         mobile: invitee.mobile || '',
         email: invitee.email || '',
+        sector: invitee.sector?.trim() || '',
         attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
         item_number: index + 1,
         is_required: invitee.is_required || false,
@@ -83,6 +86,7 @@ export const useStep3Invitees = ({
   isEditMode = false,
   editableFields,
 }: UseStep3InviteesProps) => {
+  const { toast } = useToast();
   const step3EditableMap = useMemo(
     () => getStep3EditableMap(editableFields ?? undefined),
     [editableFields]
@@ -96,7 +100,6 @@ export const useStep3Invitees = ({
   const [tableErrorMessage, setTableErrorMessage] = useState<string>('');
 
   const inviteesRequired = useMemo(() => {
-    // Invitees are required unless the meeting is a bilateral meeting or confidential
     const isBilateral = meetingCategory === 'BILATERAL_MEETING';
     const isConfidential = meetingConfidentiality === 'CONFIDENTIAL';
     return !(isBilateral || isConfidential);
@@ -111,11 +114,41 @@ export const useStep3Invitees = ({
     }
   }, [initialData, isEditMode]);
 
+  const showSuccessToast = useCallback(
+    (message: string) => {
+      toast({ title: 'تم', description: message });
+    },
+    [toast]
+  );
+
+  const showErrorToast = useCallback(
+    (message: string) => {
+      toast({ title: 'حدث خطأ', description: message, variant: 'destructive' });
+    },
+    [toast]
+  );
+
   const submitMutation = useMutation({
-    mutationFn: (payload: { formData: Partial<Step3InviteesFormData>; isDraft: boolean }) =>
-      submitStep3InviteesData({ ...payload, draftId, inviteesRequired }),
+    mutationFn: async (payload: { formData: Partial<Step3InviteesFormData>; isDraft: boolean }) => {
+      if (payload.isDraft) {
+        return submitStep3InviteesData({ ...payload, draftId, inviteesRequired });
+      }
+      await executeStep3SubmitFlow({
+        draftId,
+        formData: payload.formData,
+        inviteesRequired,
+        isDraft: false,
+        onSuccess: () => onSuccess?.(false),
+        onError: (err) => onError?.(err),
+        showSuccessToast,
+        showErrorToast,
+      });
+      return { success: true };
+    },
     onSuccess: (_, variables) => {
-      onSuccess?.(variables.isDraft);
+      if (variables.isDraft) {
+        onSuccess?.(true);
+      }
     },
     onError: (error: unknown) => {
       const editStateMessage = 'لا يمكنك التعديل على هذا الاجتماع في حالته الحالية';
@@ -180,6 +213,7 @@ export const useStep3Invitees = ({
       position: '',
       mobile: '',
       email: '',
+      sector: '',
       attendance_mechanism: AttendanceMechanism.PHYSICAL,
       is_required: false,
     };
@@ -222,7 +256,7 @@ export const useStep3Invitees = ({
       },
     }));
     
-    if (field === 'name' && value) {
+    if ((field === 'name' || field === 'sector') && value) {
       setErrors((prev) => {
         const newErrors = { ...prev };
         if (newErrors[id]) {
