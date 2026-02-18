@@ -200,7 +200,7 @@ const MeetingDetail: React.FC = () => {
     enabled: !!id && activeTab === 'scheduling-consultation',
   });
 
-  // Fetch guidance records (التوجيه tab)
+  // Fetch guidance records (سؤال tab)
   const { data: guidanceRecords, isLoading: isLoadingGuidanceRecords } = useQuery({
     queryKey: ['guidance-records', id],
     queryFn: () => getGuidanceRecords(id!),
@@ -902,6 +902,7 @@ const MeetingDetail: React.FC = () => {
     mutationFn: (payload: { notes: string; is_draft?: boolean }) => requestGuidance(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['guidance-records', id] });
       setIsRequestGuidanceModalOpen(false);
       setRequestGuidanceForm({ notes: '' });
     },
@@ -1348,6 +1349,70 @@ const MeetingDetail: React.FC = () => {
   /** When true, form is editable and all actions (FAB) are enabled (قيد المراجعة or قيد المراجعة - المكتب التنفيذي). */
   const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW || meeting?.status === MeetingStatus.UNDER_GUIDANCE;
 
+  /** Tooltip content for help icon - shows permissions based on current status */
+  const permissionTooltip = useMemo(() => {
+    const status = meetingStatus;
+    if (status === MeetingStatus.UNDER_REVIEW || status === MeetingStatus.UNDER_GUIDANCE) {
+      return {
+        title: 'تعديل كامل',
+        description: 'يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب، بالإضافة إلى الجدولة والرفض وإرجاع الطلب للمعلومات.',
+      };
+    }
+    const scheduledStatuses = [
+      MeetingStatus.SCHEDULED,
+      MeetingStatus.SCHEDULED_SCHEDULING,
+      MeetingStatus.SCHEDULED_CONTENT,
+      MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
+      MeetingStatus.SCHEDULED_UPDATE_CONTENT,
+      MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
+      MeetingStatus.SCHEDULED_DELAYED,
+    ];
+    if (scheduledStatuses.includes(status)) {
+      return {
+        title: 'عرض وتوثيق',
+        description: 'تم جدولة الاجتماع. يمكنك إضافة توثيق الاجتماع (المحضر، الحضور الفعلي، التوجيهات) وإعادة الجدولة وإضافته لقائمة الانتظار.',
+      };
+    }
+    if (status === MeetingStatus.WAITING) {
+      return {
+        title: 'عرض وتوثيق',
+        description: 'الطلب في قائمة الانتظار. يمكنك إضافة توثيق الاجتماع وإعادة الجدولة.',
+      };
+    }
+    if (status === MeetingStatus.CLOSED || status === MeetingStatus.REJECTED || status === MeetingStatus.CANCELLED) {
+      return {
+        title: 'عرض فقط',
+        description: 'الطلب مغلق. العرض للقراءة فقط ولا يمكن إجراء أي تعديلات.',
+      };
+    }
+    if (
+      status === MeetingStatus.UNDER_CONSULTATION_SCHEDULING ||
+      status === MeetingStatus.UNDER_CONTENT_REVIEW ||
+      status === MeetingStatus.UNDER_CONTENT_CONSULTATION
+    ) {
+      return {
+        title: 'قيد المراجعة',
+        description: 'الطلب قيد المراجعة من قبل مسؤول آخر (الجدولة أو المحتوى). يمكنك عرض التفاصيل فقط.',
+      };
+    }
+    if (status === MeetingStatus.DRAFT || status === MeetingStatus.RETURNED_FROM_SCHEDULING || status === MeetingStatus.RETURNED_FROM_CONTENT) {
+      return {
+        title: 'مرحلة مقدم الطلب',
+        description: 'الطلب في مرحلة مقدم الطلب. يمكنك عرض التفاصيل فقط.',
+      };
+    }
+    if (status === MeetingStatus.READY) {
+      return {
+        title: 'جاهز للجدولة',
+        description: 'الطلب جاهز. يمكنك عرض التفاصيل والجدولة.',
+      };
+    }
+    return {
+      title: 'الصلاحيات',
+      description: 'يمكنك عرض تفاصيل طلب الاجتماع.',
+    };
+  }, [meetingStatus]);
+
   // المحتوى: objectives/agenda and at least one presentation file (العرض التقديمي)
   const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
   const hasPresentation = presentationAttachments.length > 0 || newPresentationAttachments.length > 0;
@@ -1630,8 +1695,8 @@ const MeetingDetail: React.FC = () => {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                      <p className="font-semibold text-gray-900 mb-1">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
-                      <p className="text-sm text-gray-600">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
+                      <p className="font-semibold text-gray-900 mb-1">{permissionTooltip.title}</p>
+                      <p className="text-sm text-gray-600">{permissionTooltip.description}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -2606,7 +2671,7 @@ const MeetingDetail: React.FC = () => {
                   const typeLabel = recordType === 'SCHEDULING' ? 'جدولة' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                   const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'مستبدل' };
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                   const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
                   if (row.assignees?.length) {
@@ -2719,7 +2784,7 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* التوجيه tab */}
+          {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
               {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
@@ -2744,7 +2809,7 @@ const MeetingDetail: React.FC = () => {
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                     const isExpanded = expandedGuidanceId === row.guidance_id;
                     const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'مستبدل' };
+                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                     return (
                       <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
