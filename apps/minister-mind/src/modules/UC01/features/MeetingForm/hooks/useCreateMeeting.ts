@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PATH } from '../../../routes/paths';
 import { getDraftById } from '../../../data';
 import {
@@ -21,6 +21,7 @@ import { useScrollToTop } from './useScrollToTop';
 export const useCreateMeeting = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const isNewMeeting = new URLSearchParams(location.search).get('new') === 'true' || 
                        location.state?.isNewMeeting === true;
@@ -83,6 +84,7 @@ export const useCreateMeeting = () => {
       else handleNext();
     },
     onStep3InviteesSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       clearDraftData();
       navigate(PATH.MEETINGS);
     },
