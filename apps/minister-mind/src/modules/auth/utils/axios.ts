@@ -71,7 +71,7 @@ axiosInstance.interceptors.response.use(
     //   window.location.href = '/network-error'
     // }
 
-    return Promise.reject((error.response && error.response.data) || 'Something went wrong!')
+    return Promise.reject((error.response && error.response.data) || 'حدث خطأ غير متوقع!')
   }
 )
 
