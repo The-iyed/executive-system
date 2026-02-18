@@ -154,7 +154,7 @@ export const getContentConsultationRequestById = async (
 
 export interface SubmitConsultationRequest {
   feasibility_answer: boolean;
-  consultation_notes: string;
+  consultation_answers: string;
 }
 
 export const submitConsultation = async (
