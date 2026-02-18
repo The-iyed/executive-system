@@ -68,6 +68,7 @@ export interface DraftApiResponse {
     external_name?: string | null;
     position?: string | null;
     mobile?: string | null;
+    sector?: string | null;
     attendance_mechanism?: string | null;
     item_number?: number | null;
     is_required: boolean;
@@ -88,7 +89,6 @@ export interface DraftApiResponse {
   alternative_1_end_date?: string | null;
   alternative_2_start_date?: string | null;
   alternative_2_end_date?: string | null;
-  /** API-defined list of field names that the user is allowed to edit (snake_case). Omitted or empty = all editable. */
   editable_fields?: string[];
 }
 
@@ -116,7 +116,6 @@ export const patchDraftScheduling = async (
   return response.data;
 };
 
-/** Submit draft – moves it to UNDER_REVIEW */
 export const submitDraft = async (draftId: string): Promise<unknown> => {
   const response = await axiosInstance.post(
     `/api/meeting-requests/drafts/${draftId}/submit`
@@ -124,7 +123,6 @@ export const submitDraft = async (draftId: string): Promise<unknown> => {
   return response.data;
 };
 
-/** Resubmit to scheduling (from "معاد من مسؤول الجدولة" tab) */
 export const resubmitToScheduling = async (draftId: string): Promise<unknown> => {
   const response = await axiosInstance.post(
     `/api/meeting-requests/drafts/${draftId}/resubmit-to-scheduling`
@@ -132,7 +130,6 @@ export const resubmitToScheduling = async (draftId: string): Promise<unknown> =>
   return response.data;
 };
 
-/** Resubmit to content (from "معاد من مسؤول المحتوى" tab) */
 export const resubmitToContent = async (draftId: string): Promise<unknown> => {
   const response = await axiosInstance.post(
     `/api/meeting-requests/drafts/${draftId}/resubmit-to-content`
