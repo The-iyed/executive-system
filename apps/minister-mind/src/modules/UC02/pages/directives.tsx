@@ -7,7 +7,7 @@ import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels }
 import { cn } from '@sanad-ai/ui';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
-import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
@@ -27,8 +27,8 @@ const Directives: React.FC = () => {
   const [expandedDirectiveId, setExpandedDirectiveId] = useState<string | null>(null);
 
   /** Close directive via API only; no navigation. */
-  const handleCloseDirective = async (directiveId: string) => {
-    await closeDirective(directiveId);
+  const handleCloseDirective = async (directive: Directive) => {
+    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
     await refetch();
   };
 
@@ -89,21 +89,31 @@ const Directives: React.FC = () => {
     };
   }, [openDropdownId]);
 
-  // Fetch current directives (التوجيهات الحالية) from /scheduling/directives/current?skip=0&limit=100
+  // Fetch current directives (التوجيهات الحالية); search is sent to API, not done on frontend
   const { data: directivesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['directives', 'current'],
-    queryFn: () => getDirectives({ skip: 0, limit: 100 }),
+    queryKey: ['directives', 'current', debouncedSearch],
+    queryFn: () =>
+      getDirectives({
+        skip: 0,
+        limit: 100,
+        search: debouncedSearch.trim() || undefined,
+      }),
     enabled: directivesSubTab === 'current',
   });
 
-  // Full list from API; pagination is client-side
+  // Full list from API (already filtered by API when search is used); pagination is client-side
   const allOriginalDirectives: Directive[] = directivesResponse?.items || [];
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch previous directives (التوجيهات السابقة)
-  const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious } = useQuery({
-    queryKey: ['directives-previous', 0, 100],
-    queryFn: () => getPreviousDirectives({ skip: 0, limit: 100 }),
+  // Fetch previous directives (التوجيهات السابقة); search is sent to API, not done on frontend
+  const { data: previousDirectivesResponse, isLoading: isLoadingPrevious, error: errorPrevious, refetch: refetchPrevious } = useQuery({
+    queryKey: ['directives-previous', 0, 100, debouncedSearch],
+    queryFn: () =>
+      getPreviousDirectives({
+        skip: 0,
+        limit: 100,
+        search: debouncedSearch.trim() || undefined,
+      }),
     enabled: directivesSubTab === 'previous',
   });
   const originalPreviousDirectives: PreviousDirectiveItem[] = previousDirectivesResponse?.items || [];
@@ -112,21 +122,11 @@ const Directives: React.FC = () => {
     return previousDirectivesResponse.items.map(mapPreviousDirectiveToCardData);
   }, [previousDirectivesResponse]);
 
-  // Map API response to MeetingCardData
-  // Full list mapped and filtered by search; then paginate for display
+  // Map API response to MeetingCardData (no frontend search – API handles search)
   const allDirectivesFiltered: MeetingCardData[] = useMemo(() => {
     if (!directivesResponse?.items) return [];
-    let mapped = directivesResponse.items.map(mapDirectiveToCardData);
-    if (debouncedSearch.trim()) {
-      const searchLower = debouncedSearch.trim().toLowerCase();
-      mapped = mapped.filter((d) => {
-        const titleStr = typeof d.title === 'string' ? d.title : String(d.title ?? '');
-        const coordinatorStr = typeof d.coordinator === 'string' ? d.coordinator : String(d.coordinator ?? '');
-        return titleStr.toLowerCase().includes(searchLower) || coordinatorStr.toLowerCase().includes(searchLower);
-      });
-    }
-    return mapped;
-  }, [directivesResponse, debouncedSearch]);
+    return directivesResponse.items.map(mapDirectiveToCardData);
+  }, [directivesResponse]);
 
   const totalItems = allDirectivesFiltered.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -333,7 +333,7 @@ const Directives: React.FC = () => {
     },
   ];
 
-  // Previous directives table columns (agenda-like, from /directives/previous API shape)
+  // Previous directives table columns (matches /directives/previous API: id, external_id, action_number, title, due_date, status, assignees, etc.)
   const buildPreviousTableColumns = (
     previousList: PreviousDirectiveItem[],
     pageOffset: number
@@ -352,7 +352,7 @@ const Directives: React.FC = () => {
       ),
     },
     {
-      id: 'directive_number',
+      id: 'action_number',
       header: 'رقم التوجيه',
       width: 'flex-none min-w-20 w-20',
       align: 'end',
@@ -361,14 +361,14 @@ const Directives: React.FC = () => {
         return (
           <div className="w-full flex justify-end min-w-0">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {item?.directive_number ?? '-'}
+              {item?.action_number ?? '-'}
             </span>
           </div>
         );
       },
     },
     {
-      id: 'directive_date',
+      id: 'created_date',
       header: 'تاريخ التوجيه',
       width: 'flex-none min-w-24 w-24',
       align: 'end',
@@ -377,14 +377,14 @@ const Directives: React.FC = () => {
         return (
           <div className="w-full flex justify-end min-w-0">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {formatDate(item?.directive_date ?? null)}
+              {formatDate(item?.created_date ?? null)}
             </span>
           </div>
         );
       },
     },
     {
-      id: 'directive_text',
+      id: 'title',
       header: 'التوجيه',
       width: 'min-w-0 flex-1',
       align: 'end',
@@ -397,35 +397,17 @@ const Directives: React.FC = () => {
       ),
     },
     {
-      id: 'related_meeting',
-      header: 'الاجتماع المرتبط',
-      width: 'min-w-0 flex-1',
+      id: 'due_date',
+      header: 'تاريخ الاستحقاق',
+      width: 'flex-none min-w-24 w-24',
       align: 'end',
       render: (row) => {
         const item = previousList.find((d) => d.id === row.id);
-        const text = item?.related_meeting ?? '-';
         return (
           <div className="w-full flex justify-end min-w-0">
-            <TruncatedWithTooltip title={text}>
-              {text}
-            </TruncatedWithTooltip>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'meeting_nature',
-      header: 'طبيعة الاجتماع',
-      width: 'min-w-0 flex-1',
-      align: 'end',
-      render: (row) => {
-        const item = previousList.find((d) => d.id === row.id);
-        const text = item?.meeting_nature ?? '-';
-        return (
-          <div className="w-full flex justify-end min-w-0">
-            <TruncatedWithTooltip title={text}>
-              {text}
-            </TruncatedWithTooltip>
+            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
+              {formatDate(item?.due_date ?? null)}
+            </span>
           </div>
         );
       },
@@ -444,68 +426,19 @@ const Directives: React.FC = () => {
       ),
     },
     {
-      id: 'meeting_subject',
-      header: 'موضوع الاجتماع',
-      width: 'min-w-0 flex-1',
-      align: 'end',
-      render: (row) => {
-        const item = previousList.find((d) => d.id === row.id);
-        const text = item?.meeting_subject ?? '-';
-        return (
-          <div className="w-full flex justify-end min-w-0">
-            <TruncatedWithTooltip title={text}>
-              {text}
-            </TruncatedWithTooltip>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'meeting_classification',
-      header: 'فئة الاجتماع',
-      width: 'min-w-0 flex-1',
-      align: 'end',
-      render: (row) => {
-        const item = previousList.find((d) => d.id === row.id);
-        return (
-          <div className="w-full flex justify-end min-w-0">
-            <TruncatedWithTooltip title={getClassificationLabel(item?.meeting_classification ?? null)}>
-              {getClassificationLabel(item?.meeting_classification ?? null)}
-            </TruncatedWithTooltip>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'meeting_date',
-      header: 'تاريخ الاجتماع',
-      width: 'flex-none min-w-24 w-24',
-      align: 'end',
-      render: (row) => {
-        const item = previousList.find((d) => d.id === row.id);
-        return (
-          <div className="w-full flex justify-end min-w-0">
-            <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-              {formatDate(item?.meeting_date ?? null)}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'responsible_person',
+      id: 'assignees',
       header: 'الشخص المسؤول',
       width: 'min-w-0 flex-1',
       align: 'end',
       render: (row) => {
         const item = previousList.find((d) => d.id === row.id);
-        const names = item?.responsible_persons?.length
-          ? item.responsible_persons.map((p) => p.name).filter(Boolean).join('، ')
+        const text = Array.isArray(item?.assignees) && item.assignees.length
+          ? item.assignees.filter(Boolean).join('، ')
           : '-';
         return (
           <div className="w-full flex justify-end min-w-0">
-            <TruncatedWithTooltip title={names}>
-              {names}
+            <TruncatedWithTooltip title={text}>
+              {text}
             </TruncatedWithTooltip>
           </div>
         );
@@ -616,15 +549,18 @@ const Directives: React.FC = () => {
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (openDropdownId) {
-                    try {
-                      await cancelDirective(openDropdownId);
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
-                      await refetch();
-                    } catch (error) {
-                      console.error('Error cancelling directive:', error);
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
+                    const d = originalDirectives.find((x) => x.id === openDropdownId);
+                    if (d) {
+                      try {
+                        await cancelDirective(d.id, directiveToExternalDirectiveBody(d));
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
+                        await refetch();
+                      } catch (error) {
+                        console.error('Error cancelling directive:', error);
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
+                      }
                     }
                   }
                 }}
@@ -644,7 +580,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       try {
-                        await closeDirective(d.id);
+                        await closeDirective(d.id, directiveToExternalDirectiveBody(d));
                         navigate(
                           `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(d.id)}&directive_text=${encodeURIComponent(d.title)}&related_meeting=${encodeURIComponent(d.assignees || '')}`
                         );
@@ -672,7 +608,7 @@ const Directives: React.FC = () => {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
                       try {
-                        await handleCloseDirective(d.id);
+                        await handleCloseDirective(d);
                       } catch (err) {
                         console.error('Error closing directive:', err);
                       }
@@ -736,8 +672,8 @@ const Directives: React.FC = () => {
                 {previousDirectives.map((directive) => {
                   const isExpanded = expandedDirectiveId === directive.id;
                   const original = originalPreviousDirectives.find((d) => d.id === directive.id);
-                  const directiveDate = original?.directive_date
-                    ? formatDate(original.directive_date)
+                  const directiveDate = original?.created_date
+                    ? formatDate(original.created_date)
                     : directive.date;
                   return (
                     <div key={directive.id} className="flex flex-col gap-0">
@@ -764,7 +700,7 @@ const Directives: React.FC = () => {
                             </span>
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Hash className="w-4 h-4 flex-shrink-0" />
-                              <span>رقم التوجيه : {original?.directive_number ?? '-'}</span>
+                              <span>رقم التوجيه : {original?.action_number ?? '-'}</span>
                             </span>
                             <span className="flex-shrink-0 text-gray-500" aria-hidden>
                               {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -775,21 +711,70 @@ const Directives: React.FC = () => {
                       {isExpanded && original && (
                         <div className="mt-0 rounded-b-xl border-2 border-t-0 border-[#048F86] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]" style={{ fontFamily: "'Almarai', sans-serif" }}>
                           <div className="flex flex-col gap-3 text-right">
-                            {original.related_meeting && (
-                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">الاجتماع المرتبط :</span> {original.related_meeting}</p>
-                            )}
                             {directive.coordinator && (
                               <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">المسؤولون :</span> {directive.coordinator}</p>
                             )}
-                            {original.meeting_subject && (
-                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">موضوع الاجتماع :</span> {original.meeting_subject}</p>
+                            {original.due_date && (
+                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">الموعد النهائي :</span> {formatDate(original.due_date)}</p>
                             )}
-                            {original.meeting_date && (
-                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">تاريخ الاجتماع :</span> {formatDate(original.meeting_date)}</p>
-                            )}
-                            {original.deadline && (
-                              <p className="text-sm text-gray-700"><span className="font-medium text-gray-800">الموعد النهائي :</span> {formatDate(original.deadline)}</p>
-                            )}
+                            <div className="flex flex-wrap gap-2 justify-end mt-2">
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await cancelDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
+                                    setExpandedDirectiveId(null);
+                                    await refetchPrevious();
+                                  } catch (err) {
+                                    console.error('Error cancelling directive:', err);
+                                  }
+                                }}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <span>إلغاء التوجيه</span>
+                                <X className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
+                                    navigate(
+                                      `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(Array.isArray(original.assignees) ? original.assignees.join(', ') : '')}`
+                                    );
+                                  } catch (err) {
+                                    console.error('Error closing directive:', err);
+                                  }
+                                  setExpandedDirectiveId(null);
+                                }}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                style={{ background: '#048F86', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <span>طلب إجتماع</span>
+                                <CalendarDays className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
+                                    await refetchPrevious();
+                                  } catch (err) {
+                                    console.error('Error closing directive:', err);
+                                  }
+                                  setExpandedDirectiveId(null);
+                                }}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
+                                style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
+                              >
+                                <span>إغلاق التوجيه</span>
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -872,7 +857,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await cancelDirective(original.id);
+                                      await cancelDirective(original.id, directiveToExternalDirectiveBody(original));
                                       setExpandedDirectiveId(null);
                                       await refetch();
                                     } catch (err) {
@@ -890,7 +875,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await closeDirective(original.id);
+                                      await closeDirective(original.id, directiveToExternalDirectiveBody(original));
                                       navigate(
                                         `${PATH.DIRECTIVES}?form=create&directive_id=${encodeURIComponent(original.id)}&directive_text=${encodeURIComponent(original.title)}&related_meeting=${encodeURIComponent(original.assignees || '')}`
                                       );
@@ -910,7 +895,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await handleCloseDirective(original.id);
+                                      await handleCloseDirective(original);
                                     } catch (err) {
                                       console.error('Error closing directive:', err);
                                     }

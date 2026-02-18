@@ -59,18 +59,18 @@ const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
  * Map previous directive API item to MeetingCardData for table/card display
  */
 export const mapPreviousDirectiveToCardData = (item: PreviousDirectiveItem): MeetingCardData => {
-  const coordinator = item.responsible_persons?.length
-    ? item.responsible_persons.map((p) => p.name).filter(Boolean).join('، ')
-    : item.related_meeting ?? undefined;
+  const coordinator = Array.isArray(item.assignees) && item.assignees.length
+    ? item.assignees.filter(Boolean).join('، ')
+    : undefined;
   return {
     id: item.id,
-    title: item.directive_text,
-    date: formatDate(item.deadline ?? item.directive_date),
-    coordinator: coordinator || undefined,
+    title: item.title,
+    date: formatDate(item.due_date),
+    coordinator: coordinator ?? undefined,
     coordinatorAvatar: undefined,
-    status: (item.directive_status as MeetingStatus) ?? undefined,
-    statusLabel: DIRECTIVE_STATUS_LABELS[item.directive_status] ?? item.directive_status ?? '—',
-    location: item.deadline ? formatDate(item.deadline) : undefined,
+    status: (item.status as MeetingStatus) ?? undefined,
+    statusLabel: DIRECTIVE_STATUS_LABELS[item.status] ?? item.status ?? '—',
+    location: item.due_date ? formatDate(item.due_date) : undefined,
   };
 };
 

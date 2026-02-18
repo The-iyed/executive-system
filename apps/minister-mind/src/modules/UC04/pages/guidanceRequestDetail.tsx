@@ -14,6 +14,7 @@ import {
   getMeetingChannelLabel,
 } from '@shared/types';
 import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
+import { useAuth } from '../../auth/context';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
@@ -41,6 +42,8 @@ const GuidanceRequestDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isExceptionMode = location.pathname.startsWith('/exception-request/');
+  const { user } = useAuth();
+  const isExecutiveManager = user?.roles?.some((r) => r.code === 'EXECUTIVE_OFFICE_MANAGER') ?? false;
   const [activeTab, setActiveTab] = useState<string>('guidance-request');
   const [guidanceResponse, setGuidanceResponse] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
@@ -121,16 +124,20 @@ const GuidanceRequestDetail: React.FC = () => {
     },
     {
       id: 'directives-log',
-      label:  'سجلات التوجيهات',
+      label: 'التوجيهات',
     },
-    {
-      id: 'consultations-log',
-      label: 'سجلات الاستشارات',
-    },
-    {
-      id: 'consultations-log-content',
-      label: 'سجلات الاستشارات المحتوى',
-    },
+    ...(!isExecutiveManager ? [
+      {
+        id: 'consultations-log',
+        label: 'سجلات الاستشارات',
+      },
+    ] : []),
+    ...(!isExecutiveManager ? [
+      {
+        id: 'consultations-log-content',
+        label: 'سجلات الاستشارات المحتوى',
+      },
+    ] : []),
   ];
 
   const queryClient = useQueryClient();
@@ -208,6 +215,7 @@ const GuidanceRequestDetail: React.FC = () => {
       feasibility_answer: isSuitableForScheduling,
       is_draft: false,
     });
+    navigate(PATH.GUIDANCE_REQUESTS);
   };
 
   // Publish draft mutation
@@ -335,8 +343,8 @@ const GuidanceRequestDetail: React.FC = () => {
           {/* Guidance Request Tab */}
           {activeTab === 'guidance-request' && (
             <div className="flex flex-col gap-6">
-              {/* Consultation Question Section */}
-             {!isExceptionMode && <div
+              {/* Consultation Question Section - hidden for EXECUTIVE_OFFICE_MANAGER (shown in directives-log tab instead) */}
+             {!isExecutiveManager && <div
                 className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
                 style={{ fontFamily: "'Almarai', sans-serif" }}
               >
@@ -1748,7 +1756,64 @@ const GuidanceRequestDetail: React.FC = () => {
           {/* Directives Log Tab */}
           {activeTab === 'directives-log' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {isLoadingGuidanceRecords ? (
+              {/* Consultation Question Section - shown here for EXECUTIVE_OFFICE_MANAGER */}
+              {!isExceptionMode && isExecutiveManager && (
+                <div
+                  className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <div className="flex flex-col items-start p-0 gap-[10px] w-full">
+                    <div className="flex flex-col items-start p-0 gap-[4px] w-full">
+                      <h2
+                        className="w-full h-[38px] font-bold text-lg leading-[38px] text-right text-[#101828]"
+                        style={{
+                          fontFamily: "'Almarai', sans-serif",
+                          fontWeight: 700,
+                          fontSize: '18px',
+                          lineHeight: '38px',
+                        }}
+                      >
+                        سؤال جدوى جدولة الاجتماع
+                      </h2>
+                      <div className="flex flex-col items-start p-0 gap-4 w-full min-h-[80px]">
+                        <p
+                          className="w-full text-base leading-6 text-right text-[#475467]"
+                          style={{
+                            fontFamily: "'Almarai', sans-serif",
+                            fontWeight: 400,
+                            fontSize: '16px',
+                            lineHeight: '24px',
+                          }}
+                        >
+                          {guidanceQuestion || 'لا يوجد سؤال متاح'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleOpenSubmitModal}
+                      className="flex flex-row items-center px-3 py-2 gap-2 w-[158px] h-10 bg-[#29615C] rounded-[85px] flex-none"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
+                      <div className="flex flex-row justify-end items-center p-0 gap-3 w-[134px] h-6">
+                        <ClipboardCheck className="w-6 h-6 text-white" strokeWidth={2} />
+                        <span
+                          className="w-[98px] h-5 font-bold text-base leading-6 text-white"
+                          style={{
+                            fontFamily: "'Almarai', sans-serif",
+                            fontWeight: 700,
+                            fontSize: '16px',
+                            lineHeight: '24px',
+                          }}
+                        >
+                          تقديم توجيه
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              { !isExecutiveManager && isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
@@ -1857,7 +1922,21 @@ const GuidanceRequestDetail: React.FC = () => {
                             style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
                           >
                             <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
+                            { isExecutiveManager&&
+                           <>
+                          <StatusBadge status={row.status} label={statusLabel} />
+                          <div className="flex mr-2 h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
+                            E
                           </div>
+                          <span className="flex-shrink-0 ml-2 text-sm text-gray-700">Executive Manager</span>
+                          <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
+                            <Clock className="h-4 w-4 flex-shrink-0" />
+                            <span>تاريخ الرد : -</span>
+                          </span>
+                          </>
+                          }
+                          </div>
+                      
                         </div>
                       )}
                     </div>
@@ -2175,9 +2254,10 @@ const GuidanceRequestDetail: React.FC = () => {
                       const v = invitee.attendance_mechanism;
                       const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                      const isConsultant = invitee.is_consultant === true;
 
                       return (
-                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                           {/* Delete strip - overlays on hover (left side in RTL) */}
                           <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(1.62px)' }}>
                             <button
@@ -2282,9 +2362,10 @@ const GuidanceRequestDetail: React.FC = () => {
                       const v = invitee.attendance_mechanism;
                       const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
                       const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
+                      const isConsultant = invitee.is_consultant === true;
 
                       return (
-                        <div key={invitee.id || idx} className="group relative overflow-hidden bg-white border-[1.5px] border-[rgba(230,236,245,1)]" style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                           {/* Delete strip - overlays on hover (left side in RTL) */}
                           <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(1.62px)' }}>
                             <button

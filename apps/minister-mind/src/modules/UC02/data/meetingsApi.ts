@@ -124,6 +124,10 @@ export interface MeetingApiResponse {
   updated_at: string;
   submitted_at: string;
   scheduled_at: string | null;
+  /** Start of scheduled meeting (API response). */
+  scheduled_start?: string | null;
+  /** End of scheduled meeting (API response). */
+  scheduled_end?: string | null;
   closed_at: string | null;
   version: number;
   meeting_title: string;
@@ -167,6 +171,8 @@ export interface MeetingApiResponse {
   meeting_classification_type: string;
   meeting_confidentiality: string;
   sector: string;
+  description?: string | null;
+  note?: string | null;
 }
 
 export interface MeetingsListResponse {
@@ -478,17 +484,22 @@ export interface MinisterAttendee {
   position?: string;
   phone?: string;
   attendance_channel?: 'PHYSICAL' | 'REMOTE';
+  /** Whether the attendee is a consultant (مستشار). Sent to backend as is_consultant. */
+  is_consultant?: boolean;
 }
 
 export interface ScheduleMeetingRequest {
-  scheduled_at: string;
+  /** ISO datetime string (e.g. 2026-02-17T20:23:44.728Z) */
+  scheduled_start: string;
+  /** ISO datetime string (e.g. 2026-02-17T21:23:44.728Z) */
+  scheduled_end: string;
   meeting_channel: string;
   requires_protocol: boolean;
   protocol_type: string | null;
   is_data_complete: boolean;
   notes: string;
   location?: string;
-  meeting_link?: string;
+  meeting_url?: string;
   minister_attendees: MinisterAttendee[];
 }
 
@@ -568,33 +579,19 @@ export interface DirectivesListResponse {
 }
 
 // Previous directives API (matches /scheduling/directives/previous response)
-export interface ResponsiblePerson {
-  id: string | null;
-  name: string;
-  position: string | null;
-}
-
 export interface PreviousDirectiveItem {
   id: string;
-  directive_number: string;
-  directive_date: string;
-  directive_text: string;
-  related_meeting: string | null;
-  deadline: string | null;
-  responsible_persons: ResponsiblePerson[];
-  directive_status: string;
-  related_meeting_request_id: string | null;
-  meeting_nature: string | null;
-  meeting_subject: string | null;
-  description: string | null;
-  meeting_classification: string | null;
-  meeting_date: string | null;
-  status: string | null;
-  is_completed: boolean | null;
+  external_id: string;
+  action_number: string;
+  title: string;
+  due_date: string;
+  status: string;
+  is_completed: boolean;
   meeting_id: string | null;
-  created_date: string | null;
-  mod_date: string | null;
+  created_date: string;
+  mod_date: string;
   completed_at: string | null;
+  assignees: string[];
 }
 
 export interface PreviousDirectivesListResponse {
@@ -609,16 +606,21 @@ export interface PreviousDirectivesListResponse {
 export interface GetDirectivesParams {
   skip?: number;
   limit?: number;
+  /** Search query – applied by the API, not the frontend */
+  search?: string;
 }
 
 export const getDirectives = async (params: GetDirectivesParams = {}): Promise<DirectivesListResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
   }
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
+  }
+  if (params.search != null && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
   }
 
   const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/current?${queryParams.toString()}`);
@@ -633,29 +635,80 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
   }
+  if (params.search != null && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
+  }
   const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
   return response.data;
 };
 
-/** Request body for POST /api/scheduling/directives (Create Scheduling Directive - UC-07) */
+/** Request body for POST /api/external-directives (Create/Close/Cancel – same body) */
 export interface CreateDirectivePayload {
-  directive_date: string; // ISO date-time
-  directive_text: string;
-  related_meeting: string;
-  deadline: string; // ISO date-time
-  responsible_persons: string[];
+  external_id: number;
+  action_number: string;
+  title: string;
+  due_date: string; // ISO date-time
+  status: string;
+  is_completed: boolean;
+  created_date: string; // ISO date-time
+  mod_date?: string; // ISO date-time, optional on create
+  completed_at?: string | null; // ISO date-time, optional when not completed
+  assignees: string[]; // e.g. email addresses
 }
 
+/** Build external-directives body from a Directive (for close/cancel or create). */
+export const directiveToExternalDirectiveBody = (d: Directive): CreateDirectivePayload => {
+  const assigneesArray =
+    typeof d.assignees === 'string'
+      ? d.assignees
+          .split(/[,،]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : Array.isArray(d.assignees)
+        ? d.assignees
+        : [];
+  const externalId = Number(d.id);
+  return {
+    external_id: Number.isFinite(externalId) ? externalId : 0,
+    action_number: d.action_number,
+    title: d.title,
+    due_date: d.due_date,
+    status: d.status,
+    is_completed: d.is_completed,
+    created_date: d.created_date,
+    mod_date: d.mod_date ?? undefined,
+    completed_at: d.completed_at ?? undefined,
+    assignees: assigneesArray,
+  };
+};
+
+/** Build external-directives body from a PreviousDirectiveItem (for close/cancel). */
+export const previousDirectiveToExternalDirectiveBody = (d: PreviousDirectiveItem): CreateDirectivePayload => {
+  const externalId = Number(d.external_id);
+  return {
+    external_id: Number.isFinite(externalId) ? externalId : 0,
+    action_number: d.action_number,
+    title: d.title,
+    due_date: d.due_date,
+    status: d.status,
+    is_completed: d.is_completed,
+    created_date: d.created_date,
+    mod_date: d.mod_date ?? undefined,
+    completed_at: d.completed_at ?? undefined,
+    assignees: Array.isArray(d.assignees) ? d.assignees.filter(Boolean) : [],
+  };
+};
+
 export const createDirective = async (payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post('/api/scheduling/directives', payload);
+  await axiosInstance.post('/api/external-directives', payload);
 };
 
-export const closeDirective = async (directiveId: string): Promise<void> => {
-  await axiosInstance.post(`/api/scheduling/directives/${directiveId}/close`);
+export const closeDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
+  await axiosInstance.post(`/api/external-directives/close`, payload);
 };
 
-export const cancelDirective = async (directiveId: string): Promise<void> => {
-  await axiosInstance.post(`/api/scheduling/directives/${directiveId}/cancel`);
+export const cancelDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
+  await axiosInstance.post(`/api/external-directives/cancel`, payload);
 };
 
 // Consultation Records API
@@ -884,7 +937,18 @@ export interface ComparePresentationsResponse {
   summary: ComparePresentationsSummary;
   slide_by_slide?: Record<string, unknown>[];
   regeneration_decision?: Record<string, unknown>;
-  ai_insights?: Record<string, unknown>;
+  /** Parsed structure for رؤى الذكاء الاصطناعي */
+  ai_insights?: {
+    main_topics?: string[];
+    business_impact?: string;
+    risk_assessment?: string;
+    presentation_coherence?: string;
+    slide_count_comparison?: {
+      original_count?: number;
+      new_count?: number;
+      difference?: number;
+    };
+  };
 }
 
 /** POST compare-by-attachment response. When status is "completed", full result is fetched via GET. */
@@ -928,23 +992,38 @@ export const getComparisonByAttachment = async (
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 
-/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. */
+/** Delay that rejects if signal is aborted (used by compare polling). */
+function delayCompare(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+}
+
+/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. Stops when signal is aborted (e.g. modal closed). */
 export const runCompareByAttachment = async (
   attachmentId: string,
-  options?: { pollIntervalMs?: number }
+  options?: { pollIntervalMs?: number; signal?: AbortSignal }
 ): Promise<ComparePresentationsResponse> => {
   const intervalMs = options?.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const signal = options?.signal;
 
   const pollPost = async (): Promise<void> => {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const data = await postCompareByAttachment(attachmentId);
     if (data.status === 'completed') {
       return;
     }
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await delayCompare(intervalMs, signal);
     await pollPost();
   };
 
   await pollPost();
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   return getComparisonByAttachment(attachmentId);
 };
 
@@ -984,20 +1063,35 @@ function isInsightsReady(data: AttachmentInsightsResponse): boolean {
   return (extDone && llmDone) || hasContent;
 }
 
-/** Poll GET insights until extraction_status and llm_processing_status are completed (or we have notes/suggestions). */
+/** Delay that rejects if signal is aborted (e.g. modal closed). */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+}
+
+/** Poll GET insights until extraction_status and llm_processing_status are completed (or we have notes/suggestions). Stops when signal is aborted (e.g. modal closed). */
 export const getAttachmentInsightsWithPolling = async (
   attachmentId: string,
-  options?: { pollIntervalMs?: number; maxAttempts?: number }
+  options?: { pollIntervalMs?: number; maxAttempts?: number; signal?: AbortSignal }
 ): Promise<AttachmentInsightsResponse> => {
   const intervalMs = options?.pollIntervalMs ?? INSIGHTS_POLL_INTERVAL_MS;
   const maxAttempts = options?.maxAttempts ?? INSIGHTS_MAX_POLL_ATTEMPTS;
+  const signal = options?.signal;
 
   let lastData = await getAttachmentInsights(attachmentId);
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (isInsightsReady(lastData)) {
       return lastData;
     }
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await delay(intervalMs, signal);
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     lastData = await getAttachmentInsights(attachmentId);
   }
 
