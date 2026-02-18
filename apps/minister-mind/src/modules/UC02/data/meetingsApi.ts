@@ -484,6 +484,8 @@ export interface MinisterAttendee {
   position?: string;
   phone?: string;
   attendance_channel?: 'PHYSICAL' | 'REMOTE';
+  /** Whether the attendee is a consultant (مستشار). Sent to backend as is_consultant. */
+  is_consultant?: boolean;
 }
 
 export interface ScheduleMeetingRequest {
@@ -925,7 +927,18 @@ export interface ComparePresentationsResponse {
   summary: ComparePresentationsSummary;
   slide_by_slide?: Record<string, unknown>[];
   regeneration_decision?: Record<string, unknown>;
-  ai_insights?: Record<string, unknown>;
+  /** Parsed structure for رؤى الذكاء الاصطناعي */
+  ai_insights?: {
+    main_topics?: string[];
+    business_impact?: string;
+    risk_assessment?: string;
+    presentation_coherence?: string;
+    slide_count_comparison?: {
+      original_count?: number;
+      new_count?: number;
+      difference?: number;
+    };
+  };
 }
 
 /** POST compare-by-attachment response. When status is "completed", full result is fetched via GET. */
@@ -969,23 +982,38 @@ export const getComparisonByAttachment = async (
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 
-/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. */
+/** Delay that rejects if signal is aborted (used by compare polling). */
+function delayCompare(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+}
+
+/** Run full compare: POST for status only. If completed → GET and return result. If pending → poll POST, then GET result. Stops when signal is aborted (e.g. modal closed). */
 export const runCompareByAttachment = async (
   attachmentId: string,
-  options?: { pollIntervalMs?: number }
+  options?: { pollIntervalMs?: number; signal?: AbortSignal }
 ): Promise<ComparePresentationsResponse> => {
   const intervalMs = options?.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const signal = options?.signal;
 
   const pollPost = async (): Promise<void> => {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const data = await postCompareByAttachment(attachmentId);
     if (data.status === 'completed') {
       return;
     }
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await delayCompare(intervalMs, signal);
     await pollPost();
   };
 
   await pollPost();
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   return getComparisonByAttachment(attachmentId);
 };
 
@@ -1025,20 +1053,35 @@ function isInsightsReady(data: AttachmentInsightsResponse): boolean {
   return (extDone && llmDone) || hasContent;
 }
 
-/** Poll GET insights until extraction_status and llm_processing_status are completed (or we have notes/suggestions). */
+/** Delay that rejects if signal is aborted (e.g. modal closed). */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+}
+
+/** Poll GET insights until extraction_status and llm_processing_status are completed (or we have notes/suggestions). Stops when signal is aborted (e.g. modal closed). */
 export const getAttachmentInsightsWithPolling = async (
   attachmentId: string,
-  options?: { pollIntervalMs?: number; maxAttempts?: number }
+  options?: { pollIntervalMs?: number; maxAttempts?: number; signal?: AbortSignal }
 ): Promise<AttachmentInsightsResponse> => {
   const intervalMs = options?.pollIntervalMs ?? INSIGHTS_POLL_INTERVAL_MS;
   const maxAttempts = options?.maxAttempts ?? INSIGHTS_MAX_POLL_ATTEMPTS;
+  const signal = options?.signal;
 
   let lastData = await getAttachmentInsights(attachmentId);
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (isInsightsReady(lastData)) {
       return lastData;
     }
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await delay(intervalMs, signal);
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     lastData = await getAttachmentInsights(attachmentId);
   }
 
