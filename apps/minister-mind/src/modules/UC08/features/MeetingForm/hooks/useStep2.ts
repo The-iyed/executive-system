@@ -47,12 +47,12 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<{ success: 
     (formData.optional_attachments ?? []).forEach((file) => {
       body.append('optional_attachments', file);
     });
-    await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/step2`, body, {
+    await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/content`, body, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   } else {
     await axiosInstance.put(
-      `/api/meeting-requests/direct-schedule/${draftId}/step2`,
+      `/api/meeting-requests/direct-schedule/${draftId}/content`,
       {
         presentation_required: formData.presentation_required === true,
       },
