@@ -2347,7 +2347,8 @@ const MeetingDetail: React.FC = () => {
           {activeTab === 'attendees' && (
             <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
               <div className="flex flex-col gap-6 w-full">
-                <div className="flex flex-col gap-2 w-full min-w-0">
+                {/* قائمة المدعوين (مقدّم الطلب) */}
+                <div className="flex flex-col gap-4 w-full">
                   <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
@@ -2359,7 +2360,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'index',
                             header: 'رقم البند',
                             width: 'w-[100px]',
-                            align: 'end',
+                            align: 'center',
                             render: (_row: any, index: number) => (
                               <span className="text-sm text-[#475467]">{index + 1}</span>
                             ),
@@ -2476,7 +2477,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'attendance_channel',
                             header: 'آلية الحضور',
                             width: 'w-[140px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any) => {
                               const val = row.attendance_channel || 'PHYSICAL';
                               if (row.isLocal) {
@@ -2501,7 +2502,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'access_permission',
                             header: 'صلاحية الاطلاع',
                             width: 'w-[120px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any) => {
                               const checked = !!row.access_permission;
                               if (row.isLocal) {
@@ -2523,10 +2524,21 @@ const MeetingDetail: React.FC = () => {
                             },
                           },
                           {
+                            id: 'is_consultant',
+                            header: 'مستشار',
+                            width: 'w-[90px]',
+                            align: 'center',
+                            render: (row: any) => (
+                              <span className={`text-sm ${row.is_consultant ? 'text-[#048F86] font-medium' : 'text-[#475467]'}`}>
+                                {row.is_consultant ? 'نعم' : 'لا'}
+                              </span>
+                            ),
+                          },
+                          {
                             id: 'action',
                             header: 'إجراء',
                             width: 'w-[100px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any) => (
                               <div className="flex items-center justify-center w-full">
                                 <button
@@ -2546,18 +2558,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-start mt-3">
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={addInvitee}
-                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        fontFamily: "'Almarai', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        lineHeight: '24px',
-                      }}
-                    >
+                    <button type="button" disabled={!canEdit} onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
@@ -2565,7 +2566,7 @@ const MeetingDetail: React.FC = () => {
                 </div>
 
                 {/* قائمة المدعوين (الوزير) */}
-                <div className="flex flex-col gap-2 w-full min-w-0">
+                <div className="flex flex-col gap-4 w-full">
                   <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
@@ -2577,7 +2578,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'index',
                             header: 'رقم البند',
                             width: 'w-[80px]',
-                            align: 'end',
+                            align: 'center',
                             render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
                           },
                           {
@@ -2713,7 +2714,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'attendance_channel',
                             header: 'آلية الحضور',
                             width: 'w-[140px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any, index: number) => {
                               const val = row.attendance_channel || 'PHYSICAL';
                               return (
@@ -2735,11 +2736,11 @@ const MeetingDetail: React.FC = () => {
                             id: 'access_permission',
                             header: 'صلاحية الاطلاع',
                             width: 'w-[120px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any, index: number) => {
                               const checked = row.access_permission === 'FULL';
                               return (
-                                <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                   <input
                                     type="checkbox"
                                     checked={checked}
@@ -2755,31 +2756,14 @@ const MeetingDetail: React.FC = () => {
                             id: 'is_required',
                             header: 'مطلوب',
                             width: 'w-[90px]',
-                            align: 'end',
+                            align: 'center',
                             render: (row: any, index: number) => (
-                              <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={!!row.is_required}
                                   disabled={!canEdit}
                                   onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)}
-                                  className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60"
-                                />
-                              </div>
-                            ),
-                          },
-                          {
-                            id: 'is_consultant',
-                            header: 'مستشار',
-                            width: 'w-[90px]',
-                            align: 'end',
-                            render: (row: any, index: number) => (
-                              <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={!!row.is_consultant}
-                                  disabled={!canEdit}
-                                  onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)}
                                   className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60"
                                 />
                               </div>
@@ -2816,7 +2800,7 @@ const MeetingDetail: React.FC = () => {
                             id: 'action',
                             header: 'إجراء',
                             width: 'w-[100px]',
-                            align: 'end',
+                            align: 'center',
                             render: (_row: any, index: number) => (
                               <button
                                 type="button"
@@ -2851,16 +2835,12 @@ const MeetingDetail: React.FC = () => {
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
-                    <AIGenerateButton 
-                    className='mr-4'
-                    label='	إضافة مدعوين آليًا'
-                    disabled={!canEdit}
-                    onClick={() => {
-                      setIsSuggestAttendeesModalOpen(true);
-                    }} 
+                    <AIGenerateButton
+                      label="إضافة مدعوين آليًا"
+                      disabled={!canEdit}
+                      onClick={() => { setIsSuggestAttendeesModalOpen(true); }}
                     />
                   </div>
-               
                 </div>
               </div>
             </div>
