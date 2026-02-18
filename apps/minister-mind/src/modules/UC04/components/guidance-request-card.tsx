@@ -45,6 +45,7 @@ export interface GuidanceRequestCardData {
 }
 
 export interface GuidanceRequestCardProps {
+  hideStatus?: boolean;
   request: GuidanceRequestCardData;
   onView?: () => void;
   onDetails?: () => void;
@@ -52,6 +53,7 @@ export interface GuidanceRequestCardProps {
 }
 
 export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
+  hideStatus = false,
   request,
   onView,
   onDetails,
@@ -114,7 +116,7 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
                 {request.isDataComplete ? 'مكتمل' : 'غير مكتمل'}
               </span>
             )}
-            <StatusBadge status={request.status} label={request.statusLabel} />
+            {!hideStatus && <StatusBadge status={request.status} label={request.statusLabel} />}
           </div>
         </div>
 

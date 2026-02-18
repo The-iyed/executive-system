@@ -475,6 +475,7 @@ export const returnMeetingForInfo = async (
 };
 
 export interface MinisterAttendee {
+  id?: string;
   username?: string;
   external_email?: string;
   external_name?: string;
@@ -482,8 +483,15 @@ export interface MinisterAttendee {
   justification: string;
   access_permission: string;
   position?: string;
+  /** Form/display field; API may return mobile instead */
   phone?: string;
+  /** API response field for phone number */
+  mobile?: string;
   attendance_channel?: 'PHYSICAL' | 'REMOTE';
+  /** API response field for attendance (e.g. "حضوري", "عن بعد") */
+  attendance_mechanism?: string;
+  response_status?: string;
+  sector?: string | null;
   /** Whether the attendee is a consultant (مستشار). Sent to backend as is_consultant. */
   is_consultant?: boolean;
 }

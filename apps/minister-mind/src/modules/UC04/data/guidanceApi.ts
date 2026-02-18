@@ -147,7 +147,7 @@ export const getAssignedGuidanceRequests = async (
   }
 
   const response = await axiosInstance.get<GuidanceRequestsListResponse>(
-    `/api/guidance/assigned-requests?${queryParams.toString()}`
+    `/api/guidance/pending-meetings?${queryParams.toString()}`
   );
   return response.data;
 };

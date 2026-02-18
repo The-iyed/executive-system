@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone } from 'lucide-react';
+import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -107,6 +107,23 @@ const fieldLabels: Record<string, string> = {
   general_notes: 'ملاحظات',
 };
 
+/** Map API attendance_mechanism (Arabic) to attendance_channel enum */
+function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
+  if (!v || typeof v !== 'string') return 'PHYSICAL';
+  const s = v.trim().toLowerCase();
+  if (s === 'عن بعد' || s === 'remote' || s === 'remot') return 'REMOTE';
+  return 'PHYSICAL'; // حضوري, physical, etc.
+}
+
+/** Map API minister_attendees (mobile, attendance_mechanism) to form format (phone, attendance_channel) */
+function mapApiMinisterAttendeesToForm(list: any[] | undefined): MinisterAttendee[] {
+  return (list || []).map((a) => ({
+    ...a,
+    phone: a.mobile ?? a.mobile ?? '',
+    attendance_channel: (a.attendance_channel ?? mapAttendanceMechanismToChannel(a.attendance_mechanism)) as 'PHYSICAL' | 'REMOTE',
+  }));
+}
+
 /** Normalize minister attendees so all API-required fields are present (no undefined). */
 function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array<{
   username: string;
@@ -128,7 +145,7 @@ function normalizeMinisterAttendees(list: MinisterAttendee[] | undefined): Array
     justification: a.justification ?? '',
     access_permission: a.access_permission ?? 'FULL',
     position: a.position ?? '',
-    phone: a.phone ?? '',
+    phone: a.mobile ?? (a as any).mobile ?? '',
     attendance_channel: (a.attendance_channel ?? 'PHYSICAL') as 'PHYSICAL' | 'REMOTE',
     is_consultant: a.is_consultant ?? false,
   }));
@@ -200,7 +217,7 @@ const MeetingDetail: React.FC = () => {
     enabled: !!id && activeTab === 'scheduling-consultation',
   });
 
-  // Fetch guidance records (التوجيه tab)
+  // Fetch guidance records (سؤال tab)
   const { data: guidanceRecords, isLoading: isLoadingGuidanceRecords } = useQuery({
     queryKey: ['guidance-records', id],
     queryFn: () => getGuidanceRecords(id!),
@@ -410,6 +427,8 @@ const MeetingDetail: React.FC = () => {
 
   // Delete minister attendee confirmation modal state
   const [deleteAttendeeIndex, setDeleteAttendeeIndex] = useState<number | null>(null);
+  // Track which minister attendee cards are in edit mode
+  const [editingMinisterAttendees, setEditingMinisterAttendees] = useState<Set<number>>(new Set());
   
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
@@ -476,7 +495,7 @@ const MeetingDetail: React.FC = () => {
     external_email?: string;
     is_required: boolean;
     position?: string;
-    phone?: string;
+    mobile?: string;
     attendance_channel?: AttendanceChannel;
     access_permission?: boolean;
   }>>([]);
@@ -490,7 +509,8 @@ const MeetingDetail: React.FC = () => {
       external_email: '',
       is_required: false,
       position: '',
-      phone: '',
+      sector: '',
+      mobile: '',
       attendance_channel: 'PHYSICAL' as AttendanceChannel,
       access_permission: false,
     };
@@ -521,11 +541,11 @@ const MeetingDetail: React.FC = () => {
       ...inv,
       isLocal: false,
       position: (inv as any).position ?? '',
-      phone: (inv as any).phone ?? '',
+      phone: (inv as any).mobile ?? '',
       attendance_channel: ((inv as any).attendance_channel as AttendanceChannel) || 'PHYSICAL',
       access_permission: (inv as any).access_permission ?? false,
     }));
-    const localInviteesMapped = localInvitees.map((inv) => ({
+    const localInviteesMapped = localInvitees.map((inv :any) => ({
       id: inv.id,
       user_id: null,
       external_email: inv.external_email || null,
@@ -537,7 +557,9 @@ const MeetingDetail: React.FC = () => {
       access_permission: inv.access_permission ?? false,
       isLocal: true,
       position: inv.position ?? '',
-      phone: inv.phone ?? '',
+      sector: inv.sector ?? '',
+      mobile: inv.mobile ?? '',
+      phone: inv.mobile ?? '',
       attendance_channel: inv.attendance_channel ?? 'PHYSICAL',
     }));
     return [...apiInvitees, ...localInviteesMapped];
@@ -617,9 +639,9 @@ const MeetingDetail: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
   /** Validation errors per local invitee id (قائمة المدعوين مقدّم الطلب) */
-  const [inviteeValidationErrors, setInviteeValidationErrors] = useState<Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>>>>({});
+  const [inviteeValidationErrors, setInviteeValidationErrors] = useState<Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile', string>>>>({});
   /** Validation errors per minister attendee index (قائمة المدعوين الوزير) */
-  const [ministerAttendeeValidationErrors, setMinisterAttendeeValidationErrors] = useState<Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>>>>({});
+  const [ministerAttendeeValidationErrors, setMinisterAttendeeValidationErrors] = useState<Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>>>>({});
 
   // Build payload of changed fields
   const changedPayload = React.useMemo(() => {
@@ -681,7 +703,7 @@ const MeetingDetail: React.FC = () => {
         external_email: inv.external_email ?? null,
         external_name: inv.external_name ?? null,
         position: inv.position ?? null,
-        mobile: inv.mobile ?? inv.phone ?? null,
+        mobile: inv.mobile ?? inv.mobile ?? null,
         item_number: inv.item_number,
         attendance_mechanism: inv.attendance_mechanism ?? inv.attendance_channel ?? null,
         is_required: inv.is_required ?? false,
@@ -690,13 +712,14 @@ const MeetingDetail: React.FC = () => {
         justification: inv.justification ?? null,
         access_permission: inv.access_permission ?? null,
       }));
-      const newInvitees = localInvitees.map((i, idx) => ({
+      const newInvitees = localInvitees.map((i :any, idx) => ({
         id: i.id,
         user_id: null,
-        external_email: i.external_email || null,
-        external_name: i.external_name || null,
+        email: i.external_email || null,
+        name: i.external_name || null,
         position: i.position || null,
-        mobile: i.phone || null,
+        sector: i.sector || null,
+        mobile: i.mobile || null,
         item_number: idx + 1,
         attendance_mechanism: i.attendance_channel ?? null,
         is_required: i.is_required,
@@ -728,18 +751,18 @@ const MeetingDetail: React.FC = () => {
 
   /** Validate local invitees (قائمة المدعوين مقدّم الطلب): all required, email format. Returns true if valid. */
   const validateInvitees = useCallback((): boolean => {
-    const errors: Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>>> = {};
+    const errors: Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile', string>>> = {};
     localInvitees.forEach((inv) => {
-      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'phone', string>> = {};
+      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile', string>> = {};
       const name = (inv.external_name ?? '').trim();
       const email = (inv.external_email ?? '').trim();
       const position = (inv.position ?? '').trim();
-      const phone = (inv.phone ?? '').trim();
+      const phone = (inv.mobile ?? '').trim();
       if (!name) row.external_name = 'مطلوب';
       if (!email) row.external_email = 'مطلوب';
       else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
       if (!position) row.position = 'مطلوب';
-      if (!phone) row.phone = 'مطلوب';
+      if (!phone) row.mobile = 'مطلوب';
       if (Object.keys(row).length > 0) errors[inv.id] = row;
     });
     setInviteeValidationErrors(errors);
@@ -748,19 +771,19 @@ const MeetingDetail: React.FC = () => {
 
   /** Validate minister attendees (قائمة المدعوين الوزير): all required, email format. Returns true if valid. */
   const validateMinisterAttendees = useCallback((): boolean => {
-    const errors: Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>>> = {};
+    const errors: Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>>> = {};
     (scheduleForm.minister_attendees || []).forEach((att, index) => {
-      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'phone' | 'justification', string>> = {};
+      const row: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>> = {};
       const name = (att.external_name ?? '').trim();
       const email = (att.external_email ?? '').trim();
       const position = (att.position ?? '').trim();
-      const phone = (att.phone ?? '').trim();
+      const phone = (att.mobile ?? (att as any).mobile ?? '').trim();
       const justification = (att.justification ?? '').trim();
       if (!name) row.external_name = 'مطلوب';
       if (!email) row.external_email = 'مطلوب';
       else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
       if (!position) row.position = 'مطلوب';
-      if (!phone) row.phone = 'مطلوب';
+      if (!phone) row.mobile = 'مطلوب';
       if (!justification) row.justification = 'مطلوب';
       if (Object.keys(row).length > 0) errors[index] = row;
     });
@@ -902,6 +925,7 @@ const MeetingDetail: React.FC = () => {
     mutationFn: (payload: { notes: string; is_draft?: boolean }) => requestGuidance(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['guidance-records', id] });
       setIsRequestGuidanceModalOpen(false);
       setRequestGuidanceForm({ notes: '' });
     },
@@ -911,14 +935,6 @@ const MeetingDetail: React.FC = () => {
     e.preventDefault();
     requestGuidanceMutation.mutate({
       notes: requestGuidanceForm.notes || 'يرجى توفير التوجيهات اللازمة حول هذا الطلب',
-    });
-  };
-
-  const handleRequestGuidanceDraft = (e: React.MouseEvent) => {
-    e.preventDefault();
-    requestGuidanceMutation.mutate({
-      notes: requestGuidanceForm.notes || 'يرجى توفير التوجيهات اللازمة حول هذا الطلب',
-      is_draft: true,
     });
   };
 
@@ -966,16 +982,6 @@ const MeetingDetail: React.FC = () => {
       consultant_user_id: consultationForm.consultant_user_id,
       consultation_question:
         consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
-    });
-  };
-
-  const handleConsultationDraft = (e: React.MouseEvent) => {
-    e.preventDefault();
-    consultationMutation.mutate({
-      consultant_user_id: consultationForm.consultant_user_id || '',
-      consultation_question:
-        consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
-      is_draft: true,
     });
   };
 
@@ -1103,24 +1109,28 @@ const MeetingDetail: React.FC = () => {
   };
 
   const addMinisterAttendee = () => {
-    setScheduleForm((prev) => ({
-      ...prev,
-      minister_attendees: [
-        ...prev.minister_attendees,
-        {
-          username: '',
-          external_name: '',
-          external_email: '',
-          is_required: false,
-          justification: '',
-          access_permission: 'FULL',
-          position: '',
-          phone: '',
-          attendance_channel: 'PHYSICAL',
-          is_consultant: false,
-        },
-      ],
-    }));
+    setScheduleForm((prev) => {
+      const newIndex = prev.minister_attendees.length;
+      setEditingMinisterAttendees((s) => new Set(s).add(newIndex));
+      return {
+        ...prev,
+        minister_attendees: [
+          ...prev.minister_attendees,
+          {
+            username: '',
+            external_name: '',
+            external_email: '',
+            is_required: false,
+            justification: '',
+            access_permission: 'FULL',
+            position: '',
+            phone: '',
+            attendance_channel: 'PHYSICAL',
+            is_consultant: false,
+          },
+        ],
+      };
+    });
   };
 
   const removeMinisterAttendee = (index: number) => {
@@ -1128,6 +1138,11 @@ const MeetingDetail: React.FC = () => {
       ...prev,
       minister_attendees: prev.minister_attendees.filter((_, i) => i !== index),
     }));
+    setEditingMinisterAttendees((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => { if (i < index) next.add(i); else if (i > index) next.add(i - 1); });
+      return next;
+    });
   };
 
   const updateMinisterAttendee = (index: number, field: string, value: any) => {
@@ -1292,7 +1307,7 @@ const MeetingDetail: React.FC = () => {
         is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
         location: meeting.meeting_channel || prev.location,
         selected_time_slot_id: meeting.selected_time_slot_id || null,
-        minister_attendees: ((meeting as any).minister_attendees as any) || prev.minister_attendees,
+        minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
     });
 
@@ -1339,7 +1354,7 @@ const MeetingDetail: React.FC = () => {
         is_data_complete: meeting.is_data_complete ?? true,
         location: meeting.meeting_channel || '',
         meeting_channel: ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel) ? meeting.meeting_channel : 'PHYSICAL',
-        minister_attendees: ((meeting as any).minister_attendees as any) || [],
+        minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || [],
       },
       contentForm: {
         objectives: (meeting.objectives || []).map((obj) => ({
@@ -1365,6 +1380,70 @@ const MeetingDetail: React.FC = () => {
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
   /** When true, form is editable and all actions (FAB) are enabled (قيد المراجعة or قيد المراجعة - المكتب التنفيذي). */
   const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW || meeting?.status === MeetingStatus.UNDER_GUIDANCE;
+
+  /** Tooltip content for help icon - shows permissions based on current status */
+  const permissionTooltip = useMemo(() => {
+    const status = meetingStatus;
+    if (status === MeetingStatus.UNDER_REVIEW || status === MeetingStatus.UNDER_GUIDANCE) {
+      return {
+        title: 'تعديل كامل',
+        description: 'يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب، بالإضافة إلى الجدولة والرفض وإرجاع الطلب للمعلومات.',
+      };
+    }
+    const scheduledStatuses = [
+      MeetingStatus.SCHEDULED,
+      MeetingStatus.SCHEDULED_SCHEDULING,
+      MeetingStatus.SCHEDULED_CONTENT,
+      MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
+      MeetingStatus.SCHEDULED_UPDATE_CONTENT,
+      MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
+      MeetingStatus.SCHEDULED_DELAYED,
+    ];
+    if (scheduledStatuses.includes(status)) {
+      return {
+        title: 'عرض وتوثيق',
+        description: 'تم جدولة الاجتماع. يمكنك إضافة توثيق الاجتماع (المحضر، الحضور الفعلي، التوجيهات) وإعادة الجدولة وإضافته لقائمة الانتظار.',
+      };
+    }
+    if (status === MeetingStatus.WAITING) {
+      return {
+        title: 'عرض وتوثيق',
+        description: 'الطلب في قائمة الانتظار. يمكنك إضافة توثيق الاجتماع وإعادة الجدولة.',
+      };
+    }
+    if (status === MeetingStatus.CLOSED || status === MeetingStatus.REJECTED || status === MeetingStatus.CANCELLED) {
+      return {
+        title: 'عرض فقط',
+        description: 'الطلب مغلق. العرض للقراءة فقط ولا يمكن إجراء أي تعديلات.',
+      };
+    }
+    if (
+      status === MeetingStatus.UNDER_CONSULTATION_SCHEDULING ||
+      status === MeetingStatus.UNDER_CONTENT_REVIEW ||
+      status === MeetingStatus.UNDER_CONTENT_CONSULTATION
+    ) {
+      return {
+        title: 'قيد المراجعة',
+        description: 'الطلب قيد المراجعة من قبل مسؤول آخر (الجدولة أو المحتوى). يمكنك عرض التفاصيل فقط.',
+      };
+    }
+    if (status === MeetingStatus.DRAFT || status === MeetingStatus.RETURNED_FROM_SCHEDULING || status === MeetingStatus.RETURNED_FROM_CONTENT) {
+      return {
+        title: 'مرحلة مقدم الطلب',
+        description: 'الطلب في مرحلة مقدم الطلب. يمكنك عرض التفاصيل فقط.',
+      };
+    }
+    if (status === MeetingStatus.READY) {
+      return {
+        title: 'جاهز للجدولة',
+        description: 'الطلب جاهز. يمكنك عرض التفاصيل والجدولة.',
+      };
+    }
+    return {
+      title: 'الصلاحيات',
+      description: 'يمكنك عرض تفاصيل طلب الاجتماع.',
+    };
+  }, [meetingStatus]);
 
   // المحتوى: objectives/agenda and at least one presentation file (العرض التقديمي)
   const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
@@ -1454,7 +1533,7 @@ const MeetingDetail: React.FC = () => {
       { id: 'content', label: 'المحتوى' },
       { id: 'attendees', label: 'قائمة المدعوين' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
-      { id: 'directive', label: 'التوجيه' },
+      { id: 'directive', label: 'سؤال' },
       ...(hasContent ? [{ id: 'content-consultation', label: 'استشارة المحتوى' }] : []),
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
@@ -1648,8 +1727,8 @@ const MeetingDetail: React.FC = () => {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                      <p className="font-semibold text-gray-900 mb-1">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
-                      <p className="text-sm text-gray-600">يمكنك تغيير أي قيمة في طلب الاجتماع قام بإدخالها مقدم الطلب.</p>
+                      <p className="font-semibold text-gray-900 mb-1">{permissionTooltip.title}</p>
+                      <p className="text-sm text-gray-600">{permissionTooltip.description}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -2039,9 +2118,11 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Almarai', sans-serif" }}>العرض التقديمي</label>
                 <TooltipProvider>
-                <div className="flex flex-row gap-4 flex-wrap">
+                <div className="flex flex-col max-w-[800px] gap-4 flex-wrap">
                   {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
-                    <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
+               
+        <div className='flex flex-row gap-4 justify-start items-center'>        
+       <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
                       {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
                       <div className="flex flex-col items-end"><span className="text-sm font-medium text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                       <div className="flex items-center gap-2 mr-auto">
@@ -2073,34 +2154,55 @@ const MeetingDetail: React.FC = () => {
                               </TooltipContent>
                             </Tooltip>
                           )}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  insightsAbortControllerRef.current?.abort();
-                                  insightsAbortControllerRef.current = new AbortController();
-                                  setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
-                                  insightsMutation.reset();
-                                  insightsMutation.mutate({
-                                    attachmentId: att.id,
-                                    signal: insightsAbortControllerRef.current.signal,
-                                  });
-                                }}
-                                disabled={insightsMutation.isPending}
-                                className="p-2 rounded-md hover:bg-[rgba(71,84,103,0.08)] text-[#475467] disabled:opacity-50 transition-colors"
-                              >
-                                <Sparkles className="w-4 h-4" strokeWidth={1.5} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-right">
-                              <p>ملاحظات على العرض</p>
-                            </TooltipContent>
-                          </Tooltip>
+                         
                         </div>
                         <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]"><Download className="w-4 h-4 text-[#009883]" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100"><Eye className="w-4 h-4 text-[#475467]" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed"><Trash2 className="w-4 h-4" /></button>
                       </div>
+                     
                     </div>
+                    <button
+                     onClick={() => {
+                      insightsAbortControllerRef.current?.abort();
+                      insightsAbortControllerRef.current = new AbortController();
+                      setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
+                      insightsMutation.reset();
+                      insightsMutation.mutate({
+                        attachmentId: att.id,
+                        signal: insightsAbortControllerRef.current.signal,
+                      });
+                    }}
+                    disabled={insightsMutation.isPending}
+                  className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
+                  style={{
+                    fontFamily: "'Almarai', sans-serif",
+                    fontSize: '11px',
+                    lineHeight: '14px',
+                    background: '#34C3BA',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
+                  }}
+                >
+                  {/* Ellipse glow - Figma Ellipse 1: #87F8F8, blur(9.41px), soft highlight top-left */}
+                  <span
+                    className="absolute left-0 top-1/2 pointer-events-none w-[86px] h-[74px] rounded-full opacity-80 -translate-y-1/2 -translate-x-1/3"
+                    style={{
+                      background: '#87F8F8',
+                      filter: 'blur(9.41px)',
+                    }}
+                    aria-hidden
+                  />
+                  <span className="relative z-10 flex items-center gap-2">
+                  ملاحظات بالذكاء الاصطناعي
+                  <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
+                      <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
+                      <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
+                      <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
+                      <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
+                      <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
+                    </svg>
+                  </span>
+                </button>
+          </div>
                   ))}
                   {newPresentationAttachments.map((file, idx) => (
                     <div key={`new-pres-${idx}`} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-dashed border-[#009883] rounded-xl">
@@ -2112,7 +2214,7 @@ const MeetingDetail: React.FC = () => {
                   {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0 && (
                     <p className="text-[#667085] text-sm py-2">لا يوجد عرض تقديمي</p>
                   )}
-                  <label className={`flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[#009883] rounded-xl text-[#009883] ${canEdit ? 'hover:bg-[#009883]/5 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`} style={{ fontFamily: "'Almarai', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { if (canEdit) { handleAddPresentationAttachments(e.target.files); e.target.value = ''; } }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" disabled={!canEdit} /></label>
+                  <label className={`flex items-center max-w-[200px] gap-2 px-4 py-2 border-2 border-dashed border-[#009883] rounded-xl text-[#009883] ${canEdit ? 'hover:bg-[#009883]/5 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`} style={{ fontFamily: "'Almarai', sans-serif", fontSize: '14px' }}><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { if (canEdit) { handleAddPresentationAttachments(e.target.files); e.target.value = ''; } }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" disabled={!canEdit} /></label>
                 </div>
                 </TooltipProvider>
               </div>
@@ -2284,64 +2386,135 @@ const MeetingDetail: React.FC = () => {
 
               {/* Attachment LLM notes/insights modal (ملاحظات على العرض) – triggered by icon on each presentation */}
               <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
-                <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
-                  <DialogHeader>
-                    <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      ملاحظات على العرض {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-hidden p-0" dir="rtl">
+                  {/* Header with gradient accent */}
+                  <div className="relative px-6 pt-6 pb-4 border-b border-gray-100">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-l from-[#048F86] via-[#06B6A4] to-[#A6D8C1]" />
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#048F86] to-[#06B6A4]">
+                        <Sparkles className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <DialogHeader className="p-0">
+                          <DialogTitle className="text-right text-[16px] font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                            تحليل العرض التقديمي
+                          </DialogTitle>
+                        </DialogHeader>
+                        {insightsModalAttachment?.file_name && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <FileText className="h-3.5 w-3.5 text-[#667085] flex-shrink-0" />
+                            <span className="text-[13px] text-[#667085] truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              {insightsModalAttachment.file_name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)', fontFamily: "'Almarai', sans-serif" }}>
                     {insightsMutation.isPending ? (
-                      <p className="text-gray-500">جاري التحميل...</p>
+                      <div className="flex flex-col items-center justify-center py-12 gap-4">
+                        <div className="relative">
+                          <div className="h-14 w-14 rounded-full bg-[#E6F9F8] flex items-center justify-center">
+                            <Loader2 className="h-7 w-7 text-[#048F86] animate-spin" />
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-[15px] font-semibold text-[#101828]">جاري التحليل...</span>
+                          <span className="text-[13px] text-[#667085]">يتم تحليل العرض التقديمي بواسطة الذكاء الاصطناعي</span>
+                        </div>
+                      </div>
                     ) : insightsMutation.isError ? (
-                      <p className="text-red-600">حدث خطأ أثناء جلب الملاحظات. يرجى المحاولة لاحقاً.</p>
+                      <div className="flex flex-col items-center justify-center py-10 gap-3">
+                        <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+                          <AlertCircle className="h-6 w-6 text-red-500" />
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-[15px] font-semibold text-[#101828]">تعذّر إتمام التحليل</span>
+                          <span className="text-[13px] text-[#667085]">حدث خطأ أثناء جلب الملاحظات. يرجى المحاولة لاحقاً.</span>
+                        </div>
+                      </div>
                     ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
                       (() => {
                         const d = insightsMutation.data as AttachmentInsightsResponse;
                         const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
                         const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                        if (notes.length === 0 && suggestions.length === 0) {
+                          return (
+                            <div className="flex flex-col items-center justify-center py-10 gap-3">
+                              <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
+                                <Check className="h-6 w-6 text-[#667085]" />
+                              </div>
+                              <span className="text-[14px] text-[#667085]">لا توجد ملاحظات أو اقتراحات على هذا العرض.</span>
+                            </div>
+                          );
+                        }
                         return (
-                          <>
+                          <div className="flex flex-col gap-5">
                             {notes.length > 0 && (
-                              <div className="flex flex-col gap-2">
-                                <span className="text-gray-700 font-medium">ملاحظات الذكاء الاصطناعي</span>
-                                <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50">
+                                    <FileText className="h-4 w-4 text-amber-600" />
+                                  </div>
+                                  <span className="text-[14px] font-bold text-[#101828]">الملاحظات</span>
+                                  <span className="text-[12px] text-[#667085] bg-[#F2F4F7] rounded-full px-2 py-0.5">{notes.length}</span>
+                                </div>
+                                <div className="flex flex-col gap-2 mr-1">
                                   {notes.map((note, idx) => (
-                                    <li key={idx} className="whitespace-pre-wrap">{note}</li>
+                                    <div key={idx} className="flex gap-3 items-start p-3 rounded-xl bg-[#FFFBF5] border border-amber-100">
+                                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold mt-0.5">{idx + 1}</span>
+                                      <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">{note}</p>
+                                    </div>
                                   ))}
-                                </ul>
+                                </div>
                               </div>
                             )}
-                            {suggestions.length > 0 && (
-                              <div className="flex flex-col gap-2">
-                                <span className="text-gray-700 font-medium">اقتراحات الذكاء الاصطناعي</span>
-                                <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                            {/* {suggestions.length > 0 && (
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E6F9F8]">
+                                    <Lightbulb className="h-4 w-4 text-[#048F86]" />
+                                  </div>
+                                  <span className="text-[14px] font-bold text-[#101828]">الاقتراحات</span>
+                                  <span className="text-[12px] text-[#667085] bg-[#F2F4F7] rounded-full px-2 py-0.5">{suggestions.length}</span>
+                                </div>
+                                <div className="flex flex-col gap-2 mr-1">
                                   {suggestions.map((s, idx) => (
-                                    <li key={idx} className="whitespace-pre-wrap">{s}</li>
+                                    <div key={idx} className="flex gap-3 items-start p-3 rounded-xl bg-[#F6FFFE] border border-[#D0F0ED]">
+                                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#D0F0ED] text-[#048F86] text-[11px] font-bold mt-0.5">{idx + 1}</span>
+                                      <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">{s}</p>
+                                    </div>
                                   ))}
-                                </ul>
+                                </div>
                               </div>
-                            )}
-                            {notes.length === 0 && suggestions.length === 0 && (
-                              <p className="text-gray-500">لا توجد ملاحظات أو اقتراحات.</p>
-                            )}
-                          </>
+                            )} */}
+                          </div>
                         );
                       })()
                     ) : !insightsMutation.isPending && !insightsMutation.isError ? (
-                      <p className="text-gray-500">لا توجد ملاحظات.</p>
+                      <div className="flex flex-col items-center justify-center py-10 gap-3">
+                        <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
+                          <FileText className="h-6 w-6 text-[#98A2B3]" />
+                        </div>
+                        <span className="text-[14px] text-[#667085]">لا توجد ملاحظات.</span>
+                      </div>
                     ) : null}
                   </div>
-                  <DialogFooter className="flex-row-reverse gap-2">
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
                     <button
                       type="button"
                       onClick={() => { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); }}
-                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                      className="px-5 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors text-[14px] font-semibold shadow-sm"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
                       إغلاق
                     </button>
-                  </DialogFooter>
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -2353,18 +2526,19 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full">
                 {/* قائمة المدعوين (مقدّم الطلب) */}
                 <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                       {allInvitees.map((row: any, idx: number) => {
                         const isLocal = row.isLocal;
                         const isConsultant = row.is_consultant === true;
                         const name = row.external_name || row.user_id || '-';
                         const position = row.position || '-';
+                        const sector = row.sector || '-';
                         const email = row.external_email || '-';
-                        const mobile = row.phone || '-';
+                        const mobile = row.mobile || '-';
                         const attendVal = row.attendance_channel || 'PHYSICAL';
                         const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
                         const accessChecked = !!row.access_permission;
@@ -2387,6 +2561,9 @@ const MeetingDetail: React.FC = () => {
                                       <div className="flex flex-col gap-0.5">
                                         <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.position ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                         {inviteeValidationErrors[row.id]?.position && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{inviteeValidationErrors[row.id].position}</span>}
+                                      </div>
+                                      <div className="flex flex-col gap-0.5">
+                                        <Input type="text" value={row.sector || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'sector', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجهة" className="h-9 text-right w-full" style={{ fontFamily: "'Almarai', sans-serif" }} />
                                       </div>
                                     </div>
                                   ) : (
@@ -2445,8 +2622,8 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                   {isLocal ? (
                                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                      <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {inviteeValidationErrors[row.id]?.phone && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].phone}</span>}
+                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].mobile}</span>}
                                     </div>
                                   ) : (
                                     <div className="flex flex-col gap-1 min-w-0">
@@ -2456,6 +2633,19 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </div>
                               </div>
+                              {sector !== '-' && (
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -2474,24 +2664,114 @@ const MeetingDetail: React.FC = () => {
 
                 {/* قائمة المدعوين (الوزير) */}
                 <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-end" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                       {scheduleForm.minister_attendees.map((row: any, index: number) => {
                         const isConsultant = row.is_consultant === true;
+                        const isEditing = editingMinisterAttendees.has(index);
+                        const attendVal = row.attendance_channel || 'PHYSICAL';
+                        const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
+                        const accessChecked = row.access_permission === 'FULL';
+                        const name = row.external_name || row.username || '-';
+                        const position = row.position || '-';
+                        const sector = row.sector || '-';
+                        const email = row.external_email || '-';
+                        const mobile = row.mobile || '-';
+
+                        if (!isEditing) {
+                          return (
+                            <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                              <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                                <div className="flex flex-row items-center justify-between gap-3">
+                                  <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+                                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
+                                      <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
+                                      <span className="text-[12px] text-[#667085] leading-4">{position}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-row items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                                    {isConsultant && <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">مستشار</span>}
+                                    <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية'}</span>
+                                    <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
+                                    {row.is_required && <span className="inline-flex items-center rounded-full bg-[#F2F4F7] px-2.5 py-1 text-[13px] text-[#475467] whitespace-nowrap">مطلوب</span>}
+                                    {canEdit && (
+                                      <>
+                                        <button type="button" onClick={() => setEditingMinisterAttendees((s) => new Set(s).add(index))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F6FF] hover:bg-[#DCEAFF] transition-colors">
+                                          <Pencil className="w-3.5 h-3.5 text-[#3C6FD1]" />
+                                        </button>
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
+                                          <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {sector !== '-' && (
+                                  <div className="flex flex-row items-center gap-2.5 w-full">
+                                    <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                        <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                      </div>
+                                      <div className="flex flex-col gap-1 min-w-0">
+                                        <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                        <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                {row.justification && (
+                                  <TooltipProvider delayDuration={200}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-[12px] text-[#475467] bg-[#F9FAFB] rounded-lg px-3 py-2 border border-gray-200 cursor-default overflow-hidden" style={{ lineHeight: '20px', maxHeight: '74px' }}>
+                                          <span className="font-semibold text-[#101828]">المبرر: </span>{row.justification}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-[350px] text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif", lineHeight: '2.5' }}>
+                                        {row.justification}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         const errName = ministerAttendeeValidationErrors[index]?.external_name;
                         const errPos = ministerAttendeeValidationErrors[index]?.position;
-                        const errPhone = ministerAttendeeValidationErrors[index]?.phone;
+                        const errPhone = ministerAttendeeValidationErrors[index]?.mobile;
                         const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
                         const errJust = ministerAttendeeValidationErrors[index]?.justification;
-                        const attendVal = row.attendance_channel || 'PHYSICAL';
-                        const accessChecked = row.access_permission === 'FULL';
                         return (
-                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
+                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'} ring-2 ring-[#048F86]/20`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                             <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                              {/* Header: Avatar + Name/Position inputs + Delete */}
                               <div className="flex flex-row items-start justify-between gap-3">
                                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                   <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
@@ -2499,35 +2779,34 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errName && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errName}</span>}
+                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errName && <span className="text-xs text-red-600 text-right">{errName}</span>}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
-                                      {errPos && <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{errPos}</span>}
+                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                      {errPos && <span className="text-xs text-red-600 text-right">{errPos}</span>}
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
                                   <div onClick={(e) => e.stopPropagation()}>
-                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')} disabled={!canEdit}>
+                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}>
                                       <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}><SelectValue /></SelectTrigger>
                                       <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
                                     </Select>
                                   </div>
-                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
                                     <Trash2 className="w-4 h-4 text-[#CA4545]" />
                                   </button>
                                 </div>
                               </div>
-                              {/* Contact: Email + Phone */}
                               <div className="flex flex-row items-center gap-2.5 w-full">
                                 <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                     {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
                                   </div>
                                 </div>
@@ -2536,30 +2815,71 @@ const MeetingDetail: React.FC = () => {
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                    <Input type="text" value={row.phone || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'phone', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                    <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                     {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
                                   </div>
                                 </div>
                               </div>
-                              {/* Bottom row: Checkboxes + Justification */}
+                              {sector !== '-' && (
+                                <div className="flex flex-row items-center gap-2.5 w-full">
+                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
+                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
+                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-row items-center gap-3 flex-wrap">
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={accessChecked} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية الاطلاع</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#F2F4F7] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_required} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={!!row.is_required} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#475467] whitespace-nowrap">مطلوب</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_consultant} disabled={!canEdit} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
+                                  <input type="checkbox" checked={!!row.is_consultant} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
                                   <span className="text-[12px] text-[#048F86] whitespace-nowrap">مستشار</span>
                                 </div>
                                 <div className="flex-1 min-w-[120px]">
-                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
+                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
                                   {errJust && <span className="text-[10px] text-red-600 text-right">{errJust}</span>}
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rowErrors: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>> = {};
+                                  const rName = (row.external_name ?? '').trim();
+                                  const rEmail = (row.external_email ?? '').trim();
+                                  const rPos = (row.position ?? '').trim();
+                                  const rPhone = (row.mobile ?? '').trim();
+                                  const rJust = (row.justification ?? '').trim();
+                                  if (!rName) rowErrors.external_name = 'مطلوب';
+                                  if (!rEmail) rowErrors.external_email = 'مطلوب';
+                                  else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+                                  if (!rPos) rowErrors.position = 'مطلوب';
+                                  if (!rPhone) rowErrors.mobile = 'مطلوب';
+                                  if (!rJust) rowErrors.justification = 'مطلوب';
+                                  if (Object.keys(rowErrors).length > 0) {
+                                    setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
+                                    return;
+                                  }
+                                  setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
+                                  setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#048F86] text-white hover:bg-[#037a71] transition-colors text-[14px] font-bold"
+                                style={{ fontFamily: "'Almarai', sans-serif" }}
+                              >
+                                <Check className="w-4 h-4" />
+                                حفظ
+                              </button>
                             </div>
                           </div>
                         );
@@ -2587,7 +2907,7 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
                 <div className="flex justify-end">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -2621,10 +2941,10 @@ const MeetingDetail: React.FC = () => {
                   const recordType = row.type || row.consultation_type || '';
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
-                  const typeLabel = recordType === 'SCHEDULING' ? 'جدولة' : recordType === 'CONTENT' ? 'محتوى' : recordType;
+                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                   const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                   const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
                   if (row.assignees?.length) {
@@ -2660,9 +2980,6 @@ const MeetingDetail: React.FC = () => {
                             <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {row.status && (
-                              <StatusBadge status={row.status} label={overallStatusLabels[row.status] || row.status} />
-                            )}
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Clock className="w-4 h-4 flex-shrink-0" />
                               <span>تاريخ الطلب : {requestDate}</span>
@@ -2737,10 +3054,10 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* التوجيه tab */}
+          {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
                 <div className="flex justify-end">
                   <button
                     type="button"
@@ -2762,7 +3079,7 @@ const MeetingDetail: React.FC = () => {
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                     const isExpanded = expandedGuidanceId === row.guidance_id;
                     const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة' };
+                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                     return (
                       <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
@@ -2957,21 +3274,12 @@ const MeetingDetail: React.FC = () => {
                           ),
                         },
                         {
-                          id: 'username',
-                          header: 'اسم المستخدم',
-                          width: 'w-32',
-                          align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.username || '-'}</span>
-                          ),
-                        },
-                        {
                           id: 'external_name',
-                          header: 'الإسم (خارجي)',
+                          header: 'الإسم',
                           width: 'w-36',
                           align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.external_name || '-'}</span>
+                          render: (row: MinisterAttendee & { mobile?: string; attendance_mechanism?: string; response_status?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.external_name || row.username || '-'}</span>
                           ),
                         },
                         {
@@ -2993,22 +3301,33 @@ const MeetingDetail: React.FC = () => {
                           ),
                         },
                         {
-                          id: 'phone',
+                          id: 'mobile',
                           header: 'الجوال',
                           width: 'w-28',
                           align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.phone || '-'}</span>
+                          render: (row: MinisterAttendee & { mobile?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.mobile || row.mobile || '-'}</span>
                           ),
                         },
                         {
-                          id: 'attendance_channel',
+                          id: 'attendance_mechanism',
                           header: 'آلية الحضور',
                           width: 'w-24',
                           align: 'center',
-                          render: (row: MinisterAttendee) => (
+                          render: (row: MinisterAttendee & { attendance_mechanism?: string }) => (
                             <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                              {row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-'}
+                              {row.attendance_mechanism || (row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-')}
+                            </span>
+                          ),
+                        },
+                        {
+                          id: 'response_status',
+                          header: 'حالة الرد',
+                          width: 'w-24',
+                          align: 'center',
+                          render: (row: MinisterAttendee & { response_status?: string }) => (
+                            <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                              {row.response_status === 'PENDING' ? 'قيد الانتظار' : row.response_status === 'RESPONDED' ? 'تم الرد' : row.response_status || '-'}
                             </span>
                           ),
                         },
@@ -3148,7 +3467,7 @@ const MeetingDetail: React.FC = () => {
           }}
           onSuccess={(data) => {
             if (data?.suggestions && Array.isArray(data.suggestions)) {
-              const mappedAttendees: MinisterAttendee[] = data.suggestions.map((suggestion: SuggestedAttendee) => ({
+              const mappedAttendees: MinisterAttendee[] = data.suggestions.map((suggestion: any) => ({
                 username: `${suggestion.first_name} ${suggestion.last_name}`,
                 external_email: suggestion.email,
                 external_name: `${suggestion.first_name} ${suggestion.last_name}`,
@@ -3156,17 +3475,24 @@ const MeetingDetail: React.FC = () => {
                 justification: suggestion.suggestion_reason,
                 access_permission: 'FULL',
                 position: suggestion.position_name || suggestion.job_description || '',
-                phone: suggestion.phone || '',
+                phone: suggestion.mobile || '',
                 is_consultant: false,
                 attendance_channel: 'PHYSICAL',
               }));
               // work
 
-              // Add the mapped attendees to the existing list
-              setScheduleForm((prev) => ({
-                ...prev,
-                minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
-              }));
+              setScheduleForm((prev) => {
+                const startIdx = prev.minister_attendees.length;
+                setEditingMinisterAttendees((s) => {
+                  const next = new Set(s);
+                  mappedAttendees.forEach((_, i) => next.add(startIdx + i));
+                  return next;
+                });
+                return {
+                  ...prev,
+                  minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
+                };
+              });
             }
           }}
         />
@@ -3434,7 +3760,6 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
-            <button type="button" onClick={handleRequestGuidanceDraft} disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
             <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب توجيه'}</button>
           </div>
         }
@@ -3458,7 +3783,6 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_id: '', consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
-            <button type="button" onClick={handleConsultationDraft} disabled={consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{consultationMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -4034,8 +4358,8 @@ const MeetingDetail: React.FC = () => {
                         </label>
                         <Input
                           type="text"
-                          value={attendee.phone || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'phone', e.target.value)}
+                          value={attendee.mobile || ''}
+                          onChange={(e) => updateMinisterAttendee(index, 'mobile', e.target.value)}
                           placeholder="الجوال"
                           className="w-full h-9 text-right"
                           style={{ fontFamily: "'Almarai', sans-serif" }}
