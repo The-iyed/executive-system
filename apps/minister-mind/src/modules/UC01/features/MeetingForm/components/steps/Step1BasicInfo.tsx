@@ -11,9 +11,10 @@ import {
   ActionButtons,
   FormAsyncSelectV2,
   FileUpload,
-  MeetingDateTimeRangePicker,
+  MeetingRangePicker,
   SECTOR_OPTIONS,
 } from '@shared';
+import type { MeetingRangeValue } from '@shared';
 import {
   MEETING_CATEGORY_OPTIONS,
   MEETING_CLASSIFICATION_OPTIONS,
@@ -23,10 +24,46 @@ import {
   MEETING_AGENDA_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
-import { isValidDateOrDateTime } from '../../schemas/step1BasicInfo.schema';
 import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
+
+function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
+  if (!startISO || !endISO) {
+    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
+  }
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
+  }
+  const toHHmm = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const startTime = toHHmm(start);
+  const endTime = toHHmm(end);
+  const isFullDay =
+    start.getHours() === 0 &&
+    start.getMinutes() === 0 &&
+    end.getHours() === 23 &&
+    end.getMinutes() >= 59;
+  return {
+    date: start,
+    startTime,
+    endTime,
+    isFullDay,
+  };
+}
+
+function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
+  if (!value.date) return null;
+  const [sh, sm] = value.startTime.split(':').map(Number);
+  const [eh, em] = value.endTime.split(':').map(Number);
+  const start = new Date(value.date);
+  start.setHours(sh, sm, 0, 0);
+  const end = new Date(value.date);
+  end.setHours(eh, em, 0, 0);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
 
 export interface Step1BasicInfoProps {
   formData: Partial<Step1BasicInfoFormData>;
@@ -231,56 +268,120 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               const now = new Date();
               const oneWeekFromNow = new Date(now);
               oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+              const meetingError =
+                (touched.meeting_start_date || touched.meeting_end_date) &&
+                (errors.meeting_start_date || errors.meeting_end_date);
+              const alt1Error =
+                (touched.alternative_1_start_date || touched.alternative_1_end_date) &&
+                (errors.alternative_1_start_date || errors.alternative_1_end_date);
+              const alt2Error =
+                (touched.alternative_2_start_date || touched.alternative_2_end_date) &&
+                (errors.alternative_2_start_date || errors.alternative_2_end_date);
               return (
                 <>
-                  <MeetingDateTimeRangePicker
-                    sectionTitle="موعد الاجتماع"
-                    startValue={formData.meeting_start_date || ''}
-                    endValue={formData.meeting_end_date || ''}
-                    onStartChange={(value) => handleChange('meeting_start_date', value)}
-                    onEndChange={(value) => handleChange('meeting_end_date', value)}
-                    onStartBlur={() => handleBlur('meeting_start_date')}
-                    onEndBlur={() => handleBlur('meeting_end_date')}
-                    minStartDate={oneWeekFromNow}
+                  <FormField
+                    className="w-full min-w-0 sm:col-span-2"
+                    label="موعد الاجتماع"
                     required
-                    disabled={isFieldDisabled('meeting_start_date')}
-                    startError={formData.meeting_start_date && isValidDateOrDateTime(formData.meeting_start_date) ? undefined : errors.meeting_start_date}
-                    endError={formData.meeting_end_date && isValidDateOrDateTime(formData.meeting_end_date) ? undefined : errors.meeting_end_date}
-                    startTouched={touched.meeting_start_date}
-                    endTouched={touched.meeting_end_date}
-                  />
-                  <MeetingDateTimeRangePicker
-                    sectionTitle="الموعد البديل الأول"
-                    startValue={formData.alternative_1_start_date || ''}
-                    endValue={formData.alternative_1_end_date || ''}
-                    onStartChange={(value) => handleChange('alternative_1_start_date', value)}
-                    onEndChange={(value) => handleChange('alternative_1_end_date', value)}
-                    onStartBlur={() => handleBlur('alternative_1_start_date')}
-                    onEndBlur={() => handleBlur('alternative_1_end_date')}
-                    minStartDate={oneWeekFromNow}
-                    required={false}
-                    disabled={isFieldDisabled('alternative_1_start_date')}
-                    startError={formData.alternative_1_start_date && isValidDateOrDateTime(formData.alternative_1_start_date) ? undefined : errors.alternative_1_start_date}
-                    endError={formData.alternative_1_end_date && isValidDateOrDateTime(formData.alternative_1_end_date) ? undefined : errors.alternative_1_end_date}
-                    startTouched={touched.alternative_1_start_date}
-                    endTouched={touched.alternative_1_end_date}
-                  />
-                  <MeetingDateTimeRangePicker
-                    sectionTitle="الموعد البديل الثاني"
-                    startValue={formData.alternative_2_start_date || ''}
-                    endValue={formData.alternative_2_end_date || ''}
-                    onStartChange={(value) => handleChange('alternative_2_start_date', value)}
-                    onEndChange={(value) => handleChange('alternative_2_end_date', value)}
-                    onStartBlur={() => handleBlur('alternative_2_start_date')}
-                    onEndBlur={() => handleBlur('alternative_2_end_date')}
-                    minStartDate={oneWeekFromNow}
-                    required={false}
-                    disabled={isFieldDisabled('alternative_2_start_date')}
-                    startError={formData.alternative_2_start_date && isValidDateOrDateTime(formData.alternative_2_start_date) ? undefined : errors.alternative_2_start_date}
-                    endError={formData.alternative_2_end_date && isValidDateOrDateTime(formData.alternative_2_end_date) ? undefined : errors.alternative_2_end_date}
-                    startTouched={touched.alternative_2_start_date}
-                    endTouched={touched.alternative_2_end_date}
-                  />
+                    error={
+                      meetingError
+                        ? errors.meeting_start_date || errors.meeting_end_date
+                        : undefined
+                    }
+                  >
+                    <MeetingRangePicker
+                      value={isoRangeToMeetingRange(
+                        formData.meeting_start_date || '',
+                        formData.meeting_end_date || ''
+                      )}
+                      onChange={(v) => {
+                        const iso = meetingRangeToIso(v);
+                        if (iso) {
+                          handleChange('meeting_start_date', iso.start);
+                          handleChange('meeting_end_date', iso.end);
+                        } else {
+                          handleChange('meeting_start_date', '');
+                          handleChange('meeting_end_date', '');
+                        }
+                      }}
+                      onBlur={() => {
+                        handleBlur('meeting_start_date');
+                        handleBlur('meeting_end_date');
+                      }}
+                      minDate={oneWeekFromNow}
+                      disabled={isFieldDisabled('meeting_start_date')}
+                      error={!!(touched.meeting_start_date && errors.meeting_start_date) || !!(touched.meeting_end_date && errors.meeting_end_date)}
+                      placeholder="اختر التاريخ والوقت"
+                    />
+                  </FormField>
+                  <FormField
+                    className="w-full min-w-0 sm:col-span-2"
+                    label="الموعد البديل الأول"
+                    error={
+                      alt1Error
+                        ? errors.alternative_1_start_date || errors.alternative_1_end_date
+                        : undefined
+                    }
+                  >
+                    <MeetingRangePicker
+                      value={isoRangeToMeetingRange(
+                        formData.alternative_1_start_date || '',
+                        formData.alternative_1_end_date || ''
+                      )}
+                      onChange={(v) => {
+                        const iso = meetingRangeToIso(v);
+                        if (iso) {
+                          handleChange('alternative_1_start_date', iso.start);
+                          handleChange('alternative_1_end_date', iso.end);
+                        } else {
+                          handleChange('alternative_1_start_date', '');
+                          handleChange('alternative_1_end_date', '');
+                        }
+                      }}
+                      onBlur={() => {
+                        handleBlur('alternative_1_start_date');
+                        handleBlur('alternative_1_end_date');
+                      }}
+                      minDate={oneWeekFromNow}
+                      disabled={isFieldDisabled('alternative_1_start_date')}
+                      error={!!(touched.alternative_1_start_date && errors.alternative_1_start_date) || !!(touched.alternative_1_end_date && errors.alternative_1_end_date)}
+                      placeholder="اختر التاريخ والوقت"
+                    />
+                  </FormField>
+                  <FormField
+                    className="w-full min-w-0 sm:col-span-2"
+                    label="الموعد البديل الثاني"
+                    error={
+                      alt2Error
+                        ? errors.alternative_2_start_date || errors.alternative_2_end_date
+                        : undefined
+                    }
+                  >
+                    <MeetingRangePicker
+                      value={isoRangeToMeetingRange(
+                        formData.alternative_2_start_date || '',
+                        formData.alternative_2_end_date || ''
+                      )}
+                      onChange={(v) => {
+                        const iso = meetingRangeToIso(v);
+                        if (iso) {
+                          handleChange('alternative_2_start_date', iso.start);
+                          handleChange('alternative_2_end_date', iso.end);
+                        } else {
+                          handleChange('alternative_2_start_date', '');
+                          handleChange('alternative_2_end_date', '');
+                        }
+                      }}
+                      onBlur={() => {
+                        handleBlur('alternative_2_start_date');
+                        handleBlur('alternative_2_end_date');
+                      }}
+                      minDate={oneWeekFromNow}
+                      disabled={isFieldDisabled('alternative_2_start_date')}
+                      error={!!(touched.alternative_2_start_date && errors.alternative_2_start_date) || !!(touched.alternative_2_end_date && errors.alternative_2_end_date)}
+                      placeholder="اختر التاريخ والوقت"
+                    />
+                  </FormField>
                 </>
               );
           })()}
