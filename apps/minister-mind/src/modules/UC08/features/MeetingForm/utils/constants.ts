@@ -34,14 +34,14 @@ export const MEETING_NATURE_OPTIONS = [
 export { SECTOR_OPTIONS };
 
 export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: 'موضوع الاجتماع', width: 'w-full' },
   { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'objective', header: 'الهدف', type: 'text', placeholder: 'الهدف', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
@@ -71,7 +71,7 @@ export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
 ];
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: 'عنصر الأجندة', width: 'w-full' },
   { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: 'إحاطة / تحديث / قرار / توجيه / اعتماد / أخرى', width: 'w-full' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض (بالدقائق)', type: 'select', selectOptions: PRESENTATION_DURATION_MINUTES_OPTIONS, placeholder: 'اختر المدة', width: 'w-40' },
@@ -80,13 +80,13 @@ export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
 ];
 
 export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'support_description', header: 'الدعم', type: 'text', placeholder: 'الدعم', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
+  { id: 'itemNumber', header: '#', width: 'min-w-[100px]' },
   { id: 'directive', header: 'التوجيه', type: 'text', placeholder: 'التوجيه', width: 'w-full' },
   { id: 'previousMeeting', header: 'الاجتماع السابق', type: 'text', placeholder: 'الاجتماع السابق', width: 'w-full' },
   { id: 'directiveDate', header: 'تاريخ التوجيه', type: 'date', width: 'min-w-[210px]', placeholder: 'dd/mm/yyyy' },
@@ -115,7 +115,7 @@ export const ATTENDANCE_MODE_OPTIONS = [
 ] as const;
 
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'min-w-[100px]' },
+  { id: 'itemNumber', header: '#', width: 'min-w-[80px]' },
   {
     id: 'full_name',
     header: 'الاسم الكامل',
