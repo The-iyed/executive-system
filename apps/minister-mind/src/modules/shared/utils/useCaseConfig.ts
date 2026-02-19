@@ -34,7 +34,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-02': {
     code: 'UC-02',
-    defaultRoute: UC02_PATH.DIRECTIVES,
+    defaultRoute: UC02_PATH.WORK_BASKET,
     navigationItems: [
       {
         id: 'directives',
