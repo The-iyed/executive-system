@@ -88,7 +88,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'guidance-requests',
         icon: 'solar:hand-stars-outline',
-        label: 'طلبات تقديم توجيه',
+        label: ' طلبات استشارات',
         path: UC04_PATH.GUIDANCE_REQUESTS,
       },
       {
