@@ -199,11 +199,11 @@ const Directives: React.FC = () => {
   ): TableColumn<MeetingCardData>[] => [
     {
       id: 'item_number',
-      header: 'رقم البند',
+      header: '#',
       width: 'flex-none min-w-16 w-16',
-      align: 'end',
+      align: 'center',
       render: (_row, index) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-center">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
             {index + 1 + pageOffset}
           </span>
@@ -234,7 +234,7 @@ const Directives: React.FC = () => {
       render: (row) => (
         <div className="w-full min-w-0">
           <TruncatedWithTooltip title={row.title}>
-            {row.title}
+          {row.title}
           </TruncatedWithTooltip>
         </div>
       ),
@@ -254,7 +254,7 @@ const Directives: React.FC = () => {
             <TruncatedWithTooltip title={natureLabel}>
               {natureLabel}
             </TruncatedWithTooltip>
-          </div>
+        </div>
         );
       },
     },
@@ -338,11 +338,11 @@ const Directives: React.FC = () => {
   ): TableColumn<MeetingCardData>[] => [
     {
       id: 'item_number',
-      header: 'رقم البند',
+      header: '#',
       width: 'flex-none min-w-16 w-16',
-      align: 'end',
+      align: 'center',
       render: (_row, index) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-center">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
             {index + 1 + pageOffset}
           </span>
@@ -494,7 +494,7 @@ const Directives: React.FC = () => {
           onClick: () => openCreateDrawer(),
         }}
       />
-      <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
+    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
         {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
@@ -549,15 +549,15 @@ const Directives: React.FC = () => {
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                      try {
+                    try {
                         await cancelDirective(d.id, directiveToExternalDirectiveBody(d));
-                        setOpenDropdownId(null);
-                        setDropdownPosition(null);
-                        await refetch();
-                      } catch (error) {
-                        console.error('Error cancelling directive:', error);
-                        setOpenDropdownId(null);
-                        setDropdownPosition(null);
+                      setOpenDropdownId(null);
+                      setDropdownPosition(null);
+                      await refetch();
+                    } catch (error) {
+                      console.error('Error cancelling directive:', error);
+                      setOpenDropdownId(null);
+                      setDropdownPosition(null);
                       }
                     }
                   }
