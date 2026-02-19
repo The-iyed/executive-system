@@ -6,7 +6,7 @@ import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels } from 
 import type { MeetingClassification } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye } from 'lucide-react';
-import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests, type MeetingApiResponse } from '../data/meetingsApi';
+import { getMeetings, GetMeetingsParams, getAssignedSchedulingRequests, getPreviousMeetingsFromExecutionSystem, type MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
 
@@ -80,9 +80,7 @@ const ScheduleReview: React.FC = () => {
         return getAssignedSchedulingRequests(params);
       }
       if (activeTab === 'scheduled-meetings') {
-        params.status = MeetingStatus.CLOSED;
-        params.owner_type = 'SCHEDULING';
-        return getMeetings(params);
+        return getPreviousMeetingsFromExecutionSystem({ skip, limit: ITEMS_PER_PAGE });
       }
       return getMeetings(params);
     },
