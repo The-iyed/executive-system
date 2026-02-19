@@ -69,6 +69,7 @@ export const useMeetingSteps = ({
     },
     isEditMode,
     isNewMeeting: true,
+    presentationRequiredOptional: true,
   });
 
   const step3Hook = useStep3({

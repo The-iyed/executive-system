@@ -14,7 +14,6 @@ function formatDurationMs(ms: number): string {
   return 'أقل من دقيقة';
 }
 
-/** End of same calendar day (23:59:59.999) */
 function endOfDay(d: Date): Date {
   const out = new Date(d);
   out.setHours(23, 59, 59, 999);
@@ -22,9 +21,7 @@ function endOfDay(d: Date): Date {
 }
 
 export interface MeetingDateTimeRangePickerProps {
-  /** ISO datetime string */
   startValue: string;
-  /** ISO datetime string */
   endValue: string;
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
@@ -32,16 +29,13 @@ export interface MeetingDateTimeRangePickerProps {
   onEndBlur?: () => void;
   onStartFocus?: () => void;
   onEndFocus?: () => void;
-  /** e.g. one week from now; dates before this are disabled for start */
   minStartDate: Date;
-  /** Both start and end required (e.g. main slot) */
   required?: boolean;
   disabled?: boolean;
   startError?: string;
   endError?: string;
   startTouched?: boolean;
   endTouched?: boolean;
-  /** Section title above the two pickers */
   sectionTitle?: string;
   startLabel?: string;
   endLabel?: string;
@@ -71,14 +65,12 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
     () => (startValue && !Number.isNaN(new Date(startValue).getTime()) ? new Date(startValue) : null),
     [startValue]
   );
-  /** End must be same day as start – max is end of that day (23:59:59). */
   const endMax = useMemo(
     () => (startDate ? endOfDay(startDate) : null),
     [startDate]
   );
   const isEndDisabled = !startDate || disabled;
 
-  /** When user first selects start and end is empty, set end to start + 1 hour (same day). */
   const handleStartChange = useCallback(
     (value: string) => {
       onStartChange(value);
@@ -91,15 +83,6 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
     },
     [onStartChange, onEndChange, endValue]
   );
-
-  const durationMs =
-    startDate && endValue
-      ? (() => {
-          const end = new Date(endValue);
-          return Number.isNaN(end.getTime()) ? null : end.getTime() - startDate.getTime();
-        })()
-      : null;
-  const durationLabel = durationMs != null && durationMs >= 0 ? formatDurationMs(durationMs) : null;
 
   return (
     <div className="w-full min-w-0 sm:col-span-2 flex flex-col gap-2">
@@ -147,13 +130,6 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
           </div>
         </FormField>
       </div>
-      {durationLabel != null && (
-        <p className="text-sm text-muted-foreground text-right" aria-live="polite">
-          المدة: {durationLabel} (نفس اليوم، الحد الأقصى 24 ساعة)
-        </p>
-      )}
     </div>
   );
 };
-
-MeetingDateTimeRangePicker.displayName = 'MeetingDateTimeRangePicker';
