@@ -263,6 +263,17 @@ export const getWaitingList = async (params: GetMeetingsParams = {}): Promise<Me
   return response.data;
 };
 
+/** Previous meetings list from execution system (الاجتماعات السابقة tab) */
+const EXECUTION_SYSTEM_MEETINGS_URL = 'https://execution-system.momrahai.com/api/meetings';
+
+export const getPreviousMeetingsFromExecutionSystem = async (params: { skip?: number; limit?: number } = {}): Promise<MeetingsListResponse> => {
+  const skip = params.skip ?? 0;
+  const limit = params.limit ?? 10;
+  const url = `${EXECUTION_SYSTEM_MEETINGS_URL}?skip=${skip}&limit=${limit}`;
+  const response = await axiosInstance.get<MeetingsListResponse>(url);
+  return response.data;
+};
+
 export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
   const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);
   return response.data;
