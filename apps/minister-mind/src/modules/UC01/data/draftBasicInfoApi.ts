@@ -49,6 +49,7 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
   appendIf(form.meetingType, 'meeting_type', fd);
   appendIf(form.meetingClassification1, 'meeting_classification_type', fd);
   appendIf(form.meetingChannel, 'meeting_channel', fd);
+  appendIf(form.meeting_location, 'meeting_location', fd);
   appendIf(form.sector, 'sector', fd);
   appendIf(form.relatedTopic, 'related_topic', fd);
   appendDateIf(form.dueDate, 'deadline', fd);
