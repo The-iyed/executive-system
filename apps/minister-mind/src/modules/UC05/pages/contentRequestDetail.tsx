@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, GitCompare, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
+import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, Check, FileText } from 'lucide-react';
 import { Tabs, StatusBadge, MeetingActionsBar } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
+  SectorLabels,
   getMeetingTypeLabel,
   getMeetingClassificationLabel,
   getMeetingClassificationTypeLabel,
@@ -20,7 +21,7 @@ import {
   getContentConsultants,
   approveContent,
   analyzeContradictions,
-  getAttachmentInsights,
+  getAttachmentInsightsWithPolling,
   runCompareByAttachment,
   type Attachment,
   type ConsultantUser,
@@ -187,6 +188,8 @@ const ContentRequestDetail: React.FC = () => {
   const [compareResult, setCompareResult] = useState<ComparePresentationsResponse | null>(null);
   const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
 
+  const insightsAbortControllerRef = useRef<AbortController | null>(null);
+
   // Actions bar (FAB) open state – same pattern as meeting detail
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
 
@@ -219,14 +222,13 @@ const ContentRequestDetail: React.FC = () => {
         item.consultation_answers?.some((a) => a.is_draft)
     ) || [];
 
-  // Fetch LLM notes/insights when user opens the insights modal for a presentation
-  const { data: attachmentInsights, isLoading: isLoadingInsights } = useQuery({
-    queryKey: ['attachment-insights', insightsModalAttachment?.id],
-    queryFn: () => getAttachmentInsights(insightsModalAttachment!.id),
-    enabled: !!insightsModalAttachment?.id,
-  });
-
   const queryClient = useQueryClient();
+
+  const insightsMutation = useMutation({
+    mutationFn: ({ attachmentId, signal }: { attachmentId: string; signal?: AbortSignal }) =>
+      getAttachmentInsightsWithPolling(attachmentId, { signal }),
+    onError: () => {},
+  });
 
   // Consultants query for async select
   const {
@@ -717,7 +719,7 @@ const ContentRequestDetail: React.FC = () => {
                       القطاع
                     </label>
                     <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.sector || '-'}
+                      {(contentRequest.sector && SectorLabels[contentRequest.sector as keyof typeof SectorLabels]) || contentRequest.sector || '-'}
                     </div>
                   </div>
 
@@ -946,102 +948,105 @@ const ContentRequestDetail: React.FC = () => {
                   المحتوى
                 </h2>
 
-                {/* العرض التقديمي */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    العرض التقديمي
-                  </label>
-                  {presentationAttachments.length > 0 ? (
-                    <TooltipProvider>
-                    <div className="flex flex-col gap-4">
-                      {presentationAttachments.map((att: Attachment) => (
-                        <div
-                          key={att.id}
-                          className="flex flex-row items-center px-4 py-3 gap-4 bg-white border border-[#009883] rounded-[12px]"
-                        >
-                          <div className="flex flex-row items-center gap-3">
-                            {att.file_type?.toLowerCase() === 'pdf' ? (
-                              <img src={pdfIcon} alt="pdf" className="w-10 h-10 object-contain" />
-                            ) : (
-                              <div className="flex items-center justify-center w-10 h-10 bg-[#E2E5E7] rounded-md text-xs font-semibold text-[#B04135]">
-                                {att.file_type?.toUpperCase() || ''}
-                              </div>
-                            )}
-                            <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                {att.file_name}
-                              </span>
-                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                {formatFileSize(att.file_size || 0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-row items-center gap-2 ml-auto">
-                            {att.replaces_attachment_id != null && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setCompareResult(null);
-                                      setCompareErrorDetail(null);
-                                      setIsCompareModalOpen(true);
-                                      compareByAttachmentMutation.mutate(att.id);
-                                    }}
-                                    disabled={compareByAttachmentMutation.isPending}
-                                    className="inline-flex items-center justify-center w-9 h-9 bg-[#009883]/10 rounded-md hover:bg-[#009883]/20 transition-colors text-[#009883] disabled:opacity-50"
-                                  >
-                                    <GitCompare className="w-5 h-5" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-right">
-                                  <p>مقارنة</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => setInsightsModalAttachment({ id: att.id, file_name: att.file_name })}
-                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                >
-                                  <MessageSquare className="w-5 h-5 text-[#475467]" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-right">
-                                <p>ملاحظات على العرض</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            {att.blob_url && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => window.open(att.blob_url, '_blank')}
-                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                >
-                                  <Eye className="w-5 h-5 text-[#475467]" />
-                                </button>
-                                <a
-                                  href={att.blob_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                >
-                                  <Download className="w-5 h-5 text-[#009883]" />
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                {/* العرض التقديمي – same card as meeting detail */}
+                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
+                  <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
+                    <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
+                      <FileCheck className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
                     </div>
+                    <label className="text-sm font-bold text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>العرض التقديمي</label>
+                  </div>
+                  <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
+                    <TooltipProvider>
+                      <div className="flex flex-col max-w-[800px] gap-4">
+                        {presentationAttachments.map((att: Attachment) => (
+                          <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
+                            <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#009883]/40 rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#009883] hover:shadow-[0px_2px_8px_rgba(4,143,134,0.12)] transition-all duration-200">
+                              {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                              <div className="flex flex-col items-end min-w-0 flex-1">
+                                <span className="text-sm font-medium text-[#344054] truncate w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span>
+                                <span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="flex items-center rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-0.5">
+                                  {att.replaces_attachment_id != null && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setCompareResult(null);
+                                            setCompareErrorDetail(null);
+                                            setIsCompareModalOpen(true);
+                                            compareByAttachmentMutation.mutate(att.id);
+                                          }}
+                                          disabled={compareByAttachmentMutation.isPending}
+                                          className="p-2 rounded-md hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50 transition-colors"
+                                        >
+                                          <Scale className="w-4 h-4" strokeWidth={1.26} />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="text-right">
+                                        <p>تقييم الاختلاف بين العروض</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                                {att.blob_url && (
+                                  <>
+                                    <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
+                                    <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                insightsAbortControllerRef.current?.abort();
+                                insightsAbortControllerRef.current = new AbortController();
+                                setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
+                                insightsMutation.reset();
+                                insightsMutation.mutate({
+                                  attachmentId: att.id,
+                                  signal: insightsAbortControllerRef.current.signal,
+                                });
+                              }}
+                              disabled={insightsMutation.isPending}
+                              className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
+                              style={{
+                                fontFamily: "'Almarai', sans-serif",
+                                fontSize: '11px',
+                                lineHeight: '14px',
+                                background: '#34C3BA',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
+                              }}
+                            >
+                              <span className="absolute left-0 top-1/2 pointer-events-none w-[86px] h-[74px] rounded-full opacity-80 -translate-y-1/2 -translate-x-1/3" style={{ background: '#87F8F8', filter: 'blur(9.41px)' }} aria-hidden />
+                              <span className="relative z-10 flex items-center gap-2">
+                                ملاحظات بالذكاء الاصطناعي
+                                <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
+                                  <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
+                                  <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
+                                  <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
+                                  <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
+                                  <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
+                                </svg>
+                              </span>
+                            </button>
+                          </div>
+                        ))}
+                        {presentationAttachments.length === 0 && (
+                          <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed border-[#D0D5DD] min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
+                              <FileCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
+                            </div>
+                            <p className="font-medium text-base mb-1" style={{ fontFamily: "'Almarai', sans-serif", color: '#344054' }}>لا يوجد عرض تقديمي</p>
+                          </div>
+                        )}
+                      </div>
                     </TooltipProvider>
-                  ) : (
-                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      لا يوجد عرض تقديمي
-                    </p>
-                  )}
+                  </div>
                 </div>
 
                 {/* متى سيتم إرفاق العرض؟ */}
@@ -1144,11 +1149,11 @@ const ContentRequestDetail: React.FC = () => {
                   قائمة المدعوين (مقدّم الطلب)
                 </h2>
                 {contentRequest.invitees && contentRequest.invitees.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                     {contentRequest.invitees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
+                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
@@ -1238,11 +1243,11 @@ const ContentRequestDetail: React.FC = () => {
                   قائمة المدعوين (الوزير)
                 </h2>
                 {contentRequest.minister_attendees && contentRequest.minister_attendees.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                     {contentRequest.minister_attendees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
+                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
@@ -1493,168 +1498,129 @@ const ContentRequestDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
+          {/* Compare presentations result modal (تقييم الاختلاف بين العروض) – same as meeting detail */}
           <Dialog open={isCompareModalOpen} onOpenChange={setIsCompareModalOpen}>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
               <DialogHeader>
                 <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   تقييم الاختلاف بين العروض
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 overflow-y-auto px-1 space-y-6">
+              <div className="flex flex-col gap-4 py-4 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 {compareByAttachmentMutation.isPending ? (
-                  <p className="text-center text-gray-500 py-8" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    جاري تقييم الاختلاف بين العروض...
-                  </p>
+                  <p className="text-center text-gray-500 py-6">جاري تقييم الاختلاف بين العروض...</p>
                 ) : compareByAttachmentMutation.isError ? (
-                  <div className="text-center py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    <p className="text-red-600 font-medium mb-1">
-                      حدث خطأ أثناء تقييم الاختلاف
-                    </p>
-                    {compareErrorDetail ? (
-                      <p className="text-gray-700 text-sm mt-2 text-right max-w-xl mx-auto">
-                        {translateCompareErrorDetail(compareErrorDetail) ?? compareErrorDetail}
-                      </p>
-                    ) : (
-                      <p className="text-gray-600 text-sm mt-2">يرجى المحاولة لاحقاً.</p>
-                    )}
+                  <div className="text-center py-4">
+                    <p className="text-red-600 font-medium mb-1">حدث خطأ أثناء تقييم الاختلاف</p>
+                    {compareErrorDetail ? <p className="text-gray-700 text-sm mt-2 text-right">{translateCompareErrorDetail(compareErrorDetail) ?? compareErrorDetail}</p> : <p className="text-gray-600 text-sm mt-2">يرجى المحاولة لاحقاً.</p>}
                   </div>
                 ) : compareResult ? (
                   <>
-                    {/* Overall */}
-                    <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
-                      <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        النتيجة العامة
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        <span className="text-gray-600">معرف التقييم:</span>
-                        <span className="text-gray-900">{compareResult.comparison_id}</span>
-                        <span className="text-gray-600">الحالة:</span>
-                        <span className="text-gray-900">{translateCompareValue(compareResult.status, COMPARE_STATUS)}</span>
-                        <span className="text-gray-600">درجة الاختلاف الإجمالية:</span>
-                        <span className="text-gray-900">{compareResult.overall_score}</span>
-                        <span className="text-gray-600">مستوى الاختلاف:</span>
-                        <span className="text-gray-900">{translateCompareValue(compareResult.difference_level, COMPARE_LEVEL)}</span>
-                        <span className="text-gray-600">توصية إعادة التوليد:</span>
-                        <span className="text-gray-900">{translateCompareValue(compareResult.regeneration_recommendation, COMPARE_RECOMMENDATION)}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-500">معرف التقييم</span>
+                        <span className="font-medium text-gray-900">{compareResult.comparison_id || '—'}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-500">الدرجة الإجمالية</span>
+                        <span className="font-medium text-gray-900">{compareResult.overall_score ?? '—'}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-500">مستوى الاختلاف</span>
+                        <span className="font-medium text-gray-900">{translateCompareValue(compareResult.difference_level, COMPARE_LEVEL)}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-500">الحالة</span>
+                        <span className="font-medium text-gray-900">{translateCompareValue(compareResult.status, COMPARE_STATUS)}</span>
                       </div>
                     </div>
-
-                    {/* Summary */}
-                    {compareResult.summary && (
-                      <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          ملخص الشرائح
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          <span className="text-gray-600">شرائح العرض الأصلي:</span>
-                          <span className="text-gray-900">{compareResult.summary.total_slides_original}</span>
-                          <span className="text-gray-600">شرائح العرض الجديد:</span>
-                          <span className="text-gray-900">{compareResult.summary.total_slides_new}</span>
-                          <span className="text-gray-600">الفرق:</span>
-                          <span className="text-gray-900">{compareResult.summary.slide_count_difference}</span>
-                          <span className="text-gray-600">بدون تغيير:</span>
-                          <span className="text-gray-900">{compareResult.summary.unchanged_slides}</span>
-                          <span className="text-gray-600">تغييرات طفيفة:</span>
-                          <span className="text-gray-900">{compareResult.summary.minor_changes}</span>
-                          <span className="text-gray-600">تغييرات متوسطة:</span>
-                          <span className="text-gray-900">{compareResult.summary.moderate_changes}</span>
-                          <span className="text-gray-600">تغييرات كبيرة:</span>
-                          <span className="text-gray-900">{compareResult.summary.major_changes}</span>
-                          <span className="text-gray-600">شرائح جديدة:</span>
-                          <span className="text-gray-900">{compareResult.summary.new_slides}</span>
+                    {compareResult.regeneration_recommendation ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-500 text-sm">توصية إعادة التوليد</span>
+                        <p className="text-gray-900 whitespace-pre-wrap">{translateCompareValue(compareResult.regeneration_recommendation, COMPARE_RECOMMENDATION)}</p>
+                      </div>
+                    ) : null}
+                    {compareResult.summary ? (
+                      <div className="flex flex-col gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <span className="text-gray-700 font-medium">ملخص الشرائح</span>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span>الشرائح الأصلية: {compareResult.summary.total_slides_original ?? '—'}</span>
+                          <span>الشرائح الجديدة: {compareResult.summary.total_slides_new ?? '—'}</span>
+                          <span>فرق العدد: {compareResult.summary.slide_count_difference ?? '—'}</span>
+                          <span>بدون تغيير: {compareResult.summary.unchanged_slides ?? '—'}</span>
+                          <span>تغييرات طفيفة: {compareResult.summary.minor_changes ?? '—'}</span>
+                          <span>تغييرات متوسطة: {compareResult.summary.moderate_changes ?? '—'}</span>
+                          <span>تغييرات كبيرة: {compareResult.summary.major_changes ?? '—'}</span>
+                          <span>شرائح جديدة: {compareResult.summary.new_slides ?? '—'}</span>
                         </div>
                       </div>
-                    )}
-
-                    {/* Regeneration decision */}
-                    {compareResult.regeneration_decision && (
-                      <div className="rounded-xl border border-gray-200 bg-amber-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          قرار إعادة التوليد
-                        </h4>
-                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          <p><span className="text-gray-600 font-medium">التوصية:</span> {translateCompareValue(compareResult.regeneration_decision.recommendation, COMPARE_RECOMMENDATION)}</p>
-                          <p><span className="text-gray-600 font-medium">الثقة:</span> {translateCompareValue(compareResult.regeneration_decision.confidence, COMPARE_CONFIDENCE_IMPACT)}</p>
-                          {compareResult.regeneration_decision.reasoning && (
-                            <p><span className="text-gray-600 font-medium">الاستدلال:</span> {compareResult.regeneration_decision.reasoning}</p>
-                          )}
-                          {compareResult.regeneration_decision.key_factors && compareResult.regeneration_decision.key_factors.length > 0 && (
-                            <div>
-                              <span className="text-gray-600 font-medium">عوامل رئيسية:</span>
-                              <ul className="list-disc list-inside mt-1">{compareResult.regeneration_decision.key_factors.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                    ) : null}
+                    {compareResult.ai_insights && Object.keys(compareResult.ai_insights).length > 0 ? (
+                      <div className="flex flex-col gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <span className="text-gray-700 font-medium">رؤى الذكاء الاصطناعي</span>
+                        {(() => {
+                          const ai = compareResult.ai_insights as {
+                            main_topics?: string[];
+                            business_impact?: string;
+                            risk_assessment?: string;
+                            presentation_coherence?: string;
+                            slide_count_comparison?: { original_count?: number; new_count?: number; difference?: number };
+                          };
+                          return (
+                            <div className="flex flex-col gap-2 text-sm text-right">
+                              {ai.main_topics && Array.isArray(ai.main_topics) && ai.main_topics.length > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-gray-500">المواضيع الرئيسية</span>
+                                  <ul className="list-disc list-inside text-gray-900">
+                                    {ai.main_topics.map((t, i) => (
+                                      <li key={i}>{t}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                              {ai.business_impact != null && ai.business_impact !== '' ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-gray-500">الأثر على الأعمال</span>
+                                  <span className="text-gray-900">{String(ai.business_impact)}</span>
+                                </div>
+                              ) : null}
+                              {ai.risk_assessment != null && ai.risk_assessment !== '' ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-gray-500">تقييم المخاطر</span>
+                                  <span className="text-gray-900">{String(ai.risk_assessment)}</span>
+                                </div>
+                              ) : null}
+                              {ai.presentation_coherence != null && ai.presentation_coherence !== '' ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-gray-500">تماسك العرض</span>
+                                  <span className="text-gray-900">{String(ai.presentation_coherence)}</span>
+                                </div>
+                              ) : null}
+                              {ai.slide_count_comparison && typeof ai.slide_count_comparison === 'object' ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-gray-500">مقارنة عدد الشرائح</span>
+                                  <div className="grid grid-cols-2 gap-2 text-gray-900">
+                                    <span>الأصلي: {ai.slide_count_comparison.original_count ?? '—'}</span>
+                                    <span>الجديد: {ai.slide_count_comparison.new_count ?? '—'}</span>
+                                    <span>الفرق: {ai.slide_count_comparison.difference != null ? ai.slide_count_comparison.difference : '—'}</span>
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
-                          )}
-                          {compareResult.regeneration_decision.business_impact && (
-                            <p><span className="text-gray-600 font-medium">الأثر على العمل:</span> {translateCompareValue(compareResult.regeneration_decision.business_impact, COMPARE_CONFIDENCE_IMPACT)}</p>
-                          )}
-                          {compareResult.regeneration_decision.risk_assessment && (
-                            <p><span className="text-gray-600 font-medium">تقييم المخاطر:</span> {translateCompareValue(compareResult.regeneration_decision.risk_assessment, COMPARE_CONFIDENCE_IMPACT)}</p>
-                          )}
-                          {compareResult.regeneration_decision.presentation_coherence && (
-                            <p><span className="text-gray-600 font-medium">تماسك العرض:</span> {translateCompareValue(compareResult.regeneration_decision.presentation_coherence, COMPARE_COHERENCE)}</p>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </div>
-                    )}
-
-                    {/* AI insights */}
-                    {compareResult.ai_insights && (
-                      <div className="rounded-xl border border-gray-200 bg-blue-50/80 p-4">
-                        <h4 className="text-base font-semibold text-gray-900 text-right mb-3" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          رؤى الذكاء الاصطناعي
-                        </h4>
-                        <div className="space-y-2 text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          {compareResult.ai_insights.main_topics && compareResult.ai_insights.main_topics.length > 0 && (
-                            <p><span className="text-gray-600 font-medium">المواضيع الرئيسية:</span> {compareResult.ai_insights.main_topics.join('، ')}</p>
-                          )}
-                          {compareResult.ai_insights.slide_count_comparison && (
-                            <p>
-                              <span className="text-gray-600 font-medium">مقارنة عدد الشرائح:</span>{' '}
-                              أصلي: {compareResult.ai_insights.slide_count_comparison.original_count}،
-                              جديد: {compareResult.ai_insights.slide_count_comparison.new_count}،
-                              فرق: {compareResult.ai_insights.slide_count_comparison.difference}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Slide by slide */}
-                    {compareResult.slide_by_slide && compareResult.slide_by_slide.length > 0 && (
-                      <div className="rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-4 py-3 bg-[#009883]/10 border-b border-gray-200">
-                          <h4 className="text-base font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                            تفاصيل كل شريحة
-                          </h4>
-                        </div>
-                        <div className="max-h-[320px] overflow-y-auto">
-                          {compareResult.slide_by_slide.map((slide, idx) => (
-                            <div
-                              key={idx}
-                              className="px-4 py-3 border-b border-gray-100 text-right text-sm last:border-b-0"
-                              style={{ fontFamily: "'Almarai', sans-serif" }}
-                            >
-                              <span className="font-medium text-[#009883]">شريحة {slide.slide_number}:</span>{' '}
-                              <span className="text-gray-700">{slide.details}</span>{' '}
-                              <span className="text-gray-500">({translateCompareValue(slide.change_level, COMPARE_LEVEL)})</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    ) : null}
                   </>
                 ) : (
-                  <p className="text-center text-gray-500 py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    لا توجد نتيجة لعرضها.
-                  </p>
+                  <p className="text-gray-500">لا توجد نتيجة لعرضها.</p>
                 )}
               </div>
-              <DialogFooter className="border-t pt-4">
+              <DialogFooter className="flex-row-reverse gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCompareModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   إغلاق
@@ -1885,64 +1851,134 @@ const ContentRequestDetail: React.FC = () => {
         ]}
       />
 
-      {/* Attachment LLM notes/insights modal (presentation) */}
-      <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) setInsightsModalAttachment(null); }}>
-        <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-              تقييم الاختلاف بين العروض {insightsModalAttachment?.file_name ? `– ${insightsModalAttachment.file_name}` : ''}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 text-right flex flex-col gap-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-            {isLoadingInsights ? (
-              <p className="text-gray-500">جاري التحميل...</p>
-            ) : attachmentInsights != null ? (
+      {/* Attachment LLM notes/insights modal (ملاحظات على العرض) – same as meeting detail */}
+      <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
+        <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-hidden p-0" dir="rtl">
+          <div className="relative px-6 pt-6 pb-4 border-b border-gray-100">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-l from-[#048F86] via-[#06B6A4] to-[#A6D8C1]" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#048F86] to-[#06B6A4]">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <DialogHeader className="p-0">
+                  <DialogTitle className="text-right text-[16px] font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    تحليل العرض التقديمي
+                  </DialogTitle>
+                </DialogHeader>
+                {insightsModalAttachment?.file_name && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <FileText className="h-3.5 w-3.5 text-[#667085] flex-shrink-0" />
+                    <span className="text-[13px] text-[#667085] truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {insightsModalAttachment.file_name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)', fontFamily: "'Almarai', sans-serif" }}>
+            {insightsMutation.isPending ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-4">
+                <div className="relative">
+                  <div className="h-14 w-14 rounded-full bg-[#E6F9F8] flex items-center justify-center">
+                    <Loader2 className="h-7 w-7 text-[#048F86] animate-spin" />
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[15px] font-semibold text-[#101828]">جاري التحليل...</span>
+                  <span className="text-[13px] text-[#667085]">يتم تحليل العرض التقديمي بواسطة الذكاء الاصطناعي</span>
+                </div>
+              </div>
+            ) : insightsMutation.isError ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[15px] font-semibold text-[#101828]">تعذّر إتمام التحليل</span>
+                  <span className="text-[13px] text-[#667085]">حدث خطأ أثناء جلب الملاحظات. يرجى المحاولة لاحقاً.</span>
+                </div>
+              </div>
+            ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
               (() => {
-                const d = attachmentInsights as AttachmentInsightsResponse;
+                const d = insightsMutation.data as AttachmentInsightsResponse;
                 const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
                 const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                if (notes.length === 0 && suggestions.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10 gap-3">
+                      <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
+                        <Check className="h-6 w-6 text-[#667085]" />
+                      </div>
+                      <span className="text-[14px] text-[#667085]">لا توجد ملاحظات أو اقتراحات على هذا العرض.</span>
+                    </div>
+                  );
+                }
                 return (
-                  <>
+                  <div className="flex flex-col gap-5">
                     {notes.length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        <span className="text-gray-700 font-medium">ملاحظات الذكاء الاصطناعي</span>
-                        <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50">
+                            <FileText className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <span className="text-[14px] font-bold text-[#101828]">الملاحظات</span>
+                          <span className="text-[12px] text-[#667085] bg-[#F2F4F7] rounded-full px-2 py-0.5">{notes.length}</span>
+                        </div>
+                        <div className="flex flex-col gap-2 mr-1">
                           {notes.map((note, idx) => (
-                            <li key={idx} className="whitespace-pre-wrap">{note}</li>
+                            <div key={idx} className="flex gap-3 items-start p-3 rounded-xl bg-[#FFFBF5] border border-amber-100">
+                              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold mt-0.5">{idx + 1}</span>
+                              <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">{note}</p>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                     {suggestions.length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        <span className="text-gray-700 font-medium">اقتراحات الذكاء الاصطناعي</span>
-                        <ul className="list-disc list-inside space-y-1 text-gray-900 text-sm">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E6F9F8]">
+                            <FileText className="h-4 w-4 text-[#048F86]" />
+                          </div>
+                          <span className="text-[14px] font-bold text-[#101828]">الاقتراحات</span>
+                          <span className="text-[12px] text-[#667085] bg-[#F2F4F7] rounded-full px-2 py-0.5">{suggestions.length}</span>
+                        </div>
+                        <div className="flex flex-col gap-2 mr-1">
                           {suggestions.map((s, idx) => (
-                            <li key={idx} className="whitespace-pre-wrap">{s}</li>
+                            <div key={idx} className="flex gap-3 items-start p-3 rounded-xl bg-[#F6FFFE] border border-[#D0F0ED]">
+                              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#D0F0ED] text-[#048F86] text-[11px] font-bold mt-0.5">{idx + 1}</span>
+                              <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">{s}</p>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
-                    {notes.length === 0 && suggestions.length === 0 && (
-                      <p className="text-gray-500">لا توجد ملاحظات أو اقتراحات.</p>
-                    )}
-                  </>
+                  </div>
                 );
               })()
-            ) : (
-              <p className="text-gray-500">لا توجد ملاحظات.</p>
-            )}
+            ) : !insightsMutation.isPending && !insightsMutation.isError ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-[#98A2B3]" />
+                </div>
+                <span className="text-[14px] text-[#667085]">لا توجد ملاحظات.</span>
+              </div>
+            ) : null}
           </div>
-          <DialogFooter className="flex-row-reverse gap-2">
+
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
             <button
               type="button"
-              onClick={() => setInsightsModalAttachment(null)}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              onClick={() => { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); }}
+              className="px-5 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors text-[14px] font-semibold shadow-sm"
               style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               إغلاق
             </button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
