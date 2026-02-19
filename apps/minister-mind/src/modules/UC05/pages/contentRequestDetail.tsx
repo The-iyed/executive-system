@@ -6,6 +6,7 @@ import { Tabs, StatusBadge, MeetingActionsBar } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
+  SectorLabels,
   getMeetingTypeLabel,
   getMeetingClassificationLabel,
   getMeetingClassificationTypeLabel,
@@ -718,7 +719,7 @@ const ContentRequestDetail: React.FC = () => {
                       القطاع
                     </label>
                     <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.sector || '-'}
+                      {(contentRequest.sector && SectorLabels[contentRequest.sector as keyof typeof SectorLabels]) || contentRequest.sector || '-'}
                     </div>
                   </div>
 
@@ -1152,7 +1153,7 @@ const ContentRequestDetail: React.FC = () => {
                     {contentRequest.invitees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
+                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
@@ -1246,7 +1247,7 @@ const ContentRequestDetail: React.FC = () => {
                     {contentRequest.minister_attendees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
+                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
                       const email = invitee.external_email || '-';
                       const mobile = invitee.mobile || '-';
                       const v = invitee.attendance_mechanism;
