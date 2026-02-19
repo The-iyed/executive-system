@@ -105,7 +105,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         <div className="flex flex-row items-start justify-between gap-3">
           <CardTooltip text={meeting.title}>
             <h3
-              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap whitespace-nowrap"
+              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2"
               style={{ ...fontStyle, fontSize: '15px' }}
             >
               {meeting.title}
@@ -132,78 +132,72 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           </div>
         </CardTooltip>
 
-        {/* Row 3: Request Number + Date pills */}
-        <div className="flex flex-row items-center gap-2.5 w-full">
+        {/* Info pills – each pill takes full width */}
+        <div className="flex flex-col gap-2.5 w-full">
           {meeting.requestNumber && (
             <CardTooltip text={meeting.requestNumber}>
-              <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
-                  <span className="text-[12px] text-[#344054] truncate leading-4">{meeting.requestNumber}</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{meeting.requestNumber}</span>
                 </div>
               </div>
             </CardTooltip>
           )}
           <CardTooltip text={meeting.date}>
-            <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
                 <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
-                <span className="text-[12px] text-[#344054] truncate leading-4">{meeting.date}</span>
+                <span className="text-[12px] text-[#344054] leading-4">{meeting.date}</span>
               </div>
             </div>
           </CardTooltip>
+          {meeting.meetingCategory && (
+            <CardTooltip text={meeting.meetingCategory}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingCategory}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
+          {meeting.location && (
+            <CardTooltip text={getLocationLabel(meeting.location) ?? meeting.location}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{getLocationLabel(meeting.location)}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
+          {meeting.meetingDate && (
+            <CardTooltip text={meeting.meetingDate}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingDate}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
         </div>
-
-        {/* Row 4: Category + Location / Meeting Date pills */}
-        {(meeting.meetingCategory || meeting.location || meeting.meetingDate) && (
-          <div className="flex flex-row items-center gap-2.5 w-full">
-            {meeting.meetingCategory && (
-              <CardTooltip text={meeting.meetingCategory}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%] min-w-[49%] max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{meeting.meetingCategory}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            )}
-            {meeting.location && (
-              <CardTooltip text={getLocationLabel(meeting.location) ?? meeting.location}>
-                <div className="flex flex-1 flex-row items-center min-w-[49%] max-w-[49%] gap-2.5 px-3 py-2" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{getLocationLabel(meeting.location)}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            )}
-            {meeting.meetingDate && !meeting.location && (
-              <CardTooltip text={meeting.meetingDate}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{meeting.meetingDate}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            )}
-          </div>
-        )}
 
         {/* Action Button (e.g. إرسال المسودة) */}
         {onAction && actionLabel && (

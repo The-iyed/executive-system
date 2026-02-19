@@ -25,7 +25,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
   return (
     <div
       className={`
-        grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4
+        grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3
         gap-4
         w-full
         ${className}
@@ -34,7 +34,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
       {meetings.map((meeting) => {
         const label = getActionLabel?.(meeting);
         return (
-          <div key={meeting.id} className="w-full flex justify-center">
+          <div key={meeting.id} className="w-full">
             <MeetingCard
               meeting={meeting}
               onView={() => onView?.(meeting)}
@@ -43,7 +43,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
               actionLabel={label}
               hideStatus={hideStatus}
               actionLoading={getActionLoading?.(meeting)}
-              className="w-full max-w-[432.79px]"
+              className="w-full"
             />
           </div>
         );
