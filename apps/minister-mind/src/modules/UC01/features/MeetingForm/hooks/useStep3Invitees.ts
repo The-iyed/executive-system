@@ -9,6 +9,7 @@ import { mapUserToFormData } from '../utils/inviteeMappers';
 import type { UserApiResponse } from '../../../data/usersApi';
 import { getStep3EditableMap } from '../utils/editableFields';
 import { executeStep3SubmitFlow } from '../utils/step3SubmitFlow';
+import type { SuggestedAttendee } from '../../../../UC02/hooks/useSuggestMeetingAttendees';
 
 interface UseStep3InviteesProps {
   draftId: string;
@@ -309,6 +310,26 @@ export const useStep3Invitees = ({
     return true;
   }, [formData.invitees]);
 
+  const handleAddSuggestedAttendees = useCallback((suggestions: SuggestedAttendee[]) => {
+    if (!suggestions.length) return;
+    const newInvitees = suggestions.map((s) => ({
+      id: nanoid(),
+      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || '',
+      position: s.position_name || s.job_description || '',
+      mobile: s.phone || '',
+      email: s.email || '',
+      sector: s.department_name || '',
+      attendance_mechanism: AttendanceMechanism.PHYSICAL,
+      is_required: s.importance_level === 'مناسب جدا',
+      user_id: undefined,
+      username: undefined,
+    }));
+    setFormData((prev) => ({
+      ...prev,
+      invitees: [...newInvitees, ...(prev.invitees || [])],
+    }));
+  }, []);
+
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
     if (!isDraft && !validateAll()) {
       return;
@@ -331,6 +352,7 @@ export const useStep3Invitees = ({
     handleDeleteAttendee,
     handleUpdateAttendee,
     handleAddUserFromSelect,
+    handleAddSuggestedAttendees,
     validateAll,
     submitStep,
     step3EditableMap,
