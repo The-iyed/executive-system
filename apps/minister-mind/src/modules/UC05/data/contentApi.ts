@@ -450,6 +450,49 @@ export const getAttachmentInsights = async (
   return response.data;
 };
 
+const INSIGHTS_POLL_INTERVAL_MS = 2000;
+const INSIGHTS_MAX_POLL_ATTEMPTS = 60;
+
+function isInsightsReady(data: AttachmentInsightsResponse): boolean {
+  const extDone = (data.extraction_status || '').toLowerCase() === 'completed';
+  const llmDone = (data.llm_processing_status || '').toLowerCase() === 'completed';
+  const hasContent =
+    (Array.isArray(data.llm_notes) && data.llm_notes.length > 0) ||
+    (Array.isArray(data.llm_suggestions) && data.llm_suggestions.length > 0);
+  return (extDone && llmDone) || hasContent;
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+}
+
+/** Poll GET insights until ready (same as meeting detail). */
+export const getAttachmentInsightsWithPolling = async (
+  attachmentId: string,
+  options?: { pollIntervalMs?: number; maxAttempts?: number; signal?: AbortSignal }
+): Promise<AttachmentInsightsResponse> => {
+  const intervalMs = options?.pollIntervalMs ?? INSIGHTS_POLL_INTERVAL_MS;
+  const maxAttempts = options?.maxAttempts ?? INSIGHTS_MAX_POLL_ATTEMPTS;
+  const signal = options?.signal;
+
+  let lastData = await getAttachmentInsights(attachmentId);
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (isInsightsReady(lastData)) return lastData;
+    await delay(intervalMs, signal);
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+    lastData = await getAttachmentInsights(attachmentId);
+  }
+  return lastData;
+};
+
 // Analyze contradictions between consultant statements
 // UI only uses contradictions (not statements).
 export interface AnalyzeContradiction {

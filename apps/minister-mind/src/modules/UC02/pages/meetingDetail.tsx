@@ -273,7 +273,7 @@ const MeetingDetail: React.FC = () => {
   const [previousMeetingMinutesOption, setPreviousMeetingMinutesOption] = useState<OptionType | null>(null);
 
   // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1)
-  const previousMeetingId = (meeting?.previous_meeting_id || formData.previous_meeting_id || null) as string | null;
+  const previousMeetingId = (meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? formData.previous_meeting_id ?? null) as string | null;
   const { data: previousMeeting } = useQuery({
     queryKey: ['meeting', previousMeetingId],
     queryFn: () => getMeetingById(previousMeetingId!),
@@ -1171,7 +1171,8 @@ const MeetingDetail: React.FC = () => {
       const ownerDisplay = meeting.current_owner_user
         ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
         : meeting.current_owner_role?.name_ar || '';
-      const prevId = meeting.previous_meeting_id || null;
+      const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
+      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? prevId ?? '';
       const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1196,7 +1197,7 @@ const MeetingDetail: React.FC = () => {
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
       });
-      setPreviousMeetingOption(prevId ? { value: prevId, label: prevId } : null);
+      setPreviousMeetingOption(prevId ? { value: prevId, label: prevMeetingLabel || prevId } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
 
       // Initialize content tab form (objectives and agenda items)
@@ -1321,7 +1322,7 @@ const MeetingDetail: React.FC = () => {
     const ownerDisplay = meeting.current_owner_user
       ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
       : meeting.current_owner_role?.name_ar || '';
-    const prevId = meeting.previous_meeting_id || null;
+    const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
     const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
