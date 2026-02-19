@@ -108,7 +108,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                 <div
                   key={column.id}
                   className={cn(
-                    "text-[14px] font-medium text-[#475467] flex items-center px-4 py-3 whitespace-nowrap",
+                    "text-[14px] font-medium text-[#475467] flex items-center justify-center px-4 py-3 whitespace-nowrap",
                     column.width || "min-w-[180px]"
                   )}
                 >
@@ -198,7 +198,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                           </div>
                         ) : column.type === 'switch' ? (
                           <div className="w-full flex justify-start">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mx-auto">
                               <FormSwitch
                                 checked={row[column.id] || false}
                                 onCheckedChange={(checked) => onUpdateRow(row.id, column.id, checked)}
