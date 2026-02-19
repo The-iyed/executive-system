@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
 import { cn } from '@sanad-ai/ui';
-import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } from 'lucide-react';
 import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
@@ -487,8 +487,8 @@ const Directives: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        <div className="flex flex-row items-start justify-between gap-2" dir="rtl">
+      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
+        <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">توجيهات الجدولة</h1>
             <p className="text-base text-gray-600 text-right">
@@ -496,6 +496,7 @@ const Directives: React.FC = () => {
             </p>
           </div>
 
+          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="rtl">
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
@@ -507,15 +508,18 @@ const Directives: React.FC = () => {
                 className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
+          </div>
         </div>
-        <ContentBar
+      </div>
+      <ContentBar
          primaryAction={{
           label: 'إنشاء اجتماع',
           variant: 'primary',
           onClick: () => openCreateDrawer(),
          }}
         />
-
+      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+        {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
           const dropdownHeight = 100;
@@ -635,7 +639,7 @@ const Directives: React.FC = () => {
         </div>
 
         {/* Content - Table or Cards */}
-        <div className="mt-4">
+        <div>
           {directivesSubTab === 'previous' ? (
             isLoadingPrevious ? (
               <div className="flex items-center justify-center py-12">
