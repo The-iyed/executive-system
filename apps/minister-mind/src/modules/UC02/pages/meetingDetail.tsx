@@ -173,9 +173,22 @@ const DIRECTIVE_METHOD_OPTIONS = [
 const COMPARE_STATUS: Record<string, string> = { completed: 'مكتمل', pending: 'قيد المعالجة' };
 const COMPARE_LEVEL: Record<string, string> = { minor: 'طفيف', moderate: 'متوسط', major: 'كبير' };
 const COMPARE_RECOMMENDATION: Record<string, string> = { review: 'مراجعة' };
+/** Directive status labels for التوجيهات المرتبطة list */
+const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  CURRENT: 'جاري',
+  COMPLETED: 'مكتمل',
+  CANCELLED: 'ملغى',
+  CLOSED: 'مغلق',
+  OPEN: 'مفتوح',
+};
 function translateCompareValue(value: string | undefined | null, map: Record<string, string>): string {
   if (value == null || value === '') return '—';
   return map[String(value).toLowerCase()] ?? value;
+}
+function translateDirectiveStatus(status: string | undefined | null): string {
+  if (status == null || status === '') return '—';
+  return DIRECTIVE_STATUS_LABELS[String(status).toUpperCase()] ?? status;
 }
 
 /** Normalize API general_notes (array of items or legacy string) to a list for display */
@@ -2024,10 +2037,9 @@ const MeetingDetail: React.FC = () => {
                               { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_number}</span> },
                               { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
                               { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_text || '—'}</span> },
-                              { id: 'related_meeting', header: 'الاجتماع المرتبط', width: 'w-40', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.related_meeting || '—'}</span> },
                               { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
                               { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{names.length ? names.join('، ') : '—'}</span>; } },
-                              { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_status || '—'}</span> },
+                              { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{translateDirectiveStatus(row.directive_status)}</span> },
                             ]}
                             data={meeting?.related_directives ?? []}
                             rowPadding="py-3"
@@ -3294,10 +3306,9 @@ const MeetingDetail: React.FC = () => {
                           { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_number}</span> },
                           { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
                           { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_text || '—'}</span> },
-                          { id: 'related_meeting', header: 'الاجتماع المرتبط', width: 'w-40', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.related_meeting || '—'}</span> },
                           { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
                           { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{names.length ? names.join('، ') : '—'}</span>; } },
-                          { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_status || '—'}</span> },
+                          { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{translateDirectiveStatus(row.directive_status)}</span> },
                         ]}
                         data={meeting?.related_directives ?? []}
                         rowPadding="py-3"
