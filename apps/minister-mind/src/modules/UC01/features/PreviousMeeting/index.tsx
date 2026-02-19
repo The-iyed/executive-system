@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DataTable, SearchInput, Pagination, ContentBar, ViewSwitcher, ViewType, CardsGrid } from '@shared';
-import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
+import { DataTable, SearchInput, Pagination, ViewSwitcher, ViewType, CardsGrid } from '@shared';
 import { PAGINATION, createTableColumns } from '../../utils';
 import { usePreviousMeetings } from '../../hooks';
 import { PATH } from '../../routes/paths';
@@ -9,9 +8,6 @@ import '@shared/styles';
 
 const PreviousMeeting: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    openCreateDrawer,
-  } = useMeetingFormDrawer();
   const [searchValue, setSearchValue] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
@@ -31,14 +27,6 @@ const PreviousMeeting: React.FC = () => {
   }, [navigate, currentPage]);
 
   return (
-    <>
-    <ContentBar
-      primaryAction={{
-        label: 'إنشاء اجتماع',
-        variant: 'primary',
-        onClick: openCreateDrawer,
-      }}
-  />
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
         <div className="flex flex-row items-start justify-between gap-6">
@@ -50,7 +38,6 @@ const PreviousMeeting: React.FC = () => {
               يمكنك الاطلاع على الاجتماعات السابقة.
             </p>
           </div>
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
@@ -62,7 +49,6 @@ const PreviousMeeting: React.FC = () => {
                 className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
               />
             </div>
-          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
@@ -114,7 +100,6 @@ const PreviousMeeting: React.FC = () => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 
