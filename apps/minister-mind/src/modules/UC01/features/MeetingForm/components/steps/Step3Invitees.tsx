@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useToast } from '@sanad-ai/ui';
-import { FormTable, ActionButtons, FormAsyncSelectV2, OptionType } from '@shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2, OptionType, AIGenerateButton } from '@shared';
+import { SuggestAttendeesModal } from '../../../../../UC02/components';
+import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
 import {
   INVITEES_TABLE_COLUMNS,
   INVITEES_TABLE_TITLE,
@@ -38,6 +40,10 @@ export interface Step3InviteesProps {
   handleCancelClick: () => void;
   /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
   step3EditableMap?: Record<string, boolean>;
+  /** When provided, enables "إضافة مدعوين آليًا" and renders SuggestAttendeesModal. */
+  suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
+  /** Called when suggest attendees modal returns success; receives API response with suggestions. */
+  onSuggestAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
 }
 
 export const Step3Invitees: React.FC<Step3InviteesProps> = ({
@@ -56,11 +62,14 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleSaveDraftClick,
   handleCancelClick,
   step3EditableMap,
+  suggestAttendeesMeetingParams,
+  onSuggestAttendeesSuccess,
 }) => {
   const isFieldDisabled = (fieldKey: string) =>
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
 
   const [selectedUserId, setSelectedUserId] = useState<OptionType | null>(null);
+  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { 
     value: string; 
@@ -163,20 +172,39 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           emptyMessage="لم يتم العثور على مستخدمين"
           isDisabled={isFieldDisabled('invitees')}
         />
-        <FormTable
-          title={INVITEES_TABLE_TITLE}
-          columns={INVITEES_TABLE_COLUMNS}
-          required={inviteesRequired}
-          rows={formData.invitees || []}
-          onAddRow={handleAddAttendee}
-          onDeleteRow={handleDeleteAttendee}
-          onUpdateRow={handleUpdateAttendee}
-          addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
-          errors={errors}
-          touched={touched}
-          errorMessage={tableErrorMessage}
-          disabled={isFieldDisabled('invitees')}
-        />
+        {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestAttendeesModalOpen}
+            onOpenChange={setIsSuggestAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestAttendeesSuccess}
+          />
+        )}
+        <div className="relative w-full max-w-[1200px] mx-auto">
+          <FormTable
+            title={INVITEES_TABLE_TITLE}
+            columns={INVITEES_TABLE_COLUMNS}
+            required={inviteesRequired}
+            rows={formData.invitees || []}
+            onAddRow={handleAddAttendee}
+            onDeleteRow={handleDeleteAttendee}
+            onUpdateRow={handleUpdateAttendee}
+            addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
+            errors={errors}
+            touched={touched}
+            errorMessage={tableErrorMessage}
+            disabled={isFieldDisabled('invitees')}
+          />
+          {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+            <div className="absolute bottom-[-3px] right-[170px]">
+              <AIGenerateButton
+                label="إضافة مدعوين آليًا"
+                disabled={isFieldDisabled('invitees')}
+                onClick={() => setIsSuggestAttendeesModalOpen(true)}
+              />
+            </div>
+          )}
+        </div>
         <ActionButtons
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
