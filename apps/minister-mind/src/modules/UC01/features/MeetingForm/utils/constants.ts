@@ -135,7 +135,7 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   },
   {
     id: 'action',
-    header: 'إجراء',
+    header: '',
     width: 'w-[60px]',
   },
 ];
