@@ -124,7 +124,7 @@ const Meeting: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
+      <div className="px-6 flex-shrink-0" dir="rtl">
         <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
@@ -146,6 +146,8 @@ const Meeting: React.FC = () => {
              />
             </div>
         </div>
+      </div>
+      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
         <ContentBar
             primaryAction={{
             label: 'إنشاء اجتماع',
@@ -153,8 +155,7 @@ const Meeting: React.FC = () => {
             onClick: openCreateDrawer,
           }}
         />
-
-        <div className="mt-4">
+        <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
