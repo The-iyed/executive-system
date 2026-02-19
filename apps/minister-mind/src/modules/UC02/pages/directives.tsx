@@ -4,12 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
 import { cn } from '@sanad-ai/ui';
-import '@shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
+import '@shared/styles';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -199,11 +199,11 @@ const Directives: React.FC = () => {
   ): TableColumn<MeetingCardData>[] => [
     {
       id: 'item_number',
-      header: 'رقم البند',
+      header: '#',
       width: 'flex-none min-w-16 w-16',
-      align: 'end',
+      align: 'center',
       render: (_row, index) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-center">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
             {index + 1 + pageOffset}
           </span>
@@ -234,7 +234,7 @@ const Directives: React.FC = () => {
       render: (row) => (
         <div className="w-full min-w-0">
           <TruncatedWithTooltip title={row.title}>
-            {row.title}
+          {row.title}
           </TruncatedWithTooltip>
         </div>
       ),
@@ -254,7 +254,7 @@ const Directives: React.FC = () => {
             <TruncatedWithTooltip title={natureLabel}>
               {natureLabel}
             </TruncatedWithTooltip>
-          </div>
+        </div>
         );
       },
     },
@@ -338,11 +338,11 @@ const Directives: React.FC = () => {
   ): TableColumn<MeetingCardData>[] => [
     {
       id: 'item_number',
-      header: 'رقم البند',
+      header: '#',
       width: 'flex-none min-w-16 w-16',
-      align: 'end',
+      align: 'center',
       render: (_row, index) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-center">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
             {index + 1 + pageOffset}
           </span>
@@ -540,15 +540,15 @@ const Directives: React.FC = () => {
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                      try {
+                    try {
                         await cancelDirective(d.id, directiveToExternalDirectiveBody(d));
-                        setOpenDropdownId(null);
-                        setDropdownPosition(null);
-                        await refetch();
-                      } catch (error) {
-                        console.error('Error cancelling directive:', error);
-                        setOpenDropdownId(null);
-                        setDropdownPosition(null);
+                      setOpenDropdownId(null);
+                      setDropdownPosition(null);
+                      await refetch();
+                    } catch (error) {
+                      console.error('Error cancelling directive:', error);
+                      setOpenDropdownId(null);
+                      setDropdownPosition(null);
                       }
                     }
                   }
@@ -929,4 +929,3 @@ const Directives: React.FC = () => {
 };
 
 export default Directives;
-

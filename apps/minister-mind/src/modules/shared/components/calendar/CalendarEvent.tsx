@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn, Popover, PopoverTrigger, PopoverContent } from '@sanad-ai/ui';
+import { cn } from '@sanad-ai/ui';
 import type { CalendarEventData } from './WeeklyCalendarGrid';
 
 export type EventType = 'reserved' | 'optional' | 'compulsory' | 'available';
@@ -8,7 +8,7 @@ export interface CalendarEventProps {
   event: CalendarEventData;
   onClick?: (e: React.MouseEvent) => void;
   onBook?: (event: CalendarEventData) => void;
-  /** Open full event details (drawer/sheet). Shown as "عرض التفاصيل" in popover when provided. */
+  /** Open full event details (modal). Kept for API compatibility; use onClick to open details. */
   onShowDetails?: (event: CalendarEventData) => void;
   className?: string;
 }
@@ -147,140 +147,68 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   onShowDetails,
   className,
 }) => {
-  const [open, setOpen] = React.useState(false);
   const cardVariant =
     event.is_internal === true ? 'internal' : event.is_internal === false ? 'external' : event.variant || event.type;
   const styles = eventTypeStyles[cardVariant] || eventTypeStyles.reserved;
   const typeLabel = eventTypeLabels[event.type] || 'اجتماع';
   const displayLabel = event.label || typeLabel;
   const isDisabled = !event.is_available && !event.variant;
-  const hasDetails = Boolean(
-    onShowDetails &&
-      event.id !== 'highlighted-slot' &&
-      (event.location || (event.attachments && event.attachments.length > 0) || event.organizer)
-  );
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (event.id === 'highlighted-slot') return;
+    e.stopPropagation();
+    if (onBook && event.is_available) {
+      onBook(event);
+    } else if (onShowDetails) {
+      onShowDetails(event);
+    } else if (onClick) {
+      onClick(e);
+    }
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div
+    <div
+      role="button"
+      tabIndex={0}
+      className={cn(
+        'relative transition-all w-full h-full min-h-0 flex flex-col justify-center px-2 py-1.5 text-right',
+        'rounded-[7.58038px]',
+        styles?.bg,
+        styles?.border,
+        styles?.borderStyle,
+        styles?.borderRight,
+        isDisabled ? 'cursor-not-allowed opacity-60' : (event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'),
+        className
+      )}
+      style={{ minHeight: '53px', maxHeight: '53px' }}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (event.id !== 'highlighted-slot' && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick(e as unknown as React.MouseEvent);
+        }
+      }}
+    >
+      {event.is_internal !== undefined && (
+        <span
           className={cn(
-            'relative transition-all w-full h-full min-h-0 flex flex-col justify-center px-2 py-1.5 text-right',
-            'rounded-[7.58038px]',
-            styles?.bg,
-            styles?.border,
-            styles?.borderStyle,
-            styles?.borderRight,
-            isDisabled ? 'cursor-not-allowed opacity-60' : (event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'),
-            className
+            'absolute top-1 right-1 text-[9px] font-medium px-1.5 py-0.5 rounded leading-tight',
+            event.is_internal
+              ? 'bg-[#008774] text-white'
+              : 'bg-amber-500 text-white'
           )}
-          style={{ minHeight: '53px', maxHeight: '53px' }}
-          onClick={event.id === 'highlighted-slot' ? undefined : onClick}
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          style={{ fontFamily: "'Almarai', sans-serif" }}
         >
-          {event.is_internal !== undefined && (
-            <span
-              className={cn(
-                'absolute top-1 right-1 text-[9px] font-medium px-1.5 py-0.5 rounded leading-tight',
-                event.is_internal
-                  ? 'bg-[#008774] text-white'
-                  : 'bg-amber-500 text-white'
-              )}
-              style={{ fontFamily: "'Almarai', sans-serif" }}
-            >
-              {event.is_internal ? 'داخلي' : 'خارجي'}
-            </span>
-          )}
-          <span
-            className={cn('line-clamp-2', styles?.text, event.is_internal !== undefined && 'pr-12')}
-            style={{ fontFamily: "'Almarai', sans-serif", fontSize: '12.193px', lineHeight: '120%', letterSpacing: '-0.02em' }}
-          >
-            {displayLabel}
-          </span>
-        </div>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className="min-w-[220px] max-w-[280px] rounded-[12px] bg-white p-4 flex flex-col items-start gap-2 shadow-xl border-[#EAECF0] z-[50]"
-        align="center"
-        side="top"
-        sideOffset={8}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+          {event.is_internal ? 'داخلي' : 'خارجي'}
+        </span>
+      )}
+      <span
+        className={cn('line-clamp-2', styles?.text, event.is_internal !== undefined && 'pr-12')}
+        style={{ fontFamily: "'Almarai', sans-serif", fontSize: '12.193px', lineHeight: '120%', letterSpacing: '-0.02em' }}
       >
-        <div className="w-full flex justify-between items-start mb-1 gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <h3 className={cn('text-[14px] font-bold truncate', styles?.contentStyle?.text)}>
-              {event.title || 'موعد الاجتماع'}
-            </h3>
-            {event.is_selected && (
-              <span className="text-[10px] text-amber-600 font-bold">الموعد المختار لهذا الاجتماع</span>
-            )}
-          </div>
-          <span className={cn('text-[10px] px-2 py-0.5 rounded-full shrink-0', styles?.contentStyle?.bg, 'text-white')}>
-            {typeLabel}
-          </span>
-        </div>
-        <p className="text-[12px] text-[#475467]">
-          {formatDate(event.date)}
-        </p>
-        <p className="text-[12px] font-semibold text-[#101828]">
-          من {event.exactStartTime || event.startTime} إلى {event.exactEndTime || event.endTime}
-        </p>
-        {event.is_internal !== undefined && (
-          <p className="text-[12px] text-[#475467]">
-            {event.is_internal ? 'داخلي' : 'خارجي'}
-          </p>
-        )}
-
-        {onBook && event.is_available && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onBook(event);
-            }}
-            className={cn(
-              'w-full mt-2 px-4 py-2 text-white transition-colors font-bold text-[14px] rounded-[8px] border-none shadow-sm',
-              styles?.contentStyle?.bg,
-            )}
-          >
-            {event.is_selected ? 'إلغاء الحجز' : 'حجز الموعد'}
-          </button>
-        )}
-        {hasDetails && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onShowDetails?.(event);
-            }}
-            className={cn(
-              'w-full mt-2 px-4 py-2 text-white transition-colors font-bold text-[14px] rounded-[8px] border-none shadow-sm',
-              styles?.contentStyle?.bg,
-            )}
-          >
-            عرض التفاصيل
-          </button>
-        )}
-        {!hasDetails && onClick && !onBook && event.id !== 'highlighted-slot' && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(e);
-            }}
-            className={cn(
-              'w-full mt-2 px-4 py-2 text-white transition-colors font-bold text-[14px] rounded-[8px] border-none shadow-sm',
-              styles?.contentStyle?.bg,
-            )}
-          >
-            عرض التفاصيل
-          </button>
-        )}
-      </PopoverContent>
-    </Popover>
+        {displayLabel}
+      </span>
+    </div>
   );
 };
 
