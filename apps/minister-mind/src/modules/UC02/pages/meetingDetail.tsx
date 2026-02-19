@@ -22,6 +22,7 @@ import {
   AIGenerateButton,
   FormAsyncSelectV2,
   FormDatePicker,
+  FormDateTimePicker,
   type OptionType,
   Drawer,
 } from '@shared'; 
@@ -67,7 +68,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@sanad-ai/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar } from '@shared';
@@ -634,7 +635,13 @@ const MeetingDetail: React.FC = () => {
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
   const [isAddDirectiveOpen, setIsAddDirectiveOpen] = useState(false);
-  const [addDirectiveValue, setAddDirectiveValue] = useState('');
+  const [addDirectiveForm, setAddDirectiveForm] = useState({
+    directive_date: '',
+    directive_text: '',
+    related_meeting: '',
+    deadline: '',
+    responsible_persons: '', // comma or newline separated, parsed to string[]
+  });
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
@@ -827,13 +834,25 @@ const MeetingDetail: React.FC = () => {
   });
 
   const addDirectiveMutation = useMutation({
-    mutationFn: async (guidanceText: string) => {
-      await updateMeetingRequest(id!, { related_guidance: guidanceText.trim() || null });
+    mutationFn: async (payload: {
+      directive_date: string;
+      directive_text: string;
+      related_meeting: string;
+      deadline: string;
+      responsible_persons: string[];
+    }) => {
+      await createSchedulingDirective(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsAddDirectiveOpen(false);
-      setAddDirectiveValue('');
+      setAddDirectiveForm({
+        directive_date: '',
+        directive_text: '',
+        related_meeting: '',
+        deadline: '',
+        responsible_persons: '',
+      });
     },
   });
 
@@ -1531,6 +1550,9 @@ const MeetingDetail: React.FC = () => {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
       return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
+    if (meetingStatus === MeetingStatus.CLOSED) {
+      return [...all, { id: 'directives', label: 'التوجيهات' }];
+    }
     return all;
   }, [meetingStatus, hasContent]);
 
@@ -1543,6 +1565,8 @@ const MeetingDetail: React.FC = () => {
     } else if (activeTab === 'request-notes') {
       setActiveTab('request-info');
     } else if (!hasContent && activeTab === 'content-consultation') {
+      setActiveTab('request-info');
+    } else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') {
       setActiveTab('request-info');
     }
   }, [meetingStatus, activeTab, hasContent]);
@@ -1978,7 +2002,7 @@ const MeetingDetail: React.FC = () => {
                     {renderFieldLabel('related_guidance', 'التوجيه', 'text-sm font-medium text-gray-700')}
                     <button
                       type="button"
-                      disabled={!canEdit}
+                      disabled={!(canEdit || meeting?.status === MeetingStatus.CLOSED)}
                       onClick={() => setIsAddDirectiveOpen(true)}
                       className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
                       title="إضافة توجيه"
@@ -3140,7 +3164,7 @@ const MeetingDetail: React.FC = () => {
                     style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
                   >
                     <FileCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب توجيه
+                    طلب استشارة
                   </button>
               </div>
               )}
@@ -3234,11 +3258,76 @@ const MeetingDetail: React.FC = () => {
               ) : (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">التوجيه</p>
-                    <p className="text-gray-500 text-sm">لا توجد توجيهات مسجلة</p>
+                    <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>استشارة المكتب التنفيذي</p>
+                    <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد استشارات مسجلة</p>
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* التوجيهات tab – only when meeting is CLOSED: list directives and add */}
+          {activeTab === 'directives' && meetingStatus === MeetingStatus.CLOSED && (
+            <div className="flex flex-col gap-4 w-full" dir="rtl">
+              <div className="flex flex-row items-center justify-between gap-4">
+                <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة</h2>
+                <button
+                  type="button"
+                  onClick={() => setIsAddDirectiveOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors font-medium"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <Plus className="w-5 h-5" strokeWidth={1.26} />
+                  إضافة توجيه
+                </button>
+              </div>
+              {(() => {
+                const directives = meeting?.related_directives ?? [];
+                const hasDirectives = directives.length > 0;
+                const hasOnlyIds = !hasDirectives && (meeting?.related_directive_ids?.length ?? 0) > 0;
+                if (hasDirectives) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <DataTable
+                        columns={[
+                          { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
+                          { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_number}</span> },
+                          { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+                          { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_text || '—'}</span> },
+                          { id: 'related_meeting', header: 'الاجتماع المرتبط', width: 'w-40', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.related_meeting || '—'}</span> },
+                          { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+                          { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{names.length ? names.join('، ') : '—'}</span>; } },
+                          { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_status || '—'}</span> },
+                        ]}
+                        data={meeting?.related_directives ?? []}
+                        rowPadding="py-3"
+                      />
+                    </div>
+                  );
+                }
+                if (hasOnlyIds) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <DataTable
+                        columns={[
+                          { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                          { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
+                        ]}
+                        data={(meeting?.related_directive_ids ?? []).map((id) => ({ id }))}
+                        rowPadding="py-3"
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>التوجيهات المرتبطة</p>
+                      <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد توجيهات مرتبطة. استخدم زر «إضافة توجيه» لإضافة توجيه.</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -3745,49 +3834,100 @@ const MeetingDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add related directive – string (id or directive number) */}
-      <Dialog open={isAddDirectiveOpen} onOpenChange={(open) => { setIsAddDirectiveOpen(open); if (!open) setAddDirectiveValue(''); }}>
-        <DialogContent className="sm:max-w-[420px]" dir="rtl">
+      {/* Add related directive – POST /api/scheduling/directives */}
+      <Dialog
+        open={isAddDirectiveOpen}
+        onOpenChange={(open) => {
+          setIsAddDirectiveOpen(open);
+          if (open && id) setAddDirectiveForm((p) => ({ ...p, related_meeting: id }));
+          if (!open) setAddDirectiveForm({ directive_date: '', directive_text: '', related_meeting: '', deadline: '', responsible_persons: '' });
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
               إضافة توجيه مرتبط
             </DialogTitle>
           </DialogHeader>
-          <div className="py-2">
-            <label className="block text-sm font-medium text-gray-700 text-right mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
-              التوجيه
-                </label>
-            <Input
-              type="text"
-              value={addDirectiveValue}
-              onChange={(e) => setAddDirectiveValue(e.target.value)}
-              placeholder="أدخل التوجيه..."
-              className="w-full text-right"
-              style={{ fontFamily: "'Almarai', sans-serif" }}
-            />
+          <div className="flex flex-col gap-4 py-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 text-right">تاريخ التوجيه</label>
+              <FormDateTimePicker
+                value={addDirectiveForm.directive_date || undefined}
+                onChange={(isoString) => setAddDirectiveForm((p) => ({ ...p, directive_date: isoString || '' }))}
+                placeholder="اختر تاريخ ووقت التوجيه"
+                className="w-full"
+                fullWidth
+              />
             </div>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <button
-                type="button"
-              onClick={() => { setIsAddDirectiveOpen(false); setAddDirectiveValue(''); }}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 text-right">نص التوجيه</label>
+              <Textarea
+                value={addDirectiveForm.directive_text}
+                onChange={(e) => setAddDirectiveForm((p) => ({ ...p, directive_text: e.target.value }))}
+                placeholder="أدخل نص التوجيه..."
+                className="w-full min-h-[80px] text-right"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 text-right">الموعد النهائي</label>
+              <FormDateTimePicker
+                value={addDirectiveForm.deadline || undefined}
+                onChange={(isoString) => setAddDirectiveForm((p) => ({ ...p, deadline: isoString || '' }))}
+                placeholder="اختر الموعد النهائي"
+                className="w-full"
+                fullWidth
+                minDate={addDirectiveForm.directive_date ? new Date(addDirectiveForm.directive_date) : undefined}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 text-right">المسؤولون (مفصولون بفاصلة أو سطر جديد)</label>
+              <Textarea
+                value={addDirectiveForm.responsible_persons}
+                onChange={(e) => setAddDirectiveForm((p) => ({ ...p, responsible_persons: e.target.value }))}
+                placeholder="أدخل أسماء المسؤولين..."
+                className="w-full min-h-[60px] text-right"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddDirectiveOpen(false);
+                setAddDirectiveForm({ directive_date: '', directive_text: '', related_meeting: '', deadline: '', responsible_persons: '' });
+              }}
               className="px-4 py-2 rounded-lg border border-[#D0D5DD] text-[#344054] bg-white hover:bg-[#F9FAFB] transition-colors"
               style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
               onClick={() => {
-                const v = addDirectiveValue.trim();
-                if (v) addDirectiveMutation.mutate(v);
+                const meetingId = id || addDirectiveForm.related_meeting;
+                if (!meetingId || !addDirectiveForm.directive_text.trim()) return;
+                const directiveDate = addDirectiveForm.directive_date ? new Date(addDirectiveForm.directive_date).toISOString() : new Date().toISOString();
+                const deadline = addDirectiveForm.deadline ? new Date(addDirectiveForm.deadline).toISOString() : new Date().toISOString();
+                const persons = addDirectiveForm.responsible_persons
+                  .split(/[\n,،]+/)
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                addDirectiveMutation.mutate({
+                  directive_date: directiveDate,
+                  directive_text: addDirectiveForm.directive_text.trim(),
+                  related_meeting: meetingId,
+                  deadline,
+                  responsible_persons: persons,
+                });
               }}
-              disabled={!addDirectiveValue.trim() || addDirectiveMutation.isPending}
+              disabled={!addDirectiveForm.directive_text.trim() || !addDirectiveForm.directive_date || !addDirectiveForm.deadline || addDirectiveMutation.isPending}
               className="px-4 py-2 rounded-lg bg-[#048F86] text-white hover:bg-[#047a6f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               {addDirectiveMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
-              </button>
-            </DialogFooter>
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -3827,14 +3967,14 @@ const MeetingDetail: React.FC = () => {
       <Drawer
         open={isRequestGuidanceModalOpen}
         onOpenChange={setIsRequestGuidanceModalOpen}
-        title={<span className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>طلب توجيه</span>}
+        title={<span className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>طلب استشارة</span>}
         side="left"
         width={500}
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" style={{ fontFamily: "'Almarai', sans-serif" }}>إلغاء</button>
-            <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب توجيه'}</button>
+            <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif" }}>{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
           </div>
         }
       >
