@@ -28,7 +28,7 @@ import {
 import {
   getMeetingById,
   getMeetings,
-  searchMeetings,
+  getPreviousMeetingsFromExecutionSystem,
   rejectMeeting,
   sendToContent,
   requestGuidance,
@@ -1459,37 +1459,27 @@ const MeetingDetail: React.FC = () => {
     }));
   };
 
-  /** Async load options for "الاجتماع السابق" – searchMeetings by original_title */
-  const loadClosedMeetingsOptions = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      if (!search || search.trim().length === 0) {
-        return {
-          items: [],
-          total: 0,
-          skip: 0,
-          limit,
-          has_next: false,
-          has_previous: false,
-        };
-      }
-      const results = await searchMeetings({
-        q: search.trim(),
-        limit: Math.min(limit, 100), // API max is 100
+  /** Async load options for "الاجتماع السابق" (معلومات الاجتماع tab) – https://execution-system.momrahai.com/api/meetings?skip=0&limit=10 */
+  const loadPreviousMeetingSearchOptions = useCallback(
+    async (_search: string, skip: number, limit: number) => {
+      const res = await getPreviousMeetingsFromExecutionSystem({
+        skip,
+        limit: Math.min(Math.max(limit, 1), 100),
       });
       const currentId = meeting?.id;
-      const items = results
-        .filter((m) => String(m.id) !== currentId)
+      const items = res.items
+        .filter((m) => m.id !== currentId)
         .map((m) => ({
-          value: String(m.id),
-          label: m.meeting_title || m.original_title || String(m.id),
+          value: m.id,
+          label: (m.meeting_title || m.meeting_subject || m.id).trim(),
         }));
       return {
         items,
-        total: items.length,
-        skip: 0, // API doesn't support pagination
-        limit: results.length,
-        has_next: false, // API doesn't support pagination
-        has_previous: false,
+        total: res.total,
+        skip: res.skip,
+        limit: res.limit,
+        has_next: res.skip + res.limit < res.total,
+        has_previous: res.skip > 0,
       };
     },
     [meeting?.id]
@@ -1533,7 +1523,7 @@ const MeetingDetail: React.FC = () => {
       { id: 'content', label: 'المحتوى' },
       { id: 'attendees', label: 'قائمة المدعوين' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
-      { id: 'directive', label: 'سؤال' },
+      { id: 'directive', label: 'استشارة المكتب التنفيذي' },
       ...(hasContent ? [{ id: 'content-consultation', label: 'استشارة المحتوى' }] : []),
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
@@ -1691,7 +1681,7 @@ const MeetingDetail: React.FC = () => {
                     aria-hidden
                   />
                   <span className="relative z-10 flex items-center gap-2">
-                    تقييم جودة الاجتماع
+                    تقييم جاهزية الاجتماع
                     <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
                       <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
@@ -1858,10 +1848,6 @@ const MeetingDetail: React.FC = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700" style={{ fontFamily: "'Almarai', sans-serif" }}>مبرّر اللقاء</label>
-                  <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className="w-full min-h-11 px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="مبرّر اللقاء" />
-                </div>
-                <div className="flex flex-col gap-2">
                   {renderFieldLabel('related_topic', 'موضوع التكليف المرتبط', 'text-sm font-medium text-gray-700')}
                   <Input type="text" value={formData.related_topic} onChange={(e) => handleFieldChange('related_topic', e.target.value)} disabled={!canEdit} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="موضوع التكليف المرتبط" />
                 </div>
@@ -1917,10 +1903,11 @@ const MeetingDetail: React.FC = () => {
                         setPreviousMeetingOption(opt);
                         setFormData((p) => ({ ...p, previous_meeting_id: opt?.value ?? null }));
                       }}
-                      loadOptions={loadClosedMeetingsOptions}
+                      loadOptions={loadPreviousMeetingSearchOptions}
                       placeholder="اختر الاجتماع السابق..."
-                      searchPlaceholder="ابحث..."
-                      emptyMessage="لا توجد اجتماعات مغلقة"
+                      searchPlaceholder="ابحث بالعنوان..."
+                      emptyMessage="لا توجد نتائج"
+                      limit={20}
                       fullWidth
                       isDisabled={!canEdit}
                       className="text-right"
