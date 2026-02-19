@@ -124,7 +124,7 @@ const GuidanceRequestDetail: React.FC = () => {
     },
     {
       id: 'directives-log',
-      label: 'التوجيهات',
+      label: 'استشارات',
     },
     ...(!isExecutiveManager ? [
       {
