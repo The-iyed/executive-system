@@ -495,11 +495,8 @@ const Directives: React.FC = () => {
         }}
       />
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          {/* Right side - Title and Description */}
+      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
+        <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">توجيهات الجدولة</h1>
             <p className="text-base text-gray-600 text-right">
@@ -507,7 +504,6 @@ const Directives: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
           <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="rtl">
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]">
               <ViewSwitcher view={view} onViewChange={setView} />
@@ -522,7 +518,8 @@ const Directives: React.FC = () => {
             </div>
           </div>
         </div>
-
+      </div>
+      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
         {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
@@ -645,7 +642,7 @@ const Directives: React.FC = () => {
         </div>
 
         {/* Content - Table or Cards */}
-        <div className="mt-4">
+        <div>
           {directivesSubTab === 'previous' ? (
             isLoadingPrevious ? (
               <div className="flex items-center justify-center py-12">

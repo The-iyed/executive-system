@@ -10,10 +10,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <SharedLayout
       children={children}
       welcomeSection={{
-        title: 'طلبات تقديم توجيه',
+        title: ' طلبات استشارات',
         description: 'يمكنك الاطلاع على الطلبات التي تتطلب تقديم توجيه',
         breadcrumbs: [
-          { label: 'طلبات تقديم توجيه', onClick: () => {} }
+          { label: ' طلبات استشارات', onClick: () => {} }
           ],
       }}
       useDynamicNavigation={true}
