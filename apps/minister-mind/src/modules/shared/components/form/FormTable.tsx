@@ -165,7 +165,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                           </button>
                           )
                         ) : column.id === 'itemNumber' ? (
-                          <span className="font-normal text-[16px] leading-[24px] text-[#344054] whitespace-nowrap">
+                          <span className="font-normal text-[16px] leading-[24px] text-[#344054] whitespace-nowrap mx-auto">
                             {rowIndex + 1}
                           </span>
                         ) : column.type === 'date' ? (
