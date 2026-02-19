@@ -234,7 +234,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               return (
                 <>
                   <MeetingDateTimeRangePicker
-                    sectionTitle="موعد الاجتماع (الحد الأقصى 24 ساعة)"
+                    sectionTitle="موعد الاجتماع"
                     startValue={formData.meeting_start_date || ''}
                     endValue={formData.meeting_end_date || ''}
                     onStartChange={(value) => handleChange('meeting_start_date', value)}
@@ -250,7 +250,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     endTouched={touched.meeting_end_date}
                   />
                   <MeetingDateTimeRangePicker
-                    sectionTitle="الموعد البديل الأول (الحد الأقصى 24 ساعة)"
+                    sectionTitle="الموعد البديل الأول"
                     startValue={formData.alternative_1_start_date || ''}
                     endValue={formData.alternative_1_end_date || ''}
                     onStartChange={(value) => handleChange('alternative_1_start_date', value)}
@@ -266,7 +266,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     endTouched={touched.alternative_1_end_date}
                   />
                   <MeetingDateTimeRangePicker
-                    sectionTitle="الموعد البديل الثاني (الحد الأقصى 24 ساعة)"
+                    sectionTitle="الموعد البديل الثاني"
                     startValue={formData.alternative_2_start_date || ''}
                     endValue={formData.alternative_2_end_date || ''}
                     onStartChange={(value) => handleChange('alternative_2_start_date', value)}
@@ -298,6 +298,23 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               disabled={isFieldDisabled('meetingChannel')}
             />
           </FormField>
+          {formData.meetingChannel === 'PHYSICAL' && (
+            <FormField
+              className="w-full min-w-0"
+              label="الموقع"
+              required={isStep1BasicInfoFieldRequired('meeting_location')}
+              error={touched.meeting_location ? errors.meeting_location : undefined}
+            >
+              <FormInput
+                value={formData.meeting_location || ''}
+                onChange={(e) => handleChange('meeting_location', e.target.value)}
+                onBlur={() => handleBlur('meeting_location')}
+                placeholder="الموقع"
+                error={!!(touched.meeting_location && errors.meeting_location)}
+                disabled={isFieldDisabled('meeting_location')}
+              />
+            </FormField>
+          )}
           <FormField
                 className="w-full min-w-0"
               label="فئة الاجتماع"
@@ -404,7 +421,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           onAddRow={handleAddAgenda}
           onDeleteRow={handleDeleteAgenda}
           onUpdateRow={handleUpdateAgenda}
-          addButtonLabel="إضافة أجندة"
+          addButtonLabel="إضافة عنصر"
           errors={tableErrors}
           touched={tableTouched}
           errorMessage={errors?.meetingAgenda}

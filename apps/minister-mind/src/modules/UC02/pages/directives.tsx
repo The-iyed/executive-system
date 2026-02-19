@@ -486,20 +486,9 @@ const Directives: React.FC = () => {
   const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
 
   return (
-    <>
-      <ContentBar
-        primaryAction={{
-          label: 'إنشاء اجتماع',
-          variant: 'primary',
-          onClick: () => openCreateDrawer(),
-        }}
-      />
-      <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      {/* Scrollable Content */}
+    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          {/* Right side - Title and Description */}
+        <div className="flex flex-row items-start justify-between gap-2" dir="rtl">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right">توجيهات الجدولة</h1>
             <p className="text-base text-gray-600 text-right">
@@ -507,8 +496,6 @@ const Directives: React.FC = () => {
             </p>
           </div>
 
-          {/* Left side - Search and View Switcher */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="rtl">
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
@@ -520,15 +507,19 @@ const Directives: React.FC = () => {
                 className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               />
             </div>
-          </div>
         </div>
+        <ContentBar
+         primaryAction={{
+          label: 'إنشاء اجتماع',
+          variant: 'primary',
+          onClick: () => openCreateDrawer(),
+         }}
+        />
 
-        {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
           const dropdownHeight = 100;
           const gap = 4;
-          // Position above the button so it stays on screen; align right edge with button (RTL)
           const top = Math.max(8, pos.top - dropdownHeight - gap);
           const right = window.innerWidth - pos.right;
           return createPortal(
@@ -631,7 +622,6 @@ const Directives: React.FC = () => {
           );
         })()}
 
-        {/* Sub-tabs: التوجيهات السابقة / التوجيهات الحالية */}
         <div className="flex justify-center my-4">
           <Tabs
             items={[
@@ -935,7 +925,6 @@ const Directives: React.FC = () => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 

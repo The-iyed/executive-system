@@ -9,7 +9,6 @@ export interface ContentBarFilterTab {
 }
 
 export interface ContentBarProps {
-  title?: string;
   primaryAction?: ActionButton;
   filterTabs?: ContentBarFilterTab[];
   activeFilterId?: string;
@@ -20,7 +19,6 @@ export interface ContentBarProps {
 }
 
 export const ContentBar: React.FC<ContentBarProps> = ({
-  title,
   primaryAction,
   filterTabs = [],
   activeFilterId,
@@ -43,8 +41,6 @@ export const ContentBar: React.FC<ContentBarProps> = ({
       <span>
 
      {primaryAction && (
-       <div className="flex flex-row items-center flex-shrink-0 gap-2">
-        {title && <span>{title}</span>}
         <button
           type="button"
           onClick={primaryAction?.onClick}
@@ -54,7 +50,7 @@ export const ContentBar: React.FC<ContentBarProps> = ({
           <Icon icon="solar:add-circle-outline" width={22} height={22} className="flex-shrink-0" />
           <span>{primaryAction?.label ?? 'إنشاء اجتماع'}</span>
         </button>
-       </div>)}
+       )}
       </span>
       <span>
       {filterTabs.length > 0 && (

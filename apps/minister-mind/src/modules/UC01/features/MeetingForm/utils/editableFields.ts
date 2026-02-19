@@ -16,6 +16,7 @@ const STEP1_FORM_TO_API_FIELDS: Record<string, string[]> = {
   meetingClassification1: ['meeting_classification_type'],
   meetingConfidentiality: ['meeting_confidentiality'],
   meetingChannel: ['meeting_channel'],
+  meeting_location: ['meeting_location'],
   sector: ['sector'],
   relatedTopic: ['related_topic'],
   dueDate: ['deadline'],
