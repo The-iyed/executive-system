@@ -291,25 +291,17 @@ const GuidanceRequests: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
-          {/* Right side - Title and Description */}
+      {/* Fixed Header */}
+      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
+        <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right">طلبات تقديم توجيه</h1>
+            <h1 className="text-3xl font-bold mb-2 text-right"> طلبات استشارات</h1>
             <p className="text-base text-gray-600 text-right">
               يمكنك الاطلاع على الطلبات التي تتطلب تقديم توجيه
             </p>
           </div>
-
-          {/* Left side - Search and View Switcher (bar styled to match table area) */}
           <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              
-              dir="rtl"
-            >
+            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
@@ -322,10 +314,10 @@ const GuidanceRequests: React.FC = () => {
             </div>
           </div>
         </div>
-
-
-        {/* Content - Table or Cards */}
-        <div className="mt-4">
+      </div>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+        <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>

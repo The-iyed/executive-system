@@ -38,17 +38,15 @@ const Meeting: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
-        <div className="flex flex-row items-center justify-between mb-6" dir="rtl">
+      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
+        <div className="flex flex-row items-center justify-between mb-6">
           <Tabs
             items={MEETING_TABS}
             activeTab={activeTab}
             onTabChange={handleTabChange}
           />
         </div>
-
-        {/* Page Title, Description, and Search/View Switcher Bar */}
-        <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
+        <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
               سلة العمل - طلبات قيد المراجعة
@@ -75,8 +73,9 @@ const Meeting: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div className="mt-4">
+      </div>
+      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+        <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
