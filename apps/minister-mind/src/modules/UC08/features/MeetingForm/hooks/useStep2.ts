@@ -22,6 +22,8 @@ interface UseStep2Props {
   isEditMode?: boolean;
   /** Only NEW meetings may allow auto-prefill of presentation_file; when false, do not prefill from initialData when nature is SEQUENTIAL/PERIODIC */
   isNewMeeting?: boolean;
+  /** When true, "العرض مطلوب؟" is optional and never required (UC08). */
+  presentationRequiredOptional?: boolean;
 }
 
 interface SubmitStep2Payload {
@@ -63,7 +65,10 @@ const submitStep2Data = async (payload: SubmitStep2Payload): Promise<{ success: 
   return { success: true };
 };
 
-function buildValidationContext(step1FormData?: Partial<Step1FormData>): Step2ValidationContext {
+function buildValidationContext(
+  step1FormData?: Partial<Step1FormData>,
+  presentationRequiredOptional?: boolean
+): Step2ValidationContext {
   const is_urgent = step1FormData?.isUrgent ?? false;
   const meetingStartDate =
     typeof step1FormData?.meetingStartDate === 'string'
@@ -74,6 +79,7 @@ function buildValidationContext(step1FormData?: Partial<Step1FormData>): Step2Va
     is_urgent,
     meeting_time_difference_hours,
     max_allowed_hours_without_presentation: MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION,
+    requirePresentationRequired: !presentationRequiredOptional,
   };
 }
 
@@ -85,6 +91,7 @@ export const useStep2 = ({
   onError,
   isEditMode = false,
   isNewMeeting = true,
+  presentationRequiredOptional = false,
 }: UseStep2Props) => {
   const sanitizedInitial = useMemo(() => {
     if (!initialData) return undefined;
@@ -127,8 +134,8 @@ export const useStep2 = ({
   }, [sanitizedInitial, isEditMode, isNewMeeting, step1FormData?.meetingNature]);
 
   const validationContext = useMemo(
-    () => buildValidationContext(step1FormData),
-    [step1FormData]
+    () => buildValidationContext(step1FormData, presentationRequiredOptional),
+    [step1FormData, presentationRequiredOptional]
   );
 
   const submitMutation = useMutation({
@@ -192,6 +199,7 @@ export const useStep2 = ({
   );
 
   const isPresentationRequiredRequired = useMemo(() => {
+    if (presentationRequiredOptional) return false;
     const hasFile =
       formData.presentation_file != null &&
       formData.presentation_file !== undefined &&
@@ -203,7 +211,7 @@ export const useStep2 = ({
       meeting_time_difference_hours != null &&
       meeting_time_difference_hours > max_allowed_hours_without_presentation;
     return is_urgent || timeExceeds;
-  }, [formData.presentation_file, validationContext]);
+  }, [presentationRequiredOptional, formData.presentation_file, validationContext]);
 
   return {
     formData,
