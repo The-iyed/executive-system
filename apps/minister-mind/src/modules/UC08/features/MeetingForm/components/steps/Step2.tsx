@@ -41,7 +41,7 @@ export const Step2: React.FC<Step2Props> = ({
           />
 
           <FormField
-            label="االعرض مطلوب؟"
+            label="العرض مطلوب؟"
             required={isPresentationRequiredRequired}
             error={touched.presentation_required ? errors.presentation_required : undefined}
             className="w-full max-w-[1200px] h-auto"
