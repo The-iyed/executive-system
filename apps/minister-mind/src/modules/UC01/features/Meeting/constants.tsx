@@ -47,7 +47,7 @@ export const createTableColumns = (
   return [
     {
       id: 'itemNumber',
-      header: 'رقم البند',
+      header: '#',
       width: 'w-[200px]',
       align: 'center',
       render: (_row, index) => (
