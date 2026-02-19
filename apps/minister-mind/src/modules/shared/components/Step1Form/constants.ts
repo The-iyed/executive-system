@@ -37,33 +37,33 @@ export { SECTOR_OPTIONS };
 // Table Column Definitions
 
 export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'objective', header: 'الهدف', type: 'text', placeholder: '-------' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'agenda_item', header: 'جدول أعمال الاجتماع', type: 'text', placeholder: '-------' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض', type: 'text', placeholder: '-------' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const MINISTER_SUPPORT_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'support_description', header: 'الدعم', type: 'text', placeholder: '-------' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const PREVIOUS_MEETING_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'meeting_subject', header: 'موضوع الاجتماع', type: 'text', placeholder: '-------' },
   { id: 'meeting_date', header: 'تاريخ الاجتماع', type: 'date', width: 'w-40', placeholder: 'dd/mm/yyyy' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
 ];
 
 export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'previous_meeting', header: 'الاجتماع السابق', type: 'text', placeholder: '-------' },
   { id: 'directive_date', header: 'تاريخ التوجيه', type: 'date', width: 'w-40', placeholder: 'dd/mm/yyyy' },
   { id: 'directive_status', header: 'حالة التوجيه', type: 'text', placeholder: '-------' },
