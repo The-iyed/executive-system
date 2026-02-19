@@ -54,7 +54,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
         <h2 className="text-right font-bold text-[#101828]" style={{ ...fontStyle, fontSize: '22px', lineHeight: '38px' }}>
           قائمة المدعوين
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
           {invitees.map((invitee, idx) => {
             const name = invitee.external_name || '-';
             const position = (invitee as InviteeDisplay).position || '-';
@@ -157,7 +157,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
                     </div>
                   )}
                 </div>
-              </div>
+          </div>
             );
           })}
         </div>
