@@ -89,15 +89,6 @@ const Meeting: React.FC = () => {
   ]);
 
   return (
-    <>
-      <ContentBar
-        title="الطلبات الحالية"
-        primaryAction={{
-            label: 'إنشاء اجتماع',
-            variant: 'primary',
-            onClick: openCreateDrawer,
-          }}
-      />
      <div className="w-full h-full flex flex-col overflow-hidden">
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
@@ -143,7 +134,6 @@ const Meeting: React.FC = () => {
               يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
@@ -152,14 +142,19 @@ const Meeting: React.FC = () => {
               onChange={setSearchValue}
               placeholder="بحث"
               variant="default"
-              className="flex-shrink-0"
+              className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
              />
             </div>
-          </div>
         </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
-        <div>
+        <ContentBar
+            primaryAction={{
+            label: 'إنشاء اجتماع',
+            variant: 'primary',
+            onClick: openCreateDrawer,
+          }}
+        />
+
+        <div className="mt-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
@@ -231,7 +226,6 @@ const Meeting: React.FC = () => {
         </div>
       </div>
      </div>
-    </>
   );
 };
 
