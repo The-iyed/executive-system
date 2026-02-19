@@ -5,7 +5,6 @@ const CATEGORY_REQUIRING_TOPIC_AND_DUE_DATE = 'GOVERNMENT_CENTER_TOPICS' as cons
 const MEETING_TYPE_REQUIRING_SECTOR = 'INTERNAL' as const;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Accepts YYYY-MM-DD or full ISO 8601 datetime. Exported for use in UI (e.g. hide required error when value is valid). */
 export const isValidDateOrDateTime = (val: string): boolean => {
   if (!val || val.trim() === '') return false;
   const d = new Date(val.trim());
@@ -106,6 +105,7 @@ export const step1BasicInfoBaseSchema = z.object({
   meetingClassification2: z.string().optional().or(z.literal('')),
   meetingConfidentiality: z.string(),
   meetingChannel: z.string().optional().or(z.literal('')),
+  meeting_location: z.string().optional().or(z.literal('')),
   sector: z.string().optional().or(z.literal('')),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
   notes: z.string({invalid_type_error: 'القيمة المُدخلة غير صحيحة'}).optional().or(z.literal('')),
@@ -147,6 +147,8 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
   const requiresDirectiveText = data.directive_method === 'DIRECT_DIRECTIVE';
   const requiresClassification = data.meetingCategory !== 'PRIVATE_MEETING';
   const requiresAgenda = data.meetingCategory !== 'PRIVATE_MEETING';
+  const requiresMeetingDates = data.is_urgent !== true;
+  const requiresMeetingLocation = data.meetingChannel === 'PHYSICAL';
 
   const agendaItemsWithSupportSchema = requiresAgenda
     ? z.array(agendaItemStrictSchema).min(1, 'يجب إضافة عنصر أجندة واحد على الأقل').optional().default([])
@@ -162,6 +164,9 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
     meetingChannel: optionalString('آلية انعقاد الاجتماع يجب أن تكون نصاً'),
+    meeting_location: requiresMeetingLocation
+      ? requiredString('الموقع مطلوب عند اختيار آلية انعقاد الاجتماع حضوري')
+      : optionalString('الموقع يجب أن يكون نصاً'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
     meetingAgenda: agendaItemsWithSupportSchema,
     notes: optionalString('الملاحظات يجب أن تكون نصاً'),
@@ -169,8 +174,6 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     is_on_behalf_of: z.boolean().optional().default(false),
     is_based_on_directive: z.boolean().optional().default(false),
   });
-
-  const requiresMeetingDates = data.is_urgent !== true;
 
   return baseSchema.extend({
     meetingReason: requiresReason
@@ -359,6 +362,8 @@ export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partia
     case 'meeting_start_date':
     case 'meeting_end_date':
       return data.is_urgent !== true;
+    case 'meeting_location':
+      return data.meetingChannel === 'PHYSICAL';
     default:
       return false;
   }
