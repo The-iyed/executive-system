@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge, StatusType } from './status-badge';
-import { Eye, CalendarDays, MapPin, User, Hash, Layers, CheckCircle2, XCircle, Send } from 'lucide-react';
+import { Eye, CalendarDays, MapPin, User, Hash, Layers, Send } from 'lucide-react';
 import { MeetingStatus, MeetingChannelLabels } from '../types';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 
@@ -112,19 +112,6 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
             </h3>
           </CardTooltip>
           <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-            {meeting.isDataComplete != null && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium whitespace-nowrap"
-                style={{
-                  background: meeting.isDataComplete ? 'rgba(4, 143, 134, 0.08)' : 'rgba(255, 162, 162, 0.12)',
-                  color: meeting.isDataComplete ? '#048F86' : '#D13C3C',
-                  ...fontStyle,
-                }}
-              >
-                {meeting.isDataComplete ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                {meeting.isDataComplete ? 'مكتمل' : 'غير مكتمل'}
-              </span>
-            )}
             {meeting.statusLabel != null && !hideStatus && (
               <StatusBadge status={meeting.status} label={meeting.statusLabel} />
             )}
