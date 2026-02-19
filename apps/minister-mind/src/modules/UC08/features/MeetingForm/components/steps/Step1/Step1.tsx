@@ -256,7 +256,7 @@ export function Step1({
           {isFieldVisible('meetingStartDate') && (
             <>
               <MeetingDateTimeRangePicker
-                sectionTitle="موعد الاجتماع (الحد الأقصى 24 ساعة)"
+                sectionTitle="موعد الاجتماع"
                 startValue={formData.meetingStartDate ?? ''}
                 endValue={formData.meetingEndDate ?? ''}
                 onStartChange={(v) => handleChange('meetingStartDate', v)}
@@ -272,7 +272,7 @@ export function Step1({
                 endTouched={touched.meetingEndDate}
               />
               <MeetingDateTimeRangePicker
-                sectionTitle="الموعد البديل الأول (الحد الأقصى 24 ساعة)"
+                sectionTitle="الموعد البديل الأول"
                 startValue={formData.alternative1StartDate ?? ''}
                 endValue={formData.alternative1EndDate ?? ''}
                 onStartChange={(v) => handleChange('alternative1StartDate', v)}
@@ -288,7 +288,7 @@ export function Step1({
                 endTouched={touched.alternative1EndDate}
               />
               <MeetingDateTimeRangePicker
-                sectionTitle="الموعد البديل الثاني (الحد الأقصى 24 ساعة)"
+                sectionTitle="الموعد البديل الثاني"
                 startValue={formData.alternative2StartDate ?? ''}
                 endValue={formData.alternative2EndDate ?? ''}
                 onStartChange={(v) => handleChange('alternative2StartDate', v)}
