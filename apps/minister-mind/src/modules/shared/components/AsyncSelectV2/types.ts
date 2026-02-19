@@ -49,6 +49,8 @@ export interface AsyncSelectV2Props {
   fullWidth?: boolean;
   searchPlaceholder?: string;
   menuPortalTarget?: HTMLElement | null;
+  /** When false, options are not loaded on menu open; user must type to search (e.g. for APIs that require q min length). Default true. */
+  defaultOptions?: boolean;
   /** Called when the menu opens (first click). Use to mark touched and show errors. */
   onFocus?: () => void;
 }
