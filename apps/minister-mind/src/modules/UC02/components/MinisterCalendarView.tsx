@@ -1,14 +1,19 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader, Drawer } from '@shared';
+import { Loader, MeetingCard } from '@shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
   type CalendarEventData,
 } from '@shared';
-import { Skeleton, cn } from '@sanad-ai/ui';
+import { Skeleton, cn, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@sanad-ai/ui';
 import { getOutlookTimelineEvents, type OutlookTimelineEvent } from '../data/calendarApi';
+import { getMeetingById } from '../data/meetingsApi';
+import { mapMeetingToCardData } from '../utils/meetingMapper';
+
+const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -137,9 +142,20 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   extraEvents = [],
   initialDate
 }) => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
+
+  const { data: meetingDetail, isLoading: isLoadingMeeting, isError: isMeetingError } = useQuery({
+    queryKey: ['meeting', selectedEventForDetails?.id],
+    queryFn: () => getMeetingById(selectedEventForDetails!.id),
+    enabled: !!selectedEventForDetails?.id,
+  });
+  const meetingCardData = useMemo(
+    () => (meetingDetail ? mapMeetingToCardData(meetingDetail) : null),
+    [meetingDetail]
+  );
 
   // Sync currentDate if initialDate changes (e.g. when opening modal with a new selection)
   React.useEffect(() => {
@@ -379,9 +395,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               events={events}
               startHour={8}
               endHour={24}
-              onEventClick={(event) => {
-                window.open(`/meeting/${event.id}`, '_blank');
-              }}
+              onEventClick={(event) => setSelectedEventForDetails(event)}
               onEventShowDetails={(event) => setSelectedEventForDetails(event)}
             />
             
@@ -409,80 +423,136 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
         </div>
       )}
 
-      {/* Event details drawer */}
-      <Drawer
-        open={!!selectedEventForDetails}
-        onOpenChange={(open) => !open && setSelectedEventForDetails(null)}
-        title={selectedEventForDetails?.title || 'تفاصيل الموعد'}
-        width={480}
-        side="left"
-      >
-        {selectedEventForDetails && (
-          <div className="flex flex-col gap-4 text-right" dir="rtl">
-            <div className="flex flex-wrap items-center gap-2">
-              {selectedEventForDetails.is_internal !== undefined && (
-                <span
-                  className={cn(
-                    'text-xs font-medium px-2 py-1 rounded-full',
-                    selectedEventForDetails.is_internal
-                      ? 'bg-[#E6F6F4] text-[#008774]'
-                      : 'bg-amber-50 text-amber-700'
-                  )}
+      {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
+      <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
+        <DialogContent className="max-w-[520px] w-[95vw] max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle style={fontStyle}>{selectedEventForDetails?.title || 'تفاصيل الموعد'}</DialogTitle>
+          </DialogHeader>
+          {selectedEventForDetails && (
+            <div className="flex flex-col gap-4 text-right" style={fontStyle}>
+              {isLoadingMeeting && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader />
+                </div>
+              )}
+              {!isLoadingMeeting && meetingCardData && (
+                <>
+                  <MeetingCard
+                    meeting={meetingCardData}
+                    onDetails={() => {
+                      setSelectedEventForDetails(null);
+                      navigate(`/meeting/${selectedEventForDetails.id}`);
+                    }}
+                  />
+                  <Button
+                    variant="default"
+                    className="w-full bg-[#048F86] hover:bg-[#037a72] text-white"
+                    onClick={() => {
+                      setSelectedEventForDetails(null);
+                      navigate(`/meeting/${selectedEventForDetails.id}`);
+                    }}
+                  >
+                    عرض تفاصيل الاجتماع الكاملة
+                  </Button>
+                </>
+              )}
+              {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
+                <div
+                  className="flex flex-col bg-white w-full overflow-hidden border-[1.5px] border-[rgba(230,236,245,1)] cursor-default"
+                  style={{
+                    borderRadius: '16px',
+                    boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
+                  }}
                 >
-                  {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
-                </span>
+                  <div className="flex flex-col gap-4 p-5">
+                    <div className="flex flex-row items-start justify-between gap-3">
+                      <h3 className="text-right flex-1 text-[#101828] font-bold leading-6" style={{ fontSize: '15px' }}>
+                        {selectedEventForDetails.title}
+                      </h3>
+                      {selectedEventForDetails.is_internal !== undefined && (
+                        <span
+                          className={cn(
+                            'text-xs font-medium px-2 py-1 rounded-full shrink-0',
+                            selectedEventForDetails.is_internal
+                              ? 'bg-[#E6F6F4] text-[#008774]'
+                              : 'bg-amber-50 text-amber-700'
+                          )}
+                        >
+                          {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
+                        </span>
+                      )}
+                    </div>
+                    {selectedEventForDetails.organizer && (
+                      <div className="flex flex-row items-center gap-3">
+                        <div className="w-9 h-9 flex-shrink-0 rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)] flex items-center justify-center">
+                          <User className="w-4 h-4 text-[#98A2B3]" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[13px] font-medium text-[#344054]">{selectedEventForDetails.organizer.name}</span>
+                          <span className="text-xs text-[#475467]">{selectedEventForDetails.organizer.email}</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[#475467] text-sm">
+                      {formatDetailDate(selectedEventForDetails.date)}
+                    </p>
+                    <p className="text-[#101828] font-semibold text-sm">
+                      من {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} إلى{' '}
+                      {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
+                    </p>
+                    {selectedEventForDetails.location && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المكان</h4>
+                        <p className="text-sm text-[#101828] break-all">
+                          {selectedEventForDetails.location.startsWith('http')
+                            ? (
+                                <a
+                                  href={selectedEventForDetails.location}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#0E6F90] underline"
+                                >
+                                  {selectedEventForDetails.location}
+                                </a>
+                              )
+                            : selectedEventForDetails.location
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المرفقات</h4>
+                        <ul className="list-none space-y-1">
+                          {selectedEventForDetails.attachments.map((att) => (
+                            <li key={att.attachment_id} className="text-sm text-[#101828] flex items-center gap-2">
+                              <span className="truncate flex-1" title={att.name}>{att.name}</span>
+                              <span className="text-xs text-[#475467] shrink-0">{formatAttachmentSize(att.size)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-5 pb-5">
+                    <Button
+                      variant="default"
+                      className="w-full bg-[#048F86] hover:bg-[#037a72] text-white"
+                      onClick={() => {
+                        setSelectedEventForDetails(null);
+                        navigate(`/meeting/${selectedEventForDetails.id}`);
+                      }}
+                    >
+                      عرض تفاصيل الاجتماع الكاملة
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
-            <p className="text-[#475467] text-sm">
-              {formatDetailDate(selectedEventForDetails.date)}
-            </p>
-            <p className="text-[#101828] font-semibold text-sm">
-              من {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} إلى{' '}
-              {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
-            </p>
-            {selectedEventForDetails.location && (
-              <div>
-                <h4 className="text-xs font-semibold text-[#475467] mb-1">المكان</h4>
-                <p className="text-sm text-[#101828] break-all">
-                  {selectedEventForDetails.location.startsWith('http')
-                    ? (
-                        <a
-                          href={selectedEventForDetails.location}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#0E6F90] underline"
-                        >
-                          {selectedEventForDetails.location}
-                        </a>
-                      )
-                    : selectedEventForDetails.location
-                  }
-                </p>
-              </div>
-            )}
-            {selectedEventForDetails.organizer && (
-              <div>
-                <h4 className="text-xs font-semibold text-[#475467] mb-1">المنظم</h4>
-                <p className="text-sm text-[#101828]">{selectedEventForDetails.organizer.name}</p>
-                <p className="text-xs text-[#475467]">{selectedEventForDetails.organizer.email}</p>
-              </div>
-            )}
-            {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-[#475467] mb-1">المرفقات</h4>
-                <ul className="list-none space-y-1">
-                  {selectedEventForDetails.attachments.map((att) => (
-                    <li key={att.attachment_id} className="text-sm text-[#101828] flex items-center gap-2">
-                      <span className="truncate flex-1" title={att.name}>{att.name}</span>
-                      <span className="text-xs text-[#475467] shrink-0">{formatAttachmentSize(att.size)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </Drawer>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
