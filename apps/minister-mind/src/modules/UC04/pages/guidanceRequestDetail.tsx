@@ -1148,7 +1148,7 @@ const GuidanceRequestDetail: React.FC = () => {
                             columns={[
                               {
                                 id: 'index',
-                                header: 'رقم البند',
+                                header: '#',
                                 width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
                                 render: (_row: any, index: number) => (
@@ -1248,7 +1248,7 @@ const GuidanceRequestDetail: React.FC = () => {
                             columns={[
                               {
                                 id: 'index',
-                                header: 'رقم البند',
+                                header: '#',
                                 width: 'min-w-[6rem] flex-shrink-0',
                                 align: 'center',
                                 render: (_row: any, index: number) => (
@@ -1349,7 +1349,7 @@ const GuidanceRequestDetail: React.FC = () => {
                             columns={[
                               {
                                 id: 'index',
-                                header: 'رقم البند',
+                                header: '#',
                                 width: 'w-[114px]',
                                 align: 'center',
                                 render: (_row: any, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span>,
@@ -2203,7 +2203,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   قائمة المدعوين (مقدّم الطلب)
                 </h2>
                 {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                     {meetingRequest.invitees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';
@@ -2325,7 +2325,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   الحضور من جهة الوزير
                 </h2>
                 {meetingRequest.minister_attendees && meetingRequest.minister_attendees.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                     {meetingRequest.minister_attendees.map((invitee: any, idx: number) => {
                       const name = invitee.external_name || invitee.user_id || '-';
                       const position = invitee.position || '-';

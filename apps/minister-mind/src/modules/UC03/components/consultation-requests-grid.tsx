@@ -16,7 +16,7 @@ export const ConsultationRequestsGrid: React.FC<ConsultationRequestsGridProps> =
 }) => {
   return (
     <div
-      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 ${className}`}
+      className={`grid grid-cols-1 lg:grid-cols-2 min-[1440px]:grid-cols-3 gap-4 ${className}`}
       dir="rtl"
     >
       {requests.map((request) => (
