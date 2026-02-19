@@ -8,7 +8,7 @@ import {
   WeeklyCalendarGrid,
   type CalendarEventData,
 } from '@shared';
-import { Skeleton, cn, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@sanad-ai/ui';
+import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@sanad-ai/ui';
 import { getOutlookTimelineEvents, type OutlookTimelineEvent } from '../data/calendarApi';
 import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
@@ -445,16 +445,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       navigate(`/meeting/${selectedEventForDetails.id}`);
                     }}
                   />
-                  <Button
-                    variant="default"
-                    className="w-full bg-[#048F86] hover:bg-[#037a72] text-white"
-                    onClick={() => {
-                      setSelectedEventForDetails(null);
-                      navigate(`/meeting/${selectedEventForDetails.id}`);
-                    }}
-                  >
-                    عرض تفاصيل الاجتماع الكاملة
-                  </Button>
                 </>
               )}
               {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
@@ -534,18 +524,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                         </ul>
                       </div>
                     )}
-                  </div>
-                  <div className="px-5 pb-5">
-                    <Button
-                      variant="default"
-                      className="w-full bg-[#048F86] hover:bg-[#037a72] text-white"
-                      onClick={() => {
-                        setSelectedEventForDetails(null);
-                        navigate(`/meeting/${selectedEventForDetails.id}`);
-                      }}
-                    >
-                      عرض تفاصيل الاجتماع الكاملة
-                    </Button>
                   </div>
                 </div>
               )}

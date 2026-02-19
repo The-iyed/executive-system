@@ -219,7 +219,7 @@ const ScheduleReview: React.FC = () => {
     },
   ];
 
-  // Table columns for الطلبات الحالية (work-basket): include موضوع الاجتماع before فئة الاجتماع
+  // Table columns for الطلبات الحالية (work-basket)
   const workBasketTableColumns: TableColumn<MeetingApiResponse>[] = [
     {
       id: 'request_number',
@@ -234,7 +234,7 @@ const ScheduleReview: React.FC = () => {
     },
     {
       id: 'meeting_subject',
-      header: 'موضوع الاجتماع',
+      header: 'عنوان الاجتماع',
       width: 'flex-1',
       align: 'end',
       render: (row) => (
