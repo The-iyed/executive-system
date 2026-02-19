@@ -92,16 +92,16 @@ const ExceptionRequest: React.FC = () => {
   const tableColumns: TableColumn<MeetingCardData>[] = [
     {
       id: 'sequentialNumber',
-      header: 'رقم البند',
+      header: '#',
       width: 'w-32',
-      align: 'end',
+      align: 'center',
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const sequentialNumber = originalRequest?.sequential_number
           ? originalRequest.sequential_number.toString()
           : '-';
         return (
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-center">
             <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
               {sequentialNumber}
             </span>
