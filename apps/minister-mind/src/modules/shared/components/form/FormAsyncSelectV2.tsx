@@ -28,6 +28,8 @@ export interface FormAsyncSelectV2Props {
   fullWidth?: boolean;
   searchPlaceholder?: string;
   menuPortalTarget?: HTMLElement | null;
+  /** When false, options load only after user types (e.g. search API with required q). Default true. */
+  defaultOptions?: boolean;
   /** Called when the menu opens (first click). Use to mark touched and show errors. */
   onFocus?: () => void;
 }
@@ -50,6 +52,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
   fullWidth = false,
   searchPlaceholder = 'ابحث...',
   menuPortalTarget,
+  defaultOptions = true,
   onFocus,
 }) => {
   return (
@@ -75,6 +78,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
       fullWidth={fullWidth}
       searchPlaceholder={searchPlaceholder}
       menuPortalTarget={menuPortalTarget}
+      defaultOptions={defaultOptions}
       onFocus={onFocus}
     />
   );
