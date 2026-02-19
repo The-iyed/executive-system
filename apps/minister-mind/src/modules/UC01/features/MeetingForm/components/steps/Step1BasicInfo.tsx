@@ -280,7 +280,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               return (
                 <>
                   <FormField
-                    className="w-full min-w-0 sm:col-span-2"
+                    className="w-full min-w-0"
                     label="موعد الاجتماع"
                     required
                     error={
@@ -315,7 +315,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     />
                   </FormField>
                   <FormField
-                    className="w-full min-w-0 sm:col-span-2"
+                    className="w-full min-w-0"
                     label="الموعد البديل الأول"
                     error={
                       alt1Error
@@ -349,7 +349,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     />
                   </FormField>
                   <FormField
-                    className="w-full min-w-0 sm:col-span-2"
+                    className="w-full min-w-0"
                     label="الموعد البديل الثاني"
                     error={
                       alt2Error
