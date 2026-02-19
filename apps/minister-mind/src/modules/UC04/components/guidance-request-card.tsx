@@ -19,7 +19,6 @@ const iconCircleStyle = {
   boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
 } as const;
 
-/** Tooltip wrapper for card values */
 const CardTooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => (
   <TooltipProvider delayDuration={300}>
     <Tooltip>
@@ -72,16 +71,9 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
   return (
     <div
       className={`
-        group relative
-        flex flex-col
-        bg-white
-        w-full
-        overflow-hidden
-        cursor-pointer
-        hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)]
-        transition-all duration-200
-        border-[1.5px] border-[rgba(230,236,245,1)]
-        ${className}
+        group relative flex flex-col bg-white w-full overflow-hidden cursor-pointer
+        hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)] transition-all duration-200
+        border-[1.5px] border-[rgba(230,236,245,1)] ${className}
       `}
       style={{
         borderRadius: '16px',
@@ -90,15 +82,10 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
       dir="rtl"
       onClick={handleCardClick}
     >
-      {/* Card Body */}
       <div className="flex flex-col gap-4 p-5" style={fontStyle}>
-        {/* Row 1: Title + Status + Data Complete */}
         <div className="flex flex-row items-start justify-between gap-3">
           <CardTooltip text={request.title}>
-            <h3
-              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap"
-              style={{ ...fontStyle, fontSize: '15px' }}
-            >
+            <h3 className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2" style={{ ...fontStyle, fontSize: '15px' }}>
               {request.title}
             </h3>
           </CardTooltip>
@@ -113,14 +100,13 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
                 }}
               >
                 {request.isDataComplete ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                {request.isDataComplete ? 'مكتمل' : 'غير مكتمل'}
+                {request.isDataComplete ? '\u0645\u0643\u062A\u0645\u0644' : '\u063A\u064A\u0631 \u0645\u0643\u062A\u0645\u0644'}
               </span>
             )}
             {!hideStatus && <StatusBadge status={request.status} label={request.statusLabel} />}
           </div>
         </div>
 
-        {/* Row 2: Submitter */}
         {request.submitter && (
           <CardTooltip text={request.submitter}>
             <div className="flex flex-row items-center gap-3">
@@ -132,66 +118,58 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
           </CardTooltip>
         )}
 
-        {/* Row 3: Request Number + Date pills */}
-        <div className="flex flex-row items-center gap-2.5 w-full">
+        <div className="flex flex-col gap-2.5 w-full">
           <CardTooltip text={request.requestNumber}>
-            <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
-                <span className="text-[12px] text-[#344054] truncate leading-4">{request.requestNumber}</span>
+                <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0631\u0642\u0645 \u0627\u0644\u0637\u0644\u0628'}</span>
+                <span className="text-[12px] text-[#344054] leading-4">{request.requestNumber}</span>
               </div>
             </div>
           </CardTooltip>
           <CardTooltip text={request.date}>
-            <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
-                <span className="text-[12px] text-[#344054] truncate leading-4">{request.date}</span>
+                <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0627\u0644\u062A\u0627\u0631\u064A\u062E'}</span>
+                <span className="text-[12px] text-[#344054] leading-4">{request.date}</span>
               </div>
             </div>
           </CardTooltip>
+          {request.meetingCategory && (
+            <CardTooltip text={request.meetingCategory}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0641\u0626\u0629 \u0627\u0644\u0627\u062C\u062A\u0645\u0627\u0639'}</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{request.meetingCategory}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
+          {request.meetingDate && (
+            <CardTooltip text={request.meetingDate}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">{'\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0627\u062C\u062A\u0645\u0627\u0639'}</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{request.meetingDate}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
         </div>
-
-        {/* Row 4: Category + Meeting Date pills */}
-        {(request.meetingCategory || request.meetingDate) && (
-          <div className="flex flex-row items-center gap-2.5 w-full">
-            {request.meetingCategory && (
-              <CardTooltip text={request.meetingCategory}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{request.meetingCategory}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            )}
-            {request.meetingDate && (
-              <CardTooltip text={request.meetingDate}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{request.meetingDate}</span>
-                  </div>
-                </div>
-              </CardTooltip>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Hover Action Bar - glass overlay from left */}
       <div
         className="absolute top-0 left-0 z-10 flex w-12 h-full items-center justify-center -translate-x-full transition-transform duration-200 ease-in-out group-hover:translate-x-0"
         style={{ background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}

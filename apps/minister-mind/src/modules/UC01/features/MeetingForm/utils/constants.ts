@@ -70,7 +70,7 @@ export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
 
 // جدول أجندة الاجتماع: رقم البند، الأجندة، الدعم المطلوب من الوزير، مدة العرض (بالدقائق)، ونص الدعم يظهر عند اختيار أخرى
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: 'رقم البند', width: 'w-24' },
+  { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'agenda_item', header: 'الأجندة', type: 'text', placeholder: 'عنصر الأجندة', width: 'w-full' },
   { id: 'minister_support_type', header: 'الدعم المطلوب من الوزير', type: 'select', selectOptions: MINISTER_SUPPORT_TYPE_OPTIONS, placeholder: 'إحاطة / تحديث / قرار / توجيه / اعتماد / أخرى', width: 'w-full' },
   { id: 'presentation_duration_minutes', header: 'مدة العرض (بالدقائق)', type: 'select', selectOptions: PRESENTATION_DURATION_MINUTES_OPTIONS, placeholder: 'اختر المدة', width: 'w-40' },
@@ -85,7 +85,7 @@ export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
 export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   {
     id: 'itemNumber',
-    header: 'رقم البند',
+    header: '#',
     width: 'min-w-[100px]',
   },
   {

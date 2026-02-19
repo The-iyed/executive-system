@@ -273,7 +273,7 @@ const MeetingDetail: React.FC = () => {
   const [previousMeetingMinutesOption, setPreviousMeetingMinutesOption] = useState<OptionType | null>(null);
 
   // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1)
-  const previousMeetingId = (meeting?.previous_meeting_id || formData.previous_meeting_id || null) as string | null;
+  const previousMeetingId = (meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? formData.previous_meeting_id ?? null) as string | null;
   const { data: previousMeeting } = useQuery({
     queryKey: ['meeting', previousMeetingId],
     queryFn: () => getMeetingById(previousMeetingId!),
@@ -857,12 +857,12 @@ const MeetingDetail: React.FC = () => {
     },
     onError: (err: unknown) => {
       if ((err as DOMException)?.name !== 'AbortError') {
-        console.error('Compare presentations error:', err);
-        setComparePresentationsResult(null);
-        const e = err as { response?: { data?: { detail?: string } }; detail?: string };
-        const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : typeof e?.detail === 'string' ? e.detail : null;
-        setCompareErrorDetail(detail);
-        setIsComparePresentationsModalOpen(true);
+      console.error('Compare presentations error:', err);
+      setComparePresentationsResult(null);
+      const e = err as { response?: { data?: { detail?: string } }; detail?: string };
+      const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : typeof e?.detail === 'string' ? e.detail : null;
+      setCompareErrorDetail(detail);
+      setIsComparePresentationsModalOpen(true);
       }
     },
   });
@@ -1028,20 +1028,20 @@ const MeetingDetail: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       // Close the form; do not navigate
-      setIsScheduleModalOpen(false);
-      setScheduleForm({
-        scheduled_at: '',
+        setIsScheduleModalOpen(false);
+        setScheduleForm({
+          scheduled_at: '',
         scheduled_end_at: '',
-        meeting_channel: 'PHYSICAL',
-        requires_protocol: false,
-        protocol_type: null,
-        protocol_type_text: '',
-        is_data_complete: true,
-        notes: '',
-        location: '',
-        selected_time_slot_id: null,
-        minister_attendees: [],
-      });
+          meeting_channel: 'PHYSICAL',
+          requires_protocol: false,
+          protocol_type: null,
+          protocol_type_text: '',
+          is_data_complete: true,
+          notes: '',
+          location: '',
+          selected_time_slot_id: null,
+          minister_attendees: [],
+        });
     },
   });
 
@@ -1113,22 +1113,22 @@ const MeetingDetail: React.FC = () => {
       const newIndex = prev.minister_attendees.length;
       setEditingMinisterAttendees((s) => new Set(s).add(newIndex));
       return {
-        ...prev,
-        minister_attendees: [
-          ...prev.minister_attendees,
-          {
-            username: '',
-            external_name: '',
-            external_email: '',
-            is_required: false,
-            justification: '',
-            access_permission: 'FULL',
-            position: '',
-            phone: '',
-            attendance_channel: 'PHYSICAL',
+      ...prev,
+      minister_attendees: [
+        ...prev.minister_attendees,
+        {
+          username: '',
+          external_name: '',
+          external_email: '',
+          is_required: false,
+          justification: '',
+          access_permission: 'FULL',
+          position: '',
+          phone: '',
+          attendance_channel: 'PHYSICAL',
             is_consultant: false,
-          },
-        ],
+        },
+      ],
       };
     });
   };
@@ -1171,7 +1171,8 @@ const MeetingDetail: React.FC = () => {
       const ownerDisplay = meeting.current_owner_user
         ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
         : meeting.current_owner_role?.name_ar || '';
-      const prevId = meeting.previous_meeting_id || null;
+      const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
+      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? prevId ?? '';
       const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1196,7 +1197,7 @@ const MeetingDetail: React.FC = () => {
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
       });
-      setPreviousMeetingOption(prevId ? { value: prevId, label: prevId } : null);
+      setPreviousMeetingOption(prevId ? { value: prevId, label: prevMeetingLabel || prevId } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
 
       // Initialize content tab form (objectives and agenda items)
@@ -1321,7 +1322,7 @@ const MeetingDetail: React.FC = () => {
     const ownerDisplay = meeting.current_owner_user
       ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
       : meeting.current_owner_role?.name_ar || '';
-    const prevId = meeting.previous_meeting_id || null;
+    const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
     const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1630,20 +1631,20 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-row flex-wrap justify-between items-center gap-2.5 w-full min-w-0">
                 {/* Right side (RTL): back, title block, status */}
                 <div className="flex flex-row items-center gap-2.5 flex-1 min-w-0 justify-start">
-                  <button
-                    onClick={() => navigate(-1)}
+            <button
+              onClick={() => navigate(-1)}
                     className="flex flex-row justify-center items-center w-6 h-6 rounded-[4.97px] bg-white border border-[#D0D5DD] shadow-[0px_0.62px_1.24px_rgba(16,24,40,0.05)] flex-shrink-0"
                     aria-label="رجوع"
-                  >
+            >
                     <ChevronRight className="w-3 h-3 text-[#667085]" />
-                  </button>
+            </button>
                   <div className="flex flex-col items-start min-w-0 flex-1 text-right overflow-hidden">
-                    <h1
+                <h1
                       className="text-xl font-bold text-[#101828] leading-tight truncate max-w-full"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      مراجعة طلب الاجتماع ({meeting.request_number})
-                    </h1>
+                >
+                  مراجعة طلب الاجتماع ({meeting.request_number})
+                </h1>
                     <p
                       className="text-sm font-normal text-[#475467] leading-snug text-right truncate max-w-full"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
@@ -1651,13 +1652,13 @@ const MeetingDetail: React.FC = () => {
                       مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.
                     </p>
                   </div>
-                  {hasChanges && (
+                {hasChanges && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white text-xs flex-shrink-0" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      تغييرات غير محفوظة
-                    </span>
-                  )}
+                    تغييرات غير محفوظة
+                  </span>
+                )}
                   <StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />
-                </div>
+              </div>
                 {/* End (left in RTL): quality button - animated with shadow */}
                 <button
                   type="button"
@@ -1692,28 +1693,28 @@ const MeetingDetail: React.FC = () => {
                     </svg>
                   </span>
                 </button>
-              </div>
+          </div>
               {/* Tabs row: help icon and tabs on same row, same alignment - min-w-0 to prevent overflow */}
               <div className="flex flex-row items-center w-full gap-2.5 min-w-0">
                 <div className="flex-1 flex justify-center min-w-0 overflow-hidden">
-                  <Tabs
-                    items={tabs}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
+            <Tabs
+              items={tabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
                     variant="underline"
                     className="gap-2.5"
-                  />
-                </div>
+            />
+          </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+              <button
                         type="button"
                         className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
                         aria-label="مساعدة"
                       >
                         <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
-                      </button>
+              </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[280px] text-right">
                       <p className="font-semibold text-gray-900 mb-1">{permissionTooltip.title}</p>
@@ -1995,7 +1996,7 @@ const MeetingDetail: React.FC = () => {
                         <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                           <DataTable
                             columns={[
-                              { id: 'index', header: 'رقم البند', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
+                              { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
                               { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_number}</span> },
                               { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
                               { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.directive_text || '—'}</span> },
@@ -2006,8 +2007,8 @@ const MeetingDetail: React.FC = () => {
                             ]}
                             data={meeting?.related_directives ?? []}
                             rowPadding="py-3"
-                          />
-                        </div>
+                  />
+                </div>
                       );
                     }
                     if (hasOnlyIds) {
@@ -2015,13 +2016,13 @@ const MeetingDetail: React.FC = () => {
                         <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                           <DataTable
                             columns={[
-                              { id: 'index', header: 'رقم البند', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                              { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
                               { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
                             ]}
                             data={(meeting?.related_directive_ids ?? []).map((id) => ({ id }))}
                             rowPadding="py-3"
                           />
-                        </div>
+              </div>
                       );
                     }
                     return <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد توجيهات مرتبطة</div>;
@@ -2067,12 +2068,12 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-[10px] w-full">
                 <div className="text-[12.69px] leading-[38px] text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   {renderFieldLabel('agenda_items', 'أجندة الاجتماع', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
-                </div>
+                  </div>
                 {contentForm.agendaItems.length > 0 ? (
                   <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
                     <DataTable
                       columns={[
-                        { id: 'idx', header: 'رقم البند', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
                         { id: 'agenda_item', header: 'بند جدول الأعمال', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
                           <Input type="text" value={item.agenda_item} onChange={(e) => { const n = [...contentForm.agendaItems]; n[index] = { ...item, agenda_item: e.target.value }; setContentForm((p) => ({ ...p, agendaItems: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }} placeholder="عنوان البند" />
                         ) },
@@ -2121,9 +2122,9 @@ const MeetingDetail: React.FC = () => {
                   <label className="text-sm font-bold text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>العرض التقديمي</label>
                 </div>
                 <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
-                  <TooltipProvider>
+                <TooltipProvider>
                     <div className="flex flex-col max-w-[800px] gap-4">
-                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                  {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
                         <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
                           <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#009883]/40 rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#009883] hover:shadow-[0px_2px_8px_rgba(4,143,134,0.12)] transition-all duration-200">
                             {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
@@ -2133,11 +2134,11 @@ const MeetingDetail: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               <div className="flex items-center rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-0.5">
-                                {att.replaces_attachment_id != null && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
+                        {att.replaces_attachment_id != null && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
                                         onClick={() => {
                                           compareAbortControllerRef.current?.abort();
                                           compareAbortControllerRef.current = new AbortController();
@@ -2149,18 +2150,18 @@ const MeetingDetail: React.FC = () => {
                                             signal: compareAbortControllerRef.current.signal,
                                           });
                                         }}
-                                        disabled={compareByAttachmentMutation.isPending}
+                                disabled={compareByAttachmentMutation.isPending}
                                         className="p-2 rounded-md hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50 transition-colors"
-                                      >
+                              >
                                         <Scale className="w-4 h-4" strokeWidth={1.26} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-right">
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-right">
                                       <p>تقييم الاختلاف بين العروض</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                               <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
                               <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
                               <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -2200,15 +2201,15 @@ const MeetingDetail: React.FC = () => {
                               </svg>
                             </span>
                           </button>
-                        </div>
-                      ))}
-                      {newPresentationAttachments.map((file, idx) => (
+                    </div>
+                  ))}
+                  {newPresentationAttachments.map((file, idx) => (
                         <div key={`new-pres-${idx}`} className="flex flex-row items-center px-4 py-3 gap-3 h-[56px] bg-[#F0FDFA] border border-dashed border-[#009883] rounded-xl">
                           {file.name.toLowerCase().endsWith('pdf') ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135]">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>}
                           <div className="flex flex-col items-end flex-1 min-w-0"><span className="text-sm font-medium text-[#344054] truncate w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{file.name}</span><span className="text-xs text-[#048F86] font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>جديد</span></div>
                           <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewPresentationAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      ))}
+                    </div>
+                  ))}
                       {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed border-[#D0D5DD] min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
                           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
@@ -2223,9 +2224,9 @@ const MeetingDetail: React.FC = () => {
                       ) : canEdit ? (
                         <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-l from-[#048F86] to-[#34C3BA] text-white shadow-[0px_2px_8px_rgba(4,143,134,0.3)] hover:shadow-[0px_4px_14px_rgba(4,143,134,0.4)] hover:opacity-95 cursor-pointer transition-all duration-200" style={{ fontFamily: "'Almarai', sans-serif" }}><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
                       ) : null}
-                    </div>
-                  </TooltipProvider>
                 </div>
+                </TooltipProvider>
+              </div>
               </div>
 
               {/* متى سيتم إرفاق العرض؟ – card */}
@@ -2272,27 +2273,27 @@ const MeetingDetail: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                  {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
                           <div key={att.id} className="flex flex-row items-center px-4 py-3 gap-3 min-w-0 flex-1 max-w-[400px] h-[56px] bg-white border border-[#E4E7EC] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#048F86]/50 hover:shadow-[0px_2px_8px_rgba(4,143,134,0.08)] transition-all duration-200">
                             {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                             <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span><span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span></div>
                             <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
-                          </div>
-                        ))}
-                        {newAttachments.map((file, idx) => (
+                    </div>
+                  ))}
+                  {newAttachments.map((file, idx) => (
                           <div key={`new-${idx}`} className="flex flex-row items-center px-4 py-3 gap-3 h-[56px] bg-[#F0FDFA] border border-dashed border-[#048F86] rounded-xl flex-1 min-w-0 max-w-[400px]">
                             <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>
                             <div className="flex flex-col items-end flex-1 min-w-0"><span className="text-sm font-medium text-[#344054] truncate w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{file.name}</span><span className="text-xs text-[#048F86] font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>جديد</span></div>
                             <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        ))}
+                    </div>
+                  ))}
                         {canEdit && (
                           <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-dashed border-[#048F86] text-[#048F86] bg-[#048F86]/05 hover:bg-[#048F86]/10 cursor-pointer transition-all duration-200" style={{ fontFamily: "'Almarai', sans-serif" }}><Plus className="w-4 h-4" />إضافة مرفق<input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
                         )}
                       </>
                     )}
-                  </div>
                 </div>
+              </div>
               </div>
 
               {/* ملاحظات – card */}
@@ -2397,7 +2398,7 @@ const MeetingDetail: React.FC = () => {
                               return (
                                 <div className="flex flex-col gap-2 text-sm text-right">
                                   {ai.main_topics && Array.isArray(ai.main_topics) && ai.main_topics.length > 0 ? (
-                                    <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1">
                                       <span className="text-gray-500">المواضيع الرئيسية</span>
                                       <ul className="list-disc list-inside text-gray-900">
                                         {ai.main_topics.map((t, i) => (
@@ -2479,8 +2480,8 @@ const MeetingDetail: React.FC = () => {
                             <span className="text-[13px] text-[#667085] truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
                               {insightsModalAttachment.file_name}
                             </span>
-                          </div>
-                        )}
+            </div>
+          )}
                       </div>
                     </div>
                   </div>
@@ -2515,16 +2516,16 @@ const MeetingDetail: React.FC = () => {
                         const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
                         const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
                         if (notes.length === 0 && suggestions.length === 0) {
-                          return (
+                                return (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                               <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
                                 <Check className="h-6 w-6 text-[#667085]" />
                               </div>
                               <span className="text-[14px] text-[#667085]">لا توجد ملاحظات أو اقتراحات على هذا العرض.</span>
-                            </div>
-                          );
-                        }
-                        return (
+                                  </div>
+                                );
+                              }
+                                return (
                           <div className="flex flex-col gap-5">
                             {notes.length > 0 && (
                               <div className="flex flex-col gap-3">
@@ -2564,8 +2565,8 @@ const MeetingDetail: React.FC = () => {
                                 </div>
                               </div>
                             )} */}
-                          </div>
-                        );
+                                  </div>
+                                );
                       })()
                     ) : !insightsMutation.isPending && !insightsMutation.isError ? (
                       <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -2579,8 +2580,8 @@ const MeetingDetail: React.FC = () => {
 
                   {/* Footer */}
                   <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
-                    <button
-                      type="button"
+                                <button
+                                  type="button"
                       onClick={() => { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); }}
                       className="px-5 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors text-[14px] font-semibold shadow-sm"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
@@ -2603,7 +2604,7 @@ const MeetingDetail: React.FC = () => {
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                       {allInvitees.map((row: any, idx: number) => {
                         const isLocal = row.isLocal;
                         const isConsultant = row.is_consultant === true;
@@ -2667,16 +2668,16 @@ const MeetingDetail: React.FC = () => {
                                     </>
                                   )}
                                   <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                                    <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                  </button>
-                                </div>
+                                  <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                                </button>
                               </div>
+                    </div>
                               {/* Contact: Email + Phone */}
                               <div className="flex flex-row items-center gap-2.5 w-full">
                                 <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
+                  </div>
                                   {isLocal ? (
                                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                                       <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
@@ -2741,7 +2742,7 @@ const MeetingDetail: React.FC = () => {
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
                       {scheduleForm.minister_attendees.map((row: any, index: number) => {
                         const isConsultant = row.is_consultant === true;
                         const isEditing = editingMinisterAttendees.has(index);
@@ -2755,7 +2756,7 @@ const MeetingDetail: React.FC = () => {
                         const mobile = row.mobile || '-';
 
                         if (!isEditing) {
-                          return (
+                              return (
                             <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                               <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
                                 <div className="flex flex-row items-center justify-between gap-3">
@@ -2833,8 +2834,8 @@ const MeetingDetail: React.FC = () => {
                                   </TooltipProvider>
                                 )}
                               </div>
-                            </div>
-                          );
+                                </div>
+                              );
                         }
 
                         const errName = ministerAttendeeValidationErrors[index]?.external_name;
@@ -2842,14 +2843,14 @@ const MeetingDetail: React.FC = () => {
                         const errPhone = ministerAttendeeValidationErrors[index]?.mobile;
                         const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
                         const errJust = ministerAttendeeValidationErrors[index]?.justification;
-                        return (
+                              return (
                           <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'} ring-2 ring-[#048F86]/20`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
                             <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
                               <div className="flex flex-row items-start justify-between gap-3">
                                 <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                                   <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
                                     <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                  </div>
+                                </div>
                                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} style={{ fontFamily: "'Almarai', sans-serif" }} />
@@ -2953,8 +2954,8 @@ const MeetingDetail: React.FC = () => {
                                 <Check className="w-4 h-4" />
                                 حفظ
                               </button>
-                            </div>
-                          </div>
+                    </div>
+                  </div>
                         );
                       })}
                     </div>
@@ -2966,7 +2967,7 @@ const MeetingDetail: React.FC = () => {
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
-                    <AIGenerateButton
+                    <AIGenerateButton 
                       label="إضافة مدعوين آليًا"
                       disabled={!canEdit}
                       onClick={() => { setIsSuggestAttendeesModalOpen(true); }}
@@ -3034,7 +3035,7 @@ const MeetingDetail: React.FC = () => {
                     row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at, requestNumber: a.consultation_record_number || null }));
                   }
 
-                  return (
+                        return (
                     <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
                       <button
                         type="button"
@@ -3056,12 +3057,12 @@ const MeetingDetail: React.FC = () => {
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                               <Clock className="w-4 h-4 flex-shrink-0" />
                               <span>تاريخ الطلب : {requestDate}</span>
-                            </span>
+                          </span>
                             {displayRequestNumber && (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                                 <Hash className="w-4 h-4 flex-shrink-0" />
                                 <span>رمز الطلب : {displayRequestNumber}</span>
-                              </span>
+                            </span>
                             )}
                           </div>
                         </div>
@@ -3080,7 +3081,7 @@ const MeetingDetail: React.FC = () => {
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
                               const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
-                              return (
+                        return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
                                     <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
@@ -3090,7 +3091,7 @@ const MeetingDetail: React.FC = () => {
                                     {item.requestNumber && (
                                       <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
                                         <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
-                                      </span>
+                          </span>
                                     )}
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
                                       <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
@@ -3113,8 +3114,8 @@ const MeetingDetail: React.FC = () => {
                           </div>
                         </div>
                       )}
-                    </div>
-                  );
+                          </div>
+                        );
                 })
               ) : (
                 <div className="flex items-center justify-center py-12">
@@ -3141,7 +3142,7 @@ const MeetingDetail: React.FC = () => {
                     <FileCheck className="w-5 h-5" strokeWidth={1.26} />
                     طلب توجيه
                   </button>
-                </div>
+              </div>
               )}
               {isLoadingGuidanceRecords ? (
                 <div className="flex items-center justify-center py-12">
@@ -3154,7 +3155,7 @@ const MeetingDetail: React.FC = () => {
                     const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
                     const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
-                    return (
+                        return (
                       <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
                         <button
                           type="button"
@@ -3179,11 +3180,11 @@ const MeetingDetail: React.FC = () => {
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                                 <Clock className="w-4 h-4 flex-shrink-0" />
                                 <span>تاريخ الطلب : {requestDate}</span>
-                              </span>
+                          </span>
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
                                 <User className="w-4 h-4 flex-shrink-0" />
                                 <span>{row.requested_by_name || '-'}</span>
-                              </span>
+                            </span>
                             </div>
                           </div>
                         </button>
@@ -3208,7 +3209,7 @@ const MeetingDetail: React.FC = () => {
                                   {row.responded_at && (
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
                                       <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {new Date(row.responded_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                                    </span>
+                          </span>
                                   )}
                                 </div>
                               </div>
@@ -3226,8 +3227,8 @@ const MeetingDetail: React.FC = () => {
                             </div>
                           </div>
                         )}
-                      </div>
-                    );
+                          </div>
+                        );
                   })}
                 </div>
               ) : (
@@ -3339,7 +3340,7 @@ const MeetingDetail: React.FC = () => {
                       columns={[
                         {
                           id: 'index',
-                          header: 'رقم البند',
+                          header: '#',
                           width: 'w-20',
                           align: 'center',
                           render: (_row: MinisterAttendee, index: number) => (
@@ -3450,7 +3451,7 @@ const MeetingDetail: React.FC = () => {
                   <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                     <DataTable
                       columns={[
-                        { id: 'index', header: 'رقم البند', width: 'w-28', align: 'center', render: (_row: { id: string }, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
+                        { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_row: { id: string }, index: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{index + 1}</span> },
                         { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
                       ]}
                       data={meeting.related_directive_ids.map((id) => ({ id }))}
@@ -3473,17 +3474,17 @@ const MeetingDetail: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-block">
-                    <button
+                <button
                       type="button"
                       onClick={() => hasChanges && setIsEditConfirmOpen(true)}
-                      disabled={!hasChanges}
+                disabled={!hasChanges}
                       className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
                       style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
                     >
                       <Pencil className="w-4 h-4" strokeWidth={1.26} />
-                      تعديل
-                    </button>
-                  </span>
+                  تعديل
+              </button>
+                          </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[280px] text-right">
                   <p>{hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها'}</p>
@@ -3511,7 +3512,7 @@ const MeetingDetail: React.FC = () => {
             hideEdit
           />
         )}
-        </div>
+            </div>
       </div>
 
       {/* Meeting Quality Modal */}
@@ -3562,8 +3563,8 @@ const MeetingDetail: React.FC = () => {
                   return next;
                 });
                 return {
-                  ...prev,
-                  minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
+                ...prev,
+                minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
                 };
               });
             }
@@ -3755,7 +3756,7 @@ const MeetingDetail: React.FC = () => {
           <div className="py-2">
             <label className="block text-sm font-medium text-gray-700 text-right mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
               التوجيه
-            </label>
+                </label>
             <Input
               type="text"
               value={addDirectiveValue}
@@ -3764,18 +3765,18 @@ const MeetingDetail: React.FC = () => {
               className="w-full text-right"
               style={{ fontFamily: "'Almarai', sans-serif" }}
             />
-          </div>
-          <DialogFooter className="flex-row-reverse gap-2">
-            <button
-              type="button"
+            </div>
+            <DialogFooter className="flex-row-reverse gap-2">
+              <button
+                type="button"
               onClick={() => { setIsAddDirectiveOpen(false); setAddDirectiveValue(''); }}
               className="px-4 py-2 rounded-lg border border-[#D0D5DD] text-[#344054] bg-white hover:bg-[#F9FAFB] transition-colors"
               style={{ fontFamily: "'Almarai', sans-serif" }}
-            >
-              إلغاء
-            </button>
-            <button
-              type="button"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
               onClick={() => {
                 const v = addDirectiveValue.trim();
                 if (v) addDirectiveMutation.mutate(v);
@@ -3785,8 +3786,8 @@ const MeetingDetail: React.FC = () => {
               style={{ fontFamily: "'Almarai', sans-serif" }}
             >
               {addDirectiveMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
-            </button>
-          </DialogFooter>
+              </button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -3807,19 +3808,19 @@ const MeetingDetail: React.FC = () => {
         }
       >
         <form id="send-to-content-form" onSubmit={handleSendToContentSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-              ملاحظات
-            </label>
-            <Textarea
+                  ملاحظات
+                </label>
+                <Textarea
               value={sendToContentForm.notes}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSendToContentForm({ notes: e.target.value })}
               placeholder="يرجى مراجعة المحتوى قبل الجدولة"
-              className="w-full min-h-[100px] text-right"
+                  className="w-full min-h-[100px] text-right"
               style={{ fontFamily: "'Almarai', sans-serif" }}
-            />
-          </div>
-        </form>
+                />
+              </div>
+          </form>
       </Drawer>
 
       {/* Request Guidance – Drawer */}
@@ -3838,7 +3839,7 @@ const MeetingDetail: React.FC = () => {
         }
       >
         <form id="request-guidance-form" onSubmit={handleRequestGuidanceSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>ملاحظات</label>
             <Textarea value={requestGuidanceForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })} placeholder="يرجى توفير التوجيهات اللازمة حول هذا الطلب" className="w-full min-h-[100px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }} />
           </div>
@@ -3876,16 +3877,16 @@ const MeetingDetail: React.FC = () => {
             <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>المستشار</label>
             <Select value={consultationForm.consultant_user_id} onValueChange={(value) => setConsultationForm((prev) => ({ ...prev, consultant_user_id: value }))}>
               <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
-              </SelectTrigger>
-              <SelectContent dir="rtl">
-                <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
+                    <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
                   <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-9 text-right" style={{ fontFamily: "'Almarai', sans-serif" }} />
-                </div>
+                    </div>
                 {consultants.length === 0 && !isLoadingConsultants ? <SelectItem disabled value="__no_results__">لا توجد نتائج</SelectItem> : consultants.map((user) => <SelectItem key={user.id} value={user.id}>{`${user.first_name} ${user.last_name} - ${user.email}`}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+                  </SelectContent>
+                </Select>
+              </div>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>سؤال الاستشارة</label>
             <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" style={{ fontFamily: "'Almarai', sans-serif" }} />
@@ -3942,12 +3943,12 @@ const MeetingDetail: React.FC = () => {
                     <div
                       key={fieldId}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#048F86]/10 border border-[#048F86]/30 text-[#048F86] text-sm font-medium"
-                      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
                     >
                       <span>{fieldLabels[fieldId] || fieldId}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
+              <button
+                type="button"
+                onClick={() => {
                           setReturnForInfoForm((p) => ({
                             ...p,
                             editable_fields: { ...p.editable_fields, [fieldId]: false },
@@ -3957,7 +3958,7 @@ const MeetingDetail: React.FC = () => {
                         aria-label={`إزالة ${fieldLabels[fieldId] || fieldId}`}
                       >
                         <X className="w-3 h-3" strokeWidth={2.5} />
-                      </button>
+              </button>
                     </div>
                   ))}
                 </div>
@@ -3965,23 +3966,23 @@ const MeetingDetail: React.FC = () => {
             );
           })()}
           
-          <div className="flex flex-col gap-2">
-            <label
-              className="text-sm font-medium text-gray-700 text-right"
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-gray-700 text-right"
               style={{ fontFamily: "'Almarai', sans-serif" }}
-            >
-              ملاحظات
-            </label>
-            <Textarea
-              value={returnForInfoForm.notes}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                >
+                  ملاحظات
+                </label>
+                <Textarea
+                  value={returnForInfoForm.notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setReturnForInfoForm((p) => ({ ...p, notes: e.target.value }))
-              }
-              placeholder="يرجى توفير معلومات إضافية حول الموضوع"
-              className="w-full min-h-[100px] text-right"
+                  }
+                  placeholder="يرجى توفير معلومات إضافية حول الموضوع"
+                  className="w-full min-h-[100px] text-right"
               style={{ fontFamily: "'Almarai', sans-serif" }}
-            />
-          </div>
+                />
+              </div>
         </form>
       </Drawer>
 
@@ -4047,14 +4048,14 @@ const MeetingDetail: React.FC = () => {
                       minister_attendees: [],
                     });
                     setWebexMeetingDetails(null);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
                   form="schedule-meeting-form"
                   disabled={
                     !scheduleForm.scheduled_at ||
@@ -4063,40 +4064,40 @@ const MeetingDetail: React.FC = () => {
                     isCreatingWebex ||
                     (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
                   }
-                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
+              >
                   {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
-                </button>
+              </button>
               </>
             )}
           </div>
         }
       >
         <form id="schedule-meeting-form" onSubmit={handleScheduleSubmit} className="flex flex-col gap-4">
-          {validationError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              {validationError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                {validationError}
-              </p>
-            </div>
-          )}
-          {scheduleMutation.isSuccess && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    {validationError}
+                  </p>
+                </div>
+              )}
+              {scheduleMutation.isSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-right text-sm text-green-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                تم جدولة الاجتماع بنجاح
-              </p>
-            </div>
-          )}
+                    تم جدولة الاجتماع بنجاح
+                  </p>
+                </div>
+              )}
           {/* Scheduled Date/Time – Start and End */}
           <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     تاريخ ووقت البداية <span className="text-red-500">*</span>
-                  </label>
-                  <DateTimePicker
-                    value={scheduleForm.scheduled_at ? (scheduleForm.scheduled_at.includes('T') && !scheduleForm.scheduled_at.includes('Z') ? new Date(scheduleForm.scheduled_at).toISOString() : scheduleForm.scheduled_at) : undefined}
-                    onChange={(isoString) => {
+                </label>
+                <DateTimePicker
+                  value={scheduleForm.scheduled_at ? (scheduleForm.scheduled_at.includes('T') && !scheduleForm.scheduled_at.includes('Z') ? new Date(scheduleForm.scheduled_at).toISOString() : scheduleForm.scheduled_at) : undefined}
+                  onChange={(isoString) => {
                       const date = new Date(isoString);
                       const year = date.getFullYear();
                       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -4119,14 +4120,14 @@ const MeetingDetail: React.FC = () => {
                       });
                     }}
                     placeholder="اختر تاريخ ووقت البداية"
-                    className="w-full"
-                    required
-                    minDate={(() => {
-                      const d = new Date();
-                      d.setHours(0, 0, 0, 0);
-                      return d;
-                    })()}
-                  />
+                  className="w-full"
+                  required
+                  minDate={(() => {
+                    const d = new Date();
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                  })()}
+                />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -4526,7 +4527,7 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
-        </form>
+          </form>
       </Drawer>
 
       {/* Delete minister attendee confirmation modal */}

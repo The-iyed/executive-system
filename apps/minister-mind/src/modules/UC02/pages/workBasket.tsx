@@ -93,19 +93,6 @@ const WorkBasket: React.FC = () => {
   // Define table columns
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
-      id: 'sequential_number',
-      header: 'رقم البند',
-      width: 'w-32',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.sequential_number || '-'}
-          </span>
-        </div>
-      ),
-    },
-    {
       id: 'request_number',
       header: 'رقم الطلب',
       width: 'w-48',
@@ -120,26 +107,13 @@ const WorkBasket: React.FC = () => {
     },
     {
       id: 'meeting_subject',
-      header: 'موضوع الاجتماع',
+      header: 'عنوان الاجتماع',
       width: 'min-w-[220px] flex-1',
       align: 'end',
       render: (row) => (
         <TruncatedWithTooltip title={row.meeting_subject ?? '-'}>
           {row.meeting_subject ?? '-'}
         </TruncatedWithTooltip>
-      ),
-    },
-    {
-      id: 'created_at',
-      header: 'تاريخ الطلب',
-      width: 'w-40',
-      align: 'end',
-      render: (row) => (
-        <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {formatDate(row.created_at)}
-          </span>
-        </div>
       ),
     },
     {
@@ -195,19 +169,6 @@ const WorkBasket: React.FC = () => {
           </div>
         );
       },
-    },
-    {
-      id: 'is_data_complete',
-      header: 'البيانات مكتملة؟',
-      width: 'w-40',
-      align: 'center',
-      render: (row) => (
-        <div className="w-full flex justify-center">
-          <span className={`text-base font-medium leading-5 ${row.is_data_complete ? 'text-green-600' : 'text-red-600'}`}>
-            {row.is_data_complete ? 'نعم' : 'لا'}
-          </span>
-        </div>
-      ),
     },
   ];
 

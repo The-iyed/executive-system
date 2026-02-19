@@ -143,6 +143,14 @@ export interface MeetingApiResponse {
   is_sequential: boolean;
   sequential_number: number | null;
   previous_meeting_id: string | null;
+  /** When present, use meeting_id for value and meeting_title for display in الاجتماع السابق */
+  previous_meeting?: {
+    item_number?: number;
+    meeting_id: string;
+    meeting_title?: string | null;
+    meeting_date?: string | null;
+    meeting?: unknown | null;
+  } | null;
   is_direct_schedule: boolean;
   selected_time_slot_id?: string | null;
   alternative_time_slot_id_1?: string | null;
