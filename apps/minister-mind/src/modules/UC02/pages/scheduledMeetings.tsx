@@ -93,11 +93,11 @@ const ScheduledMeetings: React.FC = () => {
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
       id: 'sequential_number',
-      header: 'رقم البند',
+      header: '#',
       width: 'w-32',
-      align: 'end',
+      align: 'center',
       render: (row) => (
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-center">
           <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
             {row.sequential_number || '-'}
           </span>

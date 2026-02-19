@@ -95,7 +95,7 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
         <div className="flex flex-row items-start justify-between gap-3">
           <CardTooltip text={request.title}>
             <h3
-              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2 whitespace-nowrap"
+              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2"
               style={{ ...fontStyle, fontSize: '15px' }}
             >
               {request.title}
@@ -131,80 +131,70 @@ export const ContentRequestCard: React.FC<ContentRequestCardProps> = ({
           </CardTooltip>
         )}
 
-        {/* Row 3: Request Number + Date pills */}
-        <div className="flex flex-row items-center gap-2.5 w-full">
+        {/* Pills: Request Number, Date, Category, Location, Meeting Date — vertical stack */}
+        <div className="flex flex-col gap-2.5 w-full">
           <CardTooltip text={request.requestNumber}>
-            <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
                 <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
-                <span className="text-[12px] text-[#344054] truncate leading-4">{request.requestNumber}</span>
+                <span className="text-[12px] text-[#344054] leading-4">{request.requestNumber}</span>
               </div>
             </div>
           </CardTooltip>
           <CardTooltip text={request.date}>
-            <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
                 <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
-                <span className="text-[12px] text-[#344054] truncate leading-4">{request.date}</span>
+                <span className="text-[12px] text-[#344054] leading-4">{request.date}</span>
               </div>
             </div>
           </CardTooltip>
-        </div>
-
-        {/* Row 4: Category + Location pills */}
-        {(request.meetingCategory || request.location) && (
-          <div className="flex flex-row items-center gap-2.5 w-full">
-            {request.meetingCategory && (
-              <CardTooltip text={request.meetingCategory}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%] min-w-[49%] max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{request.meetingCategory}</span>
-                  </div>
+          {request.meetingCategory && (
+            <CardTooltip text={request.meetingCategory}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-              </CardTooltip>
-            )}
-            {request.location && (
-              <CardTooltip text={request.location}>
-                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%] min-w-[49%] max-w-[49%]" style={pillStyle}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                    <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
-                    <span className="text-[12px] text-[#344054] truncate leading-4">{request.location}</span>
-                  </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{request.meetingCategory}</span>
                 </div>
-              </CardTooltip>
-            )}
-          </div>
-        )}
-
-        {/* Row 5: Meeting Date pill */}
-        {request.meetingDate && (
-          <div className="flex flex-row items-center gap-2.5 w-full">
+              </div>
+            </CardTooltip>
+          )}
+          {request.location && (
+            <CardTooltip text={request.location}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
+                  <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{request.location}</span>
+                </div>
+              </div>
+            </CardTooltip>
+          )}
+          {request.meetingDate && (
             <CardTooltip text={request.meetingDate}>
-              <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2 max-w-[49%]" style={pillStyle}>
+              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
-                  <span className="text-[12px] text-[#344054] truncate leading-4">{request.meetingDate}</span>
+                  <span className="text-[12px] text-[#344054] leading-4">{request.meetingDate}</span>
                 </div>
               </div>
             </CardTooltip>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Hover Action Bar - glass overlay from left */}
