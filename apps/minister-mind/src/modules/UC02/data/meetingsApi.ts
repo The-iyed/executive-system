@@ -669,6 +669,23 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   return response.data;
 };
 
+/** Request body for POST /api/scheduling/directives (Create Scheduling Directive – UC-07) */
+export interface CreateSchedulingDirectivePayload {
+  directive_date: string; // ISO date-time
+  directive_text: string;
+  related_meeting: string;
+  deadline: string; // ISO date-time
+  responsible_persons: string[];
+}
+
+/** POST /api/scheduling/directives – create a new scheduling directive (DRYYMMDDXXX format). */
+export const createSchedulingDirective = async (
+  payload: CreateSchedulingDirectivePayload
+): Promise<{ id?: string }> => {
+  const response = await axiosInstance.post<{ id?: string }>('/api/scheduling/directives', payload);
+  return response.data;
+};
+
 /** Request body for POST /api/external-directives (Create/Close/Cancel – same body) */
 export interface CreateDirectivePayload {
   external_id: number;
