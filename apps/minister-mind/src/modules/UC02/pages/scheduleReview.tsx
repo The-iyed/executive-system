@@ -384,6 +384,7 @@ const ScheduleReview: React.FC = () => {
               ) : (
                 <CardsGrid
                   meetings={meetings}
+                  hideStatus={false}
                   onView={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
                   onDetails={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
                 />
