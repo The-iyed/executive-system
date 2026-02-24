@@ -24,6 +24,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingClassification1: draft.meeting_classification_type || '',
       meetingConfidentiality: draft.meeting_confidentiality || '',
       meetingChannel: draft.meeting_channel ?? '',
+      meeting_location: draft.meeting_location ?? '',
       sector: draft.sector || '',
       meetingAgenda: draft.agenda_items?.map((item: any) => ({
         id: item.id,

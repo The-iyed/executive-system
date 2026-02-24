@@ -17,7 +17,7 @@ export interface StepperProps {
 
 export const Stepper: React.FC<StepperProps> = ({ steps, currentStep, className }) => {
   return (
-    <div className={cn('flex items-center justify-center w-full overflow-x-auto px-2 sm:px-4', className)} dir="rtl">
+    <div className={cn('flex items-center justify-center w-full px-2 sm:px-4', className)} dir="rtl">
       <div className="flex items-start w-full min-w-0 max-w-4xl relative">
         {steps.map((step, index) => {
           const isActive = index === currentStep;
