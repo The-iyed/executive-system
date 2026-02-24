@@ -121,28 +121,28 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     header: 'الاسم الكامل',
     type: 'text',
     placeholder: 'الاسم الكامل',
-    width: 'min-w-[180px]',
+    width: 'min-w-[210px]',
   },
   {
     id: 'position_title',
     header: 'المسمى الوظيفي',
     type: 'text',
     placeholder: 'المسمى الوظيفي',
-    width: 'min-w-[180px]',
+    width: 'min-w-[210px]',
   },
   {
     id: 'mobile_number',
     header: 'رقم الجوال',
     type: 'text',
     placeholder: 'رقم الجوال',
-    width: 'min-w-[160px]',
+    width: 'min-w-[210px]',
   },
   {
     id: 'email',
     header: 'البريد الإلكتروني',
     type: 'text',
     placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[200px]',
+    width: 'min-w-[210px]',
   },
   {
     id: 'attendance_mode',
@@ -150,16 +150,16 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     type: 'select',
     selectOptions: [...ATTENDANCE_MODE_OPTIONS],
     placeholder: 'اختر',
-    width: 'min-w-[140px]',
+    width: 'min-w-[210px]',
   },
   {
     id: 'view_permission',
     header: 'صلاحية العرض',
     type: 'switch',
     label: false,
-    width: 'min-w-[120px]',
+    width: 'min-w-[210px]',
   },
-  { id: 'action', header: 'إجراء', width: 'w-[60px]' },
+  { id: 'action', header: '', width: 'w-[60px]' },
 ];
 
 export const INVITEES_TABLE_TITLE = 'قائمة المدعوين (مقدّم الطلب)';

@@ -188,6 +188,7 @@ export const useStep1BasicInfo = ({
         'meetingClassification2',
         'meetingConfidentiality',
         'meetingChannel',
+        'meeting_location',
         'sector',
         'notes',
         'is_urgent',
@@ -217,6 +218,7 @@ export const useStep1BasicInfo = ({
           if (formData.directive_method === 'PREVIOUS_MEETING') allTouched.previous_meeting_minutes_file = true;
           if (formData.directive_method === 'DIRECT_DIRECTIVE') allTouched.directive_text = true;
         }
+        if (formData.meetingChannel === 'PHYSICAL') allTouched.meeting_location = true;
         return allTouched;
       };
 
@@ -340,6 +342,15 @@ export const useStep1BasicInfo = ({
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.directive_text;
+            return newErrors;
+          });
+        }
+        // Clear meeting_location when meeting channel is not PHYSICAL (حضوري)
+        if (field === 'meetingChannel' && value !== 'PHYSICAL') {
+          newData.meeting_location = '';
+          setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.meeting_location;
             return newErrors;
           });
         }

@@ -4,12 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
 import { cn } from '@sanad-ai/ui';
-import '@shared/styles'; // Import shared styles including scrollbar
-import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } from 'lucide-react';
 import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
+import '@shared/styles';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -486,14 +486,6 @@ const Directives: React.FC = () => {
   const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
 
   return (
-    <>
-      <ContentBar
-        primaryAction={{
-          label: 'إنشاء اجتماع',
-          variant: 'primary',
-          onClick: () => openCreateDrawer(),
-        }}
-      />
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
         <div className="flex flex-row items-start justify-between gap-6">
@@ -519,13 +511,19 @@ const Directives: React.FC = () => {
           </div>
         </div>
       </div>
+      <ContentBar
+         primaryAction={{
+          label: 'إنشاء اجتماع',
+          variant: 'primary',
+          onClick: () => openCreateDrawer(),
+         }}
+        />
       <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
         {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
           const dropdownHeight = 100;
           const gap = 4;
-          // Position above the button so it stays on screen; align right edge with button (RTL)
           const top = Math.max(8, pos.top - dropdownHeight - gap);
           const right = window.innerWidth - pos.right;
           return createPortal(
@@ -628,7 +626,6 @@ const Directives: React.FC = () => {
           );
         })()}
 
-        {/* Sub-tabs: التوجيهات السابقة / التوجيهات الحالية */}
         <div className="flex justify-center my-4">
           <Tabs
             items={[
@@ -932,9 +929,7 @@ const Directives: React.FC = () => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 
 export default Directives;
-
