@@ -36,6 +36,7 @@ export interface Step2ValidationContext {
   is_urgent: boolean;
   meeting_time_difference_hours: number | null;
   max_allowed_hours_without_presentation: number;
+  requirePresentationRequired?: boolean;
 }
 
 export const step2BaseSchema = z.object({
@@ -61,6 +62,7 @@ function step2Refine(
     (data.presentation_file instanceof File ? data.presentation_file.size > 0 : true);
 
   if (hasPresentationFile) return;
+  if (validationContext.requirePresentationRequired === false) return;
 
   const timeExceedsThreshold =
     meeting_time_difference_hours != null &&
