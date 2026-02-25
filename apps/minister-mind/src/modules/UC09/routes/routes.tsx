@@ -21,6 +21,14 @@ const routes: RouteConfig[] = [
     layout: Fragment,
     useCase: 'UC-09',
   },
+  {
+    exact: false, // Wildcard route to catch all sub-routes under /uc09
+    guard: AuthGuard,
+    path: PATH.ROOT + '/*',
+    component: lazy(() => import('../pages')),
+    layout: Fragment,
+    useCase: 'UC-09',
+  },
 ];
 
 export default routes;
