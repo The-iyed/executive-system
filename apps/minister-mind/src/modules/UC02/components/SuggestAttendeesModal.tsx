@@ -25,6 +25,7 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
 }) => {
   const [numberOfAttendees, setNumberOfAttendees] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [noSuggestionsMessage, setNoSuggestionsMessage] = useState<string | null>(null);
   const { suggestAttendees, isLoading, error } = useSuggestMeetingAttendees();
 
   const MIN_ATTENDEES = 1;
@@ -35,10 +36,8 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
     // Only allow numbers
     if (value === '' || /^\d+$/.test(value)) {
       setNumberOfAttendees(value);
-      // Clear validation error when user types
-      if (validationError) {
-        setValidationError(null);
-      }
+      if (validationError) setValidationError(null);
+      if (noSuggestionsMessage) setNoSuggestionsMessage(null);
       // Validate range if value is not empty
       if (value !== '') {
         const num = parseInt(value, 10);
@@ -64,8 +63,14 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
       return;
     }
 
+    setNoSuggestionsMessage(null);
     const result = await suggestAttendees(num, meetingParams);
     if (result) {
+      const suggestions = result.suggestions ?? [];
+      if (suggestions.length === 0) {
+        setNoSuggestionsMessage('لا يوجد مستخدمون موصى بهم من الذكاء الاصطناعي في الوقت الحالي.');
+        return;
+      }
       onSuccess?.(result);
       setNumberOfAttendees('');
       onOpenChange(false);
@@ -76,6 +81,7 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
     if (!isLoading) {
       setNumberOfAttendees('');
       setValidationError(null);
+      setNoSuggestionsMessage(null);
       onOpenChange(false);
     }
   };
@@ -127,6 +133,11 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
             )}
             {error && !validationError && (
               <p className="text-sm text-red-600 text-right mt-1">{error}</p>
+            )}
+            {noSuggestionsMessage && (
+              <p className="text-sm text-amber-600 text-right mt-1 bg-amber-50 p-3 rounded-md border border-amber-200">
+                {noSuggestionsMessage}
+              </p>
             )}
           </div>
         </div>
