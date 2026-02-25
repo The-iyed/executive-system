@@ -1,0 +1,205 @@
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@auth';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const UEP_REMOTE_URL = 'https://admin-unified-patform-dev-2.momrahai.com';
+const REMOTE_ENTRY_URL = `${UEP_REMOTE_URL}/assets/remoteEntry.js`;
+
+type ViteFederationRemote = {
+  init?: (shareScope: unknown) => Promise<void> | void;
+  get: (module: string) => Promise<() => unknown>;
+};
+
+type BootstrapModule = {
+  mountApp?: (
+    element: HTMLElement | string, 
+    options?: { 
+      basename?: string;
+      assetBaseUrl?: string;
+      onLogout?: () => void;
+      initialPath?: string;
+    }
+  ) => (() => void) | void;
+  unmountApp?: () => void;
+  default?: {
+    mountApp?: (
+      element: HTMLElement | string, 
+      options?: { 
+        basename?: string;
+        assetBaseUrl?: string;
+        onLogout?: () => void;
+        initialPath?: string;
+      }
+    ) => (() => void) | void;
+    unmountApp?: () => void;
+  };
+};
+
+const UC10Page = () => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { logout: hostLogout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to /business-cards if at root
+  useEffect(() => {
+    if (location.pathname === '/uc10') {
+      navigate('/uc10/business-cards', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMicrofrontend = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Wait a tick to ensure ref is set
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        if (!mounted) return;
+
+        if (!containerRef.current) {
+          throw new Error('Container element not available');
+        }
+
+        // Dynamically import the remote entry
+        const remote = (await import(
+          /* @vite-ignore */
+          REMOTE_ENTRY_URL
+        )) as unknown as ViteFederationRemote;
+
+        if (!mounted) return;
+
+        if (!remote || typeof remote.get !== 'function') {
+          throw new Error('Invalid module federation remote: missing get() method');
+        }
+
+        // Initialize the remote with an empty shared scope
+        // This ensures the remote uses its own dependencies
+        await remote.init?.({});
+
+        if (!mounted) return;
+
+        // Load the bootstrap module that contains mountApp
+        const bootstrapFactory = await remote.get('./bootstrap');
+        const bootstrapModule = bootstrapFactory() as BootstrapModule;
+
+        if (!mounted) return;
+
+        // Get the mountApp function from the module
+        const mountApp = 
+          bootstrapModule.mountApp || 
+          bootstrapModule.default?.mountApp;
+
+        if (typeof mountApp !== 'function') {
+          throw new Error(
+            'Remote module does not export a mountApp function. ' +
+            'Please ensure ./bootstrap exports mountApp(element).'
+          );
+        }
+
+        // Double-check container is still available
+        if (!containerRef.current) {
+          throw new Error('Container element was unmounted before mount');
+        }
+
+        // Mount the application with all options
+        const cleanup = mountApp(containerRef.current, { 
+          basename: '/uc10',
+          assetBaseUrl: UEP_REMOTE_URL,
+          onLogout: hostLogout
+        });
+        
+        // Store cleanup function if provided
+        if (typeof cleanup === 'function') {
+          cleanupRef.current = cleanup;
+        }
+
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!mounted) return;
+        
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : 'Unknown error occurred while loading UC10';
+        
+        console.error('UC10 Microfrontend Load Error:', err);
+        setError(errorMessage);
+        setLoading(false);
+      }
+    };
+
+    loadMicrofrontend();
+
+    // Cleanup function
+    return () => {
+      mounted = false;
+      
+      // Call cleanup function if it exists
+      if (cleanupRef.current) {
+        try {
+          cleanupRef.current();
+        } catch (err) {
+          console.error('Error during UC10 cleanup:', err);
+        }
+        cleanupRef.current = null;
+      }
+    };
+  }, [hostLogout]);
+
+  return (
+    <div className="w-full h-full flex flex-col min-h-0 relative overflow-visible" dir="rtl">
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+          <div className="text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+            <div className="text-lg text-gray-600 mb-2">جاري تحميل تطبيق UC10...</div>
+            <div className="text-sm text-gray-500">يرجى الانتظار</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Error overlay */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center p-6 bg-white z-10">
+          <div
+            className="max-w-md rounded-lg border border-red-200 bg-red-50 px-6 py-4"
+            style={{ fontFamily: "'Almarai', sans-serif" }}
+          >
+            <h3 className="text-lg font-semibold text-red-800 mb-2">
+              خطأ في تحميل التطبيق
+            </h3>
+            <p className="text-sm text-red-700 mb-3">{error}</p>
+            <details className="text-xs text-red-600">
+              <summary className="cursor-pointer hover:text-red-800">
+                معلومات تقنية
+              </summary>
+              <div className="mt-2 p-2 bg-red-100 rounded">
+                <p>Remote URL: {REMOTE_ENTRY_URL}</p>
+                <p className="mt-1">
+                  تأكد من أن تطبيق UEP System Admin يعمل على المنفذ 4173
+                </p>
+                <p className="mt-1">
+                  يمكنك تشغيله باستخدام: <code>npm run preview</code> في مجلد uep-system-admin-ui
+                </p>
+              </div>
+            </details>
+          </div>
+        </div>
+      )}
+      
+      {/* Container - always rendered with overflow-visible for hover effects */}
+      <div ref={containerRef} className="flex-1 min-h-0 w-full overflow-visible" id="uc10-container" />
+    </div>
+  );
+};
+
+export default UC10Page;
