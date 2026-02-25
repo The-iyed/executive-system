@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@auth';
 
-const UEP_REMOTE_URL = 'https://admin-unified-patform-dev-2.momrahai.com';
+const UEP_REMOTE_URL = 'http://localhost:4173/';
 const REMOTE_ENTRY_URL = `${UEP_REMOTE_URL}/assets/remoteEntry.js`;
 
 type ViteFederationRemote = {
@@ -16,6 +16,7 @@ type BootstrapModule = {
       basename?: string;
       assetBaseUrl?: string;
       onLogout?: () => void;
+      hostOrigin?: string;
     }
   ) => (() => void) | void;
   unmountApp?: () => void;
@@ -26,6 +27,7 @@ type BootstrapModule = {
         basename?: string;
         assetBaseUrl?: string;
         onLogout?: () => void;
+        hostOrigin?: string;
       }
     ) => (() => void) | void;
     unmountApp?: () => void;
