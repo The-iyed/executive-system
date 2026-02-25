@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@auth';
 
-const UEP_REMOTE_URL = 'http://localhost:4173/';
+const UEP_REMOTE_URL = 'https://admin-unified-patform-dev-2.momrahai.com/';
 const REMOTE_ENTRY_URL = `${UEP_REMOTE_URL}/assets/remoteEntry.js`;
 
 type ViteFederationRemote = {
