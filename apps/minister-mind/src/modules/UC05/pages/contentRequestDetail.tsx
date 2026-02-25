@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, Check, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar } from '@shared/components';
+import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable } from '@shared/components';
+import { getDirectivesTableColumns } from '../../shared/components/tables/directives-table-columns';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -28,8 +29,10 @@ import {
   type AnalyzeResponse,
   type AttachmentInsightsResponse,
   type ComparePresentationsResponse,
+  type ContentRequestDetailResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
+import axiosInstance from '../../auth/utils/axios';
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -193,6 +196,22 @@ const ContentRequestDetail: React.FC = () => {
   // Actions bar (FAB) open state – same pattern as meeting detail
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
 
+  // AI Directives Suggestions
+  const [aiDirectivesSuggestions, setAiDirectivesSuggestions] = useState<Array<{
+    id: string;
+    directive_text: string;
+    responsible_entity: string;
+    due_date: string;
+    status: string;
+  }>>([]);
+  const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
+  const [editableAiDirectives, setEditableAiDirectives] = useState<Record<string, {
+    directive_text: string;
+    responsible_entity: string;
+    due_date: string;
+    status: string;
+  }>>({});
+
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
     queryKey: ['content-request', id],
@@ -326,6 +345,144 @@ const ContentRequestDetail: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  }, []);
+
+  // AI Directives Suggestions Handler
+  const handleRequestAiDirectives = useCallback(async () => {
+    if (!id) return;
+    
+    setIsLoadingAiSuggestions(true);
+    try {
+      const response = await axiosInstance.get(`/api/v1/business-cards/directives/external`, {
+        params: {
+          meeting_request_id: id,
+        },
+      });
+
+      const data = response.data;
+      
+      // Transform the API response to our format
+      const suggestions = Array.isArray(data) ? data : (data.directives || []);
+      
+      interface ApiSuggestion {
+        id?: number;
+        adam_id?: string;
+        title?: string;
+        directive_text?: string;
+        text?: string;
+        due_date?: string;
+        deadline?: string;
+        status?: string;
+        is_completed?: boolean;
+        assignees?: string;
+        responsible_entity?: string;
+        entity?: string;
+        meeting_id?: number;
+        created_date?: string;
+        mod_date?: string;
+        created_at?: string;
+        updated_at?: string;
+        completed_at?: string;
+      }
+      
+      const formattedSuggestions = suggestions.map((item: ApiSuggestion, index: number) => ({
+        id: `ai-${item.id || item.adam_id || Date.now()}-${index}`,
+        directive_text: item.title || item.directive_text || item.text || '',
+        responsible_entity: (() => {
+          // Parse assignees if it's a JSON string
+          if (item.assignees && typeof item.assignees === 'string') {
+            try {
+              const assigneesArray = JSON.parse(item.assignees);
+              return Array.isArray(assigneesArray) ? assigneesArray.join(', ') : item.assignees;
+            } catch {
+              return item.assignees;
+            }
+          }
+          return item.responsible_entity || item.entity || '';
+        })(),
+        due_date: (() => {
+          // Extract date from ISO string (e.g., "2025-06-16T00:00:00" -> "2025-06-16")
+          const dateStr = item.due_date || item.deadline || '';
+          if (dateStr && dateStr.includes('T')) {
+            return dateStr.split('T')[0];
+          }
+          return dateStr;
+        })(),
+        status: item.status || (item.is_completed ? 'COMPLETED' : 'PENDING'),
+      }));
+
+      setAiDirectivesSuggestions(formattedSuggestions);
+      
+      // Initialize editable state
+      const editableState: Record<string, {
+        directive_text: string;
+        responsible_entity: string;
+        due_date: string;
+        status: string;
+      }> = {};
+      formattedSuggestions.forEach((suggestion: {
+        id: string;
+        directive_text: string;
+        responsible_entity: string;
+        due_date: string;
+        status: string;
+      }) => {
+        editableState[suggestion.id] = {
+          directive_text: suggestion.directive_text,
+          responsible_entity: suggestion.responsible_entity,
+          due_date: suggestion.due_date,
+          status: suggestion.status,
+        };
+      });
+      setEditableAiDirectives(editableState);
+    } catch (error) {
+      console.error('Error fetching AI directives:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsLoadingAiSuggestions(false);
+    }
+  }, [id]);
+
+  const handleUpdateAiDirective = useCallback((directiveId: string, field: string, value: string) => {
+    setEditableAiDirectives((prev) => ({
+      ...prev,
+      [directiveId]: {
+        ...prev[directiveId],
+        [field]: value,
+      },
+    }));
+  }, []);
+
+  const handleDeleteAiDirective = useCallback((directiveId: string) => {
+    // Remove from AI suggestions
+    setAiDirectivesSuggestions((prev) => prev.filter((d) => d.id !== directiveId));
+    setEditableAiDirectives((prev) => {
+      const newState = { ...prev };
+      delete newState[directiveId];
+      return newState;
+    });
+  }, []);
+
+  const handleAddManualDirective = useCallback(() => {
+    const newId = `manual-${Date.now()}`;
+    const newDirective = {
+      id: newId,
+      directive_text: '',
+      responsible_entity: '',
+      due_date: '',
+      status: 'PENDING',
+    };
+    
+    setAiDirectivesSuggestions((prev) => [...prev, newDirective]);
+    setEditableAiDirectives((prev) => ({
+      ...prev,
+      [newId]: {
+        directive_text: '',
+        responsible_entity: '',
+        due_date: '',
+        status: 'PENDING',
+      },
+    }));
   }, []);
 
   // Submit return mutation (إعادة للطلب)
@@ -1723,18 +1880,180 @@ const ContentRequestDetail: React.FC = () => {
 
           {/* Action Content (outside tabs) */}
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
-            {/* Guidance Section */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                إضافة التوجيهات
-              </h3>
-              <Textarea
-                value={guidanceNotes}
-                onChange={(e) => setGuidanceNotes(e.target.value)}
-                placeholder="أدخل محتوى التوجيهات...."
-                className="min-h-[200px] resize-none"
-                dir="rtl"
-              />
+            {/* إضافة التوجيهات – table like meeting details */}
+            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6" dir="rtl">
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  إضافة التوجيهات
+                </h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAddManualDirective}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#008774] hover:bg-[#006d5f] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                    style={{ fontFamily: "'Almarai', sans-serif" }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>إضافة توجيه</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequestAiDirectives}
+                    disabled={isLoadingAiSuggestions}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    style={{ fontFamily: "'Almarai', sans-serif" }}
+                  >
+                    {isLoadingAiSuggestions ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
+                        <span>جاري التحميل...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-[#008774]" />
+                        <span>اقتراح بالذكاء الاصطناعي</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {(() => {
+                const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
+                const hasDirectives = directives.length > 0;
+                const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
+                const hasAiSuggestions = aiDirectivesSuggestions.length > 0;
+                
+                // Combine existing directives with AI suggestions
+                const allDirectives: Array<{
+                  id: string;
+                  isAi: boolean;
+                  directive_text?: string;
+                  directive?: string;
+                  entity?: string;
+                  responsible_entity?: string;
+                  deadline?: string | null;
+                  due_date?: string;
+                  status?: string;
+                  directive_number?: string;
+                  directive_date?: string;
+                  related_meeting?: string | null;
+                  responsible_persons?: Array<{ id: string | null; name: string; position: string | null }>;
+                  directive_status?: string;
+                  notes?: string;
+                  related_meeting_request?: string | null;
+                }> = [
+                  ...directives.map(d => ({ ...d, isAi: false })),
+                  ...aiDirectivesSuggestions.map(d => ({ 
+                    ...d, 
+                    isAi: true,
+                    // Map to expected format
+                    directive: editableAiDirectives[d.id]?.directive_text || d.directive_text,
+                    entity: editableAiDirectives[d.id]?.responsible_entity || d.responsible_entity,
+                    deadline: editableAiDirectives[d.id]?.due_date || d.due_date,
+                    status: editableAiDirectives[d.id]?.status || d.status,
+                  }))
+                ];
+                
+                if (hasDirectives || hasAiSuggestions) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
+                            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">الإجراءات</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {allDirectives.map((directive, index) => {
+                            const isAi = 'isAi' in directive && directive.isAi;
+                            const directiveId = directive.id;
+                            
+                            if (isAi && editableAiDirectives[directiveId]) {
+                              const editable = editableAiDirectives[directiveId];
+                              
+                              return (
+                                <tr key={directiveId} className="bg-purple-50/20 hover:bg-purple-50/40 transition-colors">
+                                  <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                  <td className="px-4 py-3">
+                                    <Textarea
+                                      value={editable.directive_text}
+                                      onChange={(e) => handleUpdateAiDirective(directiveId, 'directive_text', e.target.value)}
+                                      className="w-full text-sm min-h-[60px] resize-none"
+                                      placeholder="أدخل نص التوجيه..."
+                                      dir="rtl"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteAiDirective(directiveId)}
+                                        className="flex items-center justify-center gap-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="حذف"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            
+                            // Regular directive row
+                            return (
+                              <tr key={directiveId} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{directive.directive || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700 text-center">-</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                }
+                if (hasOnlyIds) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <DataTable
+                        columns={[
+                          { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                          { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
+                        ]}
+                        data={(contentRequest.related_directive_ids ?? []).map((id) => ({ id }))}
+                        rowPadding="py-3"
+                        variant="default"
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center justify-center py-12 rounded-xl border border-gray-200 bg-[#F9FAFB]">
+                    <div className="text-center">
+                      <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>إضافة التوجيهات</p>
+                      <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد توجيهات مرتبطة.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  إضافة ملاحظات توجيه (اختياري)
+                </label>
+                <Textarea
+                  value={guidanceNotes}
+                  onChange={(e) => setGuidanceNotes(e.target.value)}
+                  placeholder="أدخل محتوى التوجيهات...."
+                  className="min-h-[120px] resize-none"
+                  dir="rtl"
+                />
+              </div>
             </div>
 
             {/* Executive Summary Upload Section */}
@@ -1910,7 +2229,7 @@ const ContentRequestDetail: React.FC = () => {
                   return (
                     <div className="flex flex-col items-center justify-center py-10 gap-3">
                       <div className="h-12 w-12 rounded-full bg-[#F2F4F7] flex items-center justify-center">
-                        <Check className="h-6 w-6 text-[#667085]" />
+                        <ClipboardCheck className="h-6 w-6 text-[#667085]" />
                       </div>
                       <span className="text-[14px] text-[#667085]">لا توجد ملاحظات أو اقتراحات على هذا العرض.</span>
                     </div>

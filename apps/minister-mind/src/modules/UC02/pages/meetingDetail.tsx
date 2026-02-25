@@ -30,7 +30,8 @@ import {
 import {
   getMeetingById,
   getMeetings,
-  getPreviousMeetingsFromExecutionSystem,
+  getMeetingsSearchForPrevious,
+  type MeetingSearchResult,
   rejectMeeting,
   sendToContent,
   requestGuidance,
@@ -270,7 +271,10 @@ const MeetingDetail: React.FC = () => {
     meeting_owner: '',
     is_on_behalf_of: false,
     is_sequential: false,
-    previous_meeting_id: null as string | null,
+    previous_meeting_ext_id: null as number | null,
+    previous_meeting_group_id: null as number | null,
+    previous_meeting_original_title: null as string | null,
+    previous_meeting_meeting_title: null as string | null,
     is_based_on_directive: false,
     directive_method: '',
     previous_meeting_minutes_id: '',
@@ -284,11 +288,13 @@ const MeetingDetail: React.FC = () => {
   });
   /** Selected option for "الاجتماع السابق" async select (value + label) */
   const [previousMeetingOption, setPreviousMeetingOption] = useState<OptionType | null>(null);
+  /** Cache of last loaded search results for "الاجتماع السابق" to read original_title/meeting_title on select */
+  const previousMeetingSearchCacheRef = useRef<MeetingSearchResult[]>([]);
   /** Selected option for "محضر الاجتماع" async select */
   const [previousMeetingMinutesOption, setPreviousMeetingMinutesOption] = useState<OptionType | null>(null);
 
-  // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1)
-  const previousMeetingId = (meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? formData.previous_meeting_id ?? null) as string | null;
+  // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1); use ext_id (search result id) when set
+  const previousMeetingId = (formData.previous_meeting_ext_id != null ? String(formData.previous_meeting_ext_id) : meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? null) as string | null;
   const { data: previousMeeting } = useQuery({
     queryKey: ['meeting', previousMeetingId],
     queryFn: () => getMeetingById(previousMeetingId!),
@@ -677,7 +683,12 @@ const MeetingDetail: React.FC = () => {
     if (formData.meeting_classification !== originalSnapshot.formData.meeting_classification) payload.meeting_classification = formData.meeting_classification;
     if ((formData.meeting_owner || '') !== (originalSnapshot.formData.meeting_owner || '')) payload.meeting_owner = formData.meeting_owner || undefined;
     if (formData.is_sequential !== originalSnapshot.formData.is_sequential) payload.is_sequential = formData.is_sequential;
-    if ((formData.previous_meeting_id || null) !== (originalSnapshot.formData.previous_meeting_id || null)) payload.previous_meeting_id = formData.previous_meeting_id || null;
+    if ((formData.previous_meeting_ext_id ?? null) !== (originalSnapshot.formData.previous_meeting_ext_id ?? null) || (formData.previous_meeting_group_id ?? null) !== (originalSnapshot.formData.previous_meeting_group_id ?? null)) {
+      payload.prev_ext_id = formData.previous_meeting_ext_id ?? 0;
+      payload.group_id = formData.previous_meeting_group_id ?? 0;
+      payload.prev_ext_original_title = formData.previous_meeting_original_title ?? null;
+      payload.prev_ext_meeting_title = formData.previous_meeting_meeting_title ?? null;
+    }
     if (formData.is_based_on_directive !== originalSnapshot.formData.is_based_on_directive) payload.is_based_on_directive = formData.is_based_on_directive;
     if ((formData.directive_method || '') !== (originalSnapshot.formData.directive_method || '')) payload.directive_method = formData.directive_method || null;
     if ((formData.previous_meeting_minutes_id || '') !== (originalSnapshot.formData.previous_meeting_minutes_id || '')) payload.previous_meeting_minutes_id = formData.previous_meeting_minutes_id || null;
@@ -1212,8 +1223,11 @@ const MeetingDetail: React.FC = () => {
       const ownerDisplay = meeting.current_owner_user
         ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
         : meeting.current_owner_role?.name_ar || '';
-      const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
-      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? prevId ?? '';
+      const rawExtId = (meeting as any).prev_ext_id ?? meeting.previous_meeting?.meeting_id ?? null;
+      const rawGroupId = (meeting as any).group_id ?? null;
+      const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
+      const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
+      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? (prevExtId != null ? String(prevExtId) : '') ?? '';
       const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1226,7 +1240,10 @@ const MeetingDetail: React.FC = () => {
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_sequential: meeting.is_sequential ?? false,
-        previous_meeting_id: prevId,
+        previous_meeting_ext_id: prevExtId,
+        previous_meeting_group_id: prevGroupId,
+        previous_meeting_original_title: (meeting as any).prev_ext_original_title ?? null,
+        previous_meeting_meeting_title: (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? null,
         is_based_on_directive: basedOnDirective,
         directive_method: directiveMethod,
         previous_meeting_minutes_id: minutesId,
@@ -1238,7 +1255,7 @@ const MeetingDetail: React.FC = () => {
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
       });
-      setPreviousMeetingOption(prevId ? { value: prevId, label: prevMeetingLabel || prevId } : null);
+      setPreviousMeetingOption(prevExtId != null && prevGroupId != null ? { value: `${prevExtId}:${prevGroupId}`, label: prevMeetingLabel || String(prevExtId) } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
 
       // Initialize content tab form (objectives and agenda items)
@@ -1363,7 +1380,10 @@ const MeetingDetail: React.FC = () => {
     const ownerDisplay = meeting.current_owner_user
       ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
       : meeting.current_owner_role?.name_ar || '';
-    const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
+    const rawExtId = (meeting as any).prev_ext_id ?? meeting.previous_meeting?.meeting_id ?? null;
+    const rawGroupId = (meeting as any).group_id ?? null;
+    const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
+    const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
     const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1377,7 +1397,10 @@ const MeetingDetail: React.FC = () => {
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_sequential: meeting.is_sequential ?? false,
-        previous_meeting_id: prevId,
+        previous_meeting_ext_id: prevExtId,
+        previous_meeting_group_id: prevGroupId,
+        previous_meeting_original_title: (meeting as any).prev_ext_original_title ?? null,
+        previous_meeting_meeting_title: (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? null,
         is_based_on_directive: basedOnDirective,
         directive_method: directiveMethod,
         previous_meeting_minutes_id: minutesId,
@@ -1501,20 +1524,19 @@ const MeetingDetail: React.FC = () => {
     }));
   };
 
-  /** Async load options for "الاجتماع السابق" (معلومات الاجتماع tab) – https://execution-system.momrahai.com/api/meetings?skip=0&limit=10 */
+  /** Async load options for "الاجتماع السابق" – GET /api/v1/business-cards/meetings-search; value = "id:group_id"; cache items for original_title/meeting_title on select */
   const loadPreviousMeetingSearchOptions = useCallback(
-    async (_search: string, skip: number, limit: number) => {
-      const res = await getPreviousMeetingsFromExecutionSystem({
+    async (search: string, skip: number, limit: number) => {
+      const res = await getMeetingsSearchForPrevious({
+        q: search?.trim() ?? '',
         skip,
         limit: Math.min(Math.max(limit, 1), 100),
       });
-      const currentId = meeting?.id;
-      const items = res.items
-        .filter((m) => m.id !== currentId)
-        .map((m) => ({
-          value: m.id,
-          label: (m.meeting_title || m.meeting_subject || m.id).trim(),
-        }));
+      previousMeetingSearchCacheRef.current = res.items;
+      const items = res.items.map((m) => ({
+        value: `${m.id}:${m.group_id}`,
+        label: (m.meeting_title || m.original_title || String(m.id)).trim(),
+      }));
       return {
         items,
         total: res.total,
@@ -1524,7 +1546,7 @@ const MeetingDetail: React.FC = () => {
         has_previous: res.skip > 0,
       };
     },
-    [meeting?.id]
+    []
   );
 
   /** Async load options for "محضر الاجتماع" – getMeetings (meetings as minutes source) */
@@ -1711,7 +1733,6 @@ const MeetingDetail: React.FC = () => {
                   onClick={() => setIsQualityModalOpen(true)}
                   className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
                   style={{
-                    fontFamily: "'Almarai', sans-serif",
                     fontSize: '11px',
                     lineHeight: '14px',
                     background: '#34C3BA',
@@ -1941,7 +1962,7 @@ const MeetingDetail: React.FC = () => {
                       disabled={!canEdit}
                       onClick={() => {
                         const next = !formData.is_sequential;
-                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_id: null }) }));
+                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }) }));
                         if (!next) setPreviousMeetingOption(null);
                       }}
                       className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
@@ -1952,12 +1973,28 @@ const MeetingDetail: React.FC = () => {
                 </div>
                 {formData.is_sequential && (
                   <div className="flex flex-col gap-2 md:col-span-2">
-                    {renderFieldLabel('previous_meeting_id', <>الاجتماع السابق <span className="text-red-500">*</span></>, 'text-sm font-medium text-gray-700')}
+                    {renderFieldLabel('previous_meeting_id', 'الاجتماع السابق', 'text-sm font-medium text-gray-700')}
                     <FormAsyncSelectV2
                       value={previousMeetingOption}
                       onValueChange={(opt) => {
                         setPreviousMeetingOption(opt);
-                        setFormData((p) => ({ ...p, previous_meeting_id: opt?.value ?? null }));
+                        if (opt?.value) {
+                          const [idPart, groupPart] = opt.value.split(':');
+                          const extId = idPart ? parseInt(idPart, 10) : null;
+                          const groupId = groupPart ? parseInt(groupPart, 10) : null;
+                          const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt?.value);
+                          const originalTitle = cached?.original_title ?? null;
+                          const meetingTitle = cached?.meeting_title ?? null;
+                          setFormData((p) => ({
+                            ...p,
+                            previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
+                            previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
+                            previous_meeting_original_title: originalTitle,
+                            previous_meeting_meeting_title: meetingTitle,
+                          }));
+                        } else {
+                          setFormData((p) => ({ ...p, previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }));
+                        }
                       }}
                       loadOptions={loadPreviousMeetingSearchOptions}
                       placeholder="اختر الاجتماع السابق..."
@@ -1967,8 +2004,6 @@ const MeetingDetail: React.FC = () => {
                       fullWidth
                       isDisabled={!canEdit}
                       className="text-right"
-                      error={formData.is_sequential && !formData.previous_meeting_id}
-                      errorMessage={formData.is_sequential && !formData.previous_meeting_id ? 'مطلوب عند تفعيل اجتماع متسلسل' : undefined}
                     />
                   </div>
                 )}
@@ -1977,7 +2012,7 @@ const MeetingDetail: React.FC = () => {
                   <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
                     {meeting?.sequential_number != null
                       ? String(meeting.sequential_number)
-                      : formData.is_sequential && formData.previous_meeting_id
+                      : formData.is_sequential && formData.previous_meeting_ext_id != null
                         ? previousMeeting?.sequential_number != null
                           ? String((previousMeeting.sequential_number ?? 0) + 1)
                           : 'غير موجود (إجباري)'
@@ -2115,7 +2150,7 @@ const MeetingDetail: React.FC = () => {
                       </div>
                     ))
                   )}
-                  <button type="button" disabled={!canEdit} onClick={() => setIsMinisterCalendarOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Calendar className="w-4 h-4" />اطلع على جدول الوزير</button>
+                  <button type="button" disabled={!canEdit} onClick={() => setIsMinisterCalendarOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Calendar className="w-4 h-4" />اطلع على جدول الوزير</button>
                 </div>
               </div>
               {/* أجندة الاجتماع – Figma: same table style, "+ إضافة أجندة" */}
@@ -2141,7 +2176,7 @@ const MeetingDetail: React.FC = () => {
                     />
                   </div>
                 ) : null}
-                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, agendaItems: [...p.agendaItems, { id: `agenda-${Date.now()}`, agenda_item: '', presentation_duration_minutes: undefined }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[242px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة أجندة</button>
+                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, agendaItems: [...p.agendaItems, { id: `agenda-${Date.now()}`, agenda_item: '', presentation_duration_minutes: undefined }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[242px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة أجندة</button>
               </div>
               <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
                 <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
@@ -2235,7 +2270,6 @@ const MeetingDetail: React.FC = () => {
                             disabled={insightsMutation.isPending}
                             className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
                             style={{
-                              fontFamily: "'Almarai', sans-serif",
                               fontSize: '11px',
                               lineHeight: '14px',
                               background: '#34C3BA',
@@ -2269,8 +2303,8 @@ const MeetingDetail: React.FC = () => {
                           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
                             <FileCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
                           </div>
-                          <p className="font-medium text-base mb-1" style={{ fontFamily: "'Almarai', sans-serif", color: '#344054' }}>لا يوجد عرض تقديمي</p>
-                          <p className="text-sm mb-5" style={{ fontFamily: "'Almarai', sans-serif", color: '#667085' }}>أضف عرضاً تقديمياً للاجتماع باستخدام الزر أدناه</p>
+                          <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا يوجد عرض تقديمي</p>
+                          <p className="text-sm mb-5" style={{ color: '#667085' }}>أضف عرضاً تقديمياً للاجتماع باستخدام الزر أدناه</p>
                           {canEdit && (
                             <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-l from-[#048F86] to-[#34C3BA] text-white shadow-[0px_2px_8px_rgba(4,143,134,0.3)] hover:shadow-[0px_4px_14px_rgba(4,143,134,0.4)] hover:opacity-95 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
                           )}
@@ -2298,7 +2332,7 @@ const MeetingDetail: React.FC = () => {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#F2F4F7' }}>
                         <Clock className="w-5 h-5" strokeWidth={1.5} style={{ color: '#98A2B3' }} />
                       </div>
-                      <p className="text-sm" style={{ fontFamily: "'Almarai', sans-serif", color: '#667085' }}>لم يتم تحديد موعد إرفاق العرض بعد</p>
+                      <p className="text-sm" style={{ color: '#667085' }}>لم يتم تحديد موعد إرفاق العرض بعد</p>
                     </div>
                   )}
                 </div>
@@ -2319,8 +2353,8 @@ const MeetingDetail: React.FC = () => {
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
                           <FileText className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
                         </div>
-                        <p className="font-medium text-base mb-1" style={{ fontFamily: "'Almarai', sans-serif", color: '#344054' }}>لا توجد مرفقات اختيارية</p>
-                        <p className="text-sm mb-5" style={{ fontFamily: "'Almarai', sans-serif", color: '#667085' }}>يمكنك إرفاق مستندات إضافية إن رغبت</p>
+                        <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا توجد مرفقات اختيارية</p>
+                        <p className="text-sm mb-5" style={{ color: '#667085' }}>يمكنك إرفاق مستندات إضافية إن رغبت</p>
                         {canEdit && (
                           <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-dashed border-[#048F86] text-[#048F86] bg-[#048F86]/05 hover:bg-[#048F86]/10 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة مرفق<input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
                         )}
@@ -2367,8 +2401,8 @@ const MeetingDetail: React.FC = () => {
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
                           <ClipboardCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
                         </div>
-                        <p className="font-medium text-base mb-1" style={{ fontFamily: "'Almarai', sans-serif", color: '#344054' }}>لا توجد ملاحظات</p>
-                        <p className="text-sm" style={{ fontFamily: "'Almarai', sans-serif", color: '#667085' }}>لم تتم إضافة أي ملاحظات لهذا الطلب</p>
+                        <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا توجد ملاحظات</p>
+                        <p className="text-sm" style={{ color: '#667085' }}>لم تتم إضافة أي ملاحظات لهذا الطلب</p>
                       </div>
                     ) : (
                       <div className="w-full min-h-[100px] px-4 py-3 bg-[#F9FAFB] border border-[#EAECF0] rounded-xl text-right text-[#475467]">
@@ -2654,7 +2688,7 @@ const MeetingDetail: React.FC = () => {
               <div className="flex flex-col gap-6 w-full">
                 {/* قائمة المدعوين (مقدّم الطلب) */}
                 <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
@@ -2783,7 +2817,7 @@ const MeetingDetail: React.FC = () => {
                     <p className="text-base text-gray-500 text-right py-4">لا توجد قائمة مدعوين</p>
                   )}
                   <div className="flex items-center justify-start mt-3">
-                    <button type="button" disabled={!canEdit} onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
+                    <button type="button" disabled={!canEdit} onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
                       <Plus className="w-4 h-4" />
                       إضافة مدعو جديد
                     </button>
@@ -2792,7 +2826,7 @@ const MeetingDetail: React.FC = () => {
 
                 {/* قائمة المدعوين (الوزير) */}
                 <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '22px', lineHeight: '38px' }}>
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '22px', lineHeight: '38px' }}>
                     {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
@@ -3787,9 +3821,27 @@ const MeetingDetail: React.FC = () => {
               سيتم إرسال الحقول التالية للتعديل:
             </p>
             <ul className="mt-3 list-disc list-inside text-right text-sm text-gray-700">
-              {Object.keys(changedPayload).map((k) => (
-                <li key={k}>{fieldLabels[k] || k}</li>
-              ))}
+              {(() => {
+                const PREVIOUS_MEETING_KEYS = ['prev_ext_id', 'group_id', 'prev_ext_original_title', 'prev_ext_meeting_title'];
+                const hasPreviousMeetingChange = PREVIOUS_MEETING_KEYS.some((key) => key in changedPayload);
+                const otherKeys = Object.keys(changedPayload).filter((k) => !PREVIOUS_MEETING_KEYS.includes(k));
+                const keysToShow = otherKeys;
+                return (
+                  <>
+                    {keysToShow.map((k) => (
+                      <li key={k}>{fieldLabels[k] || k}</li>
+                    ))}
+                    {hasPreviousMeetingChange && (
+                      <li key="previous_meeting">
+                        {fieldLabels.previous_meeting_id || 'الاجتماع السابق'}
+                        {formData.previous_meeting_meeting_title && (
+                          <span className="text-[#667085]"> — {formData.previous_meeting_meeting_title}</span>
+                        )}
+                      </li>
+                    )}
+                  </>
+                );
+              })()}
               {newPresentationAttachments.length > 0 && (
                 <li key="new_presentation_attachments">
                   إضافة عروض تقديمية ({newPresentationAttachments.length} {newPresentationAttachments.length === 1 ? 'ملف' : 'ملفات'})
@@ -3822,13 +3874,6 @@ const MeetingDetail: React.FC = () => {
                 const protocolType = changedPayload.protocol_type ?? scheduleForm.protocol_type_text;
                 if (requiresProtocol === true && !protocolType) {
                   setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
-                  return;
-                }
-                // Validate: if اجتماع متسلسل؟ is checked, الاجتماع السابق is required
-                const isSequential = changedPayload.is_sequential ?? formData.is_sequential;
-                const previousMeetingId = changedPayload.previous_meeting_id ?? formData.previous_meeting_id;
-                if (isSequential === true && !previousMeetingId) {
-                  setValidationError('يجب اختيار الاجتماع السابق عند تفعيل خيار "اجتماع متسلسل؟"');
                   return;
                 }
                 // Validate invitees (قائمة المدعوين مقدّم الطلب) when payload includes them
@@ -4729,7 +4774,6 @@ const MeetingDetail: React.FC = () => {
           <div className="mt-2 mb-4">
             <p
               className="text-right text-sm text-[#475467]"
-              style={{ fontFamily: "'Almarai', sans-serif", lineHeight: '22px' }}
             >
               هل أنت متأكد من حذف هذا الحضور من قائمة الحضور من جهة الوزير؟
             </p>
@@ -4784,7 +4828,6 @@ const MeetingDetail: React.FC = () => {
           <div className="mt-2 mb-4">
             <p
               className="text-right text-sm text-[#475467]"
-              style={{ fontFamily: "'Almarai', sans-serif", lineHeight: '22px' }}
             >
               هل أنت متأكد من حذف هذا المدعو من قائمة المدعوين؟
             </p>
