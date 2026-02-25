@@ -98,24 +98,29 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
             </div>
           )}
 
-          {showAttachmentTiming && (
-            <FormRow className='sm:justify-end' {...(errors.presentation_attachment_timing ? { 'data-error-field': true } : {})}>
-              <FormField
-                label="متى سيتم إرفاق العرض؟"
-                required={attachmentTimingRequired}
-                error={touched.presentation_attachment_timing ? errors.presentation_attachment_timing : undefined}
-              >
-                <FormDatePicker
-                  value={formData.presentation_attachment_timing}
-                  onChange={(value) => handleChange('presentation_attachment_timing', value)}
-                  onBlur={() => handleBlur('presentation_attachment_timing')}
-                  placeholder="dd/mm/yyyy"
-                  error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
-                  disabled={isFieldDisabled('presentation_attachment_timing')}
-                />
-              </FormField>
-            </FormRow>
-          )}
+          {showAttachmentTiming && (() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return (
+              <FormRow className='sm:justify-end' {...(errors.presentation_attachment_timing ? { 'data-error-field': true } : {})}>
+                <FormField
+                  label="متى سيتم إرفاق العرض؟"
+                  required={attachmentTimingRequired}
+                  error={touched.presentation_attachment_timing ? errors.presentation_attachment_timing : undefined}
+                >
+                  <FormDatePicker
+                    value={formData.presentation_attachment_timing}
+                    onChange={(value) => handleChange('presentation_attachment_timing', value)}
+                    onBlur={() => handleBlur('presentation_attachment_timing')}
+                    placeholder="dd/mm/yyyy"
+                    error={!!(touched.presentation_attachment_timing && errors.presentation_attachment_timing)}
+                    disabled={isFieldDisabled('presentation_attachment_timing')}
+                    fromDate={today}
+                  />
+                </FormField>
+              </FormRow>
+            );
+          })()}
 
           <div {...(errors.additional_files ? { 'data-error-field': true } : {})}>
             <FileUpload
