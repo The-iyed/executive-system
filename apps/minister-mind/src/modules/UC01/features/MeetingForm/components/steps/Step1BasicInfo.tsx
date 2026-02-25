@@ -463,23 +463,28 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 />
               </FormField>
           )}
-          {isStep1BasicInfoFieldRequired('dueDate') && (
-            <FormField
-              className="w-full min-w-0"
-              label="تاريخ الاستحقاق"
-              required
-              error={touched.dueDate ? errors.dueDate : undefined}
-            >
-              <FormDatePicker
-                value={formData.dueDate}
-                onChange={(value) => handleChange('dueDate', value)}
-                onBlur={() => handleBlur('dueDate')}
-                placeholder="dd/mm/yyyy"
-                error={!!(touched.dueDate && errors.dueDate)}
-                disabled={isFieldDisabled('dueDate')}
-              />
-            </FormField>
-          )}
+          {isStep1BasicInfoFieldRequired('dueDate') && (() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return (
+              <FormField
+                className="w-full min-w-0"
+                label="تاريخ الاستحقاق"
+                required
+                error={touched.dueDate ? errors.dueDate : undefined}
+              >
+                <FormDatePicker
+                  value={formData.dueDate}
+                  onChange={(value) => handleChange('dueDate', value)}
+                  onBlur={() => handleBlur('dueDate')}
+                  placeholder="dd/mm/yyyy"
+                  error={!!(touched.dueDate && errors.dueDate)}
+                  disabled={isFieldDisabled('dueDate')}
+                  fromDate={today}
+                />
+              </FormField>
+            );
+          })()}
           <FormField
               className="w-full min-w-0"
             label="تصنيف الاجتماع"

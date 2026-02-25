@@ -54,7 +54,6 @@ export const MINISTER_SUPPORT_TYPE_OPTIONS = [
 
 // مدة العرض: مدة زمنية بالدقائق (قائمة اختيار)
 export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
-  { value: '0', label: '0 دقيقة' },
   { value: '5', label: '5 دقائق' },
   { value: '10', label: '10 دقائق' },
   { value: '15', label: '15 دقيقة' },

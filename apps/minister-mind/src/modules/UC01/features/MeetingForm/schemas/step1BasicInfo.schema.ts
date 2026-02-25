@@ -32,7 +32,17 @@ const dateSchema = (required: boolean, fieldName: string) => {
         (val) => !val || val === '' || DATE_PATTERN.test(val),
         'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
       );
-  return base;
+  
+  return base.refine(
+    (val) => {
+      if (!val || val === '') return true;
+      const selectedDate = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return selectedDate >= today;
+    },
+    'لا يمكن اختيار تاريخ في الماضي'
+  );
 };
 
 /** Date or datetime (ISO) for meeting start/end - required when meeting dates are required. */
