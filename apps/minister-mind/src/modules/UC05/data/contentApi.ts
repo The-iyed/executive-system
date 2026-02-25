@@ -173,6 +173,8 @@ export interface ContentRequestDetailResponse {
   invitees: Invitee[];
   minister_attendees: Invitee[] | null;
   related_directive_ids: string[];
+  /** When present, full directive objects for table display (like meeting detail). */
+  related_directives?: import('../../shared/types/meeting').RelatedDirective[];
   related_guidance: string | null;
   general_notes: string | null;
   content_officer_notes: string | null;

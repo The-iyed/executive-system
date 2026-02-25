@@ -2,7 +2,8 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, Check, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable } from '@shared/components';
+import { getDirectivesTableColumns } from '../../shared/components/tables/directives-table-columns';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -28,6 +29,7 @@ import {
   type AnalyzeResponse,
   type AttachmentInsightsResponse,
   type ComparePresentationsResponse,
+  type ContentRequestDetailResponse,
 } from '../data/contentApi';
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 
@@ -1723,18 +1725,63 @@ const ContentRequestDetail: React.FC = () => {
 
           {/* Action Content (outside tabs) */}
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
-            {/* Guidance Section */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+            {/* إضافة التوجيهات – table like meeting details */}
+            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6" dir="rtl">
               <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 إضافة التوجيهات
               </h3>
-              <Textarea
-                value={guidanceNotes}
-                onChange={(e) => setGuidanceNotes(e.target.value)}
-                placeholder="أدخل محتوى التوجيهات...."
-                className="min-h-[200px] resize-none"
-                dir="rtl"
-              />
+              {(() => {
+                const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
+                const hasDirectives = directives.length > 0;
+                const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
+                if (hasDirectives) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <DataTable
+                        columns={getDirectivesTableColumns()}
+                        data={directives}
+                        rowPadding="py-3"
+                        variant="default"
+                      />
+                    </div>
+                  );
+                }
+                if (hasOnlyIds) {
+                  return (
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <DataTable
+                        columns={[
+                          { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
+                          { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
+                        ]}
+                        data={(contentRequest.related_directive_ids ?? []).map((id) => ({ id }))}
+                        rowPadding="py-3"
+                        variant="default"
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center justify-center py-12 rounded-xl border border-gray-200 bg-[#F9FAFB]">
+                    <div className="text-center">
+                      <p className="text-gray-600 text-lg mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>إضافة التوجيهات</p>
+                      <p className="text-gray-500 text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>لا توجد توجيهات مرتبطة.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  إضافة ملاحظات توجيه (اختياري)
+                </label>
+                <Textarea
+                  value={guidanceNotes}
+                  onChange={(e) => setGuidanceNotes(e.target.value)}
+                  placeholder="أدخل محتوى التوجيهات...."
+                  className="min-h-[120px] resize-none"
+                  dir="rtl"
+                />
+              </div>
             </div>
 
             {/* Executive Summary Upload Section */}
