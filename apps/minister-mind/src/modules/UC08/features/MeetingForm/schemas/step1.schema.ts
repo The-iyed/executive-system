@@ -93,6 +93,21 @@ const previousMeetingItemStrict = z.object({
 
 const emptyStr = () => strOptional('القيمة المُدخلة غير صحيحة');
 
+const dateFieldSchema = () =>
+  strOptional('القيمة المُدخلة غير صحيحة').refine(
+    (val) => !val || val === '' || DATE_ONLY.test(val),
+    'تاريخ غير صحيح. يرجى إدخال تاريخ بصيغة (YYYY-MM-DD)'
+  ).refine(
+    (val) => {
+      if (!val || val === '') return true;
+      const selectedDate = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return selectedDate >= today;
+    },
+    'لا يمكن اختيار تاريخ في الماضي'
+  );
+
 export const step1BaseSchema = z.object({
   relatedDirective: optionType,
   requester: optionType,
@@ -107,7 +122,7 @@ export const step1BaseSchema = z.object({
   meetingCategory: z.string(),
   meetingReason: emptyStr(),
   relatedTopic: emptyStr(),
-  dueDate: emptyStr(),
+  dueDate: dateFieldSchema(),
   meetingClassification1: emptyStr(),
   meetingClassification2: emptyStr(),
   meetingConfidentiality: emptyStr(),
