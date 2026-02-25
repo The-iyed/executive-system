@@ -1,6 +1,12 @@
 import { TabItem } from '@shared/components/tabs';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  ITEMS_PER_PAGE: 6,
+  DEBOUNCE_DELAY: 500,
+} as const;
+
 export enum MeetingOwnerType {
   SUBMITTER = 'SUBMITTER',
   SCHEDULING = 'SCHEDULING',
@@ -13,13 +19,8 @@ export const MeetingOwnerTypeLabels: Record<MeetingOwnerType, string> = {
   [MeetingOwnerType.CONTENT]: 'مسؤول المحتوى',
 };
 
-export const PAGINATION = {
-  DEFAULT_PAGE: 1,
-  ITEMS_PER_PAGE: 6,
-  DEBOUNCE_DELAY: 500,
-} as const;
 
-export const MEETING_TABS: TabItem[] = [
+export const MEETING_TABS = [
   {
     id: MeetingStatus.DRAFT,
     label: MeetingStatusLabels[MeetingStatus.DRAFT],
@@ -28,21 +29,9 @@ export const MEETING_TABS: TabItem[] = [
     id: MeetingStatus.UNDER_REVIEW,
     label: MeetingStatusLabels[MeetingStatus.UNDER_REVIEW],
   },
-  // {
-  //   id: MeetingStatus.SCHEDULED,
-  //   label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
-  // },
   {
-    id: MeetingStatus.SCHEDULED_SCHEDULING,
-    label: 'جدولة - معلومات إضافية',
-  },
-  {
-    id: MeetingStatus.RETURNED_FROM_SCHEDULING,
-    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING],
-  },
-  {
-    id: MeetingStatus.RETURNED_FROM_CONTENT,
-    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_CONTENT],
+    id: MeetingStatus.SCHEDULED,
+    label: MeetingStatusLabels[MeetingStatus.SCHEDULED],
   },
 ];
 

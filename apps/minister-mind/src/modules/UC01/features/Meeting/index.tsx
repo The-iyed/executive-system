@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
 import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewSwitcher, ViewType, SearchInput } from '@shared';
-import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
+import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE, MEETING_TABS } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
@@ -15,16 +15,17 @@ const Meeting: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
-  }, [searchValue]);
+  }, [searchValue, statusFilter]);
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,
+    statusFilter,
     currentPage,
-    activeTab: undefined,
   });
 
   const {
@@ -137,23 +138,26 @@ const Meeting: React.FC = () => {
             <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-             <SearchInput
-              value={searchValue}
-              onChange={setSearchValue}
-              placeholder="بحث"
-              variant="default"
-              className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
-             />
+              <SearchInput
+                value={searchValue}
+                onChange={setSearchValue}
+                placeholder="بحث"
+                variant="default"
+                className="w-[280px]"
+              />
             </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
         <ContentBar
-            primaryAction={{
+          primaryAction={{
             label: 'إنشاء اجتماع',
             variant: 'primary',
             onClick: openCreateDrawer,
           }}
+          filterTabs={MEETING_TABS}
+          activeFilterId={statusFilter}
+          onFilterChange={(id) => setStatusFilter(id as MeetingStatus)}
         />
         <div>
           {isLoading ? (
