@@ -9,6 +9,8 @@ interface UseDeleteDraftProps {
   draftId?: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  /** When set (e.g. drawer mode), close drawer instead of navigating to MEETINGS */
+  onClose?: () => void;
 }
 
 /**
@@ -26,6 +28,7 @@ export const useDeleteDraft = ({
   draftId,
   onSuccess,
   onError,
+  onClose,
 }: UseDeleteDraftProps = {}) => {
   const navigate = useNavigate();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -35,9 +38,11 @@ export const useDeleteDraft = ({
     mutationFn: deleteDraft,
     onSuccess: () => {
       clearDraftData();
-      navigate(PATH.MEETINGS);
-
-      // Call custom success callback if provided
+      if (onClose) {
+        onClose();
+      } else {
+        navigate(PATH.MEETINGS);
+      }
       onSuccess?.();
     },
     onError: (error) => {
@@ -53,10 +58,14 @@ export const useDeleteDraft = ({
     if (draftId) {
       setIsConfirmOpen(true);
     } else {
-      // If no draft ID, just navigate away
-      navigate(PATH.MEETINGS);
+      // If no draft ID, close drawer or navigate away
+      if (onClose) {
+        onClose();
+      } else {
+        navigate(PATH.MEETINGS);
+      }
     }
-  }, [draftId, navigate]);
+  }, [draftId, navigate, onClose]);
 
   /**
    * Close confirmation modal
