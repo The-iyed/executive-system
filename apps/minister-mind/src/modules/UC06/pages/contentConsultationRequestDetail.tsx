@@ -12,6 +12,8 @@ import {
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
   getDirectiveMethodLabel,
+  SectorLabels,
+  Sector,
 } from '@shared/types';
 import {
   getContentConsultationRequestById,
@@ -821,7 +823,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         القطاع
                       </label>
                       <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.sector || '-'}
+                      {SectorLabels[meetingRequest.sector as Sector] || '-'}
                       </p>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
