@@ -151,6 +151,11 @@ export interface MeetingApiResponse {
     meeting_date?: string | null;
     meeting?: unknown | null;
   } | null;
+  /** Previous meeting from GET meeting details (same as update payload). */
+  prev_ext_id?: number | null;
+  group_id?: number | null;
+  prev_ext_original_title?: string | null;
+  prev_ext_meeting_title?: string | null;
   is_direct_schedule: boolean;
   selected_time_slot_id?: string | null;
   alternative_time_slot_id_1?: string | null;
@@ -313,6 +318,49 @@ export const searchMeetings = async (params: SearchMeetingsParams): Promise<Meet
   return response.data;
 };
 
+/**
+ * Fetch meetings for "الاجتماع السابق" (previous meeting) dropdown.
+ * Uses GET /api/v1/business-cards/meetings-search (no group_id/ext_id here; those are sent on update).
+ * Use uep_id as previous_meeting_id value in {meeting_request_id}/update payload.
+ */
+export interface MeetingsSearchForPreviousParams {
+  q?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export interface MeetingsSearchForPreviousResponse {
+  items: MeetingSearchResult[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export const getMeetingsSearchForPrevious = async (
+  params: MeetingsSearchForPreviousParams = {}
+): Promise<MeetingsSearchForPreviousResponse> => {
+  const skip = params.skip ?? 0;
+  const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+  const queryParams = new URLSearchParams();
+  // API requires "q" in query; send search term or empty string when loading initial list
+  queryParams.set('q', (params.q != null && params.q.trim() !== '') ? params.q.trim() : '');
+  queryParams.set('skip', String(skip));
+  queryParams.set('limit', String(limit));
+  const response = await axiosInstance.get<MeetingSearchResult[] | MeetingsSearchForPreviousResponse>(
+    `/api/v1/business-cards/meetings-search?${queryParams.toString()}`
+  );
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      total: data.length,
+      skip,
+      limit,
+    };
+  }
+  return data as MeetingsSearchForPreviousResponse;
+};
+
 export interface RejectMeetingRequest {
   reason: string;
   notes: string;
@@ -451,18 +499,30 @@ export interface UpdateMeetingRequestPayload {
   /** مالك الاجتماع – editable in meeting-info tab */
   meeting_owner?: string;
   is_sequential?: boolean;
-  previous_meeting_id?: string | null;
   is_based_on_directive?: boolean;
   directive_method?: string | null;
   previous_meeting_minutes_id?: string | null;
   related_guidance?: string | null;
+  /** Previous meeting from search: id from search result. Sent on update. */
+  prev_ext_id?: number;
+  /** Previous meeting from search: group_id from search result. Sent on update. */
+  group_id?: number;
+  /** Selected previous meeting's original_title from search. Sent on update. */
+  prev_ext_original_title?: string | null;
+  /** Selected previous meeting's meeting_title from search. Sent on update. */
+  prev_ext_meeting_title?: string | null;
 }
 
 export const updateMeetingRequest = async (
   meetingId: string,
   payload: UpdateMeetingRequestPayload
 ): Promise<void> => {
-  await axiosInstance.put(`/api/meeting-requests/${meetingId}/update`, payload);
+  const body = {
+    ...payload,
+    group_id: payload.group_id ?? 0,
+    prev_ext_id: payload.prev_ext_id ?? 0,
+  };
+  await axiosInstance.put(`/api/meeting-requests/${meetingId}/update`, body);
 };
 
 /**
