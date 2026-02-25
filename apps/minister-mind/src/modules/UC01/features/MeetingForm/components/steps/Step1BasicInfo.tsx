@@ -79,7 +79,6 @@ export interface Step1BasicInfoProps {
   handleDeleteAgenda: (id: string) => void;
   handleUpdateAgenda: (id: string, field: string, value: any) => void;
   handleNextClick: () => void;
-  handleSaveDraftClick: () => void;
   handleCancelClick: () => void;  
   isStep1BasicInfoFieldRequired: (field: Step1ErrorKey) => boolean;
   step1EditableMap?: Record<string, boolean>;
@@ -99,7 +98,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   handleDeleteAgenda,
   handleUpdateAgenda,
   handleNextClick,
-  handleSaveDraftClick,
   handleCancelClick,
   isStep1BasicInfoFieldRequired,
   step1EditableMap,
@@ -604,7 +602,6 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 
         <ActionButtons
           onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />

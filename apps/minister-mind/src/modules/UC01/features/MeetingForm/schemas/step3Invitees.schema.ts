@@ -21,7 +21,7 @@ const inviteeSchema = z
     if (!data.sector || String(data.sector).trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'الموقع مطلوب',
+        message: 'الجهة مطلوب',
         path: ['sector'],
       });
     }
