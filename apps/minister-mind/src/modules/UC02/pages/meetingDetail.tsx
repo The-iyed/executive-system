@@ -29,7 +29,8 @@ import {
 import {
   getMeetingById,
   getMeetings,
-  getPreviousMeetingsFromExecutionSystem,
+  getMeetingsSearchForPrevious,
+  type MeetingSearchResult,
   rejectMeeting,
   sendToContent,
   requestGuidance,
@@ -269,7 +270,10 @@ const MeetingDetail: React.FC = () => {
     meeting_owner: '',
     is_on_behalf_of: false,
     is_sequential: false,
-    previous_meeting_id: null as string | null,
+    previous_meeting_ext_id: null as number | null,
+    previous_meeting_group_id: null as number | null,
+    previous_meeting_original_title: null as string | null,
+    previous_meeting_meeting_title: null as string | null,
     is_based_on_directive: false,
     directive_method: '',
     previous_meeting_minutes_id: '',
@@ -283,11 +287,13 @@ const MeetingDetail: React.FC = () => {
   });
   /** Selected option for "الاجتماع السابق" async select (value + label) */
   const [previousMeetingOption, setPreviousMeetingOption] = useState<OptionType | null>(null);
+  /** Cache of last loaded search results for "الاجتماع السابق" to read original_title/meeting_title on select */
+  const previousMeetingSearchCacheRef = useRef<MeetingSearchResult[]>([]);
   /** Selected option for "محضر الاجتماع" async select */
   const [previousMeetingMinutesOption, setPreviousMeetingMinutesOption] = useState<OptionType | null>(null);
 
-  // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1)
-  const previousMeetingId = (meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? formData.previous_meeting_id ?? null) as string | null;
+  // Fetch previous meeting when الاجتماع السابق is selected (for الرقم التسلسلي = previous + 1); use ext_id (search result id) when set
+  const previousMeetingId = (formData.previous_meeting_ext_id != null ? String(formData.previous_meeting_ext_id) : meeting?.previous_meeting?.meeting_id ?? meeting?.previous_meeting_id ?? null) as string | null;
   const { data: previousMeeting } = useQuery({
     queryKey: ['meeting', previousMeetingId],
     queryFn: () => getMeetingById(previousMeetingId!),
@@ -675,7 +681,12 @@ const MeetingDetail: React.FC = () => {
     if (formData.meeting_classification !== originalSnapshot.formData.meeting_classification) payload.meeting_classification = formData.meeting_classification;
     if ((formData.meeting_owner || '') !== (originalSnapshot.formData.meeting_owner || '')) payload.meeting_owner = formData.meeting_owner || undefined;
     if (formData.is_sequential !== originalSnapshot.formData.is_sequential) payload.is_sequential = formData.is_sequential;
-    if ((formData.previous_meeting_id || null) !== (originalSnapshot.formData.previous_meeting_id || null)) payload.previous_meeting_id = formData.previous_meeting_id || null;
+    if ((formData.previous_meeting_ext_id ?? null) !== (originalSnapshot.formData.previous_meeting_ext_id ?? null) || (formData.previous_meeting_group_id ?? null) !== (originalSnapshot.formData.previous_meeting_group_id ?? null)) {
+      payload.prev_ext_id = formData.previous_meeting_ext_id ?? 0;
+      payload.group_id = formData.previous_meeting_group_id ?? 0;
+      payload.prev_ext_original_title = formData.previous_meeting_original_title ?? null;
+      payload.prev_ext_meeting_title = formData.previous_meeting_meeting_title ?? null;
+    }
     if (formData.is_based_on_directive !== originalSnapshot.formData.is_based_on_directive) payload.is_based_on_directive = formData.is_based_on_directive;
     if ((formData.directive_method || '') !== (originalSnapshot.formData.directive_method || '')) payload.directive_method = formData.directive_method || null;
     if ((formData.previous_meeting_minutes_id || '') !== (originalSnapshot.formData.previous_meeting_minutes_id || '')) payload.previous_meeting_minutes_id = formData.previous_meeting_minutes_id || null;
@@ -1203,8 +1214,11 @@ const MeetingDetail: React.FC = () => {
       const ownerDisplay = meeting.current_owner_user
         ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
         : meeting.current_owner_role?.name_ar || '';
-      const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
-      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? prevId ?? '';
+      const rawExtId = (meeting as any).prev_ext_id ?? meeting.previous_meeting?.meeting_id ?? null;
+      const rawGroupId = (meeting as any).group_id ?? null;
+      const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
+      const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
+      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? (prevExtId != null ? String(prevExtId) : '') ?? '';
       const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1217,7 +1231,10 @@ const MeetingDetail: React.FC = () => {
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_sequential: meeting.is_sequential ?? false,
-        previous_meeting_id: prevId,
+        previous_meeting_ext_id: prevExtId,
+        previous_meeting_group_id: prevGroupId,
+        previous_meeting_original_title: (meeting as any).prev_ext_original_title ?? null,
+        previous_meeting_meeting_title: (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? null,
         is_based_on_directive: basedOnDirective,
         directive_method: directiveMethod,
         previous_meeting_minutes_id: minutesId,
@@ -1229,7 +1246,7 @@ const MeetingDetail: React.FC = () => {
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
       });
-      setPreviousMeetingOption(prevId ? { value: prevId, label: prevMeetingLabel || prevId } : null);
+      setPreviousMeetingOption(prevExtId != null && prevGroupId != null ? { value: `${prevExtId}:${prevGroupId}`, label: prevMeetingLabel || String(prevExtId) } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
 
       // Initialize content tab form (objectives and agenda items)
@@ -1354,7 +1371,10 @@ const MeetingDetail: React.FC = () => {
     const ownerDisplay = meeting.current_owner_user
       ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
       : meeting.current_owner_role?.name_ar || '';
-    const prevId = meeting.previous_meeting?.meeting_id ?? meeting.previous_meeting_id ?? null;
+    const rawExtId = (meeting as any).prev_ext_id ?? meeting.previous_meeting?.meeting_id ?? null;
+    const rawGroupId = (meeting as any).group_id ?? null;
+    const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
+    const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
     const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
@@ -1368,7 +1388,10 @@ const MeetingDetail: React.FC = () => {
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_sequential: meeting.is_sequential ?? false,
-        previous_meeting_id: prevId,
+        previous_meeting_ext_id: prevExtId,
+        previous_meeting_group_id: prevGroupId,
+        previous_meeting_original_title: (meeting as any).prev_ext_original_title ?? null,
+        previous_meeting_meeting_title: (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? null,
         is_based_on_directive: basedOnDirective,
         directive_method: directiveMethod,
         previous_meeting_minutes_id: minutesId,
@@ -1492,20 +1515,19 @@ const MeetingDetail: React.FC = () => {
     }));
   };
 
-  /** Async load options for "الاجتماع السابق" (معلومات الاجتماع tab) – https://execution-system.momrahai.com/api/meetings?skip=0&limit=10 */
+  /** Async load options for "الاجتماع السابق" – GET /api/v1/business-cards/meetings-search; value = "id:group_id"; cache items for original_title/meeting_title on select */
   const loadPreviousMeetingSearchOptions = useCallback(
-    async (_search: string, skip: number, limit: number) => {
-      const res = await getPreviousMeetingsFromExecutionSystem({
+    async (search: string, skip: number, limit: number) => {
+      const res = await getMeetingsSearchForPrevious({
+        q: search?.trim() ?? '',
         skip,
         limit: Math.min(Math.max(limit, 1), 100),
       });
-      const currentId = meeting?.id;
-      const items = res.items
-        .filter((m) => m.id !== currentId)
-        .map((m) => ({
-          value: m.id,
-          label: (m.meeting_title || m.meeting_subject || m.id).trim(),
-        }));
+      previousMeetingSearchCacheRef.current = res.items;
+      const items = res.items.map((m) => ({
+        value: `${m.id}:${m.group_id}`,
+        label: (m.meeting_title || m.original_title || String(m.id)).trim(),
+      }));
       return {
         items,
         total: res.total,
@@ -1515,7 +1537,7 @@ const MeetingDetail: React.FC = () => {
         has_previous: res.skip > 0,
       };
     },
-    [meeting?.id]
+    []
   );
 
   /** Async load options for "محضر الاجتماع" – getMeetings (meetings as minutes source) */
@@ -1923,7 +1945,7 @@ const MeetingDetail: React.FC = () => {
                       disabled={!canEdit}
                       onClick={() => {
                         const next = !formData.is_sequential;
-                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_id: null }) }));
+                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }) }));
                         if (!next) setPreviousMeetingOption(null);
                       }}
                       className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
@@ -1934,12 +1956,28 @@ const MeetingDetail: React.FC = () => {
                 </div>
                 {formData.is_sequential && (
                   <div className="flex flex-col gap-2 md:col-span-2">
-                    {renderFieldLabel('previous_meeting_id', <>الاجتماع السابق <span className="text-red-500">*</span></>, 'text-sm font-medium text-gray-700')}
+                    {renderFieldLabel('previous_meeting_id', 'الاجتماع السابق', 'text-sm font-medium text-gray-700')}
                     <FormAsyncSelectV2
                       value={previousMeetingOption}
                       onValueChange={(opt) => {
                         setPreviousMeetingOption(opt);
-                        setFormData((p) => ({ ...p, previous_meeting_id: opt?.value ?? null }));
+                        if (opt?.value) {
+                          const [idPart, groupPart] = opt.value.split(':');
+                          const extId = idPart ? parseInt(idPart, 10) : null;
+                          const groupId = groupPart ? parseInt(groupPart, 10) : null;
+                          const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt?.value);
+                          const originalTitle = cached?.original_title ?? null;
+                          const meetingTitle = cached?.meeting_title ?? null;
+                          setFormData((p) => ({
+                            ...p,
+                            previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
+                            previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
+                            previous_meeting_original_title: originalTitle,
+                            previous_meeting_meeting_title: meetingTitle,
+                          }));
+                        } else {
+                          setFormData((p) => ({ ...p, previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }));
+                        }
                       }}
                       loadOptions={loadPreviousMeetingSearchOptions}
                       placeholder="اختر الاجتماع السابق..."
@@ -1949,8 +1987,6 @@ const MeetingDetail: React.FC = () => {
                       fullWidth
                       isDisabled={!canEdit}
                       className="text-right"
-                      error={formData.is_sequential && !formData.previous_meeting_id}
-                      errorMessage={formData.is_sequential && !formData.previous_meeting_id ? 'مطلوب عند تفعيل اجتماع متسلسل' : undefined}
                     />
                   </div>
                 )}
@@ -1959,7 +1995,7 @@ const MeetingDetail: React.FC = () => {
                   <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" style={{ fontFamily: "'Almarai', sans-serif" }} title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
                     {meeting?.sequential_number != null
                       ? String(meeting.sequential_number)
-                      : formData.is_sequential && formData.previous_meeting_id
+                      : formData.is_sequential && formData.previous_meeting_ext_id != null
                         ? previousMeeting?.sequential_number != null
                           ? String((previousMeeting.sequential_number ?? 0) + 1)
                           : 'غير موجود (إجباري)'
@@ -3769,9 +3805,27 @@ const MeetingDetail: React.FC = () => {
               سيتم إرسال الحقول التالية للتعديل:
             </p>
             <ul className="mt-3 list-disc list-inside text-right text-sm text-gray-700" style={{ fontFamily: "'Almarai', sans-serif" }}>
-              {Object.keys(changedPayload).map((k) => (
-                <li key={k}>{fieldLabels[k] || k}</li>
-              ))}
+              {(() => {
+                const PREVIOUS_MEETING_KEYS = ['prev_ext_id', 'group_id', 'prev_ext_original_title', 'prev_ext_meeting_title'];
+                const hasPreviousMeetingChange = PREVIOUS_MEETING_KEYS.some((key) => key in changedPayload);
+                const otherKeys = Object.keys(changedPayload).filter((k) => !PREVIOUS_MEETING_KEYS.includes(k));
+                const keysToShow = otherKeys;
+                return (
+                  <>
+                    {keysToShow.map((k) => (
+                      <li key={k}>{fieldLabels[k] || k}</li>
+                    ))}
+                    {hasPreviousMeetingChange && (
+                      <li key="previous_meeting">
+                        {fieldLabels.previous_meeting_id || 'الاجتماع السابق'}
+                        {formData.previous_meeting_meeting_title && (
+                          <span className="text-[#667085]"> — {formData.previous_meeting_meeting_title}</span>
+                        )}
+                      </li>
+                    )}
+                  </>
+                );
+              })()}
               {newPresentationAttachments.length > 0 && (
                 <li key="new_presentation_attachments">
                   إضافة عروض تقديمية ({newPresentationAttachments.length} {newPresentationAttachments.length === 1 ? 'ملف' : 'ملفات'})
@@ -3804,13 +3858,6 @@ const MeetingDetail: React.FC = () => {
                 const protocolType = changedPayload.protocol_type ?? scheduleForm.protocol_type_text;
                 if (requiresProtocol === true && !protocolType) {
                   setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
-                  return;
-                }
-                // Validate: if اجتماع متسلسل؟ is checked, الاجتماع السابق is required
-                const isSequential = changedPayload.is_sequential ?? formData.is_sequential;
-                const previousMeetingId = changedPayload.previous_meeting_id ?? formData.previous_meeting_id;
-                if (isSequential === true && !previousMeetingId) {
-                  setValidationError('يجب اختيار الاجتماع السابق عند تفعيل خيار "اجتماع متسلسل؟"');
                   return;
                 }
                 // Validate invitees (قائمة المدعوين مقدّم الطلب) when payload includes them
