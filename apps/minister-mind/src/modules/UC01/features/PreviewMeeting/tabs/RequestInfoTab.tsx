@@ -12,7 +12,7 @@ interface RequestInfoTabProps {
 
 export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
   const statusLabel =
-    MeetingStatusLabels[meeting.status as MeetingStatus] || meeting.status;
+    MeetingStatusLabels[meeting?.status as MeetingStatus] || meeting?.status;
 
   return (
     <div className="flex flex-col gap-4 w-full" dir="rtl">
@@ -20,7 +20,7 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>رقم الطلب</label>
           <div className={valueClass} style={fontStyle}>
-            {meeting.request_number ?? '-'}
+            {meeting?.request_number ?? '-'}
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full">
@@ -32,13 +32,13 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>مقدم الطلب</label>
           <div className={valueClass} style={fontStyle}>
-            {meeting.submitter_name ?? '-'}
+            {meeting?.submitter_name ?? '-'}
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>مالك الاجتماع</label>
           <div className={valueClass} style={fontStyle}>
-            {(meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? meeting.meeting_owner ?? '-'}
+            {(meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? meeting?.meeting_owner ?? '-'}
           </div>
         </div>
       </div>
