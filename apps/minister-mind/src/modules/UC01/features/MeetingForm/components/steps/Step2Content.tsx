@@ -38,9 +38,7 @@ export interface Step2ContentProps {
   replacementPresentationFiles?: Record<string, File>;
   replacementAdditionalFiles?: Record<string, File>;
   handleNextClick: () => void;
-  handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
-  /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
   step2EditableMap?: Record<string, boolean>;
 }
 
@@ -66,7 +64,6 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   replacementPresentationFiles,
   replacementAdditionalFiles,
   handleNextClick,
-  handleSaveDraftClick,
   handleCancelClick,
   step2EditableMap,
 }) => {
@@ -142,7 +139,6 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
 
         <ActionButtons
           onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />

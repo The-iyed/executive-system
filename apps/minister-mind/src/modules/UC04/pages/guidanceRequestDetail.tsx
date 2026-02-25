@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable } from '@shared/components';
-import type { TableColumn } from '@shared';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -12,6 +11,8 @@ import {
   getMeetingClassificationTypeLabel,
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
+  SectorLabels,
+  Sector,
 } from '@shared/types';
 import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
 import { useAuth } from '../../auth/context';
@@ -601,7 +602,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         القطاع
                       </label>
                       <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.sector || '-'}
+                      {SectorLabels[meetingRequest.sector as Sector] || '-'}
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
