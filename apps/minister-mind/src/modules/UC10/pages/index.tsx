@@ -113,7 +113,8 @@ const UC10Page = () => {
         const cleanup = mountApp(containerRef.current, { 
           basename: '/uc10',
           assetBaseUrl: UEP_REMOTE_URL,
-          onLogout: hostLogout
+          onLogout: hostLogout,
+          hostOrigin: window.location.origin  // Pass host's origin for navigation
         });
         
         // Store cleanup function if provided
@@ -185,11 +186,19 @@ const UC10Page = () => {
               <div className="mt-2 p-2 bg-red-100 rounded">
                 <p>Remote URL: {REMOTE_ENTRY_URL}</p>
                 <p className="mt-1">
-                  تأكد من أن تطبيق UEP System Admin يعمل على المنفذ 4173
+                  تأكد من أن تطبيق UEP System Admin متاح على:
                 </p>
-                <p className="mt-1">
-                  يمكنك تشغيله باستخدام: <code>npm run preview</code> في مجلد uep-system-admin-ui
+                <p className="mt-1 font-mono text-xs">
+                  {UEP_REMOTE_URL}
                 </p>
+                <p className="mt-2">
+                  تحقق من:
+                </p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>صحة رابط الخادم</li>
+                  <li>إعدادات CORS</li>
+                  <li>توفر الملفات المطلوبة</li>
+                </ul>
               </div>
             </details>
           </div>
