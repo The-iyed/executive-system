@@ -12,7 +12,13 @@ import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
 import { useScrollToTop } from './useScrollToTop';
 
-export const useCreateMeeting = () => {
+export interface UseCreateMeetingOptions {
+  /** When set (e.g. drawer mode), cancel/close closes drawer instead of navigating to MEETINGS */
+  onClose?: () => void;
+}
+
+export const useCreateMeeting = (options: UseCreateMeetingOptions = {}) => {
+  const { onClose } = options;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,6 +66,7 @@ export const useCreateMeeting = () => {
       }
     },
     onStep2SuccessGoToStep3: handleNext,
+    onClose,
   });
 
   const handleCancel = useCallback(() => {
