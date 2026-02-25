@@ -24,16 +24,38 @@ const optionalString = (invalidTypeMessage: string) =>
   z.string({ invalid_type_error: invalidTypeMessage }).optional().or(z.literal(''));
 
 const dateSchema = (fieldName: string) =>
-  optionalString(`${fieldName} يجب أن يكون نصاً`).refine(
-    (val) => !val || val === '' || DATE_PATTERN.test(val),
-    'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-  );
+  optionalString(`${fieldName} يجب أن يكون نصاً`)
+    .refine(
+      (val) => !val || val === '' || DATE_PATTERN.test(val),
+      'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+    )
+    .refine(
+      (val) => {
+        if (!val || val === '') return true;
+        const selectedDate = new Date(val);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return selectedDate >= today;
+      },
+      'لا يمكن اختيار تاريخ في الماضي'
+    );
 
 const requiredDateSchema = (fieldName: string) =>
-  z.string({ required_error: `${fieldName} مطلوب` }).refine(
-    (val) => val && val !== '' && DATE_PATTERN.test(val),
-    'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
-  );
+  z.string({ required_error: `${fieldName} مطلوب` })
+    .refine(
+      (val) => val && val !== '' && DATE_PATTERN.test(val),
+      'تاريخ غير صحيح. يرجى إدخال تاريخ صالح'
+    )
+    .refine(
+      (val) => {
+        if (!val || val === '') return true;
+        const selectedDate = new Date(val);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return selectedDate >= today;
+      },
+      'لا يمكن اختيار تاريخ في الماضي'
+    );
 
 const presentationFileSchema = z
   .instanceof(File, { message: 'الملف مطلوب' })

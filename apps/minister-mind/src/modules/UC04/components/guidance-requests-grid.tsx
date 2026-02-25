@@ -21,7 +21,7 @@ export const GuidanceRequestsGrid: React.FC<GuidanceRequestsGridProps> = ({
     >
       {requests.map((request) => (
         <GuidanceRequestCard
-          hideStatus={true}
+          hideStatus={false}
           key={request.id}
           request={request}
           onView={() => onView?.(request)}
