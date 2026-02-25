@@ -31,19 +31,13 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
 
   const closeDrawer = useCallback(() => {
     clearDraftData();
-    const pathname = location.pathname;
-    const isOnBasePath = pathname === basePath || pathname === basePath + '/' || pathname.startsWith(basePath + '/');
-    if (isOnBasePath) {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete(FORM_PARAM);
-        next.delete(ID_PARAM);
-        return next;
-      });
-    } else {
-      navigate(basePath, { replace: true });
-    }
-  }, [navigate, basePath, location, setSearchParams, clearDraftData]);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete(FORM_PARAM);
+      next.delete(ID_PARAM);
+      return next;
+    });
+  }, [setSearchParams, clearDraftData]);
 
   const onOpenChange = useCallback(
     (nextOpen: boolean) => {
