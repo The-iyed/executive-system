@@ -1,6 +1,7 @@
 
 export enum MeetingStatus {
   DRAFT = 'DRAFT',
+  ADDITIONAL_INFO = 'ADDITIONAL_INFO',
   UNDER_REVIEW = 'UNDER_REVIEW',
   UNDER_CONSULTATION_SCHEDULING = 'UNDER_CONSULTATION_SCHEDULING',
   UNDER_GUIDANCE = 'UNDER_GUIDANCE',
@@ -24,6 +25,7 @@ export enum MeetingStatus {
 
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.DRAFT]: 'مسودة',
+  [MeetingStatus.ADDITIONAL_INFO]: 'معلومات إضافية',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
   [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
   [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',
