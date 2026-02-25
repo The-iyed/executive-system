@@ -6,6 +6,8 @@ import { PATH as UC04_PATH } from '../../UC04/routes/paths';
 import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
+import { PATH as UC09_PATH } from '../../UC09/routes/paths';
+import { PATH as UC10_PATH } from '../../UC10/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
@@ -133,6 +135,30 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
     code: 'UC-08',
     defaultRoute: UC08_PATH.MEETINGS,
     navigationItems: [],
+  },
+  'UC-09': {
+    code: 'UC-09',
+    defaultRoute: UC09_PATH.HOME,
+    navigationItems: [
+      {
+        id: 'uc09',
+        icon: 'solar:widget-2-outline',
+        label: 'الهيكل التنظيمي',
+        path: UC09_PATH.HOME,
+      },
+    ],
+  },
+  'UC-10': {
+    code: 'UC-10',
+    defaultRoute: UC10_PATH.BUSINESS_CARDS,
+    navigationItems: [
+      {
+        id: 'uc10',
+        icon: 'solar:card-outline',
+        label: 'البطاقات الوظيفية',
+        path: UC10_PATH.BUSINESS_CARDS,
+      },
+    ],
   },
 };
 
