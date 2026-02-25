@@ -12,6 +12,8 @@ import {
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
   getDirectiveMethodLabel,
+  SectorLabels,
+  Sector,
 } from '@shared/types';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
@@ -419,7 +421,7 @@ const ConsultationRequestDetail: React.FC = () => {
                       القطاع
                     </label>
                     <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.sector || '-'}
+                      {SectorLabels[meetingRequest.sector as Sector] || '-'}
                     </div>
                   </div>
                   {/* نوع الاجتماع */}
