@@ -9,6 +9,8 @@ import {
   MeetingClassificationLabels,
   MeetingConfidentiality,
   MeetingConfidentialityLabels,
+  SectorLabels,
+  Sector,
 } from '@shared/types';
 
 const labelClass = 'text-sm font-medium text-gray-700 text-[#344054]';
@@ -43,7 +45,7 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>القطاع</label>
-          <div className={valueClass} style={fontStyle}>{meeting.sector || '-'}</div>
+          <div className={valueClass} style={fontStyle}>{SectorLabels[meeting.sector as Sector] || '-'}</div>
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>نوع الاجتماع</label>
@@ -78,6 +80,17 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
           <div className={valueClass} style={fontStyle}>{confidentialityLabel}</div>
         </div>
       </div>
+        <div className="flex flex-col w-full">
+          <label className="text-sm font-medium text-gray-700 text-right" style={fontStyle}>
+            ملاحظات
+          </label>
+          <div
+            className="w-full min-h-[100px] px-3 py-2 flex items-start bg-gray-50 border border-gray-200 rounded-lg text-right resize-none"
+            style={fontStyle}
+          >
+            {meeting.note ?? '-'}
+          </div>
+        </div>
 
       {/* الأهداف */}
       <div className="flex flex-col gap-[10px] w-full">
