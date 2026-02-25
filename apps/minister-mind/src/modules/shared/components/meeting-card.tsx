@@ -112,9 +112,10 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
             </h3>
           </CardTooltip>
           <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-            {meeting.statusLabel != null && !hideStatus && (
+            {(meeting.statusLabel != null && meeting.status != null) && !hideStatus && (
               <StatusBadge status={meeting.status} label={meeting.statusLabel} />
             )}
+            
           </div>
         </div>
 
