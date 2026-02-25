@@ -34,7 +34,9 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
     handleStep3Next,
     handleStep3SaveDraft,
     handleCancel,
-  } = useCreateMeeting();
+  } = useCreateMeeting({
+    onClose: controlledOnOpenChange ? () => controlledOnOpenChange(false) : undefined,
+  });
 
   const renderStepContent = () => {
     switch (currentStep) {

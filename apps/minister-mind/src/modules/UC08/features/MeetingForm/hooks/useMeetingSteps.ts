@@ -22,6 +22,8 @@ interface UseMeetingStepsProps {
   /** When step 2 submit succeeds (non-draft), call this to switch to step 3 */
   onStep2SuccessGoToStep3?: () => void;
   onStep3Success?: () => void;
+  /** When set (e.g. drawer mode), close instead of navigating to MEETINGS */
+  onClose?: () => void;
 }
 
 export const useMeetingSteps = ({
@@ -32,6 +34,7 @@ export const useMeetingSteps = ({
   onStep2Success,
   onStep2SuccessGoToStep3,
   onStep3Success,
+  onClose,
 }: UseMeetingStepsProps) => {
   const navigate = useNavigate();
 
@@ -40,6 +43,7 @@ export const useMeetingSteps = ({
     onError: (error) => {
       console.error('Delete draft error:', error);
     },
+    onClose,
   });
 
   const step1Hook = useStep1({
