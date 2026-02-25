@@ -20,6 +20,8 @@ export interface SearchFilterBarProps {
   onStatusFilterChange?: (value: MeetingStatus | 'all') => void;
   /** When true, hide "جميع الحالات" and only show status options (e.g. default to draft elsewhere) */
   hideAllOption?: boolean;
+  /** When provided, only these statuses are shown in the filter. Otherwise all MeetingStatus values are shown. */
+  statusOptions?: MeetingStatus[];
   className?: string;
 }
 
@@ -30,9 +32,11 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   statusFilter,
   onStatusFilterChange,
   hideAllOption = false,
+  statusOptions,
   className = '',
 }) => {
   const selectValue = hideAllOption ? (statusFilter ?? MeetingStatus.DRAFT) : (statusFilter || 'all');
+  const options = statusOptions ?? Object.values(MeetingStatus);
 
   return (
     <div className={`flex flex-row items-center gap-3 ${className}`} dir="rtl">
@@ -48,7 +52,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         </SelectTrigger>
         <SelectContent dir="rtl">
           {!hideAllOption && <SelectItem value="all">جميع الحالات</SelectItem>}
-          {Object.values(MeetingStatus).map((status) => (
+          {options.map((status) => (
               <SelectItem key={status} value={status}>
                 {getMeetingStatusLabel(status)}
               </SelectItem>
