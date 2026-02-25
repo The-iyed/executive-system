@@ -21,6 +21,9 @@ export function DueDateField({
   required = false,
   className,
 }: DueDateFieldProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <FormField
       className={className}
@@ -35,6 +38,7 @@ export function DueDateField({
         placeholder="dd/mm/yyyy"
         error={!!(touched && error)}
         disabled={disabled}
+        fromDate={today}
       />
     </FormField>
   );
