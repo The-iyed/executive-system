@@ -291,6 +291,7 @@ export const getContentConsultants = async (
 export interface ApproveContentRequest {
   file?: File;
   notes?: string;
+  directives?: string[];
 }
 
 export const approveContent = async (
@@ -305,6 +306,10 @@ export const approveContent = async (
 
   if (data.notes) {
     formData.append('notes', data.notes);
+  }
+
+  if (data.directives && data.directives.length > 0) {
+    formData.append('directives', JSON.stringify(data.directives));
   }
 
   await axiosInstance.post(
