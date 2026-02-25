@@ -102,8 +102,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     clearTokens();
     setUser(null);
-    // Navigate to login page
-    window.location.href = PATH.LOGIN;
+    // Navigate to login page using absolute URL to avoid base tag issues
+    alert(window.location.origin + PATH.LOGIN);
+    window.location.href = window.location.origin + PATH.LOGIN;
   };
 
   if (!isInitialised || isLoading) {
