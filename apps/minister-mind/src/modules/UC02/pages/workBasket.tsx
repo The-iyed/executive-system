@@ -231,7 +231,6 @@ const WorkBasket: React.FC = () => {
                   meetings={meetings}
                   onView={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
                   onDetails={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
-                  hideStatus={true}
                 />
               )}
               

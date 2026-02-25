@@ -43,7 +43,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
               actionLabel={label}
               hideStatus={hideStatus}
               actionLoading={getActionLoading?.(meeting)}
-              className="w-full"
+              className="w-full h-full"
             />
           </div>
         );
