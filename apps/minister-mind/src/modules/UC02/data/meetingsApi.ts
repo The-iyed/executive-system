@@ -186,6 +186,8 @@ export interface MeetingApiResponse {
   sector: string;
   description?: string | null;
   note?: string | null;
+  /** Content approval directives (استشارة المحتوى tab). */
+  content_approval_directives?: string[];
 }
 
 export interface MeetingsListResponse {
@@ -442,7 +444,7 @@ export const getConsultants = async (params: GetConsultantsParams = {}): Promise
 };
 
 export interface RequestSchedulingConsultationRequest {
-  consultant_user_id: string;
+  consultant_user_ids: string[];
   consultation_question: string;
   is_draft?: boolean;
 }
