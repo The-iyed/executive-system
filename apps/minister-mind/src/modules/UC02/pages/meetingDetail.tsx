@@ -647,7 +647,7 @@ const MeetingDetail: React.FC = () => {
 
   const queryClient = useQueryClient();
   
-  // Clear content officer notes query cache when tab is not active to prevent stale data
+  // Clear content-consultation tab query caches when tab is not active to prevent stale data
   React.useEffect(() => {
     if (activeTab !== 'content-consultation') {
       queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id, 'CONTENT'] });
@@ -2600,9 +2600,10 @@ const MeetingDetail: React.FC = () => {
                       </div>
                     ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
                       (() => {
-                        const d = insightsMutation.data as AttachmentInsightsResponse;
-                        const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
-                        const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                        const d = insightsMutation.data as AttachmentInsightsResponse & Record<string, unknown>;
+                        const notes: string[] = Array.isArray(d.llm_notes) ? d.llm_notes : (d.llm_notes != null ? [].concat(d.llm_notes as any) : []);
+                        const rawSuggestions = d.llm_suggestions ?? d.suggestions;
+                        const suggestions: string[] = Array.isArray(rawSuggestions) ? rawSuggestions.map((x: unknown) => (typeof x === 'string' ? x : String(x ?? ''))) : (rawSuggestions != null ? [].concat(rawSuggestions as any).map((x: unknown) => (typeof x === 'string' ? x : String(x ?? ''))) : []);
                         if (notes.length === 0 && suggestions.length === 0) {
                                 return (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -2634,7 +2635,7 @@ const MeetingDetail: React.FC = () => {
                                 </div>
                               </div>
                             )}
-                            {/* {suggestions.length > 0 && (
+                            {suggestions.length > 0 && (
                               <div className="flex flex-col gap-3">
                                 <div className="flex items-center gap-2">
                                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E6F9F8]">
@@ -2652,7 +2653,7 @@ const MeetingDetail: React.FC = () => {
                                   ))}
                                 </div>
                               </div>
-                            )} */}
+                            )}
                                   </div>
                                 );
                       })()
@@ -3394,7 +3395,7 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Content Officer Notes Tab – الملخص التنفيذي + الملاحظات (preview) + notes table */}
+          {/* Content Officer Notes Tab – العرض التقديمي + الملاحظات (preview) + notes table */}
           {activeTab === 'content-consultation' && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
               {isLoadingContentOfficerNotes ? (
@@ -3403,10 +3404,10 @@ const MeetingDetail: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* الملخص التنفيذي – preview only (text + file preview cards for is_executive_summary attachments) */}
+                  {/* العرض التقديمي – preview only (text + file preview cards for is_executive_summary attachments) */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium text-gray-700 text-right">
-                      الملخص التنفيذي
+                      العرض التقديمي
                     </h3>
                     {(() => {
                       const textSummary =
