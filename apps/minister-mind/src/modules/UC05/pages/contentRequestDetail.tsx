@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Tabs, StatusBadge, MeetingActionsBar, DataTable } from '@shared/components';
-import { getDirectivesTableColumns } from '../../shared/components/tables/directives-table-columns';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -744,6 +743,7 @@ const ContentRequestDetail: React.FC = () => {
                 <StatusBadge status={meetingStatus} label={statusLabel} />
               </div>
             </div>
+            {meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT && (
             <button
             type="button"
             className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -752,6 +752,7 @@ const ContentRequestDetail: React.FC = () => {
               <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
               طلب استشارة
             </button>
+            )}
           </div>
 
           {/* Tabs */}
@@ -2141,7 +2142,8 @@ const ContentRequestDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Actions bar – same FAB + arc as meeting detail */}
+      {/* Actions bar – same FAB + arc as meeting detail (hidden when scheduled for content update) */}
+      {meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT && (
       <MeetingActionsBar
         meetingStatus={MeetingStatus.UNDER_REVIEW}
         open={actionsBarOpen}
@@ -2178,6 +2180,7 @@ const ContentRequestDetail: React.FC = () => {
             : []),
         ]}
       />
+      )}
 
       {/* Attachment LLM notes/insights modal (ملاحظات على العرض) – same as meeting detail */}
       <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
