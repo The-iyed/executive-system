@@ -1,5 +1,5 @@
 import React from 'react';
-import { DateTimePicker } from '@sanad-ai/ui';
+import { DateTimePicker, cn } from '@sanad-ai/ui';
 
 export interface FormDateTimePickerProps {
   value?: string;
@@ -37,11 +37,18 @@ export const FormDateTimePicker: React.FC<FormDateTimePickerProps> = ({
   return (
     <DateTimePicker
       value={value}
-      onChange={onChange}
+      onChange={(newValue) => {
+        if (disabled) return;
+        onChange?.(newValue);
+      }}
       onBlur={onBlur}
       placeholder={placeholder}
       error={error}
-      className={fullWidth ? `${className || ''} w-full`.trim() : className}
+      className={cn(
+        fullWidth && 'w-full',
+        disabled && 'cursor-not-allowed pointer-events-none select-none',
+        className
+      )}
       disabled={disabled}
       minDate={minDate}
       maxDate={maxDate}
