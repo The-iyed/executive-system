@@ -1345,6 +1345,35 @@ const MeetingDetail: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
 
+  // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
+  useEffect(() => {
+    if (!isScheduleModalOpen || !scheduleForm.selected_time_slot_id || !meeting) return;
+    const slotId = scheduleForm.selected_time_slot_id;
+    if (!slotId) return;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot,
+    ].filter(Boolean);
+    const selectedSlot = allSlots.find((s: any) => s?.id === slotId);
+    if (!selectedSlot?.slot_start) return;
+    const toDatetimeLocal = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+    const startLocal = toDatetimeLocal(selectedSlot.slot_start);
+    const endLocal = selectedSlot.slot_end ? toDatetimeLocal(selectedSlot.slot_end) : (() => {
+      const start = new Date(selectedSlot.slot_start);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      return toDatetimeLocal(end.toISOString());
+    })();
+    setScheduleForm((prev) => ({
+      ...prev,
+      scheduled_at: startLocal,
+      scheduled_end_at: endLocal,
+    }));
+  }, [isScheduleModalOpen, scheduleForm.selected_time_slot_id, meeting]);
+
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
     if (!meeting) return;
