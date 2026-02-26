@@ -1864,7 +1864,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
                 <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('is_on_behalf_of', 'هل نطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
+                  {renderFieldLabel('is_on_behalf_of', 'هل تطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <div className="flex items-center gap-2 w-full justify-start">
                     <span className="text-[10.23px] text-[#667085]">{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
@@ -2156,11 +2156,36 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 text-[#344054]">الملاحظة</label>
+                  <label className="text-sm font-medium text-gray-700 text-[#344054]">ملاحظات</label>
                   <div className="w-full min-h-11 px-3 py-2 bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085] whitespace-pre-wrap">
                     {meeting?.note ?? '—'}
                   </div>
                 </div>
+              </div>
+              {/* الأهداف – same structure as UC01 preview / table like agenda */}
+              <div className="flex flex-col gap-[10px] w-full">
+                <div className="text-[12.69px] leading-[38px] text-[#101828]">
+                  {renderFieldLabel('objectives', 'الأهداف', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
+                </div>
+                {(contentForm.objectives?.length ?? 0) > 0 ? (
+                  <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
+                    <DataTable
+                      columns={[
+                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]">{i + 1}</span> },
+                        { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
+                          <Input type="text" value={item.objective} onChange={(e) => { const n = [...(contentForm.objectives || [])]; n[index] = { ...item, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" placeholder="الهدف" />
+                        ) },
+                        { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
+                          <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: (p.objectives || []).filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5] disabled:opacity-60 disabled:cursor-not-allowed" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
+                        ) },
+                      ] as TableColumn<any>[]}
+                      data={contentForm.objectives || []}
+                      className="border-none"
+                      rowPadding="py-3"
+                    />
+                  </div>
+                ) : null}
+                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: [...(p.objectives || []), { id: `obj-${Date.now()}`, objective: '' }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[200px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة هدف</button>
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
               <div className="flex flex-col gap-[8px] w-full">
