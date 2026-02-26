@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge } from '@shared/components';
+import { Tabs, StatusBadge, AgendaPreviewTable } from '@shared/components';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -603,38 +603,12 @@ const ConsultationRequestDetail: React.FC = () => {
                     </div>
                   </div>
                   {/* أجندة الاجتماع */}
-                  <div className="flex flex-col gap-2 md:col-span-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      أجندة الاجتماع
-                    </label>
-                    {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
-                      <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
-                        <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          <thead>
-                            <tr className="border-b border-gray-300 bg-[#F2F4F7]">
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[100px] text-center">رقم البند</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold">بند جدول الأعمال</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[160px] text-center">مدة العرض (دقيقة)</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">نوع دعم الوزير</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {meetingRequest.agenda_items.map((item: any, idx: number) => (
-                              <tr key={item.id} className={idx < (meetingRequest.agenda_items?.length ?? 0) - 1 ? 'border-b border-gray-200' : ''}>
-                                <td className="px-4 py-3 text-[#475467] text-center">{idx + 1}</td>
-                                <td className="px-4 py-3 text-[#101828]">{item.agenda_item || '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{item.presentation_duration_minutes ?? '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{item.minister_support_type || item.minister_support_other || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                        -
-                      </div>
-                    )}
+                  <div className="md:col-span-2">
+                    <AgendaPreviewTable
+                      title="أجندة الاجتماع"
+                      items={meetingRequest.agenda_items ?? undefined}
+                      dir="rtl"
+                    />
                   </div>
                   {/* هل طلب الاجتماع بناءً على توجيه من معالي الوزير */}
                   <div className="flex flex-col gap-2">
