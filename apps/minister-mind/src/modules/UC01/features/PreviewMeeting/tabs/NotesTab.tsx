@@ -3,24 +3,10 @@ import { FileText, CalendarClock, StickyNote } from 'lucide-react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 
 interface NotesTabProps {
-  meeting: MeetingApiResponse & { scheduling_officer_note?: unknown };
-}
-
-function getNoteDisplayText(value: unknown): string {
-  if (value == null) return '';
-  if (typeof value === 'string') return value.trim();
-  if (Array.isArray(value)) {
-    const parts = value.map((item) => getNoteDisplayText(item)).filter(Boolean);
-    return parts.join('\n');
-  }
-  if (typeof value === 'object') {
-    const v = value as Record<string, unknown>;
-    if (typeof v.text === 'string') return v.text.trim();
-    if (typeof v.note === 'string') return v.note.trim();
-    if (typeof v.content === 'string') return v.content.trim();
-    if (typeof v.value === 'string') return v.value.trim();
-  }
-  return '';
+  meeting: MeetingApiResponse & {
+    content_officer_note?: string | null;
+    scheduling_officer_note?: string | null;
+  };
 }
 
 const noteConfig = {
@@ -72,8 +58,8 @@ function NoteBlock({
 }
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
-  const contentOfficerNotes = getNoteDisplayText(meeting.content_officer_notes);
-  const schedulingOfficerNote = getNoteDisplayText(meeting.scheduling_officer_note);
+  const contentOfficerNotes = (meeting.content_officer_note ?? '').trim();
+  const schedulingOfficerNote = (meeting.scheduling_officer_note ?? '').trim();
 
   const hasContentNotes = contentOfficerNotes.length > 0;
   const hasSchedulingNotes = schedulingOfficerNote.length > 0;
@@ -104,17 +90,12 @@ export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
     );
   }
 
-  const noteCount = [hasContentNotes, hasSchedulingNotes].filter(Boolean).length;
-
   return (
     <div className="flex flex-col gap-5 w-full" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-800">
           الملاحظات المسجلة
         </h2>
-        <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-          {noteCount} {noteCount === 1 ? 'ملاحظة' : 'ملاحظات'}
-        </span>
       </div>
       <div className="flex flex-col gap-4">
         {hasContentNotes && (
