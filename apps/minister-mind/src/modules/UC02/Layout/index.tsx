@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { SharedLayout, WelcomeSectionProps } from '@shared';
 import { USE_CASE_CONFIGS } from '@shared';
 import { PATH } from '../routes/paths';
+import { prefetchOutlookTimelineWeeksAround } from '../data/calendarApi';
 import { MeetingFormDrawer } from '../../UC08/features/MeetingForm/components/MeetingFormDrawer';
 
 export interface LayoutProps {
@@ -13,6 +15,14 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
   const { pathname } = useLocation();
+  const queryClient = useQueryClient();
+
+  // Prefetch calendar timeline for first week + previous + next so /calendar loads fast
+  useEffect(() => {
+    prefetchOutlookTimelineWeeksAround(queryClient, new Date(), { weeksBack: 1, weeksAhead: 1 }).catch(() => {
+      // ignore prefetch errors
+    });
+  }, [queryClient]);
   const getWelcomeConfig = (): WelcomeSectionProps => {
     if (pathname === PATH.SCHEDULED_MEETINGS) {
       return {

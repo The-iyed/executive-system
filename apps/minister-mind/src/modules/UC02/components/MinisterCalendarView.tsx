@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, User } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader, MeetingCard } from '@shared';
 import {
   WeeklyCalendarNavigation,
@@ -9,7 +9,14 @@ import {
   type CalendarEventData,
 } from '@shared';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@sanad-ai/ui';
-import { getOutlookTimelineEvents, type OutlookTimelineEvent } from '../data/calendarApi';
+import {
+  getOutlookTimelineEvents,
+  getCalendarWeekRange,
+  prefetchOutlookTimelineWeek,
+  prefetchOutlookTimelineWeeksAround,
+  OUTLOOK_TIMELINE_STALE_MS,
+  type OutlookTimelineEvent,
+} from '../data/calendarApi';
 import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 
@@ -143,9 +150,28 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   initialDate
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
+
+  // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
+  React.useEffect(() => {
+    prefetchOutlookTimelineWeeksAround(queryClient, currentDate, { weeksBack: 2, weeksAhead: 2 }).catch(() => {});
+  }, [queryClient]);
+
+  // On each week change, prefetch the weeks 2 steps away (one at a time) so next/prev click is instant
+  React.useEffect(() => {
+    const twoWeeksBack = new Date(currentDate);
+    twoWeeksBack.setDate(currentDate.getDate() - 14);
+    const twoWeeksAhead = new Date(currentDate);
+    twoWeeksAhead.setDate(currentDate.getDate() + 14);
+    const { startISO: s1, endISO: e1 } = getCalendarWeekRange(twoWeeksBack);
+    const { startISO: s2, endISO: e2 } = getCalendarWeekRange(twoWeeksAhead);
+    void prefetchOutlookTimelineWeek(queryClient, s1, e1)
+      .then(() => prefetchOutlookTimelineWeek(queryClient, s2, e2))
+      .catch(() => {});
+  }, [queryClient, currentDate]);
 
   const { data: meetingDetail, isLoading: isLoadingMeeting, isError: isMeetingError } = useQuery({
     queryKey: ['meeting', selectedEventForDetails?.id],
@@ -184,6 +210,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     queryKey: ['outlook-timeline', 'uc02', startDateISO, endDateISO],
     queryFn: () => getOutlookTimelineEvents(startDateISO, endDateISO),
     enabled: true,
+    staleTime: OUTLOOK_TIMELINE_STALE_MS,
   });
 
   // Process Outlook timeline events and merge with extraEvents
@@ -399,8 +426,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               onEventShowDetails={(event) => setSelectedEventForDetails(event)}
             />
             
-            {/* Subtle loading indicator when fetching new week data */}
-            {isFetching && (
+            {/* Show "Updating" only when the currently selected week is loading (no data yet), not on background refetch */}
+            {isLoading && (
               <div className="absolute top-2 right-2 z-10">
                 <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-200 flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
