@@ -19,16 +19,16 @@ const routes: RouteConfig[] = [
     path: PATH.HOME,
     component: lazy(() => import('../pages')),
     layout: Fragment,
-    useCase: 'UC-10',
+    useCase: 'UC-13',
   },
-  // Wildcard route to catch all sub-routes under /uc10
+  // Wildcard route to catch all sub-routes under /uc13
   {
     exact: false,
     guard: AuthGuard,
     path: PATH.ROOT + '/*',
     component: lazy(() => import('../pages')),
     layout: Fragment,
-    useCase: 'UC-10',
+    useCase: 'UC-13',
   },
 ];
 
