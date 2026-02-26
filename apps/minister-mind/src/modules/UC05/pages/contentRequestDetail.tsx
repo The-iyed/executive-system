@@ -1,8 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -682,6 +682,39 @@ const ContentRequestDetail: React.FC = () => {
     });
   };
 
+  const meetingInfoData: MeetingInfoData = useMemo(() => {
+    if (!contentRequest) return {};
+    const cr = contentRequest as unknown as Record<string, unknown>;
+    const owner = contentRequest.current_owner_user
+      ? `${contentRequest.current_owner_user.first_name ?? ''} ${contentRequest.current_owner_user.last_name ?? ''}`.trim()
+      : contentRequest.current_owner_role?.name_ar ?? undefined;
+    return {
+      is_on_behalf_of: (cr.is_on_behalf_of as boolean) ?? undefined,
+      meeting_manager_label: owner ?? undefined,
+      meetingSubject: contentRequest.meeting_title ?? undefined,
+      meetingDescription: contentRequest.meeting_subject ?? undefined,
+      sector: contentRequest.sector ?? undefined,
+      meetingType: contentRequest.meeting_type ?? undefined,
+      is_urgent: contentRequest.is_direct_schedule === true,
+      urgent_reason: (cr.meeting_justification as string) ?? contentRequest.meeting_justification ?? undefined,
+      meeting_start_date: contentRequest.scheduled_at ?? undefined,
+      meeting_end_date: undefined,
+      meetingChannel: contentRequest.meeting_channel ?? undefined,
+      meeting_location: (cr.meeting_location as string) ?? undefined,
+      meetingCategory: (cr.meeting_classification_type as string) ?? contentRequest.meeting_classification ?? undefined,
+      meetingReason: contentRequest.meeting_justification ?? undefined,
+      relatedTopic: contentRequest.related_topic ?? undefined,
+      dueDate: contentRequest.deadline ?? undefined,
+      meetingClassification1: contentRequest.meeting_classification ?? undefined,
+      meetingConfidentiality: (cr.meeting_confidentiality as string) ?? undefined,
+      meetingAgenda: contentRequest.agenda_items ?? undefined,
+      is_based_on_directive: !!(contentRequest.related_directive_ids && contentRequest.related_directive_ids.length > 0),
+      directive_method: (cr.directive_method as string) ?? undefined,
+      previous_meeting_minutes_file: undefined,
+      directive_text: formatRelatedGuidance(contentRequest.related_guidance),
+      notes: getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes),
+    };
+  }, [contentRequest]);
 
   // Loading state
   if (isLoading) {
@@ -845,267 +878,7 @@ const ContentRequestDetail: React.FC = () => {
 
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  معلومات الاجتماع
-                </h2>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      هل تطلب الاجتماع نيابة عن غيرك؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {(contentRequest as { is_on_behalf_of?: boolean | null }).is_on_behalf_of === true
-                        ? 'نعم'
-                        : (contentRequest as { is_on_behalf_of?: boolean | null }).is_on_behalf_of === false
-                          ? 'لا'
-                          : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مالك الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.current_owner_user
-                        ? `${contentRequest.current_owner_user.first_name} ${contentRequest.current_owner_user.last_name}`
-                        : contentRequest.current_owner_role?.name_ar ?? '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      عنوان الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.meeting_title || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      وصف الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.meeting_subject || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      القطاع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {(contentRequest.sector && SectorLabels[contentRequest.sector as keyof typeof SectorLabels]) || contentRequest.sector || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      نوع الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getMeetingTypeLabel(contentRequest.meeting_type) || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      اجتماع عاجل؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.is_direct_schedule === true ? 'نعم' : contentRequest.is_direct_schedule === false ? 'لا' : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      السبب
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.meeting_justification || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      موعد الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.scheduled_at ? new Date(contentRequest.scheduled_at).toLocaleString('ar-SA') : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      آلية انعقاد الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getMeetingChannelLabel(contentRequest.meeting_channel) || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      الموقع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {(contentRequest as { meeting_location?: string | null }).meeting_location || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      هل يتطلب بروتوكول؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.requires_protocol === true ? 'نعم' : contentRequest.requires_protocol === false ? 'لا' : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      فئة الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getMeetingClassificationLabel(contentRequest.meeting_classification) || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مبرّر اللقاء
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.meeting_justification || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      موضوع التكليف المرتبط
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.related_topic || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      تاريخ الاستحقاق
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.deadline ? new Date(contentRequest.deadline).toLocaleDateString('ar-SA') : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      تصنيف الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getMeetingClassificationTypeLabel(contentRequest.meeting_classification_type) || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      سرية الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getMeetingConfidentialityLabel(contentRequest.meeting_confidentiality) || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      اجتماع متسلسل؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.is_sequential === true ? 'نعم' : contentRequest.is_sequential === false ? 'لا' : '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      الاجتماع السابق
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.previous_meeting_id || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      الرقم التسلسلي
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.sequential_number ?? '-'}
-                    </div>
-                  </div>
-
-                  <AgendaPreviewTable
-                    title="أجندة الاجتماع"
-                    items={contentRequest.agenda_items ?? undefined}
-                    dir="rtl"
-                  />
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      هل طلب الاجتماع بناءً على توجيه من معالي الوزير
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.related_directive_ids && contentRequest.related_directive_ids.length > 0 ? 'نعم' : 'لا'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      طريقة التوجيه
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {(contentRequest as { directive_method?: string | null }).directive_method || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      محضر الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {(contentRequest as { meeting_minutes?: string | null }).meeting_minutes || '-'}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      التوجيه
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {formatRelatedGuidance(contentRequest.related_guidance)}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 col-span-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      ملاحظات
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <MeetingInfo data={meetingInfoData} dir="rtl" />
             </div>
           )}
 
