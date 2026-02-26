@@ -30,9 +30,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
     step3InviteesHook,
     step4SchedulingHook,
     handleStep1BasicInfoNext,
-    handleStep1BasicInfoSaveDraft,
     handleStep2ContentNext,
-    handleStep2ContentSaveDraft,
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
     handleStep4SchedulingNext,
@@ -58,7 +56,6 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleDeleteAgenda={step1BasicInfoHook.handleDeleteAgenda}
             handleUpdateAgenda={step1BasicInfoHook.handleUpdateAgenda}
             handleNextClick={handleStep1BasicInfoNext}
-            handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
             isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
           />
@@ -88,7 +85,6 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
             replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
-            handleSaveDraftClick={handleStep2ContentSaveDraft}
             handleCancelClick={handleCancel}
           />
         );
