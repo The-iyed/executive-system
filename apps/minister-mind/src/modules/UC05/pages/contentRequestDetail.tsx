@@ -210,6 +210,10 @@ const ContentRequestDetail: React.FC = () => {
     due_date: string;
     status: string;
   }>>({});
+  /** IDs of existing directives (from API) that the user removed from the list – hide in UI only */
+  const [deletedExistingDirectiveIds, setDeletedExistingDirectiveIds] = useState<Set<string>>(new Set());
+  /** IDs of suggested-actions (from API) that the user removed from the list – hide in UI only */
+  const [deletedSuggestedActionIds, setDeletedSuggestedActionIds] = useState<Set<string>>(new Set());
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -217,21 +221,56 @@ const ContentRequestDetail: React.FC = () => {
     queryFn: () => getContentRequestById(id!),
     enabled: !!id,
   });
-console.log({contentRequest})
 
+  // meeting_id for suggested-actions: from content request detail or fallback to content-request id
+  const rawMeetingId =
+    contentRequest?.meeting_id ??
+    contentRequest?.meeting?.meeting_id ??
+    contentRequest?.meeting?.id ??
+    id;
   const suggestedActionsMeetingId =
-  id
+    rawMeetingId != null && String(rawMeetingId).trim() !== '' ? String(rawMeetingId).trim() : null;
 
-  // GET /api/v1/business-cards/suggested-actions?meeting_id=... – if has data, disable "اقتراح بالذكاء الاصطناعي"
+  // GET /api/v1/business-cards/suggested-actions?meeting_id=... – used in إضافة التوجيهات table; if has data, disable "اقتراح بالذكاء الاصطناعي"
   const { data: suggestedActionsData } = useQuery({
     queryKey: ['business-cards-suggested-actions', suggestedActionsMeetingId],
     queryFn: () => getSuggestedActions(suggestedActionsMeetingId!, { skip: 0, limit: 100 }),
     enabled: !!suggestedActionsMeetingId,
   });
 
+  // API can return { items: [...] } or a raw array
+  const suggestedActionsItems: Array<{
+    id: number | string;
+    meeting_id?: number;
+    title: string;
+    due_date?: string | null;
+    assignees?: string;
+    status?: string;
+    is_completed?: boolean;
+    completed_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
+  }> = Array.isArray(suggestedActionsData)
+    ? suggestedActionsData
+    : (Array.isArray((suggestedActionsData as { items?: unknown[] })?.items)
+        ? (suggestedActionsData as { items: unknown[] }).items
+        : []) as Array<{
+        id: number | string;
+        meeting_id?: number;
+        title: string;
+        due_date?: string | null;
+        assignees?: string;
+        status?: string;
+        is_completed?: boolean;
+        completed_at?: string | null;
+        created_at?: string;
+        updated_at?: string;
+      }>;
+
   const hasSuggestedActions =
-    (Array.isArray(suggestedActionsData?.items) && suggestedActionsData.items.length > 0) ||
-    ((suggestedActionsData?.total ?? 0) > 0);
+    suggestedActionsItems.length > 0 ||
+    (Array.isArray(suggestedActionsData?.items) && (suggestedActionsData?.items?.length ?? 0) > 0) ||
+    ((suggestedActionsData as { total?: number } | undefined)?.total ?? 0) > 0;
 
   // Fetch consultation records (سجلات التوجيهات)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
@@ -379,7 +418,8 @@ console.log({contentRequest})
         status: item.status ?? (item.success ? 'written' : 'pending'),
       }));
 
-      setAiDirectivesSuggestions(formattedSuggestions);
+      // Append to existing directives – do not override
+      setAiDirectivesSuggestions((prev) => [...prev, ...formattedSuggestions]);
 
       const editableState: Record<string, {
         directive_text: string;
@@ -395,7 +435,7 @@ console.log({contentRequest})
           status: suggestion.status,
         };
       });
-      setEditableAiDirectives(editableState);
+      setEditableAiDirectives((prev) => ({ ...prev, ...editableState }));
     } catch (error) {
       console.error('Error fetching AI match suggestions:', error);
     } finally {
@@ -432,7 +472,7 @@ console.log({contentRequest})
       due_date: '',
       status: 'PENDING',
     };
-    
+
     setAiDirectivesSuggestions((prev) => [...prev, newDirective]);
     setEditableAiDirectives((prev) => ({
       ...prev,
@@ -443,6 +483,15 @@ console.log({contentRequest})
         status: 'PENDING',
       },
     }));
+  }, []);
+
+  const handleDeleteExistingDirective = useCallback((directiveId: string) => {
+    setDeletedExistingDirectiveIds((prev) => new Set(prev).add(directiveId));
+  }, []);
+
+  const handleDeleteSuggestedAction = useCallback((directiveId: string) => {
+    const numericOrStringId = directiveId.replace(/^suggested-/, '');
+    setDeletedSuggestedActionIds((prev) => new Set(prev).add(numericOrStringId));
   }, []);
 
   // Submit return mutation (إعادة للطلب)
@@ -575,15 +624,25 @@ console.log({contentRequest})
       console.error('Executive summary file is required');
       return;
     }
-    
-    // Prepare directives data - just the text as array of strings
-    const directivesToSend = aiDirectivesSuggestions
-      .map(d => editableAiDirectives[d.id]?.directive_text?.trim())
-      .filter(text => text); // Remove empty strings
-    
+
+    const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
+    const existingTexts = relatedDirectives
+      .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
+      .map((d) => (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim())
+      .filter(Boolean);
+    const aiManualTexts = aiDirectivesSuggestions
+      .map((d) => editableAiDirectives[d.id]?.directive_text?.trim())
+      .filter((text): text is string => !!text);
+    const suggestedTexts = suggestedActionsItems
+      .filter((s) => !deletedSuggestedActionIds.has(String(s.id)))
+      .map((s) => (s.title ?? '').trim())
+      .filter(Boolean);
+
+    const directivesToSend = [...existingTexts, ...aiManualTexts, ...suggestedTexts];
+
     sendToSchedulingMutation.mutate({
       file: executiveSummaryFile,
-      notes: guidanceNotes.trim() || undefined,
+      notes: guidanceNotes.trim(),
       directives: directivesToSend.length > 0 ? directivesToSend : undefined,
     });
     navigate(PATH.CONTENT_REQUESTS);
@@ -1895,14 +1954,20 @@ console.log({contentRequest})
               
               {(() => {
                 const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
-                const hasDirectives = directives.length > 0;
+                const directivesFiltered = directives.filter((d) => !deletedExistingDirectiveIds.has(String(d.id)));
+                const suggestedActionsFiltered = suggestedActionsItems.filter(
+                  (s) => !deletedSuggestedActionIds.has(String(s.id))
+                );
+                const hasDirectives = directivesFiltered.length > 0;
                 const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
                 const hasAiSuggestions = aiDirectivesSuggestions.length > 0;
-                
-                // Combine existing directives with AI suggestions
+                const hasSuggestedActionsFromApi = suggestedActionsFiltered.length > 0;
+
+                // Combine existing directives + AI suggestions + suggested-actions (exclude deleted)
                 const allDirectives: Array<{
                   id: string;
                   isAi: boolean;
+                  isSuggestedAction?: boolean;
                   directive_text?: string;
                   directive?: string;
                   entity?: string;
@@ -1918,19 +1983,27 @@ console.log({contentRequest})
                   notes?: string;
                   related_meeting_request?: string | null;
                 }> = [
-                  ...directives.map(d => ({ ...d, isAi: false })),
-                  ...aiDirectivesSuggestions.map(d => ({ 
-                    ...d, 
+                  ...directivesFiltered.map((d) => ({ ...d, isAi: false, isSuggestedAction: false })),
+                  ...aiDirectivesSuggestions.map((d) => ({
+                    ...d,
                     isAi: true,
-                    // Map to expected format
+                    isSuggestedAction: false,
                     directive: editableAiDirectives[d.id]?.directive_text || d.directive_text,
                     entity: editableAiDirectives[d.id]?.responsible_entity || d.responsible_entity,
                     deadline: editableAiDirectives[d.id]?.due_date || d.due_date,
                     status: editableAiDirectives[d.id]?.status || d.status,
-                  }))
+                  })),
+                  ...suggestedActionsFiltered.map((s) => ({
+                    id: `suggested-${s.id}`,
+                    isAi: false,
+                    isSuggestedAction: true,
+                    directive: s.title ?? '-',
+                    due_date: s.due_date ?? undefined,
+                    status: s.status ?? undefined,
+                  })),
                 ];
-                
-                if (hasDirectives || hasAiSuggestions) {
+
+                if (hasDirectives || hasAiSuggestions || hasSuggestedActionsFromApi) {
                   return (
                     <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                       <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -1944,8 +2017,39 @@ console.log({contentRequest})
                         <tbody className="divide-y divide-gray-200">
                           {allDirectives.map((directive, index) => {
                             const isAi = 'isAi' in directive && directive.isAi;
+                            const isSuggestedAction = 'isSuggestedAction' in directive && directive.isSuggestedAction;
                             const directiveId = directive.id;
-                            
+
+                            // Read-only row from GET .../suggested-actions API – deletable
+                            if (isSuggestedAction) {
+                              return (
+                                <tr key={directiveId} className="hover:bg-gray-50 transition-colors bg-[#F9FAFB]/50">
+                                  <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">
+                                    {directive.directive ?? '-'}
+                                    {directive.due_date != null && String(directive.due_date).trim() !== '' && (
+                                      <span className="block text-xs text-gray-500 mt-1">الموعد: {directive.due_date}</span>
+                                    )}
+                                    {directive.status != null && String(directive.status).trim() !== '' && (
+                                      <span className="block text-xs text-gray-500">الحالة: {directive.status}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteSuggestedAction(directiveId)}
+                                        className="flex items-center justify-center gap-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="حذف"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
                             if (isAi && editableAiDirectives[directiveId]) {
                               const editable = editableAiDirectives[directiveId];
                               
@@ -1977,12 +2081,23 @@ console.log({contentRequest})
                               );
                             }
                             
-                            // Regular directive row
+                            // Regular directive row (from API – deletable from list)
                             return (
                               <tr key={directiveId} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                                <td className="px-4 py-3 text-sm text-gray-700">{directive.directive || '-'}</td>
-                                <td className="px-4 py-3 text-sm text-gray-700 text-center">-</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{directive.directive || directive.directive_text || '-'}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteExistingDirective(directiveId)}
+                                      className="flex items-center justify-center gap-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="حذف"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
                               </tr>
                             );
                           })}
@@ -2197,9 +2312,18 @@ console.log({contentRequest})
               </div>
             ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
               (() => {
-                const d = insightsMutation.data as AttachmentInsightsResponse;
-                const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
-                const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                const d = insightsMutation.data as Record<string, unknown> & AttachmentInsightsResponse;
+                const notes: string[] = Array.isArray(d.llm_notes) ? d.llm_notes : (d.llm_notes != null ? [].concat(d.llm_notes as any) : []);
+                const rawSuggestions =
+                  d.llm_suggestions ??
+                  (d as Record<string, unknown>).suggestions ??
+                  (d.data && typeof d.data === 'object' && 'llm_suggestions' in d.data ? (d.data as { llm_suggestions: unknown }).llm_suggestions : undefined) ??
+                  (d.data && typeof d.data === 'object' && 'suggestions' in d.data ? (d.data as { suggestions: unknown }).suggestions : undefined);
+                const suggestions: string[] = Array.isArray(rawSuggestions)
+                  ? rawSuggestions.map((x) => (typeof x === 'string' ? x : (x && typeof x === 'object' && 'text' in x ? (x as { text: string }).text : String(x ?? ''))))
+                  : rawSuggestions != null
+                    ? [].concat(rawSuggestions as any).map((x: unknown) => (typeof x === 'string' ? x : String(x ?? '')))
+                    : [];
                 if (notes.length === 0 && suggestions.length === 0) {
                   return (
                     <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -2244,7 +2368,9 @@ console.log({contentRequest})
                           {suggestions.map((s, idx) => (
                             <div key={idx} className="flex gap-3 items-start p-3 rounded-xl bg-[#F6FFFE] border border-[#D0F0ED]">
                               <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#D0F0ED] text-[#048F86] text-[11px] font-bold mt-0.5">{idx + 1}</span>
-                              <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">{s}</p>
+                              <p className="text-[13px] text-[#344054] leading-[22px] whitespace-pre-wrap flex-1">
+                                {typeof s === 'string' ? s : (s && typeof s === 'object' && 'text' in s ? (s as { text: string }).text : String(s ?? ''))}
+                              </p>
                             </div>
                           ))}
                         </div>
