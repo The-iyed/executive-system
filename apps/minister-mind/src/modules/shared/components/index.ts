@@ -72,5 +72,6 @@ export {
 } from './form';
 
 export { AgendaPreviewTable, type AgendaPreviewTableProps, type AgendaItemPreview } from './AgendaPreviewTable';
+export { MeetingInfo, type MeetingInfoProps, type MeetingInfoData } from './MeetingInfo';
 
 export type { OptionType } from './AsyncSelectV2/types';
