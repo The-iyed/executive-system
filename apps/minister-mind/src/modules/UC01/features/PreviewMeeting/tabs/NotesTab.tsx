@@ -1,98 +1,136 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { FileText, CalendarClock, StickyNote } from 'lucide-react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
-import type { GeneralNoteItem } from '../../../../UC02/data/meetingsApi';
-
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
 interface NotesTabProps {
-  meeting: MeetingApiResponse;
+  meeting: MeetingApiResponse & { scheduling_officer_note?: unknown };
 }
 
-/** Normalize API general_notes (array of GeneralNoteItem or legacy array of { text }) to list for display */
-function getGeneralNotesList(
-  generalNotes: GeneralNoteItem[] | { text?: string }[] | string | null | undefined
-): { id: string; author_name: string | null; author_type: string; note_type: string; text: string; created_at: string }[] {
-  if (generalNotes == null) return [];
-  if (Array.isArray(generalNotes)) {
-    return generalNotes.map((note, index) => {
-      const item = note as GeneralNoteItem & { text?: string };
-      const text = typeof item.text === 'string' ? item.text : (item as { text?: string }).text ?? '';
-      if (text.trim() === '') return null;
-      return {
-        id: (item as GeneralNoteItem).id ?? `note-${index}`,
-        author_name: (item as GeneralNoteItem).author_name ?? null,
-        author_type: (item as GeneralNoteItem).author_type ?? 'ملاحظات',
-        note_type: (item as GeneralNoteItem).note_type ?? 'ملاحظة',
-        text,
-        created_at: (item as GeneralNoteItem).created_at ?? '',
-      };
-    }).filter(Boolean) as { id: string; author_name: string | null; author_type: string; note_type: string; text: string; created_at: string }[];
+function getNoteDisplayText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) {
+    const parts = value.map((item) => getNoteDisplayText(item)).filter(Boolean);
+    return parts.join('\n');
   }
-  if (typeof generalNotes === 'string' && generalNotes.trim() !== '') {
-    return [{ id: 'note-0', author_name: null, author_type: 'ملاحظات', note_type: 'ملاحظة', text: generalNotes, created_at: '' }];
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    if (typeof v.text === 'string') return v.text.trim();
+    if (typeof v.note === 'string') return v.note.trim();
+    if (typeof v.content === 'string') return v.content.trim();
+    if (typeof v.value === 'string') return v.value.trim();
   }
-  return [];
+  return '';
+}
+
+const noteConfig = {
+  content: {
+    title: 'ملاحظات مسؤول المحتوى',
+    icon: FileText,
+    iconBg: 'bg-teal-50',
+    iconColor: 'text-teal-600',
+  },
+  scheduling: {
+    title: 'ملاحظات مسؤول الجدولة',
+    icon: CalendarClock,
+    iconBg: 'bg-slate-100',
+    iconColor: 'text-slate-600',
+  },
+} as const;
+
+function NoteBlock({
+  title,
+  text,
+  variant,
+}: {
+  title: string;
+  text: string;
+  variant: 'content' | 'scheduling';
+}) {
+  const config = noteConfig[variant];
+  const Icon = config.icon;
+
+  return (
+    <article className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${config.iconBg} ${config.iconColor}`}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            {title}
+          </span>
+        </div>
+        <div className="min-h-[3rem] rounded-lg bg-gray-50/80 px-4 py-3 sm:px-5 sm:py-4">
+          <p className="text-[15px] leading-[1.7] text-gray-800 whitespace-pre-wrap">
+            {text}
+          </p>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
-  const notesList = getGeneralNotesList(meeting.general_notes);
+  const contentOfficerNotes = getNoteDisplayText(meeting.content_officer_notes);
+  const schedulingOfficerNote = getNoteDisplayText(meeting.scheduling_officer_note);
 
-  if (notesList.length === 0) {
+  const hasContentNotes = contentOfficerNotes.length > 0;
+  const hasSchedulingNotes = schedulingOfficerNote.length > 0;
+  const hasAnyNotes = hasContentNotes || hasSchedulingNotes;
+
+  if (!hasAnyNotes) {
     return (
-      <div className="flex flex-col gap-4 w-full" dir="rtl">
-        <label className="text-sm font-medium text-gray-700 text-right" style={fontStyle}>
-          الملاحظات على الطلب
-        </label>
-        <div className="flex items-center justify-center py-12">
-          <p className="text-[#475467] text-base" style={fontStyle}>لا توجد ملاحظات متاحة</p>
+      <div className="flex flex-col gap-5 w-full" dir="rtl">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-800">
+            الملاحظات على الطلب
+          </h2>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+            <StickyNote className="h-7 w-7" strokeWidth={1.5} />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-medium text-gray-600">
+              لا توجد ملاحظات
+            </p>
+            <p className="text-sm text-gray-500">
+              لم يتم إضافة ملاحظات من مسؤول المحتوى أو مسؤول الجدولة بعد
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const noteCount = [hasContentNotes, hasSchedulingNotes].filter(Boolean).length;
+
   return (
-    <div className="flex flex-col gap-4 w-full" dir="rtl">
-      <label className="text-sm font-medium text-gray-700 text-right" style={fontStyle}>
-        الملاحظات المسجلة
-      </label>
-      <div className="flex flex-col gap-[10px] w-full">
-        {notesList.map((note) => (
-          <div
-            key={note.id}
-            className="flex flex-col justify-center items-center p-[3px] gap-[10px] w-full rounded-[9.26px]"
-            style={{ background: '#E6ECF5' }}
-          >
-            <div
-              className="flex flex-col items-end w-full py-[10px] px-[8.5px] gap-[7.13px] rounded-[8.05px] bg-white"
-              style={fontStyle}
-            >
-              <div className="flex flex-row justify-between items-start w-full gap-[15px]">
-                <div className="flex flex-col justify-center items-end gap-[4.28px] min-w-0 flex-1">
-                  <span className="text-[15.67px] font-bold leading-5 text-right" style={{ color: '#383838', ...fontStyle }}>
-                    {note.author_name || note.author_type || note.note_type || 'ملاحظة'}
-                  </span>
-                  <p className="text-[10px] leading-[11px] text-right whitespace-pre-wrap" style={{ color: '#18192B', ...fontStyle }}>
-                    {note.text}
-                  </p>
-                </div>
-                <div className="flex flex-row justify-between items-center gap-3 flex-shrink-0">
-                  <div className="flex flex-row justify-center items-center gap-2 px-2.5 py-1.5 rounded-full" style={{ background: 'rgba(0, 167, 157, 0.06)' }}>
-                    <span className="text-[10px] leading-[11px]" style={{ color: '#00A79D', ...fontStyle }}>
-                      مكتمل
-                    </span>
-                  </div>
-                  <div className="flex flex-row justify-center items-center gap-2">
-                    <span className="text-[9px] leading-[10px] text-right" style={{ color: '#2C2C2C', ...fontStyle }}>
-                      {note.created_at ? `تاريخ الطلب : ${new Date(note.created_at).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' })}` : '—'}
-                    </span>
-                    <Clock className="w-3 h-3 text-[#475467]" strokeWidth={1.08} aria-hidden />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="flex flex-col gap-5 w-full" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-gray-800">
+          الملاحظات المسجلة
+        </h2>
+        <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+          {noteCount} {noteCount === 1 ? 'ملاحظة' : 'ملاحظات'}
+        </span>
+      </div>
+      <div className="flex flex-col gap-4">
+        {hasContentNotes && (
+          <NoteBlock
+            title={noteConfig.content.title}
+            text={contentOfficerNotes}
+            variant="content"
+          />
+        )}
+        {hasSchedulingNotes && (
+          <NoteBlock
+            title={noteConfig.scheduling.title}
+            text={schedulingOfficerNote}
+            variant="scheduling"
+          />
+        )}
       </div>
     </div>
   );
