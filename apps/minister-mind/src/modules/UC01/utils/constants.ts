@@ -26,6 +26,14 @@ export const MEETING_TABS = [
     label: MeetingStatusLabels[MeetingStatus.DRAFT],
   },
   {
+    id: MeetingStatus.RETURNED_FROM_CONTENT,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_CONTENT],
+  },
+  {
+    id: MeetingStatus.RETURNED_FROM_SCHEDULING,
+    label: MeetingStatusLabels[MeetingStatus.RETURNED_FROM_SCHEDULING],
+  },
+  {
     id: MeetingStatus.UNDER_REVIEW,
     label: MeetingStatusLabels[MeetingStatus.UNDER_REVIEW],
   },
