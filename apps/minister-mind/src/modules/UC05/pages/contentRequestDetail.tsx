@@ -31,8 +31,8 @@ import {
   type ComparePresentationsResponse,
   type ContentRequestDetailResponse,
 } from '../data/contentApi';
-import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
-import axiosInstance from '../../auth/utils/axios';
+import { getConsultationRecords, getSuggestedActions, type ConsultationRecord } from '../../UC02/data/meetingsApi';
+import { postMeetingsMatch } from '../../shared/api/meetings';
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -218,6 +218,21 @@ const ContentRequestDetail: React.FC = () => {
     queryFn: () => getContentRequestById(id!),
     enabled: !!id,
   });
+console.log({contentRequest})
+
+  const suggestedActionsMeetingId =
+  id
+
+  // GET /api/v1/business-cards/suggested-actions?meeting_id=... – if has data, disable "اقتراح بالذكاء الاصطناعي"
+  const { data: suggestedActionsData } = useQuery({
+    queryKey: ['business-cards-suggested-actions', suggestedActionsMeetingId],
+    queryFn: () => getSuggestedActions(suggestedActionsMeetingId!, { skip: 0, limit: 100 }),
+    enabled: !!suggestedActionsMeetingId,
+  });
+
+  const hasSuggestedActions =
+    (Array.isArray(suggestedActionsData?.items) && suggestedActionsData.items.length > 0) ||
+    ((suggestedActionsData?.total ?? 0) > 0);
 
   // Fetch consultation records (سجلات التوجيهات)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
@@ -347,86 +362,33 @@ const ContentRequestDetail: React.FC = () => {
     }
   }, []);
 
-  // AI Directives Suggestions Handler
+  // AI Directives Suggestions Handler – POST /api/meetings/match, show suggested_actions_written
   const handleRequestAiDirectives = useCallback(async () => {
     if (!id) return;
-    
+
     setIsLoadingAiSuggestions(true);
     try {
-      const response = await axiosInstance.get(`/api/v1/business-cards/directives/external`, {
-        params: {
-          meeting_request_id: id,
-        },
-      });
+      const { results } = await postMeetingsMatch(id);
 
-      const data = response.data;
-      
-      // Transform the API response to our format
-      const suggestions = Array.isArray(data) ? data : (data.directives || []);
-      
-      interface ApiSuggestion {
-        id?: number;
-        adam_id?: string;
-        title?: string;
-        directive_text?: string;
-        text?: string;
-        due_date?: string;
-        deadline?: string;
-        status?: string;
-        is_completed?: boolean;
-        assignees?: string;
-        responsible_entity?: string;
-        entity?: string;
-        meeting_id?: number;
-        created_date?: string;
-        mod_date?: string;
-        created_at?: string;
-        updated_at?: string;
-        completed_at?: string;
-      }
-      
-      const formattedSuggestions = suggestions.map((item: ApiSuggestion, index: number) => ({
-        id: `ai-${item.id || item.adam_id || Date.now()}-${index}`,
-        directive_text: item.title || item.directive_text || item.text || '',
-        responsible_entity: (() => {
-          // Parse assignees if it's a JSON string
-          if (item.assignees && typeof item.assignees === 'string') {
-            try {
-              const assigneesArray = JSON.parse(item.assignees);
-              return Array.isArray(assigneesArray) ? assigneesArray.join(', ') : item.assignees;
-            } catch {
-              return item.assignees;
-            }
-          }
-          return item.responsible_entity || item.entity || '';
-        })(),
-        due_date: (() => {
-          // Extract date from ISO string (e.g., "2025-06-16T00:00:00" -> "2025-06-16")
-          const dateStr = item.due_date || item.deadline || '';
-          if (dateStr && dateStr.includes('T')) {
-            return dateStr.split('T')[0];
-          }
-          return dateStr;
-        })(),
-        status: item.status || (item.is_completed ? 'COMPLETED' : 'PENDING'),
+      const suggestedFromAllResults = (results || []).flatMap((r) => r.suggested_actions_written || []);
+
+      const formattedSuggestions = suggestedFromAllResults.map((item, index) => ({
+        id: `ai-match-${item.uep_id}-${index}-${item.title?.slice(0, 20) ?? ''}`,
+        directive_text: item.title ?? '',
+        responsible_entity: '',
+        due_date: '',
+        status: item.status ?? (item.success ? 'written' : 'pending'),
       }));
 
       setAiDirectivesSuggestions(formattedSuggestions);
-      
-      // Initialize editable state
+
       const editableState: Record<string, {
         directive_text: string;
         responsible_entity: string;
         due_date: string;
         status: string;
       }> = {};
-      formattedSuggestions.forEach((suggestion: {
-        id: string;
-        directive_text: string;
-        responsible_entity: string;
-        due_date: string;
-        status: string;
-      }) => {
+      formattedSuggestions.forEach((suggestion) => {
         editableState[suggestion.id] = {
           directive_text: suggestion.directive_text,
           responsible_entity: suggestion.responsible_entity,
@@ -436,8 +398,7 @@ const ContentRequestDetail: React.FC = () => {
       });
       setEditableAiDirectives(editableState);
     } catch (error) {
-      console.error('Error fetching AI directives:', error);
-      // TODO: Show error toast
+      console.error('Error fetching AI match suggestions:', error);
     } finally {
       setIsLoadingAiSuggestions(false);
     }
@@ -1907,25 +1868,27 @@ const ContentRequestDetail: React.FC = () => {
                     </svg>
                     <span>إضافة توجيه</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleRequestAiDirectives}
-                    disabled={isLoadingAiSuggestions}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    {isLoadingAiSuggestions ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
-                        <span>جاري التحميل...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 text-[#008774]" />
-                        <span>اقتراح بالذكاء الاصطناعي</span>
-                      </>
-                    )}
-                  </button>
+                  {contentRequest?.ext_id != null && (
+                    <button
+                      type="button"
+                      onClick={handleRequestAiDirectives}
+                      disabled={isLoadingAiSuggestions || hasSuggestedActions}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
+                      {isLoadingAiSuggestions ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
+                          <span>جاري التحميل...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-[#008774]" />
+                          <span>اقتراح بالذكاء الاصطناعي</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
               

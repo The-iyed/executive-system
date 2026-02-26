@@ -647,7 +647,7 @@ const MeetingDetail: React.FC = () => {
 
   const queryClient = useQueryClient();
   
-  // Clear content officer notes query cache when tab is not active to prevent stale data
+  // Clear content-consultation tab query caches when tab is not active to prevent stale data
   React.useEffect(() => {
     if (activeTab !== 'content-consultation') {
       queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id, 'CONTENT'] });
@@ -3394,7 +3394,7 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Content Officer Notes Tab – الملخص التنفيذي + الملاحظات (preview) + notes table */}
+          {/* Content Officer Notes Tab – العرض التقديمي + الملاحظات (preview) + notes table */}
           {activeTab === 'content-consultation' && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
               {isLoadingContentOfficerNotes ? (
@@ -3403,10 +3403,10 @@ const MeetingDetail: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* الملخص التنفيذي – preview only (text + file preview cards for is_executive_summary attachments) */}
+                  {/* العرض التقديمي – preview only (text + file preview cards for is_executive_summary attachments) */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium text-gray-700 text-right">
-                      الملخص التنفيذي
+                      العرض التقديمي
                     </h3>
                     {(() => {
                       const textSummary =

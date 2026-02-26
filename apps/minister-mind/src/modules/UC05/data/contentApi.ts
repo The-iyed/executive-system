@@ -184,6 +184,12 @@ export interface ContentRequestDetailResponse {
   meeting_classification_type: string;
   meeting_confidentiality: string;
   sector: string;
+  /** When present, AI suggestion button is shown; when missing, it is hidden. */
+  ext_id?: number | string | null;
+  /** When present, used to fetch suggested-actions (execution-system meeting id). Matches GET /api/content/assigned-requests/:id response. */
+  meeting_id?: string | null;
+  /** When present, linked meeting from execution-system; use meeting.id or meeting.meeting_id for suggested-actions. */
+  meeting?: { id?: string; meeting_id?: string } | null;
 }
 
 export const getContentRequestById = async (
