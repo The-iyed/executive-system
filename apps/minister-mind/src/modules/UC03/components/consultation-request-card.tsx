@@ -131,24 +131,24 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
         )}
 
         {/* Info pills - each pill takes full width */}
-        <div className="flex flex-col gap-2.5 w-full">
+        <div className="flex gap-2.5 w-full">
           <CardTooltip text={request.requestNumber}>
-            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
                 <span className="text-[12px] text-[#344054] leading-4">{request.requestNumber}</span>
               </div>
             </div>
           </CardTooltip>
           <CardTooltip text={request.date}>
-            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
                 <span className="text-[12px] text-[#344054] leading-4">{request.date}</span>
               </div>
@@ -156,11 +156,11 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
           </CardTooltip>
           {request.meetingCategory && (
             <CardTooltip text={request.meetingCategory}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{request.meetingCategory}</span>
                 </div>
@@ -169,11 +169,11 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
           )}
           {request.location && (
             <CardTooltip text={request.location}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{request.location}</span>
                 </div>
@@ -182,11 +182,11 @@ export const ConsultationRequestCard: React.FC<ConsultationRequestCardProps> = (
           )}
           {request.meetingDate && (
             <CardTooltip text={request.meetingDate}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{request.meetingDate}</span>
                 </div>
