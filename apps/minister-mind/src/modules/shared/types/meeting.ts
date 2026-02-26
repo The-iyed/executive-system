@@ -272,7 +272,7 @@ export interface GetConsultantsParams {
 }
 
 export interface RequestSchedulingConsultationRequest {
-  consultant_user_id: string;
+  consultant_user_ids: string[];
   consultation_question: string;
   is_draft?: boolean;
 }
