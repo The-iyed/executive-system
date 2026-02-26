@@ -2318,6 +2318,7 @@ const MeetingDetail: React.FC = () => {
               </div>
 
               {/* متى سيتم إرفاق العرض؟ – card */}
+              {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
                   <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
@@ -2336,7 +2337,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </div>
+              </div>}
 
               {/* مرفقات اختيارية – card */}
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
@@ -2767,7 +2768,7 @@ const MeetingDetail: React.FC = () => {
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                   </div>
                                   {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                       <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                       {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].external_email}</span>}
                                     </div>
@@ -2783,7 +2784,7 @@ const MeetingDetail: React.FC = () => {
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                       <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                       {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].mobile}</span>}
                                     </div>
@@ -2967,7 +2968,7 @@ const MeetingDetail: React.FC = () => {
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                     <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                     {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
                                   </div>
@@ -2976,7 +2977,7 @@ const MeetingDetail: React.FC = () => {
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                     <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                     {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
                                   </div>
@@ -3069,7 +3070,7 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && (
                 <div className="flex justify-end">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -3219,7 +3220,7 @@ const MeetingDetail: React.FC = () => {
           {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING  && (
                 <div className="flex justify-end">
                   <button
                     type="button"
@@ -3335,7 +3336,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-4 w-full" dir="rtl">
               <div className="flex flex-row items-center justify-between gap-4">
                 <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة</h2>
-                <button
+                 <button
                   type="button"
                   onClick={() => setIsAddDirectiveOpen(true)}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors font-medium"

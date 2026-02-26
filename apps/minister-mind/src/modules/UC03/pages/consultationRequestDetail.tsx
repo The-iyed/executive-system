@@ -208,7 +208,7 @@ const ConsultationRequestDetail: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 overflow-y-auto p-6 pb-28">
+      <div className="p-6">
         {/* Main Container */}
         <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
@@ -243,16 +243,19 @@ const ConsultationRequestDetail: React.FC = () => {
               onTabChange={setActiveTab}
             />
           </div>
+        </div>
+      </div>
 
-          {/* Submit Consultation Tab */}
-          {activeTab === 'submit-consultation' && (
-            <div className="flex flex-col gap-6">
-              {/* Consultation Question Section */}
-              <div
-                className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
-                
-              >
-                <div className="flex flex-col items-start p-0 gap-[10px] w-full">
+      {/* Tab Content Container */}
+      <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
+        {/* Submit Consultation Tab */}
+        {activeTab === 'submit-consultation' && (
+          <div className="flex flex-col gap-6">
+            {/* Consultation Question Section */}
+            <div
+              className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] mx-auto"
+            >
+              <div className="flex flex-col items-start p-0 gap-[10px] w-full">
                   <div className="flex flex-col items-start p-0 gap-[4px] w-full">
                     {/* Title */}
                     <h2
@@ -745,7 +748,7 @@ const ConsultationRequestDetail: React.FC = () => {
                               )}
                             </div>
                             <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right">
+                              <span className="text-sm font-medium text-[#344054] text-right whitespace-nowrap overflow-hidden text-ellipsis">
                                 {att.file_name}
                               </span>
                               <span className="text-sm text-[#475467] text-right">
@@ -1066,6 +1069,7 @@ const ConsultationRequestDetail: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
 
         {/* Submit Consultation Modal */}
         <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
@@ -1162,10 +1166,7 @@ const ConsultationRequestDetail: React.FC = () => {
 
           </DialogContent>
         </Dialog>
-        
-        </div>
       </div>
-    </div>
   );
 };
 
