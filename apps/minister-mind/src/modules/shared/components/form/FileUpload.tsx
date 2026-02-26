@@ -92,6 +92,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const handleFileSelect = useCallback((selectedFile: File) => {
+    if (disabled) return;
     const validationError = validateFile(selectedFile);
     if (validationError) {
       return;
@@ -135,9 +136,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }, 200);
       }
     }
-  }, [isMultiple, onFileSelect, onFilesSelect, files, maxFileSize, acceptedTypes, acceptedExtensions, showProgress]);
+  }, [disabled, isMultiple, onFileSelect, onFilesSelect, files, maxFileSize, acceptedTypes, acceptedExtensions, showProgress]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
       if (isMultiple) {
@@ -152,15 +154,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleReplaceClick = useCallback(
     (existingId: string) => {
-      if (!onExistingFileReplace) return;
+      if (disabled || !onExistingFileReplace) return;
       setPendingReplaceId(existingId);
       replaceInputRef.current?.click();
     },
-    [onExistingFileReplace]
+    [disabled, onExistingFileReplace]
   );
 
   const handleReplaceInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (disabled) return;
       const selectedFiles = Array.from(e.target.files || []);
       const id = pendingReplaceId;
       setPendingReplaceId(null);
@@ -175,7 +178,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onExistingFileReplace(id, file);
       }
     },
-    [pendingReplaceId, onExistingFileReplace, maxFileSize, acceptedTypes, acceptedExtensions]
+    [disabled, pendingReplaceId, onExistingFileReplace, maxFileSize, acceptedTypes, acceptedExtensions]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -194,6 +197,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+    if (disabled) return;
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length > 0) {
       if (isMultiple) {
@@ -206,7 +210,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         handleFileSelect(droppedFiles[0]);
       }
     }
-  }, [handleFileSelect, isMultiple]);
+  }, [disabled, handleFileSelect, isMultiple]);
 
   const handleBrowseClick = () => {
     if (disabled) return;
@@ -214,6 +218,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const handleRemoveFile = (fileToRemove: File) => {
+    if (disabled) return;
     if (isMultiple && onFilesSelect) {
       const newFiles = (files || []).filter(f => f !== fileToRemove);
       onFilesSelect(newFiles);
@@ -275,7 +280,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(0);
 
   return (
-    <div className={cn("w-full flex justify-center", containerClassName)}>
+    <div className={cn("w-full flex justify-center", disabled && "pointer-events-none select-none", containerClassName)}>
       <div className={cn("w-full max-w-[1200px] flex flex-col gap-4", className)}>
         <label className="text-right text-[14px] font-medium text-[#344054]">
           {label}
@@ -289,7 +294,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDrop={disabled ? undefined : handleDrop}
           className={cn(
             'relative border-2 border-dashed rounded-lg p-12 text-center transition-colors',
-            disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+            disabled ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer',
             !disabled && (isDragging
               ? 'border-[#009883] bg-[#009883]/5'
               : currentFiles.length > 0
@@ -400,7 +405,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                           ملف موجود
                         </span>
                       )}
-                      {onExistingFileReplace && (
+                      {onExistingFileReplace && !disabled && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -427,11 +432,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                           </svg>
                         </button>
                       )}
-                      {isReplaced && onClearReplacement && (
+                      {isReplaced && onClearReplacement && !disabled && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (disabled) return;
                             onClearReplacement(existingFile.id);
                           }}
                           className="text-[12px] text-[#667085] hover:text-[#344054] border border-[#D0D5DD] px-2 py-1 rounded"
@@ -439,11 +445,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                           إلغاء الاستبدال
                         </button>
                       )}
-                      {onExistingFileDelete && (
+                      {onExistingFileDelete && !disabled && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (disabled) return;
                             onExistingFileDelete(existingFile.id);
                           }}
                           className="text-[#667085] hover:text-[#344054] transition-colors"
@@ -496,6 +503,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                         <p className="text-[12px] text-[#667085]">{formatFileSize(currentFile.size)}</p>
                       </div>
                     </div>
+                    {!disabled && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -520,6 +528,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                         />
                       </svg>
                     </button>
+                    )}
                   </div>
                   {/* Progress Bar */}
                   {showProgress && (

@@ -8,7 +8,7 @@ export interface FormInputProps extends Omit<React.ComponentProps<'input'>, 'siz
 }
 
 export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
-  ({ className, error, fullWidth = false, style, ...props }, ref) => {
+  ({ className, error, fullWidth = false, style, onChange: propsOnChange, onInput: propsOnInput, ...props }, ref) => {
     return (
       <Input
         ref={ref}
@@ -16,6 +16,7 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           'text-right',
           'placeholder:text-[#667085]',
           'focus-visible:outline-none focus-visible:border-[#008774]',
+          props.disabled && 'cursor-not-allowed pointer-events-none select-none',
           error && 'border-[#D13C3C]',
           !error && 'focus-visible:border-[#008774]',
           fullWidth && 'w-full',
@@ -35,6 +36,23 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           color: props.value ? '#344054' : '#667085',
           width: fullWidth ? '100%' : '534.5px',
           ...style,
+        }}
+        disabled={props.disabled}
+        readOnly={props.readOnly || props.disabled}
+        onChange={(e) => {
+          if (props.disabled) {
+            // Guard: even if user removes disabled/readOnly via devtools, revert value and block update
+            e.target.value = String(props.value ?? '');
+            return;
+          }
+          propsOnChange?.(e);
+        }}
+        onInput={(e) => {
+          if (props.disabled) {
+            (e.target as HTMLInputElement).value = String(props.value ?? '');
+            return;
+          }
+          propsOnInput?.(e);
         }}
         {...props}
       />
