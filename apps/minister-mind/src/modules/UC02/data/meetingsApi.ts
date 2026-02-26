@@ -1021,6 +1021,34 @@ export const getContentOfficerNotesRecords = async (
   return response.data;
 };
 
+/** Suggested actions from execution-system for استشارة المحتوى tab – GET /api/v1/business-cards/suggested-actions */
+export interface SuggestedActionsParams {
+  skip?: number;
+  limit?: number;
+}
+
+export interface SuggestedActionsResponse {
+  items?: unknown[];
+  total?: number;
+  skip?: number;
+  limit?: number;
+  [key: string]: unknown;
+}
+
+export const getSuggestedActions = async (
+  meetingId: string,
+  params: SuggestedActionsParams = {}
+): Promise<SuggestedActionsResponse> => {
+  const queryParams = new URLSearchParams();
+  queryParams.set('meeting_id', meetingId);
+  if (params.skip !== undefined) queryParams.set('skip', String(params.skip));
+  if (params.limit !== undefined) queryParams.set('limit', String(params.limit));
+  const response = await axiosInstance.get<SuggestedActionsResponse>(
+    `/api/v1/business-cards/suggested-actions?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
 // Evaluate Readiness API
 export interface EvaluateReadinessResponse {
   readiness: string;
