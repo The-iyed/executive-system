@@ -3490,10 +3490,10 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   )}
 
-                  {/* العرض التقديمي – preview only (text + file preview cards for is_executive_summary attachments) */}
+                  {/* الملخص التنفيذي – preview only (text + file preview cards for is_executive_summary attachments; attachments with is_executive_summary false are not shown) */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium text-gray-700 text-right">
-                      العرض التقديمي
+                      الملخص التنفيذي
                     </h3>
                     {(() => {
                       const textSummary =
