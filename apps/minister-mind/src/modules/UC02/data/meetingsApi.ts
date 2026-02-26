@@ -186,6 +186,8 @@ export interface MeetingApiResponse {
   sector: string;
   description?: string | null;
   note?: string | null;
+  /** Content approval directives (استشارة المحتوى tab). */
+  content_approval_directives?: string[];
 }
 
 export interface MeetingsListResponse {
