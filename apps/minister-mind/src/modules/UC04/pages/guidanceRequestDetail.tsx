@@ -38,6 +38,36 @@ function formatRelatedGuidance(value: unknown): string {
   return '-';
 }
 
+/** Safely render notes (string / object / array from API) */
+function getNotesText(...candidates: unknown[]): string {
+  const extract = (value: unknown): string | null => {
+    if (value == null) return null;
+    if (typeof value === 'string') {
+      const t = value.trim();
+      return t.length ? t : null;
+    }
+    if (Array.isArray(value)) {
+      const parts = value.map((v) => extract(v)).filter(Boolean) as string[];
+      return parts.length ? parts.join('\n') : null;
+    }
+    if (typeof value === 'object') {
+      const v = value as Record<string, unknown>;
+      if (typeof v.text === 'string' && v.text.trim()) return v.text.trim();
+      if (typeof v.note === 'string' && v.note.trim()) return v.note.trim();
+      if (typeof v.content === 'string' && v.content.trim()) return v.content.trim();
+      if (typeof v.value === 'string' && v.value.trim()) return v.value.trim();
+      if (typeof v.notes === 'string' && v.notes.trim()) return v.notes.trim();
+      return null;
+    }
+    return null;
+  };
+  for (const c of candidates) {
+    const t = extract(c);
+    if (t) return t;
+  }
+  return '-';
+}
+
 const GuidanceRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -987,7 +1017,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       </div>
                     ) : (
                       <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {typeof meetingRequest.general_notes === 'string' ? (meetingRequest.general_notes || meetingRequest.content_officer_notes || '-') : (meetingRequest.content_officer_notes || '-')}
+                        {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                       </div>
                     )}
                   </div>
@@ -1499,7 +1529,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       </p>
                     </div>
                   )}
-                  {meetingRequest.general_notes && (
+                  {(getNotesText(meetingRequest.general_notes) !== '-' || getNotesText(meetingRequest.content_officer_notes) !== '-') && (
                     <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                       <label
                         className="text-sm font-semibold text-gray-900 text-right"
@@ -1511,23 +1541,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
-                        {meetingRequest.general_notes}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.content_officer_notes && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        ملاحظات مسؤول المحتوى
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        {meetingRequest.content_officer_notes}
+                        {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                       </p>
                     </div>
                   )}
