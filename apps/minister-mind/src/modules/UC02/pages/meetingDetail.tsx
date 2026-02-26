@@ -3469,6 +3469,20 @@ const MeetingDetail: React.FC = () => {
                 </div>
               ) : (
                 <>
+                  {/* توجيهات اعتماد المحتوى – from meeting details response (content_approval_directives) */}
+                  {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-sm font-medium text-gray-700 text-right">
+                        توجيهات اعتماد المحتوى
+                      </h3>
+                      <ul className="w-full list-disc list-inside space-y-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467]">
+                        {meeting.content_approval_directives.map((directive, index) => (
+                          <li key={index}>{directive}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* العرض التقديمي – preview only (text + file preview cards for is_executive_summary attachments) */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium text-gray-700 text-right">
