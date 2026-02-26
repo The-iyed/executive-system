@@ -112,10 +112,23 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
             </h3>
           </CardTooltip>
           <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
+          {onAction && actionLabel && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAction(); }}
+                disabled={actionLoading}
+                className="flex items-center cursor-pointer gap-1.5 px-2 py-[2px] rounded-xl bg-[#048F86] hover:bg-[#037a72] text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                style={fontStyle}
+              >
+                <span>{actionLabel}</span>
+                <Send className="w-3.5 h-3.5 rotate-[-90deg] flex-shrink-0" />
+              </button>
+            )}
             {(meeting.statusLabel != null && meeting.status != null) && !hideStatus && (
               <StatusBadge status={meeting.status} label={meeting.statusLabel} />
             )}
-            
+            {/* Action Button */}
+          
           </div>
         </div>
 
@@ -134,14 +147,14 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         </CardTooltip>
 
         {/* Info pills – each pill takes full width */}
-        <div className="flex flex-col gap-2.5 w-full">
+        <div className="flex gap-2.5 w-full">
           {meeting.requestNumber && (
             <CardTooltip text={meeting.requestNumber}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
                   <span className="text-[12px] text-[#344054] leading-4">{meeting.requestNumber}</span>
                 </div>
@@ -149,11 +162,11 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
             </CardTooltip>
           )}
           <CardTooltip text={meeting.date}>
-            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
                 <span className="text-[12px] text-[#344054] leading-4">{meeting.date}</span>
               </div>
@@ -161,11 +174,11 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           </CardTooltip>
           {meeting.meetingCategory && (
             <CardTooltip text={meeting.meetingCategory}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingCategory}</span>
                 </div>
@@ -174,11 +187,11 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           )}
           {meeting.location && (
             <CardTooltip text={getLocationLabel(meeting.location) ?? meeting.location}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{getLocationLabel(meeting.location)}</span>
                 </div>
@@ -187,11 +200,11 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           )}
           {meeting.meetingDate && (
             <CardTooltip text={meeting.meetingDate}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
                   <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingDate}</span>
                 </div>
@@ -199,20 +212,6 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
             </CardTooltip>
           )}
         </div>
-
-        {/* Action Button (e.g. إرسال المسودة) */}
-        {onAction && actionLabel && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onAction(); }}
-            disabled={actionLoading}
-            className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            style={fontStyle}
-          >
-            <span>{actionLabel}</span>
-            <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
-          </button>
-        )}
       </div>
 
       {/* Hover Action Bar - glass overlay from left */}

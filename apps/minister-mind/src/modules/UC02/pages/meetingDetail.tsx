@@ -384,10 +384,10 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
-  // Scheduling consultation modal state
+  // Scheduling consultation modal state (multiple consultants)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [consultationForm, setConsultationForm] = useState({
-    consultant_user_id: '',
+    consultant_user_ids: [] as string[],
     consultation_question: '',
     search: '',
   });
@@ -1001,19 +1001,22 @@ const MeetingDetail: React.FC = () => {
 
   const consultants: ConsultantUser[] = consultantsResponse?.items || [];
 
-  // Scheduling consultation mutation
+  // Scheduling consultation mutation (single request with consultant_user_ids array)
   const consultationMutation = useMutation({
     mutationFn: (payload: {
-      consultant_user_id: string;
+      consultant_user_ids: string[];
       consultation_question: string;
-      is_draft?: boolean;
-    }) => requestSchedulingConsultation(id!, payload),
+    }) =>
+      requestSchedulingConsultation(id!, {
+        consultant_user_ids: payload.consultant_user_ids,
+        consultation_question: payload.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       queryClient.invalidateQueries({ queryKey: ['consultation-records', id, 'SCHEDULING'] });
       setIsConsultationModalOpen(false);
       setConsultationForm({
-        consultant_user_id: '',
+        consultant_user_ids: [],
         consultation_question: '',
         search: '',
       });
@@ -1022,12 +1025,19 @@ const MeetingDetail: React.FC = () => {
 
   const handleConsultationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!consultationForm.consultant_user_id) return;
+    if (consultationForm.consultant_user_ids.length === 0) return;
     consultationMutation.mutate({
-      consultant_user_id: consultationForm.consultant_user_id,
-      consultation_question:
-        consultationForm.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
+      consultant_user_ids: consultationForm.consultant_user_ids,
+      consultation_question: consultationForm.consultation_question,
     });
+  };
+
+  const toggleConsultantSelection = (userId: string) => {
+    setConsultationForm((prev) =>
+      prev.consultant_user_ids.includes(userId)
+        ? { ...prev, consultant_user_ids: prev.consultant_user_ids.filter((id) => id !== userId) }
+        : { ...prev, consultant_user_ids: [...prev.consultant_user_ids, userId] }
+    );
   };
 
   // Return for info mutation (POST with notes + editable_fields)
@@ -1344,6 +1354,35 @@ const MeetingDetail: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
+
+  // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
+  useEffect(() => {
+    if (!isScheduleModalOpen || !scheduleForm.selected_time_slot_id || !meeting) return;
+    const slotId = scheduleForm.selected_time_slot_id;
+    if (!slotId) return;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot,
+    ].filter(Boolean);
+    const selectedSlot = allSlots.find((s: any) => s?.id === slotId);
+    if (!selectedSlot?.slot_start) return;
+    const toDatetimeLocal = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+    const startLocal = toDatetimeLocal(selectedSlot.slot_start);
+    const endLocal = selectedSlot.slot_end ? toDatetimeLocal(selectedSlot.slot_end) : (() => {
+      const start = new Date(selectedSlot.slot_start);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      return toDatetimeLocal(end.toISOString());
+    })();
+    setScheduleForm((prev) => ({
+      ...prev,
+      scheduled_at: startLocal,
+      scheduled_end_at: endLocal,
+    }));
+  }, [isScheduleModalOpen, scheduleForm.selected_time_slot_id, meeting]);
 
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
@@ -1835,7 +1874,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
                 <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('is_on_behalf_of', 'هل نطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
+                  {renderFieldLabel('is_on_behalf_of', 'هل تطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <div className="flex items-center gap-2 w-full justify-start">
                     <span className="text-[10.23px] text-[#667085]">{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
@@ -2127,11 +2166,36 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 text-[#344054]">الملاحظة</label>
+                  <label className="text-sm font-medium text-gray-700 text-[#344054]">ملاحظات</label>
                   <div className="w-full min-h-11 px-3 py-2 bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085] whitespace-pre-wrap">
                     {meeting?.note ?? '—'}
                   </div>
                 </div>
+              </div>
+              {/* الأهداف – same structure as UC01 preview / table like agenda */}
+              <div className="flex flex-col gap-[10px] w-full">
+                <div className="text-[12.69px] leading-[38px] text-[#101828]">
+                  {renderFieldLabel('objectives', 'الأهداف', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
+                </div>
+                {(contentForm.objectives?.length ?? 0) > 0 ? (
+                  <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
+                    <DataTable
+                      columns={[
+                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]">{i + 1}</span> },
+                        { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
+                          <Input type="text" value={item.objective} onChange={(e) => { const n = [...(contentForm.objectives || [])]; n[index] = { ...item, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" placeholder="الهدف" />
+                        ) },
+                        { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
+                          <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: (p.objectives || []).filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5] disabled:opacity-60 disabled:cursor-not-allowed" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
+                        ) },
+                      ] as TableColumn<any>[]}
+                      data={contentForm.objectives || []}
+                      className="border-none"
+                      rowPadding="py-3"
+                    />
+                  </div>
+                ) : null}
+                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: [...(p.objectives || []), { id: `obj-${Date.now()}`, objective: '' }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[200px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة هدف</button>
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
               <div className="flex flex-col gap-[8px] w-full">
@@ -2318,6 +2382,7 @@ const MeetingDetail: React.FC = () => {
               </div>
 
               {/* متى سيتم إرفاق العرض؟ – card */}
+              {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
                   <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
@@ -2336,7 +2401,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </div>
+              </div>}
 
               {/* مرفقات اختيارية – card */}
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
@@ -2768,7 +2833,7 @@ const MeetingDetail: React.FC = () => {
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                   </div>
                                   {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                       <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                       {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].external_email}</span>}
                                     </div>
@@ -2784,7 +2849,7 @@ const MeetingDetail: React.FC = () => {
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                       <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                       {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].mobile}</span>}
                                     </div>
@@ -2968,7 +3033,7 @@ const MeetingDetail: React.FC = () => {
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                     <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                     {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
                                   </div>
@@ -2977,7 +3042,7 @@ const MeetingDetail: React.FC = () => {
                                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
                                     <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                     {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
                                   </div>
@@ -3070,7 +3135,7 @@ const MeetingDetail: React.FC = () => {
           {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && (
                 <div className="flex justify-end">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -3220,7 +3285,7 @@ const MeetingDetail: React.FC = () => {
           {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING  && (
                 <div className="flex justify-end">
                   <button
                     type="button"
@@ -3336,7 +3401,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-4 w-full" dir="rtl">
               <div className="flex flex-row items-center justify-between gap-4">
                 <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة</h2>
-                <button
+                 <button
                   type="button"
                   onClick={() => setIsAddDirectiveOpen(true)}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors font-medium"
@@ -4071,16 +4136,16 @@ const MeetingDetail: React.FC = () => {
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_id: '', consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_ids: [], consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={!consultationForm.consultant_user_id || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {!consultationForm.consultant_user_id ? 'اختر المستشار' : 'طلب استشارة'}
+                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : 'طلب استشارة'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -4089,19 +4154,36 @@ const MeetingDetail: React.FC = () => {
       >
         <form id="consultation-form" onSubmit={handleConsultationSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">المستشار</label>
-            <Select value={consultationForm.consultant_user_id} onValueChange={(value) => setConsultationForm((prev) => ({ ...prev, consultant_user_id: value }))}>
-              <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse">
-                    <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
-                  </SelectTrigger>
-                  <SelectContent dir="rtl">
-                    <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
-                  <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-9 text-right" />
-                    </div>
-                {consultants.length === 0 && !isLoadingConsultants ? <SelectItem disabled value="__no_results__">لا توجد نتائج</SelectItem> : consultants.map((user) => <SelectItem key={user.id} value={user.id}>{`${user.first_name} ${user.last_name} - ${user.email}`}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <label className="text-sm font-medium text-gray-700 text-right">المستشارون</label>
+            <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-10 text-right border border-gray-300 rounded-lg" />
+            <div className="border border-gray-300 rounded-lg bg-white max-h-[220px] overflow-y-auto dir-rtl">
+              {isLoadingConsultants ? (
+                <div className="py-6 text-center text-sm text-gray-500">جاري التحميل...</div>
+              ) : consultants.length === 0 ? (
+                <div className="py-6 text-center text-sm text-gray-500">لا توجد نتائج</div>
+              ) : (
+                <ul className="py-1">
+                  {consultants.map((user) => (
+                    <li key={user.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+                      <input
+                        type="checkbox"
+                        id={`consultant-${user.id}`}
+                        checked={consultationForm.consultant_user_ids.includes(user.id)}
+                        onChange={() => toggleConsultantSelection(user.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
+                      />
+                      <label htmlFor={`consultant-${user.id}`} className="flex-1 text-right text-sm text-gray-700 cursor-pointer">
+                        {user.first_name} {user.last_name} <span className="text-gray-500">– {user.email}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {consultationForm.consultant_user_ids.length > 0 && (
+              <p className="text-xs text-gray-500 text-right">تم اختيار {consultationForm.consultant_user_ids.length} مستشار</p>
+            )}
+          </div>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة</label>
             <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" />
