@@ -35,11 +35,14 @@ export const FormSwitch: React.FC<FormSwitchProps> = ({
           role="switch"
           aria-checked={checked}
           disabled={disabled}
-          onClick={() => !disabled && onCheckedChange(!checked)}
+          onClick={() => {
+            if (disabled) return;
+            onCheckedChange(!checked);
+          }}
           className={cn(
             'relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#008774] focus:ring-offset-2',
             checked ? 'bg-[#008774]' : 'bg-[#D0D5DD]',
-            disabled && 'opacity-50 cursor-not-allowed'
+            disabled && 'opacity-50 cursor-not-allowed pointer-events-none select-none'
           )}
           style={{ padding: '2px' }}
         >
