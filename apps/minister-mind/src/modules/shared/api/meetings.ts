@@ -53,3 +53,47 @@ export const getWaitingList = async (
   );
   return response.data;
 };
+
+// --- Meetings match (AI suggestions) ---
+export interface MeetingMatchSuggestedActionWritten {
+  uep_id: string;
+  title: string;
+  status: string;
+  success: boolean;
+  error: string | null;
+}
+
+export interface MeetingMatchResultItem {
+  attachment_id: string;
+  attachment_version: number;
+  doc_key: string;
+  meeting_id: number;
+  extracted_content_preview: string;
+  presentation_summary: string;
+  total_historical_actions: number;
+  total_matched: number;
+  matched_actions: Array<{
+    action_id: number;
+    action_title: string;
+    similarity_level: string;
+    similarity_reason: string;
+    relevance_keywords: string[];
+  }>;
+  suggested_actions_written: MeetingMatchSuggestedActionWritten[];
+  matching_summary: string;
+  processed_at: string;
+}
+
+export interface MeetingMatchResponse {
+  results: MeetingMatchResultItem[];
+}
+
+export const postMeetingsMatch = async (
+  meetingRequestId: string
+): Promise<MeetingMatchResponse> => {
+  const response = await axiosInstance.post<MeetingMatchResponse>(
+    '/api/meetings/match',
+    { meeting_request_id: meetingRequestId }
+  );
+  return response.data;
+};

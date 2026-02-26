@@ -43,15 +43,21 @@ export const FormSelect: React.FC<FormSelectProps> = ({
   onFocus,
   loading = false,
 }) => {
+  const isDisabled = disabled || loading;
+
   return (
     <Select
       value={value}
-      onValueChange={onValueChange}
+      onValueChange={(newValue) => {
+        // Guard: even if user removes disabled via devtools, ignore value change
+        if (isDisabled) return;
+        onValueChange?.(newValue);
+      }}
       onOpenChange={(open) => {
         if (open) onFocus?.();
         else onBlur?.();
       }}
-      disabled={disabled || loading}
+      disabled={isDisabled}
     >
       <SelectTrigger
         className={cn(
@@ -61,6 +67,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
           'focus:outline-none focus:border-[#008774]',
           error && 'border-[#D13C3C]',
           !error && 'focus:border-[#008774]',
+          isDisabled && 'cursor-not-allowed pointer-events-none select-none',
           className
         )}
       >
