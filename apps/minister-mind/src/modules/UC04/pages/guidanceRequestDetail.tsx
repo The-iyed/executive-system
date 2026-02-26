@@ -305,7 +305,7 @@ const GuidanceRequestDetail: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 overflow-y-auto p-6 pb-28">
+      <div className="p-6">
         {/* Main Container */}
         <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
@@ -340,13 +340,17 @@ const GuidanceRequestDetail: React.FC = () => {
               onTabChange={setActiveTab}
             />
           </div>
+        </div>
+      </div>
 
+      {/* Tab Content Container */}
+      <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {/* Guidance Request Tab */}
           {activeTab === 'guidance-request' && (
             <div className="flex flex-col gap-6">
               {/* Consultation Question Section - hidden for EXECUTIVE_OFFICE_MANAGER (shown in directives-log tab instead) */}
              {!isExecutiveManager && <div
-                className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
+                className="flex flex-col justify-start items-end p-[10px] gap-[10px] w-full max-w-[1321px] h-[265px] mx-auto"
                 style={{ fontFamily: "'Almarai', sans-serif" }}
               >
                 <div className="flex flex-col items-start p-0 gap-[10px] w-full">
@@ -405,7 +409,7 @@ const GuidanceRequestDetail: React.FC = () => {
                 </div>
               </div>}
                   {/* Request Info Section */}
-                  <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+                  <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto">
                 <div className="flex flex-row items-center justify-between gap-4">
                   <h2
                     className="text-xl font-bold text-right text-[#101828]"
@@ -1717,7 +1721,7 @@ const GuidanceRequestDetail: React.FC = () => {
               {/* Consultation Question Section - shown here for EXECUTIVE_OFFICE_MANAGER */}
               {!isExceptionMode && isExecutiveManager && (
                 <div
-                  className="flex flex-col justify-center items-end p-[10px_34px_10px_10px] gap-[10px] w-full max-w-[1321px] h-[265px] bg-white border border-[#E6E6E6] rounded-2xl mx-auto"
+                  className="flex flex-col justify-start items-end p-[10px] gap-[10px] w-full max-w-[1321px] h-[265px] mx-auto"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   <div className="flex flex-col items-start p-0 gap-[10px] w-full">
@@ -2435,7 +2439,6 @@ const GuidanceRequestDetail: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
 
       {/* Submit Guidance Modal */}
       <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
