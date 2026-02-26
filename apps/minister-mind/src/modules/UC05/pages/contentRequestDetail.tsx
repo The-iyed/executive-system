@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -1054,22 +1054,11 @@ const ContentRequestDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      أجندة الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.agenda_items && contentRequest.agenda_items.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-1">
-                          {contentRequest.agenda_items.map((item) => (
-                            <li key={item.id}>{item.agenda_item}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        '-'
-                      )}
-                    </div>
-                  </div>
+                  <AgendaPreviewTable
+                    title="أجندة الاجتماع"
+                    items={contentRequest.agenda_items ?? undefined}
+                    dir="rtl"
+                  />
 
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
