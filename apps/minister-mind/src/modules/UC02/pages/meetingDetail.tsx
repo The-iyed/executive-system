@@ -3469,17 +3469,22 @@ const MeetingDetail: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* توجيهات اعتماد المحتوى – from meeting details response (content_approval_directives) */}
+                  {/* التوجيهات المرتبطة بالاجتماع – from meeting details (content_approval_directives) */}
                   {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 && (
                     <div className="flex flex-col gap-2">
                       <h3 className="text-sm font-medium text-gray-700 text-right">
-                        توجيهات اعتماد المحتوى
+                        التوجيهات المرتبطة بالاجتماع
                       </h3>
-                      <ul className="w-full list-disc list-inside space-y-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467]">
-                        {meeting.content_approval_directives.map((directive, index) => (
-                          <li key={index}>{directive}</li>
-                        ))}
-                      </ul>
+                      <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                        <DataTable
+                          columns={[
+                            { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
+                            { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
+                          ]}
+                          data={meeting.content_approval_directives.map((text) => ({ text }))}
+                          rowPadding="py-3"
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -3679,14 +3684,14 @@ const MeetingDetail: React.FC = () => {
               </div>
               <div className="flex flex-col gap-2">
                 <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة بالاجتماع</h2>
-                {meeting?.related_directive_ids && meeting.related_directive_ids.length > 0 ? (
+                {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 ? (
                   <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                     <DataTable
                       columns={[
-                        { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_row: { id: string }, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span> },
-                        { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]">{row.id}</span> },
+                        { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
+                        { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
                       ]}
-                      data={meeting.related_directive_ids.map((id) => ({ id }))}
+                      data={meeting.content_approval_directives.map((text) => ({ text }))}
                       rowPadding="py-3"
                     />
                   </div>
