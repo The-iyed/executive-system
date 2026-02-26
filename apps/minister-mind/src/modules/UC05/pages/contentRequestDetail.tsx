@@ -553,7 +553,7 @@ const ContentRequestDetail: React.FC = () => {
 
   // Send to scheduling officer mutation (إرسال إلى مسؤول الجدولة)
   const sendToSchedulingMutation = useMutation({
-    mutationFn: async (data: { file: File; notes?: string }) => {
+    mutationFn: async (data: { file: File; notes?: string; directives?: string[] }) => {
       if (!id) throw new Error('Meeting request ID is required');
       return approveContent(id, data);
     },
@@ -562,6 +562,8 @@ const ContentRequestDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['content-requests'] });
       setExecutiveSummaryFile(null);
       setGuidanceNotes('');
+      setAiDirectivesSuggestions([]);
+      setEditableAiDirectives({});
       navigate(PATH.CONTENT_REQUESTS);
     },
     onError: (error) => {
@@ -612,9 +614,16 @@ const ContentRequestDetail: React.FC = () => {
       console.error('Executive summary file is required');
       return;
     }
+    
+    // Prepare directives data - just the text as array of strings
+    const directivesToSend = aiDirectivesSuggestions
+      .map(d => editableAiDirectives[d.id]?.directive_text?.trim())
+      .filter(text => text); // Remove empty strings
+    
     sendToSchedulingMutation.mutate({
       file: executiveSummaryFile,
       notes: guidanceNotes.trim() || undefined,
+      directives: directivesToSend.length > 0 ? directivesToSend : undefined,
     });
     navigate(PATH.CONTENT_REQUESTS);
   };
