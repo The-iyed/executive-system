@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
-import { getStep1EditableMap } from '../utils';
+import { getStep1EditableMap, EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES } from '../utils';
 import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 
 export type Step1ErrorKey = keyof Step1BasicInfoFormData;
@@ -344,6 +344,17 @@ export const useStep1BasicInfo = ({
             delete newErrors.directive_text;
             return newErrors;
           });
+        }
+        // Clear meeting category when switching to EXTERNAL if current category is not allowed for external
+        if (field === 'meetingType' && value === 'EXTERNAL' && prev.meetingCategory) {
+          if (EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES.includes(prev.meetingCategory)) {
+            newData.meetingCategory = '';
+            setErrors((prevErrors) => {
+              const newErrors = { ...prevErrors };
+              delete newErrors.meetingCategory;
+              return newErrors;
+            });
+          }
         }
         // Clear meeting_location when meeting channel is not PHYSICAL (حضوري)
         if (field === 'meetingChannel' && value !== 'PHYSICAL') {
