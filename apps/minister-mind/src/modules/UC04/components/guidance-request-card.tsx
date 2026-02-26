@@ -118,24 +118,24 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
           </CardTooltip>
         )}
 
-        <div className="flex flex-col gap-2.5 w-full">
+        <div className="flex gap-2.5 w-full">
           <CardTooltip text={request.requestNumber}>
-            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0631\u0642\u0645 \u0627\u0644\u0637\u0644\u0628'}</span>
                 <span className="text-[12px] text-[#344054] leading-4">{request.requestNumber}</span>
               </div>
             </div>
           </CardTooltip>
           <CardTooltip text={request.date}>
-            <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0627\u0644\u062A\u0627\u0631\u064A\u062E'}</span>
                 <span className="text-[12px] text-[#344054] leading-4">{request.date}</span>
               </div>
@@ -143,11 +143,11 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
           </CardTooltip>
           {request.meetingCategory && (
             <CardTooltip text={request.meetingCategory}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">{'\u0641\u0626\u0629 \u0627\u0644\u0627\u062C\u062A\u0645\u0627\u0639'}</span>
                   <span className="text-[12px] text-[#344054] leading-4">{request.meetingCategory}</span>
                 </div>
@@ -156,11 +156,11 @@ export const GuidanceRequestCard: React.FC<GuidanceRequestCardProps> = ({
           )}
           {request.meetingDate && (
             <CardTooltip text={request.meetingDate}>
-              <div className="flex flex-row items-center gap-2.5 px-3 py-2 w-full" style={pillStyle}>
+              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
                   <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">{'\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0627\u062C\u062A\u0645\u0627\u0639'}</span>
                   <span className="text-[12px] text-[#344054] leading-4">{request.meetingDate}</span>
                 </div>

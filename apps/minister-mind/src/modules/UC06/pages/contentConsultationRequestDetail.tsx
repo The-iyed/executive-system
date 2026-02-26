@@ -11,7 +11,6 @@ import {
   getMeetingClassificationTypeLabel,
   getMeetingConfidentialityLabel,
   getMeetingChannelLabel,
-  getDirectiveMethodLabel,
   SectorLabels,
   Sector,
 } from '@shared/types';
@@ -45,25 +44,39 @@ const formatFileSize = (bytes: number): string => {
   return `${Math.round(bytes / (1024 * 1024))} MB`;
 };
 
-/** Safely format related_guidance which may be a string or a directive object/array from the API */
-function formatRelatedGuidance(value: unknown): string {
-  if (value == null) return '-';
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : '-';
-  }
-  if (Array.isArray(value)) {
-    const texts = value
-      .map((d: { directive_text?: string }) => (d?.directive_text != null ? String(d.directive_text) : ''))
-      .filter(Boolean);
-    return texts.length > 0 ? texts.join(' ') : '-';
-  }
-  if (typeof value === 'object' && value !== null && 'directive_text' in value) {
-    const text = (value as { directive_text?: string }).directive_text;
-    return text != null && String(text).trim() !== '' ? String(text).trim() : '-';
+// Safely render notes coming as string/object/array from API
+const getNotesText = (...candidates: unknown[]): string => {
+  const extract = (value: unknown): string | null => {
+    if (value == null) return null;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : null;
+    }
+    if (Array.isArray(value)) {
+      const parts = value.map(extract).filter(Boolean) as string[];
+      return parts.length ? parts.join('\n') : null;
+    }
+    if (typeof value === 'object') {
+      const v = value as Record<string, unknown>;
+      // Try common text property names
+      if (typeof v.text === 'string' && v.text.trim()) return v.text.trim();
+      if (typeof v.note === 'string' && v.note.trim()) return v.note.trim();
+      if (typeof v.content === 'string' && v.content.trim()) return v.content.trim();
+      if (typeof v.value === 'string' && v.value.trim()) return v.value.trim();
+      if (typeof v.notes === 'string' && v.notes.trim()) return v.notes.trim();
+      if (typeof v.note_text === 'string' && v.note_text.trim()) return v.note_text.trim();
+      // Don't return the object itself
+      return null;
+    }
+    return null;
+  };
+
+  for (const candidate of candidates) {
+    const text = extract(candidate);
+    if (text) return text;
   }
   return '-';
-}
+};
 
 const ContentConsultationRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -224,9 +237,9 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 overflow-y-auto p-6 pb-32">
+      <div className="p-6">
         {/* Main Container */}
-        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
+        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col" >
           {/* Header Section */}
           <div className="flex flex-row items-center justify-between gap-6">
             {/* Back Button */}
@@ -260,10 +273,14 @@ const ContentConsultationRequestDetail: React.FC = () => {
             />
           </div>
 
+        </div>
+      </div>
+
           {/* Tab Content */}
+        <div className=" overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+            <div className="flex flex-col gap-6 w-full">
+              <div className="flex flex-col gap-4 w-full">
                 <div className="flex flex-row items-center justify-between gap-4">
                 
                   <h2
@@ -372,8 +389,8 @@ const ContentConsultationRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'content' && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+            <div className="flex flex-col gap-6 w-full ">
+              <div className="flex flex-col gap-4 w-full">
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
@@ -558,7 +575,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     className="text-base text-gray-900 text-right whitespace-pre-wrap"
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
-                    {meetingRequest.general_notes || meetingRequest.content_officer_notes || '-'}
+                    {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                   </p>
                 </div>
               </div>
@@ -566,7 +583,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'attachments' && (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6" style={{ width: '100%' }}>
               {/* Sub-tabs for attachments */}
               <div className="flex flex-row gap-2 border-b border-gray-200">
                 <button
@@ -596,7 +613,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
               </div>
 
               {/* Attachment Display */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4" style={{ width: '100%' }}>
                 {activeSubTab === 'presentation' && presentationAttachments.length > 0 && (
                   <div className="flex flex-col gap-4">
                     {presentationAttachments.map((att: Attachment) => (
@@ -735,7 +752,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     className="text-sm text-gray-700 text-right whitespace-pre-wrap"
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
-                    {meetingRequest.content_officer_notes || 'لا توجد ملاحظات'}
+                    {getNotesText(meetingRequest.content_officer_notes) || 'لا توجد ملاحظات'}
                   </p>
                 </div>
               </div>
@@ -767,285 +784,208 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-6">
-              {/* Basic Information Section - all fields */}
-              <div className="flex flex-col gap-4">
+              {/* Basic Information Section */}
+              <div className="w-full  mx-auto">
                 <h3
-                  className="text-lg font-semibold text-gray-900 text-right"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  className="text-xl font-bold text-right text-[#101828] mb-6"
+                  style={{
+                    fontFamily: "'Almarai', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                  }}
                 >
                   المعلومات الأساسية
                 </h3>
-                <div className="flex flex-col gap-4">
-                  {/* هل تطلب الاجتماع نيابة عن غيرك؟ / مالك الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        هل تطلب الاجتماع نيابة عن غيرك؟
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.is_on_behalf_of === true ? 'نعم' : meetingRequest.is_on_behalf_of === false ? 'لا' : '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        مالك الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.current_owner_user
-                          ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
-                          : meetingRequest.current_owner_role?.name_ar ?? '-'}
-                      </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                  {/* هل تطلب الاجتماع نيابة عن غيرك؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      هل تطلب الاجتماع نيابة عن غيرك؟
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.is_on_behalf_of === true ? 'نعم' : meetingRequest.is_on_behalf_of === false ? 'لا' : '-'}
                     </div>
                   </div>
-                  {/* عنوان الاجتماع / وصف الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        عنوان الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.meeting_title || '-'}
-                      </p>
+                  
+                  {/* مالك الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      مالك الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.current_owner_user
+                        ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
+                        : meetingRequest.current_owner_role?.name_ar ?? '-'}
                     </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        وصف الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.meeting_subject || '-'}
-                      </p>
                   </div>
+                  
+                  {/* عنوان الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      عنوان الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.meeting_title || '-'}
+                    </div>
                   </div>
-                  {/* القطاع / نوع الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        القطاع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  
+                  {/* وصف الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      وصف الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.meeting_subject || '-'}
+                    </div>
+                  </div>
+                  
+                  {/* القطاع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      القطاع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                       {SectorLabels[meetingRequest.sector as Sector] || '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        نوع الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
-                      </p>
                     </div>
                   </div>
-                  {/* اجتماع عاجل؟ / السبب */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        اجتماع عاجل؟
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.is_direct_schedule === true ? 'نعم' : meetingRequest.is_direct_schedule === false ? 'لا' : '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        السبب
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.meeting_justification || '-'}
-                      </p>
+                  
+                  {/* نوع الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      نوع الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
                     </div>
                   </div>
-                  {/* موعد الاجتماع / آلية انعقاد الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        موعد الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.scheduled_at ? new Date(meetingRequest.scheduled_at).toLocaleString('ar-SA') : '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        آلية انعقاد الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
-                      </p>
+                  
+                  {/* اجتماع عاجل؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      اجتماع عاجل؟
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.is_direct_schedule === true ? 'نعم' : meetingRequest.is_direct_schedule === false ? 'لا' : '-'}
                     </div>
                   </div>
-                  {/* الموقع / هل يتطلب بروتوكول؟ */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        الموقع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        -
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        هل يتطلب بروتوكول؟
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.requires_protocol === true ? 'نعم' : meetingRequest.requires_protocol === false ? 'لا' : '-'}
-                      </p>
+                  
+                  {/* السبب */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      السبب
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.meeting_justification || '-'}
                     </div>
                   </div>
-                  {/* فئة الاجتماع / مبرّر اللقاء */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        فئة الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) || getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        مبرّر اللقاء
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.meeting_justification || '-'}
-                      </p>
+                  
+                  {/* آلية انعقاد الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      آلية انعقاد الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
                     </div>
                   </div>
-                  {/* موضوع التكليف المرتبط / تاريخ الاستحقاق */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        موضوع التكليف المرتبط
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.related_topic || '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        تاريخ الاستحقاق
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.deadline ? new Date(meetingRequest.deadline).toLocaleDateString('ar-SA') : '-'}
-                      </p>
+                  
+                  {/* عن بعد / حضوري */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      موعد الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.scheduled_at ? new Date(meetingRequest.scheduled_at).toLocaleString('ar-SA') : '-'}
                     </div>
                   </div>
-                  {/* تصنيف الاجتماع / سريّة الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        تصنيف الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        سريّة الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
-                      </p>
+                  
+                  {/* الموقع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      الموقع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      -
                     </div>
                   </div>
-                  {/* اجتماع متسلسل؟ / الاجتماع السابق */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        اجتماع متسلسل؟
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.is_sequential === true ? 'نعم' : meetingRequest.is_sequential === false ? 'لا' : '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        الاجتماع السابق
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.previous_meeting_id || '-'}
-                      </p>
+                  
+                  {/* هل يتطلب بروتوكول؟ */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      هل يتطلب بروتوكول؟
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.requires_protocol === true ? 'نعم' : meetingRequest.requires_protocol === false ? 'لا' : '-'}
                     </div>
                   </div>
-                  {/* الرقم التسلسلي / أجندة الاجتماع */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        الرقم التسلسلي
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.sequential_number != null ? String(meetingRequest.sequential_number) : '-'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        أجندة الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0
-                          ? `${meetingRequest.agenda_items.length} بند`
-                          : '-'}
-                      </p>
+                  
+                  {/* فئة الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      فئة الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) || getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
                     </div>
                   </div>
-                  {/* هل طلب الاجتماع بناءً على توجيه من معالي الوزير / طريقة التوجيه */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        هل طلب الاجتماع بناءً على توجيه من معالي الوزير
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0 ? 'نعم' : 'لا'}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        طريقة التوجيه
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0 ? getDirectiveMethodLabel('DIRECT_DIRECTIVE') : '-'}
-                      </p>
+                  
+                  {/* موضوع التكليف المرتبط */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      موضوع التكليف المرتبط
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.related_topic || '-'}
                     </div>
                   </div>
-                  {/* محضر الاجتماع / التوجيه */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        محضر الاجتماع
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        -
-                      </p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        التوجيه
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {formatRelatedGuidance(meetingRequest.related_guidance)}
-                      </p>
+                  
+                  {/* تاريخ الاستحقاق */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      تاريخ الاستحقاق
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {meetingRequest.deadline ? new Date(meetingRequest.deadline).toLocaleDateString('ar-SA') : '-'}
                     </div>
                   </div>
-                  {/* ملاحظات */}
-                  <div className="flex flex-row gap-4">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        ملاحظات
-                      </label>
-                      <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {meetingRequest.general_notes || meetingRequest.content_officer_notes || '-'}
-                      </p>
+                  
+                  {/* تصنيف الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      تصنيف الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
                     </div>
-                    <div className="flex-1" />
+                  </div>
+                  
+                  {/* سريّة الاجتماع */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      سريّة الاجتماع
+                    </label>
+                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ملاحظات - Separate section below */}
+                <div className="flex flex-col gap-2 mt-4">
+                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    ملاحظات
+                  </label>
+                  <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                   </div>
                 </div>
               </div>
 
               {/* Content Section - Objectives and Agenda Items */}
-              <div className="flex flex-row items-start gap-[26px] w-full" dir="rtl">
+              <div className="flex flex-row items-start gap-[26px] w-full max-w-[1321px] mx-auto" dir="rtl">
                 {/* Objectives Card */}
-                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[530px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
+                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] flex-1 min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
                   <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
                     <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
                       {/* Background Blur Effect */}
@@ -1103,7 +1043,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 </div>
 
                 {/* Agenda Items Card */}
-                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[529px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
+                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] flex-1 min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
                   <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
                     <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
                       {/* Background Blur Effect */}
@@ -1161,14 +1101,12 @@ const ContentConsultationRequestDetail: React.FC = () => {
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-center py-6">
-                                <p
-                                  className="text-[#667085] text-sm"
-                                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                                >
-                                  لا توجد بنود جدول أعمال الاجتماع
-                                </p>
-                              </div>
+                              <p
+                                className="text-[#2C2C2C] text-base leading-[26px]"
+                                style={{ fontFamily: "'Almarai', sans-serif" }}
+                              >
+                                لا توجد بنود
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1181,65 +1119,48 @@ const ContentConsultationRequestDetail: React.FC = () => {
               {/* Scheduling Section - Invitees and Minister Attendees */}
 
               {/* Additional Information Section */}
-              <div className="flex flex-col gap-6 w-full">
-                        <h2
-                          className="text-right"
-                          style={{
-                            fontFamily: "'Almarai', sans-serif",
-                            fontWeight: 700,
-                            fontSize: '22px',
-                            lineHeight: '38px',
-                            color: '#101828',
-                          }}
-                        >
+              <div className="w-full max-w-[1321px] mx-auto">
+                <h2
+                  className="text-xl font-bold text-right text-[#101828] mb-6"
+                  style={{
+                    fontFamily: "'Almarai', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                  }}
+                >
                   معلومات إضافية
-                        </h2>
+                </h2>
                 <div className="flex flex-col gap-4">
                   {meetingRequest.meeting_justification && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-col gap-2">
                       <label
-                        className="text-sm font-semibold text-gray-900 text-right"
+                        className="text-sm font-medium text-gray-700 text-right"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         مبرر الاجتماع
                       </label>
                       <p
-                        className="text-base text-gray-700 text-right leading-relaxed"
+                        className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         {meetingRequest.meeting_justification}
                       </p>
-                      </div>
+                    </div>
                   )}
                   {meetingRequest.related_topic && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-col gap-2">
                       <label
-                        className="text-sm font-semibold text-gray-900 text-right"
+                        className="text-sm font-medium text-gray-700 text-right"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         الموضوع المرتبط
                       </label>
                       <p
-                        className="text-base text-gray-700 text-right leading-relaxed"
+                        className="text-base text-gray-900 text-right"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
                         {meetingRequest.related_topic}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.general_notes && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        ملاحظات عامة
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        {meetingRequest.general_notes}
                       </p>
                     </div>
                   )}
@@ -1250,7 +1171,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
           {/* Invitees Tab - قائمة المدعوين */}
           {activeTab === 'invitees' && (
-            <div className="flex flex-col gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
+            <div className="flex flex-col gap-6 w-full" dir="rtl">
               {/* قائمة المدعوين (مقدّم الطلب) */}
               <div className="flex flex-col gap-2">
                 <h2
@@ -1773,8 +1694,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
     </div>
   );
 };
