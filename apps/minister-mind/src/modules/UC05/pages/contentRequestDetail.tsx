@@ -2663,6 +2663,7 @@ const ContentRequestDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
