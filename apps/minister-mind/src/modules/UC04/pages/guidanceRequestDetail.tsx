@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable } from '@shared/components';
+import { Tabs, StatusBadge, DataTable, AgendaPreviewTable } from '@shared/components';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -34,6 +34,36 @@ function formatRelatedGuidance(value: unknown): string {
     if ('directive_text' in value && typeof (value as { directive_text?: string }).directive_text === 'string') {
       return (value as { directive_text: string }).directive_text;
     }
+  }
+  return '-';
+}
+
+/** Safely render notes (string / object / array from API) */
+function getNotesText(...candidates: unknown[]): string {
+  const extract = (value: unknown): string | null => {
+    if (value == null) return null;
+    if (typeof value === 'string') {
+      const t = value.trim();
+      return t.length ? t : null;
+    }
+    if (Array.isArray(value)) {
+      const parts = value.map((v) => extract(v)).filter(Boolean) as string[];
+      return parts.length ? parts.join('\n') : null;
+    }
+    if (typeof value === 'object') {
+      const v = value as Record<string, unknown>;
+      if (typeof v.text === 'string' && v.text.trim()) return v.text.trim();
+      if (typeof v.note === 'string' && v.note.trim()) return v.note.trim();
+      if (typeof v.content === 'string' && v.content.trim()) return v.content.trim();
+      if (typeof v.value === 'string' && v.value.trim()) return v.value.trim();
+      if (typeof v.notes === 'string' && v.notes.trim()) return v.notes.trim();
+      return null;
+    }
+    return null;
+  };
+  for (const c of candidates) {
+    const t = extract(c);
+    if (t) return t;
   }
   return '-';
 }
@@ -922,40 +952,12 @@ const GuidanceRequestDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* أجندة الاجتماع - Table */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-md font-medium text-gray-700" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      أجندة الاجتماع
-                    </label>
-                    {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
-                      <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
-                        <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          <thead>
-                            <tr className="border-b border-gray-300 bg-[#F2F4F7]">
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[100px] text-center">رقم البند</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold">بند جدول الأعمال</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[160px] text-center">مدة العرض (دقيقة)</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">نوع دعم الوزير</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {meetingRequest.agenda_items.map((item: any, idx: number) => (
-                              <tr key={item.id} className={idx < (meetingRequest.agenda_items?.length ?? 0) - 1 ? 'border-b border-gray-200' : ''}>
-                                <td className="px-4 py-3 text-[#475467] text-center">{idx + 1}</td>
-                                <td className="px-4 py-3 text-[#101828]">{item.agenda_item || '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{item.presentation_duration_minutes ?? '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{item.minister_support_type || item.minister_support_other || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        -
-                      </div>
-                    )}
-                  </div>
+                  {/* أجندة الاجتماع */}
+                  <AgendaPreviewTable
+                    title="أجندة الاجتماع"
+                    items={meetingRequest.agenda_items ?? undefined}
+                    dir="rtl"
+                  />
 
                   {/* ملاحظات - Table */}
                   <div className="flex flex-col gap-2">
@@ -987,145 +989,9 @@ const GuidanceRequestDetail: React.FC = () => {
                       </div>
                     ) : (
                       <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        {typeof meetingRequest.general_notes === 'string' ? (meetingRequest.general_notes || meetingRequest.content_officer_notes || '-') : (meetingRequest.content_officer_notes || '-')}
+                        {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Content Section - Objectives and Agenda Items */}
-              <div className="flex flex-row items-start gap-[26px] w-full" dir="rtl">
-                {/* Objectives Card */}
-                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[530px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
-                  <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
-                    <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
-                      {/* Background Blur Effect */}
-                      <div
-                        className="absolute rounded-full bg-[#A6D8C1]"
-                        style={{
-                          width: '227.75px',
-                          height: '213.87px',
-                          left: '-41.02px',
-                          top: '4.66px',
-                          filter: 'blur(63.26px)',
-                          transform: 'rotate(-90deg)',
-                        }}
-                      />
-                      {/* Content */}
-                      <div className="relative flex flex-col items-end p-4 gap-[21px] w-full min-h-[85px]">
-                        <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                          <h3
-                            className="w-full font-semibold text-black text-right"
-                            style={{
-                              fontFamily: "'Somar Sans', sans-serif",
-                              fontSize: '21.1px',
-                              lineHeight: '28px',
-                            }}
-                          >
-                            الأهداف:
-                          </h3>
-                          <div className="w-full text-right max-h-[200px] overflow-y-auto">
-                            {meetingRequest.objectives && meetingRequest.objectives.length > 0 ? (
-                              <ul className="list-none p-0 m-0 space-y-1">
-                                {meetingRequest.objectives.map((obj) => (
-                                  <li key={obj.id} className="flex items-center gap-2">
-                                    <span className="text-[#2C2C2C] text-base leading-[26px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                      •
-                                    </span>
-                                    <span className="flex-1 text-[#2C2C2C] text-base leading-[26px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                      {obj.objective}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p
-                                className="text-[#2C2C2C] text-base leading-[26px]"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                لا توجد أهداف
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Agenda Items Card */}
-                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] w-[529px] min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
-                  <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
-                    <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
-                      {/* Background Blur Effect */}
-                      <div
-                        className="absolute rounded-full bg-[#A6D8C1]"
-                        style={{
-                          width: '227.75px',
-                          height: '213.87px',
-                          left: '-41.02px',
-                          top: '4.66px',
-                          filter: 'blur(63.26px)',
-                          transform: 'rotate(-90deg)',
-                        }}
-                      />
-                      {/* Content */}
-                      <div className="relative flex flex-col items-end p-4 gap-[21px] w-full min-h-[85px]">
-                        <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                          <h3
-                            className="w-full font-semibold text-black text-right"
-                            style={{
-                              fontFamily: "'Somar Sans', sans-serif",
-                              fontSize: '21.1px',
-                              lineHeight: '28px',
-                            }}
-                          >
-                            بنود جدول أعمال الاجتماع:
-                          </h3>
-                          <div className="w-full text-right max-h-[300px] overflow-y-auto">
-                            {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
-                              <div className="flex flex-col gap-3">
-                                {meetingRequest.agenda_items.map((item, index) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold flex-shrink-0 mt-1">
-                                        {index + 1}
-                                      </div>
-                                      <div className="flex-1 flex flex-col gap-2">
-                                        <p
-                                          className="text-[#2C2C2C] text-base leading-[26px]"
-                                          style={{ fontFamily: "'Almarai', sans-serif" }}
-                                        >
-                                          {item.agenda_item}
-                                        </p>
-                                        {item.presentation_duration_minutes && (
-                                          <span className="text-[#475467] text-sm font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                            المدة: {item.presentation_duration_minutes} دقيقة
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-6">
-                                <p
-                                  className="text-[#667085] text-sm"
-                                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                                >
-                                  لا توجد بنود جدول أعمال الاجتماع
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1499,7 +1365,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       </p>
                     </div>
                   )}
-                  {meetingRequest.general_notes && (
+                  {(getNotesText(meetingRequest.general_notes) !== '-' || getNotesText(meetingRequest.content_officer_notes) !== '-') && (
                     <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                       <label
                         className="text-sm font-semibold text-gray-900 text-right"
@@ -1511,23 +1377,7 @@ const GuidanceRequestDetail: React.FC = () => {
                         className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
-                        {meetingRequest.general_notes}
-                      </p>
-                    </div>
-                  )}
-                  {meetingRequest.content_officer_notes && (
-                    <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <label
-                        className="text-sm font-semibold text-gray-900 text-right"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        ملاحظات مسؤول المحتوى
-                      </label>
-                      <p
-                        className="text-base text-gray-700 text-right whitespace-pre-wrap leading-relaxed"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        {meetingRequest.content_officer_notes}
+                        {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
                       </p>
                     </div>
                   )}
