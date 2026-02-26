@@ -113,6 +113,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
     try {
       const response = await getUsers({
         search: search.trim() || undefined,
+        role_code: 'SUBMITTER',
         skip,
         limit,
       });
