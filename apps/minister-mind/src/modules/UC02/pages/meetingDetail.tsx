@@ -647,7 +647,7 @@ const MeetingDetail: React.FC = () => {
 
   const queryClient = useQueryClient();
   
-  // Clear content officer notes query cache when tab is not active to prevent stale data
+  // Clear content-consultation tab query caches when tab is not active to prevent stale data
   React.useEffect(() => {
     if (activeTab !== 'content-consultation') {
       queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id, 'CONTENT'] });
@@ -1345,6 +1345,35 @@ const MeetingDetail: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
 
+  // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
+  useEffect(() => {
+    if (!isScheduleModalOpen || !scheduleForm.selected_time_slot_id || !meeting) return;
+    const slotId = scheduleForm.selected_time_slot_id;
+    if (!slotId) return;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot,
+    ].filter(Boolean);
+    const selectedSlot = allSlots.find((s: any) => s?.id === slotId);
+    if (!selectedSlot?.slot_start) return;
+    const toDatetimeLocal = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+    const startLocal = toDatetimeLocal(selectedSlot.slot_start);
+    const endLocal = selectedSlot.slot_end ? toDatetimeLocal(selectedSlot.slot_end) : (() => {
+      const start = new Date(selectedSlot.slot_start);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      return toDatetimeLocal(end.toISOString());
+    })();
+    setScheduleForm((prev) => ({
+      ...prev,
+      scheduled_at: startLocal,
+      scheduled_end_at: endLocal,
+    }));
+  }, [isScheduleModalOpen, scheduleForm.selected_time_slot_id, meeting]);
+
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
     if (!meeting) return;
@@ -1835,7 +1864,7 @@ const MeetingDetail: React.FC = () => {
             <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
                 <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('is_on_behalf_of', 'هل نطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
+                  {renderFieldLabel('is_on_behalf_of', 'هل تطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
                   <div className="flex items-center gap-2 w-full justify-start">
                     <span className="text-[10.23px] text-[#667085]">{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
                     <button
@@ -2127,11 +2156,36 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 text-[#344054]">الملاحظة</label>
+                  <label className="text-sm font-medium text-gray-700 text-[#344054]">ملاحظات</label>
                   <div className="w-full min-h-11 px-3 py-2 bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085] whitespace-pre-wrap">
                     {meeting?.note ?? '—'}
                   </div>
                 </div>
+              </div>
+              {/* الأهداف – same structure as UC01 preview / table like agenda */}
+              <div className="flex flex-col gap-[10px] w-full">
+                <div className="text-[12.69px] leading-[38px] text-[#101828]">
+                  {renderFieldLabel('objectives', 'الأهداف', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
+                </div>
+                {(contentForm.objectives?.length ?? 0) > 0 ? (
+                  <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
+                    <DataTable
+                      columns={[
+                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]">{i + 1}</span> },
+                        { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
+                          <Input type="text" value={item.objective} onChange={(e) => { const n = [...(contentForm.objectives || [])]; n[index] = { ...item, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" placeholder="الهدف" />
+                        ) },
+                        { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
+                          <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: (p.objectives || []).filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5] disabled:opacity-60 disabled:cursor-not-allowed" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
+                        ) },
+                      ] as TableColumn<any>[]}
+                      data={contentForm.objectives || []}
+                      className="border-none"
+                      rowPadding="py-3"
+                    />
+                  </div>
+                ) : null}
+                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: [...(p.objectives || []), { id: `obj-${Date.now()}`, objective: '' }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[200px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة هدف</button>
               </div>
               {/* موعد الاجتماع – Figma: slot cards + gradient button */}
               <div className="flex flex-col gap-[8px] w-full">
@@ -2601,9 +2655,10 @@ const MeetingDetail: React.FC = () => {
                       </div>
                     ) : insightsMutation.data != null && insightsModalAttachment?.id === insightsMutation.variables?.attachmentId ? (
                       (() => {
-                        const d = insightsMutation.data as AttachmentInsightsResponse;
-                        const notes = Array.isArray(d.llm_notes) ? d.llm_notes : [];
-                        const suggestions = Array.isArray(d.llm_suggestions) ? d.llm_suggestions : [];
+                        const d = insightsMutation.data as AttachmentInsightsResponse & Record<string, unknown>;
+                        const notes: string[] = Array.isArray(d.llm_notes) ? d.llm_notes : (d.llm_notes != null ? [].concat(d.llm_notes as any) : []);
+                        const rawSuggestions = d.llm_suggestions ?? d.suggestions;
+                        const suggestions: string[] = Array.isArray(rawSuggestions) ? rawSuggestions.map((x: unknown) => (typeof x === 'string' ? x : String(x ?? ''))) : (rawSuggestions != null ? [].concat(rawSuggestions as any).map((x: unknown) => (typeof x === 'string' ? x : String(x ?? ''))) : []);
                         if (notes.length === 0 && suggestions.length === 0) {
                                 return (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -2635,7 +2690,7 @@ const MeetingDetail: React.FC = () => {
                                 </div>
                               </div>
                             )}
-                            {/* {suggestions.length > 0 && (
+                            {suggestions.length > 0 && (
                               <div className="flex flex-col gap-3">
                                 <div className="flex items-center gap-2">
                                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E6F9F8]">
@@ -2653,7 +2708,7 @@ const MeetingDetail: React.FC = () => {
                                   ))}
                                 </div>
                               </div>
-                            )} */}
+                            )}
                                   </div>
                                 );
                       })()
@@ -3395,7 +3450,7 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Content Officer Notes Tab – الملخص التنفيذي + الملاحظات (preview) + notes table */}
+          {/* Content Officer Notes Tab – العرض التقديمي + الملاحظات (preview) + notes table */}
           {activeTab === 'content-consultation' && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
               {isLoadingContentOfficerNotes ? (
@@ -3404,10 +3459,10 @@ const MeetingDetail: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* الملخص التنفيذي – preview only (text + file preview cards for is_executive_summary attachments) */}
+                  {/* العرض التقديمي – preview only (text + file preview cards for is_executive_summary attachments) */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium text-gray-700 text-right">
-                      الملخص التنفيذي
+                      العرض التقديمي
                     </h3>
                     {(() => {
                       const textSummary =

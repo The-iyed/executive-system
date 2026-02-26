@@ -1021,6 +1021,34 @@ export const getContentOfficerNotesRecords = async (
   return response.data;
 };
 
+/** Suggested actions from execution-system for استشارة المحتوى tab – GET /api/v1/business-cards/suggested-actions */
+export interface SuggestedActionsParams {
+  skip?: number;
+  limit?: number;
+}
+
+export interface SuggestedActionsResponse {
+  items?: unknown[];
+  total?: number;
+  skip?: number;
+  limit?: number;
+  [key: string]: unknown;
+}
+
+export const getSuggestedActions = async (
+  meetingId: string,
+  params: SuggestedActionsParams = {}
+): Promise<SuggestedActionsResponse> => {
+  const queryParams = new URLSearchParams();
+  queryParams.set('meeting_id', meetingId);
+  if (params.skip !== undefined) queryParams.set('skip', String(params.skip));
+  if (params.limit !== undefined) queryParams.set('limit', String(params.limit));
+  const response = await axiosInstance.get<SuggestedActionsResponse>(
+    `/api/v1/business-cards/suggested-actions?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
 // Evaluate Readiness API
 export interface EvaluateReadinessResponse {
   readiness: string;
@@ -1171,14 +1199,11 @@ export const getAttachmentInsights = async (
   return response.data;
 };
 
-/** Returns true when insights are ready (no need to poll further). */
+/** Returns true when insights are ready (no need to poll further). Wait for full response so we get both llm_notes and llm_suggestions. */
 function isInsightsReady(data: AttachmentInsightsResponse): boolean {
   const extDone = (data.extraction_status || '').toLowerCase() === 'completed';
   const llmDone = (data.llm_processing_status || '').toLowerCase() === 'completed';
-  const hasContent =
-    (Array.isArray(data.llm_notes) && data.llm_notes.length > 0) ||
-    (Array.isArray(data.llm_suggestions) && data.llm_suggestions.length > 0);
-  return (extDone && llmDone) || hasContent;
+  return extDone && llmDone;
 }
 
 /** Delay that rejects if signal is aborted (e.g. modal closed). */
