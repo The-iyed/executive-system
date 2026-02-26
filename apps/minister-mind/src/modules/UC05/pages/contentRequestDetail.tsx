@@ -845,7 +845,7 @@ const ContentRequestDetail: React.FC = () => {
 
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto">
+              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
@@ -1122,7 +1122,7 @@ const ContentRequestDetail: React.FC = () => {
 
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto">
+              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
@@ -1911,7 +1911,7 @@ const ContentRequestDetail: React.FC = () => {
           {/* Action Content (outside tabs) */}
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
             {/* إضافة التوجيهات – table like meeting details */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto" dir="rtl">
+            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6" dir="rtl">
               <div className="flex items-center justify-between gap-4">
                 <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   إضافة التوجيهات
@@ -2145,7 +2145,7 @@ const ContentRequestDetail: React.FC = () => {
             </div>
 
             {/* Executive Summary Upload Section */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto">
+            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 الملخص التنفيذي
               </h3>
@@ -2218,7 +2218,8 @@ const ContentRequestDetail: React.FC = () => {
             </div>
           </div>}
         </div>
-
+      </div>
+      <div>
       {/* Actions bar – same FAB + arc as meeting detail (hidden when scheduled for content update) */}
       {meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT && (
       <MeetingActionsBar
@@ -2663,6 +2664,7 @@ const ContentRequestDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
