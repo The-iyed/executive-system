@@ -16,7 +16,7 @@ import {
 } from '@shared';
 import type { MeetingRangeValue } from '@shared';
 import {
-  MEETING_CATEGORY_OPTIONS,
+  getMeetingCategoryOptions,
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
   MEETING_TYPE_OPTIONS,
@@ -416,19 +416,19 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             </FormField>
           )}
           <FormField
-                className="w-full min-w-0"
-              label="فئة الاجتماع"
-              required
-              error={touched.meetingCategory ? errors.meetingCategory : undefined}
-            >
-              <FormSelect
-                value={formData.meetingCategory}
-                onValueChange={(value) => handleChange('meetingCategory', value)}
-                options={MEETING_CATEGORY_OPTIONS}
-                placeholder="فئة الاجتماع"
-                error={!!(touched.meetingCategory && errors.meetingCategory)}
-                disabled={isFieldDisabled('meetingCategory')}
-              />
+            className="w-full min-w-0"
+            label="فئة الاجتماع"
+            required
+            error={touched.meetingCategory ? errors.meetingCategory : undefined}
+          >
+            <FormSelect
+              value={formData.meetingCategory}
+              onValueChange={(value) => handleChange('meetingCategory', value)}
+              options={getMeetingCategoryOptions(formData.meetingType ?? '')}
+              placeholder="فئة الاجتماع"
+              error={!!(touched.meetingCategory && errors.meetingCategory)}
+              disabled={isFieldDisabled('meetingCategory')}
+            />
           </FormField>
           {isStep1BasicInfoFieldRequired('meetingReason') && (
             <FormField
