@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge } from '@shared/components';
+import { Tabs, StatusBadge, AgendaPreviewTable } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -1042,77 +1042,13 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Agenda Items Card */}
-                <div className="flex flex-col items-start p-[4.4px] gap-[8.79px] flex-1 min-h-[115px] bg-white rounded-[11.36px] shadow-[0px_2.52px_14px_rgba(58,168,124,0.14)]">
-                  <div className="flex flex-col items-start p-0 gap-[6.15px] w-full min-h-[106px]">
-                    <div className="relative w-full min-h-[106px] bg-white rounded-[8.2px] overflow-hidden">
-                      {/* Background Blur Effect */}
-                      <div
-                        className="absolute rounded-full bg-[#A6D8C1]"
-                        style={{
-                          width: '227.75px',
-                          height: '213.87px',
-                          left: '-41.02px',
-                          top: '4.66px',
-                          filter: 'blur(63.26px)',
-                          transform: 'rotate(-90deg)',
-                        }}
-                      />
-                      {/* Content */}
-                      <div className="relative flex flex-col items-end p-4 gap-[21px] w-full min-h-[85px]">
-                        <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                          <h3
-                            className="w-full font-semibold text-black text-right"
-                            style={{
-                              fontFamily: "'Somar Sans', sans-serif",
-                              fontSize: '21.1px',
-                              lineHeight: '28px',
-                            }}
-                          >
-                            بنود جدول أعمال الاجتماع:
-                          </h3>
-                          <div className="w-full text-right max-h-[300px] overflow-y-auto">
-                            {meetingRequest.agenda_items && meetingRequest.agenda_items.length > 0 ? (
-                              <div className="flex flex-col gap-3">
-                                {meetingRequest.agenda_items.map((item, index) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#048F86] text-white text-xs font-semibold flex-shrink-0 mt-1">
-                                        {index + 1}
-                                      </div>
-                                      <div className="flex-1 flex flex-col gap-2">
-                                        <p
-                                          className="text-[#2C2C2C] text-base leading-[26px]"
-                                          style={{ fontFamily: "'Almarai', sans-serif" }}
-                                        >
-                                          {item.agenda_item}
-                                        </p>
-                                        {item.presentation_duration_minutes && (
-                                          <span className="text-[#475467] text-sm font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                            المدة: {item.presentation_duration_minutes} دقيقة
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p
-                                className="text-[#2C2C2C] text-base leading-[26px]"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                لا توجد بنود
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                {/* أجندة الاجتماع - preview table (same columns as Step1 form) */}
+                <div className="flex-1 w-full">
+                  <AgendaPreviewTable
+                    title="أجندة الاجتماع"
+                    items={meetingRequest.agenda_items ?? undefined}
+                    dir="rtl"
+                  />
                 </div>
               </div>
 

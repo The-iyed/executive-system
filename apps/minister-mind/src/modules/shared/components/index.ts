@@ -71,5 +71,6 @@ export {
   type FormAsyncSelectV2Props,
 } from './form';
 
+export { AgendaPreviewTable, type AgendaPreviewTableProps, type AgendaItemPreview } from './AgendaPreviewTable';
 
 export type { OptionType } from './AsyncSelectV2/types';
