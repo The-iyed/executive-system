@@ -7,7 +7,7 @@ import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
-import { PATH as UC10_PATH } from '../../UC10/routes/paths';
+import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
@@ -148,15 +148,15 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       },
     ],
   },
-  'UC-10': {
-    code: 'UC-10',
-    defaultRoute: UC10_PATH.BUSINESS_CARDS,
+  'UC-13': {
+    code: 'UC-13',
+    defaultRoute: uc13_PATH.BUSINESS_CARDS,
     navigationItems: [
       {
-        id: 'uc10',
+        id: 'uc13',
         icon: 'solar:card-outline',
         label: 'البطاقات الوظيفية',
-        path: UC10_PATH.BUSINESS_CARDS,
+        path: uc13_PATH.BUSINESS_CARDS,
       },
     ],
   },
