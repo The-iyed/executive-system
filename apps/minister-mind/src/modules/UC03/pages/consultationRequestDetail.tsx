@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, AgendaPreviewTable } from '@shared/components';
+import { Tabs, StatusBadge, MeetingInfo, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -41,6 +41,19 @@ function formatRelatedGuidance(value: unknown): string {
   return '-';
 }
 
+/** Safely get notes text (string or array of objects with .text) */
+function getNotesText(...candidates: unknown[]): string {
+  for (const c of candidates) {
+    if (c == null) continue;
+    if (typeof c === 'string' && c.trim()) return c.trim();
+    if (Array.isArray(c)) {
+      const parts = c.map((n: unknown) => (n && typeof n === 'object' && 'text' in n && typeof (n as { text: string }).text === 'string' ? (n as { text: string }).text.trim() : null)).filter(Boolean) as string[];
+      if (parts.length) return parts.join('\n');
+    }
+  }
+  return '-';
+}
+
 const ConsultationRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -65,6 +78,46 @@ const ConsultationRequestDetail: React.FC = () => {
   });
 
   const meetingRequest = consultationData?.meeting_request;
+
+  const meetingInfoData: MeetingInfoData = useMemo(() => {
+    if (!meetingRequest) return {};
+    const owner = meetingRequest.current_owner_user
+      ? `${(meetingRequest.current_owner_user.first_name ?? '').trim()} ${(meetingRequest.current_owner_user.last_name ?? '').trim()}`.trim()
+      : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.submitter_name ?? undefined;
+    const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } }).alternative_time_slot_1;
+    const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } }).alternative_time_slot_2;
+    return {
+      is_on_behalf_of: meetingRequest.is_on_behalf_of,
+      meeting_manager_label: owner || undefined,
+      meetingSubject: meetingRequest.meeting_title ?? undefined,
+      meetingDescription: meetingRequest.meeting_subject ?? undefined,
+      sector: meetingRequest.sector ?? undefined,
+      meetingType: meetingRequest.meeting_type ?? undefined,
+      is_urgent: meetingRequest.is_urgent ?? !!meetingRequest.urgent_reason,
+      urgent_reason: meetingRequest.urgent_reason ?? undefined,
+      meeting_start_date: meetingRequest.scheduled_at ?? undefined,
+      meeting_end_date: undefined,
+      alternative_1_start_date: alt1?.start ?? undefined,
+      alternative_1_end_date: alt1?.end ?? undefined,
+      alternative_2_start_date: alt2?.start ?? undefined,
+      alternative_2_end_date: alt2?.end ?? undefined,
+      meetingChannel: meetingRequest.meeting_channel ?? undefined,
+      meeting_location: meetingRequest.location ?? (meetingRequest as { selected_time_slot?: { location?: string } }).selected_time_slot?.location ?? undefined,
+      meetingCategory: (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ?? meetingRequest.meeting_classification ?? undefined,
+      meetingReason: meetingRequest.meeting_justification ?? undefined,
+      relatedTopic: meetingRequest.related_topic ?? undefined,
+      dueDate: meetingRequest.deadline ?? undefined,
+      meetingClassification1: meetingRequest.meeting_classification ?? undefined,
+      meetingConfidentiality: (meetingRequest as { meeting_confidentiality?: string }).meeting_confidentiality ?? undefined,
+      meetingAgenda: meetingRequest.agenda_items ?? undefined,
+      is_based_on_directive: !!(meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0),
+      directive_method: (meetingRequest as { directive_method?: string }).directive_method ?? undefined,
+      previous_meeting_minutes_file: undefined,
+      directive_text: formatRelatedGuidance(meetingRequest.related_guidance),
+      notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
+    };
+  }, [meetingRequest]);
+
   // Show consultation_question from pending API response; fallback to detail API
   const consultationQuestion =
     pendingConsultation?.consultation_question ??
@@ -383,311 +436,7 @@ const ConsultationRequestDetail: React.FC = () => {
           {/* Meeting Information Tab */}
           {activeTab === 'meeting-info' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* هل تطلب الاجتماع نيابة عن غيرك؟ */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      هل تطلب الاجتماع نيابة عن غيرك؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.is_on_behalf_of === true
-                        ? 'نعم'
-                        : meetingRequest.is_on_behalf_of === false
-                          ? 'لا'
-                          : '-'}
-                    </div>
-                  </div>
-                  {/* مالك الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      مالك الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.current_owner_user
-                        ? `${meetingRequest.current_owner_user.first_name ?? ''} ${meetingRequest.current_owner_user.last_name ?? ''}`.trim()
-                        : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.submitter_name ?? '-'}
-                    </div>
-                  </div>
-                  {/* عنوان الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      عنوان الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.meeting_title || '-'}
-                    </div>
-                  </div>
-                  {/* القطاع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      القطاع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {SectorLabels[meetingRequest.sector as Sector] || '-'}
-                    </div>
-                  </div>
-                  {/* نوع الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      نوع الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getMeetingTypeLabel(meetingRequest.meeting_type) || '-'}
-                    </div>
-                  </div>
-                  {/* وصف الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      وصف الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.meeting_subject || '-'}
-                    </div>
-                  </div>
-                  {/* اجتماع عاجل؟ */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      اجتماع عاجل؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.is_urgent === true
-                        ? 'نعم'
-                        : meetingRequest.is_urgent === false
-                          ? 'لا'
-                          : meetingRequest.is_direct_schedule === true
-                            ? 'نعم'
-                            : meetingRequest.is_direct_schedule === false
-                              ? 'لا'
-                              : '-'}
-                    </div>
-                  </div>
-                  {/* السبب */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      السبب
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.urgent_reason || '-'}
-                    </div>
-                  </div>
-                  {/* موعد الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      موعد الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.scheduled_at
-                        ? new Date(meetingRequest.scheduled_at).toLocaleString('ar-SA')
-                        : '-'}
-                    </div>
-                  </div>
-                  {/* آلية انعقاد الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      آلية انعقاد الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getMeetingChannelLabel(meetingRequest.meeting_channel) || '-'}
-                    </div>
-                  </div>
-                  {/* الموقع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      الموقع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.location ?? (meetingRequest.selected_time_slot?.location ?? '-')}
-                    </div>
-                  </div>
-                  {/* هل يتطلب بروتوكول؟ */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      هل يتطلب بروتوكول؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.requires_protocol === true
-                        ? 'نعم'
-                        : meetingRequest.requires_protocol === false
-                          ? 'لا'
-                          : '-'}
-                    </div>
-                  </div>
-                  {/* فئة الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      فئة الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getMeetingClassificationLabel(meetingRequest.meeting_classification) || '-'}
-                    </div>
-                  </div>
-                  {/* مبرّر اللقاء */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      مبرّر اللقاء
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.meeting_justification || '-'}
-                    </div>
-                  </div>
-                  {/* موضوع التكليف المرتبط */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      موضوع التكليف المرتبط
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.related_topic || '-'}
-                    </div>
-                  </div>
-                  {/* تاريخ الاستحقاق */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      تاريخ الاستحقاق
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.deadline
-                        ? new Date(meetingRequest.deadline).toLocaleDateString('ar-SA')
-                        : '-'}
-                    </div>
-                  </div>
-                  {/* تصنيف الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      تصنيف الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getMeetingClassificationTypeLabel(meetingRequest.meeting_classification_type) || '-'}
-                    </div>
-                  </div>
-                  {/* سريّة الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      سريّة الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getMeetingConfidentialityLabel(meetingRequest.meeting_confidentiality) || '-'}
-                    </div>
-                  </div>
-                  {/* اجتماع متسلسل؟ */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      اجتماع متسلسل؟
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.is_sequential === true
-                        ? 'نعم'
-                        : meetingRequest.is_sequential === false
-                          ? 'لا'
-                          : '-'}
-                    </div>
-                  </div>
-                  {/* الاجتماع السابق */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      الاجتماع السابق
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.previous_meeting_id || '-'}
-                    </div>
-                  </div>
-                  {/* الرقم التسلسلي */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      الرقم التسلسلي
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.sequential_number != null
-                        ? String(meetingRequest.sequential_number)
-                        : '-'}
-                    </div>
-                  </div>
-                  {/* أجندة الاجتماع */}
-                  <div className="md:col-span-2">
-                    <AgendaPreviewTable
-                      title="أجندة الاجتماع"
-                      items={meetingRequest.agenda_items ?? undefined}
-                      dir="rtl"
-                    />
-                  </div>
-                  {/* هل طلب الاجتماع بناءً على توجيه من معالي الوزير */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      هل طلب الاجتماع بناءً على توجيه من معالي الوزير
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0
-                        ? 'نعم'
-                        : meetingRequest.is_direct_schedule === true
-                          ? 'نعم'
-                          : meetingRequest.is_direct_schedule === false
-                            ? 'لا'
-                            : '-'}
-                    </div>
-                  </div>
-                  {/* طريقة التوجيه */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      طريقة التوجيه
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {getDirectiveMethodLabel(meetingRequest.directive_method) || '-'}
-                    </div>
-                  </div>
-                  {/* محضر الاجتماع */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      محضر الاجتماع
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {meetingRequest.protocol_type || '-'}
-                    </div>
-                  </div>
-                  {/* التوجيه */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      التوجيه
-                    </label>
-                    <div className="w-full min-h-[44px] flex items-start px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                      {formatRelatedGuidance(meetingRequest.related_guidance)}
-                    </div>
-                  </div>
-                  {/* ملاحظات */}
-                  <div className="flex flex-col gap-2 md:col-span-2">
-                    <label className="text-lg font-semibold text-gray-900 text-right">
-                      ملاحظات
-                    </label>
-                    {Array.isArray(meetingRequest.general_notes) && meetingRequest.general_notes.length > 0 ? (
-                      <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
-                        <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          <thead>
-                            <tr className="border-b border-gray-300 bg-[#F2F4F7]">
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[80px] text-center">رقم</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold">الملاحظة</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[150px] text-center">المصدر</th>
-                              <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">التاريخ</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {meetingRequest.general_notes.map((note: any, idx: number) => (
-                              <tr key={note.id || idx} className={idx < (meetingRequest.general_notes?.length ?? 0) - 1 ? 'border-b border-gray-200' : ''}>
-                                <td className="px-4 py-3 text-[#475467] text-center">{idx + 1}</td>
-                                <td className="px-4 py-3 text-[#101828] whitespace-pre-wrap">{note.text || '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{note.author_name || ({ SCHEDULING: 'الجدولة', CONTENT: 'المحتوى', CONTENT_CONSULTATION: 'استشارة المحتوى', EXECUTIVE_OFFICE: 'المكتب التنفيذي', GUIDANCE: 'التوجيه', SYSTEM: 'النظام', SUBMITTER: 'مقدّم الطلب', MINISTER: 'الوزير' } as Record<string, string>)[note.author_type] || note.author_type || '-'}</td>
-                                <td className="px-4 py-3 text-[#475467] text-center">{note.created_at ? new Date(note.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="w-full min-h-[44px] flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-[#F9FAFB] text-base text-gray-900 text-right">
-                        -
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <MeetingInfo data={meetingInfoData} dir="rtl" />
             </div>
           )}
 
