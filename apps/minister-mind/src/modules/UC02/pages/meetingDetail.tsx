@@ -1009,7 +1009,7 @@ const MeetingDetail: React.FC = () => {
     }) =>
       requestSchedulingConsultation(id!, {
         consultant_user_ids: payload.consultant_user_ids,
-        consultation_question: payload.consultation_question || 'هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟',
+        consultation_question: payload.consultation_question,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
@@ -1026,9 +1026,11 @@ const MeetingDetail: React.FC = () => {
   const handleConsultationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (consultationForm.consultant_user_ids.length === 0) return;
+    const questionTrimmed = consultationForm.consultation_question.trim();
+    if (!questionTrimmed) return;
     consultationMutation.mutate({
       consultant_user_ids: consultationForm.consultant_user_ids,
-      consultation_question: consultationForm.consultation_question,
+      consultation_question: questionTrimmed,
     });
   };
 
@@ -4160,11 +4162,11 @@ const MeetingDetail: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
+                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : 'طلب استشارة'}
+                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : !consultationForm.consultation_question.trim() ? 'أدخل سؤال الاستشارة' : 'طلب استشارة'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -4204,8 +4206,8 @@ const MeetingDetail: React.FC = () => {
             )}
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة</label>
-            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" />
+            <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة *</label>
+            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" required />
           </div>
         </form>
       </Drawer>
