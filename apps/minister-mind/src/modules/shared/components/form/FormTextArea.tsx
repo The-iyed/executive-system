@@ -13,7 +13,7 @@ export interface FormTextAreaProps extends Omit<React.ComponentProps<'textarea'>
 export const FormTextArea = React.forwardRef<
   HTMLTextAreaElement,
   FormTextAreaProps
->(({ className, error, label, required, fullWidth = true, containerClassName, ...props }, ref) => {
+>(({ className, error, label, required, fullWidth = true, containerClassName, onChange: propsOnChange, onInput: propsOnInput, ...props }, ref) => {
   return (
     <div className={cn(
       'flex flex-col gap-2',
@@ -44,10 +44,28 @@ export const FormTextArea = React.forwardRef<
 
           // Error
           error && 'border-[#D13C3C] text-[#344054]',
-          
+
+          // Disabled: can't be bypassed by removing attributes in devtools
+          props.disabled && 'cursor-not-allowed pointer-events-none select-none',
+
           className
         )}
         required={required}
+        readOnly={props.readOnly || props.disabled}
+        onChange={(e) => {
+          if (props.disabled) {
+            (e.target as HTMLTextAreaElement).value = String(props.value ?? '');
+            return;
+          }
+          propsOnChange?.(e);
+        }}
+        onInput={(e) => {
+          if (props.disabled) {
+            (e.target as HTMLTextAreaElement).value = String(props.value ?? '');
+            return;
+          }
+          propsOnInput?.(e);
+        }}
         {...props}
       />
       {error && (
