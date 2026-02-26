@@ -184,6 +184,12 @@ export interface ContentRequestDetailResponse {
   meeting_classification_type: string;
   meeting_confidentiality: string;
   sector: string;
+  /** When present, AI suggestion button is shown; when missing, it is hidden. */
+  ext_id?: number | string | null;
+  /** When present, used to fetch suggested-actions (execution-system meeting id). Matches GET /api/content/assigned-requests/:id response. */
+  meeting_id?: string | null;
+  /** When present, linked meeting from execution-system; use meeting.id or meeting.meeting_id for suggested-actions. */
+  meeting?: { id?: string; meeting_id?: string } | null;
 }
 
 export const getContentRequestById = async (
@@ -304,8 +310,8 @@ export const approveContent = async (
     formData.append('file', data.file);
   }
 
-  if (data.notes) {
-    formData.append('notes', data.notes);
+  if (data.notes !== undefined && data.notes !== null) {
+    formData.append('notes', typeof data.notes === 'string' ? data.notes : '');
   }
 
   if (data.directives && data.directives.length > 0) {
@@ -463,10 +469,8 @@ const INSIGHTS_MAX_POLL_ATTEMPTS = 60;
 function isInsightsReady(data: AttachmentInsightsResponse): boolean {
   const extDone = (data.extraction_status || '').toLowerCase() === 'completed';
   const llmDone = (data.llm_processing_status || '').toLowerCase() === 'completed';
-  const hasContent =
-    (Array.isArray(data.llm_notes) && data.llm_notes.length > 0) ||
-    (Array.isArray(data.llm_suggestions) && data.llm_suggestions.length > 0);
-  return (extDone && llmDone) || hasContent;
+  // Only consider ready when both are completed so we get the full response (llm_notes + llm_suggestions)
+  return extDone && llmDone;
 }
 
 function delay(ms: number, signal?: AbortSignal): Promise<void> {

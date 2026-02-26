@@ -86,7 +86,10 @@ export const FormTable: React.FC<FormTableProps> = ({
 
   return (
     <div
-      className="w-full flex flex-col gap-4 mx-auto"
+      className={cn(
+        'w-full flex flex-col gap-4 mx-auto',
+        disabled && 'pointer-events-none select-none'
+      )}
       style={{ maxWidth }}
     >
       <div className="flex items-center gap-1">
@@ -153,11 +156,14 @@ export const FormTable: React.FC<FormTableProps> = ({
                           ) : (
                           <button
                             type="button"
-                            onClick={() => !disabled && onDeleteRow(row.id)}
+                            onClick={() => {
+                              if (disabled) return;
+                              onDeleteRow(row.id);
+                            }}
                             disabled={disabled}
                             className={cn(
                               "flex items-center justify-center w-8 h-8 text-[#D13C3C] bg-[#FEF3F2] rounded-lg transition-colors",
-                              disabled ? "opacity-50 cursor-not-allowed" : "hover:w-9 hover:h-9"
+                              disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:w-9 hover:h-9"
                             )}
                             aria-label="حذف"
                           >
@@ -172,7 +178,10 @@ export const FormTable: React.FC<FormTableProps> = ({
                           <div className="w-full flex justify-end min-w-0">
                             <FormDatePicker
                               value={row[column.id] || ''}
-                              onChange={(value) => onUpdateRow(row.id, column.id, value)}
+                              onChange={(value) => {
+                                if (disabled) return;
+                                onUpdateRow(row.id, column.id, value);
+                              }}
                               placeholder={row[column.id] ? (column.placeholder || 'dd/mm/yyyy') : '-------'}
                               error={
                                 !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
@@ -186,7 +195,10 @@ export const FormTable: React.FC<FormTableProps> = ({
                           <div className="w-full flex justify-end">
                             <FormSelect
                               value={row[column.id] || ''}
-                              onValueChange={(value) => onUpdateRow(row.id, column.id, value)}
+                              onValueChange={(value) => {
+                                if (disabled) return;
+                                onUpdateRow(row.id, column.id, value);
+                              }}
                               options={column.selectOptions || []}
                               placeholder={column.placeholder || '-------'}
                               error={
@@ -201,7 +213,10 @@ export const FormTable: React.FC<FormTableProps> = ({
                             <div className="flex items-center gap-2 mx-auto">
                               <FormSwitch
                                 checked={row[column.id] || false}
-                                onCheckedChange={(checked) => onUpdateRow(row.id, column.id, checked)}
+                                onCheckedChange={(checked) => {
+                                  if (disabled) return;
+                                  onUpdateRow(row.id, column.id, checked);
+                                }}
                                 label=""
                                 className="!flex-row !items-center !gap-0"
                                 disabled={disabled}
@@ -238,9 +253,8 @@ export const FormTable: React.FC<FormTableProps> = ({
                                 <FormInput
                                   value={displayValue}
                                   onChange={(e) => {
-                                    if (!shouldDisable) {
-                                      onUpdateRow(row.id, column.id, e.target.value);
-                                    }
+                                    if (shouldDisable || disabled) return;
+                                    onUpdateRow(row.id, column.id, e.target.value);
                                   }}
                                   placeholder={column.placeholder || '-------'}
                                   disabled={shouldDisable}
@@ -285,11 +299,14 @@ export const FormTable: React.FC<FormTableProps> = ({
       {/* Add Button */}
       <button
         type="button"
-        onClick={() => !disabled && onAddRow()}
+        onClick={() => {
+          if (disabled) return;
+          onAddRow();
+        }}
         disabled={disabled}
         className={cn(
           "flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors",
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F9FAFB]"
+          disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:bg-[#F9FAFB]"
         )}
         style={{
           boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
