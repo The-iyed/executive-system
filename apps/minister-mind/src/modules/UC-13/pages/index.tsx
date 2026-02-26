@@ -37,7 +37,7 @@ type BootstrapModule = {
   };
 };
 
-const UC10Page = () => {
+const uc13Page = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,8 +48,8 @@ const UC10Page = () => {
 
   // Redirect to /business-cards if at root
   useEffect(() => {
-    if (location.pathname === '/uc10') {
-      navigate('/uc10/business-cards', { replace: true });
+    if (location.pathname === '/uc13') {
+      navigate('/uc13/business-cards', { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -113,7 +113,7 @@ const UC10Page = () => {
 
         // Mount the application with all options
         const cleanup = mountApp(containerRef.current, { 
-          basename: '/uc10',
+          basename: '/uc13',
           assetBaseUrl: UEP_REMOTE_URL,
           onLogout: hostLogout,
           hostOrigin: window.location.origin  // Pass host's origin for navigation
@@ -132,9 +132,9 @@ const UC10Page = () => {
         
         const errorMessage = err instanceof Error 
           ? err.message 
-          : 'Unknown error occurred while loading UC10';
+          : 'Unknown error occurred while loading uc13';
         
-        console.error('UC10 Microfrontend Load Error:', err);
+        console.error('uc13 Microfrontend Load Error:', err);
         setError(errorMessage);
         setLoading(false);
       }
@@ -151,7 +151,7 @@ const UC10Page = () => {
         try {
           cleanupRef.current();
         } catch (err) {
-          console.error('Error during UC10 cleanup:', err);
+          console.error('Error during uc13 cleanup:', err);
         }
         cleanupRef.current = null;
       }
@@ -164,7 +164,7 @@ const UC10Page = () => {
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
           <div className="text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-            <div className="text-lg text-gray-600 mb-2">جاري تحميل تطبيق UC10...</div>
+            <div className="text-lg text-gray-600 mb-2">جاري تحميل تطبيق uc13...</div>
             <div className="text-sm text-gray-500">يرجى الانتظار</div>
           </div>
         </div>
@@ -208,9 +208,9 @@ const UC10Page = () => {
       )}
       
       {/* Container - always rendered with overflow-visible for hover effects */}
-      <div ref={containerRef} className="flex-1 min-h-0 w-full overflow-visible" id="uc10-container" />
+      <div ref={containerRef} className="flex-1 min-h-0 w-full overflow-visible" id="uc13-container" />
     </div>
   );
 };
 
-export default UC10Page;
+export default uc13Page;
