@@ -14,10 +14,10 @@ import {
   MeetingRangePicker,
   SECTOR_OPTIONS,
   MEETING_TYPE_OPTIONS,
+  getMeetingCategoryOptions,
   type MeetingRangeValue
 } from '@shared';
 import {
-  getMeetingCategoryOptions,
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
   MEETING_CHANNEL_OPTIONS,

@@ -47,10 +47,6 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.CLOSED]: 'مغلق',
 };
 
-/**
- * Meeting Classification (فئة الاجتماع)
- * Category/Classification of the meeting
- */
 export enum MeetingClassification {
   COUNCILS_AND_COMMITTEES = 'COUNCILS_AND_COMMITTEES',
   EVENTS_AND_VISITS = 'EVENTS_AND_VISITS',
@@ -62,9 +58,6 @@ export enum MeetingClassification {
   DISCUSSION_WITHOUT_PRESENTATION = 'DISCUSSION_WITHOUT_PRESENTATION',
 }
 
-/**
- * Meeting Classification Labels (Arabic)
- */
 export const MeetingClassificationLabels: Record<MeetingClassification, string> = {
   [MeetingClassification.COUNCILS_AND_COMMITTEES]: 'المجالس واللجان',
   [MeetingClassification.EVENTS_AND_VISITS]: 'الفعاليات والزيارات',
@@ -76,10 +69,57 @@ export const MeetingClassificationLabels: Record<MeetingClassification, string> 
   [MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION]: 'مناقشة (بدون عرض تقديمي)',
 };
 
-/**
- * Meeting Classification Type (تصنيف الاجتماع)
- * Type of classification for the meeting
- */
+export const MEETING_CATEGORY_OPTIONS = [
+  {
+    value: MeetingClassification.COUNCILS_AND_COMMITTEES,
+    label: MeetingClassificationLabels[MeetingClassification.COUNCILS_AND_COMMITTEES],
+  },
+  {
+    value: MeetingClassification.EVENTS_AND_VISITS,
+    label: MeetingClassificationLabels[MeetingClassification.EVENTS_AND_VISITS],
+  },
+  {
+    value: MeetingClassification.BILATERAL_MEETING,
+    label: MeetingClassificationLabels[MeetingClassification.BILATERAL_MEETING],
+  },
+  {
+    value: MeetingClassification.PRIVATE_MEETING,
+    label: MeetingClassificationLabels[MeetingClassification.PRIVATE_MEETING],
+  },
+  {
+    value: MeetingClassification.BUSINESS,
+    label: MeetingClassificationLabels[MeetingClassification.BUSINESS],
+  },
+  {
+    value: MeetingClassification.GOVERNMENT_CENTER_TOPICS,
+    label: MeetingClassificationLabels[MeetingClassification.GOVERNMENT_CENTER_TOPICS],
+  },
+  {
+    value: MeetingClassification.WORKSHOP,
+    label: MeetingClassificationLabels[MeetingClassification.WORKSHOP],
+  },
+  {
+    value: MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION,
+    label: MeetingClassificationLabels[MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION],
+  },
+] as const;
+
+/** Category values hidden when meeting type is EXTERNAL. */
+export const EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES: readonly MeetingClassification[] = [
+  MeetingClassification.COUNCILS_AND_COMMITTEES,
+  MeetingClassification.EVENTS_AND_VISITS,
+  MeetingClassification.GOVERNMENT_CENTER_TOPICS,
+];
+
+export function getMeetingCategoryOptions(meetingType: string) {
+  if (meetingType !== 'EXTERNAL') {
+    return [...MEETING_CATEGORY_OPTIONS];
+  }
+  return MEETING_CATEGORY_OPTIONS.filter(
+    (opt) => !EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES.includes(opt.value)
+  );
+}
+
 export enum MeetingClassificationType {
   STRATEGIC = 'STRATEGIC',
   OPERATIONAL = 'OPERATIONAL',
