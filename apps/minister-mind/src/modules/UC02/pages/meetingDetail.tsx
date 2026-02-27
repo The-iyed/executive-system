@@ -217,6 +217,7 @@ const MeetingDetail: React.FC = () => {
     meeting_subject: '',
     meeting_owner: '',
     is_on_behalf_of: false,
+    is_urgent: false,
     is_sequential: false,
     previous_meeting_ext_id: null as number | null,
     previous_meeting_group_id: null as number | null,
@@ -417,6 +418,8 @@ const MeetingDetail: React.FC = () => {
   const insightsAbortControllerRef = useRef<AbortController | null>(null);
   /** AbortController for compare (تقييم الاختلاف) polling – abort when modal closes */
   const compareAbortControllerRef = useRef<AbortController | null>(null);
+  /** Last meeting id we initialized form state for – avoid overwriting user edits on refetch */
+  const lastInitializedMeetingIdRef = useRef<string | null>(null);
 
   // Handle invitee deletion
   const handleDeleteInvitee = () => {
@@ -641,6 +644,7 @@ const MeetingDetail: React.FC = () => {
     if ((formData.previous_meeting_minutes_id || '') !== (originalSnapshot.formData.previous_meeting_minutes_id || '')) payload.previous_meeting_minutes_id = formData.previous_meeting_minutes_id || null;
     if ((formData.related_guidance || '') !== (originalSnapshot.formData.related_guidance || '')) payload.related_guidance = formData.related_guidance || null;
     if (formData.is_on_behalf_of !== originalSnapshot.formData.is_on_behalf_of) payload.is_on_behalf_of = formData.is_on_behalf_of;
+    if (formData.is_urgent !== originalSnapshot.formData.is_urgent) payload.is_urgent = formData.is_urgent;
     if ((formData.sector || '') !== (originalSnapshot.formData.sector || '')) payload.sector = formData.sector || undefined;
     if ((formData.meeting_justification || '') !== (originalSnapshot.formData.meeting_justification || '')) payload.meeting_justification = formData.meeting_justification || undefined;
     if ((formData.meeting_classification_type || '') !== (originalSnapshot.formData.meeting_classification_type || '')) payload.meeting_classification_type = formData.meeting_classification_type || undefined;
@@ -666,6 +670,7 @@ const MeetingDetail: React.FC = () => {
 
     // scheduleForm comparisons against snapshot (meeting_channel = آلية انعقاد الاجتماع enum)
     if ((scheduleForm.meeting_channel || '') !== (originalSnapshot.scheduleForm.meeting_channel || '')) payload.meeting_channel = scheduleForm.meeting_channel;
+    if ((scheduleForm.location || '') !== (originalSnapshot.scheduleForm.location || '')) payload.meeting_location = scheduleForm.location || null;
     if ((scheduleForm.requires_protocol ?? false) !== (originalSnapshot.scheduleForm.requires_protocol ?? false)) payload.requires_protocol = scheduleForm.requires_protocol;
     if ((scheduleForm.protocol_type_text || '') !== (originalSnapshot.scheduleForm.protocol_type_text || '')) payload.protocol_type = scheduleForm.protocol_type_text;
     if ((scheduleForm.is_data_complete ?? true) !== (originalSnapshot.scheduleForm.is_data_complete ?? true)) payload.is_data_complete = scheduleForm.is_data_complete;
@@ -1176,9 +1181,15 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
-  // Initialize form data when meeting loads
+  // Initialize form data when meeting loads (only when meeting id changes, not on refetch)
   React.useEffect(() => {
-    if (meeting) {
+    if (!meeting?.id) {
+      lastInitializedMeetingIdRef.current = null;
+      return;
+    }
+    if (lastInitializedMeetingIdRef.current === meeting.id) return;
+    lastInitializedMeetingIdRef.current = meeting.id;
+    {
       const ownerDisplay = meeting.current_owner_user
         ? `${(meeting.current_owner_user.first_name || '').trim()} ${(meeting.current_owner_user.last_name || '').trim()}`.trim() || meeting.current_owner_user.username || ''
         : meeting.current_owner_role?.name_ar || '';
@@ -1198,6 +1209,7 @@ const MeetingDetail: React.FC = () => {
         meeting_subject: meeting.meeting_subject || '',
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
+        is_urgent: (meeting as any)?.is_urgent ?? false,
         is_sequential: meeting.is_sequential ?? false,
         previous_meeting_ext_id: prevExtId,
         previous_meeting_group_id: prevGroupId,
@@ -1352,7 +1364,7 @@ const MeetingDetail: React.FC = () => {
         protocol_type: meeting.protocol_type || prev.protocol_type,
         protocol_type_text: meeting.protocol_type || prev.protocol_type_text,
         is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
-        location: meeting.meeting_channel || prev.location,
+        location: (meeting as any).meeting_location ?? (meeting as any).location ?? prev.location ?? '',
         selected_time_slot_id: meeting.selected_time_slot_id || null,
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
@@ -1384,6 +1396,7 @@ const MeetingDetail: React.FC = () => {
         meeting_subject: meeting.meeting_subject || '',
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
+        is_urgent: (meeting as any)?.is_urgent ?? false,
         is_sequential: meeting.is_sequential ?? false,
         previous_meeting_ext_id: prevExtId,
         previous_meeting_group_id: prevGroupId,
@@ -1405,7 +1418,7 @@ const MeetingDetail: React.FC = () => {
         requires_protocol: meeting.requires_protocol ?? false,
         protocol_type_text: meeting.protocol_type || '',
         is_data_complete: meeting.is_data_complete ?? true,
-        location: meeting.meeting_channel || '',
+        location: (meeting as any).meeting_location ?? (meeting as any).location ?? '',
         meeting_channel: ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel) ? meeting.meeting_channel : 'PHYSICAL',
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || [],
       },
@@ -1618,7 +1631,7 @@ const MeetingDetail: React.FC = () => {
       meetingDescription: formData.meeting_subject || undefined,
       sector: formData.sector || undefined,
       meetingType: formData.meeting_type || undefined,
-      is_urgent: (meeting as any).is_urgent,
+      is_urgent: formData.is_urgent,
       urgent_reason: formData.meeting_justification || undefined,
       meeting_start_date: (meeting as any).scheduled_start ?? meeting.scheduled_at ?? slot?.slot_start ?? undefined,
       meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
@@ -1683,6 +1696,13 @@ const MeetingDetail: React.FC = () => {
                 <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
               </Select>
             );
+          case 'is_urgent':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_urgent ? 'نعم' : 'لا'}</span>
+                <button type="button" onClick={() => setFormData((p) => ({ ...p, is_urgent: !p.is_urgent }))} className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${formData.is_urgent ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
+              </div>
+            );
           case 'urgent_reason':
           case 'meeting_justification':
             return <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className={inputClass} placeholder={label} />;
@@ -1746,32 +1766,37 @@ const MeetingDetail: React.FC = () => {
             return <Textarea value={formData.related_guidance} onChange={(e) => handleFieldChange('related_guidance', e.target.value)} className={`${inputClass} min-h-[80px]`} placeholder={label} />;
           case 'agenda_items':
             if (!canEdit) return <div className="w-full">{value}</div>;
+            const agendaList = contentForm.agendaItems ?? [];
             return (
               <div className="w-full flex flex-col gap-2">
                 <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden bg-[#F9FAFB]">
-                  {(contentForm.agendaItems ?? []).length > 0 ? (
+                  {agendaList.length > 0 ? (
                     <div className="flex flex-col divide-y divide-gray-200">
-                      {(contentForm.agendaItems ?? []).map((item, idx) => (
+                      {agendaList.map((item, idx) => (
                         <div key={item.id} className="flex flex-row items-center gap-3 px-4 py-3 min-h-[44px]">
                           <span className="text-sm text-[#475467] w-8 flex-shrink-0 text-center">{idx + 1}</span>
                           <Input
                             type="text"
                             value={item.agenda_item ?? ''}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const newValue = e.target.value;
                               setContentForm((p) => ({
                                 ...p,
-                                agendaItems: p.agendaItems.map((i) => (i.id === item.id ? { ...i, agenda_item: e.target.value } : i)),
-                              }))
-                            }
+                                agendaItems: (p.agendaItems ?? []).map((i) =>
+                                  i.id === item.id ? { ...i, agenda_item: newValue } : i
+                                ),
+                              }));
+                            }}
                             placeholder="عنصر الأجندة"
                             className="flex-1 min-w-0 h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                            dir="rtl"
                           />
                           <button
                             type="button"
                             onClick={() =>
                               setContentForm((p) => ({
                                 ...p,
-                                agendaItems: p.agendaItems.filter((i) => i.id !== item.id),
+                                agendaItems: (p.agendaItems ?? []).filter((i) => i.id !== item.id),
                               }))
                             }
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors flex-shrink-0"
@@ -1793,7 +1818,7 @@ const MeetingDetail: React.FC = () => {
                       setContentForm((p) => ({
                         ...p,
                         agendaItems: [
-                          ...p.agendaItems,
+                          ...(p.agendaItems ?? []),
                           { id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`, agenda_item: '', presentation_duration_minutes: undefined },
                         ],
                       }))
