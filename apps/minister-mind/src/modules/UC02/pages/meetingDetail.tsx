@@ -389,7 +389,6 @@ const MeetingDetail: React.FC = () => {
     objectives: [],
     agendaItems: [],
   });
-
   // Attachments state for managing deletions and additions
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<string[]>([]);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
@@ -666,17 +665,21 @@ const MeetingDetail: React.FC = () => {
     }
 
     if (JSON.stringify(contentForm.agendaItems || []) !== JSON.stringify(originalSnapshot.contentForm.agendaItems || [])) {
-      payload.agenda_items = contentForm.agendaItems
-        .filter((item) => item.agenda_item.trim().length > 0)
-        .map((item) => ({
+      const filtered = contentForm.agendaItems.filter((item) => item.agenda_item.trim().length > 0);
+      const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+      payload.agenda_items = filtered.map((item) => {
+        const supportType = (item.minister_support_type ?? '').trim();
+        const isOther = supportType === otherTypeValue;
+        const rawOther = item.minister_support_other;
+        const customText =
+          typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+        return {
           agenda_item: item.agenda_item.trim(),
           presentation_duration_minutes: item.presentation_duration_minutes,
-        }));
-      payload.minister_support = contentForm.agendaItems
-        .filter((item) => item.agenda_item.trim().length > 0)
-        .map((item) => ({
-          support_description: item.minister_support_type === 'أخرى' ? (item.minister_support_other || '').trim() : (item.minister_support_type || '').trim(),
-        }));
+          minister_support_type: item.minister_support_type ?? '',
+          minister_support_other: isOther ? (customText || null) : null,
+        };
+      });
     }
 
     // scheduleForm comparisons against snapshot (meeting_channel = آلية انعقاد الاجتماع enum)
@@ -1247,9 +1250,9 @@ const MeetingDetail: React.FC = () => {
           objective: obj.objective,
         })),
         agendaItems: (meeting.agenda_items || []).map((item, idx) => {
-          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string };
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_description?: string };
           const support = (meeting as any).minister_support?.[idx];
-          const supportDesc = support?.support_description ?? '';
+          const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
             id: item.id || `agenda-${Date.now()}-${Math.random()}`,
@@ -1447,9 +1450,9 @@ const MeetingDetail: React.FC = () => {
           objective: obj.objective,
         })),
         agendaItems: (meeting.agenda_items || []).map((item, idx) => {
-          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string };
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_description?: string };
           const support = (meeting as any).minister_support?.[idx];
-          const supportDesc = support?.support_description ?? '';
+          const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
             id: item.id || `agenda-${Date.now()}-${Math.random()}`,
@@ -1887,12 +1890,13 @@ const MeetingDetail: React.FC = () => {
                               value={item.minister_support_other ?? ''}
                               onChange={(e) => {
                                 const newValue = e.target.value;
-                                setContentForm((p) => ({
-                                  ...p,
-                                  agendaItems: (p.agendaItems ?? []).map((i) =>
-                                    i.id === item.id ? { ...i, minister_support_other: newValue } : i
-                                  ),
-                                }));
+                                const rowIndex = idx;
+                                setContentForm((p) => {
+                                  const next = (p.agendaItems ?? []).map((i, iIdx) =>
+                                    iIdx === rowIndex ? { ...i, minister_support_other: newValue } : i
+                                  );
+                                  return { ...p, agendaItems: next };
+                                });
                               }}
                               placeholder="نص الدعم"
                               className="w-full h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
@@ -3426,8 +3430,20 @@ const MeetingDetail: React.FC = () => {
               meeting_justification: meeting.meeting_justification || '',
               related_topic: meeting.related_topic || null,
               objectives: contentForm.objectives.map((obj) => ({ objective: obj.objective })),
-              agenda_items: contentForm.agendaItems.map((item) => ({ agenda_item: item.agenda_item })),
-              minister_support: meeting.minister_support || [],
+              agenda_items: contentForm.agendaItems.map((item) => {
+                const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+                const supportType = (item.minister_support_type ?? '').trim();
+                const isOther = supportType === otherTypeValue;
+                const rawOther = item.minister_support_other;
+                const customText =
+                  typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+                return {
+                  agenda_item: item.agenda_item,
+                  presentation_duration_minutes: item.presentation_duration_minutes,
+                  minister_support_type: item.minister_support_type ?? '',
+                  minister_support_other: isOther ? (customText || null) : null,
+                };
+              }),
             },
           }}
           onSuccess={(data) => {
@@ -3633,8 +3649,29 @@ const MeetingDetail: React.FC = () => {
                 setInviteeValidationErrors({});
                 setMinisterAttendeeValidationErrors({});
                 const hasPresentationFiles = newPresentationAttachments.length > 0;
+                // Build payload at click time so agenda_items uses latest contentForm (avoids stale closure)
+                const payload = { ...changedPayload };
+                const agendaChanged =
+                  JSON.stringify(contentForm.agendaItems ?? []) !==
+                  JSON.stringify(originalSnapshot?.contentForm?.agendaItems ?? []);
+                if (agendaChanged) {
+                  const filtered = contentForm.agendaItems.filter((item) => (item.agenda_item ?? '').trim().length > 0);
+                  const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+                  payload.agenda_items = filtered.map((item) => {
+                    const supportType = (item.minister_support_type ?? '').trim();
+                    const isOther = supportType === otherTypeValue;
+                    const rawOther = item.minister_support_other;
+                    const customText = typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+                    return {
+                      agenda_item: (item.agenda_item ?? '').trim(),
+                      presentation_duration_minutes: item.presentation_duration_minutes,
+                      minister_support_type: item.minister_support_type ?? '',
+                      minister_support_other: item?.minister_support_other ,
+                    };
+                  });
+                }
                 updateMutation.mutate({
-                  payload: changedPayload,
+                  payload,
                   presentationFiles: hasPresentationFiles ? newPresentationAttachments : undefined,
                 });
               }}
