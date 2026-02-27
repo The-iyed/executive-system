@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -1745,7 +1745,67 @@ const MeetingDetail: React.FC = () => {
           case 'related_guidance':
             return <Textarea value={formData.related_guidance} onChange={(e) => handleFieldChange('related_guidance', e.target.value)} className={`${inputClass} min-h-[80px]`} placeholder={label} />;
           case 'agenda_items':
-            return <div className="w-full">{value}</div>;
+            if (!canEdit) return <div className="w-full">{value}</div>;
+            return (
+              <div className="w-full flex flex-col gap-2">
+                <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden bg-[#F9FAFB]">
+                  {(contentForm.agendaItems ?? []).length > 0 ? (
+                    <div className="flex flex-col divide-y divide-gray-200">
+                      {(contentForm.agendaItems ?? []).map((item, idx) => (
+                        <div key={item.id} className="flex flex-row items-center gap-3 px-4 py-3 min-h-[44px]">
+                          <span className="text-sm text-[#475467] w-8 flex-shrink-0 text-center">{idx + 1}</span>
+                          <Input
+                            type="text"
+                            value={item.agenda_item ?? ''}
+                            onChange={(e) =>
+                              setContentForm((p) => ({
+                                ...p,
+                                agendaItems: p.agendaItems.map((i) => (i.id === item.id ? { ...i, agenda_item: e.target.value } : i)),
+                              }))
+                            }
+                            placeholder="عنصر الأجندة"
+                            className="flex-1 min-w-0 h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setContentForm((p) => ({
+                                ...p,
+                                agendaItems: p.agendaItems.filter((i) => i.id !== item.id),
+                              }))
+                            }
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors flex-shrink-0"
+                            aria-label="حذف بند الأجندة"
+                          >
+                            <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="min-h-[44px] flex items-center px-4 py-3 text-sm text-[#475467] text-right">لا توجد بنود</div>
+                  )}
+                </div>
+                <div className="flex items-center justify-start">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setContentForm((p) => ({
+                        ...p,
+                        agendaItems: [
+                          ...p.agendaItems,
+                          { id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`, agenda_item: '', presentation_duration_minutes: undefined },
+                        ],
+                      }))
+                    }
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg shadow-sm text-[#344054] font-medium text-sm hover:bg-[#F9FAFB] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة بند أجندة
+                  </button>
+                </div>
+              </div>
+            );
           case 'general_notes':
             return <Textarea value={contentTabForm.general_notes} onChange={(e) => setContentTabForm((p) => ({ ...p, general_notes: e.target.value }))} className={`${inputClass} min-h-[80px]`} placeholder={label} />;
           default:
@@ -1780,7 +1840,7 @@ const MeetingDetail: React.FC = () => {
         </div>
       );
     },
-    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
+    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
   );
 
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
@@ -3013,7 +3073,11 @@ const MeetingDetail: React.FC = () => {
           {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING  && (
+              {meetingStatus !== MeetingStatus.WAITING &&
+                meetingStatus !== MeetingStatus.CLOSED &&
+                meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
+                meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
                 <div className="flex justify-end">
                   <button
                     type="button"
