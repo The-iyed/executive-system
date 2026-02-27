@@ -1,5 +1,4 @@
-import { FormField, FormSelect } from '@shared';
-import { MEETING_TYPE_OPTIONS } from '../../../../utils';
+import { FormField, FormSelect, MEETING_TYPE_OPTIONS } from '@shared';
 
 export interface MeetingTypeFieldProps {
   value: string;
