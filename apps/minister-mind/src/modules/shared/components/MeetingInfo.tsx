@@ -1,39 +1,11 @@
-import React from 'react';
 import { ReadOnlyField } from './ReadOnlyField';
 import { AgendaPreviewTable, type AgendaItemPreview } from './AgendaPreviewTable';
-import { SECTOR_OPTIONS, MeetingChannelLabels } from '../types';
+import {
+  SECTOR_OPTIONS,
+  getMeetingClassificationLabel,
+  getMeetingClassificationTypeLabel,
 
-// Option labels matching Step1BasicInfo constants (display only, no UC01 dependency)
-const MEETING_CATEGORY_LABELS: Record<string, string> = {
-  COUNCILS_AND_COMMITTEES: 'المجالس واللجان',
-  EVENTS_AND_VISITS: 'الفعاليات والزيارات',
-  BILATERAL_MEETING: 'لقاء ثنائي',
-  PRIVATE_MEETING: 'لقاء خاص',
-  WORKSHOP: 'ورشة عمل',
-  DISCUSSION_WITHOUT_PRESENTATION: 'مناقشة (بدون عرض تقديمي)',
-  BUSINESS: 'اجتماعات الأعمال',
-  GOVERNMENT_CENTER_TOPICS: 'مواضيع مركز الحكومة',
-};
-
-const MEETING_CLASSIFICATION_LABELS: Record<string, string> = {
-  STRATEGIC: 'استراتيجي',
-  OPERATIONAL: 'تشغيلي',
-};
-
-const CONFIDENTIALITY_LABELS: Record<string, string> = {
-  CONFIDENTIAL: 'سرّي',
-  NORMAL: 'عادي',
-};
-
-const MEETING_TYPE_LABELS: Record<string, string> = {
-  INTERNAL: 'داخلي',
-  EXTERNAL: 'خارجي',
-};
-
-const DIRECTIVE_METHOD_LABELS: Record<string, string> = {
-  DIRECT_DIRECTIVE: 'توجيه مباشر',
-  PREVIOUS_MEETING: 'اجتماع سابق',
-};
+} from '../types';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
   if (!startISO && !endISO) return '—';
@@ -62,9 +34,11 @@ function formatDateOnly(iso: string | null | undefined): string {
   return d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-function getLabel(value: string | null | undefined, map: Record<string, string>): string {
-  if (value == null || value === '') return '—';
-  return map[value] ?? value;
+/** فئة الاجتماع: resolve from both category (MeetingClassification) and type (MeetingClassificationType) so e.g. SPECIAL → خاص */
+function getMeetingCategoryDisplayLabel(value: string | null | undefined): string {
+  const fromCategory = getMeetingClassificationLabel(value);
+  if (fromCategory !== '-' && fromCategory !== (value ?? '')) return fromCategory;
+  return getMeetingClassificationTypeLabel(value);
 }
 
 /** Single source of truth for field order and labels. Key = editable field id for return-for-info (empty = no checkbox). */
