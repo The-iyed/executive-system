@@ -41,11 +41,6 @@ export const CONFIDENTIALITY_OPTIONS = [
   { value: 'NORMAL', label: 'عادي' },
 ];
 
-export const MEETING_TYPE_OPTIONS = [
-  { value: 'INTERNAL', label: 'داخلي' },
-  { value: 'EXTERNAL', label: 'خارجي' },
-];
-
 /** آلية انعقاد الاجتماع: حضوري / عن بعد — sent to API as meeting_channel */
 export const MEETING_CHANNEL_OPTIONS = [
   { value: 'PHYSICAL', label: AttendanceMechanism.PHYSICAL },
