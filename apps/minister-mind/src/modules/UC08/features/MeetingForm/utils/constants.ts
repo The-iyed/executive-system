@@ -1,14 +1,5 @@
 import { SECTOR_OPTIONS, type  FormTableColumn } from '@shared';
 
-export const MEETING_CATEGORY_OPTIONS = [
-  { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
-  { value: 'EVENTS_AND_VISITS', label: 'الفعاليات والزيارات' },
-  { value: 'BILATERAL_MEETING', label: 'لقاء ثنائي' },
-  { value: 'PRIVATE_MEETING', label: 'لقاء خاص' },
-  { value: 'BUSINESS', label: 'أعمال' },
-  { value: 'GOVERNMENT_CENTER_TOPICS', label: 'مواضيع مركز الحكومة' },
-];
-
 export const MEETING_CLASSIFICATION_OPTIONS = [
   { value: 'STRATEGIC', label: 'استراتيجي' },
   { value: 'OPERATIONAL', label: 'تشغيلي' },
