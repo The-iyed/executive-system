@@ -2948,7 +2948,7 @@ const MeetingDetail: React.FC = () => {
           {/* استشارة الجدولة */}
           {activeTab === 'scheduling-consultation' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && (
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.REJECTED && (
                 <div className="flex justify-end">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -3102,6 +3102,7 @@ const MeetingDetail: React.FC = () => {
                 meetingStatus !== MeetingStatus.CLOSED &&
                 meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
                 meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
+                meetingStatus !== MeetingStatus.REJECTED &&
                 meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
                 <div className="flex justify-end">
                   <button
