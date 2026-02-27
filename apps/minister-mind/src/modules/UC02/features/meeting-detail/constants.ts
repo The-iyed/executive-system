@@ -4,6 +4,7 @@
 
 export const fieldLabels: Record<string, string> = {
   meeting_type: 'نوع الاجتماع',
+  is_urgent: 'اجتماع عاجل؟',
   meeting_title: 'عنوان الاجتماع',
   meeting_subject: 'وصف الاجتماع',
   meeting_classification: 'تصنيف الاجتماع',
@@ -16,17 +17,21 @@ export const fieldLabels: Record<string, string> = {
   previous_meeting_minutes_id: 'محضر الاجتماع',
   related_guidance: 'التوجيه',
   objectives: 'الأهداف',
-  agenda_items: 'بنود جدول أعمال الاجتماع',
+  agenda_items: 'أجندة الاجتماع',
   meeting_channel: 'آلية انعقاد الاجتماع',
+  meeting_location: 'الموقع',
   requires_protocol: 'يتطلب بروتوكول',
   protocol_type: 'نوع البروتوكول',
   is_data_complete: 'اكتمال البيانات',
   selected_time_slot_id: 'الموعد المحدد',
+  alternative_1: 'الموعد البديل الأول',
+  alternative_2: 'الموعد البديل الثاني',
   minister_attendees: 'حضور الوزير',
   invitees: 'المدعوون',
   deleted_attachment_ids: 'حذف المرفقات',
   sector: 'القطاع',
-  meeting_justification: 'السبب',
+  urgent_reason: 'السبب',
+  meeting_justification: 'مبرر اللقاء',
   meeting_classification_type: 'فئة الاجتماع',
   related_topic: 'موضوع التكليف المرتبط',
   deadline: 'تاريخ الاستحقاق',
@@ -60,3 +65,28 @@ export const TABS_HIDDEN_WHEN_SCHEDULED = [
   'directive',
   'content-consultation',
 ];
+
+/** الدعم المطلوب من الوزير – for agenda table (same as AgendaPreviewTable) */
+export const MINISTER_SUPPORT_TYPE_OPTIONS = [
+  { value: 'إحاطة', label: 'إحاطة' },
+  { value: 'تحديث', label: 'تحديث' },
+  { value: 'قرار', label: 'قرار' },
+  { value: 'توجيه', label: 'توجيه' },
+  { value: 'اعتماد', label: 'اعتماد' },
+  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
+] as const;
+
+/** مدة العرض (بالدقائق) – for agenda table */
+export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
+  { value: '5', label: '5 دقائق' },
+  { value: '10', label: '10 دقائق' },
+  { value: '15', label: '15 دقيقة' },
+  { value: '20', label: '20 دقيقة' },
+  { value: '25', label: '25 دقيقة' },
+  { value: '30', label: '30 دقيقة' },
+  { value: '45', label: '45 دقيقة' },
+  { value: '60', label: '60 دقيقة' },
+  { value: '90', label: '90 دقيقة' },
+  { value: '120', label: '120 دقيقة' },
+  { value: '180', label: '180 دقيقة' },
+] as const;
