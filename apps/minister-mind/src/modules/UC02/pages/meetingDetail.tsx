@@ -414,6 +414,7 @@ const MeetingDetail: React.FC = () => {
   const [compareOpenedWithoutReplace, setCompareOpenedWithoutReplace] = useState(false);
   /** LLM notes/insights modal for a presentation attachment (ملاحظات على العرض) – icon on each attachment */
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
   /** AbortController for insights polling – abort when modal closes to stop polling */
   const insightsAbortControllerRef = useRef<AbortController | null>(null);
   /** AbortController for compare (تقييم الاختلاف) polling – abort when modal closes */
@@ -2129,7 +2130,7 @@ const MeetingDetail: React.FC = () => {
                         )}
                       </div>
                               <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                              <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                              <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
                               <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
                             </div>
                           </div>
@@ -2243,7 +2244,7 @@ const MeetingDetail: React.FC = () => {
                           <div key={att.id} className="flex flex-row items-center px-4 py-3 gap-3 min-w-0 flex-1 max-w-[400px] h-[56px] bg-white border border-[#E4E7EC] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#048F86]/50 hover:shadow-[0px_2px_8px_rgba(4,143,134,0.08)] transition-all duration-200">
                             {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                             <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                            <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
+                            <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
                     </div>
                   ))}
                   {newAttachments.map((file, idx) => (
@@ -3226,6 +3227,7 @@ const MeetingDetail: React.FC = () => {
               meeting={meeting}
               contentOfficerNotesRecords={contentOfficerNotesRecords}
               pdfIcon={pdfIcon}
+              onPreviewAttachment={(att) => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
             />
           )}
 
@@ -3655,6 +3657,45 @@ const MeetingDetail: React.FC = () => {
                 />
               </div>
           </form>
+      </Drawer>
+
+      {/* PDF / file preview drawer */}
+      <Drawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+        title={previewAttachment?.file_name ?? ''}
+        side="right"
+        width="90vw"
+        showDecoration={true}
+        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+      >
+        {previewAttachment && (
+          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+              <iframe
+                title={previewAttachment.file_name}
+                src={previewAttachment.blob_url}
+                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+              />
+            ) : (
+              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                </p>
+                <a
+                  href={previewAttachment.blob_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <Download className="w-4 h-4" />
+                  تحميل الملف
+                </a>
+              </div>
+            )}
+          </div>
+        )}
       </Drawer>
 
       {/* Request Guidance – Drawer */}
