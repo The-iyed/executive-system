@@ -112,24 +112,21 @@ export const MeetingConfidentialityLabels: Record<MeetingConfidentiality, string
   [MeetingConfidentiality.NORMAL]: 'عادي',
 };
 
-/**
- * Meeting Type (نوع الاجتماع)
- * Type of meeting (internal or external)
- */
 export enum MeetingType {
   INTERNAL = 'INTERNAL',
   EXTERNAL = 'EXTERNAL',
-  BUSINESS_OWNER = 'BUSINESS_OWNER',
 }
 
-/**
- * Meeting Type Labels (Arabic)
- */
 export const MeetingTypeLabels: Record<MeetingType, string> = {
   [MeetingType.INTERNAL]: 'داخلي',
   [MeetingType.EXTERNAL]: 'خارجي',
-  [MeetingType.BUSINESS_OWNER]: 'مالك أعمال',
 };
+
+/** Options for meeting type select (value/label), derived from MeetingType + MeetingTypeLabels. */
+export const MEETING_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: MeetingType.INTERNAL, label: MeetingTypeLabels[MeetingType.INTERNAL] },
+  { value: MeetingType.EXTERNAL, label: MeetingTypeLabels[MeetingType.EXTERNAL] },
+];
 
 /**
  * Sector (القطاع)
