@@ -1,10 +1,14 @@
+import React from 'react';
 import { ReadOnlyField } from './ReadOnlyField';
 import { AgendaPreviewTable, type AgendaItemPreview } from './AgendaPreviewTable';
 import {
   SECTOR_OPTIONS,
   getMeetingClassificationLabel,
   getMeetingClassificationTypeLabel,
-
+  getMeetingTypeLabel,
+  getMeetingConfidentialityLabel,
+  getDirectiveMethodLabel,
+  MeetingChannelLabels,
 } from '../types';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
@@ -34,13 +38,6 @@ function formatDateOnly(iso: string | null | undefined): string {
   return d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-/** فئة الاجتماع: resolve from both category (MeetingClassification) and type (MeetingClassificationType) so e.g. SPECIAL → خاص */
-function getMeetingCategoryDisplayLabel(value: string | null | undefined): string {
-  const fromCategory = getMeetingClassificationLabel(value);
-  if (fromCategory !== '-' && fromCategory !== (value ?? '')) return fromCategory;
-  return getMeetingClassificationTypeLabel(value);
-}
-
 /** Single source of truth for field order and labels. Key = editable field id for return-for-info (empty = no checkbox). */
 export interface MeetingInfoFieldSpec {
   key: string;
@@ -58,20 +55,20 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
     { key: 'meeting_title', label: 'عنوان الاجتماع', getValue: (d) => d.meetingSubject ?? '—' },
     { key: 'meeting_subject', label: 'وصف الاجتماع', getValue: (d) => d.meetingDescription ?? '—' },
     { key: 'sector', label: 'القطاع', getValue: (d) => (d.sector != null && d.sector !== '' ? SECTOR_OPTIONS.find((o) => o.value === d.sector)?.label ?? d.sector : '—') },
-    { key: 'meeting_type', label: 'نوع الاجتماع', getValue: (d) => getLabel(d.meetingType, MEETING_TYPE_LABELS) },
-    { key: '', label: 'اجتماع عاجل؟', getValue: (d) => (d.is_urgent === true ? 'نعم' : d.is_urgent === false ? 'لا' : '—') },
+    { key: 'meeting_type', label: 'نوع الاجتماع', getValue: (d) => getMeetingTypeLabel(d.meetingType) ?? '—' },
+    { key: 'is_urgent', label: 'اجتماع عاجل؟', getValue: (d) => (d.is_urgent === true ? 'نعم' : d.is_urgent === false ? 'لا' : '—') },
     { key: 'urgent_reason', label: 'السبب', getValue: (d) => d.urgent_reason ?? '—' },
     { key: 'selected_time_slot_id', label: 'موعد الاجتماع', getValue: (d) => formatIsoRange(d.meeting_start_date, d.meeting_end_date) },
     { key: 'alternative_1', label: 'الموعد البديل الأول', getValue: (d) => formatIsoRange(d.alternative_1_start_date, d.alternative_1_end_date) },
     { key: 'alternative_2', label: 'الموعد البديل الثاني', getValue: (d) => formatIsoRange(d.alternative_2_start_date, d.alternative_2_end_date) },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', getValue: (d) => MeetingChannelLabels[d.meetingChannel ?? ''] ?? d.meetingChannel ?? '—' },
     { key: 'meeting_location', label: 'الموقع', getValue: (d) => d.meeting_location ?? '—' },
-    { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getLabel(d.meetingCategory, MEETING_CATEGORY_LABELS) },
+    { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingCategory) ?? '—' },
     { key: 'meeting_justification', label: 'مبرر اللقاء', getValue: (d) => d.meetingReason ?? '—' },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', getValue: (d) => d.relatedTopic ?? '—' },
     { key: 'deadline', label: 'تاريخ الاستحقاق', getValue: (d) => formatDateOnly(d.dueDate) },
-    { key: 'meeting_classification', label: 'تصنيف الاجتماع', getValue: (d) => getLabel(d.meetingClassification1, MEETING_CLASSIFICATION_LABELS) },
-    { key: 'meeting_confidentiality', label: 'سرية الاجتماع', getValue: (d) => getLabel(d.meetingConfidentiality, CONFIDENTIALITY_LABELS) },
+    { key: 'meeting_classification', label: 'تصنيف الاجتماع', getValue: (d) => getMeetingClassificationLabel(d.meetingClassification1) ?? '—' },
+    { key: 'meeting_confidentiality', label: 'سرية الاجتماع', getValue: (d) => getMeetingConfidentialityLabel(d.meetingConfidentiality) ?? '—' },
   ];
 }
 
@@ -85,7 +82,7 @@ export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
       : '—';
   return [
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', getValue: (d) => (d.is_based_on_directive === true ? 'نعم' : d.is_based_on_directive === false ? 'لا' : '—') },
-    { key: 'directive_method', label: 'طريقة التوجيه', getValue: (d) => getLabel(d.directive_method, DIRECTIVE_METHOD_LABELS) },
+    { key: 'directive_method', label: 'طريقة التوجيه', getValue: (d) => getDirectiveMethodLabel(d.directive_method) ?? '—' },
     { key: 'previous_meeting_minutes_id', label: 'محضر الاجتماع', getValue: fileDisplay },
     { key: 'related_guidance', label: 'التوجيه', getValue: (d) => d.directive_text ?? '—' },
     { key: 'general_notes', label: 'ملاحظات', getValue: (d) => d.notes ?? '—', className: 'sm:col-span-2' },
