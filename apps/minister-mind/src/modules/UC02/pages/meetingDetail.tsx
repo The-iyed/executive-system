@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, Send, FileCheck, ClipboardCheck, RotateCcw, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Zap, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -75,9 +75,7 @@ import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar } from '@shared';
 import { type CalendarEventData } from '@shared';
-import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 
-// Field labels mapping for edit confirmation modal
 const fieldLabels: Record<string, string> = {
   meeting_type: 'نوع الاجتماع',
   meeting_title: 'عنوان الاجتماع',
@@ -3287,7 +3285,11 @@ const MeetingDetail: React.FC = () => {
           {/* سؤال tab */}
           {activeTab === 'directive' && (
             <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING && meetingStatus !== MeetingStatus.REJECTED && (
+              {meetingStatus !== MeetingStatus.WAITING &&
+                meetingStatus !== MeetingStatus.CLOSED &&
+                meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
+                meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
                 <div className="flex justify-end">
                   <button
                     type="button"
