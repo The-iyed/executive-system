@@ -1,5 +1,6 @@
 export { ErrorBoundary } from './error-boundary';
 export { PageTransition } from './page-transition';
+export { ReadOnlyField, type ReadOnlyFieldProps } from './ReadOnlyField';
 export { Logo } from './logo';
 export { LanguageSwitch } from './language-switch';
 export { SearchInput } from './search-input';
@@ -72,6 +73,14 @@ export {
 } from './form';
 
 export { AgendaPreviewTable, type AgendaPreviewTableProps, type AgendaItemPreview } from './AgendaPreviewTable';
-export { MeetingInfo, type MeetingInfoProps, type MeetingInfoData } from './MeetingInfo';
+export {
+  MeetingInfo,
+  getMeetingInfoGridSpecs,
+  getMeetingInfoDirectiveSpecs,
+  type MeetingInfoProps,
+  type MeetingInfoData,
+  type MeetingInfoFieldSpec,
+  type MeetingInfoRenderField,
+} from './MeetingInfo';
 
 export type { OptionType } from './AsyncSelectV2/types';
