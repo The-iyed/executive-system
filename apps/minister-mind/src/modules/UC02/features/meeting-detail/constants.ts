@@ -65,3 +65,28 @@ export const TABS_HIDDEN_WHEN_SCHEDULED = [
   'directive',
   'content-consultation',
 ];
+
+/** الدعم المطلوب من الوزير – for agenda table (same as AgendaPreviewTable) */
+export const MINISTER_SUPPORT_TYPE_OPTIONS = [
+  { value: 'إحاطة', label: 'إحاطة' },
+  { value: 'تحديث', label: 'تحديث' },
+  { value: 'قرار', label: 'قرار' },
+  { value: 'توجيه', label: 'توجيه' },
+  { value: 'اعتماد', label: 'اعتماد' },
+  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
+] as const;
+
+/** مدة العرض (بالدقائق) – for agenda table */
+export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
+  { value: '5', label: '5 دقائق' },
+  { value: '10', label: '10 دقائق' },
+  { value: '15', label: '15 دقيقة' },
+  { value: '20', label: '20 دقيقة' },
+  { value: '25', label: '25 دقيقة' },
+  { value: '30', label: '30 دقيقة' },
+  { value: '45', label: '45 دقيقة' },
+  { value: '60', label: '60 دقيقة' },
+  { value: '90', label: '90 دقيقة' },
+  { value: '120', label: '120 دقيقة' },
+  { value: '180', label: '180 دقيقة' },
+] as const;

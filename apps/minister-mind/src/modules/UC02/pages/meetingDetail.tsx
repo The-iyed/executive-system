@@ -76,7 +76,7 @@ import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
-import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS } from '../features/meeting-detail/constants';
 
 /** Map API attendance_mechanism (Arabic) to attendance_channel enum */
 function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
@@ -378,7 +378,13 @@ const MeetingDetail: React.FC = () => {
   // Content tab form state (objectives and agenda items)
   const [contentForm, setContentForm] = useState<{
     objectives: Array<{ id: string; objective: string }>;
-    agendaItems: Array<{ id: string; agenda_item: string; presentation_duration_minutes?: number }>;
+    agendaItems: Array<{
+      id: string;
+      agenda_item: string;
+      presentation_duration_minutes?: number;
+      minister_support_type?: string;
+      minister_support_other?: string;
+    }>;
   }>({
     objectives: [],
     agendaItems: [],
@@ -665,6 +671,11 @@ const MeetingDetail: React.FC = () => {
         .map((item) => ({
           agenda_item: item.agenda_item.trim(),
           presentation_duration_minutes: item.presentation_duration_minutes,
+        }));
+      payload.minister_support = contentForm.agendaItems
+        .filter((item) => item.agenda_item.trim().length > 0)
+        .map((item) => ({
+          support_description: item.minister_support_type === 'أخرى' ? (item.minister_support_other || '').trim() : (item.minister_support_type || '').trim(),
         }));
     }
 
@@ -1235,11 +1246,19 @@ const MeetingDetail: React.FC = () => {
           id: obj.id || `obj-${Date.now()}-${Math.random()}`,
           objective: obj.objective,
         })),
-        agendaItems: (meeting.agenda_items || []).map((item) => ({
-          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-          agenda_item: item.agenda_item,
-          presentation_duration_minutes: item.presentation_duration_minutes,
-        })),
+        agendaItems: (meeting.agenda_items || []).map((item, idx) => {
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string };
+          const support = (meeting as any).minister_support?.[idx];
+          const supportDesc = support?.support_description ?? '';
+          const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
+          return {
+            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+            agenda_item: item.agenda_item,
+            presentation_duration_minutes: item.presentation_duration_minutes,
+            minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
+            minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
+          };
+        }),
       });
       setContentTabForm({
         when_presentation_attached: (meeting as any).when_presentation_attached ?? '',
@@ -1427,11 +1446,19 @@ const MeetingDetail: React.FC = () => {
           id: obj.id || `obj-${Date.now()}-${Math.random()}`,
           objective: obj.objective,
         })),
-        agendaItems: (meeting.agenda_items || []).map((item) => ({
-          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-          agenda_item: item.agenda_item,
-          presentation_duration_minutes: item.presentation_duration_minutes,
-        })),
+        agendaItems: (meeting.agenda_items || []).map((item, idx) => {
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string };
+          const support = (meeting as any).minister_support?.[idx];
+          const supportDesc = support?.support_description ?? '';
+          const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
+          return {
+            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+            agenda_item: item.agenda_item,
+            presentation_duration_minutes: item.presentation_duration_minutes,
+            minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
+            minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
+          };
+        }),
       },
       contentTabForm: {
         when_presentation_attached: (meeting as any).when_presentation_attached ?? '',
@@ -1651,6 +1678,8 @@ const MeetingDetail: React.FC = () => {
         id: (item as any).id,
         agenda_item: (item as any).agenda_item,
         presentation_duration_minutes: (item as any).presentation_duration_minutes,
+        minister_support_type: (item as any).minister_support_type,
+        minister_support_other: (item as any).minister_support_other,
       })),
       is_based_on_directive: formData.is_based_on_directive,
       directive_method: formData.directive_method || undefined,
@@ -1768,47 +1797,131 @@ const MeetingDetail: React.FC = () => {
             if (!canEdit) return <div className="w-full">{value}</div>;
             const agendaList = contentForm.agendaItems ?? [];
             return (
-              <div className="w-full flex flex-col gap-2">
-                <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden bg-[#F9FAFB]">
+              <div className="w-full flex flex-col gap-2" dir="rtl">
+                <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
                   {agendaList.length > 0 ? (
-                    <div className="flex flex-col divide-y divide-gray-200">
-                      {agendaList.map((item, idx) => (
-                        <div key={item.id} className="flex flex-row items-center gap-3 px-4 py-3 min-h-[44px]">
-                          <span className="text-sm text-[#475467] w-8 flex-shrink-0 text-center">{idx + 1}</span>
-                          <Input
-                            type="text"
-                            value={item.agenda_item ?? ''}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              setContentForm((p) => ({
-                                ...p,
-                                agendaItems: (p.agendaItems ?? []).map((i) =>
-                                  i.id === item.id ? { ...i, agenda_item: newValue } : i
-                                ),
-                              }));
-                            }}
-                            placeholder="عنصر الأجندة"
-                            className="flex-1 min-w-0 h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
-                            dir="rtl"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setContentForm((p) => ({
-                                ...p,
-                                agendaItems: (p.agendaItems ?? []).filter((i) => i.id !== item.id),
-                              }))
-                            }
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors flex-shrink-0"
-                            aria-label="حذف بند الأجندة"
-                          >
-                            <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                          </button>
-                        </div>
+                    <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      <thead>
+                        <tr className="border-b border-gray-300 bg-[#F2F4F7]">
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-24 text-center">#</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold">الأجندة</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">الدعم المطلوب من الوزير</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[140px] text-center">مدة العرض (بالدقائق)</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold">نص الدعم (عند اختيار أخرى)</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold w-20 text-center" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agendaList.map((item, idx) => (
+                        <tr key={item.id} className={idx < agendaList.length - 1 ? 'border-b border-gray-200' : ''}>
+                          <td className="px-4 py-3 text-[#475467] text-center align-middle">{idx + 1}</td>
+                          <td className="px-4 py-2 align-middle">
+                            <Input
+                              type="text"
+                              value={item.agenda_item ?? ''}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, agenda_item: newValue } : i
+                                  ),
+                                }));
+                              }}
+                              placeholder="عنصر الأجندة"
+                              className="w-full h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Select
+                              value={item.minister_support_type ?? ''}
+                              onValueChange={(v) =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, minister_support_type: v } : i
+                                  ),
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-full min-w-[140px] h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm">
+                                <SelectValue placeholder="اختر" />
+                              </SelectTrigger>
+                              <SelectContent dir="rtl">
+                                {MINISTER_SUPPORT_TYPE_OPTIONS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Select
+                              value={item.presentation_duration_minutes != null ? String(item.presentation_duration_minutes) : ''}
+                              onValueChange={(v) =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, presentation_duration_minutes: v ? Number(v) : undefined } : i
+                                  ),
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-full min-w-[100px] h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm">
+                                <SelectValue placeholder="اختر" />
+                              </SelectTrigger>
+                              <SelectContent dir="rtl">
+                                {PRESENTATION_DURATION_MINUTES_OPTIONS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Input
+                              type="text"
+                              value={item.minister_support_other ?? ''}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, minister_support_other: newValue } : i
+                                  ),
+                                }));
+                              }}
+                              placeholder="نص الدعم"
+                              className="w-full h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-2 py-2 align-middle text-center">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).filter((i) => i.id !== item.id),
+                                }))
+                              }
+                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors inline-flex"
+                              aria-label="حذف بند الأجندة"
+                            >
+                              <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
+                      </tbody>
+                    </table>
                   ) : (
-                    <div className="min-h-[44px] flex items-center px-4 py-3 text-sm text-[#475467] text-right">لا توجد بنود</div>
+                    <div className="min-h-[44px] flex items-center px-4 py-3 text-sm text-[#475467] text-right">
+                      لا توجد بنود
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center justify-start">
@@ -1819,7 +1932,13 @@ const MeetingDetail: React.FC = () => {
                         ...p,
                         agendaItems: [
                           ...(p.agendaItems ?? []),
-                          { id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`, agenda_item: '', presentation_duration_minutes: undefined },
+                          {
+                            id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                            agenda_item: '',
+                            presentation_duration_minutes: undefined,
+                            minister_support_type: '',
+                            minister_support_other: '',
+                          },
                         ],
                       }))
                     }
