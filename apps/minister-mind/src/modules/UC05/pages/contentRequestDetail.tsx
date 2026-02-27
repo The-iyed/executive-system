@@ -771,9 +771,9 @@ const ContentRequestDetail: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="overflow-y-auto p-6 pb-32">
-        {/* Main Container */}
-        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
+      <div className="p-6">
+        {/* Main Container - header + tabs only, like UC04 */}
+        <div className="mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
           {/* Header Section */}
           <div className="flex flex-row items-center justify-between gap-6">
             {/* Back Button */}
@@ -809,6 +809,7 @@ const ContentRequestDetail: React.FC = () => {
           </div>
 
           {/* Tabs */}
+          
           <div className="flex justify-center w-full ">
             <Tabs
               items={tabs}
@@ -816,11 +817,16 @@ const ContentRequestDetail: React.FC = () => {
               onTabChange={setActiveTab}
             />
           </div>
+        </div>
+      </div>
 
+      <div className="flex flex-col flex-1 min-h-0">
+      {/* Tab Content Container - like UC04 */}
+      <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {/* Tab Content */}
           {activeTab === 'request-info' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+              <div className="flex flex-col gap-4 w-full mx-auto ">
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
@@ -884,7 +890,7 @@ const ContentRequestDetail: React.FC = () => {
 
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+              <div className="flex flex-col gap-4 w-full mx-auto ">
                 <h2
                   className="text-xl font-bold text-right text-[#101828]"
                   style={{
@@ -1673,7 +1679,7 @@ const ContentRequestDetail: React.FC = () => {
           {/* Action Content (outside tabs) */}
          {activeTab === 'request-info' && <div className="flex flex-col gap-6">
             {/* إضافة التوجيهات – table like meeting details */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6" dir="rtl">
+            <div className="flex flex-col gap-4 w-full mx-auto " dir="rtl">
               <div className="flex items-center justify-between gap-4">
                 <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   إضافة التوجيهات
@@ -1907,7 +1913,7 @@ const ContentRequestDetail: React.FC = () => {
             </div>
 
             {/* Executive Summary Upload Section */}
-            <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto bg-white border border-[#E6E6E6] rounded-2xl p-6">
+            <div className="flex flex-col gap-4 w-full mx-auto ">
               <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 الملخص التنفيذي
               </h3>
@@ -2021,6 +2027,8 @@ const ContentRequestDetail: React.FC = () => {
         ]}
       />
       )}
+      </div>
+
 
       {/* Attachment LLM notes/insights modal (ملاحظات على العرض) – same as meeting detail */}
       <Dialog open={!!insightsModalAttachment} onOpenChange={(open) => { if (!open) { insightsAbortControllerRef.current?.abort(); insightsAbortControllerRef.current = null; setInsightsModalAttachment(null); insightsMutation.reset(); } }}>
@@ -2426,7 +2434,7 @@ const ContentRequestDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
+
     </div>
   );
 };
