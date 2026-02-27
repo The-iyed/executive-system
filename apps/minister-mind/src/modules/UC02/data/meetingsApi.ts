@@ -458,6 +458,7 @@ export const requestSchedulingConsultation = async (
 
 export interface UpdateMeetingRequestPayload {
   meeting_title?: string;
+  meeting_type?: string;
   meeting_subject?: string;
   meeting_classification?: string;
   meeting_classification_type?: string;
@@ -466,10 +467,14 @@ export interface UpdateMeetingRequestPayload {
   related_topic?: string | null;
   deadline?: string | null;
   sector?: string;
+  is_on_behalf_of?: boolean;
+  is_urgent?: boolean;
   presentation_duration?: number;
   requires_protocol?: boolean;
   protocol_type?: string | null;
   meeting_channel?: string;
+  /** موقع الاجتماع (الموقع) – venue/location text */
+  meeting_location?: string | null;
   is_data_complete?: boolean;
   selected_time_slot_id?: string | null;
   alternative_time_slot_id_1?: string | null;
