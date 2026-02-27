@@ -5,8 +5,8 @@ import routes, { renderRoutes } from '../modules/shared/routes';
 export const App: React.FC = () => {
   return (
     <>
-      {renderRoutes(routes)}
-      <Toaster />
+        {renderRoutes(routes)}
+        <Toaster />
     </>
   );
 };
