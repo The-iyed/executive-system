@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable, MeetingInfo, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, DataTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -81,6 +81,7 @@ const GuidanceRequestDetail: React.FC = () => {
   const [isExceptionModalOpen, setIsExceptionModalOpen] = useState<boolean>(false);
   const [contentException, setContentException] = useState<boolean>(false);
   const [grantedDurationHours, setGrantedDurationHours] = useState<number>(0);
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
@@ -401,7 +402,7 @@ const GuidanceRequestDetail: React.FC = () => {
             />
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Tab Content Container */}
       <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
@@ -886,7 +887,7 @@ const GuidanceRequestDetail: React.FC = () => {
                                     </a>
                                     <button
                                       type="button"
-                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                       className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                     >
                                       <Eye className="w-5 h-5 text-[#475467]" />
@@ -968,7 +969,7 @@ const GuidanceRequestDetail: React.FC = () => {
                                     </a>
                                     <button
                                       type="button"
-                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                       className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                     >
                                       <Eye className="w-5 h-5 text-[#475467]" />
@@ -1713,7 +1714,7 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+      </div>
 
       {/* Submit Guidance Modal */}
       <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
@@ -2050,6 +2051,45 @@ const GuidanceRequestDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PDF / file preview drawer */}
+      <Drawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+        title={previewAttachment?.file_name ?? ''}
+        side="right"
+        width="90vw"
+        showDecoration={true}
+        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+      >
+        {previewAttachment && (
+          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+              <iframe
+                title={previewAttachment.file_name}
+                src={previewAttachment.blob_url}
+                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+              />
+            ) : (
+              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                </p>
+                <a
+                  href={previewAttachment.blob_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <Download className="w-4 h-4" />
+                  تحميل الملف
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };

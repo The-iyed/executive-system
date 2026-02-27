@@ -15,6 +15,7 @@ export interface ContentConsultationTabProps {
   } | undefined;
   contentOfficerNotesRecords?: { items: Array<{ note_type?: string; text?: string; note_answer?: string }> };
   pdfIcon: string;
+  onPreviewAttachment?: (att: { blob_url: string; file_name: string; file_type?: string }) => void;
 }
 
 export function ContentConsultationTab({
@@ -22,6 +23,7 @@ export function ContentConsultationTab({
   meeting,
   contentOfficerNotesRecords,
   pdfIcon,
+  onPreviewAttachment,
 }: ContentConsultationTabProps) {
   if (isLoading) {
     return (
@@ -93,7 +95,7 @@ export function ContentConsultationTab({
                     </div>
                     <div className="flex items-center gap-2 mr-auto">
                       <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]" title="تحميل"><Download className="w-4 h-4 text-[#009883]" /></a>
-                      <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100" title="معاينة"><Eye className="w-4 h-4 text-[#475467]" /></button>
+                      <button type="button" onClick={() => onPreviewAttachment ? onPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type }) : window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100" title="معاينة"><Eye className="w-4 h-4 text-[#475467]" /></button>
                     </div>
                   </div>
                 ))}
