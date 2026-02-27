@@ -481,8 +481,13 @@ export interface UpdateMeetingRequestPayload {
   alternative_time_slot_id_2?: string | null;
   scheduled_at?: string | null;
   objectives?: Array<{ objective: string }>;
-  agenda_items?: Array<{ agenda_item: string; presentation_duration_minutes?: number }>;
-  minister_support?: Array<{ support_description: string }>;
+  /** Agenda items with minister support inline: agenda_item, presentation_duration_minutes, minister_support_type, minister_support_other (null or text when type is "أخرى"). */
+  agenda_items?: Array<{
+    agenda_item: string;
+    presentation_duration_minutes?: number;
+    minister_support_type: string;
+    minister_support_other: string | null;
+  }>;
   /** قائمة المدعوين (مقدّم الطلب) – full list when updating */
   invitees?: Array<{
     id?: string;

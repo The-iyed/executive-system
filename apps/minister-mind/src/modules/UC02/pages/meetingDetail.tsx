@@ -73,10 +73,17 @@ import {
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
-import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoRenderField } from '@shared';
+import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
-import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS } from '../features/meeting-detail/constants';
+
+/** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
+const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
+  { key: 'is_sequential', label: fieldLabels.is_sequential, getValue: (d) => (d.is_sequential === true ? 'نعم' : d.is_sequential === false ? 'لا' : '—') },
+  { key: 'previous_meeting_id', label: fieldLabels.previous_meeting_id, getValue: (d) => d.previous_meeting_meeting_title ?? '—' },
+  { key: 'sequential_number', label: 'الرقم التسلسلي', getValue: (d) => d.sequential_number_display ?? '—' },
+];
 
 /** Map API attendance_mechanism (Arabic) to attendance_channel enum */
 function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
@@ -378,12 +385,17 @@ const MeetingDetail: React.FC = () => {
   // Content tab form state (objectives and agenda items)
   const [contentForm, setContentForm] = useState<{
     objectives: Array<{ id: string; objective: string }>;
-    agendaItems: Array<{ id: string; agenda_item: string; presentation_duration_minutes?: number }>;
+    agendaItems: Array<{
+      id: string;
+      agenda_item: string;
+      presentation_duration_minutes?: number;
+      minister_support_type?: string;
+      minister_support_other?: string;
+    }>;
   }>({
     objectives: [],
     agendaItems: [],
   });
-
   // Attachments state for managing deletions and additions
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<string[]>([]);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
@@ -661,12 +673,21 @@ const MeetingDetail: React.FC = () => {
     }
 
     if (JSON.stringify(contentForm.agendaItems || []) !== JSON.stringify(originalSnapshot.contentForm.agendaItems || [])) {
-      payload.agenda_items = contentForm.agendaItems
-        .filter((item) => item.agenda_item.trim().length > 0)
-        .map((item) => ({
+      const filtered = contentForm.agendaItems.filter((item) => item.agenda_item.trim().length > 0);
+      const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+      payload.agenda_items = filtered.map((item) => {
+        const supportType = (item.minister_support_type ?? '').trim();
+        const isOther = supportType === otherTypeValue;
+        const rawOther = item.minister_support_other;
+        const customText =
+          typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+        return {
           agenda_item: item.agenda_item.trim(),
           presentation_duration_minutes: item.presentation_duration_minutes,
-        }));
+          minister_support_type: item.minister_support_type ?? '',
+          minister_support_other: isOther ? (customText || null) : null,
+        };
+      });
     }
 
     // scheduleForm comparisons against snapshot (meeting_channel = آلية انعقاد الاجتماع enum)
@@ -1236,11 +1257,19 @@ const MeetingDetail: React.FC = () => {
           id: obj.id || `obj-${Date.now()}-${Math.random()}`,
           objective: obj.objective,
         })),
-        agendaItems: (meeting.agenda_items || []).map((item) => ({
-          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-          agenda_item: item.agenda_item,
-          presentation_duration_minutes: item.presentation_duration_minutes,
-        })),
+        agendaItems: (meeting.agenda_items || []).map((item, idx) => {
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_description?: string };
+          const support = (meeting as any).minister_support?.[idx];
+          const supportDesc = ext.support_description ?? support?.support_description ?? '';
+          const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
+          return {
+            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+            agenda_item: item.agenda_item,
+            presentation_duration_minutes: item.presentation_duration_minutes,
+            minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
+            minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
+          };
+        }),
       });
       setContentTabForm({
         when_presentation_attached: (meeting as any).when_presentation_attached ?? '',
@@ -1428,11 +1457,19 @@ const MeetingDetail: React.FC = () => {
           id: obj.id || `obj-${Date.now()}-${Math.random()}`,
           objective: obj.objective,
         })),
-        agendaItems: (meeting.agenda_items || []).map((item) => ({
-          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-          agenda_item: item.agenda_item,
-          presentation_duration_minutes: item.presentation_duration_minutes,
-        })),
+        agendaItems: (meeting.agenda_items || []).map((item, idx) => {
+          const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_description?: string };
+          const support = (meeting as any).minister_support?.[idx];
+          const supportDesc = ext.support_description ?? support?.support_description ?? '';
+          const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
+          return {
+            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+            agenda_item: item.agenda_item,
+            presentation_duration_minutes: item.presentation_duration_minutes,
+            minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
+            minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
+          };
+        }),
       },
       contentTabForm: {
         when_presentation_attached: (meeting as any).when_presentation_attached ?? '',
@@ -1652,14 +1689,26 @@ const MeetingDetail: React.FC = () => {
         id: (item as any).id,
         agenda_item: (item as any).agenda_item,
         presentation_duration_minutes: (item as any).presentation_duration_minutes,
+        minister_support_type: (item as any).minister_support_type,
+        minister_support_other: (item as any).minister_support_other,
       })),
+      is_sequential: formData.is_sequential,
+      previous_meeting_meeting_title: formData.previous_meeting_meeting_title ?? undefined,
+      sequential_number_display:
+        meeting?.sequential_number != null
+          ? String(meeting.sequential_number)
+          : formData.is_sequential && formData.previous_meeting_ext_id != null
+            ? previousMeeting?.sequential_number != null
+              ? String((previousMeeting.sequential_number ?? 0) + 1)
+              : 'غير موجود (إجباري)'
+            : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
       directive_method: formData.directive_method || undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
       notes: notesText,
     };
-  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption]);
+  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption, previousMeeting?.sequential_number]);
 
   /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
   const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
@@ -1745,6 +1794,72 @@ const MeetingDetail: React.FC = () => {
                 <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
               </Select>
             );
+          case 'is_sequential':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_sequential ? 'نعم' : 'لا'}</span>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => {
+                    const next = !formData.is_sequential;
+                    setFormData((p) => ({
+                      ...p,
+                      is_sequential: next,
+                      ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }),
+                    }));
+                    if (!next) setPreviousMeetingOption(null);
+                  }}
+                  className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+            );
+          case 'previous_meeting_id':
+            return (
+              <FormAsyncSelectV2
+                value={previousMeetingOption}
+                onValueChange={(opt) => {
+                  setPreviousMeetingOption(opt);
+                  if (!opt?.value) {
+                    setFormData((p) => ({
+                      ...p,
+                      previous_meeting_ext_id: null,
+                      previous_meeting_group_id: null,
+                      previous_meeting_original_title: null,
+                      previous_meeting_meeting_title: null,
+                    }));
+                    return;
+                  }
+                  const [idPart, groupPart] = String(opt.value).split(':');
+                  const extId = idPart ? parseInt(idPart, 10) : null;
+                  const groupId = groupPart ? parseInt(groupPart, 10) : null;
+                  const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt.value);
+                  setFormData((p) => ({
+                    ...p,
+                    previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
+                    previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
+                    previous_meeting_original_title: cached?.original_title ?? null,
+                    previous_meeting_meeting_title: cached?.meeting_title ?? cached?.original_title ?? opt.label ?? null,
+                  }));
+                }}
+                loadOptions={loadPreviousMeetingSearchOptions}
+                placeholder="اختر الاجتماع السابق..."
+                searchPlaceholder="ابحث بالعنوان..."
+                emptyMessage="لا توجد نتائج"
+                limit={20}
+                isDisabled={!canEdit}
+                fullWidth
+                className="text-right"
+              />
+            );
+          case 'sequential_number':
+            return (
+              <div className={`${inputClass} bg-gray-50`} title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
+                {value ?? '—'}
+              </div>
+            );
           case 'is_based_on_directive':
             return (
               <div className="flex items-center gap-2 justify-start">
@@ -1769,47 +1884,132 @@ const MeetingDetail: React.FC = () => {
             if (!canEdit) return <div className="w-full">{value}</div>;
             const agendaList = contentForm.agendaItems ?? [];
             return (
-              <div className="w-full flex flex-col gap-2">
-                <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden bg-[#F9FAFB]">
+              <div className="w-full flex flex-col gap-2" dir="rtl">
+                <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
                   {agendaList.length > 0 ? (
-                    <div className="flex flex-col divide-y divide-gray-200">
-                      {agendaList.map((item, idx) => (
-                        <div key={item.id} className="flex flex-row items-center gap-3 px-4 py-3 min-h-[44px]">
-                          <span className="text-sm text-[#475467] w-8 flex-shrink-0 text-center">{idx + 1}</span>
-                          <Input
-                            type="text"
-                            value={item.agenda_item ?? ''}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              setContentForm((p) => ({
-                                ...p,
-                                agendaItems: (p.agendaItems ?? []).map((i) =>
-                                  i.id === item.id ? { ...i, agenda_item: newValue } : i
-                                ),
-                              }));
-                            }}
-                            placeholder="عنصر الأجندة"
-                            className="flex-1 min-w-0 h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
-                            dir="rtl"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setContentForm((p) => ({
-                                ...p,
-                                agendaItems: (p.agendaItems ?? []).filter((i) => i.id !== item.id),
-                              }))
-                            }
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors flex-shrink-0"
-                            aria-label="حذف بند الأجندة"
-                          >
-                            <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                          </button>
-                        </div>
+                    <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      <thead>
+                        <tr className="border-b border-gray-300 bg-[#F2F4F7]">
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-24 text-center">#</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold">الأجندة</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[180px] text-center">الدعم المطلوب من الوزير</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-[140px] text-center">مدة العرض (بالدقائق)</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold">نص الدعم (عند اختيار أخرى)</th>
+                          <th className="px-4 py-3 text-[#475467] font-semibold w-20 text-center" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agendaList.map((item, idx) => (
+                        <tr key={item.id} className={idx < agendaList.length - 1 ? 'border-b border-gray-200' : ''}>
+                          <td className="px-4 py-3 text-[#475467] text-center align-middle">{idx + 1}</td>
+                          <td className="px-4 py-2 align-middle">
+                            <Input
+                              type="text"
+                              value={item.agenda_item ?? ''}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, agenda_item: newValue } : i
+                                  ),
+                                }));
+                              }}
+                              placeholder="عنصر الأجندة"
+                              className="w-full h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Select
+                              value={item.minister_support_type ?? ''}
+                              onValueChange={(v) =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, minister_support_type: v } : i
+                                  ),
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-full min-w-[140px] h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm">
+                                <SelectValue placeholder="اختر" />
+                              </SelectTrigger>
+                              <SelectContent dir="rtl">
+                                {MINISTER_SUPPORT_TYPE_OPTIONS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Select
+                              value={item.presentation_duration_minutes != null ? String(item.presentation_duration_minutes) : ''}
+                              onValueChange={(v) =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).map((i) =>
+                                    i.id === item.id ? { ...i, presentation_duration_minutes: v ? Number(v) : undefined } : i
+                                  ),
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-full min-w-[100px] h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm">
+                                <SelectValue placeholder="اختر" />
+                              </SelectTrigger>
+                              <SelectContent dir="rtl">
+                                {PRESENTATION_DURATION_MINUTES_OPTIONS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-2 align-middle">
+                            <Input
+                              type="text"
+                              value={item.minister_support_other ?? ''}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                const rowIndex = idx;
+                                setContentForm((p) => {
+                                  const next = (p.agendaItems ?? []).map((i, iIdx) =>
+                                    iIdx === rowIndex ? { ...i, minister_support_other: newValue } : i
+                                  );
+                                  return { ...p, agendaItems: next };
+                                });
+                              }}
+                              placeholder="نص الدعم"
+                              className="w-full h-9 text-right bg-white border border-[#D0D5DD] rounded-lg text-sm"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-2 py-2 align-middle text-center">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setContentForm((p) => ({
+                                  ...p,
+                                  agendaItems: (p.agendaItems ?? []).filter((i) => i.id !== item.id),
+                                }))
+                              }
+                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors inline-flex"
+                              aria-label="حذف بند الأجندة"
+                            >
+                              <Trash2 className="w-4 h-4 text-[#CA4545]" />
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
+                      </tbody>
+                    </table>
                   ) : (
-                    <div className="min-h-[44px] flex items-center px-4 py-3 text-sm text-[#475467] text-right">لا توجد بنود</div>
+                    <div className="min-h-[44px] flex items-center px-4 py-3 text-sm text-[#475467] text-right">
+                      لا توجد بنود
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center justify-start">
@@ -1820,7 +2020,13 @@ const MeetingDetail: React.FC = () => {
                         ...p,
                         agendaItems: [
                           ...(p.agendaItems ?? []),
-                          { id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`, agenda_item: '', presentation_duration_minutes: undefined },
+                          {
+                            id: `agenda-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                            agenda_item: '',
+                            presentation_duration_minutes: undefined,
+                            minister_support_type: '',
+                            minister_support_other: '',
+                          },
                         ],
                       }))
                     }
@@ -1866,7 +2072,7 @@ const MeetingDetail: React.FC = () => {
         </div>
       );
     },
-    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
+    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, previousMeetingOption, loadPreviousMeetingSearchOptions, loadPreviousMeetingMinutesOptions, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, setPreviousMeetingMinutesOption]
   );
 
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
@@ -2063,6 +2269,7 @@ const MeetingDetail: React.FC = () => {
               data={meetingInfoData}
               canEdit={canEdit}
               renderField={meetingInfoRenderField}
+              extraGridSpecs={formData.is_sequential ? UC02_EXTRA_MEETING_INFO_SPECS : [UC02_EXTRA_MEETING_INFO_SPECS[0], UC02_EXTRA_MEETING_INFO_SPECS[2]]}
             />
           )}
 
@@ -3309,8 +3516,20 @@ const MeetingDetail: React.FC = () => {
               meeting_justification: meeting.meeting_justification || '',
               related_topic: meeting.related_topic || null,
               objectives: contentForm.objectives.map((obj) => ({ objective: obj.objective })),
-              agenda_items: contentForm.agendaItems.map((item) => ({ agenda_item: item.agenda_item })),
-              minister_support: meeting.minister_support || [],
+              agenda_items: contentForm.agendaItems.map((item) => {
+                const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+                const supportType = (item.minister_support_type ?? '').trim();
+                const isOther = supportType === otherTypeValue;
+                const rawOther = item.minister_support_other;
+                const customText =
+                  typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+                return {
+                  agenda_item: item.agenda_item,
+                  presentation_duration_minutes: item.presentation_duration_minutes,
+                  minister_support_type: item.minister_support_type ?? '',
+                  minister_support_other: isOther ? (customText || null) : null,
+                };
+              }),
             },
           }}
           onSuccess={(data) => {
@@ -3516,8 +3735,29 @@ const MeetingDetail: React.FC = () => {
                 setInviteeValidationErrors({});
                 setMinisterAttendeeValidationErrors({});
                 const hasPresentationFiles = newPresentationAttachments.length > 0;
+                // Build payload at click time so agenda_items uses latest contentForm (avoids stale closure)
+                const payload = { ...changedPayload };
+                const agendaChanged =
+                  JSON.stringify(contentForm.agendaItems ?? []) !==
+                  JSON.stringify(originalSnapshot?.contentForm?.agendaItems ?? []);
+                if (agendaChanged) {
+                  const filtered = contentForm.agendaItems.filter((item) => (item.agenda_item ?? '').trim().length > 0);
+                  const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
+                  payload.agenda_items = filtered.map((item) => {
+                    const supportType = (item.minister_support_type ?? '').trim();
+                    const isOther = supportType === otherTypeValue;
+                    const rawOther = item.minister_support_other;
+                    const customText = typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
+                    return {
+                      agenda_item: (item.agenda_item ?? '').trim(),
+                      presentation_duration_minutes: item.presentation_duration_minutes,
+                      minister_support_type: item.minister_support_type ?? '',
+                      minister_support_other: item?.minister_support_other ,
+                    };
+                  });
+                }
                 updateMutation.mutate({
-                  payload: changedPayload,
+                  payload,
                   presentationFiles: hasPresentationFiles ? newPresentationAttachments : undefined,
                 });
               }}
