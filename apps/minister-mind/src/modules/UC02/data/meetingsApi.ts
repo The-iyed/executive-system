@@ -458,6 +458,7 @@ export const requestSchedulingConsultation = async (
 
 export interface UpdateMeetingRequestPayload {
   meeting_title?: string;
+  meeting_type?: string;
   meeting_subject?: string;
   meeting_classification?: string;
   meeting_classification_type?: string;
@@ -466,18 +467,27 @@ export interface UpdateMeetingRequestPayload {
   related_topic?: string | null;
   deadline?: string | null;
   sector?: string;
+  is_on_behalf_of?: boolean;
+  is_urgent?: boolean;
   presentation_duration?: number;
   requires_protocol?: boolean;
   protocol_type?: string | null;
   meeting_channel?: string;
+  /** موقع الاجتماع (الموقع) – venue/location text */
+  meeting_location?: string | null;
   is_data_complete?: boolean;
   selected_time_slot_id?: string | null;
   alternative_time_slot_id_1?: string | null;
   alternative_time_slot_id_2?: string | null;
   scheduled_at?: string | null;
   objectives?: Array<{ objective: string }>;
-  agenda_items?: Array<{ agenda_item: string; presentation_duration_minutes?: number }>;
-  minister_support?: Array<{ support_description: string }>;
+  /** Agenda items with minister support inline: agenda_item, presentation_duration_minutes, minister_support_type, minister_support_other (null or text when type is "أخرى"). */
+  agenda_items?: Array<{
+    agenda_item: string;
+    presentation_duration_minutes?: number;
+    minister_support_type: string;
+    minister_support_other: string | null;
+  }>;
   /** قائمة المدعوين (مقدّم الطلب) – full list when updating */
   invitees?: Array<{
     id?: string;

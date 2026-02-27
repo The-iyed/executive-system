@@ -58,7 +58,14 @@ export function normalizeMinisterAttendees(
   }));
 }
 
-export { isValidEmail } from '@shared/utils';
+/** Simple email format validation */
+export function isValidEmail(value: string): boolean {
+  if (!value || typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(trimmed);
+}
 
 /** Translate comparison API enum-like values to Arabic */
 export function translateCompareValue(
@@ -90,6 +97,21 @@ export function getGeneralNotesList(
     ];
   }
   return [];
+}
+
+/** Directive status labels for التوجيهات المرتبطة list */
+export const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  CURRENT: 'جاري',
+  COMPLETED: 'مكتمل',
+  CANCELLED: 'ملغى',
+  CLOSED: 'مغلق',
+  OPEN: 'مفتوح',
+};
+
+export function translateDirectiveStatus(status: string | undefined | null): string {
+  if (status == null || status === '') return '—';
+  return DIRECTIVE_STATUS_LABELS[String(status).toUpperCase()] ?? status;
 }
 
 /** Format a time slot for display (slot_start, slot_end). */
