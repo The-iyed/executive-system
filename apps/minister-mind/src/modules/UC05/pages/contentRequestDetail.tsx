@@ -1880,9 +1880,9 @@ const ContentRequestDetail: React.FC = () => {
                       <DataTable
                         columns={[
                           { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{i + 1}</span> },
-                          { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
+                          { id: 'directive_id', header: 'التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{row.id}</span> },
                         ]}
-                        data={(contentRequest.related_directive_ids ?? []).map((id) => ({ id }))}
+                        data={(contentRequest.related_guidance as unknown as any[] || []).map((guidance:any) => ({ id:guidance?.directive_text}))}
                         rowPadding="py-3"
                         variant="default"
                       />
