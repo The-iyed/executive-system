@@ -1,3 +1,4 @@
+import React from 'react';
 import { ReadOnlyField } from './ReadOnlyField';
 import { AgendaPreviewTable, type AgendaItemPreview } from './AgendaPreviewTable';
 import {
@@ -6,8 +7,8 @@ import {
   getMeetingClassificationTypeLabel,
   getMeetingTypeLabel,
   getMeetingConfidentialityLabel,
-  getMeetingChannelLabel,
   getDirectiveMethodLabel,
+  MeetingChannelLabels,
 } from '../types';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
@@ -37,11 +38,55 @@ function formatDateOnly(iso: string | null | undefined): string {
   return d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-/** فئة الاجتماع: resolve from both category (MeetingClassification) and type (MeetingClassificationType) so e.g. SPECIAL → خاص */
-function getMeetingCategoryDisplayLabel(value: string | null | undefined): string {
-  const fromCategory = getMeetingClassificationLabel(value);
-  if (fromCategory !== '-' && fromCategory !== (value ?? '')) return fromCategory;
-  return getMeetingClassificationTypeLabel(value);
+/** Single source of truth for field order and labels. Key = editable field id for return-for-info (empty = no checkbox). */
+export interface MeetingInfoFieldSpec {
+  key: string;
+  label: string;
+  getValue: (data: MeetingInfoData) => React.ReactNode;
+  /** e.g. 'sm:col-span-2' for notes */
+  className?: string;
+}
+
+/** Build field specs for the first grid (basic info). Used by MeetingInfo and by meetingDetail for editable + checkbox. */
+export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
+  return [
+    { key: 'is_on_behalf_of', label: 'هل تطلب الاجتماع نيابة عن غيرك؟', getValue: (d) => (d.is_on_behalf_of === true ? 'نعم' : d.is_on_behalf_of === false ? 'لا' : '—') },
+    { key: 'meeting_owner', label: 'مالك الاجتماع', getValue: (d) => d.meeting_manager_label ?? d.meeting_manager_id ?? '—' },
+    { key: 'meeting_title', label: 'عنوان الاجتماع', getValue: (d) => d.meetingSubject ?? '—' },
+    { key: 'meeting_subject', label: 'وصف الاجتماع', getValue: (d) => d.meetingDescription ?? '—' },
+    { key: 'sector', label: 'القطاع', getValue: (d) => (d.sector != null && d.sector !== '' ? SECTOR_OPTIONS.find((o) => o.value === d.sector)?.label ?? d.sector : '—') },
+    { key: 'meeting_type', label: 'نوع الاجتماع', getValue: (d) => getMeetingTypeLabel(d.meetingType) ?? '—' },
+    { key: 'is_urgent', label: 'اجتماع عاجل؟', getValue: (d) => (d.is_urgent === true ? 'نعم' : d.is_urgent === false ? 'لا' : '—') },
+    { key: 'urgent_reason', label: 'السبب', getValue: (d) => d.urgent_reason ?? '—' },
+    { key: 'selected_time_slot_id', label: 'موعد الاجتماع', getValue: (d) => formatIsoRange(d.meeting_start_date, d.meeting_end_date) },
+    { key: 'alternative_1', label: 'الموعد البديل الأول', getValue: (d) => formatIsoRange(d.alternative_1_start_date, d.alternative_1_end_date) },
+    { key: 'alternative_2', label: 'الموعد البديل الثاني', getValue: (d) => formatIsoRange(d.alternative_2_start_date, d.alternative_2_end_date) },
+    { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', getValue: (d) => MeetingChannelLabels[d.meetingChannel ?? ''] ?? d.meetingChannel ?? '—' },
+    { key: 'meeting_location', label: 'الموقع', getValue: (d) => d.meeting_location ?? '—' },
+    { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingCategory) ?? '—' },
+    { key: 'meeting_justification', label: 'مبرر اللقاء', getValue: (d) => d.meetingReason ?? '—' },
+    { key: 'related_topic', label: 'موضوع التكليف المرتبط', getValue: (d) => d.relatedTopic ?? '—' },
+    { key: 'deadline', label: 'تاريخ الاستحقاق', getValue: (d) => formatDateOnly(d.dueDate) },
+    { key: 'meeting_classification', label: 'تصنيف الاجتماع', getValue: (d) => getMeetingClassificationLabel(d.meetingClassification1) ?? '—' },
+    { key: 'meeting_confidentiality', label: 'سرية الاجتماع', getValue: (d) => getMeetingConfidentialityLabel(d.meetingConfidentiality) ?? '—' },
+  ];
+}
+
+/** Specs for the second grid (directive + notes). */
+export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
+  const fileDisplay = (d: MeetingInfoData) =>
+    d.previous_meeting_minutes_file != null
+      ? typeof d.previous_meeting_minutes_file === 'object' && 'name' in d.previous_meeting_minutes_file
+        ? (d.previous_meeting_minutes_file as { name?: string }).name ?? 'مرفق'
+        : (d.previous_meeting_minutes_file as File)?.name ?? 'مرفق'
+      : '—';
+  return [
+    { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', getValue: (d) => (d.is_based_on_directive === true ? 'نعم' : d.is_based_on_directive === false ? 'لا' : '—') },
+    { key: 'directive_method', label: 'طريقة التوجيه', getValue: (d) => getDirectiveMethodLabel(d.directive_method) ?? '—' },
+    { key: 'previous_meeting_minutes_id', label: 'محضر الاجتماع', getValue: fileDisplay },
+    { key: 'related_guidance', label: 'التوجيه', getValue: (d) => d.directive_text ?? '—' },
+    { key: 'general_notes', label: 'ملاحظات', getValue: (d) => d.notes ?? '—', className: 'sm:col-span-2' },
+  ];
 }
 
 /** Data for MeetingInfo preview – same shape as Step1 basic info, all optional. */
@@ -77,6 +122,9 @@ export interface MeetingInfoData {
   notes?: string;
 }
 
+/** When provided, each field is rendered by this function (e.g. checkbox + label + editable input). Key = editable field id. */
+export type MeetingInfoRenderField = (key: string, label: string, value: React.ReactNode, spec: MeetingInfoFieldSpec) => React.ReactNode;
+
 export interface MeetingInfoProps {
   /** All Step1 basic info fields (all optional). Every field is shown; missing values render as "—". */
   data: MeetingInfoData;
@@ -84,107 +132,68 @@ export interface MeetingInfoProps {
   className?: string;
   /** RTL */
   dir?: 'rtl' | 'ltr';
+  /** When set, each field is rendered by this function (e.g. editable row with checkbox). Otherwise ReadOnlyField. */
+  renderField?: MeetingInfoRenderField;
 }
 
 /**
  * Read-only preview of meeting basic info (Step1). Same fields and order as Step1BasicInfo;
  * no validation, no conditional hiding – all fields appear, everything disabled.
+ * When renderField is provided (e.g. from meeting detail when canEdit), each field is rendered by it.
  */
-export function MeetingInfo({ data, className = '', dir = 'rtl' }: MeetingInfoProps) {
-  const sectorLabel =
-    data.sector != null && data.sector !== ''
-      ? SECTOR_OPTIONS.find((o) => o.value === data.sector)?.label ?? data.sector
-      : '—';
+export function MeetingInfo({ data, className = '', dir = 'rtl', renderField }: MeetingInfoProps) {
+  const gridSpecs = React.useMemo(() => getMeetingInfoGridSpecs(), []);
+  const directiveSpecs = React.useMemo(() => getMeetingInfoDirectiveSpecs(), []);
 
-  const fileDisplay =
-    data.previous_meeting_minutes_file != null
-      ? typeof data.previous_meeting_minutes_file === 'object' && 'name' in data.previous_meeting_minutes_file
-        ? (data.previous_meeting_minutes_file as { name?: string }).name ?? 'مرفق'
-        : (data.previous_meeting_minutes_file as File)?.name ?? 'مرفق'
-      : '—';
+  const renderCell = (spec: MeetingInfoFieldSpec) => {
+    const value = spec.getValue(data);
+    if (renderField) return renderField(spec.key, spec.label, value, spec);
+    if (spec.className === 'sm:col-span-2')
+      return (
+        <ReadOnlyField
+          key={spec.key || spec.label}
+          label={spec.label}
+          value={value}
+          className={spec.className}
+          valueClassName="w-full min-h-[80px] px-3 py-2 flex items-start bg-gray-50 border border-gray-200 rounded-lg text-right"
+        />
+      );
+    return <ReadOnlyField key={spec.key || spec.label} label={spec.label} value={value} className={spec.className} />;
+  };
 
   return (
     <div className={`w-full flex flex-col gap-8 ${className}`} dir={dir} data-meeting-info>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
-        <ReadOnlyField
-          label="هل تطلب الاجتماع نيابة عن غيرك؟"
-          value={data.is_on_behalf_of === true ? 'نعم' : data.is_on_behalf_of === false ? 'لا' : '—'}
-        />
-        <ReadOnlyField
-          label="مالك الاجتماع"
-          value={data.meeting_manager_label ?? data.meeting_manager_id ?? '—'}
-        />
-        <ReadOnlyField label="عنوان الاجتماع" value={data.meetingSubject} />
-        <ReadOnlyField label="وصف الاجتماع" value={data.meetingDescription} />
-        <ReadOnlyField label="القطاع" value={sectorLabel} />
-        <ReadOnlyField label="نوع الاجتماع" value={getMeetingTypeLabel(data.meetingType)} />
-        <ReadOnlyField
-          label="اجتماع عاجل؟"
-          value={data.is_urgent === true ? 'نعم' : data.is_urgent === false ? 'لا' : '—'}
-        />
-        <ReadOnlyField label="السبب" value={data.urgent_reason} />
-
-        <ReadOnlyField
-          label="موعد الاجتماع"
-          value={formatIsoRange(data.meeting_start_date, data.meeting_end_date)}
-        />
-        <ReadOnlyField
-          label="الموعد البديل الأول"
-          value={formatIsoRange(data.alternative_1_start_date, data.alternative_1_end_date)}
-        />
-        <ReadOnlyField
-          label="الموعد البديل الثاني"
-          value={formatIsoRange(data.alternative_2_start_date, data.alternative_2_end_date)}
-        />
-
-        <ReadOnlyField
-          label="آلية انعقاد الاجتماع"
-          value={getMeetingChannelLabel(data.meetingChannel)}
-        />
-        <ReadOnlyField label="الموقع" value={data.meeting_location} />
-
-        <ReadOnlyField
-          label="فئة الاجتماع"
-          value={getMeetingCategoryDisplayLabel(data.meetingCategory)}
-        />
-        <ReadOnlyField label="مبرر اللقاء" value={data.meetingReason} />
-        <ReadOnlyField label="موضوع التكليف المرتبط" value={data.relatedTopic} />
-        <ReadOnlyField label="تاريخ الاستحقاق" value={formatDateOnly(data.dueDate)} />
-        <ReadOnlyField
-          label="تصنيف الاجتماع"
-          value={getMeetingClassificationTypeLabel(data.meetingClassification1)}
-        />
-        <ReadOnlyField
-          label="سرية الاجتماع"
-          value={getMeetingConfidentialityLabel(data.meetingConfidentiality)}
-        />
+        {gridSpecs.map((spec) => (
+          <div key={spec.key || spec.label} className={spec.className}>
+            {renderCell(spec)}
+          </div>
+        ))}
       </div>
 
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-0">
-        <AgendaPreviewTable
-          title="أجندة الاجتماع"
-          items={data.meetingAgenda ?? undefined}
-          dir={dir}
-        />
+        {renderField ? (
+          renderField(
+            'agenda_items',
+            'أجندة الاجتماع',
+            <AgendaPreviewTable title="" items={data.meetingAgenda ?? undefined} dir={dir} />,
+            { key: 'agenda_items', label: 'أجندة الاجتماع', getValue: () => null, className: 'sm:col-span-2' }
+          )
+        ) : (
+          <AgendaPreviewTable
+            title="أجندة الاجتماع"
+            items={data.meetingAgenda ?? undefined}
+            dir={dir}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
-        <ReadOnlyField
-          label="هل طلب الاجتماع بناءً على توجيه من معالي الوزير"
-          value={data.is_based_on_directive === true ? 'نعم' : data.is_based_on_directive === false ? 'لا' : '—'}
-        />
-        <ReadOnlyField
-          label="طريقة التوجيه"
-          value={getDirectiveMethodLabel(data.directive_method)}
-        />
-        <ReadOnlyField label="محضر الاجتماع" value={fileDisplay} />
-        <ReadOnlyField label="التوجيه" value={data.directive_text} />
-        <ReadOnlyField
-          label="ملاحظات"
-          value={data.notes}
-          className="sm:col-span-2"
-          valueClassName="w-full min-h-[80px] px-3 py-2 flex items-start bg-gray-50 border border-gray-200 rounded-lg text-right"
-        />
+        {directiveSpecs.map((spec) => (
+          <div key={spec.key || spec.label} className={spec.className}>
+            {renderCell(spec)}
+          </div>
+        ))}
       </div>
     </div>
   );
