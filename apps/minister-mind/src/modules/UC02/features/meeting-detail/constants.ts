@@ -4,6 +4,7 @@
 
 export const fieldLabels: Record<string, string> = {
   meeting_type: 'نوع الاجتماع',
+  is_urgent: 'اجتماع عاجل؟',
   meeting_title: 'عنوان الاجتماع',
   meeting_subject: 'وصف الاجتماع',
   meeting_classification: 'تصنيف الاجتماع',

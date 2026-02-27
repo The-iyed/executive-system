@@ -13,7 +13,8 @@ const SENTRY_DSN = "https://613ed30c125b3224b530b446c0a9a354@o4510955172724736.i
 
   Sentry.init({
     dsn: SENTRY_DSN,
-    sendDefaultPii: true
+    sendDefaultPii: true,
+    environment: window.location.hostname
   });
 
 const queryClient = createQueryClient();
