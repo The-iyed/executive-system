@@ -7,14 +7,52 @@ import '@shared/styles';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@sanad-ai/ui';
+import { getMeetingStatusLabel } from '@shared';
 
 const ITEMS_PER_PAGE = 10;
+
+const WORK_BASKET_STATUS_OPTIONS: string[] = [
+  MeetingStatus.UNDER_REVIEW,
+  MeetingStatus.UNDER_CONSULTATION_SCHEDULING,
+  MeetingStatus.UNDER_GUIDANCE,
+  MeetingStatus.UNDER_CONTENT_REVIEW,
+  MeetingStatus.UNDER_CONTENT_CONSULTATION,
+  MeetingStatus.SCHEDULED,
+  MeetingStatus.SCHEDULED_SCHEDULING,
+  MeetingStatus.SCHEDULED_CONTENT,
+  MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
+  MeetingStatus.SCHEDULED_UPDATE_CONTENT,
+  MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
+  MeetingStatus.SCHEDULED_DELAYED,
+  'SCHEDULED_DELEGATED',
+  MeetingStatus.RETURNED_FROM_SCHEDULING,
+  MeetingStatus.RETURNED_FROM_CONTENT,
+  MeetingStatus.ADDITIONAL_INFO,
+  MeetingStatus.WAITING,
+  MeetingStatus.REJECTED,
+  MeetingStatus.CANCELLED,
+  MeetingStatus.CLOSED,
+];
+
+function getStatusFilterLabel(value: string): string {
+  if (value === 'all') return 'جميع الحالات';
+  if (value === 'SCHEDULED_DELEGATED') return 'مجدول - مفوّض';
+  return getMeetingStatusLabel(value);
+}
 
 const WorkBasket: React.FC = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Debounce search input
@@ -26,20 +64,23 @@ const WorkBasket: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or status filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, statusFilter]);
 
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), currentPage],
+    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), statusFilter, currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
         skip,
         limit: ITEMS_PER_PAGE,
       };
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
@@ -188,6 +229,22 @@ const WorkBasket: React.FC = () => {
               className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
               dir="rtl"
             >
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger
+                  className="min-w-[180px] w-[200px] h-10 bg-white border border-gray-200/80 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-sm font-medium text-gray-700 px-4"
+                >
+                  <SelectValue placeholder="جميع الحالات" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  {WORK_BASKET_STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {getStatusFilterLabel(status)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <ViewSwitcher view={view} onViewChange={setView} />
               <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
               <SearchInput
