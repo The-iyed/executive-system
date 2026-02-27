@@ -1696,27 +1696,36 @@ const ContentRequestDetail: React.FC = () => {
                     </svg>
                     <span>إضافة توجيه</span>
                   </button>
-                  {contentRequest?.ext_id != null && (
-                    <button
-                      type="button"
-                      onClick={handleRequestAiDirectives}
-                      disabled={isLoadingAiSuggestions || hasSuggestedActions}
-                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {isLoadingAiSuggestions ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
-                          <span>جاري التحميل...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 text-[#008774]" />
-                          <span>اقتراح بالذكاء الاصطناعي</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className={contentRequest?.ext_id == null ? 'inline-flex' : undefined}>
+                          <button
+                            type="button"
+                            onClick={handleRequestAiDirectives}
+                            disabled={isLoadingAiSuggestions || hasSuggestedActions || contentRequest?.ext_id == null}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                          >
+                            {isLoadingAiSuggestions ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
+                                <span>جاري التحميل...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4 text-[#008774]" />
+                                <span>اقتراح بالذكاء الاصطناعي</span>
+                              </>
+                            )}
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-right">
+                        {contentRequest?.ext_id == null ? 'لا يوجد اجتماع سابق' : 'اقتراح بالذكاء الاصطناعي'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               
