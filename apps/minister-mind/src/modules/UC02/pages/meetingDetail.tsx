@@ -73,42 +73,10 @@ import {
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
-import { MeetingActionsBar } from '@shared';
-import { type CalendarEventData } from '@shared';
+import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
-
-// Field labels mapping for edit confirmation modal
-const fieldLabels: Record<string, string> = {
-  meeting_type: 'نوع الاجتماع',
-  meeting_title: 'عنوان الاجتماع',
-  meeting_subject: 'وصف الاجتماع',
-  meeting_classification: 'تصنيف الاجتماع',
-  meeting_owner: 'مالك الاجتماع',
-  is_on_behalf_of: 'هل تطلب الاجتماع نيابة عن غيرك؟',
-  is_sequential: 'اجتماع متسلسل؟',
-  previous_meeting_id: 'الاجتماع السابق',
-  is_based_on_directive: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير',
-  directive_method: 'طريقة التوجيه',
-  previous_meeting_minutes_id: 'محضر الاجتماع',
-  related_guidance: 'التوجيه',
-  objectives: 'الأهداف',
-  agenda_items: 'بنود جدول أعمال الاجتماع',
-  meeting_channel: 'آلية انعقاد الاجتماع',
-  requires_protocol: 'يتطلب بروتوكول',
-  protocol_type: 'نوع البروتوكول',
-  is_data_complete: 'اكتمال البيانات',
-  selected_time_slot_id: 'الموعد المحدد',
-  minister_attendees: 'حضور الوزير',
-  invitees: 'المدعوون',
-  deleted_attachment_ids: 'حذف المرفقات',
-  sector: 'القطاع',
-  meeting_justification: 'السبب',
-  meeting_classification_type: 'فئة الاجتماع',
-  related_topic: 'موضوع التكليف المرتبط',
-  deadline: 'تاريخ الاستحقاق',
-  meeting_confidentiality: 'سريّة الاجتماع',
-  general_notes: 'ملاحظات',
-};
+import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
+import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
 
 /** Map API attendance_mechanism (Arabic) to attendance_channel enum */
 function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
@@ -163,34 +131,13 @@ function isValidEmail(value: string): boolean {
   return re.test(trimmed);
 }
 
-/** Field keys sent as editable_fields to return-for-info API (same order as in form) */
-const EDITABLE_FIELD_IDS = Object.keys(fieldLabels) as string[];
-
-const DIRECTIVE_METHOD_OPTIONS = [
-  { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
-  { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
-] as const;
-
 /** Translate comparison API enum-like values to Arabic */
 const COMPARE_STATUS: Record<string, string> = { completed: 'مكتمل', pending: 'قيد المعالجة' };
 const COMPARE_LEVEL: Record<string, string> = { minor: 'طفيف', moderate: 'متوسط', major: 'كبير' };
 const COMPARE_RECOMMENDATION: Record<string, string> = { review: 'مراجعة' };
-/** Directive status labels for التوجيهات المرتبطة list */
-const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'قيد الانتظار',
-  CURRENT: 'جاري',
-  COMPLETED: 'مكتمل',
-  CANCELLED: 'ملغى',
-  CLOSED: 'مغلق',
-  OPEN: 'مفتوح',
-};
 function translateCompareValue(value: string | undefined | null, map: Record<string, string>): string {
   if (value == null || value === '') return '—';
   return map[String(value).toLowerCase()] ?? value;
-}
-function translateDirectiveStatus(status: string | undefined | null): string {
-  if (status == null || status === '') return '—';
-  return DIRECTIVE_STATUS_LABELS[String(status).toUpperCase()] ?? status;
 }
 
 /** Normalize API general_notes (array of items or legacy string) to a list for display */
@@ -1656,6 +1603,186 @@ const MeetingDetail: React.FC = () => {
     }
   }, [meetingStatus, activeTab, hasContent]);
 
+  /** Data for MeetingInfo (read-only) – built from meeting + form state so read-only tab can use shared component without modifying it. */
+  const meetingInfoData = useMemo((): MeetingInfoData => {
+    if (!meeting) return {};
+    const slot = meeting.selected_time_slot;
+    const alt1 = meeting.alternative_time_slot_1;
+    const alt2 = meeting.alternative_time_slot_2;
+    const notesList = getGeneralNotesList(meeting.general_notes);
+    const notesText = notesList.length > 0 ? notesList.map((n) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') : undefined;
+    return {
+      is_on_behalf_of: formData.is_on_behalf_of,
+      meeting_manager_label: formData.meeting_owner || undefined,
+      meetingSubject: formData.meeting_title || undefined,
+      meetingDescription: formData.meeting_subject || undefined,
+      sector: formData.sector || undefined,
+      meetingType: formData.meeting_type || undefined,
+      is_urgent: (meeting as any).is_urgent,
+      urgent_reason: formData.meeting_justification || undefined,
+      meeting_start_date: (meeting as any).scheduled_start ?? meeting.scheduled_at ?? slot?.slot_start ?? undefined,
+      meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
+      alternative_1_start_date: alt1?.slot_start,
+      alternative_1_end_date: alt1?.slot_end ?? undefined,
+      alternative_2_start_date: alt2?.slot_start,
+      alternative_2_end_date: alt2?.slot_end ?? undefined,
+      meetingChannel: scheduleForm.meeting_channel || undefined,
+      meeting_location: scheduleForm.location || undefined,
+      meetingCategory: formData.meeting_classification_type || undefined,
+      meetingReason: formData.meeting_justification || undefined,
+      relatedTopic: formData.related_topic || undefined,
+      dueDate: formData.deadline || undefined,
+      meetingClassification1: formData.meeting_classification || undefined,
+      meetingConfidentiality: formData.meeting_confidentiality || undefined,
+      meetingAgenda: (contentForm.agendaItems ?? meeting.agenda_items ?? []).map((item) => ({
+        id: (item as any).id,
+        agenda_item: (item as any).agenda_item,
+        presentation_duration_minutes: (item as any).presentation_duration_minutes,
+      })),
+      is_based_on_directive: formData.is_based_on_directive,
+      directive_method: formData.directive_method || undefined,
+      previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
+      directive_text: formData.related_guidance || undefined,
+      notes: notesText,
+    };
+  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption]);
+
+  /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
+  const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
+    (key, label, value, spec) => {
+      const showCheckbox = !!key && EDITABLE_FIELD_IDS.includes(key) && (meetingStatus === MeetingStatus.UNDER_REVIEW || meetingStatus === MeetingStatus.UNDER_GUIDANCE);
+      const isChecked = showCheckbox ? (returnForInfoForm.editable_fields[key] ?? false) : false;
+      const inputClass = 'w-full min-h-11 px-3 py-2 bg-white border border-[#D0D5DD] rounded-lg text-right text-sm';
+      const renderInput = () => {
+        if (!canEdit) return <div className={`${inputClass} bg-gray-50`}>{value ?? '—'}</div>;
+        switch (key) {
+          case 'is_on_behalf_of':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
+                <button type="button" onClick={() => setFormData((p) => ({ ...p, is_on_behalf_of: !p.is_on_behalf_of }))} className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${formData.is_on_behalf_of ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
+              </div>
+            );
+          case 'meeting_owner':
+            return <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} className={inputClass} placeholder={label} />;
+          case 'meeting_title':
+            return <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} className={inputClass} placeholder={label} />;
+          case 'meeting_subject':
+            return <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} className={inputClass} placeholder={label} />;
+          case 'sector':
+            return (
+              <Select value={formData.sector || ''} onValueChange={(v) => handleFieldChange('sector', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{SECTOR_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'meeting_type':
+            return (
+              <Select value={formData.meeting_type || ''} onValueChange={(v) => handleFieldChange('meeting_type', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'urgent_reason':
+          case 'meeting_justification':
+            return <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className={inputClass} placeholder={label} />;
+          case 'selected_time_slot_id':
+          case 'alternative_1':
+          case 'alternative_2':
+            return <div className={`${inputClass} bg-gray-50`}>{value ?? '—'}</div>;
+          case 'meeting_channel':
+            return (
+              <Select value={scheduleForm.meeting_channel} onValueChange={(v) => setScheduleForm((p) => ({ ...p, meeting_channel: v as typeof p.meeting_channel }))}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{Object.entries(MeetingChannelLabels).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'meeting_location':
+            return <Input type="text" value={scheduleForm.location} onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))} className={inputClass} placeholder={label} />;
+          case 'meeting_classification_type':
+            return (
+              <Select value={formData.meeting_classification_type || ''} onValueChange={(v) => handleFieldChange('meeting_classification_type', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{Object.values(MeetingClassificationType).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationTypeLabels[c]}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'related_topic':
+            return <Input type="text" value={formData.related_topic} onChange={(e) => handleFieldChange('related_topic', e.target.value)} className={inputClass} placeholder={label} />;
+          case 'deadline':
+            return <FormDatePicker value={formData.deadline} onChange={(v) => handleFieldChange('deadline', v)} placeholder="dd/mm/yyyy" fullWidth className={`h-11 ${inputClass}`} />;
+          case 'meeting_classification':
+            return (
+              <Select value={formData.meeting_classification} onValueChange={(v) => handleFieldChange('meeting_classification', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{Object.values(MeetingClassification).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationLabels[c]}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'meeting_confidentiality':
+            return (
+              <Select value={formData.meeting_confidentiality || ''} onValueChange={(v) => handleFieldChange('meeting_confidentiality', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'is_based_on_directive':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
+                <button type="button" onClick={() => setFormData((p) => ({ ...p, is_based_on_directive: !p.is_based_on_directive, ...(!p.is_based_on_directive ? {} : { directive_method: '' }) }))} className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${formData.is_based_on_directive ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
+              </div>
+            );
+          case 'directive_method':
+            return (
+              <Select value={formData.directive_method || ''} onValueChange={(v) => handleFieldChange('directive_method', v)}>
+                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
+                <SelectContent dir="rtl">{DIRECTIVE_METHOD_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            );
+          case 'previous_meeting_minutes_id':
+            return (
+              <FormAsyncSelectV2 value={previousMeetingMinutesOption} onValueChange={(opt) => { setPreviousMeetingMinutesOption(opt); setFormData((p) => ({ ...p, previous_meeting_minutes_id: opt?.value ?? '' })); }} loadOptions={loadPreviousMeetingMinutesOptions} placeholder={label} searchPlaceholder="ابحث..." emptyMessage="لا توجد نتائج" isDisabled={!canEdit} fullWidth className="text-right" />
+            );
+          case 'related_guidance':
+            return <Textarea value={formData.related_guidance} onChange={(e) => handleFieldChange('related_guidance', e.target.value)} className={`${inputClass} min-h-[80px]`} placeholder={label} />;
+          case 'agenda_items':
+            return <div className="w-full">{value}</div>;
+          case 'general_notes':
+            return <Textarea value={contentTabForm.general_notes} onChange={(e) => setContentTabForm((p) => ({ ...p, general_notes: e.target.value }))} className={`${inputClass} min-h-[80px]`} placeholder={label} />;
+          default:
+            return <div className={`${inputClass} bg-gray-50`}>{value ?? '—'}</div>;
+        }
+      };
+      return (
+        <div className={`flex flex-col gap-2 w-full ${spec.className ?? ''}`}>
+          <label className="text-sm font-medium text-gray-700 text-right flex flex-row items-center justify-between gap-2 w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+           
+            <span className="text-sm font-medium text-gray-700 text-right flex-1 min-w-0 truncate">{label}</span>
+            {showCheckbox && (
+            <div className="flex flex-row items-center justify-end">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={isChecked}
+                aria-label={`قابل للتعديل: ${label}`}
+                onClick={() => setReturnForInfoForm((p) => ({ ...p, editable_fields: { ...p.editable_fields, [key]: !(p.editable_fields[key] ?? false) } }))}
+                className={`inline-flex items-center gap-2 cursor-pointer flex-shrink-0 px-2.5 py-1 rounded-full border transition-all duration-200 ${isChecked ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]' : 'bg-gray-100/80 border-gray-200 text-gray-500 hover:bg-gray-100 hover:border-gray-300'}`}
+              >
+                <span className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isChecked ? 'border-[#048F86] bg-[#048F86]' : 'border-gray-400 bg-white'}`} aria-hidden>
+                  {isChecked && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                </span>
+                <span className="text-xs font-medium whitespace-nowrap">قابل للتعديل</span>
+              </button>
+            </div>
+          )}
+          </label>
+       
+          {renderInput()}
+        </div>
+      );
+    },
+    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
+  );
+
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
   const renderFieldLabel = (fieldId: string, labelContent: React.ReactNode, labelClassName?: string) => {
     const baseLabelClass = labelClassName ?? 'text-sm font-medium text-gray-700 text-[#344054]';
@@ -1839,419 +1966,18 @@ const MeetingDetail: React.FC = () => {
           className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white justify-center"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
         >
-          {/* Tab: معلومات الطلب (Excel التبويب) – اسم الحقل: رقم الطلب، حالة الطلب، مقدم الطلب، مالك الاجتماع */}
+          {/* Tab: معلومات الطلب */}
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-4 w-full">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm font-medium text-gray-700">رقم الطلب</label>
-                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right">
-                    {meeting?.request_number ?? '-'}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm font-medium text-gray-700">حالة الطلب</label>
-                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right">
-                    {statusLabel}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm font-medium text-gray-700">مقدم الطلب</label>
-                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right">
-                    {meeting?.submitter_name ?? '-'}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm font-medium text-gray-700">مالك الاجتماع</label>
-                  <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right">
-                    {(meeting )?.meeting_owner_name ?? '-'}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <RequestInfoTab meeting={meeting} statusLabel={statusLabel} />
           )}
 
-          {/* Tab: معلومات الاجتماع – Figma: flex column gap 14px, rows justify-between gap 15px, label #344054 8.24px, input border #D0D5DD rounded 4.71px */}
+          {/* Tab: معلومات الاجتماع – MeetingInfo (read-only when !canEdit; with قابل للتعديل + editable when canEdit) */}
           {activeTab === 'meeting-info' && (
-            <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('is_on_behalf_of', 'هل تطلب الاجتماع نيابة عن غيرك؟', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <div className="flex items-center gap-2 w-full justify-start">
-                    <span className="text-[10.23px] text-[#667085]">{formData.is_on_behalf_of ? 'نعم' : 'لا'}</span>
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={() => setFormData((p) => ({ ...p, is_on_behalf_of: !p.is_on_behalf_of }))}
-                      className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_on_behalf_of ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
-                    >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('meeting_owner', 'مالك الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <Input type="text" value={formData.meeting_owner} onChange={(e) => handleFieldChange('meeting_owner', e.target.value)} disabled={!canEdit} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" placeholder="مالك الاجتماع" />
-                </div>
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('meeting_title', 'عنوان الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <Input type="text" value={formData.meeting_title} onChange={(e) => handleFieldChange('meeting_title', e.target.value)} disabled={!canEdit} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" placeholder="أدخل عنوان الاجتماع" />
-                </div>
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('meeting_subject', 'وصف الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <Input type="text" value={formData.meeting_subject} onChange={(e) => handleFieldChange('meeting_subject', e.target.value)} disabled={!canEdit} className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right text-[9.42px] text-[#667085] placeholder:text-[#667085]" placeholder="أدخل وصف الاجتماع" />
-                </div>
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('sector', 'القطاع', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <Select value={formData.sector || ''} onValueChange={(v) => handleFieldChange('sector', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right flex-row-reverse text-[12px] text-[#667085]">
-                      <SelectValue placeholder="القطاع" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {SECTOR_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-[3.53px]">
-                  {renderFieldLabel('meeting_type', 'نوع الاجتماع', 'text-sm font-medium text-gray-700 text-[#344054]')}
-                  <Select value={formData.meeting_type} onValueChange={(v) => handleFieldChange('meeting_type', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full min-h-[25.9px] py-[5.89px] px-[8.24px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-[0px_0.59px_1.18px_rgba(16,24,40,0.05)] text-right flex-row-reverse text-[9.42px] text-[#667085]"><SelectValue placeholder="اختر نوع الاجتماع" /></SelectTrigger>
-                    <SelectContent dir="rtl">{Object.values(MeetingType).map((t) => <SelectItem key={t} value={t}>{MeetingTypeLabels[t]}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('meeting_justification', 'السبب', 'text-sm font-medium text-gray-700')}
-                  <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} disabled={!canEdit} className="w-full min-h-11 px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-right resize-y" placeholder="السبب" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('meeting_channel', 'آلية انعقاد الاجتماع', 'text-sm font-medium text-gray-700')}
-                  <Select
-                    value={scheduleForm.meeting_channel}
-                    onValueChange={(value) => setScheduleForm((p) => ({ ...p, meeting_channel: value as typeof p.meeting_channel }))}
-                    disabled={!canEdit}
-                  >
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse">
-                      <SelectValue placeholder="اختر آلية انعقاد الاجتماع" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {Object.entries(MeetingChannelLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3'].includes(scheduleForm.meeting_channel) && (
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">الموقع</label>
-                    <Input type="text" value={scheduleForm.location} onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))} disabled={!canEdit} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" placeholder="القاعة/الموقع" />
-                  </div>
-                )}
-                <div className="flex flex-col items-end gap-[6.89px]">
-                  {renderFieldLabel('requires_protocol', 'هل يتطلب بروتوكول؟', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]">{scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
-                    <button type="button" disabled={!canEdit} onClick={() => setScheduleForm((p) => ({ ...p, requires_protocol: !p.requires_protocol }))} className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${scheduleForm.requires_protocol ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
-                  </div>
-                  {scheduleForm.requires_protocol && (
-                    <Input type="text" value={scheduleForm.protocol_type_text} onChange={(e) => setScheduleForm((p) => ({ ...p, protocol_type_text: e.target.value }))} disabled={!canEdit} className="w-full h-11 mt-1 bg-white border border-gray-300 rounded-lg text-right" placeholder="نوع البروتوكول" />
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('meeting_classification_type', 'فئة الاجتماع', 'text-sm font-medium text-gray-700')}
-                  <Select value={formData.meeting_classification_type || ''} onValueChange={(v) => handleFieldChange('meeting_classification_type', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"><SelectValue placeholder="اختر فئة الاجتماع" /></SelectTrigger>
-                    <SelectContent dir="rtl">{Object.values(MeetingClassificationType).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationTypeLabels[c]}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('related_topic', 'موضوع التكليف المرتبط', 'text-sm font-medium text-gray-700')}
-                  <Input type="text" value={formData.related_topic} onChange={(e) => handleFieldChange('related_topic', e.target.value)} disabled={!canEdit} className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right" placeholder="موضوع التكليف المرتبط" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('deadline', 'تاريخ الاستحقاق', 'text-sm font-medium text-gray-700')}
-                  <FormDatePicker
-                    value={formData.deadline}
-                    onChange={(value) => handleFieldChange('deadline', value)}
-                    placeholder="dd/mm/yyyy"
-                    fullWidth
-                    disabled={!canEdit}
-                    className="h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('meeting_classification', 'تصنيف الاجتماع', 'text-sm font-medium text-gray-700')}
-                  <Select value={formData.meeting_classification} onValueChange={(v) => handleFieldChange('meeting_classification', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"><SelectValue placeholder="اختر تصنيف الاجتماع" /></SelectTrigger>
-                    <SelectContent dir="rtl">{Object.values(MeetingClassification).map((c) => <SelectItem key={c} value={c}>{MeetingClassificationLabels[c]}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('meeting_confidentiality', 'سريّة الاجتماع', 'text-sm font-medium text-gray-700')}
-                  <Select value={formData.meeting_confidentiality || ''} onValueChange={(v) => handleFieldChange('meeting_confidentiality', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"><SelectValue placeholder="اختر سريّة الاجتماع" /></SelectTrigger>
-                    <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col items-end gap-[6.89px]">
-                  {renderFieldLabel('is_sequential', 'اجتماع متسلسل؟', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]">{formData.is_sequential ? 'نعم' : 'لا'}</span>
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={() => {
-                        const next = !formData.is_sequential;
-                        setFormData((p) => ({ ...p, is_sequential: next, ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }) }));
-                        if (!next) setPreviousMeetingOption(null);
-                      }}
-                      className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
-                    >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
-                    </button>
-                  </div>
-                </div>
-                {formData.is_sequential && (
-                  <div className="flex flex-col gap-2 md:col-span-2">
-                    {renderFieldLabel('previous_meeting_id', 'الاجتماع السابق', 'text-sm font-medium text-gray-700')}
-                    <FormAsyncSelectV2
-                      value={previousMeetingOption}
-                      onValueChange={(opt) => {
-                        setPreviousMeetingOption(opt);
-                        if (opt?.value) {
-                          const [idPart, groupPart] = opt.value.split(':');
-                          const extId = idPart ? parseInt(idPart, 10) : null;
-                          const groupId = groupPart ? parseInt(groupPart, 10) : null;
-                          const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt?.value);
-                          const originalTitle = cached?.original_title ?? null;
-                          const meetingTitle = cached?.meeting_title ?? null;
-                          setFormData((p) => ({
-                            ...p,
-                            previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
-                            previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
-                            previous_meeting_original_title: originalTitle,
-                            previous_meeting_meeting_title: meetingTitle,
-                          }));
-                        } else {
-                          setFormData((p) => ({ ...p, previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }));
-                        }
-                      }}
-                      loadOptions={loadPreviousMeetingSearchOptions}
-                      placeholder="اختر الاجتماع السابق..."
-                      searchPlaceholder="ابحث بالعنوان..."
-                      emptyMessage="لا توجد نتائج"
-                      limit={20}
-                      fullWidth
-                      isDisabled={!canEdit}
-                      className="text-right"
-                    />
-                  </div>
-                )}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">الرقم التسلسلي</label>
-                  <div className="h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right" title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
-                    {meeting?.sequential_number != null
-                      ? String(meeting.sequential_number)
-                      : formData.is_sequential && formData.previous_meeting_ext_id != null
-                        ? previousMeeting?.sequential_number != null
-                          ? String((previousMeeting.sequential_number ?? 0) + 1)
-                          : 'غير موجود (إجباري)'
-                        : 'غير موجود'}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-[6.89px] md:col-span-2">
-                  {renderFieldLabel('is_based_on_directive', 'هل طلب الاجتماع بناء على توجيه من معالي الوزير', 'text-sm font-medium text-gray-700 leading-[11px] text-[#344054]')}
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[10.23px] text-[#667085]">{formData.is_based_on_directive ? 'نعم' : 'لا'}</span>
-                    <button
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={() => setFormData((p) => ({ ...p, is_based_on_directive: !p.is_based_on_directive, ...(!p.is_based_on_directive ? {} : { directive_method: '' }) }))}
-                      className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_based_on_directive ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
-                    >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('directive_method', 'طريقة التوجيه', 'text-sm font-medium text-gray-700')}
-                  <Select value={formData.directive_method || ''} onValueChange={(v) => handleFieldChange('directive_method', v)} disabled={!canEdit}>
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse">
-                      <SelectValue placeholder="اختر طريقة التوجيه" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {DIRECTIVE_METHOD_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {renderFieldLabel('previous_meeting_minutes_id', 'محضر الاجتماع', 'text-sm font-medium text-gray-700')}
-                  <FormAsyncSelectV2
-                    value={previousMeetingMinutesOption}
-                    onValueChange={(opt) => {
-                      setPreviousMeetingMinutesOption(opt);
-                      setFormData((p) => ({ ...p, previous_meeting_minutes_id: opt?.value ?? '' }));
-                    }}
-                    loadOptions={loadPreviousMeetingMinutesOptions}
-                    placeholder="اختر محضر الاجتماع..."
-                    searchPlaceholder="ابحث..."
-                    emptyMessage="لا توجد نتائج"
-                    isDisabled={!canEdit}
-                    fullWidth
-                    className="text-right"
-                  />
-                </div>
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <div className="flex items-center justify-between gap-2">
-                    {renderFieldLabel('related_guidance', 'التوجيه', 'text-sm font-medium text-gray-700')}
-                    <button
-                      type="button"
-                      disabled={!(canEdit || meeting?.status === MeetingStatus.CLOSED)}
-                      onClick={() => setIsAddDirectiveOpen(true)}
-                      className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
-                      title="إضافة توجيه"
-                      aria-label="إضافة توجيه"
-                    >
-                      <Plus className="w-5 h-5" strokeWidth={1.26} />
-                    </button>
-                  </div>
-                  {(() => {
-                    const directives = meeting?.related_directives ?? [];
-                    const hasDirectives = directives.length > 0;
-                    const hasOnlyIds = !hasDirectives && (meeting?.related_directive_ids?.length ?? 0) > 0;
-                    if (hasDirectives) {
-                      return (
-                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                          <DataTable
-                            columns={[
-                              { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span> },
-                              { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{row.directive_number}</span> },
-                              { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
-                              { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap">{row.directive_text || '—'}</span> },
-                              { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
-                              { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]">{names.length ? names.join('، ') : '—'}</span>; } },
-                              { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{translateDirectiveStatus(row.directive_status)}</span> },
-                            ]}
-                            data={meeting?.related_directives ?? []}
-                            rowPadding="py-3"
-                  />
-                </div>
-                      );
-                    }
-                    if (hasOnlyIds) {
-                      return (
-                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                          <DataTable
-                            columns={[
-                              { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                              { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]">{row.id}</span> },
-                            ]}
-                            data={(meeting?.related_directive_ids ?? []).map((id) => ({ id }))}
-                            rowPadding="py-3"
-                          />
-              </div>
-                      );
-                    }
-                    return <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500 text-sm">لا توجد توجيهات مرتبطة</div>;
-                  })()}
-                </div>
-              </div>
-              {/* الوصف والملاحظة – from API */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[14px] w-full">
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 text-[#344054]">الوصف</label>
-                  <div className="w-full min-h-11 px-3 py-2 bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085] whitespace-pre-wrap">
-                    {meeting?.description ?? '—'}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 text-[#344054]">ملاحظات</label>
-                  <div className="w-full min-h-11 px-3 py-2 bg-gray-50 border border-[#D0D5DD] rounded-[4.71px] text-right text-[#667085] whitespace-pre-wrap">
-                    {meeting?.note ?? '—'}
-                  </div>
-                </div>
-              </div>
-              {/* الأهداف – same structure as UC01 preview / table like agenda */}
-              <div className="flex flex-col gap-[10px] w-full">
-                <div className="text-[12.69px] leading-[38px] text-[#101828]">
-                  {renderFieldLabel('objectives', 'الأهداف', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
-                </div>
-                {(contentForm.objectives?.length ?? 0) > 0 ? (
-                  <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
-                    <DataTable
-                      columns={[
-                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]">{i + 1}</span> },
-                        { id: 'objective', header: 'الهدف', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
-                          <Input type="text" value={item.objective} onChange={(e) => { const n = [...(contentForm.objectives || [])]; n[index] = { ...item, objective: e.target.value }; setContentForm((p) => ({ ...p, objectives: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" placeholder="الهدف" />
-                        ) },
-                        { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
-                          <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: (p.objectives || []).filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5] disabled:opacity-60 disabled:cursor-not-allowed" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
-                        ) },
-                      ] as TableColumn<any>[]}
-                      data={contentForm.objectives || []}
-                      className="border-none"
-                      rowPadding="py-3"
-                    />
-                  </div>
-                ) : null}
-                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, objectives: [...(p.objectives || []), { id: `obj-${Date.now()}`, objective: '' }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[200px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة هدف</button>
-              </div>
-              {/* موعد الاجتماع – Figma: slot cards + gradient button */}
-              <div className="flex flex-col gap-[8px] w-full">
-                <div>
-                  {renderFieldLabel('selected_time_slot_id', 'موعد الاجتماع', 'text-right text-[12.69px] leading-[19px] text-[#101828]')}
-                </div>
-                <div className="flex flex-row gap-4 flex-wrap items-center">
-                  {suggestedTimes.length === 0 ? (
-                    <div className="w-full text-center py-4 text-[#667085] text-sm">لا توجد أوقات متاحة</div>
-                  ) : (
-                    suggestedTimes.map((timeSlot) => (
-                      <div key={timeSlot.id} className="flex flex-row items-center gap-2 px-2.5 py-2.5 bg-white border border-[#EEEEEE] rounded-[5px] shadow-[0px_4px_28px_rgba(0,0,0,0.06)] min-w-[160px]">
-                        <button type="button" disabled={!canEdit} onClick={() => { setSuggestedTimes((prev) => prev.map((s) => (s.id === timeSlot.id ? { ...s, selected: !s.selected } : { ...s, selected: false }))); setScheduleForm((prev) => ({ ...prev, selected_time_slot_id: scheduleForm.selected_time_slot_id === timeSlot.id ? null : timeSlot.id })); }} className={`w-7 h-[15.34px] rounded-full flex transition-all flex-shrink-0 p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${timeSlot.selected ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}><div className="w-3 h-3 rounded-full bg-white shadow-sm" /></button>
-                        <span className="flex-1 text-right text-[10.23px] text-[#667085]">{timeSlot.time}</span>
-                        <Calendar className="w-4 h-4 text-[#667085] flex-shrink-0" />
-                      </div>
-                    ))
-                  )}
-                  <button type="button" disabled={!canEdit} onClick={() => setIsMinisterCalendarOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Calendar className="w-4 h-4" />اطلع على جدول الوزير</button>
-                </div>
-              </div>
-              {/* أجندة الاجتماع – Figma: same table style, "+ إضافة أجندة" */}
-              <div className="flex flex-col gap-[10px] w-full">
-                <div className="text-[12.69px] leading-[38px] text-[#101828]">
-                  {renderFieldLabel('agenda_items', 'أجندة الاجتماع', 'text-right text-[12.69px] leading-[38px] text-[#101828]')}
-                  </div>
-                {contentForm.agendaItems.length > 0 ? (
-                  <div className="border border-[#EAECF0] rounded-[11.38px] overflow-hidden shadow-[0px_0.95px_2.85px_rgba(16,24,40,0.1),0px_0.95px_1.9px_rgba(16,24,40,0.06)] bg-white">
-                    <DataTable
-                      columns={[
-                        { id: 'idx', header: '#', width: 'w-[134px]', align: 'end', render: (_: any, i: number) => <span className="text-[15.17px] text-[#475467]">{i + 1}</span> },
-                        { id: 'agenda_item', header: 'بند جدول الأعمال', width: 'flex-1 min-w-[200px]', align: 'end', render: (item: any, index: number) => (
-                          <Input type="text" value={item.agenda_item} onChange={(e) => { const n = [...contentForm.agendaItems]; n[index] = { ...item, agenda_item: e.target.value }; setContentForm((p) => ({ ...p, agendaItems: n })); }} disabled={!canEdit} className="w-full min-h-9 text-right text-sm font-bold text-[#475467]" placeholder="عنوان البند" />
-                        ) },
-                        { id: 'act', header: 'إجراء', width: 'w-[108px]', align: 'center', render: (_: any, index: number) => (
-                          <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, agendaItems: p.agendaItems.filter((_, i) => i !== index) }))} className="flex items-center justify-center w-7 h-7 rounded-[5.57px] bg-[#FFF4F4] text-[#CA4545] hover:bg-[#FFE5E5] disabled:opacity-60 disabled:cursor-not-allowed" title="حذف"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.16} /></button>
-                        ) },
-                      ] as TableColumn<any>[]}
-                      data={contentForm.agendaItems}
-                      className="border-none"
-                      rowPadding="py-3"
-                    />
-                  </div>
-                ) : null}
-                <button type="button" disabled={!canEdit} onClick={() => setContentForm((p) => ({ ...p, agendaItems: [...p.agendaItems, { id: `agenda-${Date.now()}`, agenda_item: '', presentation_duration_minutes: undefined }] }))} className="flex items-center justify-center gap-2 px-4 py-2 rounded-[7.59px] text-white font-bold text-xs shadow-[0px_0.95px_1.9px_rgba(16,24,40,0.05)] transition-opacity hover:opacity-90 w-[242px] disabled:opacity-60 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)' }}><Plus className="w-5 h-5" />إضافة أجندة</button>
-              </div>
-              <Dialog open={isMinisterCalendarOpen} onOpenChange={setIsMinisterCalendarOpen}>
-                <DialogContent className="max-w-[850px] w-[95vw] max-h-[90vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle className="text-right text-2xl font-bold mb-4">جدول الوزير</DialogTitle></DialogHeader>
-                  <div className="py-4"><MinisterCalendarView extraEvents={highlightedEvents} initialDate={selectedSlotDate} /></div>
-                  <DialogFooter className="sm:justify-start"><button type="button" onClick={() => setIsMinisterCalendarOpen(false)} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">إغلاق</button></DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <MeetingInfoTab
+              data={meetingInfoData}
+              canEdit={canEdit}
+              renderField={meetingInfoRenderField}
+            />
           )}
 
           {/* Tab: المحتوى – العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
@@ -3134,574 +2860,51 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Consultations Log → استشارة الجدولة - Collapsible cards */}
+          {/* استشارة الجدولة */}
           {activeTab === 'scheduling-consultation' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && (
-                <div className="flex justify-end">
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <button
-                            type="button"
-                            onClick={() => setIsConsultationModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                          >
-                            <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                            طلب استشارة
-                          </button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[260px] text-right">
-                        طلب استشارة
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-              {isLoadingConsultationRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : consultationRecords && consultationRecords.items.length > 0 ? (
-                consultationRecords.items.map((row: ConsultationRecord, index: number) => {
-                  const recordId = row.id || row.consultation_id || `${index}`;
-                  const recordType = row.type || row.consultation_type || '';
-                  const recordQuestion = row.question || row.consultation_question || '';
-                  const isExpanded = expandedConsultationId === recordId;
-                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-                  const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
-
-                  const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
-                  if (row.assignees?.length) {
-                    row.assignees.forEach(a => {
-                      if (a.answers?.length) {
-                        a.answers.forEach(ans => flatItems.push({ id: ans.answer_id, text: ans.text, status: a.status, name: a.name, respondedAt: ans.responded_at, requestNumber: a.request_number }));
-                      } else {
-                        flatItems.push({ id: a.user_id, text: '', status: a.status, name: a.name, respondedAt: a.responded_at, requestNumber: a.request_number });
-                      }
-                    });
-                  } else if (row.consultation_answers?.length) {
-                    row.consultation_answers.forEach(a => flatItems.push({ id: a.consultation_id || a.external_id || `ans-${index}`, text: a.consultation_answer, status: a.status, name: row.consultant_name || '', respondedAt: a.responded_at, requestNumber: row.consultation_request_number || null }));
-                  } else if (row.assignee_sections?.length) {
-                    row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at, requestNumber: a.consultation_record_number || null }));
-                  }
-
-                        return (
-                    <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedConsultationId((prev) => (prev === recordId ? null : recordId))}
-                        className={`
-                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                          ${isExpanded
-                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                        `}
-                        style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                      >
-                        <div className="flex flex-row items-start justify-between gap-4">
-                          <div className="flex flex-col items-start flex-1 min-w-0">
-                            <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                              <Clock className="w-4 h-4 flex-shrink-0" />
-                              <span>تاريخ الطلب : {requestDate}</span>
-                          </span>
-                            {displayRequestNumber && (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <Hash className="w-4 h-4 flex-shrink-0" />
-                                <span>رمز الطلب : {displayRequestNumber}</span>
-                            </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-
-                      {isExpanded && flatItems.length > 0 && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          {flatItems.map((_, idx) =>
-                            <div key={`line-${idx}`} className="flex flex-shrink-0 w-12 flex-col items-center pt-1"
-                              style={idx > 0 ? { position: 'absolute', top: `${47 * idx}px`, height: `${136 * idx}px` } : {}}
-                            >
-                              <div className={`w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1]  max-h-[60%] ${flatItems.length > 1 ? '-mt-[38px]' : '-mt-[10px]'}`}/>
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                          )}
-                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                            {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
-                        return (
-                                <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                  <div className="flex w-full flex-row items-center justify-between gap-4">
-                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
-                                    <StatusBadge status={item.status} label={overallStatusLabels[item.status] || item.status} />
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{item.name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                    <span className="flex-shrink-0 text-sm text-gray-700">{item.name || '—'}</span>
-                                    {item.requestNumber && (
-                                      <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                        <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
-                          </span>
-                                    )}
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {isExpanded && flatItems.length === 0 && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
-                          <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                          </div>
-                        </div>
-                      )}
-                          </div>
-                        );
-                })
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">سجل الإستشارات</p>
-                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <SchedulingConsultationTab
+              meetingStatus={meetingStatus}
+              onRequestConsultation={() => setIsConsultationModalOpen(true)}
+              isLoading={isLoadingConsultationRecords}
+              records={consultationRecords}
+              expandedId={expandedConsultationId}
+              onToggleExpand={setExpandedConsultationId}
+            />
           )}
 
-          {/* سؤال tab */}
+          {/* سؤال / استشارة المكتب التنفيذي */}
           {activeTab === 'directive' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING  && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsRequestGuidanceModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                  >
-                    <FileCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
-              </div>
-              )}
-              {isLoadingGuidanceRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                <div className="flex flex-col gap-4 w-full" dir="rtl">
-                  {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
-                    const isExpanded = expandedGuidanceId === row.guidance_id;
-                    const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
-
-                        return (
-                      <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedGuidanceId((prev) => (prev === row.guidance_id ? null : row.guidance_id))}
-                          className={`
-                            w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                            ${isExpanded
-                              ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                              : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                          `}
-                          style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                        >
-                          <div className="flex flex-row items-start justify-between gap-4">
-                            <div className="flex flex-col items-start flex-1 min-w-0">
-                              <p className="text-base font-bold text-[#048F86] mb-1">السؤال</p>
-                              <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {row.status && (
-                                <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                              )}
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <Clock className="w-4 h-4 flex-shrink-0" />
-                                <span>تاريخ الطلب : {requestDate}</span>
-                          </span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <User className="w-4 h-4 flex-shrink-0" />
-                                <span>{row.requested_by_name || '-'}</span>
-                            </span>
-                            </div>
-                          </div>
-                        </button>
-
-                        {isExpanded && row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                            <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                              <div className="flex min-h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4 py-3" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                <div className="flex w-full flex-row items-center justify-between gap-4">
-                                  <p className="min-w-0 flex-1 text-right text-sm text-gray-700 whitespace-pre-wrap">{row.guidance_answer}</p>
-                                  <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                                  {row.responded_by_name && (
-                                    <>
-                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                      <span className="flex-shrink-0 text-sm text-gray-700">{row.responded_by_name}</span>
-                                    </>
-                                  )}
-                                  {row.responded_at && (
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {new Date(row.responded_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                          </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {isExpanded && !row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                            <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                              <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                            </div>
-                          </div>
-                        )}
-                          </div>
-                        );
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">استشارة المكتب التنفيذي</p>
-                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <DirectiveTab
+              meetingStatus={meetingStatus}
+              onRequestGuidance={() => setIsRequestGuidanceModalOpen(true)}
+              isLoading={isLoadingGuidanceRecords}
+              records={guidanceRecords}
+              expandedId={expandedGuidanceId}
+              onToggleExpand={setExpandedGuidanceId}
+            />
           )}
 
-          {/* التوجيهات tab – only when meeting is CLOSED: list directives and add */}
+          {/* التوجيهات tab – only when meeting is CLOSED */}
           {activeTab === 'directives' && meetingStatus === MeetingStatus.CLOSED && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              <div className="flex flex-row items-center justify-between gap-4">
-                <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة</h2>
-                 <button
-                  type="button"
-                  onClick={() => setIsAddDirectiveOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB] transition-colors font-medium"
-                
-                >
-                  <Plus className="w-5 h-5" strokeWidth={1.26} />
-                  إضافة توجيه
-                </button>
-              </div>
-              {(() => {
-                const directives = meeting?.related_directives ?? [];
-                const hasDirectives = directives.length > 0;
-                const hasOnlyIds = !hasDirectives && (meeting?.related_directive_ids?.length ?? 0) > 0;
-                if (hasDirectives) {
-                  return (
-                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                      <DataTable
-                        columns={[
-                          { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span> },
-                          { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{row.directive_number}</span> },
-                          { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
-                          { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap">{row.directive_text || '—'}</span> },
-                          { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
-                          { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]">{names.length ? names.join('، ') : '—'}</span>; } },
-                          { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{translateDirectiveStatus(row.directive_status)}</span> },
-                        ]}
-                        data={meeting?.related_directives ?? []}
-                        rowPadding="py-3"
-                      />
-                    </div>
-                  );
-                }
-                if (hasOnlyIds) {
-                  return (
-                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                      <DataTable
-                        columns={[
-                          { id: 'index', header: '#', width: 'w-28', align: 'center', render: (_: { id: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                          { id: 'directive_id', header: 'معرف التوجيه', width: 'flex-1', align: 'end', render: (row: { id: string }) => <span className="text-sm text-[#475467]">{row.id}</span> },
-                        ]}
-                        data={(meeting?.related_directive_ids ?? []).map((id) => ({ id }))}
-                        rowPadding="py-3"
-                      />
-                    </div>
-                  );
-                }
-                return (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <p className="text-gray-600 text-lg mb-2">التوجيهات المرتبطة</p>
-                      <p className="text-gray-500 text-sm">لا توجد توجيهات مرتبطة. استخدم زر «إضافة توجيه» لإضافة توجيه.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            <DirectivesTab meeting={meeting} onAddDirective={() => setIsAddDirectiveOpen(true)} />
           )}
 
-          {/* Content Officer Notes Tab – العرض التقديمي + الملاحظات (preview) + notes table */}
+          {/* استشارة المحتوى */}
           {activeTab === 'content-consultation' && (
-            <div className="flex flex-col gap-6 w-full" dir="rtl">
-              {isLoadingContentOfficerNotes ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : (
-                <>
-                  {/* التوجيهات المرتبطة بالاجتماع – from meeting details (content_approval_directives) */}
-                  {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-sm font-medium text-gray-700 text-right">
-                        التوجيهات المرتبطة بالاجتماع
-                      </h3>
-                      <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                        <DataTable
-                          columns={[
-                            { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                            { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
-                          ]}
-                          data={meeting.content_approval_directives.map((text) => ({ text }))}
-                          rowPadding="py-3"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* الملخص التنفيذي – preview only (text + file preview cards for is_executive_summary attachments; attachments with is_executive_summary false are not shown) */}
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-sm font-medium text-gray-700 text-right">
-                      الملخص التنفيذي
-                    </h3>
-                    {(() => {
-                      const textSummary =
-                        meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== ''
-                          ? String(meeting.executive_summary)
-                          : contentOfficerNotesRecords?.items?.find((n: any) => n?.note_type === 'SUMMARY' || n?.note_type === 'EXECUTIVE_SUMMARY')
-                            ? (contentOfficerNotesRecords.items.find((n: any) => n?.note_type === 'SUMMARY' || n?.note_type === 'EXECUTIVE_SUMMARY') as any)?.text ?? (contentOfficerNotesRecords.items.find((n: any) => n?.note_type === 'SUMMARY' || n?.note_type === 'EXECUTIVE_SUMMARY') as any)?.note_answer ?? ''
-                            : '';
-                      const executiveSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true);
-                      const hasContent = textSummary || executiveSummaryAttachments.length > 0;
-                      if (!hasContent) {
-                        return (
-                          <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">
-                            —
-                          </div>
-                        );
-                      }
-                      return (
-                        <>
-                          {textSummary ? (
-                            <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">
-                              {textSummary}
-                            </div>
-                          ) : null}
-                          {executiveSummaryAttachments.length > 0 && (
-                            <div className="flex flex-row gap-4 flex-wrap">
-                              {executiveSummaryAttachments.map((att) => (
-                                <div key={att.id} className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-gray-300 rounded-xl">
-                                  {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">{att.file_type?.toUpperCase() || ''}</div>}
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-sm font-medium text-[#344054]">{att.file_name}</span>
-                                    <span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 mr-auto">
-                                    <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)]" title="تحميل"><Download className="w-4 h-4 text-[#009883]" /></a>
-                                    <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100" title="معاينة"><Eye className="w-4 h-4 text-[#475467]" /></button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-
-                  {/* الملاحظات – preview only */}
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-sm font-medium text-gray-700 text-right">
-                      الملاحظات
-                    </h3>
-                    <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">
-                      {(() => {
-                        const raw: unknown = meeting?.content_officer_notes;
-                        if (raw == null) return '—';
-                        if (typeof raw === 'string') return raw;
-                        if (Array.isArray(raw)) return raw.map((n: any) => (n && typeof n === 'object' && typeof n.text === 'string' ? n.text : String(n?.text ?? '')).trim()).filter(Boolean).join('\n\n') || '—';
-                        if (typeof raw === 'object' && raw !== null && 'text' in raw) return (raw as { text?: string }).text ?? '—';
-                        return '—';
-                      })()}
-                    </div>
-                  </div>
-
-                </>
-              )}
-            </div>
+            <ContentConsultationTab
+              isLoading={isLoadingContentOfficerNotes}
+              meeting={meeting}
+              contentOfficerNotesRecords={contentOfficerNotesRecords}
+              pdfIcon={pdfIcon}
+            />
           )}
 
-          {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) – محضر الاجتماع، الحضور الفعلي، التوجيهات المرتبطة بالاجتماع */}
+          {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) */}
           {activeTab === 'meeting-documentation' && (
-            <div className="flex flex-col gap-8 w-full" dir="rtl">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>محضر الاجتماع</h2>
-                <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-right">
-                  {(meeting as any)?.previous_meeting_minutes_id ? (previousMeetingMinutesOption?.label ?? (meeting as any).previous_meeting_minutes_id) : '-'}
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>الحضور الفعلي</h2>
-                {meeting?.minister_attendees && meeting.minister_attendees.length > 0 ? (
-                  <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                    <DataTable
-                      columns={[
-                        {
-                          id: 'index',
-                          header: '#',
-                          width: 'w-20',
-                          align: 'center',
-                          render: (_row: MinisterAttendee, index: number) => (
-                            <span className="text-sm text-[#475467]">{index + 1}</span>
-                          ),
-                        },
-                        {
-                          id: 'external_name',
-                          header: 'الإسم',
-                          width: 'w-36',
-                          align: 'end',
-                          render: (row: MinisterAttendee & { mobile?: string; attendance_mechanism?: string; response_status?: string }) => (
-                            <span className="text-sm text-[#475467]">{row.external_name || row.username || '-'}</span>
-                          ),
-                        },
-                        {
-                          id: 'external_email',
-                          header: 'البريد الإلكتروني',
-                          width: 'w-44',
-                          align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]">{row.external_email || '-'}</span>
-                          ),
-                        },
-                        {
-                          id: 'position',
-                          header: 'المنصب',
-                          width: 'w-32',
-                          align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]">{row.position || '-'}</span>
-                          ),
-                        },
-                        {
-                          id: 'mobile',
-                          header: 'الجوال',
-                          width: 'w-28',
-                          align: 'end',
-                          render: (row: MinisterAttendee & { mobile?: string }) => (
-                            <span className="text-sm text-[#475467]">{row.mobile || row.mobile || '-'}</span>
-                          ),
-                        },
-                        {
-                          id: 'attendance_mechanism',
-                          header: 'آلية الحضور',
-                          width: 'w-24',
-                          align: 'center',
-                          render: (row: MinisterAttendee & { attendance_mechanism?: string }) => (
-                            <span className="text-sm text-[#475467]">
-                              {row.attendance_mechanism || (row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-')}
-                            </span>
-                          ),
-                        },
-                        {
-                          id: 'response_status',
-                          header: 'حالة الرد',
-                          width: 'w-24',
-                          align: 'center',
-                          render: (row: MinisterAttendee & { response_status?: string }) => (
-                            <span className="text-sm text-[#475467]">
-                              {row.response_status === 'PENDING' ? 'قيد الانتظار' : row.response_status === 'RESPONDED' ? 'تم الرد' : row.response_status || '-'}
-                            </span>
-                          ),
-                        },
-                        {
-                          id: 'access_permission',
-                          header: 'صلاحية الاطلاع',
-                          width: 'w-28',
-                          align: 'center',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]">
-                              {row.access_permission === 'FULL' ? 'كامل' : row.access_permission === 'READ_ONLY' ? 'قراءة فقط' : row.access_permission || '-'}
-                            </span>
-                          ),
-                        },
-                        {
-                          id: 'is_required',
-                          header: 'مطلوب',
-                          width: 'w-24',
-                          align: 'center',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]">
-                              {row.is_required != null ? (row.is_required ? 'نعم' : 'لا') : '-'}
-                            </span>
-                          ),
-                        },
-                        {
-                          id: 'justification',
-                          header: 'المبرر',
-                          width: 'w-40',
-                          align: 'end',
-                          render: (row: MinisterAttendee) => (
-                            <span className="text-sm text-[#475467]">{row.justification || '-'}</span>
-                          ),
-                        },
-                      ]}
-                      data={meeting.minister_attendees}
-                      rowPadding="py-3"
-                    />
-                  </div>
-                ) : (
-                  <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">لا يوجد حضور مسجل</div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>التوجيهات المرتبطة بالاجتماع</h2>
-                {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 ? (
-                  <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                    <DataTable
-                      columns={[
-                        { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                        { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
-                      ]}
-                      data={meeting.content_approval_directives.map((text) => ({ text }))}
-                      rowPadding="py-3"
-                    />
-                  </div>
-                ) : (
-                  <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">لا توجد توجيهات مرتبطة</div>
-                )}
-              </div>
-            </div>
+            <MeetingDocumentationTab
+              meeting={meeting}
+              previousMeetingMinutesLabel={previousMeetingMinutesOption?.label ?? null}
+            />
           )}
 
         </div>
