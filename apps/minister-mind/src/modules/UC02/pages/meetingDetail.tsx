@@ -73,10 +73,17 @@ import {
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
-import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoRenderField } from '@shared';
+import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS } from '../features/meeting-detail/constants';
+
+/** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
+const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
+  { key: 'is_sequential', label: fieldLabels.is_sequential, getValue: (d) => (d.is_sequential === true ? 'نعم' : d.is_sequential === false ? 'لا' : '—') },
+  { key: 'previous_meeting_id', label: fieldLabels.previous_meeting_id, getValue: (d) => d.previous_meeting_meeting_title ?? '—' },
+  { key: 'sequential_number', label: 'الرقم التسلسلي', getValue: (d) => d.sequential_number_display ?? '—' },
+];
 
 /** Map API attendance_mechanism (Arabic) to attendance_channel enum */
 function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
@@ -1684,13 +1691,23 @@ const MeetingDetail: React.FC = () => {
         minister_support_type: (item as any).minister_support_type,
         minister_support_other: (item as any).minister_support_other,
       })),
+      is_sequential: formData.is_sequential,
+      previous_meeting_meeting_title: formData.previous_meeting_meeting_title ?? undefined,
+      sequential_number_display:
+        meeting?.sequential_number != null
+          ? String(meeting.sequential_number)
+          : formData.is_sequential && formData.previous_meeting_ext_id != null
+            ? previousMeeting?.sequential_number != null
+              ? String((previousMeeting.sequential_number ?? 0) + 1)
+              : 'غير موجود (إجباري)'
+            : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
       directive_method: formData.directive_method || undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
       notes: notesText,
     };
-  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption]);
+  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption, previousMeeting?.sequential_number]);
 
   /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
   const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
@@ -1775,6 +1792,72 @@ const MeetingDetail: React.FC = () => {
                 <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
                 <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
               </Select>
+            );
+          case 'is_sequential':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_sequential ? 'نعم' : 'لا'}</span>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => {
+                    const next = !formData.is_sequential;
+                    setFormData((p) => ({
+                      ...p,
+                      is_sequential: next,
+                      ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }),
+                    }));
+                    if (!next) setPreviousMeetingOption(null);
+                  }}
+                  className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+            );
+          case 'previous_meeting_id':
+            return (
+              <FormAsyncSelectV2
+                value={previousMeetingOption}
+                onValueChange={(opt) => {
+                  setPreviousMeetingOption(opt);
+                  if (!opt?.value) {
+                    setFormData((p) => ({
+                      ...p,
+                      previous_meeting_ext_id: null,
+                      previous_meeting_group_id: null,
+                      previous_meeting_original_title: null,
+                      previous_meeting_meeting_title: null,
+                    }));
+                    return;
+                  }
+                  const [idPart, groupPart] = String(opt.value).split(':');
+                  const extId = idPart ? parseInt(idPart, 10) : null;
+                  const groupId = groupPart ? parseInt(groupPart, 10) : null;
+                  const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt.value);
+                  setFormData((p) => ({
+                    ...p,
+                    previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
+                    previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
+                    previous_meeting_original_title: cached?.original_title ?? null,
+                    previous_meeting_meeting_title: cached?.meeting_title ?? cached?.original_title ?? opt.label ?? null,
+                  }));
+                }}
+                loadOptions={loadPreviousMeetingSearchOptions}
+                placeholder="اختر الاجتماع السابق..."
+                searchPlaceholder="ابحث بالعنوان..."
+                emptyMessage="لا توجد نتائج"
+                limit={20}
+                isDisabled={!canEdit}
+                fullWidth
+                className="text-right"
+              />
+            );
+          case 'sequential_number':
+            return (
+              <div className={`${inputClass} bg-gray-50`} title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
+                {value ?? '—'}
+              </div>
             );
           case 'is_based_on_directive':
             return (
@@ -1988,7 +2071,7 @@ const MeetingDetail: React.FC = () => {
         </div>
       );
     },
-    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
+    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, previousMeetingOption, loadPreviousMeetingSearchOptions, loadPreviousMeetingMinutesOptions, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, setPreviousMeetingMinutesOption]
   );
 
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
@@ -2185,6 +2268,7 @@ const MeetingDetail: React.FC = () => {
               data={meetingInfoData}
               canEdit={canEdit}
               renderField={meetingInfoRenderField}
+              extraGridSpecs={formData.is_sequential ? UC02_EXTRA_MEETING_INFO_SPECS : [UC02_EXTRA_MEETING_INFO_SPECS[0], UC02_EXTRA_MEETING_INFO_SPECS[2]]}
             />
           )}
 
