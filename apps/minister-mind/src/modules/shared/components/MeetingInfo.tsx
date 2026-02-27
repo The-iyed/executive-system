@@ -115,6 +115,12 @@ export interface MeetingInfoData {
   meetingClassification1?: string;
   meetingConfidentiality?: string;
   meetingAgenda?: AgendaItemPreview[];
+  /** UC02 meeting detail only: sequential meeting flag */
+  is_sequential?: boolean;
+  /** UC02 meeting detail only: selected previous meeting display title */
+  previous_meeting_meeting_title?: string | null;
+  /** UC02 meeting detail only: computed الرقم التسلسلي display text */
+  sequential_number_display?: string;
   is_based_on_directive?: boolean;
   directive_method?: string;
   previous_meeting_minutes_file?: File | { name?: string } | null;
@@ -134,6 +140,8 @@ export interface MeetingInfoProps {
   dir?: 'rtl' | 'ltr';
   /** When set, each field is rendered by this function (e.g. editable row with checkbox). Otherwise ReadOnlyField. */
   renderField?: MeetingInfoRenderField;
+  /** Optional extra field specs (e.g. UC02: is_sequential, previous_meeting_id). Rendered at end of first grid. */
+  extraGridSpecs?: MeetingInfoFieldSpec[];
 }
 
 /**
@@ -141,8 +149,8 @@ export interface MeetingInfoProps {
  * no validation, no conditional hiding – all fields appear, everything disabled.
  * When renderField is provided (e.g. from meeting detail when canEdit), each field is rendered by it.
  */
-export function MeetingInfo({ data, className = '', dir = 'rtl', renderField }: MeetingInfoProps) {
-  const gridSpecs = React.useMemo(() => getMeetingInfoGridSpecs(), []);
+export function MeetingInfo({ data, className = '', dir = 'rtl', renderField, extraGridSpecs }: MeetingInfoProps) {
+  const gridSpecs = React.useMemo(() => [...getMeetingInfoGridSpecs(), ...(extraGridSpecs ?? [])], [extraGridSpecs]);
   const directiveSpecs = React.useMemo(() => getMeetingInfoDirectiveSpecs(), []);
 
   const renderCell = (spec: MeetingInfoFieldSpec) => {
