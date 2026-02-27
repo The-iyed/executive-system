@@ -13,13 +13,13 @@ import {
   FileUpload,
   MeetingRangePicker,
   SECTOR_OPTIONS,
+  MEETING_TYPE_OPTIONS,
+  type MeetingRangeValue
 } from '@shared';
-import type { MeetingRangeValue } from '@shared';
 import {
   getMeetingCategoryOptions,
   MEETING_CLASSIFICATION_OPTIONS,
   CONFIDENTIALITY_OPTIONS,
-  MEETING_TYPE_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
   MEETING_AGENDA_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,

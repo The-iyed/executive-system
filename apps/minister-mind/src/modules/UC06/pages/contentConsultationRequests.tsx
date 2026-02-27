@@ -446,7 +446,7 @@ const ContentConsultationRequests: React.FC = () => {
                   }}
                 />
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 min-[1440px]:grid-cols-3 gap-4 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 min-[1440px]:grid-cols-2 gap-4 w-full">
                   {originalRequests.map((request) => (
                     <ContentConsultationCard
                       key={request.id}
