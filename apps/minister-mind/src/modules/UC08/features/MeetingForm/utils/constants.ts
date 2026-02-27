@@ -20,11 +20,6 @@ export const CONFIDENTIALITY_OPTIONS = [
   { value: 'NORMAL', label: 'عادي' },
 ];
 
-export const MEETING_TYPE_OPTIONS = [
-  { value: 'INTERNAL', label: 'داخلي' },
-  { value: 'EXTERNAL', label: 'خارجي' },
-];
-
 export const MEETING_NATURE_OPTIONS = [
   { value: 'NORMAL', label: 'عادي' },
   { value: 'SEQUENTIAL', label: 'إلحاقي' },
