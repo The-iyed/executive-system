@@ -1,39 +1,14 @@
-import React from 'react';
 import { ReadOnlyField } from './ReadOnlyField';
 import { AgendaPreviewTable, type AgendaItemPreview } from './AgendaPreviewTable';
-import { SECTOR_OPTIONS, MeetingChannelLabels } from '../types';
-
-// Option labels matching Step1BasicInfo constants (display only, no UC01 dependency)
-const MEETING_CATEGORY_LABELS: Record<string, string> = {
-  COUNCILS_AND_COMMITTEES: 'المجالس واللجان',
-  EVENTS_AND_VISITS: 'الفعاليات والزيارات',
-  BILATERAL_MEETING: 'لقاء ثنائي',
-  PRIVATE_MEETING: 'لقاء خاص',
-  WORKSHOP: 'ورشة عمل',
-  DISCUSSION_WITHOUT_PRESENTATION: 'مناقشة (بدون عرض تقديمي)',
-  BUSINESS: 'اجتماعات الأعمال',
-  GOVERNMENT_CENTER_TOPICS: 'مواضيع مركز الحكومة',
-};
-
-const MEETING_CLASSIFICATION_LABELS: Record<string, string> = {
-  STRATEGIC: 'استراتيجي',
-  OPERATIONAL: 'تشغيلي',
-};
-
-const CONFIDENTIALITY_LABELS: Record<string, string> = {
-  CONFIDENTIAL: 'سرّي',
-  NORMAL: 'عادي',
-};
-
-const MEETING_TYPE_LABELS: Record<string, string> = {
-  INTERNAL: 'داخلي',
-  EXTERNAL: 'خارجي',
-};
-
-const DIRECTIVE_METHOD_LABELS: Record<string, string> = {
-  DIRECT_DIRECTIVE: 'توجيه مباشر',
-  PREVIOUS_MEETING: 'اجتماع سابق',
-};
+import {
+  SECTOR_OPTIONS,
+  getMeetingClassificationLabel,
+  getMeetingClassificationTypeLabel,
+  getMeetingTypeLabel,
+  getMeetingConfidentialityLabel,
+  getMeetingChannelLabel,
+  getDirectiveMethodLabel,
+} from '../types';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
   if (!startISO && !endISO) return '—';
@@ -62,9 +37,11 @@ function formatDateOnly(iso: string | null | undefined): string {
   return d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-function getLabel(value: string | null | undefined, map: Record<string, string>): string {
-  if (value == null || value === '') return '—';
-  return map[value] ?? value;
+/** فئة الاجتماع: resolve from both category (MeetingClassification) and type (MeetingClassificationType) so e.g. SPECIAL → خاص */
+function getMeetingCategoryDisplayLabel(value: string | null | undefined): string {
+  const fromCategory = getMeetingClassificationLabel(value);
+  if (fromCategory !== '-' && fromCategory !== (value ?? '')) return fromCategory;
+  return getMeetingClassificationTypeLabel(value);
 }
 
 /** Data for MeetingInfo preview – same shape as Step1 basic info, all optional. */
@@ -140,7 +117,7 @@ export function MeetingInfo({ data, className = '', dir = 'rtl' }: MeetingInfoPr
         <ReadOnlyField label="عنوان الاجتماع" value={data.meetingSubject} />
         <ReadOnlyField label="وصف الاجتماع" value={data.meetingDescription} />
         <ReadOnlyField label="القطاع" value={sectorLabel} />
-        <ReadOnlyField label="نوع الاجتماع" value={getLabel(data.meetingType, MEETING_TYPE_LABELS)} />
+        <ReadOnlyField label="نوع الاجتماع" value={getMeetingTypeLabel(data.meetingType)} />
         <ReadOnlyField
           label="اجتماع عاجل؟"
           value={data.is_urgent === true ? 'نعم' : data.is_urgent === false ? 'لا' : '—'}
@@ -162,24 +139,24 @@ export function MeetingInfo({ data, className = '', dir = 'rtl' }: MeetingInfoPr
 
         <ReadOnlyField
           label="آلية انعقاد الاجتماع"
-          value={MeetingChannelLabels[data.meetingChannel ?? ''] ?? data.meetingChannel ?? '—'}
+          value={getMeetingChannelLabel(data.meetingChannel)}
         />
         <ReadOnlyField label="الموقع" value={data.meeting_location} />
 
         <ReadOnlyField
           label="فئة الاجتماع"
-          value={getLabel(data.meetingCategory, MEETING_CATEGORY_LABELS)}
+          value={getMeetingCategoryDisplayLabel(data.meetingCategory)}
         />
         <ReadOnlyField label="مبرر اللقاء" value={data.meetingReason} />
         <ReadOnlyField label="موضوع التكليف المرتبط" value={data.relatedTopic} />
         <ReadOnlyField label="تاريخ الاستحقاق" value={formatDateOnly(data.dueDate)} />
         <ReadOnlyField
           label="تصنيف الاجتماع"
-          value={getLabel(data.meetingClassification1, MEETING_CLASSIFICATION_LABELS)}
+          value={getMeetingClassificationTypeLabel(data.meetingClassification1)}
         />
         <ReadOnlyField
           label="سرية الاجتماع"
-          value={getLabel(data.meetingConfidentiality, CONFIDENTIALITY_LABELS)}
+          value={getMeetingConfidentialityLabel(data.meetingConfidentiality)}
         />
       </div>
 
@@ -198,7 +175,7 @@ export function MeetingInfo({ data, className = '', dir = 'rtl' }: MeetingInfoPr
         />
         <ReadOnlyField
           label="طريقة التوجيه"
-          value={getLabel(data.directive_method, DIRECTIVE_METHOD_LABELS)}
+          value={getDirectiveMethodLabel(data.directive_method)}
         />
         <ReadOnlyField label="محضر الاجتماع" value={fileDisplay} />
         <ReadOnlyField label="التوجيه" value={data.directive_text} />
