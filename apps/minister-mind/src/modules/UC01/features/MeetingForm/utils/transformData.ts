@@ -1,16 +1,16 @@
 import { formatDateStringToISO } from "@shared";
-
-/** Preserves time if present, otherwise returns YYYY-MM-DD. For draft datetime fields. */
-function toISOOrDateString(val: string | null | undefined): string {
-  if (!val || val.trim() === '') return '';
-  const d = new Date(val.trim());
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
-}
 import type { Step1BasicInfoFormData } from "../schemas/step1BasicInfo.schema";
 import type { Step2ContentFormData } from "../schemas/step2Content.schema";
 import type { Step3InviteesFormData } from "../schemas/step3Invitees.schema";
 import { DraftApiResponse } from "../../../data";
 import { mapInviteesToFormData } from "./inviteeMappers";
+import { getMeetingLocationDropdownValue } from './constants';
+
+function toISOOrDateString(val: string | null | undefined): string {
+  if (!val || val.trim() === '') return '';
+  const d = new Date(val.trim());
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+}
 
 export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step1BasicInfoFormData> => {
     return {
@@ -25,6 +25,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       meetingConfidentiality: draft.meeting_confidentiality || '',
       meetingChannel: draft.meeting_channel ?? '',
       meeting_location: draft.meeting_location ?? '',
+      meeting_location_option: getMeetingLocationDropdownValue(draft.meeting_location ?? undefined, undefined),
       sector: draft.sector || '',
       meetingAgenda: draft.agenda_items?.map((item: any) => ({
         id: item.id,
@@ -43,7 +44,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       alternative_2_start_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_start ?? draft.alternative_2_start_date) || '',
       alternative_2_end_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_end ?? draft.alternative_2_end_date) || '',
     };
-  };
+};
 
 export const transformDraftToStep2ContentData = (draft: DraftApiResponse): Partial<Step2ContentFormData> => {
     const presentationAttachments = (draft.attachments || []).filter((a) => a.is_presentation);
@@ -70,21 +71,10 @@ export const transformDraftToStep2ContentData = (draft: DraftApiResponse): Parti
         file_type: att.file_type,
       })),
     };
-  };
+};
 
 export const transformDraftToStep3InviteesData = (draft: DraftApiResponse): Partial<Step3InviteesFormData> => {
   return {
     invitees: mapInviteesToFormData(draft.invitees),
   };
-};
-
-export const transformDraftToStep4SchedulingData = (draft: DraftApiResponse): string[] => {
-  const slots: string[] = [];
-  const selectedId = draft?.selected_time_slot?.id ?? draft?.selected_time_slot_id;
-  const alt1Id = draft?.alternative_time_slot_1?.id ?? draft?.alternative_time_slot_id_1;
-  const alt2Id = draft?.alternative_time_slot_2?.id ?? draft?.alternative_time_slot_id_2;
-  if (selectedId) slots.push(selectedId);
-  if (alt1Id) slots.push(alt1Id);
-  if (alt2Id) slots.push(alt2Id);
-  return slots;
 };

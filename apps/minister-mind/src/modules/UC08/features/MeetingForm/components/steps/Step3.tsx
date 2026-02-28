@@ -1,17 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import { FormTable, ActionButtons } from '@shared';
+import { cn } from '@sanad-ai/ui';
 import {
   INVITEES_TABLE_COLUMNS,
-  INVITEES_TABLE_TITLE,
-  ADD_INVITEE_BUTTON_LABEL,
-  MINISTER_INVITEES_TABLE_TITLE,
-  ADD_MINISTER_INVITEE_BUTTON_LABEL,
 } from '../../utils/constants';
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers } from '../../../../data/usersApi';
-import { cn } from '@sanad-ai/ui';
-import { Check } from 'lucide-react';
-
 export interface Step3Props {
   formData: Partial<Step3FormData>;
   errors: Record<string, Record<string, string>>;
@@ -100,14 +95,14 @@ export const Step3: React.FC<Step3Props> = ({
       <div className="relative w-full flex flex-col gap-8 max-w-[1200px] mx-auto">
         {/* Section 1 — Invitees (Request Submitter) */}
         <FormTable
-          title={INVITEES_TABLE_TITLE}
+          title='قائمة المدعوين (مقدّم الطلب)'
           required
           columns={INVITEES_TABLE_COLUMNS}
           rows={inviteeRows}
           onAddRow={handleAddInvitee}
           onDeleteRow={handleDeleteInvitee}
           onUpdateRow={handleUpdateInvitee}
-          addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
+          addButtonLabel='إضافة مدعو'
           errors={errors}
           touched={touched}
           errorMessage={inviteesTableError}
@@ -116,13 +111,13 @@ export const Step3: React.FC<Step3Props> = ({
         />
 
         <FormTable
-          title={MINISTER_INVITEES_TABLE_TITLE}
+          title='مدعوو الوزير'
           columns={INVITEES_TABLE_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}
           onDeleteRow={handleDeleteMinisterInvitee}
           onUpdateRow={handleUpdateMinisterInvitee}
-          addButtonLabel={ADD_MINISTER_INVITEE_BUTTON_LABEL}
+          addButtonLabel='إضافة مدعو للوزير'
           errors={errors}
           touched={touched}
           emptyStateMessage="لا يوجد مدعوون من الوزير"
