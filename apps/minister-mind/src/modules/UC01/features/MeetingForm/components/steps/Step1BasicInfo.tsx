@@ -19,7 +19,6 @@ import {
 import {
   getMeetingCategoryOptions,
   MEETING_CLASSIFICATION_OPTIONS,
-  CONFIDENTIALITY_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
   MEETING_AGENDA_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
@@ -501,21 +500,14 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               disabled={isFieldDisabled('meetingClassification1')}
             />
           </FormField>
-          <FormField
-              className="w-full min-w-0"
-            label="سرية الاجتماع"
-            required
-            error={touched.meetingConfidentiality ? errors.meetingConfidentiality : undefined}
-          >
-            <FormSelect
-              value={formData.meetingConfidentiality}
-              onValueChange={(value) => handleChange('meetingConfidentiality', value)}
-              options={CONFIDENTIALITY_OPTIONS}
-              placeholder="سرية الاجتماع"
-              error={!!(touched.meetingConfidentiality && errors.meetingConfidentiality)}
+          <FormRow className="sm:justify-end">
+            <FormSwitch
+              checked={formData.meetingConfidentiality === 'CONFIDENTIAL'}
+              onCheckedChange={(checked) => handleChange('meetingConfidentiality', checked ? 'CONFIDENTIAL' : 'NORMAL')}
+              label="اجتماع سرّي؟"
               disabled={isFieldDisabled('meetingConfidentiality')}
             />
-          </FormField>
+          </FormRow>
         </div>
 
           <FormTable

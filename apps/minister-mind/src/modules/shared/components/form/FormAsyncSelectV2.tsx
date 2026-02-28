@@ -32,6 +32,8 @@ export interface FormAsyncSelectV2Props {
   defaultOptions?: boolean;
   /** Called when the menu opens (first click). Use to mark touched and show errors. */
   onFocus?: () => void;
+  /** Called when the search input value changes (e.g. to use as name when selecting "manual entry"). */
+  onInputChange?: (newValue: string) => void;
 }
 
 export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
@@ -54,6 +56,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
   menuPortalTarget,
   defaultOptions = true,
   onFocus,
+  onInputChange,
 }) => {
   return (
     <AsyncSelectV2
@@ -80,6 +83,7 @@ export const FormAsyncSelectV2: React.FC<FormAsyncSelectV2Props> = ({
       menuPortalTarget={menuPortalTarget}
       defaultOptions={defaultOptions}
       onFocus={onFocus}
+      onInputChange={onInputChange}
     />
   );
 };
