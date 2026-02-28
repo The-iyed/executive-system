@@ -2,21 +2,12 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
-<<<<<<< HEAD
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-=======
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
->>>>>>> 9b0acc4c17a350846ba6b412c104f7c74c09a81e
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
   SectorLabels,
-  getMeetingTypeLabel,
-  getMeetingClassificationLabel,
-  getMeetingClassificationTypeLabel,
-  getMeetingConfidentialityLabel,
-  getMeetingChannelLabel,
 } from '@shared/types';
 import {
   getContentRequestById,
