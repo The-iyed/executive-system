@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { formatDateArabic } from '@shared/utils';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -593,11 +594,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
                     {meetingRequest.presentation_attachment_timing
-                      ? new Date(meetingRequest.presentation_attachment_timing).toLocaleDateString('ar-SA', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                        })
+                      ? formatDateArabic(meetingRequest.presentation_attachment_timing)
                       : '-'}
                   </p>
                 </div>
