@@ -178,6 +178,8 @@ export interface ContentRequestDetailResponse {
   related_guidance: string | null;
   general_notes: string | null;
   content_officer_notes: string | null;
+  /** Scheduler's note specifically for content review tab. */
+  scheduling_officer_note_for_content?: string | null;
   meeting_justification: string | null;
   related_topic: string | null;
   deadline: string | null;

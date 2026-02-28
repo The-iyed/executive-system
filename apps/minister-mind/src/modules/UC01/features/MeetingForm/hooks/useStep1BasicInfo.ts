@@ -1,10 +1,12 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { nanoid } from 'nanoid';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
-import { getStep1EditableMap, EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES } from '../utils';
+import { getStep1EditableMap } from '../utils';
+import { MeetingLocation } from '../utils/constants';
+import { EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES } from '@shared';
 import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
+import { useMeetingAgenda } from './useMeetingAgenda';
 
 export type Step1ErrorKey = keyof Step1BasicInfoFormData;
 
@@ -23,7 +25,6 @@ interface UseStep1BasicInfoProps {
   onSuccess?: (draftId: string) => void;
   onError?: (error: Error) => void;
   isEditMode?: boolean;
-  /** From get meeting details: list of API field names (snake_case) that are editable. Used to disable non-editable fields in edit. */
   editableFields?: string[] | null;
 }
 
@@ -33,7 +34,6 @@ export interface SubmitStep1BasicInfoPayload {
   draftId?: string;
 }
 
-/** Validates form, builds FormData via data layer, submits draft basic-info. */
 async function submitStep1BasicInfoData(
   payload: SubmitStep1BasicInfoPayload,
   isEditMode: boolean
@@ -83,40 +83,12 @@ export const useStep1BasicInfo = ({
     }
   }, [initialData]);
 
-  // Clear meeting date range (main + alternatives) when meeting is urgent
-  useEffect(() => {
-    if (formData.is_urgent === true) {
-      setFormData((prev) => ({
-        ...prev,
-        meeting_start_date: '',
-        meeting_end_date: '',
-        alternative_1_start_date: '',
-        alternative_1_end_date: '',
-        alternative_2_start_date: '',
-        alternative_2_end_date: '',
-      }));
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next.meeting_start_date;
-        delete next.meeting_end_date;
-        delete next.alternative_1_start_date;
-        delete next.alternative_1_end_date;
-        delete next.alternative_2_start_date;
-        delete next.alternative_2_end_date;
-        return next;
-      });
-    }
-  }, [formData.is_urgent]);
-
-  const showMeetingDates = formData.is_urgent !== true;
-
   const [errors, setErrors] = useState<Partial<Record<Step1ErrorKey, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<Step1ErrorKey, boolean>>>({});
 
   const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
   const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
 
-  // React Query mutation for submitting step 1
   const submitMutation = useMutation({
     mutationFn: (payload: SubmitStep1BasicInfoPayload) => submitStep1BasicInfoData(payload, isEditMode),
     onSuccess: (newDraftId) => {
@@ -140,12 +112,10 @@ export const useStep1BasicInfo = ({
     },
   });
 
-  // Validation with conditional rules
   const validationResult = useMemo(() => {
     return validateStep1BasicInfo(formData);
   }, [formData]);
 
-  // Validate single field - similar to login form pattern
   const validateField = useCallback(
     (field: keyof Step1BasicInfoFormData, value: any) => {
       const updatedData = { ...formData, [field]: value };
@@ -174,7 +144,6 @@ export const useStep1BasicInfo = ({
     [formData]
   );
 
-  // Validate all fields (including meeting date range when applicable)
   const validateAll = useCallback(
     (markTouched: boolean = true): boolean => {
       const allFormFields: Step1ErrorKey[] = [
@@ -195,16 +164,14 @@ export const useStep1BasicInfo = ({
         'is_on_behalf_of',
         'is_based_on_directive',
       ];
-      if (showMeetingDates) {
-        allFormFields.push(
-          'meeting_start_date',
-          'meeting_end_date',
-          'alternative_1_start_date',
-          'alternative_1_end_date',
-          'alternative_2_start_date',
-          'alternative_2_end_date'
-        );
-      }
+      allFormFields.push(
+        'meeting_start_date',
+        'meeting_end_date',
+        'alternative_1_start_date',
+        'alternative_1_end_date',
+        'alternative_2_start_date',
+        'alternative_2_end_date'
+      );
 
       const buildTouched = (): Partial<Record<Step1ErrorKey, boolean>> => {
         const allTouched: Partial<Record<Step1ErrorKey, boolean>> = {};
@@ -253,7 +220,7 @@ export const useStep1BasicInfo = ({
       setTableErrors({});
       return true;
     },
-    [validationResult, formData, showMeetingDates]
+    [validationResult, formData]
   );
 
   const isValidDateTime = useCallback((val: unknown): boolean => {
@@ -264,10 +231,15 @@ export const useStep1BasicInfo = ({
     return !Number.isNaN(d.getTime());
   }, []);
 
-  // Form field handlers
   const handleChange = useCallback(
     (field: keyof Step1BasicInfoFormData, value: any) => {
-      // Clear meeting date/time errors first (outside setFormData) so they disappear on first select and form re-renders correctly
+      if (field === 'meetingSubject') {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next.meetingSubject;
+          return next;
+        });
+      }
       if (STEP1_DATE_TIME_FIELDS.includes(field) && isValidDateTime(value)) {
         setErrors((prevErrors) => {
           const next = { ...prevErrors };
@@ -292,20 +264,6 @@ export const useStep1BasicInfo = ({
             return next;
           });
         }
-        // Clear meeting date errors when is_urgent is true
-        if (field === 'is_urgent' && value === true) {
-          setErrors((prevErrors) => {
-            const newErrors = { ...prevErrors };
-            delete newErrors.meeting_start_date;
-            delete newErrors.meeting_end_date;
-            delete newErrors.alternative_1_start_date;
-            delete newErrors.alternative_1_end_date;
-            delete newErrors.alternative_2_start_date;
-            delete newErrors.alternative_2_end_date;
-            return newErrors;
-          });
-        }
-        // Clear meeting_manager_id when is_on_behalf_of is false
         if (field === 'is_on_behalf_of' && value === false) {
           newData.meeting_manager_id = '';
           setErrors((prevErrors) => {
@@ -347,7 +305,7 @@ export const useStep1BasicInfo = ({
         }
         // Clear meeting category when switching to EXTERNAL if current category is not allowed for external
         if (field === 'meetingType' && value === 'EXTERNAL' && prev.meetingCategory) {
-          if (EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES.includes(prev.meetingCategory)) {
+          if (EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES.includes(prev.meetingCategory as any)) {
             newData.meetingCategory = '';
             setErrors((prevErrors) => {
               const newErrors = { ...prevErrors };
@@ -356,19 +314,23 @@ export const useStep1BasicInfo = ({
             });
           }
         }
-        // Clear meeting_location when meeting channel is not PHYSICAL (حضوري)
+        // Clear meeting_location and location option when meeting channel is not PHYSICAL (حضوري)
         if (field === 'meetingChannel' && value !== 'PHYSICAL') {
           newData.meeting_location = '';
+          newData.meeting_location_option = '';
           setErrors((prevErrors) => {
             const newErrors = { ...prevErrors };
             delete newErrors.meeting_location;
             return newErrors;
           });
         }
+        // Sync meeting_location when location dropdown changes
+        if (field === 'meeting_location_option') {
+          newData.meeting_location =
+            value === MeetingLocation.ALIYA || value === MeetingLocation.GHADEER ? value : '';
+        }
         return newData;
       });
-      // Validate field on change if it's been touched (like login form pattern).
-      // Skip validation for date/time fields when value is valid so we don't re-show "required" (e.g. end is set in next tick by start picker).
       if (touched[field]) {
         const skipValidation =
           STEP1_DATE_TIME_FIELDS.includes(field) && isValidDateTime(value);
@@ -383,76 +345,21 @@ export const useStep1BasicInfo = ({
   const handleBlur = useCallback(
     (field: Step1ErrorKey) => {
       setTouched((prev) => ({ ...prev, [field]: true }));
-      validateField(field, formData[field]);
+      // Meeting date errors are shown only on Next (validateAll), not on blur
+      if (!STEP1_DATE_TIME_FIELDS.includes(field)) {
+        validateField(field, formData[field]);
+      }
     },
     [formData, validateField]
   );
 
-  // Table handlers - Agenda (includes minister support per requirement)
-  const handleAddAgenda = useCallback(() => {
-    const newAgenda = {
-      id: nanoid(),
-      agenda_item: '',
-      presentation_duration_minutes: '',
-      minister_support_type: '',
-      minister_support_other: '',
-    };
-    setFormData((prev) => {
-      const updatedAgenda = [newAgenda, ...(prev.meetingAgenda || [])];
-      // Clear table-specific errors when adding a new item
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors.meetingAgenda;
-        return newErrors;
-      });
-      // Clear all table errors for meetingAgenda rows
-      setTableErrors((prevTableErrors) => {
-        const newTableErrors = { ...prevTableErrors };
-        // Get all agenda IDs from updated agenda
-        const agendaIds = updatedAgenda.map((a) => a.id);
-        // Remove errors for all agenda rows
-        agendaIds.forEach((id) => {
-          delete newTableErrors[id];
-        });
-        return newTableErrors;
-      });
-      return {
-        ...prev,
-        meetingAgenda: updatedAgenda,
-      };
-    });
-  }, []);
+  const { handleAddAgenda, handleDeleteAgenda, handleUpdateAgenda } = useMeetingAgenda({
+    agenda: formData.meetingAgenda ?? [],
+    setFormData,
+    setErrors,
+    setTableErrors,
+  });
 
-  const handleDeleteAgenda = useCallback((id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingAgenda: (prev.meetingAgenda || []).filter((a) => a.id !== id),
-    }));
-  }, []);
-
-  const handleUpdateAgenda = useCallback((id: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      meetingAgenda: (prev.meetingAgenda || []).map((a) =>
-        a.id === id ? { ...a, [field]: value } : a
-      ),
-    }));
-    // Clear error when field is updated
-    if (value) {
-      setTableErrors((prev) => {
-        const newErrors = { ...prev };
-        if (newErrors[id]) {
-          delete newErrors[id][field];
-          if (Object.keys(newErrors[id]).length === 0) {
-            delete newErrors[id];
-          }
-        }
-        return newErrors;
-      });
-    }
-  }, []);
-
-  // Submit step
   const submitStep = useCallback(
     async (isDraft: boolean = false): Promise<string | null> => {
       if (!isDraft && !validateAll(true)) {
@@ -484,7 +391,6 @@ export const useStep1BasicInfo = ({
     [formData, draftId, validateAll, submitMutation]
   );
 
-  // Helper to check if a field is required (form fields + meeting date range)
   const getIsFieldRequired = useCallback(
     (field: Step1ErrorKey) => {
       return isStep1BasicInfoFieldRequired(field, formData);
