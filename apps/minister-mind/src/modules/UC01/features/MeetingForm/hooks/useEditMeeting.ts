@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getDraftById, getSubmitterMeeting } from '../../../data';
 import { PATH } from '../../../routes/paths';
-import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData, transformDraftToStep4SchedulingData } from '../utils';
+import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData } from '../utils';
 import { useStepNavigation } from './useStepNavigation';
 import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
@@ -42,7 +42,6 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
       step1BasicInfo: transformDraftToStep1Data(draftData),
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
-      step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
     };
   }, [draftData]);
 
@@ -59,10 +58,9 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     navigate(PATH.MEETINGS);
   }, [navigate]);
 
-  const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook, step4SchedulingHook } = useMeetingSteps({
+  const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook } = useMeetingSteps({
     draftId: id ?? '',
     isEditMode: true,
-    currentStep,
     editableFields,
     initialData,
     onStep2ContentSuccess: (isDraft) => {
@@ -83,7 +81,6 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     onNext: handleNext,
     onSaveDraft: handleSaveDraft,
   });
@@ -96,7 +93,6 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     handleNext,
     handlePrevious,
     handleCancel,

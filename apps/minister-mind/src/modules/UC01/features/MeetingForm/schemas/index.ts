@@ -23,8 +23,3 @@ export {
   createStep3InviteesSchema,
   type Step3InviteesFormData,
 } from './step3Invitees.schema';
-
-export {
-  step4SchedulingSchema,
-  type Step4SchedulingFormData,
-} from './step4Scheduling.schema';
