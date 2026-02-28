@@ -24,6 +24,7 @@ import {
   FormDateTimePicker,
   type OptionType,
   Drawer,
+  AttachmentPreviewDrawer,
   SECTOR_OPTIONS,
   formatDateTimeArabic,
 } from '@shared'; 
@@ -3963,44 +3964,11 @@ const MeetingDetail: React.FC = () => {
           </form>
       </Drawer>
 
-      {/* PDF / file preview drawer */}
-      <Drawer
+      <AttachmentPreviewDrawer
         open={!!previewAttachment}
         onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
-        title={previewAttachment?.file_name ?? ''}
-        side="right"
-        width="90vw"
-        showDecoration={true}
-        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
-      >
-        {previewAttachment && (
-          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
-            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
-              <iframe
-                title={previewAttachment.file_name}
-                src={previewAttachment.blob_url}
-                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
-              />
-            ) : (
-              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
-                </p>
-                <a
-                  href={previewAttachment.blob_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  <Download className="w-4 h-4" />
-                  تحميل الملف
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-      </Drawer>
+        attachment={previewAttachment}
+      />
 
       {/* Request Guidance – Drawer */}
       <Drawer
