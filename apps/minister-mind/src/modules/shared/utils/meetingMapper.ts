@@ -51,7 +51,7 @@ export function mapMeetingToCardData(meeting: MeetingApiResponse): MeetingCardDa
     statusLabel,
     location: meeting.meeting_channel,
     meetingCategory: getMeetingClassificationLabel(meeting.meeting_classification),
-    meetingDate: meeting.scheduled_at ? formatDateIslamic(meeting.scheduled_at) : undefined,
+    meetingDate: meeting.meeting_start_date ? formatDateIslamic(meeting.meeting_start_date) : undefined,
     isDataComplete:
       meeting.is_data_complete == null ? undefined : Boolean(meeting.is_data_complete),
   };

@@ -24,6 +24,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   menuPortalTarget: menuPortalTargetProp,
   defaultOptions = true,
   onFocus,
+  onInputChange,
 }) => {
   const portalTargetFromContext = useSelectMenuPortalTarget();
   const menuPortalTarget = menuPortalTargetProp ?? portalTargetFromContext ?? (typeof document !== 'undefined' ? document.body : undefined);
@@ -234,7 +235,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
     }
   }, [isLoading]);
 
-  // Handle value change
+  // Handle value change – pass full option so custom fields (e.g. __search for manual entry) are preserved
   const handleChange = useCallback((
     newValue: SingleValue<SelectOption>,
     actionMeta: ActionMeta<SelectOption>
@@ -246,13 +247,8 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
       return;
     }
 
-    // Return as OptionType object
-    const optionValue: OptionType = {
-      value: newValue.value,
-      label: newValue.label,
-      description: newValue.description,
-    };
-    onChange(optionValue, actionMeta);
+    // Pass full option (SelectOption) so __search and other custom props reach the parent
+    onChange(newValue as OptionType, actionMeta);
   }, [onChange]);
 
   // Convert value to option
@@ -286,6 +282,7 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
           debounceTimeout={debounceTimeout}
           defaultOptions={defaultOptions}
           onMenuOpen={onFocus}
+          onInputChange={onInputChange}
           additional={{
             page: 1,
           }}

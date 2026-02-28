@@ -28,16 +28,12 @@ import {
   CalendarClock,
   StickyNote,
 } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, type MeetingInfoData } from '@shared/components';
+import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
   SectorLabels,
-  getMeetingTypeLabel,
-  getMeetingClassificationLabel,
-  getMeetingClassificationTypeLabel,
-  getMeetingConfidentialityLabel,
-  getMeetingChannelLabel,
 } from '@shared/types';
 import {
   getContentRequestById,
@@ -215,6 +211,9 @@ const ContentRequestDetail: React.FC = () => {
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [compareResult, setCompareResult] = useState<ComparePresentationsResponse | null>(null);
   const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
+
+  // PDF/file preview drawer
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
 
   const insightsAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -862,59 +861,19 @@ const ContentRequestDetail: React.FC = () => {
       <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {/* Tab Content */}
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full mx-auto ">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  معلومات الطلب
-                </h2>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      رقم الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.request_number ?? '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      حالة الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {statusLabel}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مقدم الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.submitter_name ?? '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مالك الاجتماع
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.current_owner_user
-                        ? `${contentRequest.current_owner_user.first_name} ${contentRequest.current_owner_user.last_name}`
-                        : contentRequest.current_owner_role?.name_ar ?? '-'}
-                    </p>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-4 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <ReadOnlyField label="رقم الطلب" value={contentRequest?.request_number ?? '-'} />
+                <ReadOnlyField label="حالة الطلب" value={statusLabel} />
+                <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? '-'} />
+                <ReadOnlyField
+                  label="مالك الاجتماع"
+                  value={
+                    contentRequest?.current_owner_user
+                      ? `${contentRequest.current_owner_user.first_name ?? ''} ${contentRequest.current_owner_user.last_name ?? ''}`.trim()
+                      : contentRequest?.current_owner_role?.name_ar ?? '-'
+                  }
+                />
               </div>
             </div>
           )}
@@ -987,7 +946,7 @@ const ContentRequestDetail: React.FC = () => {
                                 {att.blob_url && (
                                   <>
                                     <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                                    <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                                    <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
                                   </>
                                 )}
                               </div>
@@ -1085,7 +1044,7 @@ const ContentRequestDetail: React.FC = () => {
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => window.open(att.blob_url, '_blank')}
+                                  onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                   className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                 >
                                   <Eye className="w-5 h-5 text-[#475467]" />
@@ -1374,7 +1333,7 @@ const ContentRequestDetail: React.FC = () => {
                       const recordQuestion = row.question || row.consultation_question || '';
                       const isExpanded = expandedConsultationId === recordId;
                       const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                      const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                      const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                       const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                       const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1482,7 +1441,7 @@ const ContentRequestDetail: React.FC = () => {
                               )}
                               <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                                 {flatItems.map((item) => {
-                                  const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                                  const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                                   return (
                                     <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                       <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1663,6 +1622,45 @@ const ContentRequestDetail: React.FC = () => {
             </DialogContent>
           </Dialog>
 
+          {/* PDF / file preview drawer */}
+          <Drawer
+            open={!!previewAttachment}
+            onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+            title={previewAttachment?.file_name ?? ''}
+            side="right"
+            width="90vw"
+            showDecoration={true}
+            bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+          >
+            {previewAttachment && (
+              <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+                {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+                  <iframe
+                    title={previewAttachment.file_name}
+                    src={previewAttachment.blob_url}
+                    className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+                  />
+                ) : (
+                  <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                    <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                    </p>
+                    <a
+                      href={previewAttachment.blob_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
+                      <Download className="w-4 h-4" />
+                      تحميل الملف
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </Drawer>
+
           {/* Analyze contradictions result modal */}
           <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
             <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
@@ -1755,8 +1753,8 @@ const ContentRequestDetail: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Action Content (outside tabs) */}
-         {activeTab === 'request-info' && <div className="flex flex-col gap-6">
+          {/* Action Content (Directives + Executive Summary – Content tab only, not Request Information) */}
+         {activeTab === 'content' && <div className="flex flex-col gap-6">
             {/* إضافة التوجيهات – table like meeting details */}
             <div className="flex flex-col gap-4 w-full mx-auto " dir="rtl">
               <div className="flex items-center justify-between gap-4">
@@ -1775,27 +1773,36 @@ const ContentRequestDetail: React.FC = () => {
                     </svg>
                     <span>إضافة توجيه</span>
                   </button>
-                  {contentRequest?.ext_id != null && (
-                    <button
-                      type="button"
-                      onClick={handleRequestAiDirectives}
-                      disabled={isLoadingAiSuggestions || hasSuggestedActions}
-                      className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {isLoadingAiSuggestions ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
-                          <span>جاري التحميل...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 text-[#008774]" />
-                          <span>اقتراح بالذكاء الاصطناعي</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className={contentRequest?.ext_id == null ? 'inline-flex' : undefined}>
+                          <button
+                            type="button"
+                            onClick={handleRequestAiDirectives}
+                            disabled={isLoadingAiSuggestions || hasSuggestedActions || contentRequest?.ext_id == null}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                          >
+                            {isLoadingAiSuggestions ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-[#008774]" />
+                                <span>جاري التحميل...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4 text-[#008774]" />
+                                <span>اقتراح بالذكاء الاصطناعي</span>
+                              </>
+                            )}
+                          </button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-right">
+                        {contentRequest?.ext_id == null ? 'لا يوجد اجتماع سابق' : 'اقتراح بالذكاء الاصطناعي'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               
@@ -2448,7 +2455,7 @@ const ContentRequestDetail: React.FC = () => {
                         className="text-xs text-gray-500"
                         style={{ fontFamily: "'Almarai', sans-serif" }}
                       >
-                        {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                        {formatDateArabic(draft.requested_at)}
                       </span>
                     </div>
                     <p

@@ -216,7 +216,7 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       ? requiredString('تصنيف الاجتماع مطلوب')
       : optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
     meetingClassification2: optionalString('تصنيف الاجتماع يجب أن يكون نصاً'),
-    meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
+    meetingConfidentiality: z.union([z.enum(['CONFIDENTIAL', 'NORMAL']), z.literal('')]).default('NORMAL').transform((v) => (v === '' ? 'NORMAL' : v)),
     meetingChannel: optionalString('آلية انعقاد الاجتماع يجب أن تكون نصاً'),
     meeting_location: requiresMeetingLocation
       ? requiredString('الموقع مطلوب')

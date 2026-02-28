@@ -5,8 +5,6 @@ import axiosInstance from '@auth/utils/axios';
 import { useToast } from '@sanad-ai/ui';
 import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { AttendanceMechanism } from '@shared/types';
-import { mapUserToFormData } from '../utils/inviteeMappers';
-import type { UserApiResponse } from '../../../data/usersApi';
 import { getStep3EditableMap } from '../utils/editableFields';
 import { executeStep3SubmitFlow } from '../utils/step3SubmitFlow';
 import type { SuggestedAttendee } from '../../../../UC02/hooks/useSuggestMeetingAttendees';
@@ -45,17 +43,21 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
     }
   }
 
+  const effectiveUserId = (uid: string | undefined) =>
+    uid && uid !== '__manual__' ? uid : undefined;
+
   const body = {
     invitees: formData.invitees?.map((invitee, index) => {
-      if (invitee.user_id) {
+      const userId = effectiveUserId(invitee.user_id);
+      if (userId) {
         return {
-          user_id: invitee.user_id,
+          user_id: userId,
           sector: invitee.sector?.trim() || '',
           attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
           is_required: invitee.is_required || false,
         };
       }
-      
+
       return {
         name: invitee.name || '',
         position: invitee.position || '',
@@ -271,45 +273,6 @@ export const useStep3Invitees = ({
     }
   }, []);
 
-  const handleAddUserFromSelect = useCallback((userOption: { 
-    value: string; 
-    label: string; 
-    description?: string; 
-    username?: string; 
-    position?: string; 
-    phone_number?: string;
-    first_name?: string;
-    last_name?: string;
-  }) => {
-    const userId = userOption.value;
-    const existingUser = formData.invitees?.find((inv) => inv.user_id === userId);
-    if (existingUser) return false;
-
-    const userData: UserApiResponse = {
-      id: userId,
-      username: userOption.username,
-      email: userOption.description,
-      first_name: userOption.first_name,
-      last_name: userOption.last_name,
-      position: userOption.position || null,
-      phone_number: userOption.phone_number || null,
-    };
-
-    const mappedUser = mapUserToFormData(userData);
-
-    const newInvitee = {
-      ...mappedUser,
-      id: nanoid(),
-      attendance_mechanism: AttendanceMechanism.PHYSICAL,
-    };
-
-    setFormData((prev) => ({
-      ...prev,
-      invitees: [newInvitee, ...(prev.invitees || [])],
-    }));
-    return true;
-  }, [formData.invitees]);
-
   const handleAddSuggestedAttendees = useCallback((suggestions: SuggestedAttendee[]) => {
     if (!suggestions.length) return;
     const newInvitees = suggestions.map((s) => ({
@@ -351,7 +314,6 @@ export const useStep3Invitees = ({
     handleAddAttendee,
     handleDeleteAttendee,
     handleUpdateAttendee,
-    handleAddUserFromSelect,
     handleAddSuggestedAttendees,
     validateAll,
     submitStep,

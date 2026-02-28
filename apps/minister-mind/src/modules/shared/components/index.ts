@@ -61,6 +61,7 @@ export {
   type FormTableProps,
   type FormTableColumn,
   type FormTableRow,
+  type CustomCellRenderParams,
   type FormTextAreaProps,
   type FormSwitchProps,
   type FormRowProps,

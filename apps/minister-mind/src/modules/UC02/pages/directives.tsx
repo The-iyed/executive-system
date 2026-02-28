@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar } from '@shared';
+import { DataTable, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, Tabs, TruncatedWithTooltip, ContentBar, formatDateArabic } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels } from '@shared';
 import { cn } from '@sanad-ai/ui';
 import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } from 'lucide-react';
@@ -170,20 +170,8 @@ const Directives: React.FC = () => {
     enabled: meetingIds.length > 0,
   });
 
-  // Format date helper
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string | null): string =>
+    dateString ? (formatDateArabic(dateString) || '-') : '-';
 
   // Get classification label
   const getClassificationLabel = (classification: string | null): string => {
