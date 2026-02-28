@@ -864,6 +864,10 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-4 w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <ReadOnlyField label="رقم الطلب" value={contentRequest?.request_number ?? '-'} />
+                <ReadOnlyField
+                  label="تاريخ الطلب"
+                  value={formatDateArabic((contentRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (contentRequest as { created_at?: string })?.created_at) || '-'}
+                />
                 <ReadOnlyField label="حالة الطلب" value={statusLabel} />
                 <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? '-'} />
                 <ReadOnlyField

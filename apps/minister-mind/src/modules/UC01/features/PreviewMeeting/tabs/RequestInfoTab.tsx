@@ -1,6 +1,7 @@
 import React from 'react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { formatDateArabic } from '@shared/utils';
 
 const labelClass = 'text-sm font-medium text-gray-700';
 const valueClass = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right';
@@ -21,6 +22,12 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
           <label className={labelClass} style={fontStyle}>رقم الطلب</label>
           <div className={valueClass} style={fontStyle}>
             {meeting?.request_number ?? '-'}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          <label className={labelClass} style={fontStyle}>تاريخ الطلب</label>
+          <div className={valueClass} style={fontStyle}>
+            {formatDateArabic((meeting as { submitted_at?: string; created_at?: string })?.submitted_at ?? (meeting as { created_at?: string })?.created_at) || '-'}
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full">
