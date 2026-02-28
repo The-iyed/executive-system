@@ -53,4 +53,6 @@ export interface AsyncSelectV2Props {
   defaultOptions?: boolean;
   /** Called when the menu opens (first click). Use to mark touched and show errors. */
   onFocus?: () => void;
+  /** Called when the search input value changes. Use e.g. to capture typed text when user selects "manual entry". */
+  onInputChange?: (newValue: string) => void;
 }

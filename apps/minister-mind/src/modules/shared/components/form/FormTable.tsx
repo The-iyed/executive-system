@@ -23,6 +23,17 @@ export interface FormTableRow {
   [key: string]: any;
 }
 
+export interface CustomCellRenderParams {
+  row: FormTableRow;
+  rowId: string;
+  columnId: string;
+  value: any;
+  onUpdateRow: (field: string, value: any) => void;
+  disabled: boolean;
+  error?: boolean;
+  placeholder?: string;
+}
+
 export interface FormTableProps {
   title: string;
   required?: boolean;
@@ -41,6 +52,8 @@ export interface FormTableProps {
   showErrorList?: boolean; // Whether to show detailed error list
   disabled?: boolean; // When true, add/delete/update and row inputs are disabled
   nonDeletableRowIds?: string[]; // Row ids for which delete button is hidden
+  /** Custom renderer for specific columns (e.g. async select for invitee name). Key = column id. */
+  customCellRender?: Record<string, (params: CustomCellRenderParams) => React.ReactNode>;
 }
 
 export const FormTable: React.FC<FormTableProps> = ({
@@ -61,6 +74,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   showErrorList = true,
   disabled = false,
   nonDeletableRowIds = [],
+  customCellRender,
 }) => {
   const nonDeletableSet = useMemo(
     () => new Set(nonDeletableRowIds),
@@ -140,6 +154,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                   >
                     {visibleColumns.map((column) => {
                       const showCell = !column.showWhen || row[column.showWhen.field] === column.showWhen.value;
+                      const customRender = customCellRender?.[column.id];
                       return (
                       <div
                         key={column.id}
@@ -150,6 +165,22 @@ export const FormTable: React.FC<FormTableProps> = ({
                       >
                         {!showCell ? (
                           <span className="text-[14px] text-[#98A2B3]">—</span>
+                        ) : customRender ? (
+                          <div className="w-full flex justify-end min-w-0">
+                            {customRender({
+                              row,
+                              rowId: row.id,
+                              columnId: column.id,
+                              value: row[column.id],
+                              onUpdateRow: (field, value) => {
+                                if (disabled) return;
+                                onUpdateRow(row.id, field, value);
+                              },
+                              disabled,
+                              error: !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id]),
+                              placeholder: column.placeholder,
+                            })}
+                          </div>
                         ) : column.id === 'action' ? (
                           nonDeletableSet.has(row.id) ? (
                             <span className="text-[14px] text-[#98A2B3]">—</span>
