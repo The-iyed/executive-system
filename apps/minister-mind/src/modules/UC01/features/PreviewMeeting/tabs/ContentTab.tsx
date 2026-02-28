@@ -2,7 +2,7 @@ import React from 'react';
 import type { MeetingApiResponse, Attachment } from '../../../../UC02/data/meetingsApi';
 import { formatDateArabic } from '@shared/utils';
 import { MeetingStatus } from '@shared/types';
-import pdfIcon from '../../../../shared/assets/pdf.svg';
+import { Mou7tawaContentTab, type ContentTabFileItem } from '@shared/components';
 
 /** Meeting may include presentation timing from API */
 type MeetingWithContent = MeetingApiResponse & {
@@ -10,126 +10,51 @@ type MeetingWithContent = MeetingApiResponse & {
   presentation_attachment_timing?: string | null;
 };
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
-
 interface ContentTabProps {
   meeting: MeetingApiResponse;
+  /** When provided, Eye opens this (e.g. drawer) instead of new tab */
+  onPreviewAttachment?: (att: { blob_url: string; file_name: string; file_type?: string }) => void;
 }
 
-function formatAttachmentTiming(value: string | null | undefined): string {
-  if (!value || String(value).trim() === '') return '-';
-  const trimmed = String(value).trim();
-  const formatted = formatDateArabic(trimmed);
-  return formatted || trimmed;
+function toFileItem(att: Attachment): ContentTabFileItem {
+  return {
+    id: att.id,
+    file_name: att.file_name,
+    file_size: att.file_size ?? 0,
+    file_type: att.file_type ?? '',
+    blob_url: att.blob_url ?? null,
+  };
 }
 
-function getFileTypeKey(fileType: string | undefined, fileName: string | undefined): string {
-  const normalized = (fileType ?? '').toLowerCase().replace(/^\./, '').trim();
-  if (normalized === 'pdf' || normalized === 'application/pdf') return 'pdf';
-  if (['doc', 'docx'].includes(normalized) || normalized.includes('msword') || normalized.includes('word')) return 'word';
-  if (['xls', 'xlsx'].includes(normalized) || normalized.includes('excel') || normalized.includes('spreadsheet')) return 'excel';
-  const ext = (fileName ?? '').toLowerCase().split('.').pop();
-  if (ext === 'pdf') return 'pdf';
-  if (['doc', 'docx'].includes(ext ?? '')) return 'word';
-  if (['xls', 'xlsx'].includes(ext ?? '')) return 'excel';
-  return 'file';
-}
-
-function FileTypeIcon({ fileType, fileName }: { fileType?: string; fileName?: string }) {
-  const key = getFileTypeKey(fileType, fileName);
-  if (key === 'pdf') {
-    return <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" />;
-  }
-  return (
-    <div className="w-10 h-10 bg-[#E2E5E7] rounded-md flex items-center justify-center text-xs font-semibold text-[#B04135]">
-      {(fileType ?? '').toUpperCase() || (fileName ?? '').split('.').pop()?.toUpperCase() || 'FILE'}
-    </div>
-  );
-}
-
-function PresentationAttachmentRow({ att }: { att: Attachment }) {
-  return (
-    <div className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-[#009883] rounded-xl">
-      <FileTypeIcon fileType={att.file_type} fileName={att.file_name} />
-      <div className="flex flex-col items-end flex-1 min-w-0">
-        <span className="text-sm font-medium text-[#344054]" style={fontStyle}>{att.file_name}</span>
-        <span className="text-xs text-[#475467]" style={fontStyle}>{Math.round((att.file_size || 0) / 1024)} KB</span>
-      </div>
-      {att.blob_url && (
-        <a href={att.blob_url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-[rgba(0,152,131,0.1)] text-[#009883]">
-          تحميل
-        </a>
-      )}
-    </div>
-  );
-}
-
-function OptionalAttachmentRow({ att }: { att: Attachment }) {
-  return (
-    <div className="flex flex-row items-center px-3 py-2 gap-3 h-[56px] bg-white border border-gray-300 rounded-xl">
-      <FileTypeIcon fileType={att.file_type} fileName={att.file_name} />
-      <div className="flex flex-col items-end flex-1 min-w-0">
-        <span className="text-sm font-medium text-[#344054]" style={fontStyle}>{att.file_name}</span>
-        <span className="text-xs text-[#475467]" style={fontStyle}>{Math.round((att.file_size || 0) / 1024)} KB</span>
-      </div>
-      {att.blob_url && (
-        <a href={att.blob_url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-gray-100 text-[#475467]">
-          تحميل
-        </a>
-      )}
-    </div>
-  );
-}
-
-export const ContentTab: React.FC<ContentTabProps> = ({ meeting }) => {
+export const ContentTab: React.FC<ContentTabProps> = ({ meeting, onPreviewAttachment }) => {
   const m = meeting as MeetingWithContent;
   const attachments = meeting.attachments ?? [];
-  const presentationAttachments = attachments.filter((a) => a.is_presentation);
-  const additionalAttachments = attachments.filter((a) => a.is_additional);
-  const attachmentTiming = m.when_presentation_attached ?? m.presentation_attachment_timing ?? null;
+  const presentationFiles = attachments.filter((a) => a.is_presentation).map(toFileItem);
+  const optionalFiles = attachments.filter((a) => a.is_additional).map(toFileItem);
+  const attachmentTiming = m.when_presentation_attached ?? m.presentation_attachment_timing ?? '';
   const showContentOfficerNotes =
     meeting.status === MeetingStatus.RETURNED_FROM_CONTENT && meeting.content_officer_notes;
 
   return (
     <div className="flex flex-col gap-6 w-full" dir="rtl">
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700" style={fontStyle}>العرض التقديمي</label>
-        <div className="flex flex-row gap-4 flex-wrap">
-          {presentationAttachments.length > 0 ? (
-            presentationAttachments.map((att) => (
-              <PresentationAttachmentRow key={att.id} att={att} />
-            ))
-          ) : (
-            <p className="text-[#667085] text-sm py-2" style={fontStyle}>لا يوجد عرض تقديمي</p>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700" style={fontStyle}>متى سيتم إرفاق العرض؟</label>
-        <div className="w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467]" style={fontStyle}>
-          {formatAttachmentTiming(attachmentTiming ?? undefined)}
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700" style={fontStyle}>مرفقات اختيارية</label>
-        <div className="flex flex-row gap-4 flex-wrap">
-          {additionalAttachments.length > 0 ? (
-            additionalAttachments.map((att) => (
-              <OptionalAttachmentRow key={att.id} att={att} />
-            ))
-          ) : (
-            <p className="text-[#667085] text-sm py-2" style={fontStyle}>لا توجد مرفقات اختيارية</p>
-          )}
-        </div>
-      </div>
-      {showContentOfficerNotes && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700" style={fontStyle}>ملاحظات</label>
-          <div className="w-full min-h-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap" style={fontStyle}>
-            {meeting.content_officer_notes}
-          </div>
-        </div>
-      )}
+      <Mou7tawaContentTab
+        presentationFiles={presentationFiles}
+        optionalFiles={optionalFiles}
+        attachmentTimingValue={attachmentTiming ?? ''}
+        notesValue=""
+        contentOfficerNotes={showContentOfficerNotes ? meeting.content_officer_notes ?? null : null}
+        readOnly
+        formatDate={formatDateArabic}
+        onView={(file) => {
+          if (!file.blob_url) return;
+          if (onPreviewAttachment) {
+            onPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
+          } else {
+            window.open(file.blob_url, '_blank');
+          }
+        }}
+        onDownload={(file) => file.blob_url && window.open(file.blob_url, '_blank')}
+      />
     </div>
   );
 };
