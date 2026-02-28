@@ -10,7 +10,6 @@ import { ConsultationRequestCardData } from '../components/consultation-request-
 const mapStatus = (apiStatus: string): MeetingStatus | string => {
   // Map API status to MeetingStatus enum
   const statusMap: Record<string, MeetingStatus | string> = {
-    UNDER_CONSULTATION_SCHEDULING: 'UNDER_CONSULTATION_SCHEDULING',
     UNDER_REVIEW: MeetingStatus.UNDER_REVIEW,
     SCHEDULED: MeetingStatus.SCHEDULED,
     DRAFT: MeetingStatus.DRAFT,

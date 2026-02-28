@@ -3,11 +3,7 @@ import { useToast } from '@sanad-ai/ui';
 import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams } from '@shared';
 import { SuggestAttendeesModal } from '../../../../../UC02/components';
 import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
-import {
-  INVITEES_TABLE_COLUMNS,
-  INVITEES_TABLE_TITLE,
-  ADD_INVITEE_BUTTON_LABEL,
-} from '../../utils/constants';
+import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import { getUsers } from '../../../../data/usersApi';
 import type { UserApiResponse } from '../../../../data/usersApi';
@@ -218,14 +214,14 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
         )}
         <div className="relative w-full max-w-[1200px] mx-auto">
           <FormTable
-            title={INVITEES_TABLE_TITLE}
+            title= 'قائمة المدعوين'
             columns={INVITEES_TABLE_COLUMNS}
             required={inviteesRequired}
             rows={formData.invitees || []}
             onAddRow={handleAddAttendee}
             onDeleteRow={handleDeleteAttendee}
             onUpdateRow={handleUpdateAttendee}
-            addButtonLabel={ADD_INVITEE_BUTTON_LABEL}
+            addButtonLabel='إضافة مدعو جديد'
             errors={errors}
             touched={touched}
             errorMessage={tableErrorMessage}

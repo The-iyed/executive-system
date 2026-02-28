@@ -1,13 +1,4 @@
-import { SECTOR_OPTIONS, type  FormTableColumn } from '@shared';
-
-export const MEETING_CATEGORY_OPTIONS = [
-  { value: 'COUNCILS_AND_COMMITTEES', label: 'المجالس واللجان' },
-  { value: 'EVENTS_AND_VISITS', label: 'الفعاليات والزيارات' },
-  { value: 'BILATERAL_MEETING', label: 'لقاء ثنائي' },
-  { value: 'PRIVATE_MEETING', label: 'لقاء خاص' },
-  { value: 'BUSINESS', label: 'أعمال' },
-  { value: 'GOVERNMENT_CENTER_TOPICS', label: 'مواضيع مركز الحكومة' },
-];
+import { SECTOR_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS, type FormTableColumn } from '@shared';
 
 export const MEETING_CLASSIFICATION_OPTIONS = [
   { value: 'STRATEGIC', label: 'استراتيجي' },
@@ -39,29 +30,6 @@ export const MEETING_GOALS_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: '#', width: 'w-24' },
   { id: 'objective', header: 'الهدف', type: 'text', placeholder: 'الهدف', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-20' },
-];
-
-export const MINISTER_SUPPORT_TYPE_OPTIONS = [
-  { value: 'إحاطة', label: 'إحاطة' },
-  { value: 'تحديث', label: 'تحديث' },
-  { value: 'قرار', label: 'قرار' },
-  { value: 'توجيه', label: 'توجيه' },
-  { value: 'اعتماد', label: 'اعتماد' },
-  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
-];
-
-export const PRESENTATION_DURATION_MINUTES_OPTIONS = [
-  { value: '5', label: '5 دقائق' },
-  { value: '10', label: '10 دقائق' },
-  { value: '15', label: '15 دقيقة' },
-  { value: '20', label: '20 دقيقة' },
-  { value: '25', label: '25 دقيقة' },
-  { value: '30', label: '30 دقيقة' },
-  { value: '45', label: '45 دقيقة' },
-  { value: '60', label: '60 دقيقة' },
-  { value: '90', label: '90 دقيقة' },
-  { value: '120', label: '120 دقيقة' },
-  { value: '180', label: '180 دقيقة' },
 ];
 
 export const MEETING_AGENDA_COLUMNS: FormTableColumn[] = [
@@ -155,12 +123,6 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   },
   { id: 'action', header: '', width: 'w-[60px]' },
 ];
-
-export const INVITEES_TABLE_TITLE = 'قائمة المدعوين (مقدّم الطلب)';
-export const ADD_INVITEE_BUTTON_LABEL = 'إضافة مدعو';
-
-export const MINISTER_INVITEES_TABLE_TITLE = 'مدعوو الوزير';
-export const ADD_MINISTER_INVITEE_BUTTON_LABEL = 'إضافة مدعو للوزير';
 
 /** Max hours between now and meeting start without requiring presentation_required to be set when no file is uploaded. */
 export const MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION = 48;

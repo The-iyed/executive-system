@@ -1,7 +1,33 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Send,
+  Eye,
+  Download,
+  RotateCcw,
+  Upload,
+  ClipboardCheck,
+  MessageSquare,
+  Clock,
+  User,
+  Mail,
+  Phone,
+  Trash2,
+  Hash,
+  Building2,
+  FileCheck,
+  Scale,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  FileText,
+  CalendarClock,
+  StickyNote,
+} from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
 import {
@@ -745,6 +771,13 @@ const ContentRequestDetail: React.FC = () => {
     (att) => att.is_additional
   ) || [];
 
+ // Scheduler note for content, used in the notes tab
+  const schedulingContentNote = (
+    (contentRequest as any)?.scheduling_officer_note_for_content ?? ''
+  )
+    .toString()
+    .trim();
+
   const tabs = [
     {
       id: 'request-info',
@@ -765,6 +798,10 @@ const ContentRequestDetail: React.FC = () => {
     {
       id: 'invitees',
       label: 'قائمة المدعوين',
+    },
+    {
+      id: 'notes',
+      label: 'الملاحظات',
     },
   ];
 
@@ -1043,6 +1080,48 @@ const ContentRequestDetail: React.FC = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <div className="flex flex-col gap-5 w-full max-w-[900px] mx-auto" dir="rtl">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-gray-800">
+                  الملاحظات 
+                </h2>
+              </div>
+
+              {schedulingContentNote ? (
+                <article className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600">
+                        <CalendarClock className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                        ملاحظات مسؤول الجدولة على المحتوى
+                      </span>
+                    </div>
+                    <div className="min-h-[3rem] rounded-lg bg-gray-50/80 px-4 py-3 sm:px-5 sm:py-4">
+                      <p className="text-[15px] leading-[1.7] text-gray-800 whitespace-pre-wrap">
+                        {schedulingContentNote}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-16 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                    <StickyNote className="h-7 w-7" strokeWidth={1.5} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-medium text-gray-600">
+                      لا توجد ملاحظات على المحتوى
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      لم يتم إضافة ملاحظات من مسؤول الجدولة على المحتوى بعد
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
