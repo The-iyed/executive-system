@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge, AgendaPreviewTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -1036,7 +1037,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1111,7 +1112,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                               return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1287,7 +1288,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                               className="text-xs text-gray-500"
                               style={{ fontFamily: "'Almarai', sans-serif" }}
                             >
-                              {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                              {formatDateArabic(draft.requested_at)}
                             </span>
                           </div>
                           <p

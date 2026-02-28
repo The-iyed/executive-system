@@ -11,6 +11,7 @@ import {
   StatusBadge,
   Pagination,
   TruncatedWithTooltip,
+  formatDateArabic,
 } from '@shared';
 import { MeetingClassification, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -130,7 +131,7 @@ const ConsultationRequests: React.FC = () => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const submittedAt = originalRequest?.submitted_at;
         const requestDate = submittedAt
-          ? new Date(submittedAt).toLocaleDateString('ar-SA')
+          ? formatDateArabic(submittedAt)
           : '';
 
         return (
@@ -191,7 +192,7 @@ const ConsultationRequests: React.FC = () => {
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const meetingDate = originalRequest?.scheduled_at
-          ? new Date(originalRequest.scheduled_at).toLocaleDateString('ar-SA')
+          ? formatDateArabic(originalRequest.scheduled_at)
           : '';
 
         return (
