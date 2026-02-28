@@ -240,6 +240,15 @@ const MeetingDetail: React.FC = () => {
     related_topic: '',
     deadline: '' as string,
     meeting_confidentiality: '' as MeetingConfidentiality | '',
+    previous_meeting_attachment: null as {
+      id?: string;
+      meeting_request_id?: string;
+      file_name?: string;
+      file_size?: number;
+      file_type?: string;
+      content_type?: string;
+      uploaded_by?: string;
+    } | null,
   });
   /** Selected option for "الاجتماع السابق" async select (value + label) */
   const [previousMeetingOption, setPreviousMeetingOption] = useState<OptionType | null>(null);
@@ -1254,6 +1263,7 @@ const MeetingDetail: React.FC = () => {
         related_topic: meeting.related_topic ?? '',
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
+        previous_meeting_attachment: meeting.previous_meeting_attachment,
       });
       setPreviousMeetingOption(prevExtId != null && prevGroupId != null ? { value: `${prevExtId}:${prevGroupId}`, label: prevMeetingLabel || String(prevExtId) } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
@@ -1716,12 +1726,12 @@ const MeetingDetail: React.FC = () => {
             : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
       directive_method: formData.directive_method || undefined,
+      previous_meeting_attachment: formData.previous_meeting_attachment ?? undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
       notes: notesText,
     };
   }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption, previousMeeting?.sequential_number]);
-
   /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
   const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
     (key, label, value, spec) => {
