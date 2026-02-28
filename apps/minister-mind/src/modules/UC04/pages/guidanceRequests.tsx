@@ -10,6 +10,7 @@ import {
   TableColumn,
   StatusBadge,
   Pagination,
+  formatDateArabic,
 } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye, Calendar } from 'lucide-react';
@@ -138,15 +139,7 @@ const GuidanceRequests: React.FC = () => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         let requestDate = '-';
         if (originalRequest?.created_at) {
-          const date = new Date(originalRequest.created_at);
-          requestDate = new Intl.DateTimeFormat('ar-SA', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            calendar: 'islamic',
-            numberingSystem: 'arab',
-          }).format(date);
+          requestDate = formatDateArabic(originalRequest.created_at) || '-';
         }
         return (
           <div className="w-full flex justify-end">
@@ -211,7 +204,7 @@ const GuidanceRequests: React.FC = () => {
       render: (row) => {
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const meetingDate = originalRequest?.scheduled_at
-          ? new Date(originalRequest.scheduled_at).toLocaleDateString('ar-SA')
+          ? formatDateArabic(originalRequest.scheduled_at)
           : '-';
 
         return (

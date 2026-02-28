@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { FileCheck, Clock, User } from 'lucide-react';
-import { StatusBadge } from '@shared';
+import { StatusBadge, formatDateTimeArabic } from '@shared';
 import type { GuidanceRecord } from '../../../data/meetingsApi';
 import { MeetingStatus } from '@shared/types';
 
@@ -54,7 +54,7 @@ export function DirectiveTab({
         <div className="flex flex-col gap-4 w-full" dir="rtl">
           {records.items.map((row: GuidanceRecord, index: number) => {
             const isExpanded = expandedId === row.guidance_id;
-            const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+            const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
 
             return (
               <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
@@ -102,7 +102,7 @@ export function DirectiveTab({
                           )}
                           {row.responded_at && (
                             <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                              <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {new Date(row.responded_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                              <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {formatDateTimeArabic(row.responded_at)}</span>
                             </span>
                           )}
                         </div>

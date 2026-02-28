@@ -10,6 +10,7 @@ import {
   TableColumn,
   StatusBadge,
   Pagination,
+  formatDateArabic,
 } from '@shared';
 import { MeetingChannelLabels, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -56,14 +57,8 @@ const getLocationLabel = (value?: string): string | undefined => {
   return MeetingChannelLabels[value] || value;
 };
 
-const formatCardDate = (dateStr: string | null | undefined): string => {
-  if (!dateStr) return '-';
-  try {
-    return new Date(dateStr).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
-  } catch {
-    return dateStr;
-  }
-};
+const formatCardDate = (dateStr: string | null | undefined): string =>
+  dateStr ? (formatDateArabic(dateStr) || '-') : '-';
 
 // Custom Card Component matching unified design
 interface ContentConsultationCardProps {
