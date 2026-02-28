@@ -31,7 +31,10 @@ interface SubmitStep3Payload {
 }
 
 function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
+  const r = row as InviteeFormRow & { _userId?: string; _isManual?: boolean };
+  const user_id = r._isManual === true ? undefined : r._userId;
   return {
+    user_id,
     full_name: row.full_name,
     position_title: row.position_title,
     mobile_number: row.mobile_number,
