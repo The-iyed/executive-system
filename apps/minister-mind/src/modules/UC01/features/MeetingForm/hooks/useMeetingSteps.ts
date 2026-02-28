@@ -5,42 +5,34 @@ import { PATH } from '../../../routes/paths';
 import { useStep1BasicInfo } from './useStep1BasicInfo';
 import { useStep2Content } from './useStep2Content';
 import { useStep3Invitees } from './useStep3Invitees';
-import { useStep4Scheduling } from './useStep4Scheduling';
 import { useDeleteDraft } from './useDeleteDraft';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import type { Step2ContentFormData } from '../schemas/step2Content.schema';
 import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { clearDraftData, getContentStepOptions, saveContentStepOptions } from '../utils';
 
-const STEP_4_INDEX = 3;
-
 interface UseMeetingStepsProps {
   draftId: string | undefined;
   isEditMode: boolean;
-  currentStep?: number;
   editableFields?: string[] | null;
   initialData?: {
     step1BasicInfo?: Partial<Step1BasicInfoFormData>;
     step2Content?: Partial<Step2ContentFormData>;
     step3Invitees?: Partial<Step3InviteesFormData>;
-    step4Scheduling?: { initialSlots?: string[] };
   };
   onStep1Success?: (newDraftId: string) => void;
   onStep2ContentSuccess?: (isDraft: boolean) => void;
   onStep3InviteesSuccess?: (isDraft: boolean) => void;
-  onStep4SchedulingSuccess?: () => void;
 }
 
 export const useMeetingSteps = ({
   draftId,
   isEditMode,
-  currentStep = 0,
   editableFields,
   initialData,
   onStep1Success,
   onStep2ContentSuccess,
   onStep3InviteesSuccess,
-  onStep4SchedulingSuccess,
 }: UseMeetingStepsProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -140,26 +132,10 @@ export const useMeetingSteps = ({
     editableFields,
   });
 
-  const step4SchedulingHook = useStep4Scheduling({
-    draftId: draftId || '',
-    initialSlots: initialData?.step4Scheduling?.initialSlots,
-    enableCalendarFetch: currentStep === STEP_4_INDEX,
-    isEditMode,
-    onSuccess: onStep4SchedulingSuccess || (() => {
-      clearDraftData();
-      navigate(PATH.MEETINGS);
-    }),
-    onError: (error) => {
-      console.error('Step4Scheduling error:', error);
-      showErrorToast(error);
-    },
-  });
-
   return {
     deleteDraft,
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
   };
 };

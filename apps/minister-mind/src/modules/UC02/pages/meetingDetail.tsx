@@ -24,7 +24,10 @@ import {
   FormDateTimePicker,
   type OptionType,
   Drawer,
+  AttachmentPreviewDrawer,
   SECTOR_OPTIONS,
+  PRESENTATION_DURATION_MINUTES_OPTIONS,
+  MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
 } from '@shared'; 
 import {
@@ -76,7 +79,7 @@ import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
-import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS } from '../features/meeting-detail/constants';
+import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -1280,9 +1283,9 @@ const MeetingDetail: React.FC = () => {
           const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
-            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-            agenda_item: item.agenda_item,
-            presentation_duration_minutes: item.presentation_duration_minutes,
+          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+          agenda_item: item.agenda_item,
+          presentation_duration_minutes: item.presentation_duration_minutes,
             minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
             minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
           };
@@ -1485,9 +1488,9 @@ const MeetingDetail: React.FC = () => {
           const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
-            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-            agenda_item: item.agenda_item,
-            presentation_duration_minutes: item.presentation_duration_minutes,
+          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+          agenda_item: item.agenda_item,
+          presentation_duration_minutes: item.presentation_duration_minutes,
             minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
             minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
           };
@@ -1544,9 +1547,7 @@ const MeetingDetail: React.FC = () => {
       };
     }
     if (
-      status === MeetingStatus.UNDER_CONSULTATION_SCHEDULING ||
-      status === MeetingStatus.UNDER_CONTENT_REVIEW ||
-      status === MeetingStatus.UNDER_CONTENT_CONSULTATION
+      status === MeetingStatus.UNDER_CONTENT_REVIEW
     ) {
       return {
         title: 'قيد المراجعة',
@@ -3983,44 +3984,11 @@ const MeetingDetail: React.FC = () => {
           </form>
       </Drawer>
 
-      {/* PDF / file preview drawer */}
-      <Drawer
+      <AttachmentPreviewDrawer
         open={!!previewAttachment}
         onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
-        title={previewAttachment?.file_name ?? ''}
-        side="right"
-        width="90vw"
-        showDecoration={true}
-        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
-      >
-        {previewAttachment && (
-          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
-            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
-              <iframe
-                title={previewAttachment.file_name}
-                src={previewAttachment.blob_url}
-                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
-              />
-            ) : (
-              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
-                </p>
-                <a
-                  href={previewAttachment.blob_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  <Download className="w-4 h-4" />
-                  تحميل الملف
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-      </Drawer>
+        attachment={previewAttachment}
+      />
 
       {/* Request Guidance – Drawer */}
       <Drawer

@@ -1,9 +1,35 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Send,
+  Eye,
+  Download,
+  RotateCcw,
+  Upload,
+  ClipboardCheck,
+  MessageSquare,
+  Clock,
+  User,
+  Mail,
+  Phone,
+  Trash2,
+  Hash,
+  Building2,
+  FileCheck,
+  Scale,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  FileText,
+  CalendarClock,
+  StickyNote,
+} from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -746,6 +772,13 @@ const ContentRequestDetail: React.FC = () => {
     (att) => att.is_additional
   ) || [];
 
+ // Scheduler note for content, used in the notes tab
+  const schedulingContentNote = (
+    (contentRequest as any)?.scheduling_officer_note_for_content ?? ''
+  )
+    .toString()
+    .trim();
+
   const tabs = [
     {
       id: 'request-info',
@@ -766,6 +799,10 @@ const ContentRequestDetail: React.FC = () => {
     {
       id: 'invitees',
       label: 'قائمة المدعوين',
+    },
+    {
+      id: 'notes',
+      label: 'الملاحظات',
     },
   ];
 
@@ -828,6 +865,10 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-4 w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <ReadOnlyField label="رقم الطلب" value={contentRequest?.request_number ?? '-'} />
+                <ReadOnlyField
+                  label="تاريخ الطلب"
+                  value={formatDateArabic((contentRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (contentRequest as { created_at?: string })?.created_at) || '-'}
+                />
                 <ReadOnlyField label="حالة الطلب" value={statusLabel} />
                 <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? '-'} />
                 <ReadOnlyField
@@ -1044,6 +1085,48 @@ const ContentRequestDetail: React.FC = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <div className="flex flex-col gap-5 w-full max-w-[900px] mx-auto" dir="rtl">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-gray-800">
+                  الملاحظات 
+                </h2>
+              </div>
+
+              {schedulingContentNote ? (
+                <article className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600">
+                        <CalendarClock className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                        ملاحظات مسؤول الجدولة على المحتوى
+                      </span>
+                    </div>
+                    <div className="min-h-[3rem] rounded-lg bg-gray-50/80 px-4 py-3 sm:px-5 sm:py-4">
+                      <p className="text-[15px] leading-[1.7] text-gray-800 whitespace-pre-wrap">
+                        {schedulingContentNote}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-16 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                    <StickyNote className="h-7 w-7" strokeWidth={1.5} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-medium text-gray-600">
+                      لا توجد ملاحظات على المحتوى
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      لم يتم إضافة ملاحظات من مسؤول الجدولة على المحتوى بعد
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1544,44 +1627,11 @@ const ContentRequestDetail: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* PDF / file preview drawer */}
-          <Drawer
+          <AttachmentPreviewDrawer
             open={!!previewAttachment}
             onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
-            title={previewAttachment?.file_name ?? ''}
-            side="right"
-            width="90vw"
-            showDecoration={true}
-            bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
-          >
-            {previewAttachment && (
-              <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
-                {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe
-                    title={previewAttachment.file_name}
-                    src={previewAttachment.blob_url}
-                    className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
-                  />
-                ) : (
-                  <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-                    <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
-                    </p>
-                    <a
-                      href={previewAttachment.blob_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      <Download className="w-4 h-4" />
-                      تحميل الملف
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-          </Drawer>
+            attachment={previewAttachment}
+          />
 
           {/* Analyze contradictions result modal */}
           <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>

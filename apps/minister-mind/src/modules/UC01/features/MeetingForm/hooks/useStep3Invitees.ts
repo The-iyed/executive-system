@@ -59,6 +59,7 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
       }
 
       return {
+        user_id: undefined,
         name: invitee.name || '',
         position: invitee.position || '',
         mobile: invitee.mobile || '',
