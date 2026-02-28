@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, Drawer, ReadOnlyField, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -828,59 +828,19 @@ const ContentRequestDetail: React.FC = () => {
       <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {/* Tab Content */}
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full mx-auto ">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  معلومات الطلب
-                </h2>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      رقم الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.request_number ?? '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      حالة الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {statusLabel}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مقدم الطلب
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.submitter_name ?? '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      مالك الاجتماع
-                    </label>
-                    <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      {contentRequest.current_owner_user
-                        ? `${contentRequest.current_owner_user.first_name} ${contentRequest.current_owner_user.last_name}`
-                        : contentRequest.current_owner_role?.name_ar ?? '-'}
-                    </p>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-4 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <ReadOnlyField label="رقم الطلب" value={contentRequest?.request_number ?? '-'} />
+                <ReadOnlyField label="حالة الطلب" value={statusLabel} />
+                <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? '-'} />
+                <ReadOnlyField
+                  label="مالك الاجتماع"
+                  value={
+                    contentRequest?.current_owner_user
+                      ? `${contentRequest.current_owner_user.first_name ?? ''} ${contentRequest.current_owner_user.last_name ?? ''}`.trim()
+                      : contentRequest?.current_owner_role?.name_ar ?? '-'
+                  }
+                />
               </div>
             </div>
           )}
@@ -1718,8 +1678,8 @@ const ContentRequestDetail: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Action Content (outside tabs) */}
-         {activeTab === 'request-info' && <div className="flex flex-col gap-6">
+          {/* Action Content (Directives + Executive Summary – Content tab only, not Request Information) */}
+         {activeTab === 'content' && <div className="flex flex-col gap-6">
             {/* إضافة التوجيهات – table like meeting details */}
             <div className="flex flex-col gap-4 w-full mx-auto " dir="rtl">
               <div className="flex items-center justify-between gap-4">
