@@ -77,7 +77,11 @@ const PreviewMeeting: React.FC = () => {
           minister_support_other: ext.minister_support_other ?? ext.support_description,
         };
       }),
-      is_based_on_directive: !!(meeting.related_directive_ids && meeting.related_directive_ids.length > 0),
+      is_based_on_directive: !!(
+      
+        m.is_based_on_directive === true 
+
+      ),
       directive_method: (meeting.related_directive_ids && meeting.related_directive_ids.length > 0) ? 'DIRECT_DIRECTIVE' : undefined,
       directive_text: meeting.related_guidance ?? undefined,
       notes: getNotesTextFromMeeting(meeting),
