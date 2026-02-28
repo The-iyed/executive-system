@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2, Paperclip } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -403,6 +403,8 @@ const MeetingDetail: React.FC = () => {
 
   // Content tab (المحتوى) editable fields: متى سيتم إرفاق العرض؟ (ملاحظات read-only)
   const [contentTabForm, setContentTabForm] = useState({ when_presentation_attached: '', general_notes: '' });
+  /** Content sub-view: executive file (الملخّص التنفيذي) or presentation (العرض التقديمي) */
+  const [contentViewSubTab, setContentViewSubTab] = useState<'executive' | 'presentation'>('presentation');
 
   // Original snapshot for change detection
   const [originalSnapshot, setOriginalSnapshot] = useState<any>(null);
@@ -2297,7 +2299,58 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* العرض التقديمي – card */}
+              {/* Executive file / Presentation pill buttons – design Frame 2147240913 (executive) & 2147241187 (presentation) */}
+              <div className="flex flex-row flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setContentViewSubTab('executive')}
+                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'executive' ? 'bg-[rgba(156,167,0,0.14)] border-[rgba(156,167,0,0.35)]' : 'bg-[rgba(156,167,0,0.08)] border-[rgba(156,167,0,0.2)]'}`}
+                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
+                >
+                  <span className="flex items-center text-right text-[#8F751E]">الملخّص التنفيذي</span>
+                  <FileText className="w-3 h-3 flex-shrink-0 text-[#8F751E]" strokeWidth={2} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContentViewSubTab('presentation')}
+                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'presentation' ? 'bg-[rgba(0,167,157,0.14)] border-[rgba(0,167,157,0.2)]' : 'bg-[rgba(0,167,157,0.08)] border-[rgba(0,167,157,0.1)]'}`}
+                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
+                >
+                  <span className="flex items-center text-right text-[#00A79D]">العرض التقديمي</span>
+                  <Paperclip className="w-3 h-3 flex-shrink-0 text-[#00A79D]" strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+
+              {/* Executive summary or Presentation content */}
+              {contentViewSubTab === 'executive' ? (
+                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
+                  <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
+                    {(() => {
+                      const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
+                      const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
+                      const hasExec = execSummaryText || execSummaryAttachments.length > 0;
+                      if (!hasExec) {
+                        return <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">—</div>;
+                      }
+                      return (
+                        <div className="flex flex-col gap-4 max-w-[800px]">
+                          {execSummaryText && <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">{execSummaryText}</div>}
+                          {execSummaryAttachments.length > 0 && execSummaryAttachments.map((att) => (
+                            <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
+                              <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl">
+                                {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                                <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
+                                <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(143,117,30,0.08)] text-[#8F751E] transition-colors"><Download className="w-4 h-4" /></a>
+                                <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100 text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : (
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
                   <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
@@ -2411,6 +2464,7 @@ const MeetingDetail: React.FC = () => {
                 </TooltipProvider>
               </div>
               </div>
+              )}
 
               {/* متى سيتم إرفاق العرض؟ – card */}
               {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
