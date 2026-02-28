@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, MeetingInfo, Drawer, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic } from '@shared/utils';
 import {
   MeetingStatus,
@@ -19,7 +19,6 @@ import {
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
-import pdfIcon from '../../shared/assets/pdf.svg';
 
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
@@ -445,160 +444,28 @@ const ConsultationRequestDetail: React.FC = () => {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6">
-              {/* Attachments & Presentation Section */}
-              <div className="flex flex-col gap-6 w-full">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Presentation Attachments */}
-                  <div className="flex flex-col gap-3">
-                    <h3
-                      className="text-lg font-semibold text-right text-[#101828]"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      العرض التقديمي
-                    </h3>
-                    {presentationAttachments.length > 0 ? (
-                      <div className="flex flex-row gap-4 flex-wrap">
-                        {presentationAttachments.map((att) => (
-                          <div
-                            key={att.id}
-                            className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
-                          >
-                            <div className="flex flex-row items-center justify-between">
-                              {att.file_type?.toLowerCase() === 'pdf' ? (
-                                <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
-                              ) : (
-                                <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
-                                  {att.file_type?.toUpperCase() || ''}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right whitespace-nowrap overflow-hidden text-ellipsis">
-                                {att.file_name}
-                              </span>
-                              <span className="text-sm text-[#475467] text-right">
-                                {Math.round((att.file_size || 0) / 1024)} KB
-                              </span>
-                            </div>
-                            <div className="flex flex-row items-center self-end gap-2 ml-auto">
-                              {att.blob_url && (
-                                <>
-                                  <a
-                                    href={att.blob_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                  >
-                                    <Download className="w-5 h-5 text-[#009883]" />
-                                  </a>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-                                    className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                  >
-                                    <Eye className="w-5 h-5 text-[#475467]" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p
-                        className="text-sm text-[#667085] text-right"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        لا يوجد عرض تقديمي مرفق
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Optional Attachments */}
-                  <div className="flex flex-col gap-3">
-                    <h3
-                      className="text-lg font-semibold text-right text-[#101828]"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      مرفقات اختيارية
-                    </h3>
-                    {optionalAttachments.length > 0 ? (
-                      <div className="flex flex-row gap-4 flex-wrap">
-                        {optionalAttachments.map((att) => (
-                          <div
-                            key={att.id}
-                            className="flex flex-row items-center px-3 py-2 gap-4 h-[60px] bg-white border border-[#009883] rounded-[12px]"
-                          >
-                            <div className="flex flex-row items-center justify-between">
-                              {att.file_type?.toLowerCase() === 'pdf' ? (
-                                <img src={pdfIcon} alt="pdf" className="max-w-full max-h-full object-contain" />
-                              ) : (
-                                <div className="flex items-center justify-center w-[40px] h-[40px] bg-[#E2E5E7] rounded-md text-sm font-semibold text-[#B04135]">
-                                  {att.file_type?.toUpperCase() || ''}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right">
-                                {att.file_name}
-                              </span>
-                              <span className="text-sm text-[#475467] text-right">
-                                {Math.round((att.file_size || 0) / 1024)} KB
-                              </span>
-                            </div>
-                            <div className="flex flex-row items-center self-end gap-2 ml-auto">
-                              {att.blob_url && (
-                                <>
-                                  <a
-                                    href={att.blob_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                  >
-                                    <Download className="w-5 h-5 text-[#009883]" />
-                                  </a>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-                                    className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                  >
-                                    <Eye className="w-5 h-5 text-[#475467]" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p
-                        className="text-sm text-[#667085] text-right"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                        لا توجد مرفقات اختيارية
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Presentation Attachment Timing */}
-                <div className="flex flex-col gap-2 max-w-sm">
-                  <label
-                    className="text-lg font-semibold text-gray-900 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    متى سيتم إرفاق العرض؟
-                  </label>
-                  <p
-                    className="text-base text-gray-900 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    {meetingRequest.presentation_attachment_timing
-                      ? formatDateArabic(meetingRequest.presentation_attachment_timing)
-                      : '-'}
-                  </p>
-                </div>
-              </div>
+              <Mou7tawaContentTab
+                presentationFiles={presentationAttachments.map((att) => ({
+                  id: att.id,
+                  file_name: att.file_name,
+                  file_size: att.file_size ?? 0,
+                  file_type: att.file_type ?? '',
+                  blob_url: att.blob_url ?? null,
+                }))}
+                optionalFiles={optionalAttachments.map((att) => ({
+                  id: att.id,
+                  file_name: att.file_name,
+                  file_size: att.file_size ?? 0,
+                  file_type: att.file_type ?? '',
+                  blob_url: att.blob_url ?? null,
+                }))}
+                attachmentTimingValue={meetingRequest?.presentation_attachment_timing ?? ''}
+                notesValue=""
+                readOnly
+                formatDate={formatDateArabic}
+                onView={(file) => setPreviewAttachment({ blob_url: file.blob_url!, file_name: file.file_name, file_type: file.file_type })}
+                onDownload={(file) => file.blob_url && window.open(file.blob_url!, '_blank')}
+              />
             </div>
           )}
 
@@ -888,44 +755,11 @@ const ConsultationRequestDetail: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* PDF / file preview drawer */}
-        <Drawer
+        <AttachmentPreviewDrawer
           open={!!previewAttachment}
           onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
-          title={previewAttachment?.file_name ?? ''}
-          side="right"
-          width="90vw"
-          showDecoration={true}
-          bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
-        >
-          {previewAttachment && (
-            <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
-              {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
-                <iframe
-                  title={previewAttachment.file_name}
-                  src={previewAttachment.blob_url}
-                  className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
-                />
-              ) : (
-                <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-                  <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
-                  </p>
-                  <a
-                    href={previewAttachment.blob_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    <Download className="w-4 h-4" />
-                    تحميل الملف
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-        </Drawer>
+          attachment={previewAttachment}
+        />
       </div>
   );
 };

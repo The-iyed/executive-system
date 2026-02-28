@@ -10,6 +10,8 @@ export { NavigationActions, type NavItem } from './navigation-actions';
 export { WeatherCard, type WeatherCardProps } from './weather-card';
 export { SharedLayout, type SharedLayoutProps } from './shared-layout';
 export { ContentBar, type ContentBarProps, type ContentBarFilterTab } from './content-bar';
+export { Mou7tawaContentTab, type Mou7tawaContentTabProps, type ContentTabFileItem } from './Mou7tawaContentTab';
+export { AttachmentPreviewDrawer, type AttachmentPreviewDrawerProps, type AttachmentPreviewItem } from './AttachmentPreviewDrawer';
 export { Tabs, type TabsProps, type TabItem } from './tabs';
 export { StatusBadge, type StatusBadgeProps, type StatusType } from './status-badge';
 export { TruncatedWithTooltip, type TruncatedWithTooltipProps } from './truncated-with-tooltip';

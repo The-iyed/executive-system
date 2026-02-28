@@ -7,7 +7,7 @@ import { getMeetingById } from '../../../UC02/data/meetingsApi';
 import { GoBackHeader, EditButton } from '../../components';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 import { PATH } from '../../routes/paths';
-import { Tabs, MeetingInfo, type MeetingInfoData } from '@shared';
+import { Tabs, MeetingInfo, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
@@ -27,6 +27,7 @@ function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_off
 
 const PreviewMeeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(MeetingPreviewTabs.REQUEST_INFO);
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
   const {
     openEditDrawer,
   } = useMeetingFormDrawer();
@@ -119,7 +120,7 @@ const PreviewMeeting: React.FC = () => {
       case MeetingPreviewTabs.INVITEES:
         return <InviteesTab meeting={meeting} />;
       case MeetingPreviewTabs.CONTENT:
-        return <ContentTab meeting={meeting} />;
+        return <ContentTab meeting={meeting} onPreviewAttachment={(att) => setPreviewAttachment(att)} />;
       case MeetingPreviewTabs.NOTES:
         return <NotesTab meeting={meeting} />;
       default:
@@ -189,6 +190,12 @@ const PreviewMeeting: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AttachmentPreviewDrawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+        attachment={previewAttachment}
+      />
     </div>
   );
 };
