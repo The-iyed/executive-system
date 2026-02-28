@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, AgendaPreviewTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, AgendaPreviewTable, MeetingInfo, Drawer, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
@@ -430,196 +430,30 @@ const ContentConsultationRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'content' && (
-            <div className="flex flex-col gap-6 w-full ">
-              <div className="flex flex-col gap-4 w-full">
-                <h2
-                  className="text-xl font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
-                  }}
-                >
-                  المحتوى
-                </h2>
-
-                {/* العرض التقديمي - same UI as in المرفقات tab */}
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    العرض التقديمي
-                  </label>
-                  {presentationAttachments.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      {presentationAttachments.map((att: Attachment) => (
-                        <div
-                          key={att.id}
-                          className="flex flex-row items-center px-4 py-3 gap-4 bg-white border border-[#009883] rounded-[12px]"
-                        >
-                          <div className="flex flex-row items-center gap-3">
-                            {att.file_type?.toLowerCase() === 'pdf' ? (
-                              <img src={pdfIcon} alt="pdf" className="w-10 h-10 object-contain" />
-                            ) : (
-                              <div className="flex items-center justify-center w-10 h-10 bg-[#E2E5E7] rounded-md text-xs font-semibold text-[#B04135]">
-                                {att.file_type?.toUpperCase() || ''}
-                              </div>
-                            )}
-                            <div className="flex flex-col items-end">
-                              <span
-                                className="text-sm font-medium text-[#344054] text-right"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                {att.file_name}
-                              </span>
-                              <span
-                                className="text-xs text-[#475467] text-right"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                {formatFileSize(att.file_size || 0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-row items-center gap-2 ml-auto">
-                            {att.blob_url && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                >
-                                  <Eye className="w-5 h-5 text-[#475467]" />
-                                </button>
-                                <a
-                                  href={att.blob_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                >
-                                  <Download className="w-5 h-5 text-[#009883]" />
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p
-                      className="text-base text-gray-500 text-right py-2"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      لا يوجد عرض تقديمي
-                    </p>
-                  )}
-                </div>
-
-                {/* متى سيتم إرفاق العرض؟ */}
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    متى سيتم إرفاق العرض؟
-                  </label>
-                  <p
-                    className="text-base text-gray-900 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    {(meetingRequest as { presentation_attachment_timing?: string | null })?.presentation_attachment_timing ?? '-'}
-                  </p>
-                </div>
-
-                {/* مرفقات اختيارية - same UI as in المرفقات tab */}
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    مرفقات اختيارية
-                  </label>
-                  {additionalAttachments.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      {additionalAttachments.map((att: Attachment) => (
-                        <div
-                          key={att.id}
-                          className="flex flex-row items-center px-4 py-3 gap-4 bg-white border border-[#009883] rounded-[12px]"
-                        >
-                          <div className="flex flex-row items-center gap-3">
-                            {att.file_type?.toLowerCase() === 'pdf' ? (
-                              <img src={pdfIcon} alt="pdf" className="w-10 h-10 object-contain" />
-                            ) : (
-                              <div className="flex items-center justify-center w-10 h-10 bg-[#E2E5E7] rounded-md text-xs font-semibold text-[#B04135]">
-                                {att.file_type?.toUpperCase() || ''}
-                              </div>
-                            )}
-                            <div className="flex flex-col items-end">
-                              <span
-                                className="text-sm font-medium text-[#344054] text-right"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                {att.file_name}
-                              </span>
-                              <span
-                                className="text-xs text-[#475467] text-right"
-                                style={{ fontFamily: "'Almarai', sans-serif" }}
-                              >
-                                {formatFileSize(att.file_size || 0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-row items-center gap-2 ml-auto">
-                            {att.blob_url && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                >
-                                  <Eye className="w-5 h-5 text-[#475467]" />
-                                </button>
-                                <a
-                                  href={att.blob_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                >
-                                  <Download className="w-5 h-5 text-[#009883]" />
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p
-                      className="text-base text-gray-500 text-right py-2"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      لا توجد مرفقات اختيارية
-                    </p>
-                  )}
-                </div>
-
-                {/* ملاحظات */}
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-gray-700 text-right"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    ملاحظات
-                  </label>
-                  <p
-                    className="text-base text-gray-900 text-right whitespace-pre-wrap"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
-                  >
-                    {getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes)}
-                  </p>
-                </div>
-              </div>
+            <div className="flex flex-col gap-6 w-full">
+              <Mou7tawaContentTab
+                presentationFiles={presentationAttachments.map((att) => ({
+                  id: att.id,
+                  file_name: att.file_name,
+                  file_size: att.file_size ?? 0,
+                  file_type: att.file_type ?? '',
+                  blob_url: att.blob_url ?? null,
+                }))}
+                optionalFiles={additionalAttachments.map((att) => ({
+                  id: att.id,
+                  file_name: att.file_name,
+                  file_size: att.file_size ?? 0,
+                  file_type: att.file_type ?? '',
+                  blob_url: att.blob_url ?? null,
+                }))}
+                attachmentTimingValue={(meetingRequest as { presentation_attachment_timing?: string | null })?.presentation_attachment_timing ?? ''}
+                notesValue={meetingRequest?.general_notes ?? ''}
+                contentOfficerNotes={meetingRequest?.content_officer_notes ?? null}
+                readOnly
+                formatDate={formatDateArabic}
+                onView={(file) => setPreviewAttachment({ blob_url: file.blob_url!, file_name: file.file_name, file_type: file.file_type })}
+                onDownload={(file) => file.blob_url && window.open(file.blob_url!, '_blank')}
+              />
             </div>
           )}
 
@@ -1355,44 +1189,11 @@ const ContentConsultationRequestDetail: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* PDF / file preview drawer */}
-          <Drawer
+          <AttachmentPreviewDrawer
             open={!!previewAttachment}
             onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
-            title={previewAttachment?.file_name ?? ''}
-            side="right"
-            width="90vw"
-            showDecoration={true}
-            bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
-          >
-            {previewAttachment && (
-              <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
-                {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe
-                    title={previewAttachment.file_name}
-                    src={previewAttachment.blob_url}
-                    className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
-                  />
-                ) : (
-                  <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-                    <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
-                    </p>
-                    <a
-                      href={previewAttachment.blob_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      <Download className="w-4 h-4" />
-                      تحميل الملف
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-          </Drawer>
+            attachment={previewAttachment}
+          />
           </div>
     </div>
   );
