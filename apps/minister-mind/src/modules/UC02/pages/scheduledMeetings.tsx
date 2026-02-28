@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip } from '@shared';
+import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip, formatDateArabic } from '@shared';
 import { MeetingStatus, MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles';
 import { getMeetings, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
@@ -68,20 +68,8 @@ const ScheduledMeetings: React.FC = () => {
   const totalItems = meetingsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Format date helper
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string | null): string =>
+    dateString ? (formatDateArabic(dateString) || '') : '';
 
   // Get classification label
   const getClassificationLabel = (classification: string | null): string => {

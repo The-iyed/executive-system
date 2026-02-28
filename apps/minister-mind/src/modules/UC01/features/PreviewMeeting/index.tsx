@@ -53,7 +53,7 @@ const PreviewMeeting: React.FC = () => {
       meetingType: meeting.meeting_type ?? undefined,
       is_urgent: !!(m.urgent_reason as string | undefined),
       urgent_reason: (m.urgent_reason as string | undefined) ?? undefined,
-      meeting_start_date: (meeting.scheduled_start ?? meeting.scheduled_at) ?? undefined,
+      meeting_start_date: (meeting.scheduled_start ?? meeting.meeting_start_date) ?? undefined,
       meeting_end_date: (meeting as { scheduled_end?: string | null }).scheduled_end ?? undefined,
       alternative_1_start_date: alt1?.slot_start ?? undefined,
       alternative_1_end_date: alt1?.slot_end ?? undefined,

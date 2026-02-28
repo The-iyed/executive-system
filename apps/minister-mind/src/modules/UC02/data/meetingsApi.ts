@@ -135,6 +135,7 @@ export interface MeetingApiResponse {
   meeting_subject: string;
   meeting_owner_name: string;
   meeting_classification: string;
+  meeting_start_date: string | null;
   presentation_duration: number;
   is_data_complete: boolean;
   requires_protocol: boolean;
