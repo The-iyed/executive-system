@@ -1222,7 +1222,12 @@ const MeetingDetail: React.FC = () => {
       const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
       const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
       const prevMeetingLabel = (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? (prevExtId != null ? String(prevExtId) : '') ?? '';
-      const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+      const basedOnDirective = !!(
+        meeting.related_guidance ||
+        (meeting as any).is_based_on_directive === true ||
+        (meeting as any).is_based_on_directive === 'true' ||
+        (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
+      );
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
       const guidance = meeting.related_guidance ?? '';
@@ -1416,7 +1421,12 @@ const MeetingDetail: React.FC = () => {
     const rawGroupId = (meeting as any).group_id ?? null;
     const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
     const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
-    const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+    const basedOnDirective = !!(
+      meeting.related_guidance ||
+      (meeting as any).is_based_on_directive === true ||
+      (meeting as any).is_based_on_directive === 'true' ||
+      (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
+    );
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
     const guidance = meeting.related_guidance ?? '';
