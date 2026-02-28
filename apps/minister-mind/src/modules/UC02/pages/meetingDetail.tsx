@@ -2463,6 +2463,7 @@ const MeetingDetail: React.FC = () => {
                 </TooltipProvider>
               </div>
               </div>
+              )}
 
               {/* متى سيتم إرفاق العرض؟ – card */}
               {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
