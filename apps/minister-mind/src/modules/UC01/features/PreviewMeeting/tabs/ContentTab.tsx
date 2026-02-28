@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MeetingApiResponse, Attachment } from '../../../../UC02/data/meetingsApi';
+import { formatDateArabic } from '@shared/utils';
 import { MeetingStatus } from '@shared/types';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
 
@@ -18,15 +19,8 @@ interface ContentTabProps {
 function formatAttachmentTiming(value: string | null | undefined): string {
   if (!value || String(value).trim() === '') return '-';
   const trimmed = String(value).trim();
-  const asDate = new Date(trimmed);
-  if (!Number.isNaN(asDate.getTime())) {
-    return asDate.toLocaleDateString('ar-SA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-  return trimmed;
+  const formatted = formatDateArabic(trimmed);
+  return formatted || trimmed;
 }
 
 function getFileTypeKey(fileType: string | undefined, fileName: string | undefined): string {

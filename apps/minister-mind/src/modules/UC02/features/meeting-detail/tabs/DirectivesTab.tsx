@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { DataTable } from '@shared';
+import { DataTable, formatDateArabic } from '@shared';
 import type { RelatedDirective } from '../../data/meetingsApi';
 import { translateDirectiveStatus } from '../utils/meetingDetailHelpers';
 
@@ -41,9 +41,9 @@ export function DirectivesTab({ meeting, onAddDirective }: DirectivesTabProps) {
             columns={[
               { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: RelatedDirective, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span> },
               { id: 'directive_number', header: 'رقم التوجيه', width: 'w-36', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{row.directive_number}</span> },
-              { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+              { id: 'directive_date', header: 'تاريخ التوجيه', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.directive_date ? new Date(row.directive_date) : null; return <span className="text-sm text-[#475467]">{d ? formatDateArabic(d) : '—'}</span>; } },
               { id: 'directive_text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: RelatedDirective) => <span className="text-sm text-[#475467] whitespace-pre-wrap">{row.directive_text || '—'}</span> },
-              { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]">{d ? d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span>; } },
+              { id: 'deadline', header: 'الموعد النهائي', width: 'w-32', align: 'end', render: (row: RelatedDirective) => { const d = row.deadline ? new Date(row.deadline) : null; return <span className="text-sm text-[#475467]">{d ? formatDateArabic(d) : '—'}</span>; } },
               { id: 'responsible_persons', header: 'المسؤولون', width: 'w-48', align: 'end', render: (row: RelatedDirective) => { const names = (row.responsible_persons ?? []).map((p) => p.name).filter(Boolean); return <span className="text-sm text-[#475467]">{names.length ? names.join('، ') : '—'}</span>; } },
               { id: 'directive_status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: RelatedDirective) => <span className="text-sm text-[#475467]">{translateDirectiveStatus(row.directive_status)}</span> },
             ]}
