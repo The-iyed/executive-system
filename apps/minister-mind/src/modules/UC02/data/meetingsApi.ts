@@ -189,6 +189,20 @@ export interface MeetingApiResponse {
   note?: string | null;
   /** Content approval directives (استشارة المحتوى tab). */
   content_approval_directives?: string[];
+  /** Previous meeting minutes attachment from GET meeting details (file_name, blob_url, etc.). */
+  previous_meeting_attachment?: {
+    id?: string;
+    meeting_request_id?: string;
+    file_name?: string;
+    file_size?: number;
+    file_type?: string;
+    content_type?: string;
+    uploaded_by?: string;
+    uploaded_at?: string;
+    blob_url?: string;
+    source?: string;
+    name?: string;
+  } | null;
 }
 
 export interface MeetingsListResponse {
