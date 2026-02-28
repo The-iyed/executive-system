@@ -3,10 +3,8 @@ export enum MeetingStatus {
   DRAFT = 'DRAFT',
   ADDITIONAL_INFO = 'ADDITIONAL_INFO',
   UNDER_REVIEW = 'UNDER_REVIEW',
-  UNDER_CONSULTATION_SCHEDULING = 'UNDER_CONSULTATION_SCHEDULING',
   UNDER_GUIDANCE = 'UNDER_GUIDANCE',
   UNDER_CONTENT_REVIEW = 'UNDER_CONTENT_REVIEW',
-  UNDER_CONTENT_CONSULTATION = 'UNDER_CONTENT_CONSULTATION',
   SCHEDULED = 'SCHEDULED',
   SCHEDULED_SCHEDULING = 'SCHEDULED_SCHEDULING',
   SCHEDULED_CONTENT = 'SCHEDULED_CONTENT',
@@ -21,16 +19,14 @@ export enum MeetingStatus {
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
   CLOSED = 'CLOSED',
+  SCHEDULED_DELEGATED = 'SCHEDULED_DELEGATED',
 }
-
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.DRAFT]: 'مسودة',
   [MeetingStatus.ADDITIONAL_INFO]: 'معلومات إضافية',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
-  [MeetingStatus.UNDER_CONSULTATION_SCHEDULING]: 'قيد المراجعة - استشارة الجدولة',
-  [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة - المكتب التنفيذي',
+  [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة -  استشارة',
   [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
-  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: 'قيد المراجعة - استشارة المحتوى',
   [MeetingStatus.SCHEDULED]: 'مجدول',
   [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
   [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
@@ -38,19 +34,16 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث المحتوى',
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
   [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معاد من مسؤول الجدولة',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معاد من مسؤول المحتوى',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معلومات إضافية',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معلومات إضافية',
   [MeetingStatus.WAITING]: 'قيد الانتظار',
   [MeetingStatus.READY]: 'جاهز',
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.CLOSED]: 'مغلق',
+  [MeetingStatus.SCHEDULED_DELEGATED]: 'مجدول - مفوّض',
 };
 
-/**
- * Meeting Classification (فئة الاجتماع)
- * Category/Classification of the meeting
- */
 export enum MeetingClassification {
   COUNCILS_AND_COMMITTEES = 'COUNCILS_AND_COMMITTEES',
   EVENTS_AND_VISITS = 'EVENTS_AND_VISITS',
@@ -62,9 +55,6 @@ export enum MeetingClassification {
   DISCUSSION_WITHOUT_PRESENTATION = 'DISCUSSION_WITHOUT_PRESENTATION',
 }
 
-/**
- * Meeting Classification Labels (Arabic)
- */
 export const MeetingClassificationLabels: Record<MeetingClassification, string> = {
   [MeetingClassification.COUNCILS_AND_COMMITTEES]: 'المجالس واللجان',
   [MeetingClassification.EVENTS_AND_VISITS]: 'الفعاليات والزيارات',
@@ -76,10 +66,57 @@ export const MeetingClassificationLabels: Record<MeetingClassification, string> 
   [MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION]: 'مناقشة (بدون عرض تقديمي)',
 };
 
-/**
- * Meeting Classification Type (تصنيف الاجتماع)
- * Type of classification for the meeting
- */
+export const MEETING_CATEGORY_OPTIONS = [
+  {
+    value: MeetingClassification.COUNCILS_AND_COMMITTEES,
+    label: MeetingClassificationLabels[MeetingClassification.COUNCILS_AND_COMMITTEES],
+  },
+  {
+    value: MeetingClassification.EVENTS_AND_VISITS,
+    label: MeetingClassificationLabels[MeetingClassification.EVENTS_AND_VISITS],
+  },
+  {
+    value: MeetingClassification.BILATERAL_MEETING,
+    label: MeetingClassificationLabels[MeetingClassification.BILATERAL_MEETING],
+  },
+  {
+    value: MeetingClassification.PRIVATE_MEETING,
+    label: MeetingClassificationLabels[MeetingClassification.PRIVATE_MEETING],
+  },
+  {
+    value: MeetingClassification.BUSINESS,
+    label: MeetingClassificationLabels[MeetingClassification.BUSINESS],
+  },
+  {
+    value: MeetingClassification.GOVERNMENT_CENTER_TOPICS,
+    label: MeetingClassificationLabels[MeetingClassification.GOVERNMENT_CENTER_TOPICS],
+  },
+  {
+    value: MeetingClassification.WORKSHOP,
+    label: MeetingClassificationLabels[MeetingClassification.WORKSHOP],
+  },
+  {
+    value: MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION,
+    label: MeetingClassificationLabels[MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION],
+  },
+] as const;
+
+/** Category values hidden when meeting type is EXTERNAL. */
+export const EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES: readonly MeetingClassification[] = [
+  MeetingClassification.COUNCILS_AND_COMMITTEES,
+  MeetingClassification.EVENTS_AND_VISITS,
+  MeetingClassification.GOVERNMENT_CENTER_TOPICS,
+];
+
+export function getMeetingCategoryOptions(meetingType: string) {
+  if (meetingType !== 'EXTERNAL') {
+    return [...MEETING_CATEGORY_OPTIONS];
+  }
+  return MEETING_CATEGORY_OPTIONS.filter(
+    (opt) => !EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES.includes(opt.value)
+  );
+}
+
 export enum MeetingClassificationType {
   STRATEGIC = 'STRATEGIC',
   OPERATIONAL = 'OPERATIONAL',
@@ -128,6 +165,29 @@ export const MEETING_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: MeetingType.EXTERNAL, label: MeetingTypeLabels[MeetingType.EXTERNAL] },
 ];
 
+export const MINISTER_SUPPORT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'إحاطة', label: 'إحاطة' },
+  { value: 'تحديث', label: 'تحديث' },
+  { value: 'قرار', label: 'قرار' },
+  { value: 'توجيه', label: 'توجيه' },
+  { value: 'اعتماد', label: 'اعتماد' },
+  { value: 'أخرى', label: 'أخرى (يقوم بالإدخال)' },
+];
+
+export const PRESENTATION_DURATION_MINUTES_OPTIONS: { value: string; label: string }[] = [
+  { value: '5', label: '5 دقائق' },
+  { value: '10', label: '10 دقائق' },
+  { value: '15', label: '15 دقيقة' },
+  { value: '20', label: '20 دقيقة' },
+  { value: '25', label: '25 دقيقة' },
+  { value: '30', label: '30 دقيقة' },
+  { value: '45', label: '45 دقيقة' },
+  { value: '60', label: '60 دقيقة' },
+  { value: '90', label: '90 دقيقة' },
+  { value: '120', label: '120 دقيقة' },
+  { value: '180', label: '180 دقيقة' },
+];
+
 /**
  * Sector (القطاع)
  * Ministry sector for the meeting
@@ -140,10 +200,6 @@ export enum Sector {
   SUPPORT_SERVICES = 'SUPPORT_SERVICES',
   MINISTER_AFFILIATED = 'MINISTER_AFFILIATED',
 }
-
-/**
- * Sector Labels (Arabic)
- */
 export const SectorLabels: Record<Sector, string> = {
   [Sector.MUNICIPAL_AFFAIRS]: 'شؤون البلديات',
   [Sector.HOUSING_AFFAIRS]: 'شؤون الإسكان',
@@ -152,8 +208,6 @@ export const SectorLabels: Record<Sector, string> = {
   [Sector.SUPPORT_SERVICES]: 'الخدمات المساندة',
   [Sector.MINISTER_AFFILIATED]: 'الجهات التابعة لمعالي الوزير',
 };
-
-/** Dropdown options for القطاع (Sector) */
 export const SECTOR_OPTIONS: { value: Sector; label: string }[] = [
   { value: Sector.MUNICIPAL_AFFAIRS, label: SectorLabels[Sector.MUNICIPAL_AFFAIRS] },
   { value: Sector.HOUSING_AFFAIRS, label: SectorLabels[Sector.HOUSING_AFFAIRS] },
@@ -193,13 +247,36 @@ export const InviteeResponseStatusLabels: Record<string, string> = {
   DECLINED: 'مرفوض',
 };
 
-/**
- * Invitee Source (مصدر المدعو)
- */
-export const InviteeSourceLabels: Record<string, string> = {
-  SUBMITTER: 'مقدم الطلب',
-  MINISTER: 'الوزير',
+export enum MeetingOwnerType {
+  SUBMITTER = 'SUBMITTER',
+  SCHEDULING = 'SCHEDULING',
+  CONTENT = 'CONTENT',
+  MINISTER = 'MINISTER',
+}
+export const MeetingOwnerTypeLabels: Record<MeetingOwnerType, string> = {
+  [MeetingOwnerType.SUBMITTER]: 'مقدم الطلب',
+  [MeetingOwnerType.SCHEDULING]: 'مسؤول الجدولة',
+  [MeetingOwnerType.CONTENT]: 'مسؤول المحتوى',
+  [MeetingOwnerType.MINISTER]: 'الوزير',
 };
+export function getMeetingOwnerTypeLabel(
+  ownerType?: MeetingOwnerType
+): string {
+  if (!ownerType) return '';
+  return MeetingOwnerTypeLabels[ownerType];
+}
+export const isSubmitter = (ownerType?: MeetingOwnerType) =>
+  ownerType === MeetingOwnerType.SUBMITTER;
+
+export const isScheduling = (ownerType?: MeetingOwnerType) =>
+  ownerType === MeetingOwnerType.SCHEDULING;
+
+export const isContent = (ownerType?: MeetingOwnerType) =>
+  ownerType === MeetingOwnerType.CONTENT;
+
+export const isMinister = (ownerType?: MeetingOwnerType) =>
+  ownerType === MeetingOwnerType.MINISTER;
+
 
 /**
  * Directive Method (طريقة التوجيه)
@@ -273,14 +350,6 @@ export const getMeetingChannelLabel = (channel: string | null | undefined): stri
 export const getInviteeResponseStatusLabel = (status: string | null | undefined): string => {
   if (!status) return '-';
   return InviteeResponseStatusLabels[String(status).toUpperCase()] ?? status;
-};
-
-/**
- * Helper: get invitee source label
- */
-export const getInviteeSourceLabel = (source: string | null | undefined): string => {
-  if (!source) return '-';
-  return InviteeSourceLabels[String(source).toUpperCase()] ?? source;
 };
 
 /**

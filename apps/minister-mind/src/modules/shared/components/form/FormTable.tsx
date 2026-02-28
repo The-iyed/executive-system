@@ -7,12 +7,14 @@ import { FormSelect } from './FormSelect';
 import { FormSwitch } from './FormSwitch';
 import { getTableErrorList } from '@shared/utils';
 
+export type FormTableSelectOption = { value: string; label: string };
+
 export interface FormTableColumn {
   id: string;
   header: string;
   width?: string;
   type?: 'text' | 'date' | 'select' | 'switch';
-  selectOptions?: { value: string; label: string }[];
+  selectOptions?: FormTableSelectOption[] | ((rowIndex: number, row: FormTableRow, rows: FormTableRow[]) => FormTableSelectOption[]);
   placeholder?: string;
   label?: boolean;
   showWhen?: { field: string; value: string };
@@ -36,6 +38,7 @@ export interface CustomCellRenderParams {
 
 export interface FormTableProps {
   title: string;
+  description?: string;
   required?: boolean;
   columns: FormTableColumn[];
   rows: FormTableRow[];
@@ -45,19 +48,20 @@ export interface FormTableProps {
   addButtonLabel: string;
   errors?: Record<string, Record<string, string>>;
   touched?: Record<string, Record<string, boolean>>;
-  errorMessage?: string; // Error message to display below table title
-  maxHeight?: string; // Max height for table body scroll
-  maxWidth?: string; // Max width for table container
-  emptyStateMessage?: string; // Custom message when no rows
-  showErrorList?: boolean; // Whether to show detailed error list
-  disabled?: boolean; // When true, add/delete/update and row inputs are disabled
-  nonDeletableRowIds?: string[]; // Row ids for which delete button is hidden
-  /** Custom renderer for specific columns (e.g. async select for invitee name). Key = column id. */
+  errorMessage?: string;
+  maxHeight?: string;
+  maxWidth?: string;
+  emptyStateMessage?: string;
+  showErrorList?: boolean;
+  disabled?: boolean;
+  nonDeletableRowIds?: string[];
+  hideAddButton?: boolean;
   customCellRender?: Record<string, (params: CustomCellRenderParams) => React.ReactNode>;
 }
 
 export const FormTable: React.FC<FormTableProps> = ({
   title,
+  description,
   required = false,
   columns,
   rows,
@@ -74,6 +78,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   showErrorList = true,
   disabled = false,
   nonDeletableRowIds = [],
+  hideAddButton = false,
   customCellRender,
 }) => {
   const nonDeletableSet = useMemo(
@@ -101,7 +106,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   return (
     <div
       className={cn(
-        'w-full flex flex-col gap-4 mx-auto',
+        'w-full flex flex-col gap-3 mx-auto',
         disabled && 'pointer-events-none select-none'
       )}
       style={{ maxWidth }}
@@ -111,6 +116,11 @@ export const FormTable: React.FC<FormTableProps> = ({
           {title}
         </h3>
         {required && <span className="text-red-500">*</span>}
+      </div>
+      <div>
+        {description && (
+          <p className="text-sm text-[#667085]">{description}</p>
+        )}
       </div>
 
       <div className={cn(
@@ -147,6 +157,7 @@ export const FormTable: React.FC<FormTableProps> = ({
                 rows.map((row, rowIndex) => (
                   <div
                     key={row.id}
+                    data-row-id={row.id}
                     className={cn(
                       'flex w-full border-b border-[#EAECF0] min-w-max',
                       rowIndex === rows.length - 1 && 'border-b-0'
@@ -230,7 +241,11 @@ export const FormTable: React.FC<FormTableProps> = ({
                                 if (disabled) return;
                                 onUpdateRow(row.id, column.id, value);
                               }}
-                              options={column.selectOptions || []}
+                              options={
+                                typeof column.selectOptions === 'function'
+                                  ? column.selectOptions(rowIndex, row, rows)
+                                  : (column.selectOptions || [])
+                              }
                               placeholder={column.placeholder || '-------'}
                               error={
                                 !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
@@ -327,27 +342,29 @@ export const FormTable: React.FC<FormTableProps> = ({
         )}
       </div>
 
-      {/* Add Button */}
-      <button
-        type="button"
-        onClick={() => {
-          if (disabled) return;
-          onAddRow();
-        }}
-        disabled={disabled}
-        className={cn(
-          "flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors",
-          disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:bg-[#F9FAFB]"
-        )}
-        style={{
-          boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-        }}
-      >
-        <Plus className="w-4 h-4 text-[#008774] mt-[3px]" />
-        <span className="font-medium text-[14px] leading-[20px] font-normal text-[#344054]">
-          {addButtonLabel}
-        </span>
-      </button>
+      {/* Add Button - hidden when hideAddButton (e.g. agenda total already equals meeting duration) */}
+      {!hideAddButton && (
+        <button
+          type="button"
+          onClick={() => {
+            if (disabled) return;
+            onAddRow();
+          }}
+          disabled={disabled}
+          className={cn(
+            "flex items-center justify-center gap-2 self-start px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg transition-colors",
+            disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:bg-[#F9FAFB]"
+          )}
+          style={{
+            boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
+          }}
+        >
+          <Plus className="w-4 h-4 text-[#008774] mt-[3px]" />
+          <span className="font-medium text-[14px] leading-[20px] font-normal text-[#344054]">
+            {addButtonLabel}
+          </span>
+        </button>
+      )}
     </div>
   );
 };

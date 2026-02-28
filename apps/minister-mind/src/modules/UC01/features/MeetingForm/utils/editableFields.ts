@@ -1,12 +1,4 @@
-/**
- * Editable fields utility for edit meeting form.
- * The API returns editable_fields (snake_case). Form uses camelCase.
- * A form field is editable only if its corresponding API field(s) are in editable_fields.
- * "Related" fields: some form fields depend on one API field (e.g. meeting_manager_id -> meeting_owner);
- * conditional fields (e.g. urgent_reason) are editable only when their parent API field is editable.
- */
 
-/** Map: form field key (Step1) -> API field key(s) that control editability. All must be in editable_fields for the form field to be editable. */
 const STEP1_FORM_TO_API_FIELDS: Record<string, string[]> = {
   meetingType: ['meeting_type'],
   meetingSubject: ['meeting_title', 'meeting_subject'],
@@ -38,14 +30,12 @@ const STEP1_FORM_TO_API_FIELDS: Record<string, string[]> = {
   alternative_2_end_date: ['alternative_2_end_date'],
 };
 
-/** Map: form field key (Step2) -> API field key(s) that control editability. */
 const STEP2_FORM_TO_API_FIELDS: Record<string, string[]> = {
   presentation_files: ['attachments', 'presentation_files'],
   presentation_attachment_timing: ['presentation_attachment_timing'],
   additional_files: ['attachments', 'additional_files'],
 };
 
-/** Map: form field key (Step3) -> API field key(s) that control editability. */
 const STEP3_FORM_TO_API_FIELDS: Record<string, string[]> = {
   invitees: ['invitees'],
 };
@@ -79,14 +69,6 @@ function getEditableMap(
   return map;
 }
 
-/**
- * Returns whether the given form field is editable based on the API editable_fields list.
- * When editable_fields is missing or empty, all fields are considered editable (configurable).
- *
- * @param editableFields - API response editable_fields (snake_case array)
- * @param formFieldKey - Form field key (camelCase, e.g. meetingType, meeting_manager_id)
- * @returns true if the field can be edited
- */
 export function isFormFieldEditable(
   editableFields: string[] | undefined | null,
   formFieldKey: string
@@ -97,31 +79,18 @@ export function isFormFieldEditable(
   return isEditableForMap(editableFields, formFieldKey, STEP1_FORM_TO_API_FIELDS);
 }
 
-/**
- * Returns a map of Step1 form field keys to editable boolean.
- * Use this to pass disabled={!editableMap.meetingType} etc. to form controls.
- *
- * @param editableFields - API response editable_fields (snake_case array)
- * @returns Record<formFieldKey, boolean>
- */
 export function getStep1EditableMap(
   editableFields: string[] | undefined | null
 ): Record<string, boolean> {
   return getEditableMap(editableFields, STEP1_FORM_TO_API_FIELDS);
 }
 
-/**
- * Returns a map of Step2 form field keys to editable boolean.
- */
 export function getStep2EditableMap(
   editableFields: string[] | undefined | null
 ): Record<string, boolean> {
   return getEditableMap(editableFields, STEP2_FORM_TO_API_FIELDS);
 }
 
-/**
- * Returns a map of Step3 form field keys to editable boolean.
- */
 export function getStep3EditableMap(
   editableFields: string[] | undefined | null
 ): Record<string, boolean> {

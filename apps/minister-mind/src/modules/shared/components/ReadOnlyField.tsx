@@ -1,22 +1,14 @@
 import React from 'react';
 import { cn } from '@sanad-ai/ui';
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
-
 export interface ReadOnlyFieldProps {
   label: string;
   value: React.ReactNode;
   className?: string;
-  /** Optional label class (e.g. for RTL or size) */
   labelClassName?: string;
-  /** Optional value container class */
   valueClassName?: string;
 }
 
-/**
- * Shared read-only field: label + value in a consistent box.
- * Replaces repeated label + div patterns in request-info and similar tabs.
- */
 export function ReadOnlyField({
   label,
   value,
@@ -26,10 +18,10 @@ export function ReadOnlyField({
 }: ReadOnlyFieldProps) {
   return (
     <div className={cn('flex flex-col gap-2 w-full', className)}>
-      <label className={labelClassName} style={fontStyle}>
+      <label className={labelClassName}>
         {label}
       </label>
-      <div className={valueClassName} style={fontStyle}>
+      <div className={valueClassName}>
         {value ?? '—'}
       </div>
     </div>
