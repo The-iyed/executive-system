@@ -61,6 +61,49 @@ const MAX_MEETING_DURATION_MS = 24 * 60 * 60 * 1000;
 const isSameCalendarDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
+export function getMeetingDurationMinutes(
+  startISO: string | undefined,
+  endISO: string | undefined
+): number | null {
+  if (!startISO?.trim() || !endISO?.trim()) return null;
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (end < start) return null;
+  if (!isSameCalendarDay(start, end)) return null;
+  const ms = end.getTime() - start.getTime();
+  if (ms > MAX_MEETING_DURATION_MS) return null;
+  return Math.round(ms / (60 * 1000));
+}
+
+export function getAgendaTotalDurationMinutes(
+  agenda: Array<Record<string, unknown>> | undefined
+): number {
+  if (!agenda?.length) return 0;
+  return agenda.reduce((sum, item) => {
+    const n = parseInt(String(item.presentation_duration_minutes ?? ''), 10);
+    return sum + (Number.isNaN(n) ? 0 : n);
+  }, 0);
+}
+
+/** Reference time for "now" (seconds precision for consistent validation). */
+function getNowTimestamp(): number {
+  return Math.floor(Date.now() / 1000) * 1000;
+}
+
+/**
+ * Returns true if the meeting start time is in the past (strict, no buffer).
+ */
+export function isMeetingTimeInPast(
+  startISO: string | undefined,
+  _endISO?: string | undefined
+): boolean {
+  if (!startISO?.trim()) return false;
+  const start = new Date(startISO);
+  if (Number.isNaN(start.getTime())) return false;
+  return start.getTime() < getNowTimestamp();
+}
+
 const MINISTER_SUPPORT_TYPE_OTHER = 'أخرى';
 const MINISTER_SUPPORT_TYPE_VALUES = ['إحاطة', 'تحديث', 'قرار', 'توجيه', 'اعتماد', 'أخرى'] as const;
 
@@ -116,6 +159,7 @@ export const step1BasicInfoBaseSchema = z.object({
   meetingConfidentiality: z.string(),
   meetingChannel: z.string().optional().or(z.literal('')),
   meeting_location: z.string().optional().or(z.literal('')),
+  meeting_location_option: z.string().optional().or(z.literal('')),
   sector: z.string().optional().or(z.literal('')),
   meetingAgenda: z.array(agendaItemBaseSchema).optional().default([]),
   notes: z.string({invalid_type_error: 'القيمة المُدخلة غير صحيحة'}).optional().or(z.literal('')),
@@ -175,7 +219,7 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
     meetingConfidentiality: requiredString('سرية الاجتماع مطلوبة'),
     meetingChannel: optionalString('آلية انعقاد الاجتماع يجب أن تكون نصاً'),
     meeting_location: requiresMeetingLocation
-      ? requiredString('الموقع مطلوب عند اختيار آلية انعقاد الاجتماع حضوري')
+      ? requiredString('الموقع مطلوب')
       : optionalString('الموقع يجب أن يكون نصاً'),
     sector: optionalString('القطاع يجب أن يكون نصاً'),
     meetingAgenda: agendaItemsWithSupportSchema,
@@ -241,7 +285,13 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       const start = new Date(data.meeting_start_date);
       const end = new Date(data.meeting_end_date);
       if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
-        if (end < start) {
+        if (isMeetingTimeInPast(data.meeting_start_date, data.meeting_end_date)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'وقت الاجتماع لا يمكن أن يكون في الماضي',
+            path: ['meeting_start_date'],
+          });
+        } else if (end < start) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية',
@@ -302,6 +352,22 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
           } else if (e.getTime() - s.getTime() > MAX_MEETING_DURATION_MS) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'مدة الموعد البديل يجب ألا تتجاوز 24 ساعة', path: ['alternative_2_end_date'] });
           }
+        }
+      }
+    }
+    if (requiresMeetingDates && data.meeting_start_date && data.meeting_end_date) {
+      const meetingMinutes = getMeetingDurationMinutes(
+        data.meeting_start_date,
+        data.meeting_end_date
+      );
+      if (meetingMinutes != null && (data.meetingAgenda?.length ?? 0) > 0) {
+        const agendaTotal = getAgendaTotalDurationMinutes(data.meetingAgenda);
+        if (agendaTotal > meetingMinutes) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`,
+            path: ['meetingAgenda'],
+          });
         }
       }
     }
@@ -369,7 +435,6 @@ export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partia
       return data.directive_method === 'DIRECT_DIRECTIVE';
     case 'meetingAgenda':
       return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
-    case 'meeting_start_date':
     case 'meeting_end_date':
       return data.is_urgent !== true;
     case 'meeting_location':

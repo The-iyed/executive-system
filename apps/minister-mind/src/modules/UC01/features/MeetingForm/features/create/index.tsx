@@ -6,10 +6,8 @@ import { useFormMeetingModal } from '../../hooks';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
-import { Step4Scheduling } from '../../components/steps/Step4Scheduling';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import FormMeetingModal from '../../components/FormMeetingModal/FormMeetingModal';
-import '@shared/styles';
 
 export interface CreateMeetingProps {
   open?: boolean;
@@ -28,13 +26,10 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     handleStep1BasicInfoNext,
     handleStep2ContentNext,
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
-    handleStep4SchedulingNext,
-    handleStep4SchedulingSaveDraft,
     handleCancel,
   } = useCreateMeeting();
 
@@ -123,17 +118,6 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleCancelClick={handleCancel}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
             onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
-          />
-        );
-      case 3:
-        if (!draftId) return null;
-        return (
-          <Step4Scheduling
-            step4SchedulingHook={step4SchedulingHook}
-            isDeleting={deleteDraft.isDeleting}
-            handleNextClick={handleStep4SchedulingNext}
-            handleSaveDraftClick={handleStep4SchedulingSaveDraft}
-            handleCancelClick={handleCancel}
           />
         );
       default:
