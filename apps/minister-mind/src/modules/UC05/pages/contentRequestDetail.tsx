@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronUp, ChevronDown, Send, Eye, Download, RotateCcw, Upload, ClipboardCheck, MessageSquare, Clock, User, Mail, Phone, Trash2, Hash, Building2, FileCheck, Scale, Sparkles, Loader2, AlertCircle, FileText } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, AgendaPreviewTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -189,6 +189,9 @@ const ContentRequestDetail: React.FC = () => {
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [compareResult, setCompareResult] = useState<ComparePresentationsResponse | null>(null);
   const [compareErrorDetail, setCompareErrorDetail] = useState<string | null>(null);
+
+  // PDF/file preview drawer
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
 
   const insightsAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -950,7 +953,7 @@ const ContentRequestDetail: React.FC = () => {
                                 {att.blob_url && (
                                   <>
                                     <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                                    <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                                    <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
                                   </>
                                 )}
                               </div>
@@ -1048,7 +1051,7 @@ const ContentRequestDetail: React.FC = () => {
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => window.open(att.blob_url, '_blank')}
+                                  onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                   className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                 >
                                   <Eye className="w-5 h-5 text-[#475467]" />
@@ -1583,6 +1586,45 @@ const ContentRequestDetail: React.FC = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* PDF / file preview drawer */}
+          <Drawer
+            open={!!previewAttachment}
+            onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+            title={previewAttachment?.file_name ?? ''}
+            side="right"
+            width="90vw"
+            showDecoration={true}
+            bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+          >
+            {previewAttachment && (
+              <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+                {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+                  <iframe
+                    title={previewAttachment.file_name}
+                    src={previewAttachment.blob_url}
+                    className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+                  />
+                ) : (
+                  <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                    <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                    </p>
+                    <a
+                      href={previewAttachment.blob_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
+                      <Download className="w-4 h-4" />
+                      تحميل الملف
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </Drawer>
 
           {/* Analyze contradictions result modal */}
           <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
