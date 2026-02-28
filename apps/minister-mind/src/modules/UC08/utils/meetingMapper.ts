@@ -1,17 +1,7 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
+import { formatDateArabic } from '@shared/utils';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 import { MeetingApiResponse } from '../data/meetingsApi';
-
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return '';
-  
-  try {
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  } catch (error) {
-    return dateString;
-  }
-};
 
 const STATUS_MAP: Record<string, MeetingStatus> = {
   [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
@@ -52,7 +42,7 @@ export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingDispla
     id: meeting.id,
     requestNumber: meeting.request_number,
     title: meeting.meeting_title || meeting.meeting_subject,
-    date: formatDate(dateToUse),
+    date: formatDateArabic(dateToUse),
     coordinator: meeting.submitter_name,
     coordinatorAvatar: undefined,
     status: status,

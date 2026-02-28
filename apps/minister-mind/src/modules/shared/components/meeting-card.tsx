@@ -167,7 +167,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                <span className="text-[10px] text-[#98A2B3] leading-3">التاريخ</span>
+                <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الطلب</span>
                 <span className="text-[12px] text-[#344054] leading-4">{meeting.date}</span>
               </div>
             </div>

@@ -1,12 +1,15 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useToast } from '@sanad-ai/ui';
-import { FormTable, ActionButtons, FormAsyncSelectV2, OptionType, AIGenerateButton } from '@shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams } from '@shared';
 import { SuggestAttendeesModal } from '../../../../../UC02/components';
 import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
 import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import { getUsers } from '../../../../data/usersApi';
 import type { UserApiResponse } from '../../../../data/usersApi';
+
+const MANUAL_ENTRY_VALUE = '__manual__';
+const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
 
 export interface Step3InviteesProps {
   formData: Partial<Step3InviteesFormData>;
@@ -16,21 +19,11 @@ export interface Step3InviteesProps {
   tableErrorMessage?: string;
   isSubmitting: boolean;
   isDeleting: boolean;
-  
+
   // Handlers
   handleAddAttendee: () => void;
   handleDeleteAttendee: (id: string) => void;
   handleUpdateAttendee: (id: string, field: string, value: any) => void;
-  handleAddUserFromSelect: (userOption: { 
-    value: string; 
-    label: string; 
-    description?: string; 
-    username?: string;
-    position?: string;
-    phone_number?: string;
-    first_name?: string;
-    last_name?: string;
-  }) => boolean;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
@@ -53,7 +46,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleAddAttendee,
   handleDeleteAttendee,
   handleUpdateAttendee,
-  handleAddUserFromSelect,
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
@@ -64,110 +56,154 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   const isFieldDisabled = (fieldKey: string) =>
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
 
-  const [selectedUserId, setSelectedUserId] = useState<OptionType | null>(null);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
   const { toast } = useToast();
-  const userOptionsMapRef = useRef<Map<string, { 
-    value: string; 
-    label: string; 
-    description?: string; 
-    username?: string; 
-    position?: string; 
-    phone_number?: string;
-    first_name?: string;
-    last_name?: string;
-  }>>(new Map());
+  const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
+  /** Last search input per row id – used when user selects "إدخال يدوي" to prefill name */
+  const searchInputByRowRef = useRef<Record<string, string>>({});
 
-  const handleUserSelect = useCallback((value: OptionType | null) => {
-    if (!value) {
-      setSelectedUserId(null);
-      return;
-    }
-    
-    const selectedOption = userOptionsMapRef.current.get(value.value);
-    if (selectedOption) {
-      const added = handleAddUserFromSelect(selectedOption);
-      if (!added) {
-        toast({
-          title: 'المستخدم موجود مسبقاً',
-          description: 'تم إضافة هذا المستخدم إلى القائمة مسبقاً',
-          variant: 'destructive',
-        });
-        setSelectedUserId(null);
-        return;
-      }
-      
-      toast({
-        title: 'تمت الإضافة بنجاح',
-        description: `تم إضافة ${selectedOption.label} إلى قائمة المدعوين`,
-      });
-      setSelectedUserId(null);
-    } else {
-      setSelectedUserId(null);
-    }
-  }, [handleAddUserFromSelect]);
-
-  const handleLoadOptions = useCallback(async (
-    search: string,
-    skip: number,
-    limit: number
-  ) => {
+  const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
     try {
       const response = await getUsers({
         search: search.trim() || undefined,
         skip,
         limit,
       });
-
       const items = response.items.map((user: UserApiResponse) => {
         const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
+        const position = user.position ?? (user as Record<string, unknown>).position_name ?? (user as Record<string, unknown>).job_title ?? '';
+        const sectorVal = (user as Record<string, unknown>).sector;
         return {
           value: user.id,
           label: fullName,
           description: user.email,
-          username: user.username || fullName, 
-          position: user.position || '',
+          username: user.username || fullName,
+          position: typeof position === 'string' ? position : '',
           phone_number: user.phone_number || '',
+          sector: typeof sectorVal === 'string' ? sectorVal : '',
           first_name: user.first_name || '',
           last_name: user.last_name || '',
         };
       });
-
-      items.forEach((option) => {
-        userOptionsMapRef.current.set(option.value, option);
-      });
-
+      items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
+      // Include current search in manual option so it can be used as name when selected (e.g. when no results)
+      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
       return {
-        items,
-        total: response.total,
+        items: skip === 0 ? [manualOption, ...items] : items,
+        total: skip === 0 ? response.total + 1 : response.total,
         skip: response.skip,
         limit: response.limit,
         has_next: response.has_next || false,
         has_previous: response.has_previous || false,
       };
-    } catch (error) {
-      console.error('Error loading users:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error loading users:', err);
+      throw err;
     }
   }, []);
+
+  const inviteeNameCellRender = useCallback(
+    (params: CustomCellRenderParams) => {
+      const { row, onUpdateRow, disabled } = params;
+      const isManual = row.user_id === MANUAL_ENTRY_VALUE;
+
+      if (isManual) {
+        return (
+          <FormInput
+            value={row.name ?? ''}
+            onChange={(e) => onUpdateRow('name', e.target.value)}
+            placeholder="الإسم"
+            disabled={disabled}
+            fullWidth
+          />
+        );
+      }
+
+      const value: OptionType | null =
+        row.user_id && row.user_id !== MANUAL_ENTRY_VALUE
+          ? { value: row.user_id, label: row.username || row.name || '' }
+          : null;
+
+      return (
+        <FormAsyncSelectV2
+          value={value}
+          onValueChange={(opt) => {
+            if (!opt) {
+              onUpdateRow('user_id', '');
+              onUpdateRow('username', '');
+              onUpdateRow('name', '');
+              onUpdateRow('position', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('mobile', '');
+              onUpdateRow('email', '');
+              onUpdateRow('disabled', false);
+              return;
+            }
+            if (opt.value === MANUAL_ENTRY_VALUE) {
+              // Use search from option (from loadOptions when no/few results) or from onInputChange ref
+              const searchFromOption = (opt as { __search?: string }).__search ?? '';
+              const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+              const searchValue = (searchFromOption || searchFromRef).trim();
+              onUpdateRow('user_id', MANUAL_ENTRY_VALUE);
+              onUpdateRow('username', '');
+              onUpdateRow('name', searchValue);
+              onUpdateRow('position', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('mobile', '');
+              onUpdateRow('email', '');
+              onUpdateRow('disabled', false);
+              return;
+            }
+            const existing = (formData.invitees ?? []).find(
+              (inv) => inv.id !== row.id && inv.user_id === opt.value
+            );
+            if (existing) {
+              toast({
+                title: 'المستخدم موجود مسبقاً',
+                description: 'تم إضافة هذا المستخدم إلى القائمة مسبقاً',
+                variant: 'destructive',
+              });
+              return;
+            }
+            const u = userOptionsMapRef.current.get(opt.value);
+            if (u) {
+              const label = u.username || u.label;
+              onUpdateRow('user_id', u.value);
+              onUpdateRow('username', label);
+              onUpdateRow('name', label);
+              onUpdateRow('position', u.position ?? '');
+              onUpdateRow('sector', u.sector ?? '');
+              onUpdateRow('mobile', u.phone_number ?? '');
+              onUpdateRow('email', u.description ?? '');
+              onUpdateRow('disabled', true);
+            }
+          }}
+          loadOptions={loadUserOptions}
+          placeholder="اختر مستخدم أو إدخال يدوي"
+          isClearable
+          fullWidth
+          isSearchable
+          limit={10}
+          searchPlaceholder="ابحث عن مستخدم..."
+          emptyMessage="لم يتم العثور على مستخدمين"
+          isDisabled={disabled}
+          onInputChange={(newValue) => {
+            searchInputByRowRef.current[row.id] = newValue;
+          }}
+        />
+      );
+    },
+    [formData.invitees, loadUserOptions, toast]
+  );
+
+  const customCellRender = useMemo(
+    () => ({ name: inviteeNameCellRender }),
+    [inviteeNameCellRender]
+  );
 
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-6">
-        <FormAsyncSelectV2
-          value={selectedUserId}
-          onValueChange={handleUserSelect}
-          placeholder="اختر أحدَ المشتركين في المنصّة"
-          loadOptions={handleLoadOptions}
-          isClearable
-          fullWidth
-          className='max-w-[1200px] mx-auto'
-          isSearchable={true}
-          limit={10}
-          searchPlaceholder="ابحث عن مستخدم..."
-          emptyMessage="لم يتم العثور على مستخدمين"
-          isDisabled={isFieldDisabled('invitees')}
-        />
         {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
           <SuggestAttendeesModal
             isOpen={isSuggestAttendeesModalOpen}
@@ -190,6 +226,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             touched={touched}
             errorMessage={tableErrorMessage}
             disabled={isFieldDisabled('invitees')}
+            customCellRender={customCellRender}
           />
           {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
             <div className="absolute bottom-[-3px] right-[170px]">

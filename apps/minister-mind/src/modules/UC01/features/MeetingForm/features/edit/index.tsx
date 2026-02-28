@@ -119,7 +119,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleAddAttendee={step3InviteesHook.handleAddAttendee}
             handleDeleteAttendee={step3InviteesHook.handleDeleteAttendee}
             handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
-            handleAddUserFromSelect={step3InviteesHook.handleAddUserFromSelect}
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
             handleCancelClick={handleCancel}
