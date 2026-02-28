@@ -25,6 +25,7 @@ import {
   type OptionType,
   Drawer,
   SECTOR_OPTIONS,
+  formatDateTimeArabic,
 } from '@shared'; 
 import {
   getMeetingById,
@@ -1388,7 +1389,7 @@ const MeetingDetail: React.FC = () => {
       
       return {
         ...prev,
-        scheduled_at: meeting.scheduled_start ?? meeting.scheduled_at ?? '',
+        scheduled_at: meeting.scheduled_start ?? meeting.meeting_start_date ?? '',
         scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
@@ -1672,7 +1673,7 @@ const MeetingDetail: React.FC = () => {
       meetingType: formData.meeting_type || undefined,
       is_urgent: formData.is_urgent,
       urgent_reason: formData.meeting_justification || undefined,
-      meeting_start_date: (meeting as any).scheduled_start ?? meeting.scheduled_at ?? slot?.slot_start ?? undefined,
+      meeting_start_date: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? slot?.slot_start ?? undefined,
       meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
       alternative_1_start_date: alt1?.slot_start,
       alternative_1_end_date: alt1?.slot_end ?? undefined,
@@ -3254,7 +3255,7 @@ const MeetingDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -3318,7 +3319,7 @@ const MeetingDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                         return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -3395,7 +3396,7 @@ const MeetingDetail: React.FC = () => {
                 <div className="flex flex-col gap-4 w-full" dir="rtl">
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                     const isExpanded = expandedGuidanceId === row.guidance_id;
-                    const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                    const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                     const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                         return (
@@ -3451,7 +3452,7 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                   {row.responded_at && (
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {new Date(row.responded_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {formatDateTimeArabic(row.responded_at)}</span>
                           </span>
                                   )}
                                 </div>

@@ -1,38 +1,8 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
+import { formatDateArabic } from '@shared/utils';
 import { ConsultationRequestApiResponse } from '../data/consultationsApi';
 import { MeetingStatus, getMeetingStatusLabel, getMeetingChannelLabel, getMeetingClassificationLabel } from '@shared/types';
 import { ConsultationRequestCardData } from '../components/consultation-request-card';
-
-/**
- * Format date to Arabic format
- */
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return '';
-
-  try {
-    const date = new Date(dateString);
-    // Format as: "الاثنين، 23 شعبان 1447 هـ"
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      calendar: 'islamic',
-      numberingSystem: 'arab',
-    };
-
-    const formatted = new Intl.DateTimeFormat('ar-SA', options).format(date);
-    return formatted;
-  } catch (error) {
-    // Fallback to simple date format
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA');
-    } catch {
-      return dateString;
-    }
-  }
-};
 
 /**
  * Map API status to component status
@@ -68,7 +38,7 @@ export const mapConsultationRequestToCardData = (
   return {
     id: request.id,
     title: request.meeting_title || request.meeting_subject,
-    date: formatDate(dateToUse),
+    date: formatDateArabic(dateToUse),
     coordinator: request.submitter_name ?? undefined,
     coordinatorAvatar: undefined, // API doesn't provide avatar
     status: status,
@@ -94,13 +64,13 @@ export const mapConsultationRequestToCardViewData = (
     id: request.id,
     requestNumber: request.request_number,
     title: request.meeting_title || request.meeting_subject,
-    date: formatDate(dateToUse),
+    date: formatDateArabic(dateToUse),
     submitter: request.submitter_name ?? undefined,
     status: status,
     statusLabel: statusLabel,
     meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
     location: locationLabel,
-    meetingDate: request.scheduled_at ? formatDate(request.scheduled_at) : undefined,
+    meetingDate: request.scheduled_at ? formatDateArabic(request.scheduled_at) : undefined,
     isDataComplete: request.is_data_complete,
   };
 };

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge, DataTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -1058,15 +1059,7 @@ const GuidanceRequestDetail: React.FC = () => {
               ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
                 guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                   const isExpanded = expandedGuidanceId === row.guidance_id;
-                  const requestDate = row.requested_at
-                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const hasAnswer = !!row.guidance_answer;
 
                   return (
@@ -1107,15 +1100,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {(() => {
-                              const responseDate = row.responded_at
-                                ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—';
+                              const responseDate = row.responded_at ? formatDateTimeArabic(row.responded_at) : '—';
                               const statusLabels: Record<string, string> = {
                                 PENDING: 'قيد الانتظار',
                                 RESPONDED: 'تم الرد',
@@ -1206,7 +1191,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1281,7 +1266,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                               return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1343,7 +1328,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1418,7 +1403,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                               return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1863,7 +1848,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           className="text-xs text-gray-500"
                           style={{ fontFamily: "'Almarai', sans-serif" }}
                         >
-                          {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                          {formatDateArabic(draft.requested_at)}
                         </span>
                       </div>
                       <p
