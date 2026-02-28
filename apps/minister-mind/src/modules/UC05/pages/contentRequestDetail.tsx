@@ -720,6 +720,7 @@ const ContentRequestDetail: React.FC = () => {
       ? `${contentRequest.current_owner_user.first_name ?? ''} ${contentRequest.current_owner_user.last_name ?? ''}`.trim()
       : contentRequest.current_owner_role?.name_ar ?? undefined;
     return {
+      ...contentRequest as MeetingInfoData,
       is_on_behalf_of: (cr.is_on_behalf_of as boolean) ?? undefined,
       meeting_manager_label: owner ?? undefined,
       meetingSubject: contentRequest.meeting_title ?? undefined,

@@ -11,6 +11,7 @@ import {
   getDirectiveMethodLabel,
   MeetingChannelLabels,
 } from '../types';
+import { FileIcon } from 'lucide-react';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
   if (!startISO && !endISO) return '—';
@@ -74,12 +75,26 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
 
 /** Specs for the second grid (directive + notes). */
 export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
-  const fileDisplay = (d: MeetingInfoData) =>
-    d.previous_meeting_minutes_file != null
-      ? typeof d.previous_meeting_minutes_file === 'object' && 'name' in d.previous_meeting_minutes_file
-        ? (d.previous_meeting_minutes_file as { name?: string }).name ?? 'مرفق'
-        : (d.previous_meeting_minutes_file as File)?.name ?? 'مرفق'
-      : '—';
+  const fileDisplay = (d: MeetingInfoData) => {
+    const attachment = d.previous_meeting_attachment;
+    const legacyFile = d.previous_meeting_minutes_file;
+    const name =
+      attachment?.file_name ??
+      (attachment && 'name' in attachment ? (attachment as { name?: string }).name : undefined) ??
+      (legacyFile != null && typeof legacyFile === 'object' && 'name' in legacyFile
+        ? (legacyFile as { name?: string }).name
+        : (legacyFile as File)?.name);
+    if (name) {
+      return (
+        <div className="flex items-center gap-2">
+          <FileIcon className="h-4 w-4 flex-shrink-0" />
+          {name}
+        </div>
+      );
+    }
+    return '—';
+  };
+
   return [
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', getValue: (d) => (d.is_based_on_directive === true ? 'نعم' : d.is_based_on_directive === false ? 'لا' : '—') },
     { key: 'directive_method', label: 'طريقة التوجيه', getValue: (d) => getDirectiveMethodLabel(d.directive_method) ?? '—' },
@@ -115,6 +130,20 @@ export interface MeetingInfoData {
   meetingClassification1?: string;
   meetingConfidentiality?: string;
   meetingAgenda?: AgendaItemPreview[];
+  /** Previous meeting minutes attachment (from API: file_name, blob_url, etc.). */
+  previous_meeting_attachment?: {
+    id?: string;
+    meeting_request_id?: string;
+    file_name?: string;
+    file_size?: number;
+    file_type?: string;
+    content_type?: string;
+    uploaded_by?: string;
+    uploaded_at?: string;
+    blob_url?: string;
+    source?: string;
+    name?: string;
+  } | null;
   /** UC02 meeting detail only: sequential meeting flag */
   is_sequential?: boolean;
   /** UC02 meeting detail only: selected previous meeting display title */
