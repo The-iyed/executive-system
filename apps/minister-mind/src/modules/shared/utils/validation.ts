@@ -1,8 +1,3 @@
-/**
- * Shared validation helpers (email, invitee row, minister attendee row).
- */
-
-/** Simple email format validation */
 export function isValidEmail(value: string): boolean {
   if (!value || typeof value !== 'string') return false;
   const trimmed = value.trim();

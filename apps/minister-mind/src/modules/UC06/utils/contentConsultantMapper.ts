@@ -39,7 +39,6 @@ const formatDate = (dateString: string | null): string => {
 const mapStatus = (apiStatus: string): MeetingStatus | string => {
   // Map API status to MeetingStatus enum
   const statusMap: Record<string, MeetingStatus | string> = {
-    UNDER_CONTENT_CONSULTATION: 'UNDER_CONTENT_CONSULTATION',
     SCHEDULED_CONTENT_CONSULTATION: 'SCHEDULED_CONTENT_CONSULTATION',
     UNDER_REVIEW: MeetingStatus.UNDER_REVIEW,
     SCHEDULED: MeetingStatus.SCHEDULED,
@@ -58,10 +57,6 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
 const getStatusLabel = (status: MeetingStatus | string): string => {
   if (status in MeetingStatusLabels) {
     return MeetingStatusLabels[status as MeetingStatus];
-  }
-  // Handle custom statuses
-  if (status === 'UNDER_CONTENT_CONSULTATION') {
-    return 'قيد استشارة المحتوى';
   }
   if (status === 'SCHEDULED_CONTENT_CONSULTATION') {
     return 'مجدولة لاستشارة المحتوى';
