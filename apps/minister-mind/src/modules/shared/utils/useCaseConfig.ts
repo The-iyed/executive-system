@@ -5,7 +5,6 @@ import { PATH as UC03_PATH } from '../../UC03/routes/paths';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
 import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
-import { PATH as UC08_PATH } from '../../UC08/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
 import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
 
@@ -130,11 +129,6 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         path: UC06_PATH.CONTENT_CONSULTATION_REQUESTS,
       },
     ],
-  },
-  'UC-08': {
-    code: 'UC-08',
-    defaultRoute: UC08_PATH.MEETINGS,
-    navigationItems: [],
   },
   'UC-09': {
     code: 'UC-09',
