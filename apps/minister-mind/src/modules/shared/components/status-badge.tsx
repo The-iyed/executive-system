@@ -82,10 +82,6 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
   },
-  'UNDER_CONSULTATION_SCHEDULING': {
-    bgClass: 'bg-[rgba(255,211,89,0.12)]',
-    textClass: 'text-[#BE8E0B]',
-  },
   'UNDER_GUIDANCE': {
     bgClass: 'bg-[rgba(255,211,89,0.12)]',
     textClass: 'text-[#BE8E0B]',
@@ -93,10 +89,6 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
   [MeetingStatus.UNDER_CONTENT_REVIEW]: {
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
-  },
-  [MeetingStatus.UNDER_CONTENT_CONSULTATION]: {
-    bgClass: 'bg-[rgba(255,211,89,0.12)]',
-    textClass: 'text-[#BE8E0B]',
   },
   [MeetingStatus.READY]: {
     bgClass: 'bg-[rgba(4,143,134,0.08)]',
