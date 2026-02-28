@@ -13,7 +13,6 @@ import {
   MeetingClassificationType,
   MeetingClassificationTypeLabels,
   MeetingConfidentiality,
-  MeetingConfidentialityLabels,
   MeetingChannelLabels,
   StatusBadge,
   DataTable,
@@ -1789,10 +1788,20 @@ const MeetingDetail: React.FC = () => {
             );
           case 'meeting_confidentiality':
             return (
-              <Select value={formData.meeting_confidentiality || ''} onValueChange={(v) => handleFieldChange('meeting_confidentiality', v)}>
-                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
-                <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.meeting_confidentiality === MeetingConfidentiality.CONFIDENTIAL ? 'سرّي' : 'عادي'}</span>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => {
+                    const next = formData.meeting_confidentiality !== MeetingConfidentiality.CONFIDENTIAL;
+                    handleFieldChange('meeting_confidentiality', next ? MeetingConfidentiality.CONFIDENTIAL : MeetingConfidentiality.NORMAL);
+                  }}
+                  className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.meeting_confidentiality === MeetingConfidentiality.CONFIDENTIAL ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
             );
           case 'is_sequential':
             return (

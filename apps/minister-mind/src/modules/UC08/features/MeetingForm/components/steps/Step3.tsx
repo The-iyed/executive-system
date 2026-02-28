@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { FormTable, ActionButtons } from '@shared';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, type OptionType, type CustomCellRenderParams } from '@shared';
 import {
   INVITEES_TABLE_COLUMNS,
   INVITEES_TABLE_TITLE,
@@ -9,8 +9,12 @@ import {
 } from '../../utils/constants';
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers } from '../../../../data/usersApi';
+import type { UserApiResponse } from '../../../../data/usersApi';
 import { cn } from '@sanad-ai/ui';
 import { Check } from 'lucide-react';
+
+const MANUAL_ENTRY_VALUE = '__manual__';
+const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
 
 export interface Step3Props {
   formData: Partial<Step3FormData>;
@@ -57,6 +61,125 @@ export const Step3: React.FC<Step3Props> = ({
 }) => {
   const [proposerUsers, setProposerUsers] = useState<ProposerUser[]>([]);
   const [proposerLoading, setProposerLoading] = useState(true);
+  const userOptionsMapRef = useRef<Map<string, { value: string; label: string; position?: string; phone_number?: string; email?: string }>>(new Map());
+  const searchInputByRowRef = useRef<Record<string, string>>({});
+
+  const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
+    try {
+      const response = await getUsers({
+        search: search.trim() || undefined,
+        skip,
+        limit,
+      });
+      const items = response.items.map((u: UserApiResponse) => {
+        const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || '';
+        const position = u.position ?? (u as Record<string, unknown>).position_name ?? (u as Record<string, unknown>).job_title ?? '';
+        return {
+          value: u.id,
+          label: fullName,
+          position: typeof position === 'string' ? position : '',
+          phone_number: u.phone_number ?? '',
+          email: u.email ?? '',
+        };
+      });
+      items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
+      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
+      return {
+        items: skip === 0 ? [manualOption, ...items] : items,
+        total: skip === 0 ? response.total + 1 : response.total,
+        skip: response.skip,
+        limit: response.limit,
+        has_next: response.has_next || false,
+        has_previous: response.has_previous || false,
+      };
+    } catch (err) {
+      console.error('Error loading users:', err);
+      throw err;
+    }
+  }, []);
+
+  const inviteeNameCellRender = useCallback(
+    (params: CustomCellRenderParams) => {
+      const { row, onUpdateRow } = params;
+      const isManual = (row as { _isManual?: boolean })._isManual === true;
+
+      if (isManual) {
+        return (
+          <FormInput
+            value={row.full_name ?? ''}
+            onChange={(e) => onUpdateRow('full_name', e.target.value)}
+            placeholder="الاسم الكامل"
+            fullWidth
+          />
+        );
+      }
+
+      const userId = (row as { _userId?: string })._userId;
+      const value: OptionType | null =
+        userId && row.full_name
+          ? { value: userId, label: row.full_name }
+          : null;
+
+      return (
+        <FormAsyncSelectV2
+          value={value}
+          onValueChange={(opt) => {
+            if (!opt) {
+              onUpdateRow('full_name', '');
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('email', '');
+              onUpdateRow('_isManual', false);
+              onUpdateRow('_userId', '');
+              return;
+            }
+            if (opt.value === MANUAL_ENTRY_VALUE) {
+              const searchFromOption = (opt as { __search?: string }).__search ?? '';
+              const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+              const searchValue = (searchFromOption || searchFromRef).trim();
+              onUpdateRow('_isManual', true);
+              onUpdateRow('full_name', searchValue);
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('email', '');
+              onUpdateRow('_userId', '');
+              return;
+            }
+            const u = userOptionsMapRef.current.get(opt.value);
+            if (u) {
+              const existing = (formData.invitees ?? []).find(
+                (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+              );
+              if (existing) return;
+              onUpdateRow('_userId', u.value);
+              onUpdateRow('_isManual', false);
+              onUpdateRow('full_name', u.label);
+              onUpdateRow('position_title', u.position ?? '');
+              onUpdateRow('mobile_number', u.phone_number ?? '');
+              onUpdateRow('email', u.email ?? '');
+            }
+          }}
+          loadOptions={loadUserOptions}
+          placeholder="اختر مستخدم أو إدخال يدوي"
+          isClearable
+          fullWidth
+          isSearchable
+          limit={10}
+          searchPlaceholder="ابحث عن مستخدم..."
+          emptyMessage="لم يتم العثور على مستخدمين"
+          onInputChange={(newValue) => {
+            searchInputByRowRef.current[row.id] = newValue;
+          }}
+        />
+      );
+    },
+    [formData.invitees, loadUserOptions]
+  );
+
+  const inviteesCustomCellRender = useMemo(
+    () => ({ full_name: inviteeNameCellRender }),
+    [inviteeNameCellRender]
+  );
 
   useEffect(() => {
     getUsers({ limit: 10 })
@@ -113,6 +236,7 @@ export const Step3: React.FC<Step3Props> = ({
           errorMessage={inviteesTableError}
           nonDeletableRowIds={nonDeletableInviteeIds}
           emptyStateMessage="أضف مدعوياً واحداً على الأقل (مالك الاجتماع يُضاف تلقائياً)"
+          customCellRender={inviteesCustomCellRender}
         />
 
         <FormTable
