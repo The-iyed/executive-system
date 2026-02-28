@@ -1,68 +1,31 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   FormField,
   FormInput,
   FormSelect,
   FormDatePicker,
-  FormTable,
   FormTextArea,
   FormSwitch,
   FormRow,
   ActionButtons,
   FormAsyncSelectV2,
   FileUpload,
-  MeetingRangePicker,
   SECTOR_OPTIONS,
   MEETING_TYPE_OPTIONS,
-  type MeetingRangeValue
+  getMeetingCategoryOptions,
 } from '@shared';
 import {
-  getMeetingCategoryOptions,
   MEETING_CLASSIFICATION_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
-  MEETING_AGENDA_COLUMNS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
 import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
+import { getMeetingDurationMinutes } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
-
-function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
-  if (!startISO || !endISO) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const toHHmm = (d: Date) =>
-    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  const startTime = toHHmm(start);
-  const endTime = toHHmm(end);
-  const isFullDay =
-    start.getHours() === 0 &&
-    start.getMinutes() === 0 &&
-    end.getHours() === 23 &&
-    end.getMinutes() >= 59;
-  return {
-    date: start,
-    startTime,
-    endTime,
-    isFullDay,
-  };
-}
-
-function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
-  if (!value.date) return null;
-  const [sh, sm] = value.startTime.split(':').map(Number);
-  const [eh, em] = value.endTime.split(':').map(Number);
-  const start = new Date(value.date);
-  start.setHours(sh, sm, 0, 0);
-  const end = new Date(value.date);
-  end.setHours(eh, em, 0, 0);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
+import { MeetingDateFields } from '../MeetingDateFields/MeetingDateFields';
+import { MeetingLocationField } from '../MeetingLocationField';
+import { MeetingAgendaTable } from '../MeetingAgendaTable';
 
 export interface Step1BasicInfoProps {
   formData: Partial<Step1BasicInfoFormData>;
@@ -74,7 +37,7 @@ export interface Step1BasicInfoProps {
   isDeleting: boolean;
   handleChange: (field: keyof Step1BasicInfoFormData, value: any) => void;
   handleBlur: (field: Step1ErrorKey) => void;
-  handleAddAgenda: () => void;
+  handleAddAgenda: () => string;
   handleDeleteAgenda: (id: string) => void;
   handleUpdateAgenda: (id: string, field: string, value: any) => void;
   handleNextClick: () => void;
@@ -101,9 +64,15 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   isStep1BasicInfoFieldRequired,
   step1EditableMap,
 }) => {
+  const [scrollToAgendaRowId, setScrollToAgendaRowId] = useState<string | null>(null);
   const isFieldDisabled = (fieldKey: string) =>
     step1EditableMap != null && step1EditableMap[fieldKey] === false;
-  // Load users options for meeting manager
+
+  const handleAddAgendaWithScroll = useCallback(() => {
+    const newRowId = handleAddAgenda();
+    if (newRowId) setScrollToAgendaRowId(newRowId);
+  }, [handleAddAgenda]);
+
   const loadMeetingManagerOptions = useCallback(async (
     search: string,
     skip: number,
@@ -179,18 +148,17 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 className="w-full min-w-0"
               label="عنوان الاجتماع"
               required
-              error={touched.meetingSubject ? errors.meetingSubject : undefined}
+              error={errors.meetingSubject ?? undefined}
             >
               <FormInput
                 value={formData.meetingSubject || ''}
                 onChange={(e) => handleChange('meetingSubject', e.target.value)}
                 onBlur={() => handleBlur('meetingSubject')}
                 placeholder="عنوان الاجتماع"
-                error={!!(touched.meetingSubject && errors.meetingSubject)}
+                error={!!errors.meetingSubject}
                 disabled={isFieldDisabled('meetingSubject')}
               />
             </FormField>
-            {/* وصف الاجتماع - optional, payload field: meeting_description */}
             <FormField
               className="w-full min-w-0"
               label="وصف الاجتماع"
@@ -262,127 +230,14 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               </FormField>
             </FormRow>
           )}
-          {isStep1BasicInfoFieldRequired('meeting_start_date') && (() => {
-              const now = new Date();
-              const oneWeekFromNow = new Date(now);
-              oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-              const meetingError =
-                (touched.meeting_start_date || touched.meeting_end_date) &&
-                (errors.meeting_start_date || errors.meeting_end_date);
-              const alt1Error =
-                (touched.alternative_1_start_date || touched.alternative_1_end_date) &&
-                (errors.alternative_1_start_date || errors.alternative_1_end_date);
-              const alt2Error =
-                (touched.alternative_2_start_date || touched.alternative_2_end_date) &&
-                (errors.alternative_2_start_date || errors.alternative_2_end_date);
-              return (
-                <>
-                  <FormField
-                    className="w-full min-w-0"
-                    label="موعد الاجتماع"
-                    required
-                    error={
-                      meetingError
-                        ? errors.meeting_start_date || errors.meeting_end_date
-                        : undefined
-                    }
-                  >
-                    <MeetingRangePicker
-                      value={isoRangeToMeetingRange(
-                        formData.meeting_start_date || '',
-                        formData.meeting_end_date || ''
-                      )}
-                      onChange={(v) => {
-                        const iso = meetingRangeToIso(v);
-                        if (iso) {
-                          handleChange('meeting_start_date', iso.start);
-                          handleChange('meeting_end_date', iso.end);
-                        } else {
-                          handleChange('meeting_start_date', '');
-                          handleChange('meeting_end_date', '');
-                        }
-                      }}
-                      onBlur={() => {
-                        handleBlur('meeting_start_date');
-                        handleBlur('meeting_end_date');
-                      }}
-                      minDate={oneWeekFromNow}
-                      disabled={isFieldDisabled('meeting_start_date')}
-                      error={!!(touched.meeting_start_date && errors.meeting_start_date) || !!(touched.meeting_end_date && errors.meeting_end_date)}
-                      placeholder="اختر التاريخ والوقت"
-                    />
-                  </FormField>
-                  <FormField
-                    className="w-full min-w-0"
-                    label="الموعد البديل الأول"
-                    error={
-                      alt1Error
-                        ? errors.alternative_1_start_date || errors.alternative_1_end_date
-                        : undefined
-                    }
-                  >
-                    <MeetingRangePicker
-                      value={isoRangeToMeetingRange(
-                        formData.alternative_1_start_date || '',
-                        formData.alternative_1_end_date || ''
-                      )}
-                      onChange={(v) => {
-                        const iso = meetingRangeToIso(v);
-                        if (iso) {
-                          handleChange('alternative_1_start_date', iso.start);
-                          handleChange('alternative_1_end_date', iso.end);
-                        } else {
-                          handleChange('alternative_1_start_date', '');
-                          handleChange('alternative_1_end_date', '');
-                        }
-                      }}
-                      onBlur={() => {
-                        handleBlur('alternative_1_start_date');
-                        handleBlur('alternative_1_end_date');
-                      }}
-                      minDate={oneWeekFromNow}
-                      disabled={isFieldDisabled('alternative_1_start_date')}
-                      error={!!(touched.alternative_1_start_date && errors.alternative_1_start_date) || !!(touched.alternative_1_end_date && errors.alternative_1_end_date)}
-                      placeholder="اختر التاريخ والوقت"
-                    />
-                  </FormField>
-                  <FormField
-                    className="w-full min-w-0"
-                    label="الموعد البديل الثاني"
-                    error={
-                      alt2Error
-                        ? errors.alternative_2_start_date || errors.alternative_2_end_date
-                        : undefined
-                    }
-                  >
-                    <MeetingRangePicker
-                      value={isoRangeToMeetingRange(
-                        formData.alternative_2_start_date || '',
-                        formData.alternative_2_end_date || ''
-                      )}
-                      onChange={(v) => {
-                        const iso = meetingRangeToIso(v);
-                        if (iso) {
-                          handleChange('alternative_2_start_date', iso.start);
-                          handleChange('alternative_2_end_date', iso.end);
-                        } else {
-                          handleChange('alternative_2_start_date', '');
-                          handleChange('alternative_2_end_date', '');
-                        }
-                      }}
-                      onBlur={() => {
-                        handleBlur('alternative_2_start_date');
-                        handleBlur('alternative_2_end_date');
-                      }}
-                      minDate={oneWeekFromNow}
-                      disabled={isFieldDisabled('alternative_2_start_date')}
-                      error={!!(touched.alternative_2_start_date && errors.alternative_2_start_date) || !!(touched.alternative_2_end_date && errors.alternative_2_end_date)}
-                      placeholder="اختر التاريخ والوقت"
-                    />
-                  </FormField>
-                </>
-              );
-          })()}
+            <MeetingDateFields
+              formData={formData}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              handleBlur={handleBlur}
+              isFieldDisabled={isFieldDisabled}
+            />
           <FormField
             className="w-full min-w-0"
             label="آلية انعقاد الاجتماع"
@@ -398,21 +253,15 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             />
           </FormField>
           {formData.meetingChannel === 'PHYSICAL' && (
-            <FormField
-              className="w-full min-w-0"
-              label="الموقع"
-              required={isStep1BasicInfoFieldRequired('meeting_location')}
-              error={touched.meeting_location ? errors.meeting_location : undefined}
-            >
-              <FormInput
-                value={formData.meeting_location || ''}
-                onChange={(e) => handleChange('meeting_location', e.target.value)}
-                onBlur={() => handleBlur('meeting_location')}
-                placeholder="الموقع"
-                error={!!(touched.meeting_location && errors.meeting_location)}
-                disabled={isFieldDisabled('meeting_location')}
-              />
-            </FormField>
+            <MeetingLocationField
+              formData={formData}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              handleBlur={handleBlur}
+              isFieldDisabled={isFieldDisabled}
+              isRequired={isStep1BasicInfoFieldRequired('meeting_location')}
+            />
           )}
           <FormField
             className="w-full min-w-0"
@@ -510,20 +359,23 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           </FormRow>
         </div>
 
-          <FormTable
-          title="أجندة الاجتماع"
-          required={isStep1BasicInfoFieldRequired('meetingAgenda')}
-          columns={MEETING_AGENDA_COLUMNS}
-          rows={formData.meetingAgenda || []}
-          onAddRow={handleAddAgenda}
-          onDeleteRow={handleDeleteAgenda}
-          onUpdateRow={handleUpdateAgenda}
-          addButtonLabel="إضافة عنصر"
-          errors={tableErrors}
-          touched={tableTouched}
-          errorMessage={errors?.meetingAgenda}
-          disabled={isFieldDisabled('meetingAgenda')}
-        />
+          <MeetingAgendaTable
+            rows={formData.meetingAgenda || []}
+            required={isStep1BasicInfoFieldRequired('meetingAgenda')}
+            onAddRow={handleAddAgendaWithScroll}
+            onDeleteRow={handleDeleteAgenda}
+            onUpdateRow={handleUpdateAgenda}
+            errors={tableErrors}
+            touched={tableTouched}
+            errorMessage={errors?.meetingAgenda}
+            disabled={isFieldDisabled('meetingAgenda')}
+            scrollToRowId={scrollToAgendaRowId}
+            onScrolledToRow={() => setScrollToAgendaRowId(null)}
+            meetingDurationMinutes={getMeetingDurationMinutes(
+              formData.meeting_start_date,
+              formData.meeting_end_date
+            )}
+          />
         <FormRow className='sm:justify-end'>
           <FormSwitch
             checked={formData.is_based_on_directive || false}

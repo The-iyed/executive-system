@@ -1,7 +1,7 @@
+import { AttendanceMechanism } from '@shared/types';
 import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import type { DraftApiResponse } from '../../../data/draftApi';
 import type { UserApiResponse } from '../../../data/usersApi';
-import { AttendanceMechanism } from '@shared/types';
 
 export type InviteeFormData = Step3InviteesFormData['invitees'][number];
 
