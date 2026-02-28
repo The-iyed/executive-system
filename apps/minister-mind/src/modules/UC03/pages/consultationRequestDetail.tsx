@@ -385,6 +385,15 @@ const ConsultationRequestDetail: React.FC = () => {
                     {meetingRequest.request_number}
                   </p>
                 </div>
+                {/* تاريخ الطلب */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-lg font-semibold text-gray-900 text-right">
+                    تاريخ الطلب
+                  </label>
+                  <p className="text-base text-gray-900 text-right">
+                    {formatDateArabic((meetingRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (meetingRequest as { created_at?: string })?.created_at) || '-'}
+                  </p>
+                </div>
                 {/* حالة الطلب */}
                 <div className="flex flex-col gap-2">
                   <label
