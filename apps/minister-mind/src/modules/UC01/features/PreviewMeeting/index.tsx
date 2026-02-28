@@ -53,7 +53,7 @@ const PreviewMeeting: React.FC = () => {
       meetingType: meeting.meeting_type ?? undefined,
       is_urgent: !!(m.urgent_reason as string | undefined),
       urgent_reason: (m.urgent_reason as string | undefined) ?? undefined,
-      meeting_start_date: (meeting.scheduled_start ?? meeting.scheduled_at) ?? undefined,
+      meeting_start_date: (meeting.scheduled_start ?? meeting.meeting_start_date) ?? undefined,
       meeting_end_date: (meeting as { scheduled_end?: string | null }).scheduled_end ?? undefined,
       alternative_1_start_date: alt1?.slot_start ?? undefined,
       alternative_1_end_date: alt1?.slot_end ?? undefined,
@@ -77,7 +77,11 @@ const PreviewMeeting: React.FC = () => {
           minister_support_other: ext.minister_support_other ?? ext.support_description,
         };
       }),
-      is_based_on_directive: !!(meeting.related_directive_ids && meeting.related_directive_ids.length > 0),
+      is_based_on_directive: !!(
+      
+        m.is_based_on_directive === true 
+
+      ),
       directive_method: (meeting.related_directive_ids && meeting.related_directive_ids.length > 0) ? 'DIRECT_DIRECTIVE' : undefined,
       directive_text: meeting.related_guidance ?? undefined,
       notes: getNotesTextFromMeeting(meeting),

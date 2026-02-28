@@ -123,7 +123,8 @@ export const mapUserToStep3InviteeRow = (
     attendance_mode: 'IN_PERSON',
     view_permission: false,
     ...(options.isOwner && { isOwner: true }),
-  };
+    _userId: user.id,
+  } as InviteeFormRow;
 };
 
 /** Step3: create empty invitee form row (for add row). */

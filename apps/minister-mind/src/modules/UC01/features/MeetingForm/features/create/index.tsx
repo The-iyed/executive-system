@@ -112,7 +112,6 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleAddAttendee={step3InviteesHook.handleAddAttendee}
             handleDeleteAttendee={step3InviteesHook.handleDeleteAttendee}
             handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
-            handleAddUserFromSelect={step3InviteesHook.handleAddUserFromSelect}
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
             handleCancelClick={handleCancel}

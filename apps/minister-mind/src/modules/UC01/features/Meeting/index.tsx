@@ -136,21 +136,15 @@ const Meeting: React.FC = () => {
               يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
             </p>
           </div>
-            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px]"
-              />
-            </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
         <ContentBar
+          showViewSwitcher={true}
+          onViewChange={setView}
+          view={view}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
           primaryAction={{
             label: 'إنشاء اجتماع',
             variant: 'primary',
