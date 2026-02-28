@@ -9,7 +9,7 @@ import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } fr
 import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../../utils/directiveMapper';
 import { PATH } from '../../routes/paths';
-import { useMeetingFormDrawer } from '../../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
+import { useMeetingFormDrawer } from '../MeetingForm/hooks';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -482,9 +482,9 @@ export function DirectivesPage() {
           onClick: () => openCreateDrawer(),
         }}
       />
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
+    <div className="w-full h-full flex flex-col" dir="rtl">
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-6 schedule-review-scroll">
+      <div className="flex-1 p-6 schedule-review-scroll">
         {/* Page Title, Description, Search/Filter Bar, and View Switcher */}
         <div className="flex flex-row items-start justify-between mb-6 gap-6" dir="rtl">
           {/* Right side - Title and Description */}

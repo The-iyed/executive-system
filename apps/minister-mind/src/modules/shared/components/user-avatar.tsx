@@ -15,7 +15,6 @@ import { useAuth } from '@auth';
 
 export interface UserAvatarProps {
   className?: string;
-  /** Header mode: only show circular avatar, keep dropdown for logout */
   compact?: boolean;
 }
 
@@ -88,15 +87,26 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             )}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
-          <DropdownMenuLabel>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-semibold">{name}</h4>
-              <p className="text-xs text-muted-foreground">{email}</p>
+        <DropdownMenuContent
+          className="w-56 mr-2 p-2 space-y-2 rounded-xl shadow-lg"
+          align="start"
+          sideOffset={12}
+        >
+          <DropdownMenuLabel className="pb-1 border-b border-border">
+            <div className="flex flex-col gap-1 min-w-0">
+              <h4 className="text-sm font-semibold truncate" title={name}>
+                {name}
+              </h4>
+              <p className="text-xs text-muted-foreground truncate" title={email}>
+                {email}
+              </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+          <DropdownMenuItem
+            onClick={handleLogout}
+            className="text-destructive focus:text-destructive cursor-pointer rounded-md px-2 py-1.5"
+          >
             تسجيل الخروج
           </DropdownMenuItem>
         </DropdownMenuContent>
