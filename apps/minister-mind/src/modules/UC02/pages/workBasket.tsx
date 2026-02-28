@@ -1,12 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic } from '@shared';
-import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
-import '@shared/styles';
-import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
-import { mapMeetingToCardData } from '../utils/meetingMapper';
-import { PATH } from '../routes/paths';
 import {
   Select,
   SelectContent,
@@ -14,16 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@sanad-ai/ui';
-import { getMeetingStatusLabel } from '@shared';
+import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic  } from '@shared';
+import '@shared/styles';
+import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
+import { mapMeetingToCardData } from '../utils/meetingMapper';
+import { PATH } from '../routes/paths';
 
 const ITEMS_PER_PAGE = 10;
 
 const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.UNDER_REVIEW,
-  MeetingStatus.UNDER_CONSULTATION_SCHEDULING,
   MeetingStatus.UNDER_GUIDANCE,
   MeetingStatus.UNDER_CONTENT_REVIEW,
-  MeetingStatus.UNDER_CONTENT_CONSULTATION,
   MeetingStatus.SCHEDULED,
   MeetingStatus.SCHEDULED_SCHEDULING,
   MeetingStatus.SCHEDULED_CONTENT,
@@ -31,7 +27,7 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.SCHEDULED_UPDATE_CONTENT,
   MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
   MeetingStatus.SCHEDULED_DELAYED,
-  'SCHEDULED_DELEGATED',
+  MeetingStatus.SCHEDULED_DELEGATED,
   MeetingStatus.RETURNED_FROM_SCHEDULING,
   MeetingStatus.RETURNED_FROM_CONTENT,
   MeetingStatus.ADDITIONAL_INFO,
@@ -43,7 +39,6 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
 
 function getStatusFilterLabel(value: string): string {
   if (value === 'all') return 'جميع الحالات';
-  if (value === 'SCHEDULED_DELEGATED') return 'مجدول - مفوّض';
   return getMeetingStatusLabel(value);
 }
 

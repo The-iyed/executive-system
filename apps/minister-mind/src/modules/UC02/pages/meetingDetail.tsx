@@ -25,6 +25,8 @@ import {
   type OptionType,
   Drawer,
   SECTOR_OPTIONS,
+  PRESENTATION_DURATION_MINUTES_OPTIONS,
+  MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
 } from '@shared'; 
 import {
@@ -76,7 +78,7 @@ import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
-import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS } from '../features/meeting-detail/constants';
+import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -1270,9 +1272,9 @@ const MeetingDetail: React.FC = () => {
           const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
-            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-            agenda_item: item.agenda_item,
-            presentation_duration_minutes: item.presentation_duration_minutes,
+          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+          agenda_item: item.agenda_item,
+          presentation_duration_minutes: item.presentation_duration_minutes,
             minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
             minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
           };
@@ -1475,9 +1477,9 @@ const MeetingDetail: React.FC = () => {
           const supportDesc = ext.support_description ?? support?.support_description ?? '';
           const isSupportType = MINISTER_SUPPORT_TYPE_OPTIONS.some((o) => o.value === supportDesc);
           return {
-            id: item.id || `agenda-${Date.now()}-${Math.random()}`,
-            agenda_item: item.agenda_item,
-            presentation_duration_minutes: item.presentation_duration_minutes,
+          id: item.id || `agenda-${Date.now()}-${Math.random()}`,
+          agenda_item: item.agenda_item,
+          presentation_duration_minutes: item.presentation_duration_minutes,
             minister_support_type: ext.minister_support_type ?? (isSupportType ? supportDesc : ''),
             minister_support_other: ext.minister_support_other ?? (isSupportType ? '' : supportDesc),
           };
@@ -1534,9 +1536,7 @@ const MeetingDetail: React.FC = () => {
       };
     }
     if (
-      status === MeetingStatus.UNDER_CONSULTATION_SCHEDULING ||
-      status === MeetingStatus.UNDER_CONTENT_REVIEW ||
-      status === MeetingStatus.UNDER_CONTENT_CONSULTATION
+      status === MeetingStatus.UNDER_CONTENT_REVIEW
     ) {
       return {
         title: 'قيد المراجعة',

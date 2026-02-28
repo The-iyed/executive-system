@@ -6,10 +6,8 @@ import { useFormMeetingModal } from '../../hooks';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
-import { Step4Scheduling } from '../../components/steps/Step4Scheduling';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
-import '@shared/styles';
 
 export interface EditMeetingProps {
   open?: boolean;
@@ -32,15 +30,10 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     handleStep1BasicInfoNext,
-    handleStep1BasicInfoSaveDraft,
     handleStep2ContentNext,
-    handleStep2ContentSaveDraft,
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
-    handleStep4SchedulingNext,
-    handleStep4SchedulingSaveDraft,
     handleCancel,
     isLoading,
     error,
@@ -65,7 +58,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleDeleteAgenda={step1BasicInfoHook.handleDeleteAgenda}
             handleUpdateAgenda={step1BasicInfoHook.handleUpdateAgenda}
             handleNextClick={handleStep1BasicInfoNext}
-            handleSaveDraftClick={handleStep1BasicInfoSaveDraft}
             handleCancelClick={handleCancel}
             isStep1BasicInfoFieldRequired={step1BasicInfoHook.isStep1BasicInfoFieldRequired}
             step1EditableMap={step1BasicInfoHook.step1EditableMap}
@@ -95,7 +87,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
             replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
-            handleSaveDraftClick={handleStep2ContentSaveDraft}
             handleCancelClick={handleCancel}
             step2EditableMap={step2ContentHook.step2EditableMap}
           />
@@ -137,16 +128,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
           />
         );
       }
-      case 3:
-        return (
-          <Step4Scheduling
-            step4SchedulingHook={step4SchedulingHook}
-            isDeleting={deleteDraft.isDeleting}
-            handleNextClick={handleStep4SchedulingNext}
-            handleSaveDraftClick={handleStep4SchedulingSaveDraft}
-            handleCancelClick={handleCancel}
-          />
-        );
       default:
         return null;
     }

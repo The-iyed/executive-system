@@ -11,7 +11,6 @@ import {
   transformDraftToStep1Data,
   transformDraftToStep2ContentData,
   transformDraftToStep3InviteesData,
-  transformDraftToStep4SchedulingData,
 } from '../utils';
 import { useStepNavigation } from './useStepNavigation';
 import { useStepHandlers } from './useStepHandlers';
@@ -43,7 +42,6 @@ export const useCreateMeeting = () => {
       step1BasicInfo: transformDraftToStep1Data(draftData),
       step2Content: transformDraftToStep2ContentData(draftData),
       step3Invitees: transformDraftToStep3InviteesData(draftData),
-      step4Scheduling: { initialSlots: transformDraftToStep4SchedulingData(draftData) },
     };
   }, [draftData]);
 
@@ -71,10 +69,9 @@ export const useCreateMeeting = () => {
     navigate(PATH.MEETINGS);
   }, [navigate]);
 
-  const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook, step4SchedulingHook } = useMeetingSteps({
+  const { deleteDraft, step1BasicInfoHook, step2ContentHook, step3InviteesHook } = useMeetingSteps({
     draftId,
     isEditMode: false,
-    currentStep,
     initialData: initialDataFromDraft,
     onStep1Success: (newDraftId) => {
       setDraftId(newDraftId);
@@ -98,7 +95,6 @@ export const useCreateMeeting = () => {
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     onNext: handleNext,
     onSaveDraft: handleSaveDraft,
   });
@@ -111,7 +107,6 @@ export const useCreateMeeting = () => {
     step1BasicInfoHook,
     step2ContentHook,
     step3InviteesHook,
-    step4SchedulingHook,
     handleNext,
     handlePrevious,
     handleCancel,
