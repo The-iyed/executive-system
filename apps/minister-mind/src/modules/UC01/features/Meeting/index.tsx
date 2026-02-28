@@ -7,7 +7,7 @@ import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
-import '@shared/styles';
+// import '@shared/styles';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ const Meeting: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
+
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
   }, [searchValue, statusFilter]);
