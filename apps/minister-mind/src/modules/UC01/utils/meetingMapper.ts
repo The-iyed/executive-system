@@ -1,37 +1,7 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '@shared/types';
+import { formatDateArabic } from '@shared/utils';
 import { MeetingApiResponse } from '../data/meetingsApi';
-
-/**
- * Format date to Arabic format
- */
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return '';
-  
-  try {
-    const date = new Date(dateString);
-    // Format as: "الاثنين، 23 شعبان 1447 هـ"
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      calendar: 'islamic',
-      numberingSystem: 'arab',
-    };
-    
-    const formatted = new Intl.DateTimeFormat('ar-SA', options).format(date);
-    return formatted;
-  } catch (error) {
-    // Fallback to simple date format
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA');
-    } catch {
-      return dateString;
-    }
-  }
-};
 
 const STATUS_MAP: Record<string, MeetingStatus> = {
   [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
@@ -98,8 +68,8 @@ export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingDispla
   const statusLabel = getStatusLabel(status);
   
   const requestDateIso = meeting.submitted_at || meeting.created_at;
-  const requestDate = formatDate(requestDateIso);
-  const meetingDate = meeting.scheduled_at ? formatDate(meeting.scheduled_at) : '-';
+  const requestDate = formatDateArabic(requestDateIso);
+  const meetingDate = meeting.meeting_start_date ? formatDateArabic(meeting.meeting_start_date) : '-';
   const meetingCategory = getMeetingClassificationLabel(meeting.meeting_classification);
   
   return {

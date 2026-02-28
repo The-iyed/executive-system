@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
+import { formatDateArabic } from '@shared/utils';
 import {
   MeetingType,
   MeetingTypeLabels,
@@ -68,7 +69,7 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>تاريخ الاستحقاق</label>
           <div className={valueClass} style={fontStyle}>
-            {meeting.deadline ? new Date(meeting.deadline).toLocaleDateString('ar-SA') : '-'}
+            {meeting.deadline ? formatDateArabic(meeting.deadline) : '-'}
           </div>
         </div>
         <div className="flex flex-col gap-[3.53px]">
