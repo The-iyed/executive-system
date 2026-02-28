@@ -1,9 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip, formatDateArabic } from '@shared';
-import { MeetingStatus, MeetingClassification, MeetingClassificationLabels } from '@shared';
-import '@shared/styles';
+import { DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar, MeetingStatus, MeetingClassification, MeetingClassificationLabels } from '@shared';
 import { getMeetings, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
@@ -17,7 +15,6 @@ const ScheduledMeetings: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchValue);
@@ -158,47 +155,27 @@ const ScheduledMeetings: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 text-right">الاجتماعات المجدولة</h1>
-            <p className="text-base text-gray-600 text-right">الاطلاع على الاجتماعات المجدولة</p>
-          </div>
-
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              dir="rtl"
-            >
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="ادخل البحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
-        <div>
-          {isLoading ? (
+    <div>
+      <ContentBar
+        showViewSwitcher={true}
+        onViewChange={setView}
+        view={view}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+      />
+      {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
             </div>
-          ) : error ? (
+      ) : error ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
             </div>
-          ) : rawMeetings.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
+      ) : rawMeetings.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">لا توجد بيانات</div>
-            </div>
-          ) : (
+        </div>
+      ) : (
             <>
               {view === 'table' ? (
                 <DataTable
@@ -214,7 +191,6 @@ const ScheduledMeetings: React.FC = () => {
                 />
               )}
               
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
@@ -225,12 +201,9 @@ const ScheduledMeetings: React.FC = () => {
                 </div>
               )}
             </>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
 export default ScheduledMeetings;
-
