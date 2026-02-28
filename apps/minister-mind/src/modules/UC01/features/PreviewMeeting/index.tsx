@@ -46,6 +46,7 @@ const PreviewMeeting: React.FC = () => {
     const alt1 = meeting.alternative_time_slot_1 as { slot_start?: string; slot_end?: string } | null | undefined;
     const alt2 = meeting.alternative_time_slot_2 as { slot_start?: string; slot_end?: string } | null | undefined;
     return {
+      ...meeting as MeetingInfoData,
       is_on_behalf_of: (m.is_on_behalf_of as boolean | undefined) ?? undefined,
       meeting_manager_label: (meeting as { meeting_owner_name?: string }).meeting_owner_name ?? undefined,
       meetingSubject: meeting.meeting_title ?? undefined,

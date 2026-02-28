@@ -136,6 +136,7 @@ const GuidanceRequestDetail: React.FC = () => {
     const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } }).alternative_time_slot_1;
     const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } }).alternative_time_slot_2;
     return {
+      ...meetingRequest as MeetingInfoData,
       is_on_behalf_of: meetingRequest.is_on_behalf_of,
       meeting_manager_label: meetingRequest.submitter_name ?? undefined,
       meetingSubject: meetingRequest.meeting_title ?? undefined,
