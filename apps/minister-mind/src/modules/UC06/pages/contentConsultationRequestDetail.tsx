@@ -383,6 +383,21 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       className="text-sm font-medium text-gray-700 text-right"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
+                      تاريخ الطلب
+                    </label>
+                    <p
+                      className="text-base text-gray-900 text-right"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
+                      {formatDateArabic((meetingRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (meetingRequest as { created_at?: string })?.created_at) || '-'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-sm font-medium text-gray-700 text-right"
+                      style={{ fontFamily: "'Almarai', sans-serif" }}
+                    >
                       حالة الطلب
                     </label>
                     <p
