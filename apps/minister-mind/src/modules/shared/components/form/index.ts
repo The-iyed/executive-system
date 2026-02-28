@@ -7,7 +7,7 @@ export { FormDateTimePicker, type FormDateTimePickerProps } from './FormDateTime
 export { MeetingDateTimeRangePicker, type MeetingDateTimeRangePickerProps } from './MeetingDateTimeRangePicker';
 export { MeetingRangePicker } from './MeetingRangePicker';
 export type { MeetingRangeValue, MeetingRangePickerProps } from './MeetingRangePicker.types';
-export { FormTable, type FormTableProps, type FormTableColumn, type FormTableRow } from './FormTable';
+export { FormTable, type FormTableProps, type FormTableColumn, type FormTableRow, type CustomCellRenderParams } from './FormTable';
 export { FormTextArea, type FormTextAreaProps } from './FormTextArea';
 export { FormSwitch, type FormSwitchProps } from './FormSwitch';
 export { FormRow, type FormRowProps } from './FormRow';
