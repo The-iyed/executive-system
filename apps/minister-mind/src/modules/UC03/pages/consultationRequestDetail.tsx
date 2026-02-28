@@ -81,6 +81,7 @@ const ConsultationRequestDetail: React.FC = () => {
   const meetingRequest = consultationData?.meeting_request;
 
   const meetingInfoData: MeetingInfoData = useMemo(() => {
+    
     if (!meetingRequest) return {};
     const owner = meetingRequest.current_owner_user
       ? `${(meetingRequest.current_owner_user.first_name ?? '').trim()} ${(meetingRequest.current_owner_user.last_name ?? '').trim()}`.trim()
@@ -88,6 +89,7 @@ const ConsultationRequestDetail: React.FC = () => {
     const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } }).alternative_time_slot_1;
     const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } }).alternative_time_slot_2;
     return {
+      ...meetingRequest as MeetingInfoData,
       is_on_behalf_of: meetingRequest.is_on_behalf_of,
       meeting_manager_label: owner || undefined,
       meetingSubject: meetingRequest.meeting_title ?? undefined,
