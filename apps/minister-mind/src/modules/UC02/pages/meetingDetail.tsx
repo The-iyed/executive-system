@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2, Paperclip } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -13,7 +13,6 @@ import {
   MeetingClassificationType,
   MeetingClassificationTypeLabels,
   MeetingConfidentiality,
-  MeetingConfidentialityLabels,
   MeetingChannelLabels,
   StatusBadge,
   DataTable,
@@ -27,7 +26,8 @@ import {
   Drawer,
   SECTOR_OPTIONS,
   PRESENTATION_DURATION_MINUTES_OPTIONS,
-  MINISTER_SUPPORT_TYPE_OPTIONS
+  MINISTER_SUPPORT_TYPE_OPTIONS,
+  formatDateTimeArabic,
 } from '@shared'; 
 import {
   getMeetingById,
@@ -75,10 +75,17 @@ import {
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
-import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoRenderField } from '@shared';
+import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+
+/** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
+const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
+  { key: 'is_sequential', label: fieldLabels.is_sequential, getValue: (d) => (d.is_sequential === true ? 'نعم' : d.is_sequential === false ? 'لا' : '—') },
+  { key: 'previous_meeting_id', label: fieldLabels.previous_meeting_id, getValue: (d) => d.previous_meeting_meeting_title ?? '—' },
+  { key: 'sequential_number', label: 'الرقم التسلسلي', getValue: (d) => d.sequential_number_display ?? '—' },
+];
 
 /** Map API attendance_mechanism (Arabic) to attendance_channel enum */
 function mapAttendanceMechanismToChannel(v: string | null | undefined): 'PHYSICAL' | 'REMOTE' {
@@ -398,6 +405,8 @@ const MeetingDetail: React.FC = () => {
 
   // Content tab (المحتوى) editable fields: متى سيتم إرفاق العرض؟ (ملاحظات read-only)
   const [contentTabForm, setContentTabForm] = useState({ when_presentation_attached: '', general_notes: '' });
+  /** Content sub-view: executive file (الملخّص التنفيذي) or presentation (العرض التقديمي) */
+  const [contentViewSubTab, setContentViewSubTab] = useState<'executive' | 'presentation'>('presentation');
 
   // Original snapshot for change detection
   const [originalSnapshot, setOriginalSnapshot] = useState<any>(null);
@@ -421,6 +430,7 @@ const MeetingDetail: React.FC = () => {
   const [compareOpenedWithoutReplace, setCompareOpenedWithoutReplace] = useState(false);
   /** LLM notes/insights modal for a presentation attachment (ملاحظات على العرض) – icon on each attachment */
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
   /** AbortController for insights polling – abort when modal closes to stop polling */
   const insightsAbortControllerRef = useRef<AbortController | null>(null);
   /** AbortController for compare (تقييم الاختلاف) polling – abort when modal closes */
@@ -1213,8 +1223,13 @@ const MeetingDetail: React.FC = () => {
       const rawGroupId = (meeting as any).group_id ?? null;
       const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
       const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
-      const prevMeetingLabel = meeting.previous_meeting?.meeting_title ?? (prevExtId != null ? String(prevExtId) : '') ?? '';
-      const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+      const prevMeetingLabel = (meeting as any).prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? (prevExtId != null ? String(prevExtId) : '') ?? '';
+      const basedOnDirective = !!(
+        meeting.related_guidance ||
+        (meeting as any).is_based_on_directive === true ||
+        (meeting as any).is_based_on_directive === 'true' ||
+        (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
+      );
       const directiveMethod = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
       const guidance = meeting.related_guidance ?? '';
@@ -1381,7 +1396,7 @@ const MeetingDetail: React.FC = () => {
       
       return {
         ...prev,
-        scheduled_at: meeting.scheduled_start ?? meeting.scheduled_at ?? '',
+        scheduled_at: meeting.scheduled_start ?? meeting.meeting_start_date ?? '',
         scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
@@ -1408,7 +1423,12 @@ const MeetingDetail: React.FC = () => {
     const rawGroupId = (meeting as any).group_id ?? null;
     const prevExtId = rawExtId != null && !Number.isNaN(Number(rawExtId)) ? Number(rawExtId) : null;
     const prevGroupId = rawGroupId != null && !Number.isNaN(Number(rawGroupId)) ? Number(rawGroupId) : null;
-    const basedOnDirective = !!(meeting.related_guidance || (meeting as any).is_based_on_directive);
+    const basedOnDirective = !!(
+      meeting.related_guidance ||
+      (meeting as any).is_based_on_directive === true ||
+      (meeting as any).is_based_on_directive === 'true' ||
+      (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
+    );
     const directiveMethod = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
     const guidance = meeting.related_guidance ?? '';
@@ -1663,7 +1683,7 @@ const MeetingDetail: React.FC = () => {
       meetingType: formData.meeting_type || undefined,
       is_urgent: formData.is_urgent,
       urgent_reason: formData.meeting_justification || undefined,
-      meeting_start_date: (meeting as any).scheduled_start ?? meeting.scheduled_at ?? slot?.slot_start ?? undefined,
+      meeting_start_date: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? slot?.slot_start ?? undefined,
       meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
       alternative_1_start_date: alt1?.slot_start,
       alternative_1_end_date: alt1?.slot_end ?? undefined,
@@ -1684,13 +1704,23 @@ const MeetingDetail: React.FC = () => {
         minister_support_type: (item as any).minister_support_type,
         minister_support_other: (item as any).minister_support_other,
       })),
+      is_sequential: formData.is_sequential,
+      previous_meeting_meeting_title: formData.previous_meeting_meeting_title ?? undefined,
+      sequential_number_display:
+        meeting?.sequential_number != null
+          ? String(meeting.sequential_number)
+          : formData.is_sequential && formData.previous_meeting_ext_id != null
+            ? previousMeeting?.sequential_number != null
+              ? String((previousMeeting.sequential_number ?? 0) + 1)
+              : 'غير موجود (إجباري)'
+            : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
       directive_method: formData.directive_method || undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
       notes: notesText,
     };
-  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption]);
+  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption, previousMeeting?.sequential_number]);
 
   /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
   const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
@@ -1771,10 +1801,86 @@ const MeetingDetail: React.FC = () => {
             );
           case 'meeting_confidentiality':
             return (
-              <Select value={formData.meeting_confidentiality || ''} onValueChange={(v) => handleFieldChange('meeting_confidentiality', v)}>
-                <SelectTrigger className={inputClass}><SelectValue placeholder={label} /></SelectTrigger>
-                <SelectContent dir="rtl">{Object.values(MeetingConfidentiality).map((c) => <SelectItem key={c} value={c}>{MeetingConfidentialityLabels[c]}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.meeting_confidentiality === MeetingConfidentiality.CONFIDENTIAL ? 'سرّي' : 'عادي'}</span>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => {
+                    const next = formData.meeting_confidentiality !== MeetingConfidentiality.CONFIDENTIAL;
+                    handleFieldChange('meeting_confidentiality', next ? MeetingConfidentiality.CONFIDENTIAL : MeetingConfidentiality.NORMAL);
+                  }}
+                  className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.meeting_confidentiality === MeetingConfidentiality.CONFIDENTIAL ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+            );
+          case 'is_sequential':
+            return (
+              <div className="flex items-center gap-2 justify-start">
+                <span className="text-sm text-[#667085]">{formData.is_sequential ? 'نعم' : 'لا'}</span>
+                <button
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => {
+                    const next = !formData.is_sequential;
+                    setFormData((p) => ({
+                      ...p,
+                      is_sequential: next,
+                      ...(next ? {} : { previous_meeting_ext_id: null, previous_meeting_group_id: null, previous_meeting_original_title: null, previous_meeting_meeting_title: null }),
+                    }));
+                    if (!next) setPreviousMeetingOption(null);
+                  }}
+                  className={`w-7 h-[15.34px] rounded-full flex transition-all p-[1.28px] ${!canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${formData.is_sequential ? 'bg-[#3FB2AE] justify-end' : 'bg-[#F2F4F7] justify-start'}`}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+            );
+          case 'previous_meeting_id':
+            return (
+              <FormAsyncSelectV2
+                value={previousMeetingOption}
+                onValueChange={(opt) => {
+                  setPreviousMeetingOption(opt);
+                  if (!opt?.value) {
+                    setFormData((p) => ({
+                      ...p,
+                      previous_meeting_ext_id: null,
+                      previous_meeting_group_id: null,
+                      previous_meeting_original_title: null,
+                      previous_meeting_meeting_title: null,
+                    }));
+                    return;
+                  }
+                  const [idPart, groupPart] = String(opt.value).split(':');
+                  const extId = idPart ? parseInt(idPart, 10) : null;
+                  const groupId = groupPart ? parseInt(groupPart, 10) : null;
+                  const cached = previousMeetingSearchCacheRef.current.find((m) => `${m.id}:${m.group_id}` === opt.value);
+                  setFormData((p) => ({
+                    ...p,
+                    previous_meeting_ext_id: Number.isNaN(extId) ? null : extId,
+                    previous_meeting_group_id: Number.isNaN(groupId) ? null : groupId,
+                    previous_meeting_original_title: cached?.original_title ?? null,
+                    previous_meeting_meeting_title: cached?.meeting_title ?? cached?.original_title ?? opt.label ?? null,
+                  }));
+                }}
+                loadOptions={loadPreviousMeetingSearchOptions}
+                placeholder="اختر الاجتماع السابق..."
+                searchPlaceholder="ابحث بالعنوان..."
+                emptyMessage="لا توجد نتائج"
+                limit={20}
+                isDisabled={!canEdit}
+                fullWidth
+                className="text-right"
+              />
+            );
+          case 'sequential_number':
+            return (
+              <div className={`${inputClass} bg-gray-50`} title="غير قابل للتعديل. إذا كان الاجتماع السابق متسلسلاً يُضاف 1 للرقم الحالي؛ وإلا يُعطى السابق 1 والحالي 2.">
+                {value ?? '—'}
+              </div>
             );
           case 'is_based_on_directive':
             return (
@@ -1988,7 +2094,7 @@ const MeetingDetail: React.FC = () => {
         </div>
       );
     },
-    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, loadPreviousMeetingMinutesOptions, setPreviousMeetingMinutesOption]
+    [canEdit, meetingStatus, returnForInfoForm, formData, scheduleForm, contentTabForm.general_notes, contentForm.agendaItems, previousMeetingMinutesOption, previousMeetingOption, loadPreviousMeetingSearchOptions, loadPreviousMeetingMinutesOptions, handleFieldChange, setFormData, setScheduleForm, setContentForm, setContentTabForm, setReturnForInfoForm, setPreviousMeetingMinutesOption]
   );
 
   /** Renders a field label with an optional "editable when return for info" checkbox beside it (when status is UNDER_REVIEW or UNDER_GUIDANCE) */
@@ -2185,6 +2291,7 @@ const MeetingDetail: React.FC = () => {
               data={meetingInfoData}
               canEdit={canEdit}
               renderField={meetingInfoRenderField}
+              extraGridSpecs={formData.is_sequential ? UC02_EXTRA_MEETING_INFO_SPECS : [UC02_EXTRA_MEETING_INFO_SPECS[0], UC02_EXTRA_MEETING_INFO_SPECS[2]]}
             />
           )}
 
@@ -2202,7 +2309,58 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* العرض التقديمي – card */}
+              {/* Executive file / Presentation pill buttons – design Frame 2147240913 (executive) & 2147241187 (presentation) */}
+              <div className="flex flex-row flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setContentViewSubTab('executive')}
+                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'executive' ? 'bg-[rgba(156,167,0,0.14)] border-[rgba(156,167,0,0.35)]' : 'bg-[rgba(156,167,0,0.08)] border-[rgba(156,167,0,0.2)]'}`}
+                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
+                >
+                  <span className="flex items-center text-right text-[#8F751E]">الملخّص التنفيذي</span>
+                  <FileText className="w-3 h-3 flex-shrink-0 text-[#8F751E]" strokeWidth={2} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContentViewSubTab('presentation')}
+                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'presentation' ? 'bg-[rgba(0,167,157,0.14)] border-[rgba(0,167,157,0.2)]' : 'bg-[rgba(0,167,157,0.08)] border-[rgba(0,167,157,0.1)]'}`}
+                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
+                >
+                  <span className="flex items-center text-right text-[#00A79D]">العرض التقديمي</span>
+                  <Paperclip className="w-3 h-3 flex-shrink-0 text-[#00A79D]" strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+
+              {/* Executive summary or Presentation content */}
+              {contentViewSubTab === 'executive' ? (
+                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
+                  <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
+                    {(() => {
+                      const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
+                      const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
+                      const hasExec = execSummaryText || execSummaryAttachments.length > 0;
+                      if (!hasExec) {
+                        return <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">—</div>;
+                      }
+                      return (
+                        <div className="flex flex-col gap-4 max-w-[800px]">
+                          {execSummaryText && <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">{execSummaryText}</div>}
+                          {execSummaryAttachments.length > 0 && execSummaryAttachments.map((att) => (
+                            <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
+                              <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl">
+                                {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                                <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
+                                <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(143,117,30,0.08)] text-[#8F751E] transition-colors"><Download className="w-4 h-4" /></a>
+                                <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100 text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : (
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
                   <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
@@ -2252,7 +2410,7 @@ const MeetingDetail: React.FC = () => {
                         )}
                       </div>
                               <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                              <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                              <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
                               <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
                             </div>
                           </div>
@@ -2316,6 +2474,7 @@ const MeetingDetail: React.FC = () => {
                 </TooltipProvider>
               </div>
               </div>
+              )}
 
               {/* متى سيتم إرفاق العرض؟ – card */}
               {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
@@ -2366,7 +2525,7 @@ const MeetingDetail: React.FC = () => {
                           <div key={att.id} className="flex flex-row items-center px-4 py-3 gap-3 min-w-0 flex-1 max-w-[400px] h-[56px] bg-white border border-[#E4E7EC] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#048F86]/50 hover:shadow-[0px_2px_8px_rgba(4,143,134,0.08)] transition-all duration-200">
                             {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                             <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                            <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
+                            <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
                     </div>
                   ))}
                   {newAttachments.map((file, idx) => (
@@ -3106,7 +3265,7 @@ const MeetingDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -3170,7 +3329,7 @@ const MeetingDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                         return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -3247,7 +3406,7 @@ const MeetingDetail: React.FC = () => {
                 <div className="flex flex-col gap-4 w-full" dir="rtl">
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                     const isExpanded = expandedGuidanceId === row.guidance_id;
-                    const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                    const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                     const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                         return (
@@ -3303,7 +3462,7 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                   {row.responded_at && (
                                     <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {new Date(row.responded_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {formatDateTimeArabic(row.responded_at)}</span>
                           </span>
                                   )}
                                 </div>
@@ -3349,6 +3508,7 @@ const MeetingDetail: React.FC = () => {
               meeting={meeting}
               contentOfficerNotesRecords={contentOfficerNotesRecords}
               pdfIcon={pdfIcon}
+              onPreviewAttachment={(att) => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
             />
           )}
 
@@ -3811,6 +3971,45 @@ const MeetingDetail: React.FC = () => {
                 />
               </div>
           </form>
+      </Drawer>
+
+      {/* PDF / file preview drawer */}
+      <Drawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+        title={previewAttachment?.file_name ?? ''}
+        side="right"
+        width="90vw"
+        showDecoration={true}
+        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+      >
+        {previewAttachment && (
+          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+              <iframe
+                title={previewAttachment.file_name}
+                src={previewAttachment.blob_url}
+                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+              />
+            ) : (
+              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                </p>
+                <a
+                  href={previewAttachment.blob_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <Download className="w-4 h-4" />
+                  تحميل الملف
+                </a>
+              </div>
+            )}
+          </div>
+        )}
       </Drawer>
 
       {/* Request Guidance – Drawer */}

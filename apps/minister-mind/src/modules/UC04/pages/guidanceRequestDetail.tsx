@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable, MeetingInfo, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, DataTable, MeetingInfo, Drawer, type MeetingInfoData } from '@shared/components';
+import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
@@ -81,6 +82,7 @@ const GuidanceRequestDetail: React.FC = () => {
   const [isExceptionModalOpen, setIsExceptionModalOpen] = useState<boolean>(false);
   const [contentException, setContentException] = useState<boolean>(false);
   const [grantedDurationHours, setGrantedDurationHours] = useState<number>(0);
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
 
   // Fetch guidance request data from API
   const { data: guidanceData, isLoading, error } = useQuery({
@@ -401,7 +403,7 @@ const GuidanceRequestDetail: React.FC = () => {
             />
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Tab Content Container */}
       <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
@@ -886,7 +888,7 @@ const GuidanceRequestDetail: React.FC = () => {
                                     </a>
                                     <button
                                       type="button"
-                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                       className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                     >
                                       <Eye className="w-5 h-5 text-[#475467]" />
@@ -968,7 +970,7 @@ const GuidanceRequestDetail: React.FC = () => {
                                     </a>
                                     <button
                                       type="button"
-                                      onClick={() => window.open(att.blob_url, '_blank')}
+                                      onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
                                       className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
                                     >
                                       <Eye className="w-5 h-5 text-[#475467]" />
@@ -1057,15 +1059,7 @@ const GuidanceRequestDetail: React.FC = () => {
               ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
                 guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
                   const isExpanded = expandedGuidanceId === row.guidance_id;
-                  const requestDate = row.requested_at
-                    ? new Date(row.requested_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const hasAnswer = !!row.guidance_answer;
 
                   return (
@@ -1106,15 +1100,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           </div>
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {(() => {
-                              const responseDate = row.responded_at
-                                ? new Date(row.responded_at).toLocaleDateString('ar-SA', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—';
+                              const responseDate = row.responded_at ? formatDateTimeArabic(row.responded_at) : '—';
                               const statusLabels: Record<string, string> = {
                                 PENDING: 'قيد الانتظار',
                                 RESPONDED: 'تم الرد',
@@ -1205,7 +1191,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1280,7 +1266,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                               return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1342,7 +1328,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   const recordQuestion = row.question || row.consultation_question || '';
                   const isExpanded = expandedConsultationId === recordId;
                   const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? new Date(row.requested_at).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                   const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                   const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
@@ -1417,7 +1403,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           )}
                           <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
                             {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? new Date(item.respondedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                               return (
                                 <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
                                   <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -1713,7 +1699,7 @@ const GuidanceRequestDetail: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+      </div>
 
       {/* Submit Guidance Modal */}
       <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
@@ -1862,7 +1848,7 @@ const GuidanceRequestDetail: React.FC = () => {
                           className="text-xs text-gray-500"
                           style={{ fontFamily: "'Almarai', sans-serif" }}
                         >
-                          {new Date(draft.requested_at).toLocaleDateString('ar-SA')}
+                          {formatDateArabic(draft.requested_at)}
                         </span>
                       </div>
                       <p
@@ -2050,6 +2036,45 @@ const GuidanceRequestDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PDF / file preview drawer */}
+      <Drawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+        title={previewAttachment?.file_name ?? ''}
+        side="right"
+        width="90vw"
+        showDecoration={true}
+        bodyClassName="!p-0 flex flex-col flex-1 min-h-0"
+      >
+        {previewAttachment && (
+          <div className="flex flex-col flex-1 min-h-[60vh] w-full" dir="ltr">
+            {previewAttachment.file_type?.toLowerCase() === 'pdf' ? (
+              <iframe
+                title={previewAttachment.file_name}
+                src={previewAttachment.blob_url}
+                className="w-full flex-1 min-h-0 border-0 rounded-b-[16px] bg-[#f9fafb]"
+              />
+            ) : (
+              <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
+                <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
+                </p>
+                <a
+                  href={previewAttachment.blob_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
+                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                >
+                  <Download className="w-4 h-4" />
+                  تحميل الملف
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };

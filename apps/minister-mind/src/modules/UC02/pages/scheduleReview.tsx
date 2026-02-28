@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput, TruncatedWithTooltip } from '@shared';
+import { Tabs, DataTable, CardsGrid, ViewSwitcher, SearchFilterBar, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, SearchInput, TruncatedWithTooltip, formatDateArabic } from '@shared';
 import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels } from '@shared';
 import type { MeetingClassification } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -105,15 +105,8 @@ const ScheduleReview: React.FC = () => {
     return MeetingClassificationLabels[classification as MeetingClassification] || classification;
   };
 
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string | null): string =>
+    dateString ? (formatDateArabic(dateString) || '-') : '-';
 
   // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;

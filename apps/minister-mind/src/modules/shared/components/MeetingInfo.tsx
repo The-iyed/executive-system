@@ -1,6 +1,7 @@
 import React from 'react';
 import { ReadOnlyField } from './ReadOnlyField';
 import { AgendaPreviewTable, type AgendaItemPreview } from './AgendaPreviewTable';
+import { formatDateArabic } from '../utils/format';
 import {
   SECTOR_OPTIONS,
   getMeetingClassificationLabel,
@@ -18,12 +19,14 @@ function formatIsoRange(startISO: string | null | undefined, endISO: string | nu
   if (start && Number.isNaN(start.getTime())) return startISO ?? '—';
   if (end && Number.isNaN(end.getTime())) return endISO ?? '—';
   const fmt = (d: Date) =>
-    d.toLocaleString('ar-SA', {
+    d.toLocaleString('ar', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      calendar: 'gregory',
+      numberingSystem: 'latn',
     });
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
   if (start) return fmt(start);
@@ -32,10 +35,7 @@ function formatIsoRange(startISO: string | null | undefined, endISO: string | nu
 }
 
 function formatDateOnly(iso: string | null | undefined): string {
-  if (!iso || iso.trim() === '') return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return formatDateArabic(iso) || '—';
 }
 
 /** Single source of truth for field order and labels. Key = editable field id for return-for-info (empty = no checkbox). */
@@ -115,6 +115,12 @@ export interface MeetingInfoData {
   meetingClassification1?: string;
   meetingConfidentiality?: string;
   meetingAgenda?: AgendaItemPreview[];
+  /** UC02 meeting detail only: sequential meeting flag */
+  is_sequential?: boolean;
+  /** UC02 meeting detail only: selected previous meeting display title */
+  previous_meeting_meeting_title?: string | null;
+  /** UC02 meeting detail only: computed الرقم التسلسلي display text */
+  sequential_number_display?: string;
   is_based_on_directive?: boolean;
   directive_method?: string;
   previous_meeting_minutes_file?: File | { name?: string } | null;
@@ -134,6 +140,8 @@ export interface MeetingInfoProps {
   dir?: 'rtl' | 'ltr';
   /** When set, each field is rendered by this function (e.g. editable row with checkbox). Otherwise ReadOnlyField. */
   renderField?: MeetingInfoRenderField;
+  /** Optional extra field specs (e.g. UC02: is_sequential, previous_meeting_id). Rendered at end of first grid. */
+  extraGridSpecs?: MeetingInfoFieldSpec[];
 }
 
 /**
@@ -141,8 +149,8 @@ export interface MeetingInfoProps {
  * no validation, no conditional hiding – all fields appear, everything disabled.
  * When renderField is provided (e.g. from meeting detail when canEdit), each field is rendered by it.
  */
-export function MeetingInfo({ data, className = '', dir = 'rtl', renderField }: MeetingInfoProps) {
-  const gridSpecs = React.useMemo(() => getMeetingInfoGridSpecs(), []);
+export function MeetingInfo({ data, className = '', dir = 'rtl', renderField, extraGridSpecs }: MeetingInfoProps) {
+  const gridSpecs = React.useMemo(() => [...getMeetingInfoGridSpecs(), ...(extraGridSpecs ?? [])], [extraGridSpecs]);
   const directiveSpecs = React.useMemo(() => getMeetingInfoDirectiveSpecs(), []);
 
   const renderCell = (spec: MeetingInfoFieldSpec) => {
