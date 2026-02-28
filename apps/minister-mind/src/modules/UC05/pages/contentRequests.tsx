@@ -14,6 +14,7 @@ import {
   MeetingStatus,
   MeetingStatusLabels,
   TruncatedWithTooltip,
+  formatDateArabic,
 } from '@shared';
 import '@shared/styles'; // Import shared styles including scrollbar
 import { Eye } from 'lucide-react';
@@ -80,23 +81,8 @@ const ContentRequests: React.FC = () => {
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Format date in Arabic Islamic format: الجمعة، ١٠ رمضان ١٤٤٧ هـ
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('ar-SA', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        calendar: 'islamic',
-        numberingSystem: 'arab',
-      }).format(date);
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string | null | undefined): string =>
+    dateString ? (formatDateArabic(dateString) || '-') : '-';
 
   // Get classification label
   const getClassificationLabel = (classification: string | null | undefined): string => {
