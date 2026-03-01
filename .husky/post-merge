@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# After git pull: run husky + push-alias setup once so developers are set up without extra steps.
+# Subsequent pulls skip setup so pull stays fast.
+
+sh scripts/setup-after-pull.sh
