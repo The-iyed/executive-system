@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   DataTable,
-  ViewSwitcher,
-  SearchInput,
   MeetingCardData,
   ViewType,
   TableColumn,
   StatusBadge,
   Pagination,
   formatDateArabic,
+  ContentBar,
 } from '@shared';
 import { MeetingChannelLabels, getMeetingClassificationLabel } from '@shared/types';
 import '@shared/styles'; // Import shared styles including scrollbar
@@ -386,38 +385,14 @@ const ContentConsultationRequests: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          {/* Right side - Title and Description */}
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold mb-2 text-right">الطلبات التي تتطلب تقديم استشارة المحتوى</h2>
-            <p className="text-base text-gray-600 text-right">
-              يمكنك الاطلاع على الطلبات التي تتطلب إضافة إفادات
-            </p>
-          </div>
-
-          {/* Left side - Search and View Switcher (bar styled to match table area) */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              dir="rtl"
-            >
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
-        <div>
+    <div>
+      <ContentBar
+        showViewSwitcher={true}
+        onViewChange={setView}
+        view={view}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+      />
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
@@ -457,7 +432,6 @@ const ContentConsultationRequests: React.FC = () => {
                 </div>
               )}
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
@@ -468,9 +442,7 @@ const ContentConsultationRequests: React.FC = () => {
                 </div>
               )}
             </>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

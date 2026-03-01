@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DataTable, SearchInput, Pagination, ViewSwitcher, ViewType, CardsGrid } from '@shared';
+import { DataTable, Pagination, ViewType, CardsGrid, ContentBar } from '@shared';
 import { PAGINATION, createTableColumns } from '../../utils';
 import { usePreviousMeetings } from '../../hooks';
 import { PATH } from '../../routes/paths';
-import '@shared/styles';
 
 const PreviousMeeting: React.FC = () => {
   const navigate = useNavigate();
@@ -27,58 +26,36 @@ const PreviousMeeting: React.FC = () => {
   }, [navigate, currentPage]);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
-              قائمة الاجتماعات السابقة
-            </h1>
-            <p className="text-base text-gray-600 text-right">
-              يمكنك الاطلاع على الاجتماعات السابقة.
-            </p>
+      <div>
+        <ContentBar
+          showViewSwitcher={true}
+          onViewChange={setView}
+          view={view}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+        />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-600">جاري التحميل...</div>
           </div>
-            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]" dir="rtl">
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)] p-4"
-              />
-            </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
-        <div>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">جاري التحميل...</div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
-            </div>
-          ) : meetings.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">لا توجد بيانات</div>
-            </div>
-          ) : (
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
+          </div>
+        ) : meetings.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-600">لا توجد بيانات</div>
+          </div>
+        ) : (
             <>
               {view === 'table' ? (
-                <div className="w-full overflow-x-auto table-scroll">
-                  <div className="min-w-[1400px]">
-                    <DataTable
-                      columns={tableColumns}
-                      data={meetings}
-                      onRowClick={(row) =>
-                        navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
-                      }
-                    />
-                  </div>
-                </div>
+                <DataTable
+                  columns={tableColumns}
+                  data={meetings}
+                  onRowClick={(row) =>
+                    navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
+                  }
+                />
               ) : (
                 <CardsGrid
                   meetings={meetings}
@@ -86,6 +63,7 @@ const PreviousMeeting: React.FC = () => {
                   onDetails={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
                 />
               )}
+              
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
@@ -96,10 +74,8 @@ const PreviousMeeting: React.FC = () => {
                 </div>
               )}
             </>
-          )}
-        </div>
+        )}
       </div>
-    </div>
   );
 };
 
