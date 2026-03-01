@@ -28,7 +28,7 @@ import {
   StickyNote,
 } from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, FormAsyncSelectV2, FormDatePicker, type MeetingInfoData, type OptionType } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -56,6 +56,14 @@ import {
 } from '../data/contentApi';
 import { getConsultationRecords, getSuggestedActions, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { postMeetingsMatch } from '../../shared/api/meetings';
+
+/** Action status options for manual/suggested directive rows (editable). */
+const ACTION_STATUS_OPTIONS = [
+  { value: 'PENDING', label: 'قيد الانتظار' },
+  { value: 'IN_PROGRESS', label: 'قيد التنفيذ' },
+  { value: 'COMPLETED', label: 'مكتمل' },
+  { value: 'LATE', label: 'متأخر' },
+] as const;
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -235,6 +243,18 @@ const ContentRequestDetail: React.FC = () => {
   const [deletedSuggestedActionIds, setDeletedSuggestedActionIds] = useState<Set<string>>(new Set());
   /** Matched action from GET /api/v1/actions/ per AI directive id (key = ai directive id). */
   const [aiDirectiveActions, setAiDirectiveActions] = useState<Record<string, ActionItem>>({});
+  /** Manually added directives from "إضافة توجيه" async select (list actions). */
+  const [manualAddedActions, setManualAddedActions] = useState<ActionItem[]>([]);
+  /** Selected value for the "إضافة توجيه" async select (cleared after adding). */
+  const [addDirectiveSelectValue, setAddDirectiveSelectValue] = useState<OptionType | null>(null);
+  /** When true, show an extra table row with async select in التوجيه column. */
+  const [showAddDirectiveRow, setShowAddDirectiveRow] = useState(false);
+  /** Ref: option value (action id) -> ActionItem for add-directive select. */
+  const addDirectiveActionMapRef = useRef<Map<string, ActionItem>>(new Map());
+  /** Edits for manual-added actions (due_date, status, assignees). */
+  const [manualActionEdits, setManualActionEdits] = useState<Record<number, { due_date?: string | null; status?: string; assignees?: string[] }>>({});
+  /** Inline input value for adding assignee (per manual action id). */
+  const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number, string>>({});
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -506,27 +526,65 @@ const ContentRequestDetail: React.FC = () => {
     });
   }, []);
 
-  const handleAddManualDirective = useCallback(() => {
-    const newId = `manual-${Date.now()}`;
-    const newDirective = {
-      id: newId,
-      directive_text: '',
-      responsible_entity: '',
-      due_date: '',
-      status: 'PENDING',
-    };
+  /** Load options for "إضافة توجيه" async select – GET /api/v1/actions/ with search. */
+  const loadActionsForAddDirective = useCallback(
+    async (search: string, _skip: number, limit: number) => {
+      const actions = await listActions({ search: search || '', limit: limit || 20 });
+      actions.forEach((a) => addDirectiveActionMapRef.current.set(String(a.id), a));
+      return {
+        items: actions.map((a) => ({ value: String(a.id), label: a.title })),
+        total: actions.length,
+        skip: 0,
+        limit: limit || 20,
+        has_next: false,
+        has_previous: false,
+      };
+    },
+    []
+  );
 
-    setAiDirectivesSuggestions((prev) => [...prev, newDirective]);
-    setEditableAiDirectives((prev) => ({
-      ...prev,
-      [newId]: {
-        directive_text: '',
-        responsible_entity: '',
-        due_date: '',
-        status: 'PENDING',
-      },
-    }));
+  const handleAddDirectiveSelectChange = useCallback((opt: OptionType | null) => {
+    if (!opt?.value) return;
+    const action = addDirectiveActionMapRef.current.get(opt.value);
+    if (action) {
+      setManualAddedActions((prev) => {
+        if (prev.some((a) => a.id === action.id)) return prev;
+        return [...prev, action];
+      });
+      setShowAddDirectiveRow(false);
+    }
+    setAddDirectiveSelectValue(null);
   }, []);
+
+  const handleDeleteManualAction = useCallback((actionId: number) => {
+    setManualAddedActions((prev) => prev.filter((a) => a.id !== actionId));
+    setManualActionEdits((prev) => {
+      const next = { ...prev };
+      delete next[actionId];
+      return next;
+    });
+  }, []);
+
+  const updateManualActionDueDate = useCallback((actionId: number, due_date: string | null) => {
+    setManualActionEdits((prev) => ({ ...prev, [actionId]: { ...prev[actionId], due_date } }));
+  }, []);
+  const updateManualActionStatus = useCallback((actionId: number, status: string) => {
+    setManualActionEdits((prev) => ({ ...prev, [actionId]: { ...prev[actionId], status } }));
+  }, []);
+  const getManualActionAssignees = useCallback((actionId: number, fallback: string[]) => {
+    return manualActionEdits[actionId]?.assignees ?? fallback;
+  }, [manualActionEdits]);
+  const setManualActionAssignees = useCallback((actionId: number, assignees: string[]) => {
+    setManualActionEdits((prev) => ({ ...prev, [actionId]: { ...prev[actionId], assignees } }));
+  }, []);
+  const addManualActionAssignee = useCallback((actionId: number, email: string, currentAssignees: string[]) => {
+    const trimmed = email.trim();
+    if (!trimmed || currentAssignees.includes(trimmed)) return;
+    setManualActionAssignees(actionId, [...currentAssignees, trimmed]);
+  }, [setManualActionAssignees]);
+  const removeManualActionAssignee = useCallback((actionId: number, index: number, currentAssignees: string[]) => {
+    setManualActionAssignees(actionId, currentAssignees.filter((_, i) => i !== index));
+  }, [setManualActionAssignees]);
 
   const handleDeleteExistingDirective = useCallback((directiveId: string) => {
     setDeletedExistingDirectiveIds((prev) => new Set(prev).add(directiveId));
@@ -618,6 +676,10 @@ const ContentRequestDetail: React.FC = () => {
       setAiDirectivesSuggestions([]);
       setEditableAiDirectives({});
       setAiDirectiveActions({});
+      setManualAddedActions([]);
+      setManualActionEdits({});
+      setAssigneeInputByActionId({});
+      setShowAddDirectiveRow(false);
       navigate(PATH.CONTENT_REQUESTS);
     },
     onError: (error) => {
@@ -727,7 +789,18 @@ const ContentRequestDetail: React.FC = () => {
       }))
       .filter((d) => d.title !== '—');
 
-    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs];
+    const manualObjs: DirectiveForApprove[] = manualAddedActions.map((a) => {
+      const edits = manualActionEdits[a.id];
+      return {
+        id: a.id,
+        title: (a.title ?? '').trim() || '—',
+        due_date: edits?.due_date !== undefined ? edits.due_date : (a.due_date ?? null),
+        assignees: edits?.assignees ?? a.assignees ?? [],
+        status: edits?.status ?? a.status ?? 'PENDING',
+      };
+    });
+
+    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
 
     sendToSchedulingMutation.mutate({
       file: executiveSummaryFile,
@@ -1767,10 +1840,10 @@ const ContentRequestDetail: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                   إضافة التوجيهات
                 </h3>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
-                    onClick={handleAddManualDirective}
+                    onClick={() => setShowAddDirectiveRow(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-[#008774] hover:bg-[#006d5f] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
@@ -1822,12 +1895,14 @@ const ContentRequestDetail: React.FC = () => {
                 const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
                 const hasAiSuggestions = aiDirectivesSuggestions.length > 0;
                 const hasSuggestedActionsFromApi = suggestedActionsFiltered.length > 0;
+                const hasManualActions = manualAddedActions.length > 0;
 
-                // Combine existing directives + AI suggestions + suggested-actions (exclude deleted)
+                // Combine existing directives + AI suggestions + suggested-actions + manual-added (from list actions)
                 const allDirectives: Array<{
                   id: string;
                   isAi: boolean;
                   isSuggestedAction?: boolean;
+                  isManualAction?: boolean;
                   directive_text?: string;
                   directive?: string;
                   entity?: string;
@@ -1842,6 +1917,8 @@ const ContentRequestDetail: React.FC = () => {
                   directive_status?: string;
                   notes?: string;
                   related_meeting_request?: string | null;
+                  /** For isManualAction: the full ActionItem. */
+                  manualAction?: ActionItem;
                 }> = [
                   ...directivesFiltered.map((d) => ({ ...d, isAi: false, isSuggestedAction: false })),
                   ...aiDirectivesSuggestions.map((d) => ({
@@ -1861,6 +1938,16 @@ const ContentRequestDetail: React.FC = () => {
                     due_date: s.due_date ?? undefined,
                     status: s.status ?? undefined,
                   })),
+                  ...manualAddedActions.map((a) => ({
+                    id: `manual-${a.id}`,
+                    isAi: false,
+                    isSuggestedAction: false,
+                    isManualAction: true,
+                    directive: a.title ?? '-',
+                    due_date: a.due_date ?? undefined,
+                    status: a.status ?? undefined,
+                    manualAction: a,
+                  })),
                 ];
 
                 /** Normalize assignees to string[] (API may return JSON array or string). */
@@ -1877,7 +1964,7 @@ const ContentRequestDetail: React.FC = () => {
                   return [];
                 };
 
-                if (hasDirectives || hasAiSuggestions || hasSuggestedActionsFromApi) {
+                if (hasDirectives || hasAiSuggestions || hasSuggestedActionsFromApi || hasManualActions || showAddDirectiveRow) {
                   return (
                     <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
                       <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -1895,7 +1982,105 @@ const ContentRequestDetail: React.FC = () => {
                           {allDirectives.map((directive, index) => {
                             const isAi = 'isAi' in directive && directive.isAi;
                             const isSuggestedAction = 'isSuggestedAction' in directive && directive.isSuggestedAction;
+                            const isManualAction = 'isManualAction' in directive && directive.isManualAction;
                             const directiveId = directive.id;
+
+                            // Row from "إضافة توجيه" async select (list actions) – editable due_date, status, assignees
+                            if (isManualAction && directive.manualAction) {
+                              const a = directive.manualAction;
+                              const dueDate = manualActionEdits[a.id]?.due_date !== undefined ? manualActionEdits[a.id].due_date : a.due_date;
+                              const status = manualActionEdits[a.id]?.status ?? a.status ?? 'PENDING';
+                              const assignees = getManualActionAssignees(a.id, a.assignees ?? []);
+                              const assigneeInput = assigneeInputByActionId[a.id] ?? '';
+                              return (
+                                <tr key={directiveId} className="hover:bg-gray-50 transition-colors bg-[#F0FDF4]/50">
+                                  <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{a.title ?? '—'}</td>
+                                  <td className="px-4 py-3">
+                                    <FormDatePicker
+                                      value={dueDate ?? ''}
+                                      onChange={(v) => updateManualActionDueDate(a.id, v || null)}
+                                      placeholder="dd/mm/yyyy"
+                                      className="min-w-[120px] text-right"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Select value={status} onValueChange={(v) => updateManualActionStatus(a.id, v)} dir="rtl">
+                                      <SelectTrigger className="min-w-[140px] text-right" dir="rtl">
+                                        <SelectValue placeholder="الحالة" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {ACTION_STATUS_OPTIONS.map((opt) => (
+                                          <SelectItem key={opt.value} value={opt.value} className="text-right">
+                                            {opt.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </td>
+                                  <td className="px-4 py-3" dir="rtl">
+                                    <div className="flex flex-wrap gap-1.5 items-center">
+                                      {assignees.map((email, i) => (
+                                        <span
+                                          key={`${email}-${i}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#008774]/15 text-[#008774] text-xs"
+                                        >
+                                          {email}
+                                          <button
+                                            type="button"
+                                            onClick={() => removeManualActionAssignee(a.id, i, assignees)}
+                                            className="p-0.5 rounded hover:bg-[#008774]/20"
+                                            aria-label="حذف"
+                                          >
+                                            <span className="sr-only">حذف</span>
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      ))}
+                                      <Input
+                                        value={assigneeInput}
+                                        onChange={(e) => setAssigneeInputByActionId((p) => ({ ...p, [a.id]: e.target.value }))}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            addManualActionAssignee(a.id, assigneeInput, assignees);
+                                            setAssigneeInputByActionId((p) => ({ ...p, [a.id]: '' }));
+                                          }
+                                        }}
+                                        placeholder="إضافة معين..."
+                                        className="h-8 min-w-[80px] max-w-[120px] text-xs text-right"
+                                        dir="rtl"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          addManualActionAssignee(a.id, assigneeInput, assignees);
+                                          setAssigneeInputByActionId((p) => ({ ...p, [a.id]: '' }));
+                                        }}
+                                        className="p-1 rounded border border-[#D0D5DD] hover:bg-gray-100 text-gray-600"
+                                        title="إضافة"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteManualAction(a.id)}
+                                        className="flex items-center justify-center gap-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="حذف"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
 
                             // Read-only row from GET .../suggested-actions API – deletable
                             if (isSuggestedAction) {
@@ -1984,6 +2169,40 @@ const ContentRequestDetail: React.FC = () => {
                               </tr>
                             );
                           })}
+                          {showAddDirectiveRow && (
+                            <tr key="add-directive-row" className="bg-[#F0FDF4]/30 border-t-2 border-dashed border-[#008774]/30">
+                              <td className="px-4 py-3 text-sm text-gray-700">{allDirectives.length + 1}</td>
+                              <td className="px-4 py-3" dir="rtl">
+                                <div className="min-w-[200px] max-w-full">
+                                  <FormAsyncSelectV2
+                                    value={addDirectiveSelectValue}
+                                    onValueChange={handleAddDirectiveSelectChange}
+                                    loadOptions={loadActionsForAddDirective}
+                                    placeholder="ابحث واختر التوجيه..."
+                                    searchPlaceholder="ابحث في التوجيهات..."
+                                    emptyMessage="لا توجد نتائج"
+                                    fullWidth
+                                    limit={20}
+                                    defaultOptions={false}
+                                    className="text-right"
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500">—</td>
+                              <td className="px-4 py-3 text-sm text-gray-500">—</td>
+                              <td className="px-4 py-3 text-sm text-gray-500">—</td>
+                              <td className="px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowAddDirectiveRow(false); setAddDirectiveSelectValue(null); }}
+                                  className="text-sm text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100"
+                                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                                >
+                                  إلغاء
+                                </button>
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
