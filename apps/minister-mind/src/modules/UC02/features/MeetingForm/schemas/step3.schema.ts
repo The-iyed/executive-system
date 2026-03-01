@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 /** Backend invitee item (request submitter & minister invitees). */
 export const inviteeBackendSchema = z.object({
-  full_name: z.string().min(1, 'الاسم الكامل مطلوب'),
-  position_title: z.string().min(1, 'المسمى الوظيفي مطلوب'),
-  mobile_number: z.string().min(1, 'رقم الجوال مطلوب'),
-  email: z.string().email('البريد الإلكتروني غير صحيح'),
+  full_name: z.string().min(1, 'الإسم مطلوب'),
+  position_title: z.string().optional().default(''),
+  mobile_number: z.string().min(1, 'الجوال مطلوب'),
+  sector: z.string().optional().default(''),
+  email: z.string().min(1, 'البريد الإلكتروني مطلوب').email('البريد الإلكتروني غير صحيح'),
   attendance_mode: z.enum(['IN_PERSON', 'REMOTE'], {
     required_error: 'آلية الحضور مطلوبة',
     invalid_type_error: 'آلية الحضور يجب أن تكون حضوري أو عن بُعد',

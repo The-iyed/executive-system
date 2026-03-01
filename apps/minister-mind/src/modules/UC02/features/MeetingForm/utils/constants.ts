@@ -70,6 +70,45 @@ export const MEETING_CHANNEL_OPTIONS = [
   { value: MeetingChannel.HYBRID, label: 'مختلط' },
 ];
 
+/** Location dropdown options (same as UC01). */
+export const LOCATION_OPTIONS = {
+  ALIYA: 'العليا',
+  GHADEER: 'الغدير',
+  OTHER: 'موقع آخر',
+} as const;
+
+export type LocationOptionValue = (typeof LOCATION_OPTIONS)[keyof typeof LOCATION_OPTIONS];
+
+export const MEETING_LOCATION_OPTIONS: { value: LocationOptionValue; label: string }[] = [
+  { value: LOCATION_OPTIONS.ALIYA, label: LOCATION_OPTIONS.ALIYA },
+  { value: LOCATION_OPTIONS.GHADEER, label: LOCATION_OPTIONS.GHADEER },
+  { value: LOCATION_OPTIONS.OTHER, label: LOCATION_OPTIONS.OTHER },
+];
+
+export function isPresetLocation(value: string | undefined): value is LocationOptionValue {
+  return value === LOCATION_OPTIONS.ALIYA || value === LOCATION_OPTIONS.GHADEER;
+}
+
+export function getLocationDropdownValue(
+  location: string | undefined,
+  location_option: string | undefined
+): '' | LocationOptionValue {
+  const loc = location?.trim() ?? '';
+  if (loc === LOCATION_OPTIONS.ALIYA || loc === LOCATION_OPTIONS.GHADEER) return loc;
+  if (loc !== '') return LOCATION_OPTIONS.OTHER;
+  return (location_option as '' | LocationOptionValue) ?? '';
+}
+
+export function showLocationOtherInput(
+  location: string | undefined,
+  location_option: string | undefined
+): boolean {
+  const loc = location?.trim() ?? '';
+  if (isPresetLocation(loc)) return false;
+  if (loc !== '') return true;
+  return location_option === LOCATION_OPTIONS.OTHER;
+}
+
 /** Attendance mode options for invitees (backend: IN_PERSON | REMOTE). */
 export const ATTENDANCE_MODE_OPTIONS = [
   { value: 'IN_PERSON', label: 'حضوري' },
@@ -80,46 +119,53 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: '#', width: 'min-w-[80px]' },
   {
     id: 'full_name',
-    header: 'الاسم الكامل',
+    header: 'الإسم',
     type: 'text',
-    placeholder: 'الاسم الكامل',
-    width: 'min-w-[210px]',
+    placeholder: 'الإسم',
+    width: 'min-w-[180px]',
   },
   {
     id: 'position_title',
-    header: 'المسمى الوظيفي',
+    header: 'المنصب',
     type: 'text',
-    placeholder: 'المسمى الوظيفي',
-    width: 'min-w-[210px]',
+    placeholder: 'المنصب',
+    width: 'min-w-[180px]',
   },
   {
     id: 'mobile_number',
-    header: 'رقم الجوال',
+    header: 'الجوال',
     type: 'text',
-    placeholder: 'رقم الجوال',
-    width: 'min-w-[210px]',
+    placeholder: 'الجوال',
+    width: 'min-w-[160px]',
+  },
+  {
+    id: 'sector',
+    header: 'الجهة',
+    type: 'text',
+    placeholder: 'الجهة',
+    width: 'min-w-[160px]',
   },
   {
     id: 'email',
     header: 'البريد الإلكتروني',
     type: 'text',
     placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[210px]',
+    width: 'min-w-[200px]',
   },
   {
     id: 'attendance_mode',
     header: 'آلية الحضور',
     type: 'select',
     selectOptions: [...ATTENDANCE_MODE_OPTIONS],
-    placeholder: 'اختر',
-    width: 'min-w-[210px]',
+    placeholder: 'حضوري / عن بُعد',
+    width: 'min-w-[160px]',
   },
   {
     id: 'view_permission',
-    header: 'صلاحية العرض',
+    header: 'صلاحية الاطلاع',
     type: 'switch',
     label: false,
-    width: 'min-w-[210px]',
+    width: 'min-w-[140px]',
   },
   { id: 'action', header: '', width: 'w-[60px]' },
 ];

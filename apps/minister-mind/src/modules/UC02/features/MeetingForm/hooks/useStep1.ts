@@ -4,6 +4,7 @@ import axiosInstance from '@auth/utils/axios';
 import type { Step1FormData } from '../schemas/step1.schema';
 import { validateStep1, extractValidationErrors } from '../schemas/step1.schema';
 import { isStep1FieldVisible } from '../utils/step1FieldConditions';
+import { LOCATION_OPTIONS, getLocationDropdownValue } from '../utils/constants';
 import { STEP1_FORM_FIELDS } from '../types/step1.types';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { useMeetingAgenda } from './useMeetingAgenda';
@@ -132,6 +133,7 @@ const INITIAL_STATE: Partial<Step1FormData> = {
   alternative2StartDate: '',
   alternative2EndDate: '',
   location: '',
+  location_option: '',
   requiresProtocol: false,
   isComplete: false,
 };
@@ -193,7 +195,11 @@ export function useStep1({
 
     if (markTouched) {
       const touchedMap: Partial<Record<keyof Step1FormData, boolean>> = {};
-      STEP1_FORM_FIELDS.forEach((key) => { touchedMap[key] = true; });
+      STEP1_FORM_FIELDS.forEach((key) => {
+        if (isStep1FieldVisible(key, formData)) {
+          touchedMap[key] = true;
+        }
+      });
       setTouched(touchedMap);
       setTableTouched(
         Object.fromEntries(
@@ -227,6 +233,14 @@ export function useStep1({
       if (field === 'meetingNature' && value !== 'SEQUENTIAL' && value !== 'PERIODIC') {
         next.previousMeeting = '';
       }
+      if (field === 'meeting_channel' && value !== 'PHYSICAL') {
+        next.location = '';
+        next.location_option = '';
+      }
+      if (field === 'location_option') {
+        next.location =
+          value === LOCATION_OPTIONS.ALIYA || value === LOCATION_OPTIONS.GHADEER ? (value as string) : '';
+      }
       return next;
     });
     if (field === 'wasDiscussedPreviously' && value === false) {
@@ -240,6 +254,13 @@ export function useStep1({
       setErrors((e) => {
         const next = { ...e };
         delete next.previousMeeting;
+        return next;
+      });
+    }
+    if (field === 'meeting_channel' && value !== 'PHYSICAL') {
+      setErrors((e) => {
+        const next = { ...e };
+        delete next.location;
         return next;
       });
     }
@@ -278,7 +299,9 @@ export function useStep1({
     const deadlineVal = meeting.deadline
       ? (meeting.deadline.includes('T') ? meeting.deadline : `${meeting.deadline}T00:00:00`).slice(0, 10)
       : '';
-    const meetingDesc = (meeting as Record<string, unknown>).meeting_description;
+    const meetingUnknown = meeting as unknown as Record<string, unknown>;
+    const meetingDesc = meetingUnknown.meeting_description;
+    const meetingLocation = typeof meetingUnknown.location === 'string' ? meetingUnknown.location : undefined;
     setFormData((prev) => ({
       ...prev,
       meetingTitle: meeting.meeting_title ?? prev.meetingTitle,
@@ -295,12 +318,13 @@ export function useStep1({
       meetingConfidentiality: meeting.meeting_confidentiality ?? prev.meetingConfidentiality,
       meeting_channel: meeting.meeting_channel ?? prev.meeting_channel,
       requiresProtocol: meeting.requires_protocol ?? prev.requiresProtocol,
-      location: meeting.location ?? prev.location,
+      location: meetingLocation ?? prev.location ?? '',
+      location_option: getLocationDropdownValue(meetingLocation, undefined) ?? prev.location_option ?? '',
       requester: meeting.submitter_id != null
-        ? { value: meeting.submitter_id, label: (meeting as Record<string, string>).submitter_name ?? meeting.submitter_name ?? '' }
+        ? { value: meeting.submitter_id, label: meeting.submitter_name ?? '' }
         : prev.requester,
       meetingOwner: meeting.current_owner_user_id != null
-        ? { value: meeting.current_owner_user_id, label: (meeting as Record<string, string>).meeting_owner_name ?? '' }
+        ? { value: meeting.current_owner_user_id, label: meeting.meeting_owner_name ?? '' }
         : prev.meetingOwner,
     }));
   }, []);
