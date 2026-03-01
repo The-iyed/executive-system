@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AttendanceMechanism } from '@shared/types';
+import { isValidPhone } from '@shared';
 
 const attendanceMechanismSchema = z.nativeEnum(AttendanceMechanism);
 
@@ -10,7 +11,7 @@ const inviteeSchema = z
     email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')), 
     name: z.string().optional().or(z.literal('')), 
     position: z.string().optional().or(z.literal('')), 
-    mobile: z.string().optional().or(z.literal('')), 
+    mobile: z.string().optional().or(z.literal('')),
     sector: z.string().optional().or(z.literal('')),
     attendance_mechanism: attendanceMechanismSchema.optional().default(AttendanceMechanism.PHYSICAL),
     is_required: z.boolean().optional().default(false),
@@ -18,6 +19,15 @@ const inviteeSchema = z
     disabled: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
+    // Phone: when provided and non-empty, must be valid (digits only, optional leading +) — for all rows (manual and selected user)
+    const mobile = (data.mobile ?? '').trim();
+    if (mobile !== '' && !isValidPhone(mobile)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'الجوال: صيغة غير صحيحة (أرقام فقط، مع إمكانية + في البداية)',
+        path: ['mobile'],
+      });
+    }
     if (!data.sector || String(data.sector).trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
