@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { FormTable, FormInput } from '@shared';
-import { INVITEES_TABLE_COLUMNS } from '../../UC08/features/MeetingForm/utils/constants';
-import { createEmptyStep3InviteeRow } from '../../UC08/features/MeetingForm/utils/inviteeMappers';
-import type { InviteeFormRow } from '../../UC08/features/MeetingForm/schemas/step3.schema';
+import { createEmptyStep3InviteeRow, INVITEES_TABLE_COLUMNS } from '../features/MeetingForm/utils';
+import { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
