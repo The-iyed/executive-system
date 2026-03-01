@@ -38,8 +38,8 @@ function buildOptimisticOutlookEvent(
 }
 import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
-import { FormMeetingModal } from '../../UC08/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
+import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
