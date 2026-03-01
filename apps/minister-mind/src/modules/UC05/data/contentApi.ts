@@ -319,6 +319,7 @@ export interface ActionItem {
 
 export interface ListActionsParams {
   limit?: number;
+  skip?: number;
   search?: string;
 }
 
