@@ -38,7 +38,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
   if (invitees.length === 0) {
     return (
       <div className="flex flex-col gap-6 w-full" dir="rtl">
-        <h2 className="text-right font-bold text-[#101828]" style={{ ...fontStyle, fontSize: '22px', lineHeight: '38px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ ...fontStyle, fontSize: '16px', lineHeight: '38px' }}>
           قائمة المدعوين
         </h2>
         <div className="w-full min-h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right text-[#667085]" style={fontStyle}>
@@ -51,7 +51,7 @@ export const InviteesTab: React.FC<InviteesTabProps> = ({ meeting }) => {
   return (
     <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
       <div className="flex flex-col gap-4">
-        <h2 className="text-right font-bold text-[#101828]" style={{ ...fontStyle, fontSize: '22px', lineHeight: '38px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ ...fontStyle, fontSize: '16px', lineHeight: '38px' }}>
           قائمة المدعوين
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
