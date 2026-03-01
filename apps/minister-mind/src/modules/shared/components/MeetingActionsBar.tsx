@@ -108,6 +108,8 @@ export interface MeetingActionsBarProps {
   onOpenChange: (open: boolean) => void;
   onOpenSchedule: () => void;
   onOpenReject: () => void;
+  /** When provided and status is SCHEDULED, "إلغاء" opens cancel modal and uses cancel API instead of reject. */
+  onOpenCancel?: () => void;
   onOpenEditConfirm: () => void;
   onOpenReturnForInfo: () => void;
   onOpenSendToContent: () => void;
@@ -130,6 +132,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   onOpenChange,
   onOpenSchedule,
   onOpenReject,
+  onOpenCancel,
   onOpenEditConfirm,
   onOpenReturnForInfo,
   onOpenSendToContent,
@@ -158,7 +161,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
       ? [
           { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
           { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
+          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
         ]
       : meetingStatus === MeetingStatus.WAITING
         ? [

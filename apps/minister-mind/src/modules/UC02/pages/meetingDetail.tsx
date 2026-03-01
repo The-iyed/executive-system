@@ -22,6 +22,9 @@ import {
   FormAsyncSelectV2,
   FormDatePicker,
   FormDateTimePicker,
+  FormField,
+  FormInput,
+  FormSelect,
   type OptionType,
   Drawer,
   AttachmentPreviewDrawer,
@@ -36,6 +39,7 @@ import {
   getMeetingsSearchForPrevious,
   type MeetingSearchResult,
   rejectMeeting,
+  cancelMeeting,
   sendToContent,
   requestGuidance,
   getConsultants,
@@ -80,6 +84,12 @@ import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type M
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import {
+  MEETING_LOCATION_OPTIONS,
+  MeetingLocation,
+  getMeetingLocationDropdownValue,
+  showMeetingLocationOtherInput,
+} from '../../UC01/features/MeetingForm/utils/constants';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -339,6 +349,13 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
+  // Cancel meeting modal state (for SCHEDULED meetings)
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelForm, setCancelForm] = useState({
+    reason: '',
+    notes: '',
+  });
+
   // Send to content modal state
   const [isSendToContentModalOpen, setIsSendToContentModalOpen] = useState(false);
   const [sendToContentForm, setSendToContentForm] = useState({
@@ -390,6 +407,7 @@ const MeetingDetail: React.FC = () => {
     is_data_complete: true,
     notes: '',
     location: '',
+    location_option: '' as string,
     selected_time_slot_id: null as string | null,
     minister_attendees: [] as MinisterAttendee[],
   });
@@ -706,7 +724,8 @@ const MeetingDetail: React.FC = () => {
 
     // scheduleForm comparisons against snapshot (meeting_channel = آلية انعقاد الاجتماع enum)
     if ((scheduleForm.meeting_channel || '') !== (originalSnapshot.scheduleForm.meeting_channel || '')) payload.meeting_channel = scheduleForm.meeting_channel;
-    if ((scheduleForm.location || '') !== (originalSnapshot.scheduleForm.location || '')) payload.meeting_location = scheduleForm.location || null;
+    // Always send meeting_location: preset (العليا/الغدير) or custom text when "other" is selected
+    payload.meeting_location = scheduleForm.location || null;
     if ((scheduleForm.requires_protocol ?? false) !== (originalSnapshot.scheduleForm.requires_protocol ?? false)) payload.requires_protocol = scheduleForm.requires_protocol;
     if ((scheduleForm.protocol_type_text || '') !== (originalSnapshot.scheduleForm.protocol_type_text || '')) payload.protocol_type = scheduleForm.protocol_type_text;
     if ((scheduleForm.is_data_complete ?? true) !== (originalSnapshot.scheduleForm.is_data_complete ?? true)) payload.is_data_complete = scheduleForm.is_data_complete;
@@ -922,6 +941,17 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
+  // Cancel meeting mutation (for SCHEDULED meetings)
+  const cancelMutation = useMutation({
+    mutationFn: (payload: { reason?: string; notes?: string }) => cancelMeeting(id!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      setIsCancelModalOpen(false);
+      setCancelForm({ reason: '', notes: '' });
+      navigate(-1); // Navigate back after successful cancel
+    },
+  });
+
   // Send to content mutation
   const sendToContentMutation = useMutation({
     mutationFn: (payload: { notes: string; is_draft?: boolean }) => sendToContent(id!, payload),
@@ -941,6 +971,14 @@ const MeetingDetail: React.FC = () => {
         notes: rejectForm.notes,
       });
     }
+  };
+
+  const handleCancelSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    cancelMutation.mutate({
+      reason: cancelForm.reason.trim() || undefined,
+      notes: cancelForm.notes.trim() || undefined,
+    });
   };
 
   const handleSendToContentSubmit = (e: React.FormEvent) => {
@@ -1091,6 +1129,7 @@ const MeetingDetail: React.FC = () => {
           is_data_complete: true,
           notes: '',
           location: '',
+          location_option: '',
           selected_time_slot_id: null,
           minister_attendees: [],
         });
@@ -1415,6 +1454,7 @@ const MeetingDetail: React.FC = () => {
         protocol_type_text: meeting.protocol_type || prev.protocol_type_text,
         is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
         location: (meeting as any).meeting_location ?? (meeting as any).location ?? prev.location ?? '',
+        location_option: getMeetingLocationDropdownValue((meeting as any).meeting_location ?? (meeting as any).location ?? undefined, prev.location_option || undefined) ?? '',
         selected_time_slot_id: meeting.selected_time_slot_id || null,
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
@@ -1474,6 +1514,7 @@ const MeetingDetail: React.FC = () => {
         protocol_type_text: meeting.protocol_type || '',
         is_data_complete: meeting.is_data_complete ?? true,
         location: (meeting as any).meeting_location ?? (meeting as any).location ?? '',
+        location_option: getMeetingLocationDropdownValue((meeting as any).meeting_location ?? (meeting as any).location ?? undefined, undefined) ?? '',
         meeting_channel: ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel) ? meeting.meeting_channel : 'PHYSICAL',
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || [],
       },
@@ -1793,8 +1834,37 @@ const MeetingDetail: React.FC = () => {
                 <SelectContent dir="rtl">{Object.entries(MeetingChannelLabels).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
               </Select>
             );
-          case 'meeting_location':
-            return <Input type="text" value={scheduleForm.location} onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))} className={inputClass} placeholder={label} />;
+          case 'meeting_location': {
+            const locDropdownValue = getMeetingLocationDropdownValue(scheduleForm.location, scheduleForm.location_option) || undefined;
+            const showOtherInput = showMeetingLocationOtherInput(scheduleForm.location, scheduleForm.location_option);
+            return (
+              <div className="flex flex-col gap-4 w-full">
+                <FormSelect
+                  value={locDropdownValue}
+                  onValueChange={(value) => {
+                    const v = value ?? '';
+                    if (v === MeetingLocation.ALIYA || v === MeetingLocation.GHADEER) {
+                      setScheduleForm((p) => ({ ...p, location_option: v, location: v }));
+                    } else {
+                      setScheduleForm((p) => ({ ...p, location_option: v, location: '' }));
+                    }
+                  }}
+                  options={MEETING_LOCATION_OPTIONS}
+                  placeholder="اختر الموقع"
+                />
+                {showOtherInput && (
+                  <FormField className="w-full min-w-0" label="تحديد الموقع (موقع آخر)">
+                    <FormInput
+                      value={scheduleForm.location || ''}
+                      onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))}
+                      placeholder="أدخل الموقع"
+                      fullWidth
+                    />
+                  </FormField>
+                )}
+              </div>
+            );
+          }
           case 'meeting_classification_type':
             return (
               <Select value={formData.meeting_classification_type || ''} onValueChange={(v) => handleFieldChange('meeting_classification_type', v)}>
@@ -3571,6 +3641,7 @@ const MeetingDetail: React.FC = () => {
             onOpenChange={setActionsBarOpen}
             onOpenSchedule={() => setIsScheduleModalOpen(true)}
             onOpenReject={() => setIsRejectModalOpen(true)}
+            onOpenCancel={meeting.status === MeetingStatus.SCHEDULED ? () => setIsCancelModalOpen(true) : undefined}
             onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
             onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
             onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
@@ -3718,6 +3789,63 @@ const MeetingDetail: React.FC = () => {
               
               >
                 {rejectMutation.isPending ? 'جاري الرفض...' : 'رفض الطلب'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Meeting Modal (SCHEDULED meetings only) */}
+      <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              إلغاء الاجتماع
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCancelSubmit}>
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right">
+                  سبب الإلغاء
+                </label>
+                <Input
+                  type="text"
+                  value={cancelForm.reason}
+                  onChange={(e) => setCancelForm((prev) => ({ ...prev, reason: e.target.value }))}
+                  placeholder="سبب إلغاء الاجتماع"
+                  className="w-full text-right"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right">
+                  ملاحظات إضافية
+                </label>
+                <Textarea
+                  value={cancelForm.notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="تفاصيل إضافية"
+                  className="w-full min-h-[100px] text-right"
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex-row-reverse gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCancelModalOpen(false);
+                  setCancelForm({ reason: '', notes: '' });
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                تراجع
+              </button>
+              <button
+                type="submit"
+                disabled={cancelMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancelMutation.isPending ? 'جاري الإلغاء...' : 'إلغاء الاجتماع'}
               </button>
             </DialogFooter>
           </form>
@@ -4211,6 +4339,7 @@ const MeetingDetail: React.FC = () => {
                     is_data_complete: true,
                     notes: '',
                     location: '',
+                    location_option: '',
                     selected_time_slot_id: null,
                     minister_attendees: [],
                   });
@@ -4237,6 +4366,7 @@ const MeetingDetail: React.FC = () => {
                       is_data_complete: true,
                       notes: '',
                       location: '',
+                      location_option: '',
                       selected_time_slot_id: null,
                       minister_attendees: [],
                     });
