@@ -9,7 +9,6 @@ import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 const mapStatus = (apiStatus: string): MeetingStatus | string => {
   // Map API status to MeetingStatus enum
   const statusMap: Record<string, MeetingStatus | string> = {
-    SCHEDULED_CONTENT_CONSULTATION: 'SCHEDULED_CONTENT_CONSULTATION',
     UNDER_REVIEW: MeetingStatus.UNDER_REVIEW,
     SCHEDULED: MeetingStatus.SCHEDULED,
     DRAFT: MeetingStatus.DRAFT,
@@ -27,9 +26,6 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
 const getStatusLabel = (status: MeetingStatus | string): string => {
   if (status in MeetingStatusLabels) {
     return MeetingStatusLabels[status as MeetingStatus];
-  }
-  if (status === 'SCHEDULED_CONTENT_CONSULTATION') {
-    return 'مجدولة لاستشارة المحتوى';
   }
   return status;
 };
