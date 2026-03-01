@@ -1,8 +1,9 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ActionButtons, type OptionType } from '@shared';
+import { ActionButtons, MeetingAgendaTable, type OptionType } from '@shared';
 import { getMeetingById, type MeetingApiResponse } from '../../../../../data';
 import type { Step1FormData } from '../../../schemas/step1.schema';
+import { getMeetingDurationMinutes } from '../../../schemas/step1.schema';
 import { useStep1BusinessRules } from '../../../hooks/useStep1BusinessRules';
 import {
   MeetingNatureField,
@@ -35,16 +36,25 @@ const REQUIRED_INDICATOR_FIELDS = new Set<keyof Step1FormData>([
   'meeting_channel',
   'requester',
   'meetingOwner',
+  'sector',
+  'meetingType',
+  'meetingAgenda',
+  'meetingStartDate',
 ]);
 
 export interface Step1Props {
   formData: Partial<Step1FormData>;
   errors: Partial<Record<keyof Step1FormData, string>>;
   touched: Partial<Record<keyof Step1FormData, boolean>>;
+  tableErrors: Record<string, Record<string, string>>;
+  tableTouched: Record<string, Record<string, boolean>>;
   isSubmitting: boolean;
   isDeleting: boolean;
   handleChange: (field: keyof Step1FormData, value: unknown) => void;
   handleBlur: (field: keyof Step1FormData) => void;
+  handleAddAgenda: () => string;
+  handleDeleteAgenda: (id: string) => void;
+  handleUpdateAgenda: (id: string, field: string, value: unknown) => void;
   fillFormFromPreviousMeeting?: (meeting: MeetingApiResponse) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
@@ -56,10 +66,15 @@ export function Step1({
   formData,
   errors,
   touched,
+  tableErrors,
+  tableTouched,
   isSubmitting,
   isDeleting,
   handleChange,
   handleBlur,
+  handleAddAgenda,
+  handleDeleteAgenda,
+  handleUpdateAgenda,
   fillFormFromPreviousMeeting,
   handleNextClick,
   handleSaveDraftClick,
@@ -68,6 +83,12 @@ export function Step1({
 }: Step1Props) {
   const location = useLocation();
   const { isFieldDisabled } = useStep1BusinessRules(formData);
+  const [scrollToAgendaRowId, setScrollToAgendaRowId] = useState<string | null>(null);
+
+  const handleAddAgendaWithScroll = useCallback(() => {
+    const newRowId = handleAddAgenda();
+    if (newRowId) setScrollToAgendaRowId(newRowId);
+  }, [handleAddAgenda]);
 
   const isRequired = useCallback(
     (field: keyof Step1FormData): boolean => {
@@ -236,7 +257,6 @@ export function Step1({
 
           {isFieldVisible('urgentReason') && (
             <UrgentReasonField
-              className="sm:col-span-2 w-full min-w-0"
               value={formData.urgentReason ?? ''}
               onChange={(v) => handleChange('urgentReason', v)}
               onBlur={() => handleBlur('urgentReason')}
@@ -269,13 +289,13 @@ export function Step1({
           {isFieldVisible('location') && (
             <LocationField
               className="w-full min-w-0"
-              value={formData.location ?? ''}
-              onChange={(v) => handleChange('location', v)}
-              onBlur={() => handleBlur('location')}
-              error={errors.location}
-              touched={touched.location}
-              disabled={isFieldDisabled('location')}
-              required={isRequired('location')}
+              formData={formData}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              handleBlur={handleBlur}
+              isFieldDisabled={isFieldDisabled}
+              isRequired={isRequired('location')}
             />
           )}
 
@@ -353,6 +373,26 @@ export function Step1({
             touched={touched.meetingConfidentiality}
             disabled={isFieldDisabled('meetingConfidentiality')}
           />
+
+          <div className='sm:col-span-2 w-full min-w-0'>
+          <MeetingAgendaTable
+            rows={formData.meetingAgenda || []}
+            required={isRequired('meetingAgenda')}
+            onAddRow={handleAddAgendaWithScroll}
+            onDeleteRow={handleDeleteAgenda}
+            onUpdateRow={handleUpdateAgenda}
+            errors={tableErrors}
+            touched={tableTouched}
+            errorMessage={errors.meetingAgenda}
+            disabled={isFieldDisabled('meetingAgenda')}
+            scrollToRowId={scrollToAgendaRowId}
+            onScrolledToRow={() => setScrollToAgendaRowId(null)}
+            meetingDurationMinutes={getMeetingDurationMinutes(
+              formData.meetingStartDate,
+              formData.meetingEndDate
+            )}
+            />
+          </div>
 
           <NotesField
             className="sm:col-span-2 w-full min-w-0"
