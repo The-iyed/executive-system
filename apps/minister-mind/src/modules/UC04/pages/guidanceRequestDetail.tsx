@@ -9,7 +9,7 @@ import {
   getMeetingStatusLabel,
 } from '@shared/types';
 import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
-import { useAuth } from '../../auth/context';
+import { useAuth } from '../../auth/context/AuthProvider';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
