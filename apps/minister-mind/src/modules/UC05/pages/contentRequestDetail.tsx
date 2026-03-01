@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -635,6 +635,13 @@ const ContentRequestDetail: React.FC = () => {
     },
   });
 
+  // Keep actions bar open while "send to scheduling" is in progress so user sees loading state
+  useEffect(() => {
+    if (sendToSchedulingMutation.isPending) {
+      setActionsBarOpen(true);
+    }
+  }, [sendToSchedulingMutation.isPending]);
+
   const handleSendToScheduling = () => {
     if (!executiveSummaryFile) {
       // TODO: Show validation error - executive summary file is required
@@ -662,7 +669,6 @@ const ContentRequestDetail: React.FC = () => {
       notes: guidanceNotes.trim(),
       directives: directivesToSend.length > 0 ? directivesToSend : undefined,
     });
-    navigate(PATH.CONTENT_REQUESTS);
   };
 
   const handleReturnRequest = () => {
@@ -2052,8 +2058,12 @@ const ContentRequestDetail: React.FC = () => {
         hasContent={false}
         customActions={[
           {
-            icon: <Send className="w-5 h-5" strokeWidth={1.26} />,
-            label: 'إرسال إلى مسؤول الجدولة',
+            icon: sendToSchedulingMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.26} />
+            ) : (
+              <Send className="w-5 h-5" strokeWidth={1.26} />
+            ),
+            label: sendToSchedulingMutation.isPending ? 'جاري الإرسال...' : 'إرسال إلى مسؤول الجدولة',
             onClick: handleSendToScheduling,
             disabled: sendToSchedulingMutation.isPending || !executiveSummaryFile,
             disabledReason: !executiveSummaryFile ? 'يرجى إرفاق الملخص التنفيذي أولاً' : undefined,

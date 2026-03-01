@@ -19,15 +19,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const TEAL_DARK = '#1f4848';
 
-/** Ministry emblem placeholder (shield outline) - replace src with actual ministry logo asset if available */
-const MinistryEmblem = () => (
-  <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
-    <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  </div>
-);
-
 const Login = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -90,58 +81,59 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#ECF0F1] flex-row-reverse justify-center items-center" dir="rtl">
-      {/* Left column - Branding with bg-auth.svg */}
+    <div className="min-h-screen min-h-[100dvh] w-full flex flex-row-reverse bg-[#ECF0F1] justify-center items-center" dir="rtl">
+      {/* Branding panel — desktop only */}
       <div
-        className="w-[43%] my-6 h-[90vh] hidden lg:flex flex-col rounded-l-[14px] overflow-hidden relative"
+        className="w-[43%] my-6 h-[90vh] hidden lg:flex flex-col rounded-l-[14px] overflow-hidden relative flex-shrink-0"
         style={{
-
           backgroundImage: `url('/assets/bg-auth.svg')`,
           backgroundSize: 'contain',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
         }}
-      >
-       
-      </div>
+      />
 
-      {/* Right column - Login form */}
+      {/* Login form */}
       <div
-        className="min-h-screen w-[50%] flex justify-start items-center px-6 py-10 rounded-r-[14px] lg:rounded-r-none"
+        className="min-h-screen min-h-[100dvh] w-full lg:w-[50%] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-10 py-6 sm:py-10 rounded-none lg:rounded-r-[14px] overflow-y-auto"
       >
-        {/* Mobile: brief branding bar */}
-        <div className="lg:hidden flex items-center gap-2 justify-end py-3 mb-4 rounded-lg" style={{ backgroundColor: TEAL_DARK }}>
-          <MinistryEmblem />
-          <span className="text-white font-semibold text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>
-            وزارة البلديات والإسكان
-          </span>
-        </div>
-        <div className="w-full max-w-[520px] text-right">
-          {/* Calendar section: icon + title (calendar.svg to left of title in RTL) */}
-          <div className="flex items-center gap-3 justify-end flex-row-reverse mb-1">
-            <span className="text-black font-bold text-xl" style={{ fontFamily: "'Almarai', sans-serif" }}>
-              المنصة الموحدة
-            </span>
+        <div className="w-full max-w-[420px] sm:max-w-[520px] text-right">
+          {/* Responsive: ministry logo + calendar block in one row (justify-between, reversed). Desktop: calendar block only. */}
+          <div className="flex flex-row-reverse justify-between items-start gap-4 mb-1 lg:block lg:mb-0">
+    
             <img
-              src="/assets/calendar.svg"
-              alt=""
-              className="w-[34px] h-[34px] flex-shrink-0"
-              width={34}
-              height={34}
+              src="/assets/ministry.svg"
+              alt="وزارة البلديات والإسكان"
+              className="h-12 w-auto object-contain flex-shrink-0 invert lg:hidden"
             />
+                    <div>
+              {/* Calendar section: icon + title (calendar.svg to left of title in RTL) */}
+              <div className="flex items-center gap-2 sm:gap-3 justify-end flex-row-reverse mb-1">
+                <span className="text-black font-bold text-xl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  المنصة الموحدة
+                </span>
+                <img
+                  src="/assets/calendar.svg"
+                  alt=""
+                  className="w-8 h-8 sm:w-[34px] sm:h-[34px] flex-shrink-0"
+                  width={34}
+                  height={34}
+                />
+              </div>
+              <p className="text-gray-600 text-sm mb-4 sm:mb-6" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                للمكتب التنفيذي
+              </p>
+            </div>
           </div>
-          <p className="text-gray-600 text-sm mb-6" style={{ fontFamily: "'Almarai', sans-serif" }}>
-            للمكتب التنفيذي
-          </p>
 
-          <h3 className="text-black font-bold text-2xl mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <h3 className="text-black font-bold text-xl sm:text-2xl mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
             مرحباً بك،
           </h3>
-          <p className="text-gray-700 text-sm mb-8" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <p className="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed" style={{ fontFamily: "'Almarai', sans-serif" }}>
             قم بتسجيل الدخول للوصول إلى حسابك وإدارة اجتماعاتك بكل سهولة
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
             <div className="flex flex-col gap-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                 البريد الإلكتروني
