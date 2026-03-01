@@ -15,10 +15,31 @@ import {
   prefetchOutlookTimelineWeek,
   prefetchOutlookTimelineWeeksAround,
   OUTLOOK_TIMELINE_STALE_MS,
+  createScheduledMeeting,
   type OutlookTimelineEvent,
 } from '../data/calendarApi';
+
+/** Build an optimistic Outlook event for the calendar cache (no GET refetch). */
+function buildOptimisticOutlookEvent(
+  meetingTitle: string,
+  scheduledStart: string,
+  scheduledEnd: string,
+  optimisticId: string
+): OutlookTimelineEvent {
+  return {
+    subject: meetingTitle || 'اجتماع',
+    start_datetime: scheduledStart,
+    end_datetime: scheduledEnd,
+    item_id: optimisticId,
+    change_key: 'optimistic',
+    organizer: { name: '', email: '' },
+    is_internal: true,
+  };
+}
 import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
+import { FormMeetingModal } from '../../UC08/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
@@ -154,6 +175,9 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
+  const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
+  const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
+  const [slotFormError, setSlotFormError] = useState<string | null>(null);
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
@@ -173,10 +197,12 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       .catch(() => {});
   }, [queryClient, currentDate]);
 
+  const isOptimisticEvent = !!selectedEventForDetails?.id?.startsWith('optimistic-');
+  const isOutlookEvent = !!selectedEventForDetails?.id?.startsWith('AAMk');
   const { data: meetingDetail, isLoading: isLoadingMeeting, isError: isMeetingError } = useQuery({
     queryKey: ['meeting', selectedEventForDetails?.id],
     queryFn: () => getMeetingById(selectedEventForDetails!.id),
-    enabled: !!selectedEventForDetails?.id,
+    enabled: !!selectedEventForDetails?.id && !isOptimisticEvent && !isOutlookEvent,
   });
   const meetingCardData = useMemo(
     () => (meetingDetail ? mapMeetingToCardData(meetingDetail) : null),
@@ -424,6 +450,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               endHour={24}
               onEventClick={(event) => setSelectedEventForDetails(event)}
               onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+              onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
             />
             
             {/* Show "Updating" only when the currently selected week is loading (no data yet), not on background refetch */}
@@ -463,7 +490,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   <Loader />
                 </div>
               )}
-              {!isLoadingMeeting && meetingCardData && (
+              {!isOptimisticEvent && !isOutlookEvent && !isLoadingMeeting && meetingCardData && (
                 <>
                   <MeetingCard
                     meeting={meetingCardData}
@@ -558,6 +585,75 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create meeting from slot drawer */}
+      <FormMeetingModal
+        open={!!slotForNewMeeting}
+        onOpenChange={(open) => !open && setSlotForNewMeeting(null)}
+      >
+        {slotForNewMeeting && (
+          <CalendarSlotMeetingForm
+            slotDate={slotForNewMeeting.date}
+            slotTime={slotForNewMeeting.time}
+            isSubmitting={slotFormSubmitting}
+            submitError={slotFormError}
+            onSubmit={async (values) => {
+              setSlotFormError(null);
+              setSlotFormSubmitting(true);
+              const scheduled_start = new Date(values.start_date).toISOString();
+              const scheduled_end = new Date(values.end_date).toISOString();
+              const optimisticId = `optimistic-${Date.now()}`;
+              const optimisticEvent = buildOptimisticOutlookEvent(
+                values.title,
+                scheduled_start,
+                scheduled_end,
+                optimisticId
+              );
+
+              // Optimistic update: add the new meeting to the calendar cache immediately
+              queryClient.setQueryData<OutlookTimelineEvent[]>(
+                ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                (old) => [...(old ?? []), optimisticEvent]
+              );
+              setSlotForNewMeeting(null);
+
+              try {
+                const invitees = values.minister_invitees.map((m) => ({
+                  name: m.full_name,
+                  position: m.position_title,
+                  mobile: m.mobile_number,
+                  email: m.email,
+                }));
+                await createScheduledMeeting({
+                  meeting_title: values.title,
+                  scheduled_start,
+                  scheduled_end,
+                  invitees,
+                });
+                // Invalidate in background so next time we get server truth (no need to block UI)
+                queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+              } catch (err: unknown) {
+                // Rollback: remove the optimistic event from the cache
+                queryClient.setQueryData<OutlookTimelineEvent[]>(
+                  ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                  (old) => (old ?? []).filter((e) => e.item_id !== optimisticId)
+                );
+                const message =
+                  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                  (err as Error)?.message ||
+                  'حدث خطأ أثناء إنشاء الاجتماع';
+                setSlotFormError(message);
+              } finally {
+                setSlotFormSubmitting(false);
+              }
+            }}
+            onCancel={() => {
+              setSlotFormError(null);
+              setSlotForNewMeeting(null);
+            }}
+          />
+        )}
+      </FormMeetingModal>
     </div>
   );
 };
