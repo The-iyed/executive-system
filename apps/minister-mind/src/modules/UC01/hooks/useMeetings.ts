@@ -55,10 +55,8 @@ export const useMeetings = ({
     [statusFilter, ownerType]
   );
 
-  // Calculate pagination values
   const skip = (currentPage - 1) * itemsPerPage;
 
-  // Fetch meetings from API
   const { data: meetingsResponse, isLoading, error } = useQuery({
     queryKey: ['meetings', 'uc01', apiFilters.status, apiFilters.owner_type, debouncedSearch.trim(), currentPage],
     queryFn: () => {
@@ -76,13 +74,11 @@ export const useMeetings = ({
     enabled: true,
   });
 
-  // Map API response to MeetingDisplayData
   const meetings: MeetingDisplayData[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
 
-  // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 

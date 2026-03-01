@@ -1573,8 +1573,6 @@ const MeetingDetail: React.FC = () => {
       MeetingStatus.SCHEDULED,
       MeetingStatus.SCHEDULED_SCHEDULING,
       MeetingStatus.SCHEDULED_CONTENT,
-      MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
-      MeetingStatus.SCHEDULED_UPDATE_CONTENT,
       MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
       MeetingStatus.SCHEDULED_DELAYED,
     ];
@@ -1608,12 +1606,6 @@ const MeetingDetail: React.FC = () => {
       return {
         title: 'مرحلة مقدم الطلب',
         description: 'الطلب في مرحلة مقدم الطلب. يمكنك عرض التفاصيل فقط.',
-      };
-    }
-    if (status === MeetingStatus.READY) {
-      return {
-        title: 'جاهز للجدولة',
-        description: 'الطلب جاهز. يمكنك عرض التفاصيل والجدولة.',
       };
     }
     return {

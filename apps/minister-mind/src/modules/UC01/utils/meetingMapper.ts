@@ -1,34 +1,7 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
-import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '@shared/types';
-import { formatDateArabic } from '@shared/utils';
+import { MeetingOwnerType, getMeetingClassificationLabel } from '@shared/types';
+import { getMeetingStatusLabel, formatDateArabic, meetingStatusByRole } from '@shared/utils';
 import { MeetingApiResponse } from '../data/meetingsApi';
-
-const STATUS_MAP: Record<string, MeetingStatus> = {
-  [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
-  [MeetingStatus.UNDER_REVIEW]: MeetingStatus.UNDER_REVIEW,
-  [MeetingStatus.SCHEDULED]: MeetingStatus.SCHEDULED,
-  [MeetingStatus.SCHEDULED_SCHEDULING]: MeetingStatus.SCHEDULED_SCHEDULING,
-  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
-  [MeetingStatus.REJECTED]: MeetingStatus.REJECTED,
-  [MeetingStatus.CANCELLED]: MeetingStatus.CANCELLED,
-  [MeetingStatus.CLOSED]: MeetingStatus.CLOSED,
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: MeetingStatus.RETURNED_FROM_SCHEDULING,
-  [MeetingStatus.RETURNED_FROM_CONTENT]: MeetingStatus.RETURNED_FROM_CONTENT,
-};
-
-const mapStatus = (apiStatus: string): MeetingStatus | string => {
-  if (apiStatus in STATUS_MAP) {
-    return STATUS_MAP[apiStatus];
-  }
-  return apiStatus;
-};
-
-const getStatusLabel = (status: MeetingStatus | string): string => {
-  if (status in MeetingStatusLabels) {
-    return MeetingStatusLabels[status as MeetingStatus];
-  }
-  return status;
-};
 
 export interface MeetingDisplayData extends MeetingCardData {
   requestNumber: string;
@@ -54,18 +27,16 @@ const normalizeNotes = (notes: unknown): string[] => {
 };
 
 const getReturnNotes = (meeting: MeetingApiResponse): string => {
-  // Prefer explicit arrays when available (same shape used in preview Notes tab)
   const general = normalizeNotes(meeting.general_notes);
   const content = normalizeNotes(meeting.content_officer_notes);
   const all = [...general, ...content];
   if (all.length === 0) return '-';
-  // Show the most recent note (last) for compact table display
   return all[all.length - 1];
 };
 
 export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingDisplayData => {
-  const status = mapStatus(meeting.status);
-  const statusLabel = getStatusLabel(status);
+  const status = meetingStatusByRole(meeting?.status, MeetingOwnerType.SUBMITTER);
+  const statusLabel = getMeetingStatusLabel(status);
   
   const requestDateIso = meeting.submitted_at || meeting.created_at;
   const requestDate = formatDateArabic(requestDateIso);
@@ -76,7 +47,6 @@ export const mapMeetingToCardData = (meeting: MeetingApiResponse): MeetingDispla
     id: meeting.id,
     requestNumber: meeting.request_number,
     title: meeting.meeting_title || meeting.meeting_subject,
-    // For cards, show meeting date when scheduled; otherwise fall back to request date
     date: meetingDate !== '-' ? meetingDate : requestDate,
     requestDate,
     meetingCategory,
