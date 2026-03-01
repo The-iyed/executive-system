@@ -577,7 +577,8 @@ export const updateMeetingRequestWithAttachments = async (
 };
 
 export interface ReturnForInfoRequest {
-  notes: string;
+  /** Optional notes for the submitter (مجدول - معلومات إضافية) */
+  notes?: string;
   /** Field names the submitter is allowed to edit when request is returned for info */
   editable_fields?: string[];
 }
@@ -587,6 +588,33 @@ export const returnMeetingForInfo = async (
   payload: ReturnForInfoRequest
 ): Promise<void> => {
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/return-for-info`, payload);
+};
+
+/** مجدول - الجدولة → مجدول: إعتماد التحديث */
+export interface ApproveUpdateRequest {
+  notes?: string;
+}
+
+export const approveMeetingUpdate = async (
+  meetingId: string,
+  payload: ApproveUpdateRequest = {}
+): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/approve-update`, payload);
+};
+
+/** مجدول - الجدولة → مجدول - المحتوى (مسؤول المحتوى): إرسال للمحتوى */
+export interface SendToContentScheduledRequest {
+  /** Optional notes / questions for content officer; each line can create a CONTENT consultation */
+  notes?: string;
+  /** Optional: assign a specific content officer */
+  consultant_user_id?: string;
+}
+
+export const sendToContentScheduled = async (
+  meetingId: string,
+  payload: SendToContentScheduledRequest = {}
+): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/send-to-content-scheduled`, payload);
 };
 
 export interface MinisterAttendee {

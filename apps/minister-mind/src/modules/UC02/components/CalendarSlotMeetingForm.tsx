@@ -1,8 +1,38 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { FormTable, FormInput, MeetingDateTimeRangePicker } from '@shared';
+import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue } from '@shared';
 import type { FormTableColumn } from '@shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
+
+function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
+  if (!startISO || !endISO) {
+    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
+  }
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
+  }
+  const toHHmm = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return {
+    date: start,
+    startTime: toHHmm(start),
+    endTime: toHHmm(end),
+    isFullDay: false,
+  };
+}
+
+function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
+  if (!value.date) return null;
+  const [sh, sm] = value.startTime.split(':').map(Number);
+  const [eh, em] = value.endTime.split(':').map(Number);
+  const start = new Date(value.date);
+  start.setHours(sh, sm, 0, 0);
+  const end = new Date(value.date);
+  end.setHours(eh, em, 0, 0);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
 
 /** Minister invitees table: email only (for calendar-slot meeting form). */
 const MINISTER_INVITEES_EMAIL_ONLY_COLUMNS: FormTableColumn[] = [
@@ -87,11 +117,18 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const [titleTouched, setTitleTouched] = useState(false);
   const titleTrimmed = title.trim();
   const showTitleError = titleTouched && !titleTrimmed;
+  const [pastDateError, setPastDateError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setTitleTouched(true);
+    setPastDateError(null);
     if (!titleTrimmed) return;
+    const start = startDate ? new Date(startDate).getTime() : 0;
+    if (start <= Date.now()) {
+      setPastDateError('لا يمكن إنشاء اجتماع في وقت مضى. يرجى اختيار تاريخ ووقت في المستقبل.');
+      return;
+    }
     onSubmit({
       title: titleTrimmed,
       start_date: startDate,
@@ -123,18 +160,30 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           )}
         </div>
 
-        <MeetingDateTimeRangePicker
-          startValue={startDate}
-          endValue={endDate}
-          onStartChange={setStartDate}
-          onEndChange={setEndDate}
-          minStartDate={minStartDate}
-          startLabel="تاريخ ووقت البداية"
-          endLabel="تاريخ ووقت النهاية"
-        />
+        <FormField className="w-full min-w-0" label="موعد الاجتماع" required>
+          <MeetingRangePicker
+            value={isoRangeToMeetingRange(startDate, endDate)}
+            onChange={(v) => {
+              setPastDateError(null);
+              const iso = meetingRangeToIso(v);
+              if (iso) {
+                setStartDate(iso.start);
+                setEndDate(iso.end);
+              } else {
+                setStartDate('');
+                setEndDate('');
+              }
+            }}
+            minDate={minStartDate}
+            placeholder="اختر التاريخ والوقت"
+          />
+        </FormField>
+        {pastDateError && (
+          <p className="text-right text-sm text-red-600">{pastDateError}</p>
+        )}
 
         <FormTable
-          title="قائمة المدعوين من جهة الوزير"
+          title="قائمة المدعوين"
           columns={MINISTER_INVITEES_EMAIL_ONLY_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}

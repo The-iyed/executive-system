@@ -950,7 +950,7 @@ const ContentRequestDetail: React.FC = () => {
           onBack={() => navigate(-1)}
           statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
           primaryAction={
-            meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT ? (
+            meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO ? (
               <button
                 type="button"
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2323,7 +2323,7 @@ const ContentRequestDetail: React.FC = () => {
       </div>
       <div>
       {/* Actions bar – same FAB + arc as meeting detail (hidden when scheduled for content update) */}
-      {meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT && (
+      {meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO && (
       <MeetingActionsBar
         meetingStatus={MeetingStatus.UNDER_REVIEW}
         open={actionsBarOpen}
