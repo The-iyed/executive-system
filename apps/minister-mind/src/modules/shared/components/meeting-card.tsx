@@ -156,7 +156,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
-                  <span className="text-[12px] text-[#344054] leading-4">{meeting.requestNumber}</span>
+                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.requestNumber}</span>
                 </div>
               </div>
             </CardTooltip>
@@ -168,7 +168,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
               </div>
               <div className="flex flex-col gap-0.5 min-w-0 items-center">
                 <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الطلب</span>
-                <span className="text-[12px] text-[#344054] leading-4">{meeting.date}</span>
+                <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.date}</span>
               </div>
             </div>
           </CardTooltip>
@@ -180,7 +180,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
-                  <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingCategory}</span>
+                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.meetingCategory}</span>
                 </div>
               </div>
             </CardTooltip>
@@ -193,7 +193,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
-                  <span className="text-[12px] text-[#344054] leading-4">{getLocationLabel(meeting.location)}</span>
+                  <span className="text-[12px] text-[#344054] leading-4 text-center">{getLocationLabel(meeting.location)}</span>
                 </div>
               </div>
             </CardTooltip>
@@ -206,7 +206,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0 items-center">
                   <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
-                  <span className="text-[12px] text-[#344054] leading-4">{meeting.meetingDate}</span>
+                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.meetingDate}</span>
                 </div>
               </div>
             </CardTooltip>
