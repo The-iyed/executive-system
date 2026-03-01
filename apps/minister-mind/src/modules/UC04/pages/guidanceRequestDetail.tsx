@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
+import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
@@ -368,42 +368,15 @@ const GuidanceRequestDetail: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="p-6">
-        {/* Main Container */}
-        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
-          {/* Header Section */}
-          <div className="flex flex-row items-center justify-between gap-6">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* Title and Status */}
-            <div className="flex-1 flex flex-col gap-1 items-start relative">
-              <div className="flex items-center gap-3">
-                <h1
-                  className="text-2xl font-bold text-gray-900 text-right"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  تعديل طلب معاد من مسؤول الجدولة ({meetingRequest.request_number})
-                </h1>
-                <StatusBadge status={meetingStatus} label={statusLabel} />
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex justify-center w-full ">
-            <Tabs
-              items={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
-        </div>
-          </div>
+        <DetailPageHeader
+          title={`تعديل طلب معاد من مسؤول الجدولة (${meetingRequest.request_number})`}
+          onBack={() => navigate(-1)}
+          statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      </div>
 
       {/* Tab Content Container */}
       <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
@@ -474,11 +447,11 @@ const GuidanceRequestDetail: React.FC = () => {
                   <div className="flex flex-col gap-4 w-full max-w-[1321px] mx-auto">
                 <div className="flex flex-row items-center justify-between gap-4">
                   <h2
-                    className="text-xl font-bold text-right text-[#101828]"
+                    className="text-lg font-bold text-right text-[#101828]"
                     style={{
                       fontFamily: "'Almarai', sans-serif",
                       fontWeight: 700,
-                      fontSize: '20px',
+                      fontSize: '16px',
                       lineHeight: '28px',
                     }}
                   >
@@ -597,7 +570,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       style={{
                         fontFamily: "'Almarai', sans-serif",
                         fontWeight: 700,
-                        fontSize: '22px',
+                        fontSize: '16px',
                         lineHeight: '38px',
                         color: '#101828',
                       }}
@@ -697,7 +670,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       style={{
                         fontFamily: "'Almarai', sans-serif",
                         fontWeight: 700,
-                        fontSize: '22px',
+                        fontSize: '16px',
                         lineHeight: '38px',
                         color: '#101828',
                       }}
@@ -798,7 +771,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       style={{
                         fontFamily: "'Almarai', sans-serif",
                         fontWeight: 700,
-                        fontSize: '22px',
+                        fontSize: '16px',
                         lineHeight: '38px',
                         color: '#101828',
                       }}
@@ -1342,7 +1315,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
-                    fontSize: '22px',
+                    fontSize: '16px',
                     lineHeight: '38px',
                     color: '#101828',
                   }}
@@ -1464,7 +1437,7 @@ const GuidanceRequestDetail: React.FC = () => {
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
-                    fontSize: '22px',
+                    fontSize: '16px',
                     lineHeight: '38px',
                     color: '#101828',
                   }}
