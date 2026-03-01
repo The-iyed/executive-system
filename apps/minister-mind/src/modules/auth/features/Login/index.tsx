@@ -18,7 +18,6 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const TEAL_DARK = '#1f4848';
-const BG_RIGHT = '#f7f7f7';
 
 /** Ministry emblem placeholder (shield outline) - replace src with actual ministry logo asset if available */
 const MinistryEmblem = () => (
