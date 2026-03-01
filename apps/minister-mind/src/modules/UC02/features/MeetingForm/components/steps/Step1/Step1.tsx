@@ -78,6 +78,7 @@ export function Step1({
   fillFormFromPreviousMeeting,
   handleNextClick,
   handleSaveDraftClick,
+  handleCancelClick,
   isFieldVisible,
 }: Step1Props) {
   const location = useLocation();
@@ -410,7 +411,7 @@ export function Step1({
         </div>
 
         <ActionButtons
-          onSaveDraft={handleSaveDraftClick}
+          onCancel={handleCancelClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />
