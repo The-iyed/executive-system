@@ -387,6 +387,15 @@ export const rejectMeeting = async (meetingId: string, payload: RejectMeetingReq
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/reject`, payload);
 };
 
+export interface CancelMeetingRequest {
+  reason?: string;
+  notes?: string;
+}
+
+export const cancelMeeting = async (meetingId: string, payload: CancelMeetingRequest = {}): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/cancel`, payload);
+};
+
 export const moveToWaitingList = async (meetingId: string): Promise<void> => {
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/add-to-waiting-list`);
 };
