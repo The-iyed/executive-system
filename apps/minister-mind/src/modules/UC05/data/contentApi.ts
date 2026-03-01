@@ -1,6 +1,9 @@
 // Import axios instance
 import axiosInstance from '../../auth/utils/axios';
 
+/** Base URL for business-cards / actions API (list actions). */
+const BUSINESS_CARDS_BASE_URL = 'https://momah-business-cards.momrahai.com';
+
 export interface Attachment {
   id: string;
   file_name: string;
@@ -296,10 +299,61 @@ export const getContentConsultants = async (
   return response.data;
 };
 
+/** Action item from GET /api/v1/actions/ (list actions). */
+export interface ActionItem {
+  id: number;
+  adam_id?: string | null;
+  title: string;
+  due_date?: string | null;
+  status?: string;
+  is_completed?: boolean;
+  meeting_id?: number | string | null;
+  created_date?: string | null;
+  mod_date?: string | null;
+  completed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  /** Array of assignee emails – do not treat as string. */
+  assignees?: string[];
+}
+
+export interface ListActionsParams {
+  limit?: number;
+  search?: string;
+}
+
+/** GET /api/v1/actions/ – list actions with optional search and limit (uses business-cards base URL). */
+export const listActions = async (
+  params: ListActionsParams = {}
+): Promise<ActionItem[]> => {
+  const parts: string[] = [];
+  if (params.limit !== undefined) {
+    parts.push(`limit=${encodeURIComponent(String(params.limit))}`);
+  }
+  if (params.search != null && params.search !== '') {
+    parts.push(`search=${encodeURIComponent(params.search)}`);
+  }
+  const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+  const url = `/api/v1/actions${query}`;
+  const response = await axiosInstance.get<ActionItem[]>(url);
+  const data = response.data;
+  return Array.isArray(data) ? data : [];
+};
+
+/** Directive object for approve payload – directives form field is JSON string of this array. */
+export interface DirectiveForApprove {
+  id: number;
+  title: string;
+  due_date: string | null;
+  assignees: string[];
+  status: string;
+}
+
 export interface ApproveContentRequest {
   file?: File;
   notes?: string;
-  directives?: string[];
+  /** Array of directive objects (sent as JSON string in form). */
+  directives?: DirectiveForApprove[];
 }
 
 export const approveContent = async (
