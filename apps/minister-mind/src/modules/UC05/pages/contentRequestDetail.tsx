@@ -1953,7 +1953,7 @@ const ContentRequestDetail: React.FC = () => {
               })()}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  إضافة ملاحظات توجيه (اختياري)
+                  إضافة ملاحظات 
                 </label>
                 <Textarea
                   value={guidanceNotes}
