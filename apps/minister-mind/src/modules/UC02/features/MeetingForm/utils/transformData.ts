@@ -74,11 +74,15 @@ type DraftInvitee = NonNullable<DraftApiResponse['invitees']>[number];
 function mapDraftInviteeToStep3Row(invitee: DraftInvitee, index: number): InviteeFormRow {
   const attendanceMode = (invitee as { attendance_mode?: string }).attendance_mode;
   const viewPerm = (invitee as { view_permission?: boolean }).view_permission;
+  const sector = (invitee as { sector?: string; department_name?: string }).sector
+    ?? (invitee as { sector?: string; department_name?: string }).department_name
+    ?? '';
   return {
     id: invitee.id,
     full_name: invitee.external_name ?? '',
     position_title: invitee.position ?? '',
     mobile_number: invitee.mobile ?? '',
+    sector,
     email: invitee.external_email ?? '',
     attendance_mode: attendanceMode === 'REMOTE' ? 'REMOTE' : 'IN_PERSON',
     view_permission: viewPerm === true,

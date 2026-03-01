@@ -168,6 +168,7 @@ export const step1BaseSchema = z.object({
   alternative2EndDate: emptyStr(),
   meeting_channel: emptyStr(),
   location: emptyStr(),
+  location_option: emptyStr(),
   requiresProtocol: z.boolean().optional().default(false),
   meetingGoals: z.array(meetingGoalItem).optional().default([]),
   meetingAgenda: z.array(agendaItemBase).optional().default([]),
