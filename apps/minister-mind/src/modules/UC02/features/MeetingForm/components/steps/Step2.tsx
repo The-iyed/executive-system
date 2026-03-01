@@ -69,7 +69,6 @@ export const Step2: React.FC<Step2Props> = ({
 
         <ActionButtons
           onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />

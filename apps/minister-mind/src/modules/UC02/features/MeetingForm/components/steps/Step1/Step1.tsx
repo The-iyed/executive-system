@@ -412,7 +412,6 @@ export function Step1({
 
         <ActionButtons
           onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />
