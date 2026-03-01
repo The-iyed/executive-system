@@ -66,11 +66,10 @@ export const ContentBar: React.FC<ContentBarProps> = ({
 
   return (
     <div
-      className={`flex flex-row items-center justify-between border border-[#F2F2F2] gap-6 px-4 py-2 rounded-[30px] min-h-[56px] ${className} bg-transparent!`}
+      className={`flex flex-row items-center justify-between gap-6 px-4 py-2 rounded-[30px] min-h-[56px] bg-transparent! ${className}`}
       dir="rtl"
     >
       <span>
-
      {primaryAction && (
         <button
           type="button"

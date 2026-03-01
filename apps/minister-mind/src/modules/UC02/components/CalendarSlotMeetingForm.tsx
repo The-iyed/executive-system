@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { FormTable, FormInput, MeetingDateTimeRangePicker } from '@shared';
 import type { FormTableColumn } from '@shared';
-import { createEmptyStep3InviteeRow } from '../../UC08/features/MeetingForm/utils/inviteeMappers';
-import type { InviteeFormRow } from '../../UC08/features/MeetingForm/schemas/step3.schema';
+import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
+import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 
 /** Minister invitees table: email only (for calendar-slot meeting form). */
 const MINISTER_INVITEES_EMAIL_ONLY_COLUMNS: FormTableColumn[] = [

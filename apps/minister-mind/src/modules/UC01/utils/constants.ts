@@ -1,4 +1,3 @@
-import { TabItem } from '@shared/components/tabs';
 import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
 
 export const PAGINATION = {

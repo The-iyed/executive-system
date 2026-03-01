@@ -8,7 +8,7 @@ export { UserAvatar } from './user-avatar';
 export { WelcomeSection, type WelcomeSectionProps, type ActionButton } from './welcome-section';
 export { NavigationActions, type NavItem } from './navigation-actions';
 export { WeatherCard, type WeatherCardProps } from './weather-card';
-export { SharedLayout, type SharedLayoutProps } from './shared-layout';
+export { SharedLayout, type SharedLayoutProps } from './Layout/shared-layout';
 export { ContentBar, type ContentBarProps, type ContentBarFilterTab } from './content-bar';
 export { Mou7tawaContentTab, type Mou7tawaContentTabProps, type ContentTabFileItem } from './Mou7tawaContentTab';
 export { AttachmentPreviewDrawer, type AttachmentPreviewDrawerProps, type AttachmentPreviewItem } from './AttachmentPreviewDrawer';
