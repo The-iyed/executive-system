@@ -4,10 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck, User, Mail, Phone, Building2 } from 'lucide-react';
 import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic } from '@shared/utils';
-import {
-  MeetingStatus,
-  getMeetingStatusLabel,
-} from '@shared/types';
+import { MeetingStatus } from '@shared/types';
+import { getMeetingStatusLabel } from '@shared';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
 import { PATH } from '../routes/paths';
