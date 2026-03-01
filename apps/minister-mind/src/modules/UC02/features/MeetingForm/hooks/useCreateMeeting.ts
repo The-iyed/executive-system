@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { PATH as UC02_PATH } from '../../../../UC02/routes/paths';
 import {
   getDraftId,
   saveDraftId,
@@ -11,6 +10,7 @@ import { useStepNavigation } from './useStepNavigation';
 import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
 import { useScrollToTop } from './useScrollToTop';
+import { PATH } from '../../../routes/paths';
 
 export interface UseCreateMeetingOptions {
   /** When set (e.g. drawer mode), cancel/close closes drawer instead of navigating to MEETINGS */
@@ -51,8 +51,12 @@ export const useCreateMeeting = (options: UseCreateMeetingOptions = {}) => {
 
   const handleSaveDraft = useCallback(() => {
     clearDraftData();
-    navigate(UC02_PATH.DIRECTIVES);
-  }, [navigate]);
+    if (onClose) {
+      onClose();
+    } else {
+      navigate(PATH.DIRECTIVES);
+    }
+  }, [navigate, onClose]);
 
   const { deleteDraft, step1Hook, step2Hook, step3Hook } = useMeetingSteps({
     draftId,
