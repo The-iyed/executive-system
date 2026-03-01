@@ -1498,8 +1498,11 @@ const MeetingDetail: React.FC = () => {
   // Map status to MeetingStatus enum
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
-  /** When true, form is editable and all actions (FAB) are enabled (قيد المراجعة or قيد المراجعة - المكتب التنفيذي). */
-  const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW || meeting?.status === MeetingStatus.UNDER_GUIDANCE;
+  /** When true, form is editable and all actions (FAB) are enabled. */
+  const canEdit =
+    meeting?.status === MeetingStatus.UNDER_REVIEW ||
+    meeting?.status === MeetingStatus.UNDER_GUIDANCE ||
+    meeting?.status === MeetingStatus.SCHEDULED;
 
   /** Tooltip content for help icon - shows permissions based on current status */
   const permissionTooltip = useMemo(() => {
@@ -3524,8 +3527,8 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Edit button: bottom-left, when status allows edit (UNDER_REVIEW or UNDER_GUIDANCE); disabled when no changes */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE) && (
+        {/* Edit button: bottom-left, when status allows edit; disabled when no changes */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
           <div className="fixed bottom-6 left-6 z-40 flex-shrink-0" dir="rtl">
             <TooltipProvider>
               <Tooltip>
