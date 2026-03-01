@@ -3,3 +3,4 @@
 # Subsequent pulls skip setup so pull stays fast.
 
 sh scripts/setup-after-pull.sh
+ff
