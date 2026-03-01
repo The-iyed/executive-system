@@ -34,8 +34,9 @@ function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
   return {
     user_id,
     full_name: row.full_name,
-    position_title: row.position_title,
+    position_title: row.position_title ?? '',
     mobile_number: row.mobile_number,
+    sector: (row as { sector?: string }).sector ?? '',
     email: row.email,
     attendance_mode: row.attendance_mode,
     view_permission: row.view_permission,
@@ -168,12 +169,16 @@ export const useStep3 = ({
           }
         }
       }
-      if (path[0] === 'minister_invitees' && typeof path[1] === 'number') {
-        const row = formData.minister_invitees?.[path[1]];
-        const field = (path[2] as string) ?? '_';
-        if (row?.id) {
-          if (!newErrors[row.id]) newErrors[row.id] = {};
-          newErrors[row.id][field] = err.message;
+      if (path[0] === 'minister_invitees') {
+        if (path.length === 1) {
+          newErrors['__minister_invitees_table__'] = { _: err.message };
+        } else if (typeof path[1] === 'number') {
+          const row = formData.minister_invitees?.[path[1]];
+          const field = (path[2] as string) ?? '_';
+          if (row?.id) {
+            if (!newErrors[row.id]) newErrors[row.id] = {};
+            newErrors[row.id][field] = err.message;
+          }
         }
       }
     });

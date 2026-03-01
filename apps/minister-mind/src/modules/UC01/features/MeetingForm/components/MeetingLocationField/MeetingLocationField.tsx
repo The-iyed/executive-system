@@ -33,7 +33,6 @@ export const MeetingLocationField: React.FC<MeetingLocationFieldProps> = ({
   const locationError = touched.meeting_location ? errors.meeting_location : undefined;
   const hasError = !!(touched.meeting_location && errors.meeting_location);
 
-  // Use meeting_location as source of truth for location; derive dropdown from it when possible
   const dropdownValue = getMeetingLocationDropdownValue(
     formData.meeting_location,
     formData.meeting_location_option
