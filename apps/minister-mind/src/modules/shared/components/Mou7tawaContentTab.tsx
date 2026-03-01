@@ -102,6 +102,9 @@ function FileCard({
   );
 }
 
+/** Exported for reuse in other tabs (e.g. استشارة المحتوى) – same file card as tab المحتوى */
+export { FileCard as ContentTabFileCard };
+
 function AddFileButton({
   label,
   onClick,

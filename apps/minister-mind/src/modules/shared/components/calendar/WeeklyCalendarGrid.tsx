@@ -99,6 +99,14 @@ const formatTimeLabelArabic = (time: string): string => {
   return `${(hour - 12).toString().padStart(2, '0')} م`;
 };
 
+/** True if the slot (date + time) is in the past (cannot create meeting). */
+const isSlotInPast = (date: Date, time: string): boolean => {
+  const [h = 0] = time.split(':').map(Number);
+  const slotStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, 0, 0, 0);
+  return slotStart.getTime() <= Date.now();
+};
+
+/** Events that overlap this (date, time) slot – used for blocking empty-slot click and for "covered" check */
 const getEventsForSlot = (slotDate: Date, time: string, events: CalendarEventData[]): CalendarEventData[] =>
   events.filter((event) => {
     const eventStart = new Date(event.date);
@@ -113,6 +121,34 @@ const getEventsForSlot = (slotDate: Date, time: string, events: CalendarEventDat
     }
     return timeHour >= startHour && timeHour < endHour;
   });
+
+/** Events that **start** at this (date, time) – render once here and span duration */
+const getEventsStartingAtSlot = (slotDate: Date, time: string, events: CalendarEventData[]): CalendarEventData[] =>
+  events.filter((event) => {
+    const eventStart = new Date(event.date);
+    if (!isSameCalendarDay(eventStart, slotDate)) return false;
+    return event.startTime === time;
+  });
+
+/** True if this slot is inside a multi-hour event that started earlier (so we show empty cell and let the spanning block show) */
+const isSlotCoveredByLongEvent = (slotDate: Date, time: string, events: CalendarEventData[]): boolean =>
+  events.some((event) => {
+    const eventStart = new Date(event.date);
+    if (!isSameCalendarDay(eventStart, slotDate)) return false;
+    const timeHour = parseInt(time.split(':')[0], 10);
+    const startHour = parseInt(event.startTime.split(':')[0], 10);
+    const endHour = parseInt(event.endTime.split(':')[0], 10);
+    return timeHour > startHour && timeHour < endHour;
+  });
+
+const ROW_HEIGHT_PX = 53;
+
+/** Duration in grid rows (hours) for an event; minimum 1 */
+const eventSpanRows = (event: CalendarEventData): number => {
+  const startH = parseInt(event.startTime.split(':')[0], 10);
+  const endH = parseInt(event.endTime.split(':')[0], 10);
+  return Math.max(1, endH - startH);
+};
 
 export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   weekStart,
@@ -173,27 +209,64 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
         />
       </div>
 
-      {/* Time Slots: 7 day columns then time column (RTL) - scrollable */}
-      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_52px] min-h-0 flex-1">
-        {timeSlots.map((time) => (
+      {/* Time Slots: 7 day columns then time column (RTL). Explicit grid placement so time labels stay aligned when events span rows. */}
+      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_52px] min-h-0 flex-1 auto-rows-[53px]">
+        {timeSlots.map((time, timeIndex) => (
           <React.Fragment key={time}>
-            {/* Day Columns */}
+            {/* Day Columns - explicit row/column so spanning doesn't shift time labels */}
             {weekDates.map((date, dayIndex) => {
-              const slotEvents = getEventsForSlot(date, time, events);
-              const hasAvailableSlot = slotEvents.some((event) => event.is_available);
-              const isBlocked = slotEvents.length > 0 && !hasAvailableSlot;
+              const startingEvents = getEventsStartingAtSlot(date, time, events);
+              const covered = isSlotCoveredByLongEvent(date, time, events);
+              const slotEventsForBlocking = getEventsForSlot(date, time, events);
+              const hasAvailableSlot = slotEventsForBlocking.some((event) => event.is_available);
+              const isBlockedByEvent = slotEventsForBlocking.length > 0 && !hasAvailableSlot;
+              const isPast = onTimeSlotClick != null && isSlotInPast(date, time);
+              const isSlotClickable = !isBlockedByEvent && !isPast && !covered;
+
+              const spanRows = startingEvents.length > 0
+                ? Math.max(...startingEvents.map(eventSpanRows), 1)
+                : 1;
+
+              const row = timeIndex + 1;
+              const col = dayIndex + 1;
+
+              if (covered) {
+                return (
+                  <div
+                    key={dayIndex}
+                    className="border-b border-r pointer-events-none relative z-0"
+                    style={{
+                      borderColor: '#EAECED',
+                      borderStyle: 'dashed',
+                      borderWidth: '0.908201px',
+                      minHeight: ROW_HEIGHT_PX,
+                      gridRow: row,
+                      gridColumn: col,
+                    }}
+                    aria-hidden
+                  />
+                );
+              }
 
               return (
                 <div
                   key={dayIndex}
                   className={cn(
-                    'h-[53px] flex flex-row gap-0.5 overflow-hidden shrink-0 transition-colors border-b border-r',
-                    isBlocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-[#F9FAFB]',
+                    'flex flex-row gap-0.5 overflow-hidden shrink-0 transition-colors border-b border-r min-h-[53px]',
+                    startingEvents.length === 0 && (isSlotClickable ? 'cursor-pointer hover:bg-[#F9FAFB]' : 'cursor-not-allowed'),
+                    isPast && startingEvents.length === 0 && 'bg-[#F9FAFB] opacity-60',
                   )}
-                  style={{ borderColor: '#EAECED', borderStyle: 'dashed', borderWidth: '0.908201px' }}
-                  onClick={isBlocked ? undefined : () => onTimeSlotClick?.(date, time)}
+                  style={{
+                    borderColor: '#EAECED',
+                    borderStyle: 'dashed',
+                    borderWidth: '0.908201px',
+                    gridRow: spanRows > 1 ? `${row} / span ${spanRows}` : row,
+                    gridColumn: col,
+                    zIndex: startingEvents.length > 0 ? 1 : undefined,
+                  }}
+                  onClick={startingEvents.length === 0 && isSlotClickable ? () => onTimeSlotClick?.(date, time) : undefined}
                 >
-                  {slotEvents.map((event) => (
+                  {startingEvents.map((event) => (
                     <div key={event.id} className="min-w-0 flex-1 h-full overflow-hidden">
                       <CalendarEvent
                         event={event}
@@ -209,10 +282,16 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                 </div>
               );
             })}
-            {/* Time Label - Almarai 12.7148px #272727 (last column = left in RTL) */}
+            {/* Time Label - fixed to this row so it never shifts */}
             <div
               className="flex items-center justify-center py-2 h-[53px] shrink-0 border-b border-r"
-              style={{ borderColor: '#EAECED', borderStyle: 'dashed', borderWidth: '0.908201px' }}
+              style={{
+                borderColor: '#EAECED',
+                borderStyle: 'dashed',
+                borderWidth: '0.908201px',
+                gridRow: timeIndex + 1,
+                gridColumn: 8,
+              }}
             >
               <span className="text-[#272727]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '12.7148px' }}>
                 {formatTimeLabelArabic(time)}
