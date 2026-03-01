@@ -4,20 +4,21 @@
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, AttachmentPreviewDrawer, type AttachmentPreviewItem } from '@shared';
+import { AttachmentPreviewDrawer, formatDateArabic, type AttachmentPreviewItem } from '@shared';
 import { searchAdamMeetingByTitle, type AdamMeetingAction } from '../../../data/meetingsApi';
+import { translateDirectiveStatus } from '../utils/meetingDetailHelpers';
 import { Loader2, Download, Eye } from 'lucide-react';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
 
-function formatInvitees(invitees: AdamMeetingAction['invitees']): string {
-  if (invitees == null) return '—';
-  if (Array.isArray(invitees)) {
-    const parts = invitees.map((inv) =>
-      typeof inv === 'string' ? inv : (inv && typeof inv === 'object' && 'name' in inv ? String((inv as { name?: string }).name ?? inv) : String(inv))
-    );
-    return parts.filter(Boolean).join('، ') || '—';
-  }
-  return String(invitees);
+/** Get assignees as string[] for المعينون column. API may send assignees as string[] (emails) or invitees as string[] | object[]. */
+function getAssigneesList(row: AdamMeetingAction): string[] {
+  const raw = row.assignees ?? row.invitees;
+  if (raw == null || !Array.isArray(raw)) return [];
+  return raw
+    .map((item) =>
+      typeof item === 'string' ? item : (item && typeof item === 'object' && 'name' in item ? String((item as { name?: string }).name ?? item) : String(item))
+    )
+    .filter(Boolean);
 }
 
 export interface MeetingDocumentationTabProps {
@@ -128,17 +129,47 @@ export function MeetingDocumentationTab({ meetingTitle }: MeetingDocumentationTa
           </div>
         ) : (
           <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-            <DataTable
-              columns={[
-                { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_: AdamMeetingAction, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                { id: 'title', header: 'العنوان', width: 'flex-1', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.title ?? '—'}</span> },
-                { id: 'due_date', header: 'تاريخ الاستحقاق', width: 'w-36', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.due_date ?? '—'}</span> },
-                { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.status ?? '—'}</span> },
-                { id: 'invitees', header: 'المدعوون', width: 'w-48', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{formatInvitees(row.invitees)}</span> },
-              ]}
-              data={actions}
-              rowPadding="py-3"
-            />
+            <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-32">الموعد النهائي</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-28">الحالة</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 min-w-[120px]">المعينون</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {actions.map((row, index) => {
+                  const d = row.due_date ? new Date(row.due_date) : null;
+                  const assigneesList = getAssigneesList(row);
+                  return (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{row.title ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{d ? formatDateArabic(d) : '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{translateDirectiveStatus(row.status)}</td>
+                      <td className="px-4 py-3" dir="rtl">
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          {assigneesList.length === 0 ? (
+                            <span className="text-sm text-gray-500">—</span>
+                          ) : (
+                            assigneesList.map((email, i) => (
+                              <span
+                                key={`${email}-${i}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#008774]/15 text-[#008774] text-xs"
+                              >
+                                {email}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
