@@ -15,7 +15,6 @@ import {
   MeetingConfidentiality,
   MeetingChannelLabels,
   StatusBadge,
-  DataTable,
   Tabs,
   DetailPageHeader,
   type TableColumn,
@@ -33,6 +32,7 @@ import {
   PRESENTATION_DURATION_MINUTES_OPTIONS,
   MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
+  formatDateArabic,
   isValidPhone,
 } from '@shared'; 
 import {
@@ -88,6 +88,7 @@ import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type M
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import { translateDirectiveStatus } from '../features/meeting-detail/utils/meetingDetailHelpers';
 import {
   MEETING_LOCATION_OPTIONS,
   MeetingLocation,
@@ -1702,17 +1703,40 @@ const MeetingDetail: React.FC = () => {
     return all;
   }, [meetingStatus]);
 
-  // Normalize content_approval_directives for table (API may return string[] or object[] with title/text)
-  const contentApprovalDirectivesRows = useMemo(() => {
+  // Normalize content_approval_directives for table (same columns as DirectivesTab: رقم التوجيه، تاريخ التوجيه، نص التوجيه، الموعد النهائي، المسؤولون، الحالة)
+  // API may return string[] or object[] with title/text/due_date/status/assignees/directive_number
+  interface ContentApprovalDirectiveRow {
+    directive_number?: string;
+    directive_date?: string;
+    directive_text: string;
+    deadline?: string;
+    responsible_persons?: string;
+    directive_status?: string;
+  }
+  const contentApprovalDirectivesRows = useMemo((): ContentApprovalDirectiveRow[] => {
     const raw = meeting?.content_approval_directives;
     if (!raw || !Array.isArray(raw)) return [];
-    return raw.map((item: string | { title?: string; text?: string; [key: string]: unknown }) => {
-      if (typeof item === 'string') return { text: item };
+    return raw.map((item: string | { title?: string; text?: string; due_date?: string; deadline?: string; status?: string; assignees?: string[] | Array<{ name?: string }>; directive_number?: string; [key: string]: unknown }) => {
+      if (typeof item === 'string') return { directive_text: item };
       if (item && typeof item === 'object') {
         const t = (item as { title?: string; text?: string }).title ?? (item as { text?: string }).text;
-        if (t != null && typeof t === 'string') return { text: t };
+        const text = t != null && typeof t === 'string' ? t : String(item);
+        const dueDate = (item as { due_date?: string }).due_date ?? (item as { deadline?: string }).deadline;
+        const status = (item as { status?: string }).status;
+        const assignees = (item as { assignees?: string[] | Array<{ name?: string }> }).assignees;
+        const responsiblePersons = Array.isArray(assignees)
+          ? assignees.map((a) => (typeof a === 'string' ? a : (a && typeof a === 'object' && 'name' in a ? String((a as { name?: string }).name ?? a) : String(a)))).filter(Boolean).join('، ') || undefined
+          : undefined;
+        return {
+          directive_number: (item as { directive_number?: string }).directive_number,
+          directive_date: dueDate,
+          directive_text: text,
+          deadline: dueDate,
+          responsible_persons: responsiblePersons,
+          directive_status: status,
+        };
       }
-      return { text: String(item) };
+      return { directive_text: String(item) };
     });
   }, [meeting?.content_approval_directives]);
 
@@ -2349,7 +2373,7 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* التوجيهات المرتبطة بالاجتماع (from former استشارة المحتوى tab) */}
+              {/* التوجيهات المرتبطة بالاجتماع – same table as إضافة التوجيهات (contentRequestDetail) */}
               {contentApprovalDirectivesRows.length > 0 && (
                 <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                   <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
@@ -2360,14 +2384,50 @@ const MeetingDetail: React.FC = () => {
                   </div>
                   <div className="p-5">
                     <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                      <DataTable
-                        columns={[
-                          { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                          { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
-                        ]}
-                        data={contentApprovalDirectivesRows}
-                        rowPadding="py-3"
-                      />
+                      <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-32">الموعد النهائي</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-28">الحالة</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 min-w-[120px]">المعينون</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {contentApprovalDirectivesRows.map((row, index) => {
+                            const d = row.deadline ? new Date(row.deadline) : null;
+                            const assigneesList = (row.responsible_persons ?? '')
+                              .split(/[،,]/)
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            return (
+                              <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{row.directive_text || '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{d ? formatDateArabic(d) : '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{translateDirectiveStatus(row.directive_status)}</td>
+                                <td className="px-4 py-3" dir="rtl">
+                                  <div className="flex flex-wrap gap-1.5 items-center">
+                                    {assigneesList.length === 0 ? (
+                                      <span className="text-sm text-gray-500">—</span>
+                                    ) : (
+                                      assigneesList.map((email, i) => (
+                                        <span
+                                          key={`${email}-${i}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#008774]/15 text-[#008774] text-xs"
+                                        >
+                                          {email}
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>

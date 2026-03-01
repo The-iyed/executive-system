@@ -1118,6 +1118,8 @@ export interface AdamMeetingAction {
   title?: string;
   due_date?: string;
   status?: string;
+  /** Assignees as string array (e.g. emails: ["f.abuhaimed@momah.gov.sa", "h.alhagbani@momah.gov.sa"]) */
+  assignees?: string[];
   invitees?: string[] | Array<{ name?: string; [key: string]: unknown }>;
   [key: string]: unknown;
 }
