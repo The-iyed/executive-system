@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
-
-
+import { TooltipProvider } from '@sanad-ai/ui';
 import { ActionButton } from './welcome-section';
 
 export interface NavItem {
@@ -12,7 +10,7 @@ export interface NavItem {
   label: string;
   path?: string;
   actions?: ActionButton[];
-  requiresUseCase?: string; // Optional: Only show this item if user has the specified use case
+  requiresUseCase?: string;
 }
 
 export interface NavigationActionsProps {
@@ -20,19 +18,14 @@ export interface NavigationActionsProps {
   defaultActive?: string;
   onNavChange?: (id: string) => void;
   items?: NavItem[];
-  /** Pill style: light grey bar, segments with icon+label, active = dark teal */
   variant?: 'default' | 'pill';
 }
 
 const isRouteActive = (itemPath?: string, pathname?: string) => {
   if (!itemPath || !pathname) return false;
   if (itemPath === '/') return pathname === '/';
-
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 };
-
-const TEAL_ACTIVE = '#00A79D';
-const PILL_BG = '#F0F0F0';
 
 export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
   className = '',
@@ -84,7 +77,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                   onClick={() => handleClick(item.id, item.path)}
                   className="flex items-center gap-2 min-h-[38px] py-2.5 px-4 rounded-full transition-colors"
                   style={{
-                    backgroundColor: isActive ? TEAL_ACTIVE : 'transparent',
+                    backgroundColor: isActive ? '#044D4E' : 'transparent',
                     color: isActive ? '#fff' : '#374151',
                   }}
                   aria-label={item.label}
