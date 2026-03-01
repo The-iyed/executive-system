@@ -1,47 +1,42 @@
 
 export enum MeetingStatus {
   DRAFT = 'DRAFT',
-  ADDITIONAL_INFO = 'ADDITIONAL_INFO',
   UNDER_REVIEW = 'UNDER_REVIEW',
+  RETURNED_FROM_CONTENT = 'RETURNED_FROM_CONTENT',
   UNDER_GUIDANCE = 'UNDER_GUIDANCE',
   UNDER_CONTENT_REVIEW = 'UNDER_CONTENT_REVIEW',
+  REJECTED = 'REJECTED',
+  WAITING = 'WAITING',
   SCHEDULED = 'SCHEDULED',
-  SCHEDULED_SCHEDULING = 'SCHEDULED_SCHEDULING',
-  SCHEDULED_CONTENT = 'SCHEDULED_CONTENT',
-  SCHEDULED_CONTENT_CONSULTATION = 'SCHEDULED_CONTENT_CONSULTATION',
-  SCHEDULED_UPDATE_CONTENT = 'SCHEDULED_UPDATE_CONTENT',
-  SCHEDULED_ADDITIONAL_INFO = 'SCHEDULED_ADDITIONAL_INFO',
   SCHEDULED_DELAYED = 'SCHEDULED_DELAYED',
   RETURNED_FROM_SCHEDULING = 'RETURNED_FROM_SCHEDULING',
-  RETURNED_FROM_CONTENT = 'RETURNED_FROM_CONTENT',
-  WAITING = 'WAITING',
-  READY = 'READY',
-  REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
-  CLOSED = 'CLOSED',
+  SCHEDULED_ADDITIONAL_INFO = 'SCHEDULED_ADDITIONAL_INFO',
+  SCHEDULED_CONTENT = 'SCHEDULED_CONTENT',
+  SCHEDULED_SCHEDULING = 'SCHEDULED_SCHEDULING',
   SCHEDULED_DELEGATED = 'SCHEDULED_DELEGATED',
+  CLOSED_PASS = 'CLOSED_PASS',
+  CLOSED = 'CLOSED',
 }
+
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
-  [MeetingStatus.DRAFT]: 'مسودة',
-  [MeetingStatus.ADDITIONAL_INFO]: 'معلومات إضافية',
+  [MeetingStatus.DRAFT]: 'جديد',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معلومات إضافية',
   [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة -  استشارة',
   [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
+  [MeetingStatus.REJECTED]: 'مرفوض',
+  [MeetingStatus.WAITING]: 'قيد الانتظار',
   [MeetingStatus.SCHEDULED]: 'مجدول',
-  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
-  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
-  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: 'مجدول - استشارة المحتوى',
-  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: 'مجدول - تحديث المحتوى',
-  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
   [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
   [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معلومات إضافية',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معلومات إضافية',
-  [MeetingStatus.WAITING]: 'قيد الانتظار',
-  [MeetingStatus.READY]: 'جاهز',
-  [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.CANCELLED]: 'ملغي',
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
+  [MeetingStatus.SCHEDULED_CONTENT]: 'مجدول - المحتوى',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: 'مجدول - الجدولة',
+  [MeetingStatus.SCHEDULED_DELEGATED]: 'مجدول - إنابة',
+  [MeetingStatus.CLOSED_PASS]: 'مغلق - تمرير',
   [MeetingStatus.CLOSED]: 'مغلق',
-  [MeetingStatus.SCHEDULED_DELEGATED]: 'مجدول - مفوّض',
 };
 
 export enum MeetingClassification {
@@ -123,19 +118,12 @@ export enum MeetingClassificationType {
   SPECIAL = 'SPECIAL',
 }
 
-/**
- * Meeting Classification Type Labels (Arabic)
- */
 export const MeetingClassificationTypeLabels: Record<MeetingClassificationType, string> = {
   [MeetingClassificationType.STRATEGIC]: 'استراتيجي',
   [MeetingClassificationType.OPERATIONAL]: 'تشغيلي',
   [MeetingClassificationType.SPECIAL]: 'خاص',
 };
 
-/**
- * Meeting Confidentiality (سريّة الاجتماع)
- * Confidentiality level of the meeting
- */
 export enum MeetingConfidentiality {
   CONFIDENTIAL = 'CONFIDENTIAL',
   NORMAL = 'NORMAL',
@@ -293,13 +281,6 @@ export const MeetingClassificationLabelsExtra: Record<string, string> = {
   WORKSHOP: 'ورشة عمل',
   DISCUSSION: 'مناقشة (بدون عرض تقديمي)',
   DISCUSSION_WITHOUT_PRESENTATION: 'مناقشة (بدون عرض تقديمي)',
-};
-
-/**
- * Helper: get meeting status label (accepts enum or API string)
- */
-export const getMeetingStatusLabel = (status: MeetingStatus | string): string => {
-  return MeetingStatusLabels[status as MeetingStatus] ?? status;
 };
 
 /**

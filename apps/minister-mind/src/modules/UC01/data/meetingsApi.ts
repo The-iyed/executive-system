@@ -14,7 +14,7 @@ export interface GetMeetingsParams {
 export interface MeetingApiResponse {
   id: string;
   request_number: string;
-  status: string;
+  status: MeetingStatus;
   meeting_title: string;
   meeting_subject: string;
   created_at: string;

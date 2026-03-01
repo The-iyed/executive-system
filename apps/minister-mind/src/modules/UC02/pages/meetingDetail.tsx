@@ -1517,8 +1517,6 @@ const MeetingDetail: React.FC = () => {
       MeetingStatus.SCHEDULED,
       MeetingStatus.SCHEDULED_SCHEDULING,
       MeetingStatus.SCHEDULED_CONTENT,
-      MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
-      MeetingStatus.SCHEDULED_UPDATE_CONTENT,
       MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
       MeetingStatus.SCHEDULED_DELAYED,
     ];
@@ -1552,12 +1550,6 @@ const MeetingDetail: React.FC = () => {
       return {
         title: 'مرحلة مقدم الطلب',
         description: 'الطلب في مرحلة مقدم الطلب. يمكنك عرض التفاصيل فقط.',
-      };
-    }
-    if (status === MeetingStatus.READY) {
-      return {
-        title: 'جاهز للجدولة',
-        description: 'الطلب جاهز. يمكنك عرض التفاصيل والجدولة.',
       };
     }
     return {
@@ -2262,13 +2254,13 @@ const MeetingDetail: React.FC = () => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-              <button
+                      <button
                         type="button"
                         className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
                         aria-label="مساعدة"
                       >
                         <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
-              </button>
+                     </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[280px] text-right">
                       <p className="font-semibold text-gray-900 mb-1">{permissionTooltip.title}</p>

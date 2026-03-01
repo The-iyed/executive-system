@@ -4,10 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
 import { Tabs, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-import {
-  MeetingStatus,
-  getMeetingStatusLabel,
-} from '@shared/types';
+import { MeetingStatus } from '@shared/types';
+import { getMeetingStatusLabel } from '@shared';
 import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
 import { useAuth } from '../../auth/context';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
