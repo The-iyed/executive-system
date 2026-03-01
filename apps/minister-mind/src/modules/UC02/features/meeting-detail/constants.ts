@@ -63,6 +63,5 @@ export const COMPARE_RECOMMENDATION: Record<string, string> = { review: 'مرا�
 export const TABS_HIDDEN_WHEN_SCHEDULED = [
   'scheduling-consultation',
   'directive',
-  'content-consultation',
 ];
 

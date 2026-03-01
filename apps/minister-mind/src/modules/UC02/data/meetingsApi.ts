@@ -1113,6 +1113,45 @@ export const getSuggestedActions = async (
   return response.data;
 };
 
+/** Action item from GET /api/v1/adam-meetings/search/{title} response (التوجيهات المرتبطة بالاجتماع) */
+export interface AdamMeetingAction {
+  title?: string;
+  due_date?: string;
+  status?: string;
+  invitees?: string[] | Array<{ name?: string; [key: string]: unknown }>;
+  [key: string]: unknown;
+}
+
+/** Response from GET /api/v1/adam-meetings/search/{title} – Search Meeting By Title */
+export interface AdamMeetingSearchByTitleResponse {
+  found: boolean;
+  meeting_id?: string;
+  meeting_title?: string;
+  meeting_start_date?: string;
+  meeting_end_date?: string;
+  status?: string;
+  actions?: AdamMeetingAction[];
+  actions_count?: number;
+  mom_pdf_base64?: string;
+  mom_status?: string;
+  message?: string;
+}
+
+/**
+ * Search for a meeting by title – GET {VITE_BUSINESS_CARDS_BASE_URL}/adam-meetings/search/{title}.
+ * Uses .env VITE_BUSINESS_CARDS_BASE_URL (e.g. https://momah-business-cards.momrahai.com/api/v1).
+ * Used in توثيق الاجتماع tab for محضر الاجتماع (mom_pdf_base64) and التوجيهات (actions).
+ */
+export const searchAdamMeetingByTitle = async (
+  title: string
+): Promise<AdamMeetingSearchByTitleResponse> => {
+  const baseUrl = (import.meta.env.VITE_BUSINESS_CARDS_BASE_URL as string)?.replace(/\/$/, '') ?? '';
+  const encodedTitle = encodeURIComponent(title.trim());
+  const url = `${baseUrl}/adam-meetings/search/${encodedTitle}`;
+  const response = await axiosInstance.get<AdamMeetingSearchByTitleResponse>(url);
+  return response.data;
+};
+
 // Evaluate Readiness API
 export interface EvaluateReadinessResponse {
   readiness: string;
