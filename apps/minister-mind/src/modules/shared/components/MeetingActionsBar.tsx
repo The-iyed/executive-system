@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarMinus, Plus, Pencil, RotateCcw, Send, X, Zap } from 'lucide-react';
+import { CalendarMinus, CheckCircle, Plus, Pencil, RotateCcw, Send, X, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@sanad-ai/ui';
 import { MeetingStatus } from '../types';
 
@@ -113,6 +113,8 @@ export interface MeetingActionsBarProps {
   onOpenEditConfirm: () => void;
   onOpenReturnForInfo: () => void;
   onOpenSendToContent: () => void;
+  /** مجدول - الجدولة → إعتماد التحديث → مجدول */
+  onOpenApproveUpdate?: () => void;
   onAddToWaitingList: () => void;
   isAddToWaitingListPending: boolean;
   hasChanges: boolean;
@@ -136,6 +138,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   onOpenEditConfirm,
   onOpenReturnForInfo,
   onOpenSendToContent,
+  onOpenApproveUpdate,
   onAddToWaitingList,
   isAddToWaitingListPending,
   hasChanges,
@@ -154,9 +157,18 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
     { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
   ];
 
+  /** مجدول - الجدولة (SCHEDULED_SCHEDULING): إعادة، إعتماد التحديث، إرسال للمحتوى */
+  const scheduledSchedulingActions: ActionBarItem[] = [
+    { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
+    ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
+    { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); onOpenSendToContent(); } },
+  ];
+
   const actions: ActionBarItem[] =
     customActions && customActions.length > 0
       ? customActions.map((a) => ({ ...a, onClick: () => { close(); a.onClick(); } }))
+      : meetingStatus === MeetingStatus.SCHEDULED_SCHEDULING
+      ? scheduledSchedulingActions
       : meetingStatus === MeetingStatus.SCHEDULED
       ? [
           { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
