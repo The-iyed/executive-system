@@ -5,9 +5,9 @@ import { HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@sanad-ai/ui';
 import { getMeetingById } from '../../../UC02/data/meetingsApi';
 import { GoBackHeader, EditButton } from '../../components';
-import { MeetingStatus, MeetingStatusLabels } from '@shared/types';
+import { MeetingOwnerType, MeetingStatus } from '@shared/types';
 import { PATH } from '../../routes/paths';
-import { Tabs, MeetingInfo, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared';
+import { Tabs, MeetingInfo, AttachmentPreviewDrawer, type MeetingInfoData, getMeetingStatusLabel } from '@shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
@@ -28,9 +28,7 @@ function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_off
 const PreviewMeeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(MeetingPreviewTabs.REQUEST_INFO);
   const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
-  const {
-    openEditDrawer,
-  } = useMeetingFormDrawer();
+  const { openEditDrawer } = useMeetingFormDrawer();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -106,7 +104,7 @@ const PreviewMeeting: React.FC = () => {
     );
   }
 
-  const statusLabel = MeetingStatusLabels[meeting.status as MeetingStatus] || meeting.status;
+  const statusLabel = getMeetingStatusLabel(meeting.status, MeetingOwnerType.SUBMITTER);
 
   const handleBack = () => {
     navigate(PATH.MEETINGS);
@@ -147,7 +145,6 @@ const PreviewMeeting: React.FC = () => {
               />
               {[
                 MeetingStatus.DRAFT,
-                MeetingStatus.SCHEDULED_UPDATE_CONTENT,
                 MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
                 MeetingStatus.SCHEDULED_DELAYED,
                 MeetingStatus.RETURNED_FROM_SCHEDULING,
