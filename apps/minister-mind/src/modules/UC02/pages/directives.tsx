@@ -8,8 +8,8 @@ import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } fr
 import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
-import { useMeetingFormDrawer } from '../../UC08/features/MeetingForm/hooks/useMeetingFormDrawer';
 import '@shared/styles';
+import { useMeetingFormDrawer } from '../features/MeetingForm/hooks';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -474,39 +474,33 @@ const Directives: React.FC = () => {
   const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right">توجيهات الجدولة</h1>
-            <p className="text-base text-gray-600 text-right">
-              يمكنك الاطلاع على توجيهات الجدولة الحالية والسابقة
-            </p>
-          </div>
-
-          <div className="flex flex-col items-end gap-4 flex-shrink-0" dir="rtl">
-            <div className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]">
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+    <div>
       <ContentBar
+        showViewSwitcher={true}
+        onViewChange={setView}
+        view={view}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+
          primaryAction={{
           label: 'إنشاء اجتماع',
           variant: 'primary',
           onClick: () => openCreateDrawer(),
          }}
         />
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+             <div className="flex justify-center my-4">
+        <Tabs
+          items={[
+            { id: 'previous', label: 'التوجيهات السابقة' },
+            { id: 'current', label: 'التوجيهات الحالية' },
+          ]}
+          activeTab={directivesSubTab}
+          onTabChange={(id) => setDirectivesSubTab(id as 'current' | 'previous')}
+          variant='pill'
+        />
+        </div>
+
+      <div className="flex-1 px-6 pb-6 schedule-review-scroll">
         {/* Dropdown Portal */}
         {openDropdownId && dropdownPosition && (() => {
           const pos = dropdownPosition;
@@ -614,19 +608,6 @@ const Directives: React.FC = () => {
           );
         })()}
 
-        <div className="flex justify-center my-4">
-          <Tabs
-            items={[
-              { id: 'previous', label: 'التوجيهات السابقة' },
-              { id: 'current', label: 'التوجيهات الحالية' },
-            ]}
-            activeTab={directivesSubTab}
-            onTabChange={(id) => setDirectivesSubTab(id as 'current' | 'previous')}
-            variant='pill'
-          />
-        </div>
-
-        {/* Content - Table or Cards */}
         <div>
           {directivesSubTab === 'previous' ? (
             isLoadingPrevious ? (
@@ -916,6 +897,7 @@ const Directives: React.FC = () => {
           )}
         </div>
       </div>
+
     </div>
   );
 };

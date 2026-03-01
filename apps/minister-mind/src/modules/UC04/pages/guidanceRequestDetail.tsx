@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Download, Eye, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, DataTable, MeetingInfo, Drawer, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { ChevronRight, ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
+import { Tabs, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
 import {
   MeetingStatus,
@@ -245,7 +245,7 @@ const GuidanceRequestDetail: React.FC = () => {
       if (!meetingRequest?.id) throw new Error('Meeting request ID is required');
       return saveGuidanceAsDraft(meetingRequest.id, data).then(() => data);
     },
-    onSuccess: ( data: ProvideGuidanceRequest ) => {
+    onSuccess: ( _data: ProvideGuidanceRequest ) => {
       queryClient.invalidateQueries({ queryKey: ['guidance-request', id] });
       queryClient.invalidateQueries({ queryKey: ['guidance-records-with-drafts', id] });
       queryClient.invalidateQueries({ queryKey: ['guidance-records', id] });
