@@ -85,18 +85,18 @@ const getRandomVariant = (id: string): string => {
   return variants[index];
 };
 
-/** Map a datetime to a grid slot string (HH:00) using local time */
+/** Map a datetime to a grid slot string (HH:00) using UTC so timeline slots match API times */
 const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
   slotHour = Math.max(0, Math.min(23, slotHour));
   return `${slotHour.toString().padStart(2, '0')}:00`;
 };
 
 const formatExactTime = (date: Date): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
