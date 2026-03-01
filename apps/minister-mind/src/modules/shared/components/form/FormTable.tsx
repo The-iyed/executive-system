@@ -295,20 +295,26 @@ export const FormTable: React.FC<FormTableProps> = ({
                                 displayValue = row[column.id] || '';
                               }
                               
+                              const cellError = touched[row.id]?.[column.id] && errors[row.id]?.[column.id];
                               return (
-                                <FormInput
-                                  value={displayValue}
-                                  onChange={(e) => {
-                                    if (shouldDisable || disabled) return;
-                                    onUpdateRow(row.id, column.id, e.target.value);
-                                  }}
-                                  placeholder={column.placeholder || '-------'}
-                                  disabled={shouldDisable}
-                                  error={
-                                    !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
-                                  }
-                                  fullWidth
-                                />
+                                <div className="w-full flex flex-col gap-0.5 items-end">
+                                  <FormInput
+                                    value={displayValue}
+                                    onChange={(e) => {
+                                      if (shouldDisable || disabled) return;
+                                      onUpdateRow(row.id, column.id, e.target.value);
+                                    }}
+                                    placeholder={column.placeholder || '-------'}
+                                    disabled={shouldDisable}
+                                    error={!!cellError}
+                                    fullWidth
+                                  />
+                                  {cellError && (
+                                    <span className="text-[12px] text-[#D13C3C] text-right">
+                                      {cellError}
+                                    </span>
+                                  )}
+                                </div>
                               );
                             })()}
                           </div>
