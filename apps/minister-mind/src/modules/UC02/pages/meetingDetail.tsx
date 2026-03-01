@@ -48,6 +48,8 @@ import {
   type ConsultantUser,
   requestSchedulingConsultation,
   returnMeetingForInfo,
+  approveMeetingUpdate,
+  sendToContentScheduled,
   scheduleMeeting,
   rescheduleMeeting,
   createWebexMeeting,
@@ -377,6 +379,10 @@ const MeetingDetail: React.FC = () => {
     consultation_question: '',
     search: '',
   });
+
+  // Approve update modal state (مجدول - الجدولة → إعتماد التحديث → مجدول)
+  const [isApproveUpdateModalOpen, setIsApproveUpdateModalOpen] = useState(false);
+  const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
 
   // Return for info modal state (editable_fields: which fields submitter can edit)
   const [isReturnForInfoModalOpen, setIsReturnForInfoModalOpen] = useState(false);
@@ -943,9 +949,14 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  // Send to content mutation
+  // Send to content mutation (uses send-to-content-scheduled when status is SCHEDULED_SCHEDULING)
   const sendToContentMutation = useMutation({
-    mutationFn: (payload: { notes: string; is_draft?: boolean }) => sendToContent(id!, payload),
+    mutationFn: (payload: { notes: string; is_draft?: boolean; consultant_user_id?: string }) => {
+      if (meeting?.status === MeetingStatus.SCHEDULED_SCHEDULING) {
+        return sendToContentScheduled(id!, { notes: payload.notes || undefined, consultant_user_id: payload.consultant_user_id });
+      }
+      return sendToContent(id!, { notes: payload.notes, is_draft: payload.is_draft });
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsSendToContentModalOpen(false);
@@ -1087,6 +1098,22 @@ const MeetingDetail: React.FC = () => {
       notes: notesTrimmed,
       editable_fields,
     });
+  };
+
+  // Approve update mutation (مجدول - الجدولة → مجدول)
+  const approveUpdateMutation = useMutation({
+    mutationFn: (payload: { notes?: string }) => approveMeetingUpdate(id!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      setIsApproveUpdateModalOpen(false);
+      setApproveUpdateForm({ notes: '' });
+      navigate(-1);
+    },
+  });
+
+  const handleApproveUpdateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    approveUpdateMutation.mutate({ notes: approveUpdateForm.notes.trim() || undefined });
   };
 
   // Schedule meeting mutation (uses reschedule API when meeting is already SCHEDULED)
@@ -3499,7 +3526,6 @@ const MeetingDetail: React.FC = () => {
               isLoading={isLoadingContentOfficerNotes}
               meeting={meeting}
               contentOfficerNotesRecords={contentOfficerNotesRecords}
-              pdfIcon={pdfIcon}
               onPreviewAttachment={(att) => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
             />
           )}
@@ -3542,7 +3568,7 @@ const MeetingDetail: React.FC = () => {
         )}
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
           <MeetingActionsBar
             meetingStatus={meetingStatus}
             open={actionsBarOpen}
@@ -3553,6 +3579,7 @@ const MeetingDetail: React.FC = () => {
             onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
             onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
             onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
+            onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => setIsApproveUpdateModalOpen(true) : undefined}
             onAddToWaitingList={() => moveToWaitingListMutation.mutate()}
             isAddToWaitingListPending={moveToWaitingListMutation.isPending}
             hasChanges={hasChanges}
@@ -4125,6 +4152,37 @@ const MeetingDetail: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة *</label>
             <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" required />
+          </div>
+        </form>
+      </Drawer>
+
+      {/* Approve Update – Drawer (مجدول - الجدولة → مجدول) */}
+      <Drawer
+        open={isApproveUpdateModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setApproveUpdateForm({ notes: '' });
+          setIsApproveUpdateModalOpen(open);
+        }}
+        title={<span className="text-right">إعتماد التحديث</span>}
+        side="left"
+        width={500}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsApproveUpdateModalOpen(false); setApproveUpdateForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+            <button type="submit" form="approve-update-form" disabled={approveUpdateMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">{approveUpdateMutation.isPending ? 'جاري الإرسال...' : 'إعتماد التحديث'}</button>
+          </div>
+        }
+      >
+        <form id="approve-update-form" onSubmit={handleApproveUpdateSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right">ملاحظات (اختياري)</label>
+            <Textarea
+              value={approveUpdateForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setApproveUpdateForm({ notes: e.target.value })}
+              placeholder="تم اعتماد التحديث"
+              className="w-full min-h-[100px] text-right"
+            />
           </div>
         </form>
       </Drawer>

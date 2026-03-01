@@ -5,11 +5,26 @@ import React from 'react';
 import { DataTable } from '@shared';
 import type { MinisterAttendee } from '../../data/meetingsApi';
 
+/** Normalize content_approval_directives: API may return string[] or object[] (e.g. { id, title, due_date, assignees, status }). */
+function normalizeDirectivesToRows(
+  raw: string[] | Array<{ title?: string; text?: string; [key: string]: unknown }> | undefined
+): Array<{ text: string }> {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    if (typeof item === 'string') return { text: item };
+    if (item && typeof item === 'object') {
+      const t = (item as { title?: string; text?: string }).title ?? (item as { text?: string }).text;
+      if (t != null && typeof t === 'string') return { text: t };
+    }
+    return { text: String(item) };
+  });
+}
+
 export interface MeetingDocumentationTabProps {
   meeting: {
     previous_meeting_minutes_id?: string | null;
     minister_attendees?: (MinisterAttendee & { mobile?: string; attendance_mechanism?: string; attendance_channel?: string; response_status?: string })[];
-    content_approval_directives?: string[];
+    content_approval_directives?: string[] | Array<{ id?: string; title?: string; due_date?: string; assignees?: unknown; status?: string; [key: string]: unknown }>;
   } | undefined;
   previousMeetingMinutesLabel: string | null;
 }
@@ -67,7 +82,7 @@ export function MeetingDocumentationTab({ meeting, previousMeetingMinutesLabel }
                 { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
                 { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
               ]}
-              data={meeting.content_approval_directives.map((text) => ({ text }))}
+              data={normalizeDirectivesToRows(meeting.content_approval_directives)}
               rowPadding="py-3"
             />
           </div>
