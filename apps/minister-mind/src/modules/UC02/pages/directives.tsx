@@ -10,6 +10,7 @@ import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils
 import { PATH } from '../routes/paths';
 import '@shared/styles';
 import { useMeetingFormDrawer } from '../features/MeetingForm/hooks';
+import { MeetingFormDrawer } from '../features/MeetingForm/components/MeetingFormDrawer';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -474,6 +475,7 @@ const Directives: React.FC = () => {
   const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
 
   return (
+    <>
     <div>
       <ContentBar
         showViewSwitcher={true}
@@ -481,7 +483,6 @@ const Directives: React.FC = () => {
         view={view}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-
          primaryAction={{
           label: 'إنشاء اجتماع',
           variant: 'primary',
@@ -899,6 +900,9 @@ const Directives: React.FC = () => {
       </div>
 
     </div>
+
+     <MeetingFormDrawer />
+    </>
   );
 };
 
