@@ -1,2 +1,28 @@
 #!/usr/bin/env sh
-npm run build:all
+# Pre-push: ensure Docker Compose build and stack start successfully.
+# Do not bypass with --no-verify: CI runs the same check and will fail the push/PR.
+
+set -e
+
+echo "> Verifying Docker Compose build and startup..."
+docker compose up -d --build
+UP_EXIT=$?
+if [ $UP_EXIT -ne 0 ]; then
+  echo "> Docker Compose up --build failed. Bringing down any partial stack."
+  docker compose down 2>/dev/null || true
+  exit $UP_EXIT
+fi
+
+# Give services a moment to start
+sleep 5
+
+# Ensure at least one container is running (build + start succeeded)
+if [ -z "$(docker compose ps --status running -q 2>/dev/null)" ]; then
+  echo "> Containers did not stay running. Build or runtime error."
+  docker compose down 2>/dev/null || true
+  exit 1
+fi
+
+echo "> Docker build and startup OK. Tearing down..."
+docker compose down
+exit 0
