@@ -56,7 +56,7 @@ export const Step3: React.FC<Step3Props> = ({
 }) => {
   const [proposerUsers, setProposerUsers] = useState<ProposerUser[]>([]);
   const [proposerLoading, setProposerLoading] = useState(true);
-  const userOptionsMapRef = useRef<Map<string, { value: string; label: string; position?: string; phone_number?: string; email?: string }>>(new Map());
+  const userOptionsMapRef = useRef<Map<string, { value: string; label: string; position?: string; phone_number?: string; email?: string; sector?: string }>>(new Map());
   const searchInputByRowRef = useRef<Record<string, string>>({});
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
@@ -69,12 +69,14 @@ export const Step3: React.FC<Step3Props> = ({
       const items = response.items.map((u: UserApiResponse) => {
         const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || '';
         const position = u.position ?? (u as Record<string, unknown>).position_name ?? (u as Record<string, unknown>).job_title ?? '';
+        const sector = (u as Record<string, unknown>).sector ?? (u as Record<string, unknown>).department_name ?? '';
         return {
           value: u.id,
           label: fullName,
           position: typeof position === 'string' ? position : '',
           phone_number: u.phone_number ?? '',
           email: u.email ?? '',
+          sector: typeof sector === 'string' ? sector : '',
         };
       });
       items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
@@ -103,7 +105,7 @@ export const Step3: React.FC<Step3Props> = ({
           <FormInput
             value={row.full_name ?? ''}
             onChange={(e) => onUpdateRow('full_name', e.target.value)}
-            placeholder="الاسم الكامل"
+            placeholder="الإسم"
             fullWidth
           />
         );
@@ -123,6 +125,7 @@ export const Step3: React.FC<Step3Props> = ({
               onUpdateRow('full_name', '');
               onUpdateRow('position_title', '');
               onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
               onUpdateRow('email', '');
               onUpdateRow('_isManual', false);
               onUpdateRow('_userId', '');
@@ -136,6 +139,7 @@ export const Step3: React.FC<Step3Props> = ({
               onUpdateRow('full_name', searchValue);
               onUpdateRow('position_title', '');
               onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
               onUpdateRow('email', '');
               onUpdateRow('_userId', '');
               return;
@@ -151,6 +155,7 @@ export const Step3: React.FC<Step3Props> = ({
               onUpdateRow('full_name', u.label);
               onUpdateRow('position_title', u.position ?? '');
               onUpdateRow('mobile_number', u.phone_number ?? '');
+              onUpdateRow('sector', u.sector ?? '');
               onUpdateRow('email', u.email ?? '');
             }
           }}
@@ -174,6 +179,93 @@ export const Step3: React.FC<Step3Props> = ({
   const inviteesCustomCellRender = useMemo(
     () => ({ full_name: inviteeNameCellRender }),
     [inviteeNameCellRender]
+  );
+
+  /** Same as invitee name cell but checks minister_invitees for duplicates. */
+  const ministerNameCellRender = useCallback(
+    (params: CustomCellRenderParams) => {
+      const { row, onUpdateRow } = params;
+      const isManual = (row as { _isManual?: boolean })._isManual === true;
+
+      if (isManual) {
+        return (
+          <FormInput
+            value={row.full_name ?? ''}
+            onChange={(e) => onUpdateRow('full_name', e.target.value)}
+            placeholder="الإسم"
+            fullWidth
+          />
+        );
+      }
+
+      const userId = (row as { _userId?: string })._userId;
+      const value: OptionType | null =
+        userId && row.full_name
+          ? { value: userId, label: row.full_name }
+          : null;
+
+      return (
+        <FormAsyncSelectV2
+          value={value}
+          onValueChange={(opt) => {
+            if (!opt) {
+              onUpdateRow('full_name', '');
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('email', '');
+              onUpdateRow('_isManual', false);
+              onUpdateRow('_userId', '');
+              return;
+            }
+            if (opt.value === MANUAL_ENTRY_VALUE) {
+              const searchFromOption = (opt as { __search?: string }).__search ?? '';
+              const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+              const searchValue = (searchFromOption || searchFromRef).trim();
+              onUpdateRow('_isManual', true);
+              onUpdateRow('full_name', searchValue);
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('email', '');
+              onUpdateRow('_userId', '');
+              return;
+            }
+            const u = userOptionsMapRef.current.get(opt.value);
+            if (u) {
+              const existing = (formData.minister_invitees ?? []).find(
+                (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+              );
+              if (existing) return;
+              onUpdateRow('_userId', u.value);
+              onUpdateRow('_isManual', false);
+              onUpdateRow('full_name', u.label);
+              onUpdateRow('position_title', u.position ?? '');
+              onUpdateRow('mobile_number', u.phone_number ?? '');
+              onUpdateRow('sector', u.sector ?? '');
+              onUpdateRow('email', u.email ?? '');
+            }
+          }}
+          loadOptions={loadUserOptions}
+          placeholder="اختر مستخدم أو إدخال يدوي"
+          isClearable
+          fullWidth
+          isSearchable
+          limit={10}
+          searchPlaceholder="ابحث عن مستخدم..."
+          emptyMessage="لم يتم العثور على مستخدمين"
+          onInputChange={(newValue) => {
+            searchInputByRowRef.current[row.id] = newValue;
+          }}
+        />
+      );
+    },
+    [formData.minister_invitees, loadUserOptions]
+  );
+
+  const ministerCustomCellRender = useMemo(
+    () => ({ full_name: ministerNameCellRender }),
+    [ministerNameCellRender]
   );
 
   useEffect(() => {
@@ -244,7 +336,9 @@ export const Step3: React.FC<Step3Props> = ({
           addButtonLabel='إضافة مدعو للوزير'
           errors={errors}
           touched={touched}
+          errorMessage={errors['__minister_invitees_table__']?._}
           emptyStateMessage="لا يوجد مدعوون من الوزير"
+          customCellRender={ministerCustomCellRender}
         />
 
         {/* Section 3 — Suggested Participants (المقترحون) */}

@@ -130,6 +130,22 @@ export const useStep2 = ({
     }
   }, [sanitizedInitial, isEditMode, isNewMeeting, step1FormData?.meetingNature]);
 
+  // When Urgent is toggled OFF, reset "العرض مطلوب؟" value and clear its error (field is hidden)
+  useEffect(() => {
+    if (step1FormData?.isUrgent !== true) {
+      setFormData((prev) => {
+        if (prev.presentation_required == null) return prev;
+        return { ...prev, presentation_required: undefined };
+      });
+      setErrors((prev) => {
+        if (!('presentation_required' in prev)) return prev;
+        const next = { ...prev };
+        delete next.presentation_required;
+        return next;
+      });
+    }
+  }, [step1FormData?.isUrgent]);
+
   const validationContext = useMemo(
     () => buildValidationContext(step1FormData, presentationRequiredOptional),
     [step1FormData, presentationRequiredOptional]
@@ -195,6 +211,8 @@ export const useStep2 = ({
     [formData, validateAll, submitMutation]
   );
 
+  const showPresentationRequiredField = step1FormData?.isUrgent === true;
+
   const isPresentationRequiredRequired = useMemo(() => {
     if (presentationRequiredOptional) return false;
     const hasFile =
@@ -219,6 +237,7 @@ export const useStep2 = ({
     handleBlur,
     validateAll,
     submitStep,
+    showPresentationRequiredField,
     isPresentationRequiredRequired,
   };
 };
