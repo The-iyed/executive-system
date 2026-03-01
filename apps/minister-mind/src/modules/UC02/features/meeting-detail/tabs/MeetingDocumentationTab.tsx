@@ -1,95 +1,153 @@
 /**
- * Meeting documentation tab – توثيق الاجتماع (محضر، الحضور الفعلي، التوجيهات المرتبطة).
+ * Meeting documentation tab – توثيق الاجتماع (محضر من API، التوجيهات المرتبطة من API).
+ * Uses GET /api/v1/adam-meetings/search/{title} for محضر الاجتماع (mom_pdf_base64) and actions.
  */
-import React from 'react';
-import { DataTable } from '@shared';
-import type { MinisterAttendee } from '../../data/meetingsApi';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { DataTable, AttachmentPreviewDrawer, type AttachmentPreviewItem } from '@shared';
+import { searchAdamMeetingByTitle, type AdamMeetingAction } from '../../../data/meetingsApi';
+import { Loader2, Download, Eye } from 'lucide-react';
+import pdfIcon from '../../../../shared/assets/pdf.svg';
 
-/** Normalize content_approval_directives: API may return string[] or object[] (e.g. { id, title, due_date, assignees, status }). */
-function normalizeDirectivesToRows(
-  raw: string[] | Array<{ title?: string; text?: string; [key: string]: unknown }> | undefined
-): Array<{ text: string }> {
-  if (!raw || !Array.isArray(raw)) return [];
-  return raw.map((item) => {
-    if (typeof item === 'string') return { text: item };
-    if (item && typeof item === 'object') {
-      const t = (item as { title?: string; text?: string }).title ?? (item as { text?: string }).text;
-      if (t != null && typeof t === 'string') return { text: t };
-    }
-    return { text: String(item) };
-  });
+function formatInvitees(invitees: AdamMeetingAction['invitees']): string {
+  if (invitees == null) return '—';
+  if (Array.isArray(invitees)) {
+    const parts = invitees.map((inv) =>
+      typeof inv === 'string' ? inv : (inv && typeof inv === 'object' && 'name' in inv ? String((inv as { name?: string }).name ?? inv) : String(inv))
+    );
+    return parts.filter(Boolean).join('، ') || '—';
+  }
+  return String(invitees);
 }
 
 export interface MeetingDocumentationTabProps {
-  meeting: {
-    previous_meeting_minutes_id?: string | null;
-    minister_attendees?: (MinisterAttendee & { mobile?: string; attendance_mechanism?: string; attendance_channel?: string; response_status?: string })[];
-    content_approval_directives?: string[] | Array<{ id?: string; title?: string; due_date?: string; assignees?: unknown; status?: string; [key: string]: unknown }>;
-  } | undefined;
-  previousMeetingMinutesLabel: string | null;
+  /** Meeting title used to call GET /api/v1/adam-meetings/search/{title} for mom_pdf_base64 and actions */
+  meetingTitle: string | undefined;
 }
 
-export function MeetingDocumentationTab({ meeting, previousMeetingMinutesLabel }: MeetingDocumentationTabProps) {
-  const minutesLabel = meeting?.previous_meeting_minutes_id != null
-    ? (previousMeetingMinutesLabel ?? (meeting as { previous_meeting_minutes_id?: string }).previous_meeting_minutes_id ?? '-')
-    : '-';
+export function MeetingDocumentationTab({ meetingTitle }: MeetingDocumentationTabProps) {
+  const [previewAttachment, setPreviewAttachment] = useState<AttachmentPreviewItem | null>(null);
+
+  const {
+    data: apiData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['adam-meetings-search', meetingTitle],
+    queryFn: () => searchAdamMeetingByTitle(meetingTitle!),
+    enabled: Boolean(meetingTitle?.trim()),
+  });
+
+  const hasPdf = Boolean(apiData?.mom_pdf_base64?.trim());
+  const actions = apiData?.actions ?? [];
+  const sectionHeadingClass = "text-right font-bold text-[#101828] text-[16px]";
+  const sectionHeadingStyle = { fontFamily: "'Almarai', sans-serif", fontSize: '18px' };
+
+  const momPdfDataUrl = hasPdf && apiData?.mom_pdf_base64
+    ? `data:application/pdf;base64,${apiData.mom_pdf_base64}`
+    : '';
 
   return (
     <div className="flex flex-col gap-8 w-full" dir="rtl">
+      {/* محضر الاجتماع – from API mom_pdf_base64 */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className={sectionHeadingClass} style={sectionHeadingStyle}>
           محضر الاجتماع
         </h2>
-        <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-right">
-          {minutesLabel}
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
-          الحضور الفعلي
-        </h2>
-        {meeting?.minister_attendees && meeting.minister_attendees.length > 0 ? (
-          <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-            <DataTable
-              columns={[
-                { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_row: MinisterAttendee, index: number) => <span className="text-sm text-[#475467]">{index + 1}</span> },
-                { id: 'external_name', header: 'الإسم', width: 'w-36', align: 'end', render: (row: MinisterAttendee & { mobile?: string; attendance_mechanism?: string; response_status?: string }) => <span className="text-sm text-[#475467]">{row.external_name || row.username || '-'}</span> },
-                { id: 'external_email', header: 'البريد الإلكتروني', width: 'w-44', align: 'end', render: (row: MinisterAttendee) => <span className="text-sm text-[#475467]">{row.external_email || '-'}</span> },
-                { id: 'position', header: 'المنصب', width: 'w-32', align: 'end', render: (row: MinisterAttendee) => <span className="text-sm text-[#475467]">{row.position || '-'}</span> },
-                { id: 'mobile', header: 'الجوال', width: 'w-28', align: 'end', render: (row: MinisterAttendee & { mobile?: string }) => <span className="text-sm text-[#475467]">{row.mobile || '-'}</span> },
-                { id: 'attendance_mechanism', header: 'آلية الحضور', width: 'w-24', align: 'center', render: (row: MinisterAttendee & { attendance_mechanism?: string }) => <span className="text-sm text-[#475467]">{row.attendance_mechanism || (row.attendance_channel === 'REMOTE' ? 'عن بعد' : row.attendance_channel === 'PHYSICAL' ? 'حضوري' : '-')}</span> },
-                { id: 'response_status', header: 'حالة الرد', width: 'w-24', align: 'center', render: (row: MinisterAttendee & { response_status?: string }) => <span className="text-sm text-[#475467]">{row.response_status === 'PENDING' ? 'قيد الانتظار' : row.response_status === 'RESPONDED' ? 'تم الرد' : row.response_status || '-'}</span> },
-                { id: 'access_permission', header: 'صلاحية الاطلاع', width: 'w-28', align: 'center', render: (row: MinisterAttendee) => <span className="text-sm text-[#475467]">{row.access_permission === 'FULL' ? 'كامل' : row.access_permission === 'READ_ONLY' ? 'قراءة فقط' : row.access_permission || '-'}</span> },
-                { id: 'is_required', header: 'مطلوب', width: 'w-24', align: 'center', render: (row: MinisterAttendee) => <span className="text-sm text-[#475467]">{row.is_required != null ? (row.is_required ? 'نعم' : 'لا') : '-'}</span> },
-                { id: 'justification', header: 'المبرر', width: 'w-40', align: 'end', render: (row: MinisterAttendee) => <span className="text-sm text-[#475467]">{row.justification || '-'}</span> },
-              ]}
-              data={meeting.minister_attendees}
-              rowPadding="py-3"
-            />
+        {!meetingTitle?.trim() ? (
+          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">
+            لا يوجد عنوان اجتماع للبحث عن المحضر
+          </div>
+        ) : isLoading ? (
+          <div className="px-4 py-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>جاري تحميل المحضر...</span>
+          </div>
+        ) : isError ? (
+          <div className="px-4 py-6 bg-red-50 border border-red-200 rounded-xl text-center text-red-600">
+            {error instanceof Error ? error.message : 'حدث خطأ أثناء جلب المحضر'}
+          </div>
+        ) : !apiData?.found ? (
+          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">
+            {apiData?.message ?? 'لم يتم العثور على اجتماع بهذا العنوان'}
+          </div>
+        ) : !hasPdf ? (
+          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">
+            {apiData?.mom_status ?? 'لا يتوفر محضر PDF لهذا الاجتماع'}
           </div>
         ) : (
-          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">لا يوجد حضور مسجل</div>
+          <div className="flex flex-row gap-4 justify-start items-center flex-wrap">
+            <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] max-w-[400px]">
+              <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" />
+              <div className="flex flex-col items-end min-w-0 flex-1">
+                <span className="text-sm font-medium text-[#344054] truncate w-full text-right">محضر الاجتماع.pdf</span>
+              </div>
+              <a
+                href={`data:application/pdf;base64,${apiData.mom_pdf_base64}`}
+                download="محضر_الاجتماع.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"
+              >
+                <Download className="w-4 h-4" />
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewAttachment({ blob_url: momPdfDataUrl, file_name: 'محضر الاجتماع.pdf', file_type: 'pdf' })}
+                className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* التوجيهات المرتبطة بالاجتماع – from API actions (Title, due date, status, invitees) */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className={sectionHeadingClass} style={sectionHeadingStyle}>
           التوجيهات المرتبطة بالاجتماع
         </h2>
-        {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 ? (
+        {!meetingTitle?.trim() ? (
+          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">
+            لا يوجد عنوان اجتماع لعرض التوجيهات
+          </div>
+        ) : isLoading ? (
+          <div className="px-4 py-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>جاري تحميل التوجيهات...</span>
+          </div>
+        ) : isError ? (
+          <div className="px-4 py-6 bg-red-50 border border-red-200 rounded-xl text-center text-red-600">
+            {error instanceof Error ? error.message : 'حدث خطأ أثناء جلب التوجيهات'}
+          </div>
+        ) : !apiData?.found || actions.length === 0 ? (
+          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">
+            لا توجد توجيهات مرتبطة
+          </div>
+        ) : (
           <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
             <DataTable
               columns={[
-                { id: 'index', header: '#', width: 'w-20', align: 'center', render: (_: { text: string }, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
-                { id: 'text', header: 'نص التوجيه', width: 'flex-1', align: 'end', render: (row: { text: string }) => <span className="text-sm text-[#475467]">{row.text}</span> },
+                { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_: AdamMeetingAction, i: number) => <span className="text-sm text-[#475467]">{i + 1}</span> },
+                { id: 'title', header: 'العنوان', width: 'flex-1', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.title ?? '—'}</span> },
+                { id: 'due_date', header: 'تاريخ الاستحقاق', width: 'w-36', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.due_date ?? '—'}</span> },
+                { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{row.status ?? '—'}</span> },
+                { id: 'invitees', header: 'المدعوون', width: 'w-48', align: 'end', render: (row: AdamMeetingAction) => <span className="text-sm text-[#475467]">{formatInvitees(row.invitees)}</span> },
               ]}
-              data={normalizeDirectivesToRows(meeting.content_approval_directives)}
+              data={actions}
               rowPadding="py-3"
             />
           </div>
-        ) : (
-          <div className="px-4 py-6 bg-gray-50 border border-gray-200 rounded-xl text-center text-gray-500">لا توجد توجيهات مرتبطة</div>
         )}
       </div>
+
+      <AttachmentPreviewDrawer
+        open={!!previewAttachment}
+        onOpenChange={(open) => !open && setPreviewAttachment(null)}
+        attachment={previewAttachment}
+      />
     </div>
   );
 }
