@@ -1,7 +1,8 @@
 import { MeetingCardData } from '@shared/components/meeting-card';
 import { formatDateArabic } from '@shared/utils';
 import { GuidanceRequestApiResponse } from '../data/guidanceApi';
-import { MeetingStatus, getMeetingStatusLabel, getMeetingClassificationLabel } from '@shared/types';
+import { MeetingStatus, getMeetingClassificationLabel } from '@shared/types';
+import { getMeetingStatusLabel } from '@shared';
 import { GuidanceRequestCardData } from '../components/guidance-request-card';
 
 /**
