@@ -181,6 +181,7 @@ export const useStep3Invitees = ({
   const validateAll = useCallback((): boolean => {
     if (!validationResult.success) {
       const newErrors: Record<string, Record<string, string>> = {};
+      const newTouched: Record<string, Record<string, boolean>> = {};
       let newTableError = '';
 
       validationResult.error.errors.forEach((err) => {
@@ -194,6 +195,11 @@ export const useStep3Invitees = ({
               newErrors[invitee.id] = {};
             }
             newErrors[invitee.id][field] = err.message;
+            // Mark field as touched so error styling shows on the cell (e.g. الجوال validation)
+            if (!newTouched[invitee.id]) {
+              newTouched[invitee.id] = {};
+            }
+            newTouched[invitee.id][field] = true;
           }
         } else if (err.path[0] === 'invitees') {
           // Table-level error (e.g. invitees required)
@@ -201,6 +207,7 @@ export const useStep3Invitees = ({
         }
       });
       setErrors(newErrors);
+      setTouched((prev) => ({ ...prev, ...newTouched }));
       setTableErrorMessage(newTableError);
       return false;
     }
