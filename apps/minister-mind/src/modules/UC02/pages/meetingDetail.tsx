@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2, Paperclip } from 'lucide-react';
+import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
   MeetingStatus, 
@@ -17,11 +17,15 @@ import {
   StatusBadge,
   DataTable,
   Tabs,
+  DetailPageHeader,
   type TableColumn,
   AIGenerateButton,
   FormAsyncSelectV2,
   FormDatePicker,
   FormDateTimePicker,
+  FormField,
+  FormInput,
+  FormSelect,
   type OptionType,
   Drawer,
   AttachmentPreviewDrawer,
@@ -29,6 +33,7 @@ import {
   PRESENTATION_DURATION_MINUTES_OPTIONS,
   MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
+  isValidPhone,
 } from '@shared'; 
 import {
   getMeetingById,
@@ -36,12 +41,15 @@ import {
   getMeetingsSearchForPrevious,
   type MeetingSearchResult,
   rejectMeeting,
+  cancelMeeting,
   sendToContent,
   requestGuidance,
   getConsultants,
   type ConsultantUser,
   requestSchedulingConsultation,
   returnMeetingForInfo,
+  approveMeetingUpdate,
+  sendToContentScheduled,
   scheduleMeeting,
   rescheduleMeeting,
   createWebexMeeting,
@@ -80,6 +88,12 @@ import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type M
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import {
+  MEETING_LOCATION_OPTIONS,
+  MeetingLocation,
+  getMeetingLocationDropdownValue,
+  showMeetingLocationOtherInput,
+} from '../../UC01/features/MeetingForm/utils/constants';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -339,6 +353,13 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
+  // Cancel meeting modal state (for SCHEDULED meetings)
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelForm, setCancelForm] = useState({
+    reason: '',
+    notes: '',
+  });
+
   // Send to content modal state
   const [isSendToContentModalOpen, setIsSendToContentModalOpen] = useState(false);
   const [sendToContentForm, setSendToContentForm] = useState({
@@ -358,6 +379,10 @@ const MeetingDetail: React.FC = () => {
     consultation_question: '',
     search: '',
   });
+
+  // Approve update modal state (مجدول - الجدولة → إعتماد التحديث → مجدول)
+  const [isApproveUpdateModalOpen, setIsApproveUpdateModalOpen] = useState(false);
+  const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
 
   // Return for info modal state (editable_fields: which fields submitter can edit)
   const [isReturnForInfoModalOpen, setIsReturnForInfoModalOpen] = useState(false);
@@ -390,6 +415,7 @@ const MeetingDetail: React.FC = () => {
     is_data_complete: true,
     notes: '',
     location: '',
+    location_option: '' as string,
     selected_time_slot_id: null as string | null,
     minister_attendees: [] as MinisterAttendee[],
   });
@@ -415,8 +441,6 @@ const MeetingDetail: React.FC = () => {
 
   // Content tab (المحتوى) editable fields: متى سيتم إرفاق العرض؟ (ملاحظات read-only)
   const [contentTabForm, setContentTabForm] = useState({ when_presentation_attached: '', general_notes: '' });
-  /** Content sub-view: executive file (الملخّص التنفيذي) or presentation (العرض التقديمي) */
-  const [contentViewSubTab, setContentViewSubTab] = useState<'executive' | 'presentation'>('presentation');
 
   // Original snapshot for change detection
   const [originalSnapshot, setOriginalSnapshot] = useState<any>(null);
@@ -697,7 +721,8 @@ const MeetingDetail: React.FC = () => {
 
     // scheduleForm comparisons against snapshot (meeting_channel = آلية انعقاد الاجتماع enum)
     if ((scheduleForm.meeting_channel || '') !== (originalSnapshot.scheduleForm.meeting_channel || '')) payload.meeting_channel = scheduleForm.meeting_channel;
-    if ((scheduleForm.location || '') !== (originalSnapshot.scheduleForm.location || '')) payload.meeting_location = scheduleForm.location || null;
+    // Always send meeting_location: preset (العليا/الغدير) or custom text when "other" is selected
+    payload.meeting_location = scheduleForm.location || null;
     if ((scheduleForm.requires_protocol ?? false) !== (originalSnapshot.scheduleForm.requires_protocol ?? false)) payload.requires_protocol = scheduleForm.requires_protocol;
     if ((scheduleForm.protocol_type_text || '') !== (originalSnapshot.scheduleForm.protocol_type_text || '')) payload.protocol_type = scheduleForm.protocol_type_text;
     if ((scheduleForm.is_data_complete ?? true) !== (originalSnapshot.scheduleForm.is_data_complete ?? true)) payload.is_data_complete = scheduleForm.is_data_complete;
@@ -761,7 +786,7 @@ const MeetingDetail: React.FC = () => {
 
   const hasChanges = Object.keys(changedPayload).length > 0 || deletedAttachmentIds.length > 0 || newAttachments.length > 0 || newPresentationAttachments.length > 0;
 
-  /** Validate local invitees (قائمة المدعوين مقدّم الطلب): all required, email format. Returns true if valid. */
+  /** Validate local invitees (قائمة المدعوين مقدّم الطلب): all required, email and phone format. Returns true if valid. */
   const validateInvitees = useCallback((): boolean => {
     const errors: Record<string, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile', string>>> = {};
     localInvitees.forEach((inv) => {
@@ -774,14 +799,14 @@ const MeetingDetail: React.FC = () => {
       if (!email) row.external_email = 'مطلوب';
       else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
       if (!position) row.position = 'مطلوب';
-      if (!phone) row.mobile = 'مطلوب';
+      if (phone && !isValidPhone(phone)) row.mobile = 'الجوال: صيغة غير صحيحة (أرقام فقط، مع إمكانية + في البداية)';
       if (Object.keys(row).length > 0) errors[inv.id] = row;
     });
     setInviteeValidationErrors(errors);
     return Object.keys(errors).length === 0;
   }, [localInvitees]);
 
-  /** Validate minister attendees (قائمة المدعوين الوزير): all required, email format. Returns true if valid. */
+  /** Validate minister attendees (قائمة المدعوين الوزير): all required, email and phone format. Returns true if valid. */
   const validateMinisterAttendees = useCallback((): boolean => {
     const errors: Record<number, Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>>> = {};
     (scheduleForm.minister_attendees || []).forEach((att, index) => {
@@ -795,7 +820,7 @@ const MeetingDetail: React.FC = () => {
       if (!email) row.external_email = 'مطلوب';
       else if (!isValidEmail(email)) row.external_email = 'صيغة بريد إلكتروني غير صحيحة';
       if (!position) row.position = 'مطلوب';
-      if (!phone) row.mobile = 'مطلوب';
+      if (phone && !isValidPhone(phone)) row.mobile = 'الجوال: صيغة غير صحيحة (أرقام فقط، مع إمكانية + في البداية)';
       if (!justification) row.justification = 'مطلوب';
       if (Object.keys(row).length > 0) errors[index] = row;
     });
@@ -913,9 +938,25 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  // Send to content mutation
+  // Cancel meeting mutation (for SCHEDULED meetings)
+  const cancelMutation = useMutation({
+    mutationFn: (payload: { reason?: string; notes?: string }) => cancelMeeting(id!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      setIsCancelModalOpen(false);
+      setCancelForm({ reason: '', notes: '' });
+      navigate(-1); // Navigate back after successful cancel
+    },
+  });
+
+  // Send to content mutation (uses send-to-content-scheduled when status is SCHEDULED_SCHEDULING)
   const sendToContentMutation = useMutation({
-    mutationFn: (payload: { notes: string; is_draft?: boolean }) => sendToContent(id!, payload),
+    mutationFn: (payload: { notes: string; is_draft?: boolean; consultant_user_id?: string }) => {
+      if (meeting?.status === MeetingStatus.SCHEDULED_SCHEDULING) {
+        return sendToContentScheduled(id!, { notes: payload.notes || undefined, consultant_user_id: payload.consultant_user_id });
+      }
+      return sendToContent(id!, { notes: payload.notes, is_draft: payload.is_draft });
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsSendToContentModalOpen(false);
@@ -932,6 +973,14 @@ const MeetingDetail: React.FC = () => {
         notes: rejectForm.notes,
       });
     }
+  };
+
+  const handleCancelSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    cancelMutation.mutate({
+      reason: cancelForm.reason.trim() || undefined,
+      notes: cancelForm.notes.trim() || undefined,
+    });
   };
 
   const handleSendToContentSubmit = (e: React.FormEvent) => {
@@ -1051,6 +1100,22 @@ const MeetingDetail: React.FC = () => {
     });
   };
 
+  // Approve update mutation (مجدول - الجدولة → مجدول)
+  const approveUpdateMutation = useMutation({
+    mutationFn: (payload: { notes?: string }) => approveMeetingUpdate(id!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      setIsApproveUpdateModalOpen(false);
+      setApproveUpdateForm({ notes: '' });
+      navigate(-1);
+    },
+  });
+
+  const handleApproveUpdateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    approveUpdateMutation.mutate({ notes: approveUpdateForm.notes.trim() || undefined });
+  };
+
   // Schedule meeting mutation (uses reschedule API when meeting is already SCHEDULED)
   const scheduleMutation = useMutation({
     mutationFn: (payload: {
@@ -1082,6 +1147,7 @@ const MeetingDetail: React.FC = () => {
           is_data_complete: true,
           notes: '',
           location: '',
+          location_option: '',
           selected_time_slot_id: null,
           minister_attendees: [],
         });
@@ -1406,6 +1472,7 @@ const MeetingDetail: React.FC = () => {
         protocol_type_text: meeting.protocol_type || prev.protocol_type_text,
         is_data_complete: meeting.is_data_complete ?? prev.is_data_complete,
         location: (meeting as any).meeting_location ?? (meeting as any).location ?? prev.location ?? '',
+        location_option: getMeetingLocationDropdownValue((meeting as any).meeting_location ?? (meeting as any).location ?? undefined, prev.location_option || undefined) ?? '',
         selected_time_slot_id: meeting.selected_time_slot_id || null,
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
@@ -1465,6 +1532,7 @@ const MeetingDetail: React.FC = () => {
         protocol_type_text: meeting.protocol_type || '',
         is_data_complete: meeting.is_data_complete ?? true,
         location: (meeting as any).meeting_location ?? (meeting as any).location ?? '',
+        location_option: getMeetingLocationDropdownValue((meeting as any).meeting_location ?? (meeting as any).location ?? undefined, undefined) ?? '',
         meeting_channel: ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel) ? meeting.meeting_channel : 'PHYSICAL',
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || [],
       },
@@ -1776,8 +1844,37 @@ const MeetingDetail: React.FC = () => {
                 <SelectContent dir="rtl">{Object.entries(MeetingChannelLabels).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
               </Select>
             );
-          case 'meeting_location':
-            return <Input type="text" value={scheduleForm.location} onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))} className={inputClass} placeholder={label} />;
+          case 'meeting_location': {
+            const locDropdownValue = getMeetingLocationDropdownValue(scheduleForm.location, scheduleForm.location_option) || undefined;
+            const showOtherInput = showMeetingLocationOtherInput(scheduleForm.location, scheduleForm.location_option);
+            return (
+              <div className="flex flex-col gap-4 w-full">
+                <FormSelect
+                  value={locDropdownValue}
+                  onValueChange={(value) => {
+                    const v = value ?? '';
+                    if (v === MeetingLocation.ALIYA || v === MeetingLocation.GHADEER) {
+                      setScheduleForm((p) => ({ ...p, location_option: v, location: v }));
+                    } else {
+                      setScheduleForm((p) => ({ ...p, location_option: v, location: '' }));
+                    }
+                  }}
+                  options={MEETING_LOCATION_OPTIONS}
+                  placeholder="اختر الموقع"
+                />
+                {showOtherInput && (
+                  <FormField className="w-full min-w-0" label="تحديد الموقع (موقع آخر)">
+                    <FormInput
+                      value={scheduleForm.location || ''}
+                      onChange={(e) => setScheduleForm((p) => ({ ...p, location: e.target.value }))}
+                      placeholder="أدخل الموقع"
+                      fullWidth
+                    />
+                  </FormField>
+                )}
+              </div>
+            );
+          }
           case 'meeting_classification_type':
             return (
               <Select value={formData.meeting_classification_type || ''} onValueChange={(v) => handleFieldChange('meeting_classification_type', v)}>
@@ -2166,110 +2263,45 @@ const MeetingDetail: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
       {/* Single parent: no bg, no extra container — only head and content are white cards with gap */}
-      <div className="flex-1 min-h-0 flex flex-col gap-8 pr-5 min-w-0">
-        {/* Head: white card */}
-        <div
-            className="flex flex-col flex-shrink-0 gap-8 h-full pb-3 min-w-0"
-          >
-            <div className="flex flex-row justify-end items-center gap-2.5 relative min-w-0">
-            {/* Figma Frame 2147241026: column, justify-center, items-end, gap 18px */}
-            <div className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white min-w-0">
-              {/* Top row: title + status on right (RTL), quality button at end (left in RTL) - flex-wrap so nothing overflows */}
-              <div className="flex flex-row flex-wrap justify-between items-center gap-2.5 w-full min-w-0">
-                {/* Right side (RTL): back, title block, status */}
-                <div className="flex flex-row items-center gap-2.5 flex-1 min-w-0 justify-start">
-            <button
-              onClick={() => navigate(-1)}
-                    className="flex flex-row justify-center items-center w-6 h-6 rounded-[4.97px] bg-white border border-[#D0D5DD] shadow-[0px_0.62px_1.24px_rgba(16,24,40,0.05)] flex-shrink-0"
-                    aria-label="رجوع"
-            >
-                    <ChevronRight className="w-3 h-3 text-[#667085]" />
-            </button>
-                  <div className="flex flex-col items-start min-w-0 flex-1 text-right overflow-hidden">
-                <h1
-                      className="text-xl font-bold text-[#101828] leading-tight truncate max-w-full"
-                    
-                >
-                  مراجعة طلب الاجتماع ({meeting.request_number})
-                </h1>
-                    <p
-                      className="text-sm font-normal text-[#475467] leading-snug text-right truncate max-w-full"
-                    
-                    >
-                      مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة.
-                    </p>
-                  </div>
-                {hasChanges && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white text-xs flex-shrink-0">
-                    تغييرات غير محفوظة
-                  </span>
-                )}
-                  <StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />
-              </div>
-                {/* End (left in RTL): quality button - animated with shadow */}
-                <button
-                  type="button"
-                  onClick={() => setIsQualityModalOpen(true)}
-                  className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
-                  style={{
-                    fontSize: '11px',
-                    lineHeight: '14px',
-                    background: '#34C3BA',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
-                  }}
-                >
-                  {/* Ellipse glow - Figma Ellipse 1: #87F8F8, blur(9.41px), soft highlight top-left */}
-                  <span
-                    className="absolute left-0 top-1/2 pointer-events-none w-[86px] h-[74px] rounded-full opacity-80 -translate-y-1/2 -translate-x-1/3"
-                    style={{
-                      background: '#87F8F8',
-                      filter: 'blur(9.41px)',
-                    }}
-                    aria-hidden
-                  />
-                  <span className="relative z-10 flex items-center gap-2">
-                    تقييم جاهزية الاجتماع
-                    <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
-                      <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
-                      <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
-                      <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
-                      <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
-                      <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
-                    </svg>
-                  </span>
-                </button>
-          </div>
-              {/* Tabs row: help icon and tabs on same row, same alignment - min-w-0 to prevent overflow */}
-              <div className="flex flex-row items-center w-full gap-2.5 min-w-0">
-                <div className="flex-1 flex justify-center min-w-0 overflow-hidden">
-            <Tabs
-              items={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-                    variant="underline"
-                    className="gap-2.5"
-            />
-          </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
-                        aria-label="مساعدة"
-                      >
-                        <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
-                     </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                      <p className="font-semibold text-gray-900 mb-1">{permissionTooltip.title}</p>
-                      <p className="text-sm text-gray-600">{permissionTooltip.description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
+      <div className="flex-1 min-h-0 flex flex-col gap-2 pr-5 min-w-0">
+        {/* Head: shared detail page header (back, title, status, primary action, tabs) */}
+        <div className="flex flex-col flex-shrink-0 pb-3 min-w-0">
+          <DetailPageHeader
+            title={`مراجعة طلب الاجتماع (${meeting.request_number})`}
+            subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
+            onBack={() => navigate(-1)}
+            statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />}
+            hasChanges={hasChanges}
+            primaryAction={
+              <button
+                type="button"
+                onClick={() => setIsQualityModalOpen(true)}
+                className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-full flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
+                style={{
+                  fontSize: '11px',
+                  lineHeight: '14px',
+                  background: '#34C3BA',
+                  boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  تقييم جاهزية الاجتماع
+                  <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
+                    <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
+                    <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
+                    <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
+                    <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
+                    <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
+                  </svg>
+                </span>
+              </button>
+            }
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            helpTooltip={permissionTooltip}
+          />
         </div>
 
         {/* Content: white card, takes full remaining height, gap above from head - min-w-0 to prevent overflow */}
@@ -2306,58 +2338,42 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Executive file / Presentation pill buttons – design Frame 2147240913 (executive) & 2147241187 (presentation) */}
-              <div className="flex flex-row flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setContentViewSubTab('executive')}
-                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'executive' ? 'bg-[rgba(156,167,0,0.14)] border-[rgba(156,167,0,0.35)]' : 'bg-[rgba(156,167,0,0.08)] border-[rgba(156,167,0,0.2)]'}`}
-                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
-                >
-                  <span className="flex items-center text-right text-[#8F751E]">الملخّص التنفيذي</span>
-                  <FileText className="w-3 h-3 flex-shrink-0 text-[#8F751E]" strokeWidth={2} aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setContentViewSubTab('presentation')}
-                  className={`box-border flex flex-row justify-center items-center p-2.5 gap-1.5 min-h-[23px] flex-none rounded-[4px] border-[0.5px] transition-colors ${contentViewSubTab === 'presentation' ? 'bg-[rgba(0,167,157,0.14)] border-[rgba(0,167,157,0.2)]' : 'bg-[rgba(0,167,157,0.08)] border-[rgba(0,167,157,0.1)]'}`}
-                  style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 400, fontSize: '9.47102px', lineHeight: '12px' }}
-                >
-                  <span className="flex items-center text-right text-[#00A79D]">العرض التقديمي</span>
-                  <Paperclip className="w-3 h-3 flex-shrink-0 text-[#00A79D]" strokeWidth={2} aria-hidden />
-                </button>
+              {/* الملخّص التنفيذي */}
+              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
+                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#8F751E]/08 to-transparent border-b border-[#EAECF0]">
+                  <div className="w-8 h-8 rounded-lg bg-[#8F751E]/12 flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-[#8F751E]" strokeWidth={1.8} />
+                  </div>
+                  <label className="text-sm font-bold text-[#344054]">الملخّص التنفيذي</label>
+                </div>
+                <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
+                  {(() => {
+                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
+                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
+                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
+                    if (!hasExec) {
+                      return <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">—</div>;
+                    }
+                    return (
+                      <div className="flex flex-col gap-4 max-w-[800px]">
+                        {execSummaryText && <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">{execSummaryText}</div>}
+                        {execSummaryAttachments.length > 0 && execSummaryAttachments.map((att) => (
+                          <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
+                            <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl">
+                              {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                              <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
+                              <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(143,117,30,0.08)] text-[#8F751E] transition-colors"><Download className="w-4 h-4" /></a>
+                              <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100 text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
-              {/* Executive summary or Presentation content */}
-              {contentViewSubTab === 'executive' ? (
-                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                  <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
-                    {(() => {
-                      const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
-                      const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
-                      const hasExec = execSummaryText || execSummaryAttachments.length > 0;
-                      if (!hasExec) {
-                        return <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">—</div>;
-                      }
-                      return (
-                        <div className="flex flex-col gap-4 max-w-[800px]">
-                          {execSummaryText && <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">{execSummaryText}</div>}
-                          {execSummaryAttachments.length > 0 && execSummaryAttachments.map((att) => (
-                            <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
-                              <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl">
-                                {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                                <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                                <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(143,117,30,0.08)] text-[#8F751E] transition-colors"><Download className="w-4 h-4" /></a>
-                                <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100 text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              ) : (
+              {/* العرض التقديمي */}
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
                   <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
@@ -2471,7 +2487,6 @@ const MeetingDetail: React.FC = () => {
                 </TooltipProvider>
               </div>
               </div>
-              )}
 
               {/* متى سيتم إرفاق العرض؟ – card */}
               {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
@@ -2839,15 +2854,14 @@ const MeetingDetail: React.FC = () => {
               </Dialog>
             </div>
           )}
-
           {/* Tab: قائمة المدعوين (Excel) – قائمة المدعوين (مقدم الطلب)، قائمة المدعوين (الوزير) */}
           {activeTab === 'attendees' && (
             <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
               <div className="flex flex-col gap-6 w-full">
                 {/* قائمة المدعوين (مقدّم الطلب) */}
                 <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '22px', lineHeight: '38px' }}>
-                    {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828]')}
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '16px', lineHeight: '38px' }}>
+                    {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828] text-[16px]')}
                   </div>
                   {allInvitees && allInvitees.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
@@ -2942,7 +2956,7 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                   {isLocal ? (
                                     <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
+                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                       {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].mobile}</span>}
                                     </div>
                                   ) : (
@@ -2984,8 +2998,8 @@ const MeetingDetail: React.FC = () => {
 
                 {/* قائمة المدعوين (الوزير) */}
                 <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '22px', lineHeight: '38px' }}>
-                    {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828]')}
+                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '16px', lineHeight: '38px' }}>
+                    {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828] text-[16px]')}
                   </div>
                   {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
@@ -3135,7 +3149,7 @@ const MeetingDetail: React.FC = () => {
                                     <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                    <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال *" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
+                                    <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
                                     {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
                                   </div>
                                 </div>
@@ -3185,7 +3199,7 @@ const MeetingDetail: React.FC = () => {
                                   if (!rEmail) rowErrors.external_email = 'مطلوب';
                                   else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
                                   if (!rPos) rowErrors.position = 'مطلوب';
-                                  if (!rPhone) rowErrors.mobile = 'مطلوب';
+                                  if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'الجوال: صيغة غير صحيحة (أرقام فقط، مع إمكانية + في البداية)';
                                   if (!rJust) rowErrors.justification = 'مطلوب';
                                   if (Object.keys(rowErrors).length > 0) {
                                     setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
@@ -3504,7 +3518,6 @@ const MeetingDetail: React.FC = () => {
               isLoading={isLoadingContentOfficerNotes}
               meeting={meeting}
               contentOfficerNotesRecords={contentOfficerNotesRecords}
-              pdfIcon={pdfIcon}
               onPreviewAttachment={(att) => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
             />
           )}
@@ -3547,16 +3560,18 @@ const MeetingDetail: React.FC = () => {
         )}
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED) && (
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
           <MeetingActionsBar
             meetingStatus={meetingStatus}
             open={actionsBarOpen}
             onOpenChange={setActionsBarOpen}
             onOpenSchedule={() => setIsScheduleModalOpen(true)}
             onOpenReject={() => setIsRejectModalOpen(true)}
+            onOpenCancel={meeting.status === MeetingStatus.SCHEDULED ? () => setIsCancelModalOpen(true) : undefined}
             onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
             onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
             onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
+            onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => setIsApproveUpdateModalOpen(true) : undefined}
             onAddToWaitingList={() => moveToWaitingListMutation.mutate()}
             isAddToWaitingListPending={moveToWaitingListMutation.isPending}
             hasChanges={hasChanges}
@@ -3564,7 +3579,6 @@ const MeetingDetail: React.FC = () => {
             hideEdit
           />
         )}
-            </div>
       </div>
 
       {/* Meeting Quality Modal */}
@@ -3707,8 +3721,83 @@ const MeetingDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Cancel Meeting Modal (SCHEDULED meetings only) */}
+      <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              إلغاء الاجتماع
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCancelSubmit}>
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right">
+                  سبب الإلغاء
+                </label>
+                <Input
+                  type="text"
+                  value={cancelForm.reason}
+                  onChange={(e) => setCancelForm((prev) => ({ ...prev, reason: e.target.value }))}
+                  placeholder="سبب إلغاء الاجتماع"
+                  className="w-full text-right"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 text-right">
+                  ملاحظات إضافية
+                </label>
+                <Textarea
+                  value={cancelForm.notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="تفاصيل إضافية"
+                  className="w-full min-h-[100px] text-right"
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex-row-reverse gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCancelModalOpen(false);
+                  setCancelForm({ reason: '', notes: '' });
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                تراجع
+              </button>
+              <button
+                type="submit"
+                disabled={cancelMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancelMutation.isPending ? 'جاري الإلغاء...' : 'إلغاء الاجتماع'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit confirmation modal */}
       <Dialog open={isEditConfirmOpen} onOpenChange={(open) => {
+        if (open) {
+          // Run validation when dialog opens so invalid data (e.g. bad mobile) is caught before confirm
+          let hasErrors = false;
+          if (localInvitees.length > 0 && !validateInvitees()) {
+            setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+            setActiveTab('attendees');
+            hasErrors = true;
+          }
+          if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
+            setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+            setActiveTab('attendees');
+            hasErrors = true;
+          }
+          if (hasErrors) {
+            setIsEditConfirmOpen(false);
+            return;
+          }
+        }
         setIsEditConfirmOpen(open);
         if (!open) {
           setValidationError(null);
@@ -3788,16 +3877,16 @@ const MeetingDetail: React.FC = () => {
                   setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
                   return;
                 }
-                // Validate invitees (قائمة المدعوين مقدّم الطلب) when payload includes them
-                if (changedPayload.invitees && localInvitees.length > 0 && !validateInvitees()) {
-                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+                // Validate invitees (قائمة المدعوين مقدّم الطلب) whenever there are local invitees
+                if (localInvitees.length > 0 && !validateInvitees()) {
+                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
                   setIsEditConfirmOpen(false);
                   setActiveTab('attendees');
                   return;
                 }
-                // Validate minister attendees (قائمة المدعوين الوزير) when payload includes them
-                if (changedPayload.minister_attendees && (scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
-                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+                // Validate minister attendees (قائمة المدعوين الوزير) whenever any exist
+                if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
+                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
                   setIsEditConfirmOpen(false);
                   setActiveTab('attendees');
                   return;
@@ -4059,6 +4148,37 @@ const MeetingDetail: React.FC = () => {
         </form>
       </Drawer>
 
+      {/* Approve Update – Drawer (مجدول - الجدولة → مجدول) */}
+      <Drawer
+        open={isApproveUpdateModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setApproveUpdateForm({ notes: '' });
+          setIsApproveUpdateModalOpen(open);
+        }}
+        title={<span className="text-right">إعتماد التحديث</span>}
+        side="left"
+        width={500}
+        bodyClassName="dir-rtl"
+        footer={
+          <div className="flex flex-row-reverse gap-2">
+            <button type="button" onClick={() => { setIsApproveUpdateModalOpen(false); setApproveUpdateForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+            <button type="submit" form="approve-update-form" disabled={approveUpdateMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">{approveUpdateMutation.isPending ? 'جاري الإرسال...' : 'إعتماد التحديث'}</button>
+          </div>
+        }
+      >
+        <form id="approve-update-form" onSubmit={handleApproveUpdateSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right">ملاحظات (اختياري)</label>
+            <Textarea
+              value={approveUpdateForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setApproveUpdateForm({ notes: e.target.value })}
+              placeholder="تم اعتماد التحديث"
+              className="w-full min-h-[100px] text-right"
+            />
+          </div>
+        </form>
+      </Drawer>
+
       {/* Return for Info – Drawer (notes + editable_fields for POST return-for-info) */}
       <Drawer
         open={isReturnForInfoModalOpen}
@@ -4189,6 +4309,7 @@ const MeetingDetail: React.FC = () => {
                     is_data_complete: true,
                     notes: '',
                     location: '',
+                    location_option: '',
                     selected_time_slot_id: null,
                     minister_attendees: [],
                   });
@@ -4215,6 +4336,7 @@ const MeetingDetail: React.FC = () => {
                       is_data_complete: true,
                       notes: '',
                       location: '',
+                      location_option: '',
                       selected_time_slot_id: null,
                       minister_attendees: [],
                     });
