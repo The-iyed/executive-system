@@ -70,6 +70,8 @@ export const useStep1BasicInfo = ({
     is_urgent: false,
     is_on_behalf_of: false,
     is_based_on_directive: false,
+    /** سرية الاجتماع: default عادي (non-confidential). */
+    meetingConfidentiality: 'NORMAL',
     ...initialData,
   });
 
