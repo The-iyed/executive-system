@@ -1,15 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@sanad-ai/ui';
-import { MeetingStatus, MeetingClassification, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic  } from '@shared';
-import '@shared/styles';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar  } from '@shared';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
@@ -50,7 +42,6 @@ const WorkBasket: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchValue);
@@ -197,52 +188,21 @@ const WorkBasket: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right">الطلبات الحالية</h1>
-            <p className="text-base text-gray-600 text-right">
-              الاطلاع على الطلبات قيد المراجعة
-            </p>
-          </div>
+    <div>
+      <ContentBar
+        showViewSwitcher={true}
+        onViewChange={setView}
+        view={view}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        filterTabs={['all', ...WORK_BASKET_STATUS_OPTIONS].map((status) => ({
+          id: status,
+          label: getStatusFilterLabel(status),
+        }))}
+        activeFilterId={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
-            <div
-              className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              dir="rtl"
-            >
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger
-                  className="min-w-[180px] w-[200px] h-10 bg-white border border-gray-200/80 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-sm font-medium text-gray-700 px-4"
-                >
-                  <SelectValue placeholder="جميع الحالات" />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  <SelectItem value="all">جميع الحالات</SelectItem>
-                  {WORK_BASKET_STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {getStatusFilterLabel(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <ViewSwitcher view={view} onViewChange={setView} />
-              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="بحث"
-                variant="default"
-                className="w-[280px] min-w-0 rounded-full bg-white border-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
-        <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
@@ -258,14 +218,12 @@ const WorkBasket: React.FC = () => {
           ) : (
             <>
               {view === 'table' ? (
-                <div className="w-full overflow-x-auto">
-                  <DataTable
-                    columns={tableColumns}
-                    data={rawMeetings}
-                    onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
-                    className="min-w-[900px]"
-                  />
-                </div>
+                <DataTable
+                  columns={tableColumns}
+                  data={rawMeetings}
+                  onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
+                  className="min-w-[900px]"
+                />
               ) : (
                 <CardsGrid
                   meetings={meetings}
@@ -274,7 +232,6 @@ const WorkBasket: React.FC = () => {
                 />
               )}
               
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
@@ -286,8 +243,6 @@ const WorkBasket: React.FC = () => {
               )}
             </>
           )}
-        </div>
-      </div>
     </div>
   );
 };
