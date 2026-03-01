@@ -8,11 +8,11 @@ export const Logo: React.FC<LogoProps> = () => {
   return (
     <div className="flex items-center gap-3 flex-shrink-0">
      <img
-       src="/assets/calendar.svg"
+       src="/assets/Logomark.png"
        alt=""
-       className="w-[34px] h-[34px] flex-shrink-0"
-       width={34}
-       height={34}
+       className="w-[40px] h-[40px] flex-shrink-0"
+       width={40}
+       height={40}
      />
      <div className="flex flex-col items-start">
        <h1 className="text-lg font-bold text-gray-800 leading-tight">
