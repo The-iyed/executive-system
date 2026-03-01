@@ -1266,7 +1266,7 @@ const MeetingDetail: React.FC = () => {
         related_topic: meeting.related_topic ?? '',
         deadline: meeting.deadline ? meeting.deadline.slice(0, 10) : '',
         meeting_confidentiality: (meeting.meeting_confidentiality as MeetingConfidentiality) ?? '',
-        previous_meeting_attachment: meeting.previous_meeting_attachment,
+        previous_meeting_attachment: meeting.previous_meeting_attachment ?? null,
       });
       setPreviousMeetingOption(prevExtId != null && prevGroupId != null ? { value: `${prevExtId}:${prevGroupId}`, label: prevMeetingLabel || String(prevExtId) } : null);
       setPreviousMeetingMinutesOption(minutesId ? { value: minutesId, label: minutesId } : null);
