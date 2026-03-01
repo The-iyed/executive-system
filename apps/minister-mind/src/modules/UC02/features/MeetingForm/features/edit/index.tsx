@@ -80,6 +80,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleNextClick={handleStep2Next}
             handleSaveDraftClick={handleStep2SaveDraft}
             handleCancelClick={handleCancel}
+            showPresentationRequiredField={step2Hook.showPresentationRequiredField}
             isPresentationRequiredRequired={step2Hook.isPresentationRequiredRequired}
           />
         );

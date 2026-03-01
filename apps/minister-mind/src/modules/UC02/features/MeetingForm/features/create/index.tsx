@@ -76,6 +76,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleNextClick={handleStep2Next}
             handleSaveDraftClick={handleStep2SaveDraft}
             handleCancelClick={handleCancel}
+            showPresentationRequiredField={step2Hook.showPresentationRequiredField}
             isPresentationRequiredRequired={step2Hook.isPresentationRequiredRequired}
           />
         );

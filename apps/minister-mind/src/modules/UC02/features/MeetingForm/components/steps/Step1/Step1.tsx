@@ -39,6 +39,7 @@ const REQUIRED_INDICATOR_FIELDS = new Set<keyof Step1FormData>([
   'sector',
   'meetingType',
   'meetingAgenda',
+  'meetingStartDate',
 ]);
 
 export interface Step1Props {
@@ -256,7 +257,6 @@ export function Step1({
 
           {isFieldVisible('urgentReason') && (
             <UrgentReasonField
-              className="sm:col-span-2 w-full min-w-0"
               value={formData.urgentReason ?? ''}
               onChange={(v) => handleChange('urgentReason', v)}
               onBlur={() => handleBlur('urgentReason')}
@@ -289,13 +289,13 @@ export function Step1({
           {isFieldVisible('location') && (
             <LocationField
               className="w-full min-w-0"
-              value={formData.location ?? ''}
-              onChange={(v) => handleChange('location', v)}
-              onBlur={() => handleBlur('location')}
-              error={errors.location}
-              touched={touched.location}
-              disabled={isFieldDisabled('location')}
-              required={isRequired('location')}
+              formData={formData}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              handleBlur={handleBlur}
+              isFieldDisabled={isFieldDisabled}
+              isRequired={isRequired('location')}
             />
           )}
 
@@ -374,6 +374,26 @@ export function Step1({
             disabled={isFieldDisabled('meetingConfidentiality')}
           />
 
+          <div className='sm:col-span-2 w-full min-w-0'>
+          <MeetingAgendaTable
+            rows={formData.meetingAgenda || []}
+            required={isRequired('meetingAgenda')}
+            onAddRow={handleAddAgendaWithScroll}
+            onDeleteRow={handleDeleteAgenda}
+            onUpdateRow={handleUpdateAgenda}
+            errors={tableErrors}
+            touched={tableTouched}
+            errorMessage={errors.meetingAgenda}
+            disabled={isFieldDisabled('meetingAgenda')}
+            scrollToRowId={scrollToAgendaRowId}
+            onScrolledToRow={() => setScrollToAgendaRowId(null)}
+            meetingDurationMinutes={getMeetingDurationMinutes(
+              formData.meetingStartDate,
+              formData.meetingEndDate
+            )}
+            />
+          </div>
+
           <NotesField
             className="sm:col-span-2 w-full min-w-0"
             value={formData.notes ?? ''}
@@ -390,23 +410,6 @@ export function Step1({
           />
         </div>
 
-        <MeetingAgendaTable
-          rows={formData.meetingAgenda || []}
-          required={isRequired('meetingAgenda')}
-          onAddRow={handleAddAgendaWithScroll}
-          onDeleteRow={handleDeleteAgenda}
-          onUpdateRow={handleUpdateAgenda}
-          errors={tableErrors}
-          touched={tableTouched}
-          errorMessage={errors.meetingAgenda}
-          disabled={isFieldDisabled('meetingAgenda')}
-          scrollToRowId={scrollToAgendaRowId}
-          onScrolledToRow={() => setScrollToAgendaRowId(null)}
-          meetingDurationMinutes={getMeetingDurationMinutes(
-            formData.meetingStartDate,
-            formData.meetingEndDate
-          )}
-        />
         <ActionButtons
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
