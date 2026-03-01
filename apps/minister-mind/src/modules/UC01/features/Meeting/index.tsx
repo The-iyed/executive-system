@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewType } from '@shared';
+import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewType, getMeetingTabsByRole, MeetingOwnerType } from '@shared';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE, MEETING_TABS } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
@@ -137,7 +137,7 @@ const Meeting: React.FC = () => {
             variant: 'primary',
             onClick: openCreateDrawer,
           }}
-          filterTabs={MEETING_TABS}
+          filterTabs={getMeetingTabsByRole(MeetingOwnerType.SUBMITTER)}
           activeFilterId={statusFilter}
           onFilterChange={(id) => setStatusFilter(id as MeetingStatus)}
         />
