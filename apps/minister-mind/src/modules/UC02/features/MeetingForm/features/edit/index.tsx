@@ -51,10 +51,15 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             formData={step1Hook.formData}
             errors={step1Hook.errors}
             touched={step1Hook.touched}
+            tableErrors={step1Hook.tableErrors}
+            tableTouched={step1Hook.tableTouched}
             isSubmitting={step1Hook.isSubmitting}
             isDeleting={deleteDraft.isDeleting}
             handleChange={step1Hook.handleChange}
             handleBlur={step1Hook.handleBlur}
+            handleAddAgenda={step1Hook.handleAddAgenda}
+            handleDeleteAgenda={step1Hook.handleDeleteAgenda}
+            handleUpdateAgenda={step1Hook.handleUpdateAgenda}
             fillFormFromPreviousMeeting={step1Hook.fillFormFromPreviousMeeting}
             handleNextClick={handleStep1Next}
             handleSaveDraftClick={handleStep1SaveDraft}
@@ -75,6 +80,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleNextClick={handleStep2Next}
             handleSaveDraftClick={handleStep2SaveDraft}
             handleCancelClick={handleCancel}
+            showPresentationRequiredField={step2Hook.showPresentationRequiredField}
             isPresentationRequiredRequired={step2Hook.isPresentationRequiredRequired}
           />
         );
