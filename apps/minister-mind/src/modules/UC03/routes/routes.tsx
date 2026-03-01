@@ -1,8 +1,8 @@
 import { RouteProps } from 'react-router-dom';
 import { Fragment, lazy } from 'react';
+import { AuthGuard } from '@shared/guards';
 import { PATH } from './paths';
 import { Layout } from '../Layout';
-import { AuthGuard } from '@shared/guards';
 
 type RouteConfig = {
   exact: boolean | null;
