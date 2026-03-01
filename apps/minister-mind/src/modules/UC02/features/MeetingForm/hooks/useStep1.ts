@@ -6,6 +6,7 @@ import { validateStep1, extractValidationErrors } from '../schemas/step1.schema'
 import { isStep1FieldVisible } from '../utils/step1FieldConditions';
 import { STEP1_FORM_FIELDS } from '../types/step1.types';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
+import { useMeetingAgenda } from './useMeetingAgenda';
 
 interface UseStep1Props {
   draftId?: string;
@@ -145,6 +146,15 @@ export function useStep1({
   const [formData, setFormData] = useState<Partial<Step1FormData>>({ ...INITIAL_STATE, ...initialData });
   const [errors, setErrors] = useState<Partial<Record<keyof Step1FormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Step1FormData, boolean>>>({});
+  const [tableErrors, setTableErrors] = useState<Record<string, Record<string, string>>>({});
+  const [tableTouched, setTableTouched] = useState<Record<string, Record<string, boolean>>>({});
+
+  const { handleAddAgenda, handleDeleteAgenda, handleUpdateAgenda } = useMeetingAgenda({
+    agenda: formData.meetingAgenda ?? [],
+    setFormData,
+    setErrors,
+    setTableErrors,
+  });
 
   useEffect(() => {
     if (!initialData || !isEditMode) return;
@@ -174,15 +184,25 @@ export function useStep1({
     const result = validateStep1(formData);
     if (result.success) {
       setErrors({});
+      setTableErrors({});
       return true;
     }
-    const { formErrors } = extractValidationErrors(result, formData);
+    const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(result, formData);
     setErrors(formErrors);
+    setTableErrors(extractedTableErrors);
 
     if (markTouched) {
       const touchedMap: Partial<Record<keyof Step1FormData, boolean>> = {};
       STEP1_FORM_FIELDS.forEach((key) => { touchedMap[key] = true; });
       setTouched(touchedMap);
+      setTableTouched(
+        Object.fromEntries(
+          (formData.meetingAgenda ?? []).map((a) => [
+            a.id,
+            { agenda_item: true, presentation_duration_minutes: true, minister_support_type: true, minister_support_other: true },
+          ])
+        )
+      );
 
       requestAnimationFrame(() => {
         const el = document.querySelector('[data-error-field]') ?? document.querySelector('[data-form-container]');
@@ -243,11 +263,12 @@ export function useStep1({
     } catch (err: unknown) {
       const validationErrors = (err as Error & { validationErrors?: unknown })?.validationErrors;
       if (validationErrors) {
-        const { formErrors } = extractValidationErrors(
+        const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(
           { success: false, error: validationErrors } as Parameters<typeof extractValidationErrors>[0],
           formData
         );
         setErrors(formErrors);
+        setTableErrors(extractedTableErrors);
       }
       return null;
     }
@@ -293,10 +314,15 @@ export function useStep1({
     formData,
     errors,
     touched,
+    tableErrors,
+    tableTouched,
     isSubmitting: submitMutation.isPending,
     isFieldVisible,
     handleChange,
     handleBlur,
+    handleAddAgenda,
+    handleDeleteAgenda,
+    handleUpdateAgenda,
     fillFormFromPreviousMeeting,
     validateAll,
     submitStep,
