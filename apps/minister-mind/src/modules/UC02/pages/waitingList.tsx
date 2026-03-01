@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable, CardsGrid, ViewSwitcher, SearchInput, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar } from '@shared';
+import { DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar } from '@shared';
 import { MeetingClassification, MeetingClassificationLabels } from '@shared';
 import '@shared/styles';
 import { getWaitingList, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';

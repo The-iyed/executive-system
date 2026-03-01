@@ -429,8 +429,7 @@ const MeetingDetail: React.FC = () => {
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
 
-  // Minister Calendar Modal state
-  const [isMinisterCalendarOpen, setIsMinisterCalendarOpen] = useState(false);
+
 
   // Compare presentations modal (تقييم الاختلاف بين العروض)
   const [isComparePresentationsModalOpen, setIsComparePresentationsModalOpen] = useState(false);
@@ -612,14 +611,6 @@ const MeetingDetail: React.FC = () => {
       exactEndTime: formatExactTime(endDate),
     }] as CalendarEventData[];
   }, [scheduleForm.selected_time_slot_id, meeting]);
-
-  // Extract the date of the selected slot to open the calendar at the correct week
-  const selectedSlotDate = React.useMemo(() => {
-    if (highlightedEvents.length > 0) {
-      return highlightedEvents[0].date;
-    }
-    return undefined;
-  }, [highlightedEvents]);
 
 
   const queryClient = useQueryClient();
@@ -3827,12 +3818,7 @@ const MeetingDetail: React.FC = () => {
                   JSON.stringify(originalSnapshot?.contentForm?.agendaItems ?? []);
                 if (agendaChanged) {
                   const filtered = contentForm.agendaItems.filter((item) => (item.agenda_item ?? '').trim().length > 0);
-                  const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
                   payload.agenda_items = filtered.map((item) => {
-                    const supportType = (item.minister_support_type ?? '').trim();
-                    const isOther = supportType === otherTypeValue;
-                    const rawOther = item.minister_support_other;
-                    const customText = typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
                     return {
                       agenda_item: (item.agenda_item ?? '').trim(),
                       presentation_duration_minutes: item.presentation_duration_minutes,
