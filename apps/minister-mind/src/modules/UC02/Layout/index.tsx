@@ -5,7 +5,6 @@ import { SharedLayout, WelcomeSectionProps } from '@shared';
 import { USE_CASE_CONFIGS } from '@shared';
 import { PATH } from '../routes/paths';
 import { prefetchOutlookTimelineWeeksAround } from '../data/calendarApi';
-import { MeetingFormDrawer } from '../features/MeetingForm/components/MeetingFormDrawer';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -68,7 +67,6 @@ export const Layout: React.FC<LayoutProps> = ({
   const isCalendar = pathname === PATH.CALENDAR;
 
   return (
-    <>
       <SharedLayout
         children={children}
         welcomeSection={getWelcomeConfig()}
@@ -78,7 +76,5 @@ export const Layout: React.FC<LayoutProps> = ({
         hideContentBar={isMeetingDetail || isCalendar}
         contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
       />
-      <MeetingFormDrawer createEditBasePath={PATH.DIRECTIVES} />
-    </>
   );
 };
