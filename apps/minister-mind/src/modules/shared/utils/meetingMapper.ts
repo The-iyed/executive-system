@@ -1,9 +1,5 @@
-/**
- * Shared meeting API response to card/display data mapper.
- * Use with MeetingApiResponse from @shared/types.
- */
+import { MeetingApiResponse } from '@shared/types/meeting';
 import type { MeetingCardData } from '../components/meeting-card';
-import type { MeetingApiResponse } from '../types';
 import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '../types';
 import { formatDateIslamic } from './format';
 

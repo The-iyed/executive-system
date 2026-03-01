@@ -14,10 +14,6 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     bgClass: 'bg-[rgba(126,126,126,0.12)]',
     textClass: 'text-[#636363]',
   },
-  [MeetingStatus.ADDITIONAL_INFO]: {
-    bgClass: 'bg-[rgba(89,146,255,0.12)]',
-    textClass: 'text-[#3C6FD1]',
-  },
   [MeetingStatus.UNDER_REVIEW]: {
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
@@ -31,14 +27,6 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
     textClass: 'text-[#027A48]',
   },
   [MeetingStatus.SCHEDULED_CONTENT]: {
-    bgClass: 'bg-[rgba(236,253,243,1)]',
-    textClass: 'text-[#027A48]',
-  },
-  [MeetingStatus.SCHEDULED_CONTENT_CONSULTATION]: {
-    bgClass: 'bg-[rgba(236,253,243,1)]',
-    textClass: 'text-[#027A48]',
-  },
-  [MeetingStatus.SCHEDULED_UPDATE_CONTENT]: {
     bgClass: 'bg-[rgba(236,253,243,1)]',
     textClass: 'text-[#027A48]',
   },
@@ -89,10 +77,6 @@ const statusConfig: Record<StatusType, { bgClass: string; textClass: string }> =
   [MeetingStatus.UNDER_CONTENT_REVIEW]: {
     bgClass: 'bg-[rgba(89,146,255,0.12)]',
     textClass: 'text-[#3C6FD1]',
-  },
-  [MeetingStatus.READY]: {
-    bgClass: 'bg-[rgba(4,143,134,0.08)]',
-    textClass: 'text-[#048F86]',
   },
   'PENDING': {
     bgClass: 'bg-[rgba(255,211,89,0.12)]',

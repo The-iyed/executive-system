@@ -24,10 +24,6 @@ const getStatusLabel = (status: MeetingStatus | string): string => {
   if (status in MeetingStatusLabels) {
     return MeetingStatusLabels[status as MeetingStatus];
   }
-  // Handle custom statuses
-  if (status === 'SCHEDULED_CONTENT_CONSULTATION') {
-    return 'مجدول لاستشارة المحتوى';
-  }
   return status as string;
 };
 
