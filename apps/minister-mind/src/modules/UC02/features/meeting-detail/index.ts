@@ -13,4 +13,3 @@ export { DirectivesTab } from './tabs/DirectivesTab';
 export { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 export { SchedulingConsultationTab } from './tabs/SchedulingConsultationTab';
 export { DirectiveTab } from './tabs/DirectiveTab';
-export { ContentConsultationTab } from './tabs/ContentConsultationTab';

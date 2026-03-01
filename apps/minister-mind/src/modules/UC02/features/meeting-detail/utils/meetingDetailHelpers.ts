@@ -102,6 +102,7 @@ export function getGeneralNotesList(
 /** Directive status labels for التوجيهات المرتبطة list */
 export const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
   PENDING: 'قيد الانتظار',
+  IN_PROGRESS: 'قيد التنفيذ',
   CURRENT: 'جاري',
   COMPLETED: 'مكتمل',
   CANCELLED: 'ملغى',

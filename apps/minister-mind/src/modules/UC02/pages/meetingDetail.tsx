@@ -15,7 +15,6 @@ import {
   MeetingConfidentiality,
   MeetingChannelLabels,
   StatusBadge,
-  DataTable,
   Tabs,
   DetailPageHeader,
   type TableColumn,
@@ -33,6 +32,7 @@ import {
   PRESENTATION_DURATION_MINUTES_OPTIONS,
   MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
+  formatDateArabic,
   isValidPhone,
 } from '@shared'; 
 import {
@@ -86,8 +86,9 @@ import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
-import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab, ContentConsultationTab } from '../features/meeting-detail';
+import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
+import { translateDirectiveStatus } from '../features/meeting-detail/utils/meetingDetailHelpers';
 import {
   MEETING_LOCATION_OPTIONS,
   MeetingLocation,
@@ -211,27 +212,15 @@ const MeetingDetail: React.FC = () => {
     enabled: !!id && activeTab === 'directive',
   });
 
-  // Fetch content officer notes records (استشارة المحتوى tab)
-  // Only fetch when tab is active to prevent unnecessary data loading
-  const { data: contentOfficerNotesRecordsRaw, isLoading: isLoadingContentOfficerNotes } = useQuery({
+  // Fetch content officer notes records (shown in المحتوى tab)
+  const { data: contentOfficerNotesRecordsRaw } = useQuery({
     queryKey: ['content-officer-notes-records', id, 'CONTENT'],
     queryFn: () => getContentOfficerNotesRecords(id!, { skip: 0, limit: 100, consultation_type: 'CONTENT' }),
-    enabled: !!id && activeTab === 'content-consultation',
-    // Don't keep previous data when disabled to prevent rendering stale objects
+    enabled: !!id && activeTab === 'content',
     placeholderData: undefined,
   });
 
-  // Clear query cache when tab is not active to prevent stale data
-  // Note: queryClient is declared later in the component, so we'll move this effect there
-
-  // Only expose data when tab is actually active - this prevents stale data from being accessed
-  // Use useMemo to ensure we never access the data when tab is not active
-  const contentOfficerNotesRecords = React.useMemo(() => {
-    if (activeTab !== 'content-consultation') {
-      return undefined;
-    }
-    return contentOfficerNotesRecordsRaw;
-  }, [activeTab, contentOfficerNotesRecordsRaw]);
+  const contentOfficerNotesRecords = activeTab === 'content' ? contentOfficerNotesRecordsRaw : undefined;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -639,9 +628,9 @@ const MeetingDetail: React.FC = () => {
 
   const queryClient = useQueryClient();
   
-  // Clear content-consultation tab query caches when tab is not active to prevent stale data
+  // Clear content officer notes cache when leaving المحتوى tab to avoid stale data
   React.useEffect(() => {
-    if (activeTab !== 'content-consultation') {
+    if (activeTab !== 'content') {
       queryClient.removeQueries({ queryKey: ['content-officer-notes-records', id, 'CONTENT'] });
     }
   }, [activeTab, id, queryClient]);
@@ -1694,8 +1683,7 @@ const MeetingDetail: React.FC = () => {
 
   // Tabs per Excel "الجدولة - مراجعة الطلب": التبويب (column التبويب)
   // When status is SCHEDULED (مجدول), hide 4 tabs and add "توثيق الاجتماع"
-  // When !hasContent (no objectives/agenda + presentation), hide "استشارة المحتوى" tab
-  const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive', 'content-consultation'];
+  const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive'];
   const tabs = useMemo(() => {
     const all = [
       { id: 'request-info', label: 'معلومات الطلب' },
@@ -1704,7 +1692,6 @@ const MeetingDetail: React.FC = () => {
       { id: 'attendees', label: 'قائمة المدعوين' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
       { id: 'directive', label: 'استشارة المكتب التنفيذي' },
-      ...(hasContent ? [{ id: 'content-consultation', label: 'استشارة المحتوى' }] : []),
     ];
     if (meetingStatus === MeetingStatus.SCHEDULED) {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
@@ -1714,9 +1701,59 @@ const MeetingDetail: React.FC = () => {
       return [...all, { id: 'directives', label: 'التوجيهات' }];
     }
     return all;
-  }, [meetingStatus, hasContent]);
+  }, [meetingStatus]);
 
-  // When status is SCHEDULED and current tab is hidden, switch to request-info; when not SCHEDULED and on meeting-documentation, switch away; when !hasContent and on content-consultation, switch away
+  // Normalize content_approval_directives for table (same columns as DirectivesTab: رقم التوجيه، تاريخ التوجيه، نص التوجيه، الموعد النهائي، المسؤولون، الحالة)
+  // API may return string[] or object[] with title/text/due_date/status/assignees/directive_number
+  interface ContentApprovalDirectiveRow {
+    directive_number?: string;
+    directive_date?: string;
+    directive_text: string;
+    deadline?: string;
+    responsible_persons?: string;
+    directive_status?: string;
+  }
+  const contentApprovalDirectivesRows = useMemo((): ContentApprovalDirectiveRow[] => {
+    const raw = meeting?.content_approval_directives;
+    if (!raw || !Array.isArray(raw)) return [];
+    return raw.map((item: string | { title?: string; text?: string; due_date?: string; deadline?: string; status?: string; assignees?: string[] | Array<{ name?: string }>; directive_number?: string; [key: string]: unknown }) => {
+      if (typeof item === 'string') return { directive_text: item };
+      if (item && typeof item === 'object') {
+        const t = (item as { title?: string; text?: string }).title ?? (item as { text?: string }).text;
+        const text = t != null && typeof t === 'string' ? t : String(item);
+        const dueDate = (item as { due_date?: string }).due_date ?? (item as { deadline?: string }).deadline;
+        const status = (item as { status?: string }).status;
+        const assignees = (item as { assignees?: string[] | Array<{ name?: string }> }).assignees;
+        const responsiblePersons = Array.isArray(assignees)
+          ? assignees.map((a) => (typeof a === 'string' ? a : (a && typeof a === 'object' && 'name' in a ? String((a as { name?: string }).name ?? a) : String(a)))).filter(Boolean).join('، ') || undefined
+          : undefined;
+        return {
+          directive_number: (item as { directive_number?: string }).directive_number,
+          directive_date: dueDate,
+          directive_text: text,
+          deadline: dueDate,
+          responsible_persons: responsiblePersons,
+          directive_status: status,
+        };
+      }
+      return { directive_text: String(item) };
+    });
+  }, [meeting?.content_approval_directives]);
+
+  // Content officer notes for المحتوى tab (from meeting.content_officer_notes or contentOfficerNotesRecords)
+  const contentOfficerNotesDisplay = useMemo(() => {
+    const raw: unknown = meeting?.content_officer_notes;
+    if (raw != null) {
+      if (typeof raw === 'string') return raw.trim() || '—';
+      if (Array.isArray(raw)) return raw.map((n: { text?: string }) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') || '—';
+      if (typeof raw === 'object' && 'text' in raw) return ((raw as { text?: string }).text ?? '—').trim() || '—';
+    }
+    const fromRecords = contentOfficerNotesRecords?.items?.find((n) => n?.note_type === 'SUMMARY' || n?.note_type === 'EXECUTIVE_SUMMARY');
+    const t = (fromRecords as { text?: string; note_answer?: string } | undefined)?.text ?? (fromRecords as { note_answer?: string } | undefined)?.note_answer;
+    return (t != null && String(t).trim() !== '') ? String(t).trim() : '—';
+  }, [meeting?.content_officer_notes, contentOfficerNotesRecords]);
+
+  // When status is SCHEDULED and current tab is hidden, switch to request-info; when not SCHEDULED and on meeting-documentation, switch away
   useEffect(() => {
     if (meetingStatus === MeetingStatus.SCHEDULED && TABS_HIDDEN_WHEN_SCHEDULED.includes(activeTab)) {
       setActiveTab('request-info');
@@ -1724,12 +1761,10 @@ const MeetingDetail: React.FC = () => {
       setActiveTab('request-info');
     } else if (activeTab === 'request-notes') {
       setActiveTab('request-info');
-    } else if (!hasContent && activeTab === 'content-consultation') {
-      setActiveTab('request-info');
     } else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') {
       setActiveTab('request-info');
     }
-  }, [meetingStatus, activeTab, hasContent]);
+  }, [meetingStatus, activeTab]);
 
   /** Data for MeetingInfo (read-only) – built from meeting + form state so read-only tab can use shared component without modifying it. */
   const meetingInfoData = useMemo((): MeetingInfoData => {
@@ -2338,6 +2373,66 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </div>
 
+              {/* التوجيهات المرتبطة بالاجتماع – same table as إضافة التوجيهات (contentRequestDetail) */}
+              {contentApprovalDirectivesRows.length > 0 && (
+                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
+                  <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
+                    <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <label className="text-sm font-bold text-[#344054]">التوجيهات المرتبطة بالاجتماع</label>
+                  </div>
+                  <div className="p-5">
+                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
+                      <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-32">الموعد النهائي</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-28">الحالة</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 min-w-[120px]">المعينون</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {contentApprovalDirectivesRows.map((row, index) => {
+                            const d = row.deadline ? new Date(row.deadline) : null;
+                            const assigneesList = (row.responsible_persons ?? '')
+                              .split(/[،,]/)
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            return (
+                              <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{row.directive_text || '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{d ? formatDateArabic(d) : '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{translateDirectiveStatus(row.directive_status)}</td>
+                                <td className="px-4 py-3" dir="rtl">
+                                  <div className="flex flex-wrap gap-1.5 items-center">
+                                    {assigneesList.length === 0 ? (
+                                      <span className="text-sm text-gray-500">—</span>
+                                    ) : (
+                                      assigneesList.map((email, i) => (
+                                        <span
+                                          key={`${email}-${i}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#008774]/15 text-[#008774] text-xs"
+                                        >
+                                          {email}
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* الملخّص التنفيذي */}
               <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
                 <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#8F751E]/08 to-transparent border-b border-[#EAECF0]">
@@ -2582,6 +2677,14 @@ const MeetingDetail: React.FC = () => {
                       </div>
                     );
                   })()}
+                  {contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—' && (
+                    <div className="mt-4 pt-4 border-t border-[#EAECF0]">
+                      <span className="font-medium text-[#344054] block mb-1 text-right">ملاحظات مسؤول المحتوى</span>
+                      <div className="w-full min-h-[80px] px-4 py-3 bg-amber-50/50 border border-[#EAECF0] rounded-xl text-right text-[#475467] whitespace-pre-wrap text-sm">
+                        {contentOfficerNotesDisplay}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -3512,22 +3615,9 @@ const MeetingDetail: React.FC = () => {
             <DirectivesTab meeting={meeting} onAddDirective={() => setIsAddDirectiveOpen(true)} />
           )}
 
-          {/* استشارة المحتوى */}
-          {activeTab === 'content-consultation' && (
-            <ContentConsultationTab
-              isLoading={isLoadingContentOfficerNotes}
-              meeting={meeting}
-              contentOfficerNotesRecords={contentOfficerNotesRecords}
-              onPreviewAttachment={(att) => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-            />
-          )}
-
-          {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) */}
+          {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) – uses GET /api/v1/adam-meetings/search/{title} */}
           {activeTab === 'meeting-documentation' && (
-            <MeetingDocumentationTab
-              meeting={meeting}
-              previousMeetingMinutesLabel={previousMeetingMinutesOption?.label ?? null}
-            />
+            <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />
           )}
 
         </div>
