@@ -20,9 +20,12 @@ export const mapDirectiveToCardData = (directive: Directive): MeetingCardData =>
 };
 
 const DIRECTIVE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  IN_PROGRESS: 'قيد التنفيذ',
   CLOSED: 'مغلق',
   CURRENT: 'جاري',
   CANCELLED: 'ملغي',
+  COMPLETED: 'مكتمل',
 };
 
 /**
