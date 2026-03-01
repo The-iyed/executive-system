@@ -2,12 +2,11 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@sanad-ai/ui';
-import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewSwitcher, ViewType, SearchInput } from '@shared';
+import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewType } from '@shared';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE, MEETING_TABS } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
-// import '@shared/styles';
 
 const Meeting: React.FC = () => {
   const navigate = useNavigate();
@@ -91,7 +90,7 @@ const Meeting: React.FC = () => {
   ]);
 
   return (
-     <div className="w-full h-full flex flex-col overflow-hidden">
+     <>
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
           <DialogHeader className="text-right gap-2">
@@ -126,19 +125,7 @@ const Meeting: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="px-6 flex-shrink-0" dir="rtl">
-        <div className="flex flex-row items-start justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2 text-right text-gray-900">
-              قائمة الاجتماعات
-            </h1>
-            <p className="text-base text-gray-600 text-right">
-              يمكنك الاطلاع على الاجتماعات التي قمت بإنشائها.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+      <div>
         <ContentBar
           showViewSwitcher={true}
           onViewChange={setView}
@@ -154,34 +141,29 @@ const Meeting: React.FC = () => {
           activeFilterId={statusFilter}
           onFilterChange={(id) => setStatusFilter(id as MeetingStatus)}
         />
-        <div>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">جاري التحميل...</div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
-            </div>
-          ) : meetings.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">لا توجد بيانات</div>
-            </div>
-          ) : (
-            <>
-              {view === 'table' ? (
-                <div className="w-full overflow-x-auto table-scroll">
-                  <div className="min-w-[1400px]">
-                    <DataTable
-                      columns={tableColumns}
-                      data={meetings}
-                      onRowClick={(row) =>
-                        navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
-                      }
-                    />
-                  </div>
-                </div>
-              ) : (
+         {isLoading ? (
+           <div className="flex items-center justify-center py-12">
+             <div className="text-gray-600">جاري التحميل...</div>
+           </div>
+         ) : error ? (
+           <div className="flex items-center justify-center py-12">
+             <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
+           </div>
+         ) : meetings.length === 0 ? (
+           <div className="flex items-center justify-center py-12">
+             <div className="text-gray-600">لا توجد بيانات</div>
+           </div>
+         ) : (
+           <>
+             {view === 'table' ? (
+                <DataTable
+                  columns={tableColumns}
+                  data={meetings}
+                  onRowClick={(row) =>
+                    navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
+                  }
+                />
+             ) : (
                 <CardsGrid
                   meetings={meetings}
                   onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
@@ -211,8 +193,9 @@ const Meeting: React.FC = () => {
                   }}
                   getActionLoading={(meeting) => isSubmitting && submittingMeetingId === meeting.id}
                 />
-              )}
-              {totalPages > 1 && (
+             )}
+             
+             {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
                     currentPage={currentPage}
@@ -220,12 +203,11 @@ const Meeting: React.FC = () => {
                     onPageChange={setCurrentPage}
                   />
                 </div>
-              )}
-            </>
-          )}
-        </div>
+             )}
+           </>
+         )}
       </div>
-     </div>
+     </>
   );
 };
 

@@ -7,14 +7,11 @@ import { PAGINATION, MeetingOwnerType } from '../utils/constants';
 
 interface UseMeetingsOptions {
   searchValue: string;
-  /** Status to filter by (required). No "all" - always filtered by this status. */
   statusFilter: MeetingStatus;
   currentPage: number;
   itemsPerPage?: number;
-  /** Optional. When not provided, uses SUBMITTER (e.g. UC01). When provided (e.g. UC08 tabs), uses this owner type. */
   ownerType?: MeetingOwnerType;
 }
-
 interface UseMeetingsReturn {
   meetings: MeetingDisplayData[];
   isLoading: boolean;
