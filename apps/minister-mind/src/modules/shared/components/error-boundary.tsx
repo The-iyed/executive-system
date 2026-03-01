@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[#DC2626] mb-4">
               حدث خطأ ما
-            </h2>
+            </h2>   
             <p className="text-[#666] mb-4">
               نعتذر، حدث خطأ غير متوقع. يرجى تحديث الصفحة.
             </p>
