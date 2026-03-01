@@ -22,7 +22,7 @@ export function MeetingDocumentationTab({ meeting, previousMeetingMinutesLabel }
   return (
     <div className="flex flex-col gap-8 w-full" dir="rtl">
       <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
           محضر الاجتماع
         </h2>
         <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-right">
@@ -30,7 +30,7 @@ export function MeetingDocumentationTab({ meeting, previousMeetingMinutesLabel }
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
           الحضور الفعلي
         </h2>
         {meeting?.minister_attendees && meeting.minister_attendees.length > 0 ? (
@@ -57,7 +57,7 @@ export function MeetingDocumentationTab({ meeting, previousMeetingMinutesLabel }
         )}
       </div>
       <div className="flex flex-col gap-2">
-        <h2 className="text-right font-bold text-[#101828]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
           التوجيهات المرتبطة بالاجتماع
         </h2>
         {meeting?.content_approval_directives && meeting.content_approval_directives.length > 0 ? (
