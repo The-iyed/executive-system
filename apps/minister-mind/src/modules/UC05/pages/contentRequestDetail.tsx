@@ -41,11 +41,14 @@ import {
   completeContentConsultation,
   getContentConsultants,
   approveContent,
+  listActions,
   analyzeContradictions,
   getAttachmentInsightsWithPolling,
   runCompareByAttachment,
+  type ActionItem,
   type Attachment,
   type ConsultantUser,
+  type DirectiveForApprove,
   type AnalyzeResponse,
   type AttachmentInsightsResponse,
   type ComparePresentationsResponse,
@@ -230,6 +233,8 @@ const ContentRequestDetail: React.FC = () => {
   const [deletedExistingDirectiveIds, setDeletedExistingDirectiveIds] = useState<Set<string>>(new Set());
   /** IDs of suggested-actions (from API) that the user removed from the list – hide in UI only */
   const [deletedSuggestedActionIds, setDeletedSuggestedActionIds] = useState<Set<string>>(new Set());
+  /** Matched action from GET /api/v1/actions/ per AI directive id (key = ai directive id). */
+  const [aiDirectiveActions, setAiDirectiveActions] = useState<Record<string, ActionItem>>({});
 
   // Fetch content request data from API
   const { data: contentRequest, isLoading, error } = useQuery({
@@ -452,6 +457,28 @@ const ContentRequestDetail: React.FC = () => {
         };
       });
       setEditableAiDirectives((prev) => ({ ...prev, ...editableState }));
+
+      // For each AI directive title, GET /api/v1/actions/?search=title&limit=1 and store the match
+      const actionEntries: Array<{ id: string; action: ActionItem }> = [];
+      await Promise.all(
+        formattedSuggestions.map(async (suggestion) => {
+          const title = (suggestion.directive_text ?? '').trim();
+          if (!title) return;
+          try {
+            const actions = await listActions({ search: title, limit: 1, skip: 0 });
+            const first = actions[0];
+            if (first) {
+              actionEntries.push({ id: suggestion.id, action: first });
+            }
+          } catch (e) {
+            console.warn('Failed to fetch action for directive title:', title, e);
+          }
+        })
+      );
+      setAiDirectiveActions((prev) => ({
+        ...prev,
+        ...Object.fromEntries(actionEntries.map((e) => [e.id, e.action])),
+      }));
     } catch (error) {
       console.error('Error fetching AI match suggestions:', error);
     } finally {
@@ -579,7 +606,7 @@ const ContentRequestDetail: React.FC = () => {
 
   // Send to scheduling officer mutation (إرسال إلى مسؤول الجدولة)
   const sendToSchedulingMutation = useMutation({
-    mutationFn: async (data: { file: File; notes?: string; directives?: string[] }) => {
+    mutationFn: async (data: { file: File; notes?: string; directives?: DirectiveForApprove[] }) => {
       if (!id) throw new Error('Meeting request ID is required');
       return approveContent(id, data);
     },
@@ -590,6 +617,7 @@ const ContentRequestDetail: React.FC = () => {
       setGuidanceNotes('');
       setAiDirectivesSuggestions([]);
       setEditableAiDirectives({});
+      setAiDirectiveActions({});
       navigate(PATH.CONTENT_REQUESTS);
     },
     onError: (error) => {
@@ -641,6 +669,20 @@ const ContentRequestDetail: React.FC = () => {
     }
   }, [sendToSchedulingMutation.isPending]);
 
+  /** Normalize assignees to string[] for building approve payload. */
+  const assigneesForApprove = (a: unknown): string[] => {
+    if (Array.isArray(a)) return a.filter((x): x is string => typeof x === 'string');
+    if (typeof a === 'string') {
+      try {
+        const parsed = JSON.parse(a) as unknown;
+        return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
   const handleSendToScheduling = () => {
     if (!executiveSummaryFile) {
       // TODO: Show validation error - executive summary file is required
@@ -649,19 +691,43 @@ const ContentRequestDetail: React.FC = () => {
     }
 
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
-    const existingTexts = relatedDirectives
+    const existingObjs: DirectiveForApprove[] = relatedDirectives
       .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
-      .map((d) => (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim())
-      .filter(Boolean);
-    const aiManualTexts = aiDirectivesSuggestions
-      .map((d) => editableAiDirectives[d.id]?.directive_text?.trim())
-      .filter((text): text is string => !!text);
-    const suggestedTexts = suggestedActionsItems
-      .filter((s) => !deletedSuggestedActionIds.has(String(s.id)))
-      .map((s) => (s.title ?? '').trim())
-      .filter(Boolean);
+      .map((d) => ({
+        id: Number(d.id),
+        title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
+        due_date: d.deadline ?? null,
+        assignees: (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[],
+        status: d.directive_status ?? 'PENDING',
+      }))
+      .filter((d) => d.title !== '—');
 
-    const directivesToSend = [...existingTexts, ...aiManualTexts, ...suggestedTexts];
+    const aiObjs: DirectiveForApprove[] = aiDirectivesSuggestions
+      .filter((d) => aiDirectiveActions[d.id])
+      .map((d) => {
+        const action = aiDirectiveActions[d.id];
+        const title = (editableAiDirectives[d.id]?.directive_text ?? d.directive_text ?? '').trim() || action.title;
+        return {
+          id: action.id,
+          title,
+          due_date: action.due_date ?? null,
+          assignees: action.assignees ?? [],
+          status: action.status ?? 'PENDING',
+        };
+      });
+
+    const suggestedObjs: DirectiveForApprove[] = suggestedActionsItems
+      .filter((s) => !deletedSuggestedActionIds.has(String(s.id)))
+      .map((s) => ({
+        id: Number(s.id),
+        title: (s.title ?? '').trim() || '—',
+        due_date: s.due_date ?? null,
+        assignees: assigneesForApprove(s.assignees),
+        status: s.status ?? 'PENDING',
+      }))
+      .filter((d) => d.title !== '—');
+
+    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs];
 
     sendToSchedulingMutation.mutate({
       file: executiveSummaryFile,
@@ -1720,7 +1786,7 @@ const ContentRequestDetail: React.FC = () => {
                           <button
                             type="button"
                             onClick={handleRequestAiDirectives}
-                            disabled={isLoadingAiSuggestions || hasSuggestedActions || contentRequest?.ext_id == null}
+                            // disabled={isLoadingAiSuggestions || hasSuggestedActions || contentRequest?.ext_id == null}
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                             style={{ fontFamily: "'Almarai', sans-serif" }}
                           >
@@ -1797,6 +1863,20 @@ const ContentRequestDetail: React.FC = () => {
                   })),
                 ];
 
+                /** Normalize assignees to string[] (API may return JSON array or string). */
+                const assigneesList = (a: unknown): string[] => {
+                  if (Array.isArray(a)) return a.filter((x): x is string => typeof x === 'string');
+                  if (typeof a === 'string') {
+                    try {
+                      const parsed = JSON.parse(a) as unknown;
+                      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+                    } catch {
+                      return [];
+                    }
+                  }
+                  return [];
+                };
+
                 if (hasDirectives || hasAiSuggestions || hasSuggestedActionsFromApi) {
                   return (
                     <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
@@ -1805,6 +1885,9 @@ const ContentRequestDetail: React.FC = () => {
                           <tr>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-32">الموعد النهائي</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-28">الحالة</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 min-w-[120px]">المعينون</th>
                             <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">الإجراءات</th>
                           </tr>
                         </thead>
@@ -1816,18 +1899,16 @@ const ContentRequestDetail: React.FC = () => {
 
                             // Read-only row from GET .../suggested-actions API – deletable
                             if (isSuggestedAction) {
+                              const rawId = String(directiveId).replace(/^suggested-/, '');
+                              const suggestedItem = suggestedActionsFiltered.find((s) => String(s.id) === rawId);
+                              const assignees = suggestedItem ? assigneesList(suggestedItem.assignees) : [];
                               return (
                                 <tr key={directiveId} className="hover:bg-gray-50 transition-colors bg-[#F9FAFB]/50">
                                   <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">
-                                    {directive.directive ?? '-'}
-                                    {directive.due_date != null && String(directive.due_date).trim() !== '' && (
-                                      <span className="block text-xs text-gray-500 mt-1">الموعد: {directive.due_date}</span>
-                                    )}
-                                    {directive.status != null && String(directive.status).trim() !== '' && (
-                                      <span className="block text-xs text-gray-500">الحالة: {directive.status}</span>
-                                    )}
-                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{directive.directive ?? '-'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">{directive.due_date ?? '—'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">{directive.status ?? '—'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{assignees.length ? assignees.join('، ') : '—'}</td>
                                   <td className="px-4 py-3">
                                     <div className="flex justify-center">
                                       <button
@@ -1846,7 +1927,7 @@ const ContentRequestDetail: React.FC = () => {
 
                             if (isAi && editableAiDirectives[directiveId]) {
                               const editable = editableAiDirectives[directiveId];
-                              
+                              const action = aiDirectiveActions[directiveId];
                               return (
                                 <tr key={directiveId} className="bg-purple-50/20 hover:bg-purple-50/40 transition-colors">
                                   <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
@@ -1858,6 +1939,11 @@ const ContentRequestDetail: React.FC = () => {
                                       placeholder="أدخل نص التوجيه..."
                                       dir="rtl"
                                     />
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">{action?.due_date ?? '—'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">{action?.status ?? '—'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">
+                                    {action?.assignees?.length ? action.assignees.join('، ') : '—'}
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex justify-center">
@@ -1880,6 +1966,9 @@ const ContentRequestDetail: React.FC = () => {
                               <tr key={directiveId} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
                                 <td className="px-4 py-3 text-sm text-gray-700">{directive.directive || directive.directive_text || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{(directive as { deadline?: string | null }).deadline ?? '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700">{(directive as { directive_status?: string }).directive_status ?? '—'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{((directive as { responsible_persons?: Array<{ name?: string }> }).responsible_persons ?? []).map((p) => p.name).filter(Boolean).join('، ') || '—'}</td>
                                 <td className="px-4 py-3">
                                   <div className="flex justify-center">
                                     <button
