@@ -10,7 +10,7 @@
     "dev:build": "nx run-many --target=build --projects=minister-mind --watch",
     "dev:build-all": "nx run-many --target=build --projects=minister-mind --watch",
     "build:all": "nx run-many --target=build --projects=minister-mind",
-    "prepare": "husky"
+    "prepare": "husky && sh scripts/install-hooks.sh"
   },
   "private": true,
   "dependencies": {
