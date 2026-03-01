@@ -1,12 +1,5 @@
-/**
- * Shared API: meetings list and detail (used by UC01, UC02, UC08).
- */
 import axiosInstance from '../../auth/utils/axios';
-import type {
-  MeetingApiResponse,
-  MeetingsListResponse,
-  GetMeetingsParams,
-} from '../types';
+import { GetMeetingsParams, MeetingApiResponse, MeetingsListResponse } from '@shared/types/meeting';
 
 export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
   const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);

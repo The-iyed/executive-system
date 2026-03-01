@@ -6,7 +6,6 @@ import { ScreenLoader, Loader } from '@shared';
 import { filterRoutesByUseCase } from '@shared/utils/routeFilter';
 import { getDefaultRouteForUser } from '@shared/utils/useCaseConfig';
 import { Layout } from '../Layout';
-import { PATH } from './paths';
 import uc02Routes from './routes';
 
 /** Inline fallback for lazy route chunks: keeps layout visible, only content area shows loading */

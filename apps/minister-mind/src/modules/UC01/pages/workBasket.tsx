@@ -171,7 +171,7 @@ const WorkBasket: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
+    <div className="w-full h-full flex flex-col" dir="rtl">
       <div className="px-6 pt-6 pb-2 flex-shrink-0" dir="rtl">
         <div className="flex flex-row items-start justify-between gap-6">
           <div className="flex-1">
@@ -181,7 +181,6 @@ const WorkBasket: React.FC = () => {
           <div className="flex flex-col items-end gap-4 flex-shrink-0">
             <div
               className="flex flex-row items-center gap-4 px-4 py-3 rounded-[10px]"
-              
               dir="rtl"
             >
               <ViewSwitcher view={view} onViewChange={setView} />
@@ -196,7 +195,7 @@ const WorkBasket: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-6 schedule-review-scroll">
+      <div className="flex-1 px-6 pb-6 schedule-review-scroll">
         <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
