@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { clearDraftData } from '../utils';
 import { PATH as PATH_UC02 } from '../../../../UC02/routes/paths';
@@ -17,6 +17,7 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams<{ id: string }>();
+  const [forceClosed, setForceClosed] = useState(false);
 
   const basePath = options?.createEditBasePath ?? PATH_UC02.DIRECTIVES;
 
@@ -27,17 +28,25 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
 
   const isCreate = form === 'create';
   const isEdit = form === 'edit' && !!editId;
-  const open = isCreate || isEdit;
+  const openFromUrl = isCreate || isEdit;
+  const open = openFromUrl && !forceClosed;
+
+  useEffect(() => {
+    if (!form) {
+      setForceClosed(false);
+    }
+  }, [form]);
 
   const closeDrawer = useCallback(() => {
+    setForceClosed(true);
     clearDraftData();
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete(FORM_PARAM);
-      next.delete(ID_PARAM);
-      return next;
-    });
-  }, [setSearchParams, clearDraftData]);
+    const next = new URLSearchParams(location.search);
+    next.delete(FORM_PARAM);
+    next.delete(ID_PARAM);
+    const search = next.toString();
+    const to = { pathname: location.pathname, search: search ? `?${search}` : '' };
+    navigate(to, { replace: true });
+  }, [navigate, location.pathname, location.search]);
 
   const onOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -48,6 +57,7 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
 
   const openCreateDrawer = useCallback(
     (additionalParams?: Record<string, string>) => {
+      setForceClosed(false);
       clearDraftData();
       const params = new URLSearchParams();
       params.set(FORM_PARAM, 'create');
@@ -63,6 +73,7 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
 
   const openEditDrawer = useCallback(
     (meetingId: string) => {
+      setForceClosed(false);
       clearDraftData();
       const currentPath = window.location.pathname;
       const isPreviewOrDetail = currentPath.includes(PATH_UC02.DIRECTIVES) && currentPath.includes('/preview');
