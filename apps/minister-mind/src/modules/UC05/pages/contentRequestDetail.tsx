@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   Send,
@@ -29,7 +28,7 @@ import {
   StickyNote,
 } from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -807,52 +806,26 @@ const ContentRequestDetail: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="p-6">
-        {/* Main Container - header + tabs only, like UC04 */}
-        <div className="mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
-          {/* Header Section */}
-          <div className="flex flex-row items-center justify-between gap-6">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* Title and Status */}
-            <div className="flex-1 flex flex-col gap-1 items-start relative">
-              <div className="flex items-center gap-3">
-                <h1
-                  className="text-2xl font-bold text-gray-900 text-right"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  {contentRequest.meeting_title} ({contentRequest.request_number})
-                </h1>
-                <StatusBadge status={meetingStatus} label={statusLabel} />
-              </div>
-            </div>
-            {meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT && (
-            <button
-            type="button"
-            className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleRequestConsultation}
-            >
-              <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-              طلب استشارة
-            </button>
-            )}
-          </div>
-
-          {/* Tabs */}
-          
-          <div className="flex justify-center w-full ">
-            <Tabs
-              items={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
-        </div>
+        <DetailPageHeader
+          title={`${contentRequest.meeting_title} (${contentRequest.request_number})`}
+          onBack={() => navigate(-1)}
+          statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
+          primaryAction={
+            meetingStatus !== MeetingStatus.SCHEDULED_UPDATE_CONTENT ? (
+              <button
+                type="button"
+                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleRequestConsultation}
+              >
+                <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
+                طلب استشارة
+              </button>
+            ) : undefined
+          }
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
 
       <div className="flex flex-col flex-1 min-h-0">
@@ -891,7 +864,7 @@ const ContentRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4 w-full mx-auto ">
                 <h2
-                  className="text-xl font-bold text-right text-[#101828]"
+                  className="text-lg font-bold text-right text-[#101828]"
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
@@ -1137,7 +1110,7 @@ const ContentRequestDetail: React.FC = () => {
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
-                    fontSize: '22px',
+                    fontSize: '16px',
                     lineHeight: '38px',
                     color: '#101828',
                   }}
@@ -1231,7 +1204,7 @@ const ContentRequestDetail: React.FC = () => {
                   style={{
                     fontFamily: "'Almarai', sans-serif",
                     fontWeight: 700,
-                    fontSize: '22px',
+                    fontSize: '16px',
                     lineHeight: '38px',
                     color: '#101828',
                   }}

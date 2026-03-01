@@ -183,6 +183,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.0
         version: 10.4.23(postcss@8.5.6)
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       nx:
         specifier: ^22.3.3
         version: 22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18))
@@ -3631,6 +3634,11 @@ packages:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
@@ -6709,9 +6717,9 @@ snapshots:
     transitivePeerDependencies:
       - nx
 
-  '@nrwl/js@19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)':
+  '@nrwl/js@19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)':
     dependencies:
-      '@nx/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)
+      '@nx/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)
     transitivePeerDependencies:
       - '@babel/traverse'
       - '@swc-node/register'
@@ -6853,7 +6861,7 @@ snapshots:
       '@babel/preset-env': 7.28.5(@babel/core@7.28.5)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.28.5)
       '@babel/runtime': 7.28.4
-      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)
+      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)
       '@nx/devkit': 19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))
       '@nx/workspace': 19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18))
       babel-plugin-const-enum: 1.2.0(@babel/core@7.28.5)
@@ -6896,7 +6904,7 @@ snapshots:
       '@babel/preset-env': 7.28.5(@babel/core@7.28.5)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.28.5)
       '@babel/runtime': 7.28.4
-      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.4.5)
+      '@nrwl/js': 19.8.14(@babel/traverse@7.28.5)(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@20.19.27)(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))(typescript@5.9.3)
       '@nx/devkit': 19.8.14(nx@22.3.3(@swc/core@1.15.8(@swc/helpers@0.5.18)))
       '@nx/workspace': 19.8.14(@swc/core@1.15.8(@swc/helpers@0.5.18))
       babel-plugin-const-enum: 1.2.0(@babel/core@7.28.5)
@@ -9527,6 +9535,8 @@ snapshots:
       - supports-color
 
   human-signals@5.0.0: {}
+
+  husky@9.1.7: {}
 
   iconv-lite@0.4.24:
     dependencies:

@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ClipboardCheck, User, Mail, Phone, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { ClipboardCheck, User, Mail, Phone, Building2 } from 'lucide-react';
+import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic } from '@shared/utils';
 import {
   MeetingStatus,
@@ -257,41 +257,14 @@ const ConsultationRequestDetail: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="p-6">
-        {/* Main Container */}
-        <div className=" mx-auto bg-white rounded-2xl p-6 md:p-8 gap-6 flex flex-col">
-          {/* Header Section */}
-          <div className="flex flex-row items-center justify-between gap-6">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* Title and Status */}
-            <div className="flex-1 flex flex-col gap-1 items-start relative">
-              <div className="flex items-center gap-3">
-                <h1
-                  className="text-2xl font-bold text-gray-900 text-right"
-                  
-                >
-                  تعديل طلب معاد من مسؤول الجدولة ({meetingRequest.request_number})
-                </h1>
-                <StatusBadge status={meetingStatus} label={statusLabel} />
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex justify-center w-full ">
-            <Tabs
-              items={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
-        </div>
+        <DetailPageHeader
+          title={`تعديل طلب معاد من مسؤول الجدولة (${meetingRequest.request_number})`}
+          onBack={() => navigate(-1)}
+          statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
 
       {/* Tab Content Container */}
@@ -486,7 +459,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     style={{
                       fontFamily: "'Almarai', sans-serif",
                       fontWeight: 700,
-                      fontSize: '22px',
+                      fontSize: '16px',
                       lineHeight: '38px',
                       color: '#101828',
                     }}
@@ -575,7 +548,7 @@ const ConsultationRequestDetail: React.FC = () => {
                     style={{
                       fontFamily: "'Almarai', sans-serif",
                       fontWeight: 700,
-                      fontSize: '22px',
+                      fontSize: '16px',
                       lineHeight: '38px',
                       color: '#101828',
                     }}
