@@ -115,3 +115,29 @@ export const getOutlookTimelineEvents = async (
   const events = response.data?.data?.events;
   return Array.isArray(events) ? events : [];
 };
+
+/** Invitee for create-scheduled-meeting: either by user_id or by name/position/mobile/email */
+export type CreateScheduledMeetingInvitee =
+  | { user_id: string }
+  | { name: string; position: string; mobile: string; email: string };
+
+export interface CreateScheduledMeetingPayload {
+  meeting_title: string;
+  scheduled_start: string; // ISO datetime
+  scheduled_end: string;   // ISO datetime
+  invitees: CreateScheduledMeetingInvitee[];
+}
+
+/**
+ * Create a scheduled meeting from the calendar slot form.
+ * POST /api/scheduling/create-scheduled-meeting
+ */
+export const createScheduledMeeting = async (
+  payload: CreateScheduledMeetingPayload
+): Promise<unknown> => {
+  const { data } = await axiosInstance.post(
+    '/api/scheduling/create-scheduled-meeting',
+    payload
+  );
+  return data;
+};

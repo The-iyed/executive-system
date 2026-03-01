@@ -429,8 +429,7 @@ const MeetingDetail: React.FC = () => {
   // Delete invitee confirmation modal state
   const [deleteInviteeId, setDeleteInviteeId] = useState<string | null>(null);
 
-  // Minister Calendar Modal state
-  const [isMinisterCalendarOpen, setIsMinisterCalendarOpen] = useState(false);
+
 
   // Compare presentations modal (تقييم الاختلاف بين العروض)
   const [isComparePresentationsModalOpen, setIsComparePresentationsModalOpen] = useState(false);
@@ -612,14 +611,6 @@ const MeetingDetail: React.FC = () => {
       exactEndTime: formatExactTime(endDate),
     }] as CalendarEventData[];
   }, [scheduleForm.selected_time_slot_id, meeting]);
-
-  // Extract the date of the selected slot to open the calendar at the correct week
-  const selectedSlotDate = React.useMemo(() => {
-    if (highlightedEvents.length > 0) {
-      return highlightedEvents[0].date;
-    }
-    return undefined;
-  }, [highlightedEvents]);
 
 
   const queryClient = useQueryClient();
@@ -1507,8 +1498,11 @@ const MeetingDetail: React.FC = () => {
   // Map status to MeetingStatus enum
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
-  /** When true, form is editable and all actions (FAB) are enabled (قيد المراجعة or قيد المراجعة - المكتب التنفيذي). */
-  const canEdit = meeting?.status === MeetingStatus.UNDER_REVIEW || meeting?.status === MeetingStatus.UNDER_GUIDANCE;
+  /** When true, form is editable and all actions (FAB) are enabled. */
+  const canEdit =
+    meeting?.status === MeetingStatus.UNDER_REVIEW ||
+    meeting?.status === MeetingStatus.UNDER_GUIDANCE ||
+    meeting?.status === MeetingStatus.SCHEDULED;
 
   /** Tooltip content for help icon - shows permissions based on current status */
   const permissionTooltip = useMemo(() => {
@@ -3533,8 +3527,8 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Edit button: bottom-left, when status allows edit (UNDER_REVIEW or UNDER_GUIDANCE); disabled when no changes */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE) && (
+        {/* Edit button: bottom-left, when status allows edit; disabled when no changes */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
           <div className="fixed bottom-6 left-6 z-40 flex-shrink-0" dir="rtl">
             <TooltipProvider>
               <Tooltip>
@@ -3827,12 +3821,7 @@ const MeetingDetail: React.FC = () => {
                   JSON.stringify(originalSnapshot?.contentForm?.agendaItems ?? []);
                 if (agendaChanged) {
                   const filtered = contentForm.agendaItems.filter((item) => (item.agenda_item ?? '').trim().length > 0);
-                  const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
                   payload.agenda_items = filtered.map((item) => {
-                    const supportType = (item.minister_support_type ?? '').trim();
-                    const isOther = supportType === otherTypeValue;
-                    const rawOther = item.minister_support_other;
-                    const customText = typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
                     return {
                       agenda_item: (item.agenda_item ?? '').trim(),
                       presentation_duration_minutes: item.presentation_duration_minutes,

@@ -184,7 +184,6 @@ export interface MeetingApiResponse {
   sector: string;
   description?: string | null;
   note?: string | null;
-  /** Optional fields returned by some endpoints (e.g. UC08 form, UC01 preview, meeting detail). */
   location?: string | null;
   meeting_description?: string | null;
   meeting_owner?: string | null;
