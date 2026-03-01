@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar  } from '@shared';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar, MeetingOwnerType, getMeetingTabsByRole  } from '@shared';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
@@ -15,14 +15,11 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.SCHEDULED,
   MeetingStatus.SCHEDULED_SCHEDULING,
   MeetingStatus.SCHEDULED_CONTENT,
-  MeetingStatus.SCHEDULED_CONTENT_CONSULTATION,
-  MeetingStatus.SCHEDULED_UPDATE_CONTENT,
   MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
   MeetingStatus.SCHEDULED_DELAYED,
   MeetingStatus.SCHEDULED_DELEGATED,
   MeetingStatus.RETURNED_FROM_SCHEDULING,
   MeetingStatus.RETURNED_FROM_CONTENT,
-  MeetingStatus.ADDITIONAL_INFO,
   MeetingStatus.WAITING,
   MeetingStatus.REJECTED,
   MeetingStatus.CANCELLED,
@@ -195,10 +192,7 @@ const WorkBasket: React.FC = () => {
         view={view}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        filterTabs={['all', ...WORK_BASKET_STATUS_OPTIONS].map((status) => ({
-          id: status,
-          label: getStatusFilterLabel(status),
-        }))}
+        filterTabs={[ {id: 'all', label: 'جميع الحالات'}, ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING)]}
         activeFilterId={statusFilter}
         onFilterChange={setStatusFilter}
       />
