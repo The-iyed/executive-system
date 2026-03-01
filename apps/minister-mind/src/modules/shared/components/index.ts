@@ -11,7 +11,7 @@ export { WeatherCard, type WeatherCardProps } from './weather-card';
 export { SharedLayout, type SharedLayoutProps } from './Layout/shared-layout';
 export { ContentBar, type ContentBarProps, type ContentBarFilterTab } from './content-bar';
 export { DetailPageHeader, type DetailPageHeaderProps } from './DetailPageHeader';
-export { Mou7tawaContentTab, type Mou7tawaContentTabProps, type ContentTabFileItem } from './Mou7tawaContentTab';
+export { Mou7tawaContentTab, ContentTabFileCard, type Mou7tawaContentTabProps, type ContentTabFileItem } from './Mou7tawaContentTab';
 export { AttachmentPreviewDrawer, type AttachmentPreviewDrawerProps, type AttachmentPreviewItem } from './AttachmentPreviewDrawer';
 export { Tabs, type TabsProps, type TabItem } from './tabs';
 export { StatusBadge, type StatusBadgeProps, type StatusType } from './status-badge';
