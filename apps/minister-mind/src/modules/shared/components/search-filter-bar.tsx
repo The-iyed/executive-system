@@ -7,10 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@sanad-ai/ui';
-import {
-  MeetingStatus,
-  getMeetingStatusLabel,
-} from '../types';
+import { MeetingStatus } from '../types';
+import { getMeetingStatusLabel } from '../utils';
 
 export interface SearchFilterBarProps {
   searchValue?: string;
