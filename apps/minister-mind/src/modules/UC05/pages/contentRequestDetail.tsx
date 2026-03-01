@@ -29,7 +29,7 @@ import {
   StickyNote,
 } from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@shared/utils';
-import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, Drawer, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { Tabs, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -164,15 +164,7 @@ const COMPARE_LEVEL: Record<string, string> = {
 const COMPARE_RECOMMENDATION: Record<string, string> = {
   review: 'مراجعة',
 };
-const COMPARE_CONFIDENCE_IMPACT: Record<string, string> = {
-  high: 'عالي',
-  medium: 'متوسط',
-  low: 'منخفض',
-};
-const COMPARE_COHERENCE: Record<string, string> = {
-  good: 'جيد',
-  needs_improvement: 'يحتاج تحسين',
-};
+
 function translateCompareValue(
   value: string | undefined | null,
   map: Record<string, string>
@@ -1345,7 +1337,6 @@ const ContentRequestDetail: React.FC = () => {
                       const isExpanded = expandedConsultationId === recordId;
                       const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
                       const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                      const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
                       const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
@@ -1406,8 +1397,6 @@ const ContentRequestDetail: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const typeLabel = (t: string) =>
-                                      t === 'SCHEDULING' ? 'السؤال' : t === 'CONTENT' ? 'محتوى' : t;
                                     const sentences: string[] = [];
                                     flatItems.forEach((row:  {
                                       id: string;
@@ -1964,7 +1953,7 @@ const ContentRequestDetail: React.FC = () => {
               })()}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  إضافة ملاحظات توجيه (اختياري)
+                  إضافة ملاحظات 
                 </label>
                 <Textarea
                   value={guidanceNotes}

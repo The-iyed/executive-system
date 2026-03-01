@@ -2,9 +2,6 @@ import { useMemo } from 'react';
 import { useAuth } from '@auth';
 import { getNavigationItemsForUser, getDefaultRouteForUser, getUserUseCaseCodes } from '../utils/useCaseConfig';
 
-/**
- * Hook to get navigation items and default route based on user's use cases
- */
 export const useUserNavigation = () => {
   const { user } = useAuth();
 

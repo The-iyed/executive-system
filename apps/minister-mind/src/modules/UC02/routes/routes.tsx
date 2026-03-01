@@ -1,9 +1,9 @@
 
 import {RouteProps } from 'react-router-dom'
 import { Fragment, lazy } from 'react'
-import { PATH } from './paths'
-import { Layout } from '../Layout'
 import { AuthGuard } from '@shared/guards'
+import { Layout } from '../Layout'
+import { PATH } from './paths'
 
 type RouteConfig = {
   exact: boolean | null
@@ -16,22 +16,6 @@ type RouteConfig = {
 } & RouteProps
 
 const routes: RouteConfig[] = [
-  {
-    exact: true,
-    // guard: GuestGuard,
-    path: PATH.RECENT_ACTIVITY,
-    component: lazy(() => import('../pages/recentActivity')),
-    layout: Layout,
-    useCase: 'UC-02',
-  },
-  {
-    exact: true,
-    guard: AuthGuard,
-    path: PATH.SCHEDULE_REVIEW,
-    component: lazy(() => import('../pages/scheduleReview')),
-    layout: Layout,
-    useCase: 'UC-02',
-  },
   {
     exact: true,
     guard: AuthGuard,
