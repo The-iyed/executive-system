@@ -341,6 +341,8 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     >
                       {meetingRequest.request_number ?? '-'}
                     </p>
+
+                    
                   </div>
 
                   <div className="flex flex-col gap-2">
