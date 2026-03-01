@@ -1,20 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ClipboardCheck, Download, Eye, User, Mail, Phone, Building2 } from 'lucide-react';
-import { Tabs, StatusBadge, MeetingInfo, Drawer, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
+import { ChevronRight, ClipboardCheck, User, Mail, Phone, Building2 } from 'lucide-react';
+import { Tabs, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@shared/components';
 import { formatDateArabic } from '@shared/utils';
 import {
   MeetingStatus,
   getMeetingStatusLabel,
-  getMeetingTypeLabel,
-  getMeetingClassificationLabel,
-  getMeetingClassificationTypeLabel,
-  getMeetingConfidentialityLabel,
-  getMeetingChannelLabel,
-  getDirectiveMethodLabel,
-  SectorLabels,
-  Sector,
 } from '@shared/types';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@sanad-ai/ui';
