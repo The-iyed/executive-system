@@ -136,6 +136,8 @@ const INITIAL_STATE: Partial<Step1FormData> = {
   location_option: '',
   requiresProtocol: false,
   isComplete: false,
+  /** سرية الاجتماع: default عادي (non-confidential). */
+  meetingConfidentiality: 'NORMAL',
 };
 
 export function useStep1({
