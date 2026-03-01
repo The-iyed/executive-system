@@ -1,5 +1,7 @@
-import { FormField, FormSelect } from '@shared';
-import { CONFIDENTIALITY_OPTIONS } from '../../../../utils';
+import { FormField, FormSwitch } from '@shared';
+
+/** Default when not set: عادي (non-confidential). */
+const DEFAULT_CONFIDENTIALITY = 'NORMAL';
 
 export interface MeetingConfidentialityFieldProps {
   value: string;
@@ -18,18 +20,18 @@ export function MeetingConfidentialityField({
   disabled = false,
   className,
 }: MeetingConfidentialityFieldProps) {
+  const effectiveValue = value || DEFAULT_CONFIDENTIALITY;
+  const isConfidential = effectiveValue === 'CONFIDENTIAL';
   return (
     <FormField
       className={className}
       label="سريّة الاجتماع"
       error={touched ? error : undefined}
     >
-      <FormSelect
-        value={value}
-        onValueChange={onChange}
-        options={CONFIDENTIALITY_OPTIONS}
-        placeholder="سريّة الاجتماع"
-        error={!!(touched && error)}
+      <FormSwitch
+        checked={isConfidential}
+        onCheckedChange={(checked) => onChange(checked ? 'CONFIDENTIAL' : 'NORMAL')}
+        label="اجتماع سرّي؟"
         disabled={disabled}
       />
     </FormField>
