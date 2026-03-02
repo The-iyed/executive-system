@@ -23,6 +23,14 @@ export const Layout: React.FC<LayoutProps> = ({
     });
   }, [queryClient]);
   const getWelcomeConfig = (): WelcomeSectionProps => {
+    if (pathname === PATH.DASHBOARD) {
+      return {
+        title: 'الرئيسية',
+        description: 'لوحة المعلومات والإحصائيات',
+        breadcrumbs: undefined,
+        actions: undefined,
+      };
+    }
     if (pathname === PATH.SCHEDULED_MEETINGS) {
       return {
         title: 'الاجتماعات السابقة',
@@ -65,6 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const hideContentBarFilterTabs = pathname === PATH.WORK_BASKET;
   const isMeetingDetail = pathname.startsWith('/meeting/') && pathname.split('/').filter(Boolean).length >= 2;
   const isCalendar = pathname === PATH.CALENDAR;
+  const isDashboard = pathname === PATH.DASHBOARD;
 
   return (
       <SharedLayout
@@ -73,7 +82,7 @@ export const Layout: React.FC<LayoutProps> = ({
         navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
         useDynamicNavigation={false}
         contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
-        hideContentBar={isMeetingDetail || isCalendar}
+        hideContentBar={isMeetingDetail || isCalendar || isDashboard}
         contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
       />
   );
