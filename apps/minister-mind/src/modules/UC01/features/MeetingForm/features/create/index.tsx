@@ -31,6 +31,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
     handleCancel,
+    handlePrevious,
   } = useCreateMeeting();
 
   const renderStepContent = () => {
@@ -80,6 +81,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
             replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
           />
         );
@@ -114,6 +116,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
             onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}

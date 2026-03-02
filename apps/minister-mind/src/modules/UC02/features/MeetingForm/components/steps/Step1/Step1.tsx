@@ -94,12 +94,14 @@ export function Step1({
     (field: keyof Step1FormData): boolean => {
       if (REQUIRED_INDICATOR_FIELDS.has(field)) return true;
       if (field === 'location') return formData.meeting_channel === 'PHYSICAL';
-      if (field === 'previousMeeting' || field === 'urgentReason' || field === 'meetingReason' || field === 'relatedTopic' || field === 'dueDate' || field === 'meetingClassification1') {
+      // تصنيف الاجتماع: optional when فئة الاجتماع is "خاص" (PRIVATE_MEETING), required otherwise; field always visible
+      if (field === 'meetingClassification1') return formData.meetingCategory !== 'PRIVATE_MEETING';
+      if (field === 'previousMeeting' || field === 'urgentReason' || field === 'meetingReason' || field === 'relatedTopic' || field === 'dueDate') {
         return isFieldVisible(field);
       }
       return false;
     },
-    [formData.meeting_channel, isFieldVisible]
+    [formData.meeting_channel, formData.meetingCategory, isFieldVisible]
   );
 
   useEffect(() => {
@@ -319,7 +321,6 @@ export function Step1({
 
           {isFieldVisible('meetingReason') && (
             <MeetingReasonField
-              className="sm:col-span-2 w-full min-w-0"
               value={formData.meetingReason ?? ''}
               onChange={(v) => handleChange('meetingReason', v)}
               onBlur={() => handleBlur('meetingReason')}
