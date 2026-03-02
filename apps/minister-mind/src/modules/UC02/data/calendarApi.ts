@@ -116,12 +116,16 @@ export const getOutlookTimelineEvents = async (
   return Array.isArray(events) ? events : [];
 };
 
-/** Invitee for create-scheduled-meeting: name, position, mobile, email */
+/** Minister invitee for create-scheduled-meeting: name, position, mobile, email, attendance_mode, meeting_owner */
 export interface CreateScheduledMeetingInvitee {
   name: string;
   position: string;
   mobile: string;
   email: string;
+  /** IN_PERSON (حضوري) | REMOTE (عن بُعد) */
+  attendance_mode?: 'IN_PERSON' | 'REMOTE';
+  /** true when this invitee is selected as meeting owner */
+  meeting_owner?: boolean;
 }
 
 /** Payload for POST /api/scheduling/create-scheduled-meeting */
@@ -129,7 +133,7 @@ export interface CreateScheduledMeetingPayload {
   meeting_title: string;
   scheduled_start: string; // ISO datetime e.g. "2026-03-06T11:00:00.000Z"
   scheduled_end: string;   // ISO datetime e.g. "2026-03-06T12:00:00.000Z"
-  invitees?: CreateScheduledMeetingInvitee[];
+  minister_invitees?: CreateScheduledMeetingInvitee[];
 }
 
 /**
@@ -144,7 +148,7 @@ export const createScheduledMeeting = async (
     meeting_title: payload.meeting_title,
     scheduled_start: payload.scheduled_start,
     scheduled_end: payload.scheduled_end,
-    invitees: payload.invitees ?? [],
+    minister_invitees: payload.minister_invitees ?? [],
   };
   const { data } = await axiosInstance.post<{ id?: string }>(
     '/api/scheduling/create-scheduled-meeting',

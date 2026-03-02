@@ -619,17 +619,19 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               setSlotForNewMeeting(null);
 
               try {
-                const invitees = values.minister_invitees.map((m) => ({
+                const minister_invitees = values.minister_invitees.map((m) => ({
                   name: m.full_name ?? '',
                   position: m.position_title ?? '',
                   mobile: m.mobile_number ?? '',
                   email: m.email ?? '',
+                  attendance_mode: m.attendance_mode === 'REMOTE' ? 'REMOTE' : 'IN_PERSON',
+                  ...(m.isOwner && { meeting_owner: true }),
                 }));
                 const result = await createScheduledMeeting({
                   meeting_title: values.title,
                   scheduled_start,
                   scheduled_end,
-                  invitees,
+                  minister_invitees,
                 });
                 const meetingId = (result as { id?: string })?.id;
                 trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
