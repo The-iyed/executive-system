@@ -1,4 +1,4 @@
-import axiosInstance from '@auth/utils/axios';
+import axiosInstance from '@/modules/auth/utils/axios';
 
 /** AD user from search by email API - uses actual response columns */
 export interface ADUserByEmail {
