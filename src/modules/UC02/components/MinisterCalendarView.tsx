@@ -399,37 +399,21 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   // Always show the calendar structure - never remove it after initial load
   return (
     <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
-      {/* Header: Frame 2147241014 - flex row justify-end align center, padding 10px, gap 10px */}
-      <div
-        className="flex flex-row justify-between items-center flex-none px-[10px] pt-4 pb-4 gap-[10px] bg-white"
-        style={{ borderRadius: '14px' }}
-      >
-        {/* Right in RTL: التقويم + subtitle + chevron-down button */}
-        <div className="flex flex-row items-center gap-2">
-          <button
-            type="button"
-            className="flex items-center justify-center w-6 h-6 rounded-[4.97024px] border border-[#D0D5DD] bg-white shadow-[0px_0.62px_1.24px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
-            aria-label="خيارات"
-          >
-            <ChevronDown className="w-3 h-3 text-[#667085]" />
-          </button>
+      {/* Header */}
+      <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-row items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+            <ChevronDown className="w-4 h-4 text-[#048F86]" />
+          </div>
           <div className="flex flex-col items-end">
-            <h1
-              className="font-bold text-[#101828] leading-tight"
-              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '15.7722px', lineHeight: '30px' }}
-            >
+            <h1 className="font-bold text-gray-800 text-[16px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
               التقويم
             </h1>
-            <p
-              className="text-[#475467] leading-tight"
-              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '11.0405px', lineHeight: '19px' }}
-            >
+            <p className="text-gray-400 text-[11px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
               عرض الجدول الزمني للاجتماعات
             </p>
           </div>
         </div>
-
-        {/* Left in RTL: month nav with teal circles */}
         <WeeklyCalendarNavigation
           currentDate={currentDate}
           onPreviousWeek={handlePreviousWeek}
@@ -437,8 +421,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
         />
       </div>
 
-      <div className="relative flex-1 min-h-0 bg-white overflow-auto" style={{ borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' }}>
-        {/* Show skeleton only on initial load when we have no data at all */}
+      <div className="relative flex-1 min-h-0 bg-white overflow-auto rounded-2xl shadow-sm border border-gray-100">
         {isInitialLoad ? (
           <CalendarSkeleton />
         ) : (
@@ -453,12 +436,11 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
             />
             
-            {/* Show "Updating" only when the currently selected week is loading (no data yet), not on background refetch */}
             {isLoading && (
-              <div className="absolute top-2 right-2 z-10">
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-200 flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                  <span className="text-xs text-gray-700 font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <div className="absolute top-3 right-3 z-10">
+                <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-lg border border-gray-100 flex items-center gap-2.5">
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-[#048F86] rounded-full animate-spin" />
+                  <span className="text-[11px] text-gray-600 font-semibold" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     جاري التحديث...
                   </span>
                 </div>
