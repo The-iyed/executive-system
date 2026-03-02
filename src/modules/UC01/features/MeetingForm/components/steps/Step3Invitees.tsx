@@ -6,7 +6,7 @@ import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks
 import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import type { UserApiResponse } from '../../../../data/usersApi';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@sanad-ai/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/lib/ui';
 import { Trash2 } from 'lucide-react';
 import { searchUsersByEmail } from '@/modules/UC02/data/usersApi';
 
