@@ -170,24 +170,24 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   { id: 'action', header: '', width: 'w-[60px]' },
 ];
 
-/** Minister invitees table columns: البريد first, then الاسم، المنصب، الجوال، آلية الحضور، مطلوب، المبرر */
+/** Minister invitees: email first (AD search), then الإسم، المنصب، الجوال، الجهة، آلية الحضور، صلاحية الاطلاع + isOwner */
 export const MINISTER_INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: '#', width: 'w-14 shrink-0' },
-  { id: 'email', header: 'البريد', type: 'text', placeholder: 'البريد', width: 'w-[220px] min-w-[220px]' },
-  { id: 'full_name', header: 'الاسم', type: 'text', placeholder: 'الاسم', width: 'w-[180px] min-w-[180px]' },
-  { id: 'position_title', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'w-[160px] min-w-[160px]' },
-  { id: 'mobile_number', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'w-[140px] min-w-[140px]' },
+  { id: 'email', header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: 'min-w-[220px]' },
+  { id: 'full_name', header: 'الإسم', type: 'text', placeholder: 'الإسم', width: 'min-w-[180px]' },
+  { id: 'position_title', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'min-w-[160px]' },
+  { id: 'mobile_number', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'min-w-[140px]' },
+  { id: 'sector', header: 'الجهة', type: 'text', placeholder: 'الجهة', width: 'min-w-[140px]' },
   {
     id: 'attendance_mode',
     header: 'آلية الحضور',
     type: 'select',
     selectOptions: [...ATTENDANCE_MODE_OPTIONS],
     placeholder: 'حضوري / عن بُعد',
-    width: 'w-[140px] min-w-[140px]',
+    width: 'min-w-[140px]',
   },
-  { id: 'view_permission', header: 'مطلوب', type: 'switch', label: false, width: 'w-[90px] min-w-[90px]' },
-  { id: 'sector', header: 'المبرر', type: 'text', placeholder: 'المبرر', width: 'w-[140px] min-w-[140px]' },
-  { id: 'isOwner', header: 'مالك الاجتماع', width: 'w-[120px] min-w-[120px]' },
+  { id: 'view_permission', header: 'صلاحية الاطلاع', type: 'switch', label: false, width: 'min-w-[120px]' },
+  { id: 'isOwner', header: 'مالك الاجتماع', width: 'min-w-[110px]' },
   { id: 'action', header: '', width: 'w-14 shrink-0' },
 ];
 
