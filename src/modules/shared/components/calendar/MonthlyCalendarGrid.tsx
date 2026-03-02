@@ -59,6 +59,7 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
   onEventClick,
   onEventShowDetails,
   onTimeSlotClick,
+  onDayOverflowClick,
 }) => {
   const monthDays = useMemo(() => getMonthGrid(currentDate), [currentDate]);
   const currentMonth = currentDate.getMonth();
