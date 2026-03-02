@@ -183,6 +183,8 @@ export const step1BaseSchema = z.object({
 
 export type Step1FormData = z.infer<typeof step1BaseSchema>;
 
+const CATEGORY_PRIVATE_MEETING = 'PRIVATE_MEETING' as const;
+
 export const step1ValidationSchema = step1BaseSchema
   .extend({
     requester: optionType.refine(
@@ -208,7 +210,7 @@ export const step1ValidationSchema = step1BaseSchema
     meetingCategory: str('فئة الاجتماع مطلوبة'),
     sector: str('القطاع مطلوب'),
     meetingType: str('نوع الاجتماع مطلوب'),
-    meetingClassification1: str('تصنيف الاجتماع مطلوب'),
+    meetingClassification1: strOptional('تصنيف الاجتماع يجب أن يكون نصاً'),
     meeting_channel: str('آلية انعقاد الاجتماع مطلوبة'),
     meetingGoals: z.array(meetingGoalItemStrict).optional().default([]),
     meetingAgenda: z
@@ -220,6 +222,16 @@ export const step1ValidationSchema = step1BaseSchema
     previousMeetings: z.array(previousMeetingItemStrict).optional().default([]),
   })
   .superRefine((d, ctx) => {
+    // تصنيف الاجتماع: required for all فئة except "خاص" (PRIVATE_MEETING)
+    if (d.meetingCategory !== CATEGORY_PRIVATE_MEETING) {
+      if (!d.meetingClassification1 || String(d.meetingClassification1).trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'تصنيف الاجتماع مطلوب',
+          path: ['meetingClassification1'],
+        });
+      }
+    }
     if (d.isUrgent) {
       if (!d.urgentReason || d.urgentReason === '') {
         ctx.addIssue({
@@ -244,15 +256,15 @@ export const step1ValidationSchema = step1BaseSchema
         });
       }
     }
-    // UC01-style: agenda total duration must not exceed meeting duration
+    // Agenda total duration must match meeting duration exactly
     if (d.meetingStartDate && d.meetingEndDate && (d.meetingAgenda?.length ?? 0) > 0) {
       const meetingMinutes = getMeetingDurationMinutes(d.meetingStartDate, d.meetingEndDate);
       if (meetingMinutes != null) {
         const agendaTotal = getAgendaTotalDurationMinutes(d.meetingAgenda as Array<Record<string, unknown>>);
-        if (agendaTotal > meetingMinutes) {
+        if (agendaTotal !== meetingMinutes) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`,
+            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي بالضبط مدة الاجتماع (${meetingMinutes} دقيقة)`,
             path: ['meetingAgenda'],
           });
         }
