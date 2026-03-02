@@ -119,8 +119,7 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
   const endDate = new Date(event.end_datetime);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
-  const variantByInternal =
-    event.is_internal === true ? 'internal' : event.is_internal === false ? 'external' : getRandomVariant(id);
+  const variantByInternal = getRandomVariant(id);
   if (isNaN(startDate.getTime())) {
     return {
       id,
