@@ -102,6 +102,36 @@ export const MEETING_CATEGORY_OPTIONS = [
   },
 ] as const;
 
+export enum MeetingSubCategory {
+  BASIC = 'BASIC',
+  EXTERNAL_PREPARATORY = 'EXTERNAL_PREPARATORY',
+  INTERNAL_PREPARATORY = 'INTERNAL_PREPARATORY',
+  EMERGENT = 'EMERGENT',
+  NOTIFICATION = 'NOTIFICATION',
+}
+
+export const MeetingSubCategoryLabels: Record<MeetingSubCategory, string> = {
+  [MeetingSubCategory.BASIC]: 'أساسي',
+  [MeetingSubCategory.EXTERNAL_PREPARATORY]: 'تحضيري خارجي',
+  [MeetingSubCategory.INTERNAL_PREPARATORY]: 'تحضيري داخلي',
+  [MeetingSubCategory.EMERGENT]: 'منبثق',
+  [MeetingSubCategory.NOTIFICATION]: 'تبليغ',
+};
+
+export const MEETING_SUB_CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: MeetingSubCategory.BASIC, label: MeetingSubCategoryLabels[MeetingSubCategory.BASIC] },
+  {
+    value: MeetingSubCategory.EXTERNAL_PREPARATORY,
+    label: MeetingSubCategoryLabels[MeetingSubCategory.EXTERNAL_PREPARATORY],
+  },
+  {
+    value: MeetingSubCategory.INTERNAL_PREPARATORY,
+    label: MeetingSubCategoryLabels[MeetingSubCategory.INTERNAL_PREPARATORY],
+  },
+  { value: MeetingSubCategory.EMERGENT, label: MeetingSubCategoryLabels[MeetingSubCategory.EMERGENT] },
+  { value: MeetingSubCategory.NOTIFICATION, label: MeetingSubCategoryLabels[MeetingSubCategory.NOTIFICATION] },
+];
+
 /** Category values hidden when meeting type is EXTERNAL. */
 export const EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES: readonly MeetingClassification[] = [
   MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL,

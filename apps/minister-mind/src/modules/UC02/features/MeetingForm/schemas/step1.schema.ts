@@ -151,6 +151,7 @@ export const step1BaseSchema = z.object({
   meetingDescription: emptyStr(),
   meetingType: emptyStr(),
   meetingCategory: z.string(),
+  meetingSubCategory: emptyStr(),
   meetingReason: emptyStr(),
   relatedTopic: emptyStr(),
   dueDate: dateFieldSchema(),
