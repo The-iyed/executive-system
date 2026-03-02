@@ -7,7 +7,7 @@ import {
 } from '../../utils/constants';
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers, searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
-import { getUserDisplayId, getUserDisplayLabel } from '@shared/utils';
+import { getUserDisplayId, getUserDisplayLabel } from '@/modules/shared/utils';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
 const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
