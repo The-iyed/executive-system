@@ -256,15 +256,15 @@ export const step1ValidationSchema = step1BaseSchema
         });
       }
     }
-    // UC01-style: agenda total duration must not exceed meeting duration
+    // Agenda total duration must match meeting duration exactly
     if (d.meetingStartDate && d.meetingEndDate && (d.meetingAgenda?.length ?? 0) > 0) {
       const meetingMinutes = getMeetingDurationMinutes(d.meetingStartDate, d.meetingEndDate);
       if (meetingMinutes != null) {
         const agendaTotal = getAgendaTotalDurationMinutes(d.meetingAgenda as Array<Record<string, unknown>>);
-        if (agendaTotal > meetingMinutes) {
+        if (agendaTotal !== meetingMinutes) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`,
+            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي بالضبط مدة الاجتماع (${meetingMinutes} دقيقة)`,
             path: ['meetingAgenda'],
           });
         }
