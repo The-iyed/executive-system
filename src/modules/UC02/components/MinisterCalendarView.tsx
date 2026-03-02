@@ -6,7 +6,9 @@ import { Loader, MeetingCard } from '@/modules/shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
+  MonthlyCalendarGrid,
   type CalendarEventData,
+  type CalendarViewMode,
 } from '@/modules/shared';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
 import {
@@ -178,6 +180,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
@@ -270,18 +273,26 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const handlePreviousWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() - 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setDate(prev.getDate() - 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   const handleNextWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() + 1);
+      } else {
+        newDate.setDate(prev.getDate() + 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   // Track if we've ever loaded data successfully
   const hasLoadedOnce = React.useRef(false);
@@ -418,6 +429,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           currentDate={currentDate}
           onPreviousWeek={handlePreviousWeek}
           onNextWeek={handleNextWeek}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       </div>
 
@@ -426,16 +439,25 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           <CalendarSkeleton />
         ) : (
           <>
-            <WeeklyCalendarGrid
-              weekStart={weekStart}
-              events={events}
-              startHour={8}
-              endHour={24}
-              onEventClick={(event) => setSelectedEventForDetails(event)}
-              onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-              onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
-            />
-            
+            {viewMode === 'weekly' ? (
+              <WeeklyCalendarGrid
+                weekStart={weekStart}
+                events={events}
+                startHour={8}
+                endHour={24}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            ) : (
+              <MonthlyCalendarGrid
+                currentDate={currentDate}
+                events={events}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            )}
             {isLoading && (
               <div className="absolute top-3 right-3 z-10">
                 <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-lg border border-gray-100 flex items-center gap-2.5">
