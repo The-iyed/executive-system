@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge, StatusType } from './status-badge';
-import { CalendarDays, MapPin, User, Layers, ChevronLeft } from 'lucide-react';
+import { CalendarDays, MapPin, User, Layers } from 'lucide-react';
 import { MeetingStatus, MeetingChannelLabels } from '../types';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
 import { cn } from '@/lib/ui';
@@ -62,8 +62,8 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   return (
     <div
       className={cn(
-        'group relative flex flex-col rounded-xl overflow-hidden cursor-pointer transition-all duration-200',
-        'border hover:shadow-lg hover:-translate-y-0.5',
+        'group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-200',
+        'border hover:shadow-md',
         className,
       )}
       style={{
@@ -73,21 +73,15 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
       dir="rtl"
       onClick={handleClick}
     >
-      {/* ── Top accent line ── */}
-      <div className="h-1 w-full" style={{ background: 'var(--color-primary-500)' }} />
-
-      {/* ── Header: Request # + Status ── */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
+      {/* ── Row 1: Request number + Status ── */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        {/* Request number */}
         {meeting.requestNumber ? (
           <span
-            className="text-[11px] font-semibold px-2 py-0.5 rounded"
-            style={{
-              color: 'var(--color-primary-600)',
-              background: 'var(--color-primary-50)',
-              fontVariantNumeric: 'tabular-nums',
-            }}
+            className="text-xs font-medium tracking-wide"
+            style={{ color: 'var(--color-text-gray-500)', fontVariantNumeric: 'tabular-nums' }}
           >
-            طلب #{meeting.requestNumber}
+            #{meeting.requestNumber}
           </span>
         ) : (
           <span />
@@ -111,11 +105,11 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         </div>
       </div>
 
-      {/* ── Title ── */}
-      <div className="px-4 pt-1 pb-2">
+      {/* ── Row 2: Title ── */}
+      <div className="px-5 pb-1">
         <CardTooltip text={meeting.title}>
           <h3
-            className="text-sm font-bold leading-5 line-clamp-2"
+            className="text-[15px] font-bold leading-6 line-clamp-2"
             style={{ color: 'var(--color-text-gray-900)' }}
           >
             {meeting.title}
@@ -123,82 +117,72 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         </CardTooltip>
       </div>
 
-      {/* ── Submitter row — inline with avatar ── */}
-      {meeting.coordinator && (
-        <div className="flex items-center gap-2 px-4 pb-2">
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-            style={{
-              background: 'var(--color-primary-50)',
-              border: '1.5px solid var(--color-primary-100)',
-            }}
-          >
-            {meeting.coordinatorAvatar ? (
-              <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-3 h-3" style={{ color: 'var(--color-primary-400)' }} strokeWidth={1.8} />
-            )}
-          </div>
-          <span className="text-xs" style={{ color: 'var(--color-text-gray-600)' }}>
-            {meeting.coordinator}
-          </span>
+      {/* ── Row 3: Date + Category tag ── */}
+      <div className="flex items-center gap-3 px-5 py-2 flex-wrap">
+        {/* Date chip */}
+        <div className="flex items-center gap-1.5">
+          <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-text-gray-500)' }} strokeWidth={1.6} />
+          <span className="text-xs" style={{ color: 'var(--color-text-gray-600)' }}>{meeting.date}</span>
         </div>
-      )}
 
-      {/* ── Metadata strip ── */}
+        {/* Meeting date if different */}
+        {meeting.meetingDate && (
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-primary-500)' }} strokeWidth={1.6} />
+            <span className="text-xs font-medium" style={{ color: 'var(--color-primary-500)' }}>{meeting.meetingDate}</span>
+          </div>
+        )}
+
+        {/* Category as tag */}
+        {meeting.meetingCategory && (
+          <div
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full"
+            style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-500)' }}
+          >
+            <Layers className="w-3 h-3" strokeWidth={1.6} />
+            <span className="text-[11px] font-medium">{meeting.meetingCategory}</span>
+          </div>
+        )}
+
+        {/* Location as tag */}
+        {meeting.location && (
+          <div
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full"
+            style={{ background: 'var(--color-base-gray-100)', color: 'var(--color-text-gray-600)' }}
+          >
+            <MapPin className="w-3 h-3" strokeWidth={1.6} />
+            <span className="text-[11px] font-medium">{getLocationLabel(meeting.location)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Row 4: Submitter — clear section ── */}
       <div
-        className="flex items-center flex-wrap gap-x-4 gap-y-2 px-4 py-2.5 mt-auto"
+        className="flex items-center gap-3 px-5 py-3 mt-auto"
         style={{
           background: 'var(--color-base-gray-50)',
           borderTop: '1px solid var(--color-base-gray-100)',
         }}
       >
-        {/* Date */}
-        <div className="flex items-center gap-1.5">
-          <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-text-gray-400)' }} strokeWidth={1.6} />
-          <span className="text-[11px]" style={{ color: 'var(--color-text-gray-500)' }}>
-            {meeting.date}
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+          style={{
+            background: 'var(--color-base-gray-200)',
+            border: '1.5px solid var(--color-base-gray-300)',
+          }}
+        >
+          {meeting.coordinatorAvatar ? (
+            <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-4 h-4" style={{ color: 'var(--color-base-gray-500)' }} strokeWidth={1.5} />
+          )}
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] leading-3" style={{ color: 'var(--color-text-gray-500)' }}>مقدم الطلب</span>
+          <span className="text-xs font-medium truncate" style={{ color: 'var(--color-text-gray-700)' }}>
+            {meeting.coordinator ?? '-'}
           </span>
         </div>
-
-        {/* Meeting date */}
-        {meeting.meetingDate && (
-          <div className="flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-primary-500)' }} strokeWidth={1.6} />
-            <span className="text-[11px] font-medium" style={{ color: 'var(--color-primary-600)' }}>
-              {meeting.meetingDate}
-            </span>
-          </div>
-        )}
-
-        {/* Category tag */}
-        {meeting.meetingCategory && (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-            style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)' }}
-          >
-            <Layers className="w-2.5 h-2.5" strokeWidth={2} />
-            {meeting.meetingCategory}
-          </span>
-        )}
-
-        {/* Location tag */}
-        {meeting.location && (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-            style={{ background: 'var(--color-base-gray-100)', color: 'var(--color-text-gray-600)' }}
-          >
-            <MapPin className="w-2.5 h-2.5" strokeWidth={2} />
-            {getLocationLabel(meeting.location)}
-          </span>
-        )}
-
-        {/* Arrow indicator */}
-        <ChevronLeft
-          className="w-4 h-4 mr-auto opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ color: 'var(--color-primary-500)' }}
-          strokeWidth={2}
-        />
       </div>
     </div>
   );
