@@ -20,18 +20,19 @@ function ActionBubble({
   disabledReason?: string;
   compact?: boolean;
 }) {
+  const iconCircle = (
+    <span
+      className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
+        variant === 'danger'
+          ? 'bg-red-50 border-red-200 text-red-600'
+          : 'bg-white border-gray-200/80 text-gray-800'
+      }`}
+    >
+      {icon}
+    </span>
+  );
+
   if (compact) {
-    const iconCircle = (
-      <span
-        className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
-          variant === 'danger'
-            ? 'bg-red-50 border-red-200 text-red-600'
-            : 'bg-white border-gray-200/80 text-gray-800'
-        }`}
-      >
-        {icon}
-      </span>
-    );
     const btn = (
       <button
         type="button"
@@ -57,21 +58,20 @@ function ActionBubble({
     );
   }
 
-  // Inline button style
   const button = (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
-        variant === 'danger'
-          ? 'text-red-600 hover:bg-red-50 border border-red-200'
-          : 'text-[#344054] hover:bg-[#F3F4F6] border border-[#E5E7EB]'
-      }`}
-      style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+      className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
     >
-      {icon}
-      <span>{label}</span>
+      <span
+        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
+        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+      >
+        {label}
+      </span>
+      {iconCircle}
     </button>
   );
 
@@ -80,9 +80,9 @@ function ActionBubble({
       <TooltipProvider delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex">{button}</span>
+            <span className="inline-flex w-full min-w-0">{button}</span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
             {disabledReason}
           </TooltipContent>
         </Tooltip>
@@ -108,19 +108,21 @@ export interface MeetingActionsBarProps {
   onOpenChange: (open: boolean) => void;
   onOpenSchedule: () => void;
   onOpenReject: () => void;
+  /** When provided and status is SCHEDULED, "إلغاء" opens cancel modal and uses cancel API instead of reject. */
   onOpenCancel?: () => void;
   onOpenEditConfirm: () => void;
   onOpenReturnForInfo: () => void;
   onOpenSendToContent: () => void;
+  /** مجدول - الجدولة → إعتماد التحديث → مجدول */
   onOpenApproveUpdate?: () => void;
   onAddToWaitingList: () => void;
   isAddToWaitingListPending: boolean;
   hasChanges: boolean;
   hasContent: boolean;
+  /** When provided, use these actions instead of status-based ones (same FAB + arc UI). */
   customActions?: ActionBarItem[];
+  /** When true, do not show the "تعديل" action in the FAB (e.g. when edit is moved to a separate button). */
   hideEdit?: boolean;
-  /** Render as inline toolbar instead of floating FAB */
-  inline?: boolean;
 }
 
 const R = 100;
@@ -143,23 +145,23 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   hasContent,
   customActions,
   hideEdit = false,
-  inline = false,
 }) => {
   const close = () => onOpenChange(false);
 
   const defaultUnderReviewActions: ActionBarItem[] = [
-    { icon: <CalendarMinus className="w-4 h-4" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
-    ...(hideEdit ? [] : [{ icon: <Pencil className="w-4 h-4" strokeWidth={1.26} />, label: 'تعديل', onClick: () => { close(); onOpenEditConfirm(); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' }]),
-    { icon: <RotateCcw className="w-4 h-4" strokeWidth={1.26} />, label: 'إعادة للطلب', onClick: () => { close(); onOpenReturnForInfo(); } },
-    { icon: <Send className="w-4 h-4" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && onOpenSendToContent(); }, disabled: !hasContent, disabledReason: 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' },
-    { icon: <Plus className="w-4 h-4" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-    { icon: <X className="w-4 h-4" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
+    { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
+    ...(hideEdit ? [] : [{ icon: <Pencil className="w-5 h-5" strokeWidth={1.26} />, label: 'تعديل', onClick: () => { close(); onOpenEditConfirm(); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' }]),
+    { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة للطلب', onClick: () => { close(); onOpenReturnForInfo(); } },
+    { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && onOpenSendToContent(); }, disabled: !hasContent, disabledReason: 'أضف أهدافاً أو بنود أجندة وعرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' },
+    { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+    { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
   ];
 
+  /** مجدول - الجدولة (SCHEDULED_SCHEDULING): إعادة، إعتماد التحديث، إرسال للمحتوى */
   const scheduledSchedulingActions: ActionBarItem[] = [
-    { icon: <RotateCcw className="w-4 h-4" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
-    ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-4 h-4" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
-    { icon: <Send className="w-4 h-4" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); onOpenSendToContent(); } },
+    { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
+    ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
+    { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); onOpenSendToContent(); } },
   ];
 
   const actions: ActionBarItem[] =
@@ -169,39 +171,19 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
       ? scheduledSchedulingActions
       : meetingStatus === MeetingStatus.SCHEDULED
       ? [
-          { icon: <CalendarMinus className="w-4 h-4" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
-          { icon: <Plus className="w-4 h-4" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-          { icon: <X className="w-4 h-4" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
+          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
+          { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+          { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
         ]
       : meetingStatus === MeetingStatus.WAITING
         ? [
-            { icon: <X className="w-4 h-4" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
-            { icon: <CalendarMinus className="w-4 h-4" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
+            { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
+            { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
           ]
         : defaultUnderReviewActions;
 
   const n = actions.length;
 
-  // ─── Inline toolbar mode ───
-  if (inline) {
-    return (
-      <div className="flex flex-row items-center gap-2 flex-wrap" dir="rtl">
-        {actions.map((action, i) => (
-          <ActionBubble
-            key={i}
-            icon={action.icon}
-            label={action.label}
-            onClick={action.onClick}
-            disabled={action.disabled}
-            variant={action.variant}
-            disabledReason={action.disabledReason}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  // ─── Floating FAB mode (legacy) ───
   return (
     <>
       {open && (
