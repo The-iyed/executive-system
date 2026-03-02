@@ -13,7 +13,7 @@ import {
 import { createWebexMeeting } from '../data/meetingsApi';
 import { searchByEmail } from '../data/adIntegrationApi';
 import { X } from 'lucide-react';
-import { cn } from '@sanad-ai/ui';
+import { cn } from '@/lib/ui';
 
 /** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
