@@ -1147,7 +1147,7 @@ export interface AdamMeetingSearchByTitleResponse {
 export const searchAdamMeetingByTitle = async (
   title: string
 ): Promise<AdamMeetingSearchByTitleResponse> => {
-  const baseUrl = (import.meta.env.VITE_BUSINESS_CARDS_BASE_URL as string)?.replace(/\/$/, '') ?? '';
+  const baseUrl = 'https://momah-business-cards.momrahai.com/api/v1';
   const encodedTitle = encodeURIComponent(title.trim());
   const url = `${baseUrl}/adam-meetings/search/${encodedTitle}`;
   const response = await axiosInstance.get<AdamMeetingSearchByTitleResponse>(url);

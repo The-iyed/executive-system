@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { clearTokens, getTokens, setTokens } from './token'
 
-const baseURL = import.meta.env.VITE_APP_BASE_URL_MINISTER as string
+const baseURL = 'https://execution-system.momrahai.com'
 const headers = {
   Accept: 'application/json',
   // 'Content-Type': 'application/json',
