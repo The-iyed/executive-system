@@ -9,6 +9,7 @@ export interface MonthlyCalendarGridProps {
   onEventClick?: (event: CalendarEventData) => void;
   onEventShowDetails?: (event: CalendarEventData) => void;
   onTimeSlotClick?: (date: Date, time: string) => void;
+  onDayOverflowClick?: (date: Date, events: CalendarEventData[]) => void;
 }
 
 const dayNamesShort = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
