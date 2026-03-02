@@ -31,6 +31,10 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
       '@analytics': resolve(__dirname, './src/lib/analytics.ts'),
+      '@shared': resolve(__dirname, './src/modules/shared'),
+      '@shared/styles': resolve(__dirname, './src/modules/shared/styles/index.ts'),
+      '@shared/utils': resolve(__dirname, './src/modules/shared/utils'),
+      '@shared/types': resolve(__dirname, './src/modules/shared/types'),
       '@/lib/api': resolve(__dirname, './src/lib/api'),
       '@/lib/ui': resolve(__dirname, './src/lib/ui'),
       '@/lib/ui/styles.css': resolve(__dirname, './src/lib/ui/styles.css'),
