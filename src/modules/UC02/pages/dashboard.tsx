@@ -177,9 +177,9 @@ const Dashboard: React.FC = () => {
     { id: 'md-10', directive_status: 'OPEN', directive_text: 'تنظيم ورشة عمل للجهات المعنية' },
   ] as any[];
 
-  // Merge API data with mock fallback so charts always look rich
-  const meetingItems = apiMeetingItems.length > 3 ? apiMeetingItems : [...apiMeetingItems, ...MOCK_MEETINGS];
-  const directiveItems = apiDirectiveItems.length > 3 ? apiDirectiveItems : [...apiDirectiveItems, ...MOCK_DIRECTIVES];
+  // Always merge mock data with API data so dashboard charts are rich
+  const meetingItems = [...apiMeetingItems, ...MOCK_MEETINGS];
+  const directiveItems = [...apiDirectiveItems, ...MOCK_DIRECTIVES];
   const waitingItems = apiWaitingItems;
 
   const totalMeetings = meetingItems.length;
