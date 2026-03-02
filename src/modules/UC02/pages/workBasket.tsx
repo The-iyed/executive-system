@@ -5,9 +5,9 @@ import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMee
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
-import { cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/lib/ui';
+import { cn, Popover, PopoverTrigger, PopoverContent } from '@/lib/ui';
 import { Icon } from '@iconify/react';
-import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, Filter, X } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,7 +41,7 @@ const WorkBasket: React.FC = () => {
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
@@ -53,19 +53,19 @@ const WorkBasket: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilters]);
 
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), statusFilter, currentPage],
+    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), statusFilters, currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
         skip,
         limit: ITEMS_PER_PAGE,
       };
-      if (statusFilter !== 'all') {
-        params.status = statusFilter;
+      if (statusFilters.length === 1) {
+        params.status = statusFilters[0];
       }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
@@ -214,20 +214,93 @@ const WorkBasket: React.FC = () => {
           </div>
 
           {/* Left: Actions */}
-          <div className="flex items-center gap-3">
-            {/* Status filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter} dir="rtl">
-              <SelectTrigger className="h-10 min-w-[180px] rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm font-medium text-[var(--color-text-gray-700)]">
-                <SelectValue placeholder="جميع الحالات" />
-              </SelectTrigger>
-              <SelectContent dir="rtl">
-                {filterTabs.map((tab) => (
-                  <SelectItem key={tab.id} value={tab.id}>
-                    {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2">
+            {/* Multi-status filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className={cn(
+                  'h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all',
+                  statusFilters.length > 0
+                    ? 'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
+                    : 'bg-white border-[var(--color-base-gray-200)] text-[var(--color-text-gray-600)] hover:border-[var(--color-base-gray-300)]'
+                )}>
+                  <Filter className="w-4 h-4" />
+                  <span>{statusFilters.length > 0 ? `${statusFilters.length} حالة` : 'تصفية الحالة'}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-2" dir="rtl">
+                <div className="flex flex-col gap-0.5">
+                  {filterTabs.filter(t => t.id !== 'all').map((tab) => {
+                    const isChecked = statusFilters.includes(tab.id);
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setStatusFilters(prev =>
+                            isChecked ? prev.filter(s => s !== tab.id) : [...prev, tab.id]
+                          );
+                        }}
+                        className={cn(
+                          'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors',
+                          isChecked
+                            ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
+                            : 'text-[var(--color-text-gray-600)] hover:bg-[var(--color-base-gray-50)]'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
+                            isChecked
+                              ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)]'
+                              : 'border-[var(--color-base-gray-300)]'
+                          )}>
+                            {isChecked && (
+                              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          <span>{tab.label}</span>
+                        </div>
+                        {tab.count !== undefined && (
+                          <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {statusFilters.length > 0 && (
+                  <button
+                    onClick={() => setStatusFilters([])}
+                    className="w-full mt-2 pt-2 border-t border-[var(--color-base-gray-100)] text-xs text-[var(--color-text-gray-500)] hover:text-[var(--color-primary-600)] transition-colors text-center py-1.5"
+                  >
+                    مسح الكل
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {/* Active filter chips */}
+            {statusFilters.length > 0 && (
+              <div className="flex items-center gap-1">
+                {statusFilters.map(id => {
+                  const tab = filterTabs.find(t => t.id === id);
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-medium"
+                    >
+                      {tab?.label}
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-[var(--color-primary-900)]"
+                        onClick={() => setStatusFilters(prev => prev.filter(s => s !== id))}
+                      />
+                    </span>
+                  );
+                })}
+              </div>
+            )
 
             {/* Search */}
             <div className="relative">
