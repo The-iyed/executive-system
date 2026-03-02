@@ -20,10 +20,8 @@ interface UseMeetingStepsProps {
   };
   onStep1Success?: (newDraftId: string) => void;
   onStep2Success?: (isDraft: boolean) => void;
-  /** When step 2 submit succeeds (non-draft), call this to switch to step 3 */
   onStep2SuccessGoToStep3?: () => void;
   onStep3Success?: () => void;
-  /** When set (e.g. drawer mode), close instead of navigating to MEETINGS */
   onClose?: () => void;
 }
 
@@ -54,7 +52,7 @@ export const useMeetingSteps = ({
     onError: (error) => {
       console.error('Step1 error:', error);
     },
-    isEditMode,
+    isEditMode: isEditMode || !!draftId,
   });
 
   const step2Hook = useStep2({
