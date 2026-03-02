@@ -103,6 +103,8 @@ export const FormTable: React.FC<FormTableProps> = ({
     [columns, rows]
   );
 
+  const cellWidth = (col: typeof visibleColumns[0]) => col.width || 'min-w-[180px]';
+
   return (
     <div
       className={cn(
@@ -129,14 +131,14 @@ export const FormTable: React.FC<FormTableProps> = ({
       )}>
         <div className="w-full overflow-x-auto">
           <div className="min-w-max">
-            {/* Table Header */}
+            {/* Table Header - same width classes as body cells for alignment */}
             <div className="flex w-full bg-[#F9FAFB] border-b border-[#D0D5DD] min-w-max">
               {visibleColumns.map((column) => (
                 <div
                   key={column.id}
                   className={cn(
-                    "text-[14px] font-medium text-[#475467] flex items-center justify-center px-4 py-3 whitespace-nowrap",
-                    column.width || "min-w-[180px]"
+                    "text-[14px] font-medium text-[#475467] flex items-center justify-end px-4 py-3 whitespace-nowrap",
+                    cellWidth(column)
                   )}
                 >
                   {column.header}
@@ -145,7 +147,7 @@ export const FormTable: React.FC<FormTableProps> = ({
             </div>
 
             {/* Table Body */}
-            <div 
+            <div
               className="flex flex-col bg-white overflow-y-auto"
               style={{ maxHeight }}
             >
@@ -167,160 +169,152 @@ export const FormTable: React.FC<FormTableProps> = ({
                       const showCell = !column.showWhen || row[column.showWhen.field] === column.showWhen.value;
                       const customRender = customCellRender?.[column.id];
                       return (
-                      <div
-                        key={column.id}
-                        className={cn(
-                          'flex items-center px-4 py-3',
-                          column.width || 'flex-1'
-                        )}
-                      >
-                        {!showCell ? (
-                          <span className="text-[14px] text-[#98A2B3]">—</span>
-                        ) : customRender ? (
-                          <div className="w-full flex justify-end min-w-0">
-                            {customRender({
-                              row,
-                              rowId: row.id,
-                              columnId: column.id,
-                              value: row[column.id],
-                              onUpdateRow: (field, value) => {
-                                if (disabled) return;
-                                onUpdateRow(row.id, field, value);
-                              },
-                              disabled,
-                              error: !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id]),
-                              placeholder: column.placeholder,
-                            })}
-                          </div>
-                        ) : column.id === 'action' ? (
-                          nonDeletableSet.has(row.id) ? (
+                        <div
+                          key={column.id}
+                          className={cn(
+                            'flex items-center px-4 py-3',
+                            cellWidth(column)
+                          )}
+                        >
+                          {!showCell ? (
                             <span className="text-[14px] text-[#98A2B3]">—</span>
-                          ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (disabled) return;
-                              onDeleteRow(row.id);
-                            }}
-                            disabled={disabled}
-                            className={cn(
-                              "flex items-center justify-center w-8 h-8 text-[#D13C3C] bg-[#FEF3F2] rounded-lg transition-colors",
-                              disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:w-9 hover:h-9"
-                            )}
-                            aria-label="حذف"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          )
-                        ) : column.id === 'itemNumber' ? (
-                          <span className="font-normal text-[16px] leading-[24px] text-[#344054] whitespace-nowrap mx-auto">
-                            {rowIndex + 1}
-                          </span>
-                        ) : column.type === 'date' ? (
-                          <div className="w-full flex justify-end min-w-0">
-                            <FormDatePicker
-                              value={row[column.id] || ''}
-                              onChange={(value) => {
-                                if (disabled) return;
-                                onUpdateRow(row.id, column.id, value);
-                              }}
-                              placeholder={row[column.id] ? (column.placeholder || 'dd/mm/yyyy') : '-------'}
-                              error={
-                                !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
-                              }
-                              className="w-full"
-                              fullWidth
-                              disabled={disabled}
-                            />
-                          </div>
-                        ) : column.type === 'select' ? (
-                          <div className="w-full flex justify-end">
-                            <FormSelect
-                              value={row[column.id] || ''}
-                              onValueChange={(value) => {
-                                if (disabled) return;
-                                onUpdateRow(row.id, column.id, value);
-                              }}
-                              options={
-                                typeof column.selectOptions === 'function'
-                                  ? column.selectOptions(rowIndex, row, rows)
-                                  : (column.selectOptions || [])
-                              }
-                              placeholder={column.placeholder || '-------'}
-                              error={
-                                !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
-                              }
-                              fullWidth
-                              disabled={disabled}
-                            />
-                          </div>
-                        ) : column.type === 'switch' ? (
-                          <div className="w-full flex justify-start">
-                            <div className="flex items-center gap-2 mx-auto">
-                              <FormSwitch
-                                checked={row[column.id] || false}
-                                onCheckedChange={(checked) => {
+                          ) : customRender ? (
+                            <div className="w-full flex justify-end min-w-0">
+                              {customRender({
+                                row,
+                                rowId: row.id,
+                                columnId: column.id,
+                                value: row[column.id],
+                                onUpdateRow: (field, value) => {
                                   if (disabled) return;
-                                  onUpdateRow(row.id, column.id, checked);
+                                  onUpdateRow(row.id, field, value);
+                                },
+                                disabled,
+                                error: !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id]),
+                                placeholder: column.placeholder,
+                              })}
+                            </div>
+                          ) : column.id === 'action' ? (
+                            nonDeletableSet.has(row.id) ? (
+                              <span className="text-[14px] text-[#98A2B3]">—</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (disabled) return;
+                                  onDeleteRow(row.id);
                                 }}
-                                label=""
-                                className="!flex-row !items-center !gap-0"
+                                disabled={disabled}
+                                className={cn(
+                                  "flex items-center justify-center w-8 h-8 text-[#D13C3C] bg-[#FEF3F2] rounded-lg transition-colors",
+                                  disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:w-9 hover:h-9"
+                                )}
+                                aria-label="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )
+                          ) : column.id === 'itemNumber' ? (
+                            <span className="font-normal text-[16px] leading-[24px] text-[#344054] whitespace-nowrap mx-auto">
+                              {rowIndex + 1}
+                            </span>
+                          ) : column.type === 'date' ? (
+                            <div className="w-full flex justify-end min-w-0">
+                              <FormDatePicker
+                                value={row[column.id] || ''}
+                                onChange={(value) => {
+                                  if (disabled) return;
+                                  onUpdateRow(row.id, column.id, value);
+                                }}
+                                placeholder={row[column.id] ? (column.placeholder || 'dd/mm/yyyy') : '-------'}
+                                error={
+                                  !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
+                                }
+                                className="w-full"
+                                fullWidth
                                 disabled={disabled}
                               />
                             </div>
-                          </div>
-                        ) : (
-                          <div className="w-full flex justify-end">
-                            {(() => {
-                              // Check if field should be disabled based on row.disabled field
-                              const isDisabled = row.disabled === true;
-                              const disabledFields = ['name', 'position', 'mobile', 'email'];
-                              const shouldDisable = (disabled || (isDisabled && disabledFields.includes(column.id)));
-                              
-                              // Determine display value
-                              let displayValue = '';
-                              
-                              if (shouldDisable) {
-                                if (column.id === 'name') {
-                                  // For name field, show username if available, then name
-                                  const nameValue = row.username || row.name;
-                                  displayValue = (nameValue && nameValue.trim() !== '') ? nameValue : '';
-                                } else {
-                                  // For other fields, show the field value if available
-                                  const fieldValue = row[column.id];
-                                  displayValue = (fieldValue && String(fieldValue).trim() !== '') ? String(fieldValue) : '';
+                          ) : column.type === 'select' ? (
+                            <div className="w-full flex justify-end">
+                              <FormSelect
+                                value={row[column.id] || ''}
+                                onValueChange={(value) => {
+                                  if (disabled) return;
+                                  onUpdateRow(row.id, column.id, value);
+                                }}
+                                options={
+                                  typeof column.selectOptions === 'function'
+                                    ? column.selectOptions(rowIndex, row, rows)
+                                    : (column.selectOptions || [])
                                 }
-                              } else {
-                                // For editable fields, use the actual field value
-                                displayValue = row[column.id] || '';
-                              }
-                              
-                              const cellError = touched[row.id]?.[column.id] && errors[row.id]?.[column.id];
-                              return (
-                                <div className="w-full flex flex-col gap-0.5 items-end">
-                                  <FormInput
-                                    value={displayValue}
-                                    onChange={(e) => {
-                                      if (shouldDisable || disabled) return;
-                                      onUpdateRow(row.id, column.id, e.target.value);
-                                    }}
-                                    placeholder={column.placeholder || '-------'}
-                                    disabled={shouldDisable}
-                                    error={!!cellError}
-                                    fullWidth
-                                  />
-                                  {cellError && (
-                                    <span className="text-[12px] text-[#D13C3C] text-right">
-                                      {cellError}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </div>
-                    );
+                                placeholder={column.placeholder || '-------'}
+                                error={
+                                  !!(touched[row.id]?.[column.id] && errors[row.id]?.[column.id])
+                                }
+                                fullWidth
+                                disabled={disabled}
+                              />
+                            </div>
+                          ) : column.type === 'switch' ? (
+                            <div className="w-full flex justify-start">
+                              <div className="flex items-center gap-2 mx-auto">
+                                <FormSwitch
+                                  checked={row[column.id] || false}
+                                  onCheckedChange={(checked) => {
+                                    if (disabled) return;
+                                    onUpdateRow(row.id, column.id, checked);
+                                  }}
+                                  label=""
+                                  className="!flex-row !items-center !gap-0"
+                                  disabled={disabled}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full flex justify-end">
+                              {(() => {
+                                const isDisabled = row.disabled === true;
+                                const disabledFields = ['name', 'position', 'mobile', 'email', 'full_name', 'position_title', 'mobile_number'];
+                                const shouldDisable = (disabled || (isDisabled && disabledFields.includes(column.id)));
+                                let displayValue = '';
+                                if (shouldDisable) {
+                                  if (column.id === 'name' || column.id === 'full_name') {
+                                    const nameValue = row.username || row.name || row.full_name;
+                                    displayValue = (nameValue && nameValue.trim() !== '') ? nameValue : '';
+                                  } else {
+                                    const fieldValue = row[column.id];
+                                    displayValue = (fieldValue && String(fieldValue).trim() !== '') ? String(fieldValue) : '';
+                                  }
+                                } else {
+                                  displayValue = row[column.id] || '';
+                                }
+                                const cellError = touched[row.id]?.[column.id] && errors[row.id]?.[column.id];
+                                return (
+                                  <div className="w-full flex flex-col gap-0.5 items-end">
+                                    <FormInput
+                                      value={displayValue}
+                                      onChange={(e) => {
+                                        if (shouldDisable || disabled) return;
+                                        onUpdateRow(row.id, column.id, e.target.value);
+                                      }}
+                                      placeholder={column.placeholder || '-------'}
+                                      disabled={shouldDisable}
+                                      error={!!cellError}
+                                      fullWidth
+                                    />
+                                    {cellError && (
+                                      <span className="text-[12px] text-[#D13C3C] text-right">
+                                        {cellError}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      );
                     })}
                   </div>
                 ))
@@ -331,7 +325,6 @@ export const FormTable: React.FC<FormTableProps> = ({
       </div>
 
       <div>
-
         {errorMessage && (
           <p className="text-right text-[14px] text-[#D13C3C] -mt-[10px]">
             {errorMessage}
@@ -348,7 +341,6 @@ export const FormTable: React.FC<FormTableProps> = ({
         )}
       </div>
 
-      {/* Add Button - hidden when hideAddButton (e.g. agenda total already equals meeting duration) */}
       {!hideAddButton && (
         <button
           type="button"

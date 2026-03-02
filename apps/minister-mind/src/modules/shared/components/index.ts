@@ -65,6 +65,8 @@ export {
   type FormTableColumn,
   type FormTableRow,
   type CustomCellRenderParams,
+  getInviteesTableColumns,
+  type InviteesTableColumnsOptions,
   type FormTextAreaProps,
   type FormSwitchProps,
   type FormRowProps,

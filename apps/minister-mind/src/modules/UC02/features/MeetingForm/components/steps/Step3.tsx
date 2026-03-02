@@ -6,7 +6,8 @@ import {
   INVITEES_TABLE_COLUMNS,
 } from '../../utils/constants';
 import type { Step3FormData } from '../../schemas/step3.schema';
-import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
+import { getUsers, searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
+import { getUserDisplayId, getUserDisplayLabel } from '@shared/utils';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
 const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
@@ -63,26 +64,40 @@ export const Step3: React.FC<Step3Props> = ({
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
     try {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-      const items = response.items.map((u: UserApiResponse) => {
-        const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || '';
-        const position = u.position ?? (u as Record<string, unknown>).position_name ?? (u as Record<string, unknown>).job_title ?? '';
-        const sector = (u as Record<string, unknown>).sector ?? (u as Record<string, unknown>).department_name ?? '';
+      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
+      const hasSearch = (search?.trim() ?? '').length > 0;
+
+      if (!hasSearch) {
+        // Initial dropdown: show only manual option, no API call
         return {
-          value: u.id,
-          label: fullName,
+          items: skip === 0 ? [manualOption] : [],
+          total: 1,
+          skip: 0,
+          limit,
+          has_next: false,
+          has_previous: false,
+        };
+      }
+
+      const response = await searchUsersByEmail(search, skip, limit);
+      const items = response.items.map((u: UserApiResponse) => {
+        const rec = u as Record<string, unknown>;
+        const id = getUserDisplayId(rec) || u.id;
+        const label = getUserDisplayLabel(rec);
+        const position = u.position ?? rec.position_name ?? rec.job_title ?? rec.title ?? '';
+        const sector = rec.sector ?? rec.department_name ?? rec.department ?? '';
+        const email = (u.email ?? rec.mail) as string | undefined;
+        const phone = (u.phone_number ?? rec.mobile) as string | null | undefined;
+        return {
+          value: id,
+          label,
           position: typeof position === 'string' ? position : '',
-          phone_number: u.phone_number ?? '',
-          email: u.email ?? '',
+          phone_number: phone ?? '',
+          email: email ?? '',
           sector: typeof sector === 'string' ? sector : '',
         };
       });
       items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
-      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
       return {
         items: skip === 0 ? [manualOption, ...items] : items,
         total: skip === 0 ? response.total + 1 : response.total,
@@ -120,59 +135,62 @@ export const Step3: React.FC<Step3Props> = ({
           : null;
 
       return (
-        <FormAsyncSelectV2
-          value={value}
-          onValueChange={(opt) => {
-            if (!opt) {
-              onUpdateRow('full_name', '');
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              onUpdateRow('_isManual', false);
-              onUpdateRow('_userId', '');
-              return;
-            }
-            if (opt.value === MANUAL_ENTRY_VALUE) {
-              const searchFromOption = (opt as { __search?: string }).__search ?? '';
-              const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
-              const searchValue = (searchFromOption || searchFromRef).trim();
-              onUpdateRow('_isManual', true);
-              onUpdateRow('full_name', searchValue);
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              onUpdateRow('_userId', '');
-              return;
-            }
-            const u = userOptionsMapRef.current.get(opt.value);
-            if (u) {
-              const existing = (formData.invitees ?? []).find(
-                (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
-              );
-              if (existing) return;
-              onUpdateRow('_userId', u.value);
-              onUpdateRow('_isManual', false);
-              onUpdateRow('full_name', u.label);
-              onUpdateRow('position_title', u.position ?? '');
-              onUpdateRow('mobile_number', u.phone_number ?? '');
-              onUpdateRow('sector', u.sector ?? '');
-              onUpdateRow('email', u.email ?? '');
-            }
-          }}
-          loadOptions={loadUserOptions}
-          placeholder="اختر مستخدم أو إدخال يدوي"
-          isClearable
-          fullWidth
-          isSearchable
-          limit={10}
-          searchPlaceholder="ابحث عن مستخدم..."
-          emptyMessage="لم يتم العثور على مستخدمين"
-          onInputChange={(newValue) => {
-            searchInputByRowRef.current[row.id] = newValue;
-          }}
-        />
+        <div className="w-full min-w-0">
+          <FormAsyncSelectV2
+            value={value}
+            defaultOptions={false}
+            fullWidth
+            onValueChange={(opt) => {
+              if (!opt) {
+                onUpdateRow('full_name', '');
+                onUpdateRow('position_title', '');
+                onUpdateRow('mobile_number', '');
+                onUpdateRow('sector', '');
+                onUpdateRow('email', '');
+                onUpdateRow('_isManual', false);
+                onUpdateRow('_userId', '');
+                return;
+              }
+              if (opt.value === MANUAL_ENTRY_VALUE) {
+                const searchFromOption = (opt as { __search?: string }).__search ?? '';
+                const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+                const searchValue = (searchFromOption || searchFromRef).trim();
+                onUpdateRow('_isManual', true);
+                onUpdateRow('full_name', searchValue);
+                onUpdateRow('position_title', '');
+                onUpdateRow('mobile_number', '');
+                onUpdateRow('sector', '');
+                onUpdateRow('email', '');
+                onUpdateRow('_userId', '');
+                return;
+              }
+              const u = userOptionsMapRef.current.get(opt.value);
+              if (u) {
+                const existing = (formData.invitees ?? []).find(
+                  (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+                );
+                if (existing) return;
+                onUpdateRow('_userId', u.value);
+                onUpdateRow('_isManual', false);
+                onUpdateRow('full_name', u.label);
+                onUpdateRow('position_title', u.position ?? '');
+                onUpdateRow('mobile_number', u.phone_number ?? '');
+                onUpdateRow('sector', u.sector ?? '');
+                onUpdateRow('email', u.email ?? '');
+              }
+            }}
+            loadOptions={loadUserOptions}
+            placeholder="اختر مستخدم أو إدخال يدوي"
+            isClearable
+            isSearchable
+            limit={10}
+            searchPlaceholder="ابحث عن مستخدم..."
+            emptyMessage="لم يتم العثور على مستخدمين"
+            onInputChange={(newValue) => {
+              searchInputByRowRef.current[row.id] = newValue;
+            }}
+          />
+        </div>
       );
     },
     [formData.invitees, loadUserOptions]
@@ -207,59 +225,62 @@ export const Step3: React.FC<Step3Props> = ({
           : null;
 
       return (
-        <FormAsyncSelectV2
-          value={value}
-          onValueChange={(opt) => {
-            if (!opt) {
-              onUpdateRow('full_name', '');
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              onUpdateRow('_isManual', false);
-              onUpdateRow('_userId', '');
-              return;
-            }
-            if (opt.value === MANUAL_ENTRY_VALUE) {
-              const searchFromOption = (opt as { __search?: string }).__search ?? '';
-              const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
-              const searchValue = (searchFromOption || searchFromRef).trim();
-              onUpdateRow('_isManual', true);
-              onUpdateRow('full_name', searchValue);
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              onUpdateRow('_userId', '');
-              return;
-            }
-            const u = userOptionsMapRef.current.get(opt.value);
-            if (u) {
-              const existing = (formData.minister_invitees ?? []).find(
-                (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
-              );
-              if (existing) return;
-              onUpdateRow('_userId', u.value);
-              onUpdateRow('_isManual', false);
-              onUpdateRow('full_name', u.label);
-              onUpdateRow('position_title', u.position ?? '');
-              onUpdateRow('mobile_number', u.phone_number ?? '');
-              onUpdateRow('sector', u.sector ?? '');
-              onUpdateRow('email', u.email ?? '');
-            }
-          }}
-          loadOptions={loadUserOptions}
-          placeholder="اختر مستخدم أو إدخال يدوي"
-          isClearable
-          fullWidth
-          isSearchable
-          limit={10}
-          searchPlaceholder="ابحث عن مستخدم..."
-          emptyMessage="لم يتم العثور على مستخدمين"
-          onInputChange={(newValue) => {
-            searchInputByRowRef.current[row.id] = newValue;
-          }}
-        />
+        <div className="w-full min-w-0">
+          <FormAsyncSelectV2
+            value={value}
+            defaultOptions={false}
+            fullWidth
+            onValueChange={(opt) => {
+              if (!opt) {
+                onUpdateRow('full_name', '');
+                onUpdateRow('position_title', '');
+                onUpdateRow('mobile_number', '');
+                onUpdateRow('sector', '');
+                onUpdateRow('email', '');
+                onUpdateRow('_isManual', false);
+                onUpdateRow('_userId', '');
+                return;
+              }
+              if (opt.value === MANUAL_ENTRY_VALUE) {
+                const searchFromOption = (opt as { __search?: string }).__search ?? '';
+                const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+                const searchValue = (searchFromOption || searchFromRef).trim();
+                onUpdateRow('_isManual', true);
+                onUpdateRow('full_name', searchValue);
+                onUpdateRow('position_title', '');
+                onUpdateRow('mobile_number', '');
+                onUpdateRow('sector', '');
+                onUpdateRow('email', '');
+                onUpdateRow('_userId', '');
+                return;
+              }
+              const u = userOptionsMapRef.current.get(opt.value);
+              if (u) {
+                const existing = (formData.minister_invitees ?? []).find(
+                  (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+                );
+                if (existing) return;
+                onUpdateRow('_userId', u.value);
+                onUpdateRow('_isManual', false);
+                onUpdateRow('full_name', u.label);
+                onUpdateRow('position_title', u.position ?? '');
+                onUpdateRow('mobile_number', u.phone_number ?? '');
+                onUpdateRow('sector', u.sector ?? '');
+                onUpdateRow('email', u.email ?? '');
+              }
+            }}
+            loadOptions={loadUserOptions}
+            placeholder="اختر مستخدم أو إدخال يدوي"
+            isClearable
+            isSearchable
+            limit={10}
+            searchPlaceholder="ابحث عن مستخدم..."
+            emptyMessage="لم يتم العثور على مستخدمين"
+            onInputChange={(newValue) => {
+              searchInputByRowRef.current[row.id] = newValue;
+            }}
+          />
+        </div>
       );
     },
     [formData.minister_invitees, loadUserOptions]
