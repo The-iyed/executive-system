@@ -300,7 +300,7 @@ const WorkBasket: React.FC = () => {
                   );
                 })}
               </div>
-            )
+            )}
 
             {/* Search */}
             <div className="relative">
