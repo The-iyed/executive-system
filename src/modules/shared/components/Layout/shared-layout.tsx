@@ -61,7 +61,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             `,
             isScrolled
               ? `
-                top-3 mx-4
+                top-3 mx-6
                 h-14 px-5
                 rounded-2xl
                 bg-white/70
