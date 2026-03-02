@@ -35,8 +35,14 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
   },
   'UC-02': {
     code: 'UC-02',
-    defaultRoute: UC02_PATH.WORK_BASKET,
+    defaultRoute: UC02_PATH.DASHBOARD,
     navigationItems: [
+      {
+        id: 'dashboard',
+        icon: 'solar:home-2-bold',
+        label: 'الرئيسية',
+        path: UC02_PATH.DASHBOARD,
+      },
       {
         id: 'directives',
         icon: 'solar:document-text-outline',
