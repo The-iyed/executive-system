@@ -3626,16 +3626,16 @@ const MeetingDetail: React.FC = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
                   </div>
                 ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                  <div className="flex flex-col divide-y divide-[#F3F4F6]">
-                    {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
+                  <div className="flex flex-col">
+                    {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
                       const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                       const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       return (
                         <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                          {/* Question bubble */}
+                          {/* Question bubble – sender (RTL, right side) */}
                           <div className="px-5 pt-5 pb-3">
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3" dir="rtl">
                               <div className="flex-shrink-0">
                                 <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
                                   <span className="text-xs font-bold text-[#048F86]">{row.requested_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
@@ -3647,34 +3647,34 @@ const MeetingDetail: React.FC = () => {
                                   <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
                                   {row.status && <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />}
                                 </div>
-                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-full">
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%]">
                                   <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{row.guidance_question || '-'}</p>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          {/* Answer bubble */}
+                          {/* Answer bubble – receiver (LTR, left side) */}
                           <div className="px-5 pb-5 pt-1">
                             {row.guidance_answer ? (
-                              <div className="flex items-start gap-3 ml-12 flex-row-reverse" dir="ltr">
+                              <div className="flex items-start gap-3" dir="ltr">
                                 <div className="flex-shrink-0">
                                   <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
                                     <span className="text-xs font-bold text-[#92400E]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
                                   </div>
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col items-end">
-                                  <div className="flex items-center gap-2 mb-1 flex-row-reverse">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
                                     {row.responded_by_name && <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>}
                                     {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>}
                                   </div>
-                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-full">
-                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap text-right">{row.guidance_answer}</p>
+                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
                                   </div>
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 mr-12 ml-auto px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
                                 <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
                               </div>
