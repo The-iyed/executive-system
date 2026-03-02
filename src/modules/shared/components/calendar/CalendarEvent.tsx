@@ -65,8 +65,8 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   onShowDetails,
   className,
 }) => {
-  const cardVariant =
-    event.is_internal === true ? 'internal' : event.is_internal === false ? 'external' : event.variant || event.type;
+  // Always use the hash-based variant for color variety; fall back to type
+  const cardVariant = event.variant || event.type;
   const accentColor = ACCENT_COLORS[cardVariant] || ACCENT_COLORS.reserved;
   const bgColor = BG_COLORS[cardVariant] || BG_COLORS.reserved;
   const textColor = TEXT_COLORS[cardVariant] || TEXT_COLORS.reserved;
