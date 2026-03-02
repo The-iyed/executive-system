@@ -61,7 +61,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
       <TooltipProvider>
         {items && items.length > 0 && (
           <div
-            className={`flex items-center gap-0.5 rounded-full border border-gray-200 bg-white p-1 shadow-sm ${className}`}
+            className={`flex items-center gap-1 ${className}`}
             dir="rtl"
           >
             {items.map((item) => {
@@ -71,11 +71,11 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                   key={item.id}
                   onClick={() => handleClick(item.id, item.path)}
                   className={`
-                    flex items-center gap-2 h-9 px-5 rounded-full text-sm font-semibold
-                    transition-all duration-250 whitespace-nowrap cursor-pointer
+                    flex items-center gap-2 h-8 px-4 rounded-lg text-[13px] font-medium
+                    transition-all duration-200 whitespace-nowrap cursor-pointer
                     ${isActive
-                      ? 'bg-[var(--color-primary-700)] text-white shadow-md'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-[var(--color-primary-700)] text-white'
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                     }
                   `}
                   aria-label={item.label}
@@ -84,9 +84,8 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                   {item.icon && (
                     <Icon
                       icon={item.icon}
-                      width={18}
-                      height={18}
-                      className={isActive ? 'text-white' : 'text-gray-400'}
+                      width={16}
+                      height={16}
                     />
                   )}
                   <span>{item.label}</span>
