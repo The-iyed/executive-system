@@ -32,7 +32,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   const { navigationItems: dynamicNavItems } = useUserNavigation();
 
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const isScrolled = useContainerScroll(contentRef, 30);
+  useContainerScroll(contentRef, 30);
+  const isScrolled = true;
 
   const finalNavigationItems = useMemo(() => {
     if (useDynamicNavigation || !navigationItems) {
