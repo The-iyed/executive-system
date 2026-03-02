@@ -27,7 +27,7 @@ const isRouteActive = (itemPath?: string, pathname?: string) => {
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 };
 
-export const NavigationActions: React.FC<NavigationActionsProps> = ({ 
+export const NavigationActions: React.FC<NavigationActionsProps> = ({
   className = '',
   defaultActive = 'calendar',
   onNavChange,
@@ -35,7 +35,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
   variant = 'default',
 }) => {
   const navigate = useNavigate();
-  const location = useLocation();  
+  const location = useLocation();
   const [activeId, setActiveId] = useState<string>(defaultActive);
 
   useEffect(() => {
@@ -61,12 +61,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
       <TooltipProvider>
         {items && items.length > 0 && (
           <div
-            className={`flex h-[54px] px-2 flex-row items-center gap-0 rounded-full overflow-hidden ${className}`}
-            style={{
-              backgroundColor: 'white',
-              padding: '5px',
-              fontFamily: "'Almarai', sans-serif",
-            }}
+            className={`flex items-center gap-1 ${className}`}
             dir="rtl"
           >
             {items.map((item) => {
@@ -75,23 +70,25 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleClick(item.id, item.path)}
-                  className="flex items-center gap-2 min-h-[38px] py-2.5 px-4 rounded-full transition-colors"
-                  style={{
-                    backgroundColor: isActive ? '#044D4E' : 'transparent',
-                    color: isActive ? '#fff' : '#374151',
-                  }}
+                  className={`
+                    flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-medium
+                    transition-all duration-200 whitespace-nowrap cursor-pointer
+                    ${isActive
+                      ? 'bg-[var(--color-primary-700)] text-white'
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    }
+                  `}
                   aria-label={item.label}
                   aria-pressed={isActive}
                 >
                   {item.icon && (
                     <Icon
                       icon={item.icon}
-                      width={20}
-                      height={20}
-                      style={{ color: isActive ? '#fff' : '#374151', flexShrink: 0 }}
+                      width={16}
+                      height={16}
                     />
                   )}
-                  <span className="text-sm font-light whitespace-nowrap">{item.label}</span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -101,6 +98,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
     );
   }
 
+  // Default variant (kept for backward compatibility)
   return (
     <>
       <style>{`
@@ -108,10 +106,6 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
-        }
-        @keyframes fadeInSlide {
-          0% { opacity: 0; transform: translateX(-12px) scale(0.9); }
-          100% { opacity: 1; transform: translateX(0) scale(1); }
         }
       `}</style>
       <TooltipProvider>

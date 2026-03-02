@@ -19,6 +19,14 @@ const routes: RouteConfig[] = [
   {
     exact: true,
     guard: AuthGuard,
+    path: PATH.DASHBOARD,
+    component: lazy(() => import('../pages/dashboard')),
+    layout: Layout,
+    useCase: 'UC-02',
+  },
+  {
+    exact: true,
+    guard: AuthGuard,
     path: PATH.MEETING_DETAIL,
     component: lazy(() => import('../pages/meetingDetail')),
     layout: Layout,
