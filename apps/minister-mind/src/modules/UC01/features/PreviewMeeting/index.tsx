@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { HelpCircle } from 'lucide-react';
@@ -11,6 +11,7 @@ import { Tabs, MeetingInfo, AttachmentPreviewDrawer, type MeetingInfoData, getMe
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
+import { trackEvent } from '@analytics';
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
   if (meeting.note != null && typeof meeting.note === 'string' && meeting.note.trim()) return meeting.note.trim();
@@ -37,6 +38,12 @@ const PreviewMeeting: React.FC = () => {
     queryFn: () => getMeetingById(id!),
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (meeting?.id) {
+      trackEvent('UC-01', 'uc01_meeting_preview_viewed', { meeting_id: meeting.id });
+    }
+  }, [meeting?.id]);
 
   const meetingInfoData = useMemo((): MeetingInfoData => {
     if (!meeting) return {};

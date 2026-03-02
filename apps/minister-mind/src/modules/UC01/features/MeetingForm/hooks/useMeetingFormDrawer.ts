@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData } from '../utils';
+import { trackEvent } from '@analytics';
 
 const FORM_PARAM = 'form';
 const ID_PARAM = 'id';
@@ -39,12 +40,14 @@ export function useMeetingFormDrawer() {
   );
 
   const openCreateDrawer = useCallback(() => {
+    trackEvent('UC-01', 'uc01_meeting_request_started');
     clearDraftData();
     navigate(`${PATH.MEETINGS}?${FORM_PARAM}=create`);
   }, [navigate]);
 
   const openEditDrawer = useCallback(
     (meetingId: string) => {
+      trackEvent('UC-01', 'uc01_meeting_edit_opened', { meeting_id: meetingId });
       clearDraftData();
       const currentPath = window.location.pathname;
       const isPreviewOrDetail = currentPath.includes('/meeting/') && currentPath.includes('/preview');

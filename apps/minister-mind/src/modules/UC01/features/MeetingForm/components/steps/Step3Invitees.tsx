@@ -1,15 +1,29 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useToast } from '@sanad-ai/ui';
 import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams } from '@shared';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@sanad-ai/ui';
 import { SuggestAttendeesModal } from '../../../../../UC02/components';
 import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
 import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import { getUsers } from '../../../../data/usersApi';
 import type { UserApiResponse } from '../../../../data/usersApi';
+import { Trash2 } from 'lucide-react';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
 const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
+
+/** Row for قائمة المدعوين (الوزير) – only shown for UC02 in edit form */
+export interface MinisterAttendeeRow {
+  id: string;
+  external_name: string;
+  position: string;
+  external_email: string;
+  mobile: string;
+  attendance_channel: 'PHYSICAL' | 'REMOTE';
+  is_required: boolean;
+  justification: string;
+}
 
 export interface Step3InviteesProps {
   formData: Partial<Step3InviteesFormData>;
@@ -33,6 +47,13 @@ export interface Step3InviteesProps {
   suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
   /** Called when suggest attendees modal returns success; receives API response with suggestions. */
   onSuggestAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
+  /** When true (UC02 scheduling officer), show قائمة المدعوين (الوزير) table. */
+  showMinisterInvitees?: boolean;
+  /** Minister attendees from formData (hook state); used when showMinisterInvitees. */
+  ministerAttendees?: Array<{ id: string; external_name?: string; position?: string; external_email?: string; mobile?: string; attendance_channel?: 'PHYSICAL' | 'REMOTE'; is_required?: boolean; justification?: string }>;
+  onAddMinisterAttendee?: () => void;
+  onDeleteMinisterAttendee?: (index: number) => void;
+  onUpdateMinisterAttendee?: (index: number, field: string, value: string | boolean) => void;
 }
 
 export const Step3Invitees: React.FC<Step3InviteesProps> = ({
@@ -52,11 +73,17 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   step3EditableMap,
   suggestAttendeesMeetingParams,
   onSuggestAttendeesSuccess,
+  showMinisterInvitees = false,
+  ministerAttendees = [],
+  onAddMinisterAttendee,
+  onDeleteMinisterAttendee,
+  onUpdateMinisterAttendee,
 }) => {
   const isFieldDisabled = (fieldKey: string) =>
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
 
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
+
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
   /** Last search input per row id – used when user selects "إدخال يدوي" to prefill name */
@@ -238,6 +265,120 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             </div>
           )}
         </div>
+
+        {showMinisterInvitees && (
+          <div className="relative w-full max-w-[1200px] mx-auto flex flex-col gap-4" dir="rtl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-[#101828]">قائمة المدعوين (الوزير)</h3>
+              <button
+                type="button"
+                onClick={() => onAddMinisterAttendee?.()}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg text-[#344054] hover:bg-gray-50 text-sm font-medium"
+              >
+                إضافة مدعو (الوزير)
+              </button>
+            </div>
+            <div className="border border-[#EAECF0] rounded-xl overflow-hidden">
+              <table className="w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                <thead className="bg-[#F9FAFB] border-b border-[#EAECF0]">
+                  <tr>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">الاسم</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">المنصب</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">البريد</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">الجوال</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">آلية الحضور</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">مطلوب</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">المبرر</th>
+                    <th className="px-3 py-3 w-12" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EAECF0]">
+                  {ministerAttendees.map((row, index) => (
+                    <tr key={row.id} className="bg-white hover:bg-gray-50/50">
+                      <td className="px-3 py-2">
+                        <FormInput
+                          value={row.external_name ?? ''}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'external_name', e.target.value)}
+                          placeholder="الاسم"
+                          className="h-9 text-right w-full"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <FormInput
+                          value={row.position ?? ''}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'position', e.target.value)}
+                          placeholder="المنصب"
+                          className="h-9 text-right w-full"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <FormInput
+                          value={row.external_email ?? ''}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'external_email', e.target.value)}
+                          placeholder="البريد"
+                          type="email"
+                          className="h-9 text-right w-full"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <FormInput
+                          value={row.mobile ?? ''}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'mobile', e.target.value)}
+                          placeholder="الجوال"
+                          className="h-9 text-right w-full"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Select
+                          value={row.attendance_channel ?? 'PHYSICAL'}
+                          onValueChange={(v: string) => onUpdateMinisterAttendee?.(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}
+                        >
+                          <SelectTrigger className="h-9 text-right w-full min-w-[100px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PHYSICAL">حضوري</SelectItem>
+                            <SelectItem value="REMOTE">عن بعد</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={row.is_required ?? false}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'is_required', e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <FormInput
+                          value={row.justification ?? ''}
+                          onChange={(e) => onUpdateMinisterAttendee?.(index, 'justification', e.target.value)}
+                          placeholder="المبرر"
+                          className="h-9 text-right w-full"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => onDeleteMinisterAttendee?.(index)}
+                          className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                          aria-label="حذف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {ministerAttendees.length === 0 && (
+                <div className="px-4 py-8 text-center text-sm text-[#667085]">لا توجد بيانات</div>
+              )}
+            </div>
+          </div>
+        )}
+
         <ActionButtons
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
