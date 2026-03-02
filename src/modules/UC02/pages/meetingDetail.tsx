@@ -3696,8 +3696,12 @@ const MeetingDetail: React.FC = () => {
                 )}
 
                 {/* Inline chat input */}
-                {meetingStatus !== MeetingStatus.CLOSED &&
-                  meetingStatus !== MeetingStatus.REJECTED && (
+                {meetingStatus !== MeetingStatus.WAITING &&
+                  meetingStatus !== MeetingStatus.CLOSED &&
+                  meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                  meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
+                  meetingStatus !== MeetingStatus.REJECTED &&
+                  meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
                   <div className="border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
                     <form
                       onSubmit={(e) => {
