@@ -23,6 +23,14 @@ export const Layout: React.FC<LayoutProps> = ({
     });
   }, [queryClient]);
   const getWelcomeConfig = (): WelcomeSectionProps => {
+    if (pathname === PATH.DASHBOARD) {
+      return {
+        title: 'الرئيسية',
+        description: 'لوحة المعلومات والإحصائيات',
+        breadcrumbs: undefined,
+        actions: undefined,
+      };
+    }
     if (pathname === PATH.SCHEDULED_MEETINGS) {
       return {
         title: 'الاجتماعات السابقة',
