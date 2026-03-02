@@ -28,7 +28,7 @@ const BASE_AGENDA_COLUMNS: FormTableColumn[] = [
 ];
 
 const DURATION_MISMATCH_MESSAGE = (agendaTotal: number, meetingMinutes: number) =>
-  `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`;
+  `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي بالضبط مدة الاجتماع (${meetingMinutes} دقيقة)`;
 
 export const MeetingAgendaTable: React.FC<MeetingAgendaTableProps> = ({
   rows,
@@ -74,7 +74,7 @@ export const MeetingAgendaTable: React.FC<MeetingAgendaTableProps> = ({
   const durationMismatchError =
     meetingDurationMinutes != null &&
     rows.length > 0 &&
-    totalAgendaMinutes > meetingDurationMinutes
+    totalAgendaMinutes !== meetingDurationMinutes
       ? DURATION_MISMATCH_MESSAGE(totalAgendaMinutes, meetingDurationMinutes)
       : undefined;
   const effectiveErrorMessage = errorMessage ?? durationMismatchError;
@@ -105,7 +105,7 @@ export const MeetingAgendaTable: React.FC<MeetingAgendaTableProps> = ({
     <div ref={tableWrapperRef} className="w-full flex flex-col gap-2">
       <FormTable
         title="أجندة الاجتماع"
-        description={showDurationSummary ? 'مجموع مدة الأجندة يجب أن يساوي أو يقل عن مدة الاجتماع' : undefined}
+        description={showDurationSummary ? 'مجموع مدة عناصر الأجندة يجب أن يساوي بالضبط مدة الاجتماع' : undefined}
         required={required}
         columns={columns}
         rows={rows}

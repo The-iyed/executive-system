@@ -34,6 +34,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
     handleStep3Next,
     handleStep3SaveDraft,
     handleCancel,
+    handlePrevious,
   } = useCreateMeeting({
     onClose: controlledOnOpenChange ? () => controlledOnOpenChange(false) : undefined,
   });
@@ -75,6 +76,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleBlur={step2Hook.handleBlur}
             handleNextClick={handleStep2Next}
             handleSaveDraftClick={handleStep2SaveDraft}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             showPresentationRequiredField={step2Hook.showPresentationRequiredField}
             isPresentationRequiredRequired={step2Hook.isPresentationRequiredRequired}
@@ -98,6 +100,7 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             setProposerUserIds={step3Hook.setProposerUserIds}
             handleNextClick={handleStep3Next}
             handleSaveDraftClick={handleStep3SaveDraft}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             nonDeletableInviteeIds={step3Hook.nonDeletableInviteeIds}
           />
