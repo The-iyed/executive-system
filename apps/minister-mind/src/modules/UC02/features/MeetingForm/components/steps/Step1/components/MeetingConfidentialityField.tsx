@@ -25,7 +25,6 @@ export function MeetingConfidentialityField({
   return (
     <FormField
       className={className}
-      label="سريّة الاجتماع"
       error={touched ? error : undefined}
     >
       <FormSwitch
