@@ -96,7 +96,6 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
       style={{
         background: bgColor,
         minHeight: '48px',
-        borderLeft: `3px solid ${accentColor}`,
       }}
       onClick={handleClick}
       onKeyDown={(e) => {
