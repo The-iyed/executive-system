@@ -56,7 +56,7 @@ export const loginApi = async (payload: LoginPayload): Promise<LoginResponse> =>
 
 // Refresh token API - Uses plain axios to avoid interceptor loops
 export const refreshTokenApi = async (refreshToken: string): Promise<RefreshTokenResponse> => {
-  const baseURL = import.meta.env.VITE_APP_BASE_URL_MINISTER as string;
+  const baseURL = 'https://execution-system.momrahai.com';
   const response = await axios.post<RefreshTokenResponse>(
     `${baseURL}/api/auth/refresh`,
     { refresh_token: refreshToken },
