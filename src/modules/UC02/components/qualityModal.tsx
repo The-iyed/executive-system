@@ -1,18 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
 import { useQuery } from '@tanstack/react-query';
 import { evaluateReadiness } from '../data/meetingsApi';
-import MeetingQualityIcon from '../../shared/assets/MeetingQualityIcon.svg?react';
+import { Sparkles, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 
 enum MeetingQualityStatus {
   GOOD = 'good',
   AVERAGE = 'average',
   BAD = 'bad',
-}
-
-interface StatusConfig {
-  label: string;
-  position: string;
-  arcEndAngle: number; // degrees from left (180) to right (0) for solid segment end
 }
 
 interface QualityModalProps {
@@ -31,131 +25,81 @@ const mapReadinessToStatus = (readiness: string): MeetingQualityStatus => {
   return MeetingQualityStatus.AVERAGE;
 };
 
-const getStatusConfig = (status: MeetingQualityStatus): StatusConfig => {
-  const statusConfigMap: Record<MeetingQualityStatus, StatusConfig> = {
-    [MeetingQualityStatus.GOOD]: { label: 'قوي', position: '28%', arcEndAngle: 45 },
-    [MeetingQualityStatus.AVERAGE]: { label: 'متوسط', position: '50%', arcEndAngle: 90 },
-    [MeetingQualityStatus.BAD]: { label: 'ضعيف', position: '78%', arcEndAngle: 135 },
-  };
-  return statusConfigMap[status];
+const STATUS_CONFIG: Record<MeetingQualityStatus, {
+  label: string;
+  percentage: number;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  icon: typeof TrendingUp;
+  emoji: string;
+}> = {
+  [MeetingQualityStatus.GOOD]: {
+    label: 'قوي',
+    percentage: 85,
+    color: '#059669',
+    bgColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    icon: TrendingUp,
+    emoji: '🟢',
+  },
+  [MeetingQualityStatus.AVERAGE]: {
+    label: 'متوسط',
+    percentage: 55,
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    icon: Minus,
+    emoji: '🟡',
+  },
+  [MeetingQualityStatus.BAD]: {
+    label: 'ضعيف',
+    percentage: 25,
+    color: '#DC2626',
+    bgColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    icon: TrendingDown,
+    emoji: '🔴',
+  },
 };
 
-/* Semi-circle donut: Figma 241×241 ellipse, inner/outer radius, gap between segments */
-const FIGMA_ELLIPSE_SIZE = 241;
-const FIGMA_GRAPH_LEFT = 70;
-const GAUGE_R_OUTER = FIGMA_ELLIPSE_SIZE / 2;
-const GAUGE_R_INNER = GAUGE_R_OUTER - 28;
-const GAUGE_CX = FIGMA_GRAPH_LEFT + GAUGE_R_OUTER;
-const GAUGE_CY = 73.91 + GAUGE_R_OUTER;
-const GAUGE_VIEW_WIDTH = 350;
-const GAUGE_VIEW_HEIGHT = 220;
-const SEGMENT_GAP_DEG = 2;
-const RIGHT_SEGMENT_COUNT = 22;
-
-/* Figma card styles */
-const GAUGE_COLORS = {
-  dark: '#044D4E',
-  medium: 'rgba(25, 132, 133, 0.9)',
-  light: 'rgba(146, 220, 221, 0.9)',
-  lightest: 'rgba(205, 243, 244, 0.9)',
-} as const;
-
-function angleToXY(cx: number, cy: number, r: number, angleDeg: number) {
-  const rad = (angleDeg * Math.PI) / 180;
-  return {
-    x: cx + r * Math.cos(rad),
-    y: cy - r * Math.sin(rad),
-  };
-}
-
-function getSegmentColor(index: number, total: number): string {
-  const t = index / (total - 1 || 1);
-  if (t <= 0.33) return GAUGE_COLORS.medium;
-  if (t <= 0.66) return GAUGE_COLORS.light;
-  return GAUGE_COLORS.lightest;
-}
-
-/** Path for one donut segment: outer arc → inner arc, filled (sweep 1 = clockwise) */
-function donutSegmentPath(
-  cx: number,
-  cy: number,
-  rOut: number,
-  rIn: number,
-  startDeg: number,
-  endDeg: number
-): string {
-  const startOut = angleToXY(cx, cy, rOut, startDeg);
-  const endOut = angleToXY(cx, cy, rOut, endDeg);
-  const endIn = angleToXY(cx, cy, rIn, endDeg);
-  const startIn = angleToXY(cx, cy, rIn, startDeg);
-  return (
-    `M ${startOut.x} ${startOut.y} ` +
-    `A ${rOut} ${rOut} 0 0 1 ${endOut.x} ${endOut.y} ` +
-    `L ${endIn.x} ${endIn.y} ` +
-    `A ${rIn} ${rIn} 0 0 0 ${startIn.x} ${startIn.y} ` +
-    'Z'
-  );
-}
-
-function QualityGaugeCurve({ arcEndAngle }: { arcEndAngle: number }) {
-  const cx = GAUGE_CX;
-  const cy = GAUGE_CY;
-  const rOut = GAUGE_R_OUTER;
-  const rIn = GAUGE_R_INNER;
-
-  /* Solid segment (left): one donut slice 180° → arcEndAngle, dark */
-  const solidPath = donutSegmentPath(cx, cy, rOut, rIn, 180, arcEndAngle);
-
-  /* Right side: multiple donut segments from arcEndAngle to 0° with gap between cards */
-  const gapTotal = (RIGHT_SEGMENT_COUNT - 1) * SEGMENT_GAP_DEG;
-  const segmentDeg = (arcEndAngle - gapTotal) / RIGHT_SEGMENT_COUNT;
-  const rightSegments: { startAngle: number; endAngle: number; color: string }[] = [];
-  for (let i = 0; i < RIGHT_SEGMENT_COUNT; i++) {
-    const endAngle = arcEndAngle - i * (segmentDeg + SEGMENT_GAP_DEG);
-    const startAngle = endAngle - segmentDeg;
-    if (startAngle < 0) break;
-    rightSegments.push({
-      startAngle,
-      endAngle,
-      color: getSegmentColor(i, RIGHT_SEGMENT_COUNT),
-    });
-  }
+function CircularGauge({ percentage, color, label }: { percentage: number; color: string; label: string }) {
+  const radius = 70;
+  const strokeWidth = 10;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (percentage / 100) * circumference;
+  const trackColor = '#F3F4F6';
 
   return (
-    <svg
-      viewBox={`0 0 ${GAUGE_VIEW_WIDTH} ${GAUGE_VIEW_HEIGHT}`}
-      className="w-full max-w-[350px] h-[220px] shrink-0"
-      style={{ overflow: 'visible' }}
-    >
-      {/* Solid donut segment: card dark #044D4E */}
-      <path d={solidPath} fill={GAUGE_COLORS.dark} />
-      {/* Right donut segments with space between cards */}
-      {rightSegments.map((seg, i) => (
-        <path
-          key={i}
-          d={donutSegmentPath(cx, cy, rOut, rIn, seg.startAngle, seg.endAngle)}
-          fill={seg.color}
+    <div className="relative flex items-center justify-center">
+      <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90">
+        {/* Track */}
+        <circle
+          cx="90" cy="90" r={radius}
+          fill="none"
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
         />
-      ))}
-    </svg>
+        {/* Progress */}
+        <circle
+          cx="90" cy="90" r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - progress}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center gap-1">
+        <span className="text-3xl font-bold" style={{ color }}>{percentage}%</span>
+        <span className="text-sm font-semibold text-[#6B7280]">{label}</span>
+      </div>
+    </div>
   );
 }
-
-const renderCenteredMessage = (message: string, withCard = false) => {
-  const content = (
-    <div className="flex items-center justify-center py-8">
-      <div className="text-[#475467]">{message}</div>
-    </div>
-  );
-
-  if (!withCard) return content;
-
-  return (
-    <div className="rounded-[24px] p-6 shadow-[0_20px_45px_rgba(15,23,42,0.12)] border border-[#E5E7EB]">
-      {content}
-    </div>
-  );
-};
 
 const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) => {
   const { data: readinessData, isLoading } = useQuery({
@@ -171,72 +115,88 @@ const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) =>
   const meetingQualityReasons: string[] =
     hasStatus && readinessData ? readinessData.reasoning : [];
 
-  const statusConfig = getStatusConfig(meetingQualityStatus);
+  const config = STATUS_CONFIG[meetingQualityStatus];
+  const StatusIcon = config.icon;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[560px] sm:max-w-[560px] bg-[#FFFFFF] gap-0" dir="rtl">
-        <DialogHeader className="mb-4">
-          <DialogTitle className="text-right text-[18px] font-semibold text-[#101828]">
-            مؤشر جودة الاجتماع
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        className="w-full max-w-[520px] sm:max-w-[520px] bg-white gap-0 p-0 rounded-2xl overflow-hidden border-0"
+        dir="rtl"
+        style={{
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        {/* Header */}
+        <div className="relative px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: config.bgColor, border: `1px solid ${config.borderColor}` }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: config.color }} />
+            </div>
+            <div>
+              <h2 className="text-[17px] font-bold text-[#101828]">تقييم جاهزية الاجتماع</h2>
+              <p className="text-[13px] text-[#667085] mt-0.5">تحليل ذكي لمستوى الجاهزية</p>
+            </div>
+          </div>
+        </div>
 
-        <div className="space-y-8 h-[420px] flex flex-col">
+        <div className="px-6 pb-6">
           {isLoading ? (
-            <div className="h-full flex items-center justify-center">
-              {renderCenteredMessage('جاري التحميل...')}
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="w-10 h-10 rounded-full border-[3px] border-[#E5E7EB] border-t-[#048F86] animate-spin" />
+              <p className="text-sm text-[#667085]">جاري التحليل...</p>
             </div>
           ) : !hasStatus ? (
-            <div className="h-full flex items-center justify-center">
-              {renderCenteredMessage('لا يوجد تقييم بعد', true)}
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-[#9CA3AF]" />
+              </div>
+              <p className="text-sm text-[#667085]">لا يوجد تقييم بعد</p>
             </div>
           ) : (
-            <div className="h-full flex flex-col min-h-0">
-                {/* Content: Figma 350px, gauge 241×241 at left 70, label centered below arc */}
-                <div className="flex flex-col items-center w-full shrink-0" style={{ minHeight: 200 }}>
-                  <div className="relative w-full flex justify-center" style={{ minHeight: 200 }}>
-                    <QualityGaugeCurve arcEndAngle={statusConfig.arcEndAngle} />
-                    {/* Completed value label: centered below semicircle (Figma: Almarai, black) */}
-                    <div
-                      className="absolute flex flex-col items-center gap-1"
-                      style={{
-                        left: '54%',
-                        transform: 'translateX(-50%)',
-                        bottom: 12,
-                      }}
-                    >
-                      <span className="font-normal text-[19px] leading-[120%] text-[#000000] whitespace-nowrap">
-                        {statusConfig.label}
-                      </span>
-                      <div className="w-[4px] h-[8px] bg-white rounded-sm shrink-0" />
-                    </div>
-                  </div>
+            <div className="flex flex-col gap-5">
+              {/* Gauge + Status Card */}
+              <div
+                className="flex flex-col items-center gap-4 p-5 rounded-xl"
+                style={{ backgroundColor: config.bgColor, border: `1px solid ${config.borderColor}` }}
+              >
+                <CircularGauge percentage={config.percentage} color={config.color} label={config.label} />
+                <div className="flex items-center gap-2">
+                  <StatusIcon className="w-4 h-4" style={{ color: config.color }} />
+                  <span className="text-sm font-semibold" style={{ color: config.color }}>
+                    مستوى الجاهزية: {config.label}
+                  </span>
                 </div>
+              </div>
 
               {/* Reasons */}
-              <div className="space-y-4 flex-1 min-h-0 flex flex-col">
-                <div className="flex items-center justify-between shrink-0">
-                  <h3 className="flex items-center gap-2 text-[21px] font-semibold text-black">
-                    <MeetingQualityIcon />
-                    <span>الأسباب</span>
-                  </h3>
-                </div>
-
-                <div className="space-y-3 flex-1 min-h-0 overflow-y-auto p-4 bg-[#FCFCFD] border border-[#D0D5DD] rounded-[12px] text-[#475467]">
+              <div className="flex flex-col gap-3">
+                <h3 className="text-[15px] font-bold text-[#101828] flex items-center gap-2">
+                  <span>التفاصيل والأسباب</span>
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#F3F4F6] text-[11px] font-semibold text-[#6B7280]">
+                    {meetingQualityReasons.length}
+                  </span>
+                </h3>
+                <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
                   {meetingQualityReasons.length > 0 ? (
                     meetingQualityReasons.map((reason, index) => (
-                      <p
+                      <div
                         key={index}
-                        className="text-[#475467] text-[12px]"
+                        className="flex items-start gap-3 p-3 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6] hover:border-[#E5E7EB] transition-colors"
                       >
-                        {index + 1}.{' '}{reason}
-                      </p>
+                        <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-white border border-[#E5E7EB] flex items-center justify-center text-[11px] font-bold text-[#6B7280]">
+                          {index + 1}
+                        </span>
+                        <p className="text-[13px] text-[#374151] leading-relaxed flex-1">
+                          {reason}
+                        </p>
+                      </div>
                     ))
                   ) : (
-                    <div className="text-[#475467] text-[12px]">
-                      لا توجد أسباب متاحة
-                    </div>
+                    <p className="text-[13px] text-[#9CA3AF] text-center py-4">لا توجد أسباب متاحة</p>
                   )}
                 </div>
               </div>
