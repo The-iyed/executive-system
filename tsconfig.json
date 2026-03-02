@@ -30,6 +30,7 @@
     "rootDir": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@analytics": ["src/lib/analytics.ts"],
       "@/lib/api": ["src/lib/api/index.ts"],
       "@/lib/api/*": ["src/lib/api/*"],
       "@/lib/ui": ["src/lib/ui/index.ts"],
