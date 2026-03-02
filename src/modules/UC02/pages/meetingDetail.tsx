@@ -2334,6 +2334,11 @@ const MeetingDetail: React.FC = () => {
             onBack={() => navigate(-1)}
             statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />}
             hasChanges={hasChanges}
+            editAction={{
+              visible: meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED,
+              hasChanges,
+              onClick: () => setIsEditConfirmOpen(true),
+            }}
             primaryAction={
               <AIGenerateButton
                 label="تقييم جاهزية الاجتماع"
@@ -3750,32 +3755,7 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
-        {/* Edit button: bottom-left, when status allows edit; disabled when no changes */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
-          <div className="fixed bottom-6 left-6 z-40 flex-shrink-0" dir="rtl">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-block">
-                <button
-                      type="button"
-                      onClick={() => hasChanges && setIsEditConfirmOpen(true)}
-                disabled={!hasChanges}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
-                      style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                    >
-                      <Pencil className="w-4 h-4" strokeWidth={1.26} />
-                  تعديل
-              </button>
-                          </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[280px] text-right">
-                  <p>{hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
+        {/* Edit button moved to DetailPageHeader */}
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
