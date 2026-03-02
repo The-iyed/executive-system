@@ -3035,8 +3035,8 @@ const MeetingDetail: React.FC = () => {
                         const accessChecked = !!row.access_permission;
                         const accessLabel = accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية';
                         return (
-                          <div key={row.id || idx} className={`group relative border rounded-2xl transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
-                            <div className="flex flex-col gap-4 p-5">
+                          <div key={row.id || idx} className={`group relative border rounded-xl transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
+                            <div className="flex flex-col gap-3 p-4">
                               {/* Header */}
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -3092,10 +3092,10 @@ const MeetingDetail: React.FC = () => {
                               </div>
 
                               {/* Contact info */}
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                    <Mail className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                    <Mail className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                   </div>
                                   {isLocal ? (
                                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -3109,9 +3109,9 @@ const MeetingDetail: React.FC = () => {
                                     </div>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                    <Phone className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                    <Phone className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                   </div>
                                   {isLocal ? (
                                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -3127,9 +3127,9 @@ const MeetingDetail: React.FC = () => {
                                 </div>
                               </div>
                               {sector !== '-' && !isLocal && (
-                                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                    <Building2 className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                    <Building2 className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                   </div>
                                   <div className="flex flex-col min-w-0">
                                     <span className="text-[10px] text-[#9CA3AF]">الجهة</span>
@@ -3200,8 +3200,8 @@ const MeetingDetail: React.FC = () => {
 
                         if (!isEditing) {
                           return (
-                            <div key={row.id || index} className={`group relative border rounded-2xl transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
-                              <div className="flex flex-col gap-4 p-5">
+                            <div key={row.id || index} className={`group relative border rounded-xl transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB] hover:border-[#D1D5DB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
+                              <div className="flex flex-col gap-3 p-4">
                                 {/* Header */}
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -3236,19 +3236,19 @@ const MeetingDetail: React.FC = () => {
                                 </div>
 
                                 {/* Contact */}
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                      <Mail className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                      <Mail className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                       <span className="text-[10px] text-[#9CA3AF]">البريد</span>
                                       <span className="text-xs text-[#374151] truncate">{email}</span>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                      <Phone className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                                  <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                      <Phone className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                       <span className="text-[10px] text-[#9CA3AF]">الجوال</span>
@@ -3257,9 +3257,9 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                 </div>
                                 {sector !== '-' && (
-                                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
-                                      <Building2 className="h-3.5 w-3.5 text-[#6B7280]" strokeWidth={2} />
+                                  <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white border border-[#E5E7EB]">
+                                      <Building2 className="h-3 w-3 text-[#6B7280]" strokeWidth={2} />
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                       <span className="text-[10px] text-[#9CA3AF]">الجهة</span>
@@ -3271,7 +3271,7 @@ const MeetingDetail: React.FC = () => {
                                   <TooltipProvider delayDuration={200}>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-xs text-[#6B7280] bg-[#F9FAFB] rounded-xl px-3 py-2.5 border border-[#F3F4F6] line-clamp-2">
+                                        <div className="text-xs text-[#6B7280] bg-[#F9FAFB] rounded-lg px-2.5 py-2 border border-[#F3F4F6] line-clamp-2">
                                           <span className="font-semibold text-[#374151]">المبرر: </span>{row.justification}
                                         </div>
                                       </TooltipTrigger>
@@ -3293,8 +3293,8 @@ const MeetingDetail: React.FC = () => {
                         const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
                         const errJust = ministerAttendeeValidationErrors[index]?.justification;
                         return (
-                          <div key={row.id || index} className={`group relative border rounded-2xl ring-2 ring-[#048F86]/20 transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
-                            <div className="flex flex-col gap-4 p-5">
+                          <div key={row.id || index} className={`group relative border rounded-xl ring-2 ring-[#048F86]/20 transition-all duration-200 ${isConsultant ? 'bg-[#F0FDF9] border-[#048F86]/25' : 'bg-white border-[#E5E7EB]'}`} style={{ boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
+                            <div className="flex flex-col gap-3 p-4">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#FEF3C7] border border-[#FDE68A]">
@@ -3339,16 +3339,16 @@ const MeetingDetail: React.FC = () => {
                               </div>
 
                               {/* Contact inputs */}
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                  <Mail className="h-3.5 w-3.5 text-[#6B7280] flex-shrink-0" strokeWidth={2} />
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                  <Mail className="h-3 w-3 text-[#6B7280] flex-shrink-0" strokeWidth={2} />
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                                     <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-7 text-right text-xs w-full bg-white rounded-lg ${errEmail ? 'border-red-400' : 'border-[#D1D5DB]'}`} />
                                     {errEmail && <span className="text-[10px] text-red-500">{errEmail}</span>}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F9FAFB] border border-[#F3F4F6]">
-                                  <Phone className="h-3.5 w-3.5 text-[#6B7280] flex-shrink-0" strokeWidth={2} />
+                                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6]">
+                                  <Phone className="h-3 w-3 text-[#6B7280] flex-shrink-0" strokeWidth={2} />
                                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                                     <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال" className={`h-7 text-right text-xs w-full bg-white rounded-lg ${errPhone ? 'border-red-400' : 'border-[#D1D5DB]'}`} />
                                     {errPhone && <span className="text-[10px] text-red-500">{errPhone}</span>}
