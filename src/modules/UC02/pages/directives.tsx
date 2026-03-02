@@ -422,7 +422,7 @@ const Directives: React.FC = () => {
                     }}
                   >
                     {[
-                      { label: 'إلغاء التوجيه', icon: XCircle, color: 'var(--color-status-yellow)', action: async () => {
+                      { label: 'الأخذ بالتوجيه', icon: XCircle, color: 'var(--color-status-yellow)', action: async () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
                         if (d) { try { await cancelDirective(d.id, directiveToExternalDirectiveBody(d)); await refetch(); } catch { } }
                       }},
