@@ -1,27 +1,14 @@
 import React from 'react';
 import { StatusBadge, StatusType } from './status-badge';
-import { Eye, CalendarDays, MapPin, User, Hash, Layers, Send } from 'lucide-react';
+import { CalendarDays, MapPin, User, Hash, Layers, ArrowLeft } from 'lucide-react';
 import { MeetingStatus, MeetingChannelLabels } from '../types';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
-
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+import { cn } from '@/lib/ui';
 
 const getLocationLabel = (value?: string): string | undefined => {
   if (!value) return undefined;
   return MeetingChannelLabels[value] || value;
 };
-
-const pillStyle = {
-  borderRadius: '12px',
-  background: '#FFFFFF',
-  boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)',
-} as const;
-
-const iconCircleStyle = {
-  background: '#FFFFFF',
-  border: '1px solid #EAECF0',
-  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-} as const;
 
 /** Tooltip wrapper for card values */
 const CardTooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => (
@@ -29,7 +16,7 @@ const CardTooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ te
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent side="top" className="max-w-[280px] text-right z-50">
-        <p className="whitespace-pre-wrap break-words text-[12px]">{text}</p>
+        <p className="whitespace-pre-wrap break-words text-xs">{text}</p>
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>
@@ -50,7 +37,6 @@ export interface MeetingCardData {
   isDataComplete?: boolean | null;
 }
 
-
 export interface MeetingCardProps {
   meeting: MeetingCardData;
   onView?: () => void;
@@ -62,6 +48,25 @@ export interface MeetingCardProps {
   hideStatus?: boolean;
 }
 
+/** Single info item inside the card */
+const InfoItem: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}> = ({ icon: IconComp, label, value }) => (
+  <CardTooltip text={value}>
+    <div className="flex items-center gap-2.5 min-w-0">
+      <div className="w-8 h-8 rounded-lg bg-[var(--color-base-gray-50)] border border-[var(--color-base-gray-100)] flex items-center justify-center flex-shrink-0">
+        <IconComp className="w-4 h-4 text-[var(--color-text-gray-500)]" strokeWidth={1.5} />
+      </div>
+      <div className="flex flex-col min-w-0">
+        <span className="text-[10px] text-[var(--color-text-gray-500)] leading-3">{label}</span>
+        <span className="text-xs font-medium text-[var(--color-text-gray-700)] leading-4 truncate">{value}</span>
+      </div>
+    </div>
+  </CardTooltip>
+);
+
 export const MeetingCard: React.FC<MeetingCardProps> = ({
   meeting,
   onView,
@@ -72,159 +77,87 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   hideStatus = false,
   className = '',
 }) => {
-  const handleCardClick = () => {
-    if (onDetails) {
-      onDetails();
-    }
-  };
+  const handleCardClick = () => onDetails?.();
 
   return (
     <div
-      className={`
-        group relative
-        flex flex-col
-        bg-white
-        w-full
-        overflow-hidden
-        cursor-pointer
-        hover:shadow-[0px_4px_16px_rgba(16,24,40,0.12)]
-        transition-all duration-200
-        border-[1.5px] border-[rgba(230,236,245,1)]
-        ${className}
-      `}
-      style={{
-        borderRadius: '16px',
-        boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
-      }}
+      className={cn(
+        'group relative flex flex-col bg-white rounded-2xl border border-[var(--color-base-gray-100)] overflow-hidden cursor-pointer transition-all duration-200',
+        'hover:border-[var(--color-primary-200)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]',
+        className
+      )}
       dir="rtl"
       onClick={handleCardClick}
     >
-      {/* Card Body */}
-      <div className="flex flex-col gap-4 p-5" style={fontStyle}>
-        {/* Row 1: Title + Status Badge */}
-        <div className="flex flex-row items-start justify-between gap-3">
-          <CardTooltip text={meeting.title}>
-            <h3
-              className="text-right flex-1 text-[#101828] font-bold leading-6 line-clamp-2"
-              style={{ ...fontStyle, fontSize: '15px' }}
-            >
-              {meeting.title}
-            </h3>
-          </CardTooltip>
-          <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-          {onAction && actionLabel && (
+      {/* Top accent line */}
+      <div className="h-[3px] bg-gradient-to-l from-[var(--color-primary-500)] to-[var(--color-primary-300)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      <div className="flex flex-col gap-4 p-5">
+        {/* Row 1: Status + Actions */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {!hideStatus && meeting.statusLabel && meeting.status && (
+              <StatusBadge status={meeting.status} label={meeting.statusLabel} />
+            )}
+            {onAction && actionLabel && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onAction(); }}
                 disabled={actionLoading}
-                className="flex items-center cursor-pointer gap-1.5 px-2 py-[2px] rounded-xl bg-[#048F86] hover:bg-[#037a72] text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                style={fontStyle}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white text-xs font-medium disabled:opacity-50 transition-colors"
               >
-                <span>{actionLabel}</span>
-                <Send className="w-3.5 h-3.5 rotate-[-90deg] flex-shrink-0" />
+                {actionLabel}
               </button>
             )}
-            {(meeting.statusLabel != null && meeting.status != null) && !hideStatus && (
-              <StatusBadge status={meeting.status} label={meeting.statusLabel} />
-            )}
-            {/* Action Button */}
-          
           </div>
+
+          {/* View button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onView ? onView() : onDetails?.(); }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)] transition-colors opacity-0 group-hover:opacity-100"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Row 2: Coordinator */}
-        <CardTooltip text={meeting.coordinator ?? '-'}>
-          <div className="flex flex-row items-center gap-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-              {meeting.coordinatorAvatar ? (
-                <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="h-full w-full rounded-full object-cover" />
-              ) : (
-                <User className="h-4 w-4 text-[#98A2B3]" strokeWidth={1.5} />
-              )}
-            </div>
-            <span className="text-[13px] font-medium text-[#344054] leading-5 truncate">{meeting.coordinator ?? '-'}</span>
-          </div>
+        {/* Row 2: Title */}
+        <CardTooltip text={meeting.title}>
+          <h3 className="text-[15px] font-bold text-[var(--color-text-gray-900)] leading-6 line-clamp-2">
+            {meeting.title}
+          </h3>
         </CardTooltip>
 
-        {/* Info pills – each pill takes full width */}
-        <div className="flex gap-2.5 w-full">
+        {/* Row 3: Coordinator */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-[var(--color-base-gray-100)] flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {meeting.coordinatorAvatar ? (
+              <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-4 h-4 text-[var(--color-text-gray-500)]" strokeWidth={1.5} />
+            )}
+          </div>
+          <span className="text-sm text-[var(--color-text-gray-600)] truncate">{meeting.coordinator ?? '-'}</span>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-[var(--color-base-gray-100)]" />
+
+        {/* Row 4: Info items */}
+        <div className="grid grid-cols-2 gap-3">
           {meeting.requestNumber && (
-            <CardTooltip text={meeting.requestNumber}>
-              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                  <Hash className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                  <span className="text-[10px] text-[#98A2B3] leading-3">رقم الطلب</span>
-                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.requestNumber}</span>
-                </div>
-              </div>
-            </CardTooltip>
+            <InfoItem icon={Hash} label="رقم الطلب" value={meeting.requestNumber} />
           )}
-          <CardTooltip text={meeting.date}>
-            <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-              </div>
-              <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الطلب</span>
-                <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.date}</span>
-              </div>
-            </div>
-          </CardTooltip>
+          <InfoItem icon={CalendarDays} label="تاريخ الطلب" value={meeting.date} />
           {meeting.meetingCategory && (
-            <CardTooltip text={meeting.meetingCategory}>
-              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                  <Layers className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                  <span className="text-[10px] text-[#98A2B3] leading-3">فئة الاجتماع</span>
-                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.meetingCategory}</span>
-                </div>
-              </div>
-            </CardTooltip>
+            <InfoItem icon={Layers} label="فئة الاجتماع" value={meeting.meetingCategory} />
           )}
           {meeting.location && (
-            <CardTooltip text={getLocationLabel(meeting.location) ?? meeting.location}>
-              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                  <MapPin className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                  <span className="text-[10px] text-[#98A2B3] leading-3">الموقع</span>
-                  <span className="text-[12px] text-[#344054] leading-4 text-center">{getLocationLabel(meeting.location)}</span>
-                </div>
-              </div>
-            </CardTooltip>
+            <InfoItem icon={MapPin} label="الموقع" value={getLocationLabel(meeting.location) ?? meeting.location} />
           )}
           {meeting.meetingDate && (
-            <CardTooltip text={meeting.meetingDate}>
-              <div className="flex flex-col items-center gap-2.5 px-3 py-2 w-full " style={pillStyle}>
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={iconCircleStyle}>
-                  <CalendarDays className="h-4 w-4 text-[#667085]" strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0 items-center">
-                  <span className="text-[10px] text-[#98A2B3] leading-3">تاريخ الاجتماع</span>
-                  <span className="text-[12px] text-[#344054] leading-4 text-center">{meeting.meetingDate}</span>
-                </div>
-              </div>
-            </CardTooltip>
+            <InfoItem icon={CalendarDays} label="تاريخ الاجتماع" value={meeting.meetingDate} />
           )}
         </div>
-      </div>
-
-      {/* Hover Action Bar - glass overlay from left */}
-      <div
-        className="absolute top-0 left-0 z-10 flex w-12 h-full items-center justify-center -translate-x-full transition-transform duration-200 ease-in-out group-hover:translate-x-0"
-        style={{ background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}
-      >
-        <button
-          onClick={(e) => { e.stopPropagation(); onView ? onView() : handleCardClick(); }}
-          className="flex items-center justify-center rounded-full w-8 h-8 bg-white shadow-md hover:bg-[#F2F4F7] transition-colors"
-        >
-          <Eye className="w-[18px] h-[18px] text-[#475467]" strokeWidth={1.67} />
-        </button>
       </div>
     </div>
   );
