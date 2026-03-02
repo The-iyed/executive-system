@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, HelpCircle } from 'lucide-react';
+import { ChevronRight, HelpCircle, Pencil } from 'lucide-react';
 import { Tabs, type TabItem } from './tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/lib/ui';
 import { cn } from '@/lib/ui';
@@ -17,6 +17,14 @@ export interface DetailPageHeaderProps {
   hasChanges?: boolean;
   /** Primary action button (e.g. "تقييم جاهزية الاجتماع") – rendered at start in RTL */
   primaryAction?: React.ReactNode;
+  /** Edit action config – renders the edit/save button inline in the header */
+  editAction?: {
+    visible: boolean;
+    hasChanges: boolean;
+    onClick: () => void;
+    label?: string;
+    tooltip?: string;
+  };
   /** Tab items for the tabs row */
   tabs: TabItem[];
   /** Currently active tab id */
@@ -31,7 +39,7 @@ export interface DetailPageHeaderProps {
 
 /**
  * Shared detail page header: back, title, subtitle, status, primary action,
- * and a tabs strip. Clean structure and hierarchy for RTL.
+ * edit button, and a tabs strip. Clean structure and hierarchy for RTL.
  */
 export function DetailPageHeader({
   title,
@@ -40,6 +48,7 @@ export function DetailPageHeader({
   statusBadge,
   hasChanges = false,
   primaryAction,
+  editAction,
   tabs,
   activeTab,
   onTabChange,
@@ -50,70 +59,101 @@ export function DetailPageHeader({
     <div
       className={cn(
         'w-full mt-[30px] flex flex-col rounded-2xl bg-white min-w-0 overflow-hidden',
-        'border border-[#E5E7EB] shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
+        'border border-[#E5E7EB]',
         className
       )}
       dir="rtl"
+      style={{
+        boxShadow: '0 4px 24px -4px rgba(4, 143, 134, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04)',
+      }}
     >
-      {/* Top accent */}
-      <div
-        className="h-0.5 w-full flex-shrink-0"
-      />
+      {/* No top accent bar */}
 
       <div className="flex flex-col min-w-0">
-        {/* Row 1: Back + Title + Subtitle + (optional) unsaved badge */}
-        <div className="flex flex-row items-center justify-between gap-4 px-5 pt-5 pb-3 min-w-0">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center justify-center w-10 h-10 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-colors flex-shrink-0 mt-0.5"
-              aria-label="رجوع"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          )}
-          <div className="flex flex-col min-w-0 flex-1 text-right">
-            <div className="flex flex-row items-center gap-2 flex-wrap">
-              <h1 className="text-base font-semibold text-[#111827] leading-tight truncate max-w-full">
-                {title}
-              </h1>
-              
-            {statusBadge}
-            {hasChanges && (
-                <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium text-white flex-shrink-0"
-                  style={{
-                    background: 'linear-gradient(135deg, #3B82F6 0%, #048F86 50%, #22D3D3 100%)',
-                    boxShadow: '0 1px 2px rgba(4, 143, 134, 0.25)',
-                  }}
-                >
-                  تغييرات غير محفوظة
-                </span>
+        {/* Row 1: Back + Title + Status + Actions */}
+        <div className="flex flex-row items-center justify-between gap-4 px-6 pt-5 pb-4 min-w-0">
+          {/* Right side: back + title + status */}
+          <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-all flex-shrink-0"
+                aria-label="رجوع"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+            <div className="flex flex-col min-w-0 flex-1 text-right">
+              <div className="flex flex-row items-center gap-2.5 flex-wrap">
+                <h1 className="text-[18px] font-bold text-[#101828] leading-tight truncate max-w-full">
+                  {title}
+                </h1>
+                {statusBadge}
+                {hasChanges && (
+                  <span
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white flex-shrink-0 animate-pulse"
+                    style={{
+                      background: 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)',
+                      boxShadow: '0 1px 3px rgba(4, 143, 134, 0.3)',
+                    }}
+                  >
+                    تغييرات غير محفوظة
+                  </span>
+                )}
+              </div>
+              {subtitle && (
+                <p className="text-[13px] text-[#667085] leading-snug mt-0.5 truncate max-w-full">
+                  {subtitle}
+                </p>
               )}
             </div>
-            {subtitle && (
-              <p className="text-xs text-[#6B7280] leading-snug mt-0.5 truncate max-w-full">
-                {subtitle}
-              </p>
+          </div>
+
+          {/* Left side: actions */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            {editAction?.visible && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => editAction.hasChanges && editAction.onClick()}
+                      disabled={!editAction.hasChanges}
+                      className={cn(
+                        'flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all',
+                        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none',
+                        editAction.hasChanges
+                          ? 'hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
+                          : ''
+                      )}
+                      style={{
+                        background: editAction.hasChanges
+                          ? 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)'
+                          : 'linear-gradient(135deg, #9CA3AF 0%, #D1D5DB 100%)',
+                        boxShadow: editAction.hasChanges
+                          ? '0 2px 8px rgba(4, 143, 134, 0.3)'
+                          : 'none',
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={2} />
+                      <span>{editAction.label ?? 'تعديل'}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[280px] text-right">
+                    <p>{editAction.tooltip ?? (editAction.hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {primaryAction && (
+              <div className="flex-shrink-0">{primaryAction}</div>
             )}
           </div>
-          {primaryAction && (
-            <div className="flex-shrink-0">{primaryAction}</div>
-          )}
-         
         </div>
 
-        {/* Row 2: Status + Primary action (aligned end in RTL) */}
-        <div className="flex flex-row items-center justify-between gap-4 px-5 pb-4 min-w-0">
-        
-          <div className="flex flex-row items-center gap-3 flex-wrap min-w-0">
-          </div>
-         
-        </div>
-
-        {/* Tabs strip: full width, light bg, clear separation */}
-        <div className="flex flex-row items-center gap-3 w-full min-w-0 bg-[#F9FAFB] border-t border-[#E5E7EB] px-4 py-3">
+        {/* Tabs strip */}
+        <div className="flex flex-row items-center gap-3 w-full min-w-0 bg-[#FAFBFC] border-t border-[#EAECF0] px-5 py-0">
           <div className="flex-1 flex justify-center min-w-0 overflow-x-auto">
             <Tabs
               items={tabs}
@@ -129,7 +169,7 @@ export function DetailPageHeader({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center justify-center w-9 h-9 rounded-lg text-[#6B7280] hover:bg-white hover:text-[#111827] hover:shadow-sm transition-all flex-shrink-0 border border-transparent hover:border-[#E5E7EB]"
+                    className="flex items-center justify-center w-9 h-9 rounded-lg text-[#98A2B3] hover:bg-white hover:text-[#344054] hover:shadow-sm transition-all flex-shrink-0 border border-transparent hover:border-[#E5E7EB]"
                     aria-label="مساعدة"
                   >
                     <HelpCircle className="w-5 h-5" strokeWidth={1.5} />
@@ -139,8 +179,8 @@ export function DetailPageHeader({
                   side="bottom"
                   className="max-w-[280px] text-right border border-[#E5E7EB] shadow-lg bg-white"
                 >
-                  <p className="font-semibold text-[#111827] mb-1">{helpTooltip.title}</p>
-                  <p className="text-sm text-[#6B7280]">{helpTooltip.description}</p>
+                  <p className="font-bold text-[#101828] mb-1">{helpTooltip.title}</p>
+                  <p className="text-sm text-[#667085]">{helpTooltip.description}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
