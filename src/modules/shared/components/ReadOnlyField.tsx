@@ -7,21 +7,24 @@ export interface ReadOnlyFieldProps {
   className?: string;
   labelClassName?: string;
   valueClassName?: string;
+  icon?: React.ReactNode;
 }
 
 export function ReadOnlyField({
   label,
   value,
   className,
-  labelClassName = 'text-sm font-medium text-gray-700',
-  valueClassName = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right',
+  labelClassName = 'text-[13px] font-semibold text-[#475467] tracking-wide',
+  valueClassName = 'w-full min-h-[44px] px-4 flex items-center bg-[#F9FAFB] border border-[#EAECF0] rounded-xl text-right text-[14px] text-[#101828] font-medium',
+  icon,
 }: ReadOnlyFieldProps) {
   return (
-    <div className={cn('flex flex-col gap-2 w-full', className)}>
+    <div className={cn('flex flex-col gap-1.5 w-full', className)}>
       <label className={labelClassName}>
         {label}
       </label>
-      <div className={valueClassName}>
+      <div className={cn(valueClassName, 'transition-colors')}>
+        {icon && <span className="ml-2 text-[#667085]">{icon}</span>}
         {value ?? '—'}
       </div>
     </div>
