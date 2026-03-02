@@ -6,8 +6,8 @@ import { SuggestAttendeesModal } from '../../../../../UC02/components';
 import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
 import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
-import { getUsers } from '../../../../data/usersApi';
-import type { UserApiResponse } from '../../../../data/usersApi';
+import { searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
+import { getUserDisplayId, getUserDisplayLabel } from '@shared/utils';
 import { Trash2 } from 'lucide-react';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
@@ -93,30 +93,43 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
     try {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-      const items = response.items.map((user: UserApiResponse) => {
-        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
-        const position = user.position ?? (user as Record<string, unknown>).position_name ?? (user as Record<string, unknown>).job_title ?? '';
-        const sectorVal = (user as Record<string, unknown>).sector;
+      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
+      const hasSearch = (search?.trim() ?? '').length > 0;
+
+      if (!hasSearch) {
+        // Initial dropdown: show only manual option, no API call
         return {
-          value: user.id,
-          label: fullName,
-          description: user.email,
-          username: user.username || fullName,
+          items: skip === 0 ? [manualOption] : [],
+          total: 1,
+          skip: 0,
+          limit,
+          has_next: false,
+          has_previous: false,
+        };
+      }
+
+      const response = await searchUsersByEmail(search, skip, limit);
+      const items = response.items.map((user: UserApiResponse) => {
+        const u = user as Record<string, unknown>;
+        const id = getUserDisplayId(u) || user.id;
+        const label = getUserDisplayLabel(u);
+        const position = user.position ?? u.position_name ?? u.job_title ?? u.title ?? '';
+        const sectorVal = u.sector ?? u.department;
+        const email = (user.email ?? u.mail) as string | undefined;
+        const phone = (user.phone_number ?? u.mobile) as string | null | undefined;
+        return {
+          value: id,
+          label,
+          description: email ?? '',
+          username: (user.username ?? u.cn ?? label) as string,
           position: typeof position === 'string' ? position : '',
-          phone_number: user.phone_number || '',
+          phone_number: phone ?? '',
           sector: typeof sectorVal === 'string' ? sectorVal : '',
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
+          first_name: (user.first_name ?? u.givenName) as string,
+          last_name: (user.last_name ?? u.sn) as string,
         };
       });
       items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
-      // Include current search in manual option so it can be used as name when selected (e.g. when no results)
-      const manualOption = { value: MANUAL_ENTRY_VALUE, label: MANUAL_ENTRY_LABEL, __search: search?.trim() ?? '' };
       return {
         items: skip === 0 ? [manualOption, ...items] : items,
         total: skip === 0 ? response.total + 1 : response.total,
@@ -154,9 +167,12 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           : null;
 
       return (
-        <FormAsyncSelectV2
-          value={value}
-          onValueChange={(opt) => {
+        <div className="w-full min-w-0">
+          <FormAsyncSelectV2
+            value={value}
+            defaultOptions={false}
+            fullWidth
+            onValueChange={(opt) => {
             if (!opt) {
               onUpdateRow('user_id', '');
               onUpdateRow('username', '');
@@ -210,7 +226,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           loadOptions={loadUserOptions}
           placeholder="اختر مستخدم أو إدخال يدوي"
           isClearable
-          fullWidth
           isSearchable
           limit={10}
           searchPlaceholder="ابحث عن مستخدم..."
@@ -219,7 +234,8 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           onInputChange={(newValue) => {
             searchInputByRowRef.current[row.id] = newValue;
           }}
-        />
+          />
+        </div>
       );
     },
     [formData.invitees, loadUserOptions, toast]

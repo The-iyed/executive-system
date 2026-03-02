@@ -8,6 +8,7 @@ export { MeetingDateTimeRangePicker, type MeetingDateTimeRangePickerProps } from
 export { MeetingRangePicker } from './MeetingRangePicker';
 export type { MeetingRangeValue, MeetingRangePickerProps } from './MeetingRangePicker.types';
 export { FormTable, type FormTableProps, type FormTableColumn, type FormTableRow, type CustomCellRenderParams } from './FormTable';
+export { getInviteesTableColumns, type InviteesTableColumnsOptions } from './inviteesTableColumns';
 export { FormTextArea, type FormTextAreaProps } from './FormTextArea';
 export { FormSwitch, type FormSwitchProps } from './FormSwitch';
 export { FormRow, type FormRowProps } from './FormRow';
