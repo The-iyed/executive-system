@@ -34,7 +34,7 @@ export const AIGenerateButton: React.FC<AIGenerateButtonProps> = ({
       style={{
         background: isSecondary
           ? 'linear-gradient(135deg, #34C3BA 0%, #048F86 100%)'
-          : '#101828',
+          : 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
       }}
     >
