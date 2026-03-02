@@ -40,10 +40,10 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient, subtitle, onClick, delay = 0 }) => (
-  <FadeUp delay={delay}>
+  <FadeUp delay={delay} className="h-full">
     <button
       onClick={onClick}
-      className="group relative flex items-center gap-4 rounded-[20px] bg-white p-5 text-right w-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+      className="group relative flex items-center gap-4 rounded-[20px] bg-white p-5 text-right w-full h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
       style={{ border: '1px solid rgba(0,0,0,.06)' }}
       dir="rtl"
     >
@@ -58,7 +58,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient, subti
       <div className="relative flex-1 min-w-0">
         <p className="text-[12px] font-medium text-gray-400 tracking-wide">{title}</p>
         <p className="text-[28px] font-extrabold text-gray-800 leading-tight mt-0.5">{value}</p>
-        {subtitle && <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>}
+        {subtitle ? <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p> : <p className="text-[11px] text-gray-400 mt-0.5 invisible">‎</p>}
       </div>
     </button>
   </FadeUp>
