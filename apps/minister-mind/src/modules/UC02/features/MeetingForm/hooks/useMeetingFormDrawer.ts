@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { clearDraftData } from '../utils';
 import { PATH as PATH_UC02 } from '../../../../UC02/routes/paths';
+import { trackEvent } from '@analytics';
 
 const FORM_PARAM = 'form';
 const ID_PARAM = 'id';
@@ -73,6 +74,7 @@ export function useMeetingFormDrawer(options?: UseMeetingFormDrawerOptions) {
 
   const openEditDrawer = useCallback(
     (meetingId: string) => {
+      trackEvent('UC-02', 'uc02_meeting_edit_opened', { meeting_id: meetingId });
       setForceClosed(false);
       clearDraftData();
       const currentPath = window.location.pathname;
