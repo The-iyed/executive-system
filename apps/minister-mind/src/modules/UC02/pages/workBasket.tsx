@@ -5,6 +5,7 @@ import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMee
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
+import { trackEvent } from '@analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -38,6 +39,10 @@ const WorkBasket: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    trackEvent('UC-02', 'uc02_work_basket_viewed');
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -40,6 +40,7 @@ import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { trackEvent } from '@analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
@@ -619,16 +620,21 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
               try {
                 const invitees = values.minister_invitees.map((m) => ({
-                  name: m.full_name,
-                  position: m.position_title,
-                  mobile: m.mobile_number,
-                  email: m.email,
+                  name: m.full_name ?? '',
+                  position: m.position_title ?? '',
+                  mobile: m.mobile_number ?? '',
+                  email: m.email ?? '',
                 }));
-                await createScheduledMeeting({
+                const result = await createScheduledMeeting({
                   meeting_title: values.title,
                   scheduled_start,
                   scheduled_end,
                   invitees,
+                });
+                const meetingId = (result as { id?: string })?.id;
+                trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
+                  meeting_id: meetingId,
+                  meeting_title: values.title,
                 });
                 // Invalidate in background so next time we get server truth (no need to block UI)
                 queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });

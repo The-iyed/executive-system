@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getDraftById, getSubmitterMeeting } from '../../../data';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData } from '../utils';
+import { transformMeetingToInitialData, type MeetingForEdit } from '../utils/transformMeetingToEditData';
 import { useStepNavigation } from './useStepNavigation';
 import { useStepHandlers } from './useStepHandlers';
 import { useMeetingSteps } from './useMeetingSteps';
@@ -11,6 +12,8 @@ import { useScrollToTop } from './useScrollToTop';
 
 export interface UseEditMeetingOptions {
   meetingIdOverride?: string;
+  /** When opening edit from meeting detail: pass meeting from getMeetingById so form loads with same API data */
+  initialMeetingData?: MeetingForEdit | null;
 }
 
 export const useEditMeeting = (options?: UseEditMeetingOptions) => {
@@ -18,32 +21,39 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
   const queryClient = useQueryClient();
   const { id: idFromParams } = useParams<{ id: string }>();
   const id = options?.meetingIdOverride ?? idFromParams ?? undefined;
+  const fromMeetingDetail = !!options?.initialMeetingData;
 
-  const { data: draftData, isLoading, error } = useQuery({
+  const { data: draftDataFromApi, isLoading: isLoadingDraft, error } = useQuery({
     queryKey: ['draft', id, 'edit'],
     queryFn: () => getDraftById(id!),
-    enabled: !!id,
+    enabled: !!id && !fromMeetingDetail,
   });
 
   const { data: submitterMeeting } = useQuery({
     queryKey: ['submitterMeeting', id, 'edit'],
     queryFn: () => getSubmitterMeeting(id!),
-    enabled: !!id,
+    enabled: !!id && !fromMeetingDetail,
   });
 
+  const draftData = fromMeetingDetail ? (options!.initialMeetingData ?? null) : draftDataFromApi;
+  const isLoading = fromMeetingDetail ? false : isLoadingDraft;
+
   const editableFields = useMemo(
-    () => submitterMeeting?.editable_fields ?? draftData?.editable_fields ?? null,
-    [submitterMeeting?.editable_fields, draftData?.editable_fields]
+    () => (fromMeetingDetail ? null : (submitterMeeting?.editable_fields ?? draftDataFromApi?.editable_fields ?? null)),
+    [fromMeetingDetail, submitterMeeting?.editable_fields, draftDataFromApi?.editable_fields]
   );
 
   const initialData = useMemo(() => {
-    if (!draftData) return undefined;
+    if (fromMeetingDetail && options?.initialMeetingData) {
+      return transformMeetingToInitialData(options.initialMeetingData);
+    }
+    if (!draftDataFromApi) return undefined;
     return {
-      step1BasicInfo: transformDraftToStep1Data(draftData),
-      step2Content: transformDraftToStep2ContentData(draftData),
-      step3Invitees: transformDraftToStep3InviteesData(draftData),
+      step1BasicInfo: transformDraftToStep1Data(draftDataFromApi),
+      step2Content: transformDraftToStep2ContentData(draftDataFromApi),
+      step3Invitees: transformDraftToStep3InviteesData(draftDataFromApi),
     };
-  }, [draftData]);
+  }, [fromMeetingDetail, options?.initialMeetingData, draftDataFromApi]);
 
   const { currentStep, handleNext: baseHandleNext, handlePrevious } = useStepNavigation();
 
