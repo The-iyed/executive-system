@@ -385,7 +385,6 @@ export function Step1({
             errors={tableErrors}
             touched={tableTouched}
             errorMessage={errors.meetingAgenda}
-            disabled={isFieldDisabled('meetingAgenda')}
             scrollToRowId={scrollToAgendaRowId}
             onScrolledToRow={() => setScrollToAgendaRowId(null)}
             meetingDurationMinutes={getMeetingDurationMinutes(

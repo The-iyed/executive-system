@@ -1,11 +1,7 @@
-import type { FormTableColumn } from '@/modules/shared';
+import { MEETING_CLASSIFICATION_OPTIONS, getInviteesTableColumns, type FormTableColumn } from '@/modules/shared';
 import { AttendanceMechanism } from '@/modules/shared/types';
 
-export const MEETING_CLASSIFICATION_OPTIONS = [
-  { value: 'STRATEGIC', label: 'استراتيجي' },
-  { value: 'OPERATIONAL', label: 'تشغيلي' },
-  { value: 'ORGANIZATIONAL_STRUCTURING', label: 'بناء تنظيمي' },
-];
+export { MEETING_CLASSIFICATION_OPTIONS };
 
 export const CONFIDENTIALITY_OPTIONS = [
   { value: 'CONFIDENTIAL', label: 'سرّي' },
@@ -61,63 +57,19 @@ export const DIRECTIVE_METHOD_OPTIONS = [
   { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
 ];
 
-export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
-  {
-    id: 'itemNumber',
-    header: '#',
-    width: 'min-w-[100px]',
-  },
-  {
-    id: 'name',
-    header: 'الإسم',
-    type: 'text',
-    placeholder: 'الإسم',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'position',
-    header: 'المنصب',
-    type: 'text',
-    placeholder: 'المنصب',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'sector',
-    header: 'الجهة',
-    type: 'text',
-    placeholder: 'الجهة',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'mobile',
-    header: 'الجوال',
-    type: 'text',
-    placeholder: 'الجوال',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'email',
-    header: 'البريد الإلكتروني',
-    type: 'text',
-    placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'attendance_mechanism',
-    header: 'آلية الحضور',
-    type: 'select',
-    selectOptions: [
-      { value: AttendanceMechanism.PHYSICAL, label: AttendanceMechanism.PHYSICAL },
-      { value: AttendanceMechanism.VIRTUAL, label: AttendanceMechanism.VIRTUAL },
-    ],
-    width: 'min-w-[210px]',
-  },
-  {
-    id: 'action',
-    header: '',
-    width: 'w-[60px]',
-  },
-];
+/** Shared invitees table columns (same structure as UC02 Step3 for alignment). */
+export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
+  nameFieldId: 'name',
+  positionFieldId: 'position',
+  sectorFieldId: 'sector',
+  mobileFieldId: 'mobile',
+  emailFieldId: 'email',
+  attendanceFieldId: 'attendance_mechanism',
+  attendanceOptions: [
+    { value: AttendanceMechanism.PHYSICAL, label: AttendanceMechanism.PHYSICAL },
+    { value: AttendanceMechanism.VIRTUAL, label: AttendanceMechanism.VIRTUAL },
+  ],
+});
 
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
