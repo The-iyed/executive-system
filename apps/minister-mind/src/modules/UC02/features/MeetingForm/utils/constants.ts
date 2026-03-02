@@ -170,6 +170,27 @@ export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   { id: 'action', header: '', width: 'w-[60px]' },
 ];
 
+/** Minister invitees table columns: البريد first, then الاسم، المنصب، الجوال، آلية الحضور، مطلوب، المبرر */
+export const MINISTER_INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: '#', width: 'w-14 shrink-0' },
+  { id: 'email', header: 'البريد', type: 'text', placeholder: 'البريد', width: 'w-[220px] min-w-[220px]' },
+  { id: 'full_name', header: 'الاسم', type: 'text', placeholder: 'الاسم', width: 'w-[180px] min-w-[180px]' },
+  { id: 'position_title', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'w-[160px] min-w-[160px]' },
+  { id: 'mobile_number', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'w-[140px] min-w-[140px]' },
+  {
+    id: 'attendance_mode',
+    header: 'آلية الحضور',
+    type: 'select',
+    selectOptions: [...ATTENDANCE_MODE_OPTIONS],
+    placeholder: 'حضوري / عن بُعد',
+    width: 'w-[140px] min-w-[140px]',
+  },
+  { id: 'view_permission', header: 'مطلوب', type: 'switch', label: false, width: 'w-[90px] min-w-[90px]' },
+  { id: 'sector', header: 'المبرر', type: 'text', placeholder: 'المبرر', width: 'w-[140px] min-w-[140px]' },
+  { id: 'isOwner', header: 'مالك الاجتماع', width: 'w-[120px] min-w-[120px]' },
+  { id: 'action', header: '', width: 'w-14 shrink-0' },
+];
+
 /** Max hours between now and meeting start without requiring presentation_required to be set when no file is uploaded. */
 export const MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION = 48;
 
