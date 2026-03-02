@@ -2,61 +2,126 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area,
+  RadialBarChart, RadialBar,
 } from 'recharts';
 import { Icon } from '@iconify/react';
 import { getAssignedSchedulingRequests } from '../data/meetingsApi';
-import { getDirectivesPaginated, DirectiveApiResponse } from '../data/directivesApi';
+import { getDirectivesPaginated } from '../data/directivesApi';
 import { getWaitingList } from '../data/meetingsApi';
 import { MeetingStatus, getMeetingStatusLabel } from '@/modules/shared';
 import { PATH } from '../routes/paths';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { motion } from 'motion/react';
 
-// ── Stat card ──────────────────────────────────────────
+/* ─── animated wrapper ────────────────────────────────── */
+const FadeUp: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ children, delay = 0, className }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.45, delay, ease: [.22,1,.36,1] }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
+/* ─── stat card ───────────────────────────────────────── */
 interface StatCardProps {
   title: string;
   value: number | string;
   icon: string;
-  color: string;
-  bgColor: string;
+  gradient: string;
   subtitle?: string;
   onClick?: () => void;
+  delay?: number;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor, subtitle, onClick }) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-4 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 text-right transition-shadow hover:shadow-md w-full"
-    dir="rtl"
-  >
-    <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: bgColor }}>
-      <Icon icon={icon} width={24} height={24} style={{ color }} />
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{title}</p>
-      <p className="text-2xl font-bold text-[hsl(var(--foreground))] mt-0.5">{value}</p>
-      {subtitle && <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">{subtitle}</p>}
-    </div>
-  </button>
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient, subtitle, onClick, delay = 0 }) => (
+  <FadeUp delay={delay}>
+    <button
+      onClick={onClick}
+      className="group relative flex items-center gap-4 rounded-[20px] bg-white p-5 text-right w-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+      style={{ border: '1px solid rgba(0,0,0,.06)' }}
+      dir="rtl"
+    >
+      {/* subtle gradient bg on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(135deg, ${gradient.split(',')[0]}08, transparent)` }} />
+      <div
+        className="relative flex-shrink-0 w-[52px] h-[52px] rounded-2xl flex items-center justify-center shadow-sm"
+        style={{ background: `linear-gradient(135deg, ${gradient})` }}
+      >
+        <Icon icon={icon} width={26} height={26} className="text-white" />
+      </div>
+      <div className="relative flex-1 min-w-0">
+        <p className="text-[12px] font-medium text-gray-400 tracking-wide">{title}</p>
+        <p className="text-[28px] font-extrabold text-gray-800 leading-tight mt-0.5">{value}</p>
+        {subtitle && <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>}
+      </div>
+    </button>
+  </FadeUp>
 );
 
-// ── Colors ─────────────────────────────────────────────
-const CHART_COLORS = ['#048F86', '#3C6FD1', '#F59E0B', '#EF4444', '#8B5CF6', '#10B981', '#EC4899', '#6366F1'];
+/* ─── chart card wrapper ──────────────────────────────── */
+const ChartCard: React.FC<{ title: string; children: React.ReactNode; delay?: number; className?: string }> = ({ title, children, delay = 0, className = '' }) => (
+  <FadeUp delay={delay} className={className}>
+    <div
+      className="rounded-[20px] bg-white p-6 h-full"
+      style={{ border: '1px solid rgba(0,0,0,.06)' }}
+    >
+      <h3 className="text-[15px] font-bold text-gray-700 mb-5 text-right">{title}</h3>
+      {children}
+    </div>
+  </FadeUp>
+);
+
+/* ─── custom tooltip ──────────────────────────────────── */
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-gray-900 text-white px-4 py-2.5 rounded-xl text-[12px] shadow-2xl" dir="rtl">
+      {label && <p className="font-semibold mb-1">{label}</p>}
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ background: p.color || p.fill }} />
+          {p.name}: <span className="font-bold">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+};
+
+/* ─── colors ──────────────────────────────────────────── */
+const GRADIENTS = {
+  teal: '#0EA5A0, #048F86',
+  blue: '#5B8DEF, #3C6FD1',
+  purple: '#A78BFA, #7C3AED',
+  amber: '#FBBf24, #F59E0B',
+};
 
 const STATUS_COLORS: Record<string, string> = {
   [MeetingStatus.UNDER_REVIEW]: '#3C6FD1',
   [MeetingStatus.SCHEDULED]: '#10B981',
+  [MeetingStatus.SCHEDULED_SCHEDULING]: '#10B981',
+  [MeetingStatus.SCHEDULED_CONTENT]: '#10B981',
   [MeetingStatus.WAITING]: '#F59E0B',
   [MeetingStatus.REJECTED]: '#EF4444',
   [MeetingStatus.CANCELLED]: '#9CA3AF',
   [MeetingStatus.CLOSED]: '#6366F1',
   [MeetingStatus.UNDER_GUIDANCE]: '#8B5CF6',
   [MeetingStatus.UNDER_CONTENT_REVIEW]: '#EC4899',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: '#F97316',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: '#F97316',
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: '#14B8A6',
+  [MeetingStatus.SCHEDULED_DELAYED]: '#EAB308',
+  [MeetingStatus.SCHEDULED_DELEGATED]: '#6366F1',
 };
 
-// ── Dashboard ──────────────────────────────────────────
+const BAR_COLORS = ['#048F86', '#3C6FD1', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'];
+
+/* ─── Dashboard ───────────────────────────────────────── */
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
@@ -83,7 +148,6 @@ const Dashboard: React.FC = () => {
   const directiveItems = directives?.items ?? [];
   const waitingItems = waitingList?.items ?? [];
 
-  // ── Computed stats ───────────────────────────────
   const totalMeetings = meetings?.total ?? meetingItems.length;
   const totalDirectives = directives?.total ?? directiveItems.length;
   const totalWaiting = waitingList?.total ?? waitingItems.length;
@@ -97,7 +161,7 @@ const Dashboard: React.FC = () => {
 
   const openDirectives = directiveItems.filter(d => d.directive_status !== 'CLOSED' && d.directive_status !== 'COMPLETED').length;
 
-  // ── Status distribution for pie chart ────────────
+  /* ── pie data ────────────────────────── */
   const statusCounts = meetingItems.reduce<Record<string, number>>((acc, m) => {
     acc[m.status] = (acc[m.status] || 0) + 1;
     return acc;
@@ -111,7 +175,7 @@ const Dashboard: React.FC = () => {
     }))
     .sort((a, b) => b.value - a.value);
 
-  // ── Meetings by month (area chart) ──────────────
+  /* ── monthly trend ───────────────────── */
   const monthlyData = React.useMemo(() => {
     const months: Record<string, number> = {};
     meetingItems.forEach(m => {
@@ -121,213 +185,233 @@ const Dashboard: React.FC = () => {
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       months[key] = (months[key] || 0) + 1;
     });
+    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
     return Object.entries(months)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([month, count]) => {
-        const [y, m] = month.split('-');
-        const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        const m = month.split('-')[1];
         return { name: monthNames[parseInt(m) - 1] || month, count };
       });
   }, [meetingItems]);
 
-  // ── Directive status bar chart ──────────────────
+  /* ── directive bar data ──────────────── */
   const directiveStatusData = React.useMemo(() => {
     const counts: Record<string, number> = {};
     directiveItems.forEach(d => {
       const s = d.directive_status || 'غير محدد';
       counts[s] = (counts[s] || 0) + 1;
     });
+    const labelMap: Record<string, string> = { OPEN: 'مفتوح', CLOSED: 'مغلق', IN_PROGRESS: 'جاري', COMPLETED: 'مكتمل', PENDING: 'قيد الانتظار' };
     return Object.entries(counts).map(([status, count]) => ({
-      name: status === 'OPEN' ? 'مفتوح' : status === 'CLOSED' ? 'مغلق' : status === 'IN_PROGRESS' ? 'جاري' : status === 'COMPLETED' ? 'مكتمل' : status,
+      name: labelMap[status] || status,
       count,
     }));
   }, [directiveItems]);
 
-  // ── Recent meetings ────────────────────────────
+  /* ── completion radial ───────────────── */
+  const completionPct = totalMeetings > 0
+    ? Math.round((scheduledCount / totalMeetings) * 100)
+    : 0;
+  const radialData = [{ name: 'مكتمل', value: completionPct, fill: '#048F86' }];
+
+  /* ── recent meetings ─────────────────── */
   const recentMeetings = [...meetingItems]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+    .slice(0, 6);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-3 border-[var(--color-primary-500)] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 rounded-full border-[3px] border-[#048F86] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6" dir="rtl">
-      {/* ── Header ──────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">لوحة المعلومات</h1>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-1">نظرة عامة على الاجتماعات والتوجيهات وسير العمل</p>
-        </div>
+    <div className="flex flex-col gap-5 px-2 py-4 lg:px-4" dir="rtl">
+      {/* ── Stat cards ──────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard title="إجمالي الطلبات" value={totalMeetings} icon="solar:folder-with-files-bold-duotone" gradient={GRADIENTS.teal} subtitle={`${underReviewCount} قيد المراجعة`} onClick={() => navigate(PATH.WORK_BASKET)} delay={0} />
+        <StatCard title="الاجتماعات المجدولة" value={scheduledCount} icon="solar:calendar-mark-bold-duotone" gradient={GRADIENTS.blue} onClick={() => navigate(PATH.SCHEDULED_MEETINGS)} delay={0.06} />
+        <StatCard title="التوجيهات" value={totalDirectives} icon="solar:document-text-bold-duotone" gradient={GRADIENTS.purple} subtitle={`${openDirectives} مفتوحة`} onClick={() => navigate(PATH.DIRECTIVES)} delay={0.12} />
+        <StatCard title="قائمة الانتظار" value={totalWaiting} icon="solar:clock-circle-bold-duotone" gradient={GRADIENTS.amber} onClick={() => navigate(PATH.WAITING_LIST)} delay={0.18} />
       </div>
 
-      {/* ── Stat cards ──────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="إجمالي الطلبات"
-          value={totalMeetings}
-          icon="solar:folder-with-files-bold"
-          color="#048F86"
-          bgColor="rgba(4,143,134,0.1)"
-          subtitle={`${underReviewCount} قيد المراجعة`}
-          onClick={() => navigate(PATH.WORK_BASKET)}
-        />
-        <StatCard
-          title="الاجتماعات المجدولة"
-          value={scheduledCount}
-          icon="solar:calendar-mark-bold"
-          color="#3C6FD1"
-          bgColor="rgba(60,111,209,0.1)"
-          onClick={() => navigate(PATH.SCHEDULED_MEETINGS)}
-        />
-        <StatCard
-          title="التوجيهات"
-          value={totalDirectives}
-          icon="solar:document-text-bold"
-          color="#8B5CF6"
-          bgColor="rgba(139,92,246,0.1)"
-          subtitle={`${openDirectives} مفتوحة`}
-          onClick={() => navigate(PATH.DIRECTIVES)}
-        />
-        <StatCard
-          title="قائمة الانتظار"
-          value={totalWaiting}
-          icon="solar:clock-circle-bold"
-          color="#F59E0B"
-          bgColor="rgba(245,158,11,0.1)"
-          onClick={() => navigate(PATH.WAITING_LIST)}
-        />
-      </div>
-
-      {/* ── Charts row ──────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Status distribution pie */}
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
-          <h3 className="text-[15px] font-semibold text-[hsl(var(--foreground))] mb-4">توزيع حالات الطلبات</h3>
+      {/* ── Row 1: Donut + Radial + Area ────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Donut chart */}
+        <ChartCard title="توزيع حالات الطلبات" delay={0.2} className="lg:col-span-5">
           {pieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={95}
-                  paddingAngle={3}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,.08)', fontSize: 13 }}
-                  formatter={(value: number, name: string) => [value, name]}
-                />
-                <Legend
-                  layout="vertical"
-                  align="right"
-                  verticalAlign="middle"
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12, lineHeight: '22px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex items-center gap-2" dir="rtl">
+              <ResponsiveContainer width="55%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                    cornerRadius={6}
+                  >
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2.5 flex-1">
+                {pieData.map((d, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[12px]">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.fill }} />
+                    <span className="text-gray-500 truncate">{d.name}</span>
+                    <span className="font-bold text-gray-700 mr-auto">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
-            <p className="text-center text-[hsl(var(--muted-foreground))] py-10 text-sm">لا توجد بيانات</p>
+            <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
           )}
-        </div>
+        </ChartCard>
 
-        {/* Monthly trend area */}
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
-          <h3 className="text-[15px] font-semibold text-[hsl(var(--foreground))] mb-4">الطلبات حسب الشهر</h3>
+        {/* Completion radial */}
+        <ChartCard title="نسبة الإنجاز" delay={0.26} className="lg:col-span-3">
+          <div className="flex flex-col items-center">
+            <ResponsiveContainer width="100%" height={200}>
+              <RadialBarChart
+                cx="50%"
+                cy="50%"
+                innerRadius="70%"
+                outerRadius="100%"
+                startAngle={90}
+                endAngle={-270}
+                data={radialData}
+                barSize={16}
+              >
+                <RadialBar
+                  dataKey="value"
+                  cornerRadius={10}
+                  background={{ fill: '#F3F4F6' }}
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className="flex flex-col items-center -mt-[130px] mb-8">
+              <span className="text-[36px] font-black text-gray-800">{completionPct}%</span>
+              <span className="text-[11px] text-gray-400 mt-0.5">من الطلبات مجدولة</span>
+            </div>
+          </div>
+        </ChartCard>
+
+        {/* Monthly area chart */}
+        <ChartCard title="الطلبات حسب الشهر" delay={0.32} className="lg:col-span-4">
           {monthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={monthlyData}>
                 <defs>
-                  <linearGradient id="colorMeetings" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#048F86" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#048F86" stopOpacity={0} />
+                  <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#048F86" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#048F86" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,.08)', fontSize: 13 }} />
-                <Area type="monotone" dataKey="count" stroke="#048F86" strokeWidth={2.5} fill="url(#colorMeetings)" name="الطلبات" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} allowDecimals={false} width={30} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#048F86"
+                  strokeWidth={3}
+                  fill="url(#gradArea)"
+                  name="الطلبات"
+                  dot={{ r: 5, fill: '#048F86', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 7, fill: '#048F86', stroke: '#fff', strokeWidth: 3 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-[hsl(var(--muted-foreground))] py-10 text-sm">لا توجد بيانات</p>
+            <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
           )}
-        </div>
+        </ChartCard>
       </div>
 
-      {/* ── Second row: directives bar + recent meetings ── */}
+      {/* ── Row 2: Bar + Recent meetings ────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Directive status bar chart */}
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
-          <h3 className="text-[15px] font-semibold text-[hsl(var(--foreground))] mb-4">حالات التوجيهات</h3>
+        {/* Directive bar chart */}
+        <ChartCard title="حالات التوجيهات" delay={0.36}>
           {directiveStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={directiveStatusData} barSize={32}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,.08)', fontSize: 13 }} />
-                <Bar dataKey="count" name="العدد" radius={[8, 8, 0, 0]}>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={directiveStatusData} barSize={40}>
+                <defs>
+                  {BAR_COLORS.map((c, i) => (
+                    <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={c} stopOpacity={1} />
+                      <stop offset="100%" stopColor={c} stopOpacity={0.6} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} allowDecimals={false} width={30} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="count" name="العدد" radius={[10, 10, 4, 4]}>
                   {directiveStatusData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    <Cell key={i} fill={`url(#barGrad${i % BAR_COLORS.length})`} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-[hsl(var(--muted-foreground))] py-10 text-sm">لا توجد بيانات</p>
+            <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
           )}
-        </div>
+        </ChartCard>
 
-        {/* Recent meetings list */}
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
-          <h3 className="text-[15px] font-semibold text-[hsl(var(--foreground))] mb-4">أحدث الطلبات</h3>
-          <div className="flex flex-col gap-3">
-            {recentMeetings.length > 0 ? recentMeetings.map((m) => (
-              <button
+        {/* Recent meetings */}
+        <ChartCard title="أحدث الطلبات" delay={0.4}>
+          <div className="flex flex-col gap-1">
+            {recentMeetings.length > 0 ? recentMeetings.map((m, i) => (
+              <motion.button
                 key={m.id}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.45 + i * 0.05 }}
                 onClick={() => navigate(`/meeting/${m.id}`)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors text-right w-full"
+                className="flex items-center gap-3 p-3.5 rounded-2xl hover:bg-gray-50 transition-colors text-right w-full group"
               >
                 <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: STATUS_COLORS[m.status] || '#9CA3AF' }}
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-4 ring-opacity-20"
+                  style={{
+                    background: STATUS_COLORS[m.status] || '#9CA3AF',
+                    ringColor: (STATUS_COLORS[m.status] || '#9CA3AF') + '33',
+                  }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[hsl(var(--foreground))] truncate">{m.meeting_title}</p>
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">
-                    {getMeetingStatusLabel(m.status)} · {m.submitter_name}
+                  <p className="text-[13px] font-semibold text-gray-700 truncate group-hover:text-[#048F86] transition-colors">{m.meeting_title}</p>
+                  <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{
+                      background: (STATUS_COLORS[m.status] || '#9CA3AF') + '15',
+                      color: STATUS_COLORS[m.status] || '#9CA3AF',
+                    }}>
+                      {getMeetingStatusLabel(m.status)}
+                    </span>
+                    <span>·</span>
+                    <span>{m.submitter_name}</span>
                   </p>
                 </div>
-                <span className="text-[11px] text-[hsl(var(--muted-foreground))] flex-shrink-0">
+                <span className="text-[10px] text-gray-300 flex-shrink-0 group-hover:text-gray-500 transition-colors">
                   {(() => {
-                    try {
-                      return formatDistanceToNow(new Date(m.created_at), { addSuffix: true, locale: ar });
-                    } catch { return ''; }
+                    try { return formatDistanceToNow(new Date(m.created_at), { addSuffix: true, locale: ar }); } catch { return ''; }
                   })()}
                 </span>
-              </button>
+              </motion.button>
             )) : (
-              <p className="text-center text-[hsl(var(--muted-foreground))] py-6 text-sm">لا توجد طلبات</p>
+              <p className="text-center text-gray-400 py-10 text-sm">لا توجد طلبات</p>
             )}
           </div>
-        </div>
+        </ChartCard>
       </div>
     </div>
   );
