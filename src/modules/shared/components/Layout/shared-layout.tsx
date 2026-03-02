@@ -7,6 +7,7 @@ import { UserAvatar } from '../user-avatar';
 import { WelcomeSectionProps } from '../welcome-section';
 import { type ContentBarFilterTab } from '../content-bar';
 import { Logo } from '../logo';
+import { Bell } from 'lucide-react';
 
 export interface SharedLayoutProps {
   children: React.ReactNode;
@@ -31,7 +32,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   const { navigationItems: dynamicNavItems } = useUserNavigation();
 
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const isScrolled = useContainerScroll(contentRef, 30);
+  useContainerScroll(contentRef, 30);
+  const isScrolled = true;
 
   const finalNavigationItems = useMemo(() => {
     if (useDynamicNavigation || !navigationItems) {
@@ -47,77 +49,61 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   }, [navigationItems, dynamicNavItems, useDynamicNavigation, user?.use_cases]);
 
   return (
-    <div className="h-screen flex flex-col relative w-full overflow-hidden" dir="rtl">
+    <div className="h-screen flex flex-col relative w-full overflow-hidden bg-gray-50" dir="rtl">
       <div className={twMerge('relative flex flex-col flex-1 min-h-0 z-10', headerClassName)}>
-         <header
-          className={twMerge(
-            `
-            sticky top-4 z-50
-            flex items-center justify-between gap-4
-            px-10
-            transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
-            `,
-            isScrolled
-              ? `
-                py-3
-                rounded-full
-                bg-white/50
-                backdrop-blur-3xl
-                shadow-[0_10px_40px_rgba(0,0,0,0.12)]
-                border border-white/30
-                scale-[0.98]
-                `
-              : `
-                py-6
-                rounded-t-[14px]
-                bg-transparent
-                `
-          )}
+        {/* ─── Navbar ─── */}
+        <header
+          className="
+            sticky top-3 z-50 mx-4
+            flex items-center justify-between
+            h-[60px] px-5
+            rounded-3xl
+            bg-white
+            shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]
+            border border-gray-100
+          "
         >
-          <div
-            className={twMerge(
-              'transition-all duration-500',
-              isScrolled ? 'scale-90' : 'scale-100'
-            )}
-          >
+          {/* Right: Logo */}
+          <div className="flex-shrink-0">
             <Logo />
           </div>
 
-          <div
-            className="flex flex-row-reverse items-center gap-4 flex-1 justify-center min-w-0"
-          >
+          {/* Center: Navigation — no wrapper bg, no border-radius on container */}
+          <nav className="flex-1 flex justify-center min-w-0">
             {isAuthenticated && (
-              <NavigationActions 
-                items={finalNavigationItems} 
-                variant="pill" 
+              <NavigationActions
+                items={finalNavigationItems}
+                variant="pill"
               />
             )}
-          </div>
+          </nav>
 
+          {/* Left: Actions */}
           {isAuthenticated && (
-                <div
-                 className={twMerge(
-                   'transition-all duration-500',
-                   isScrolled ? 'scale-90' : 'scale-100'
-                 )}
-               >            
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm border border-gray-200 p-0.5">
-                <UserAvatar compact />
-              </div>
-         
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Notification bell */}
+              <button
+                className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
+                aria-label="الإشعارات"
+              >
+                <Bell className="w-[18px] h-[18px]" />
+                <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-7 bg-gray-200" />
+
+              {/* User avatar */}
+              <UserAvatar compact />
             </div>
           )}
         </header>
+
+        {/* ─── Content ─── */}
         <div
           ref={contentRef}
           className={twMerge(
-            `
-            flex-1 min-h-0
-            flex flex-col
-            rounded-t-[31px]
-            px-6 pb-6
-            overflow-auto
-            `,
+            'flex-1 min-h-0 flex flex-col px-6 pb-6 pt-4 overflow-auto',
             contentContainerClassName
           )}
         >

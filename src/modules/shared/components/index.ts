@@ -33,11 +33,13 @@ export {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
   CalendarEvent,
+  MonthlyCalendarGrid,
   type WeeklyCalendarNavigationProps,
   type WeeklyCalendarGridProps,
   type CalendarEventProps,
   type CalendarEventData,
   type EventType,
+  type CalendarViewMode,
 } from './calendar';// Form Components
 export {
   FormField,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
-import pdfIcon from '../../shared/assets/pdf.svg';
+import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@radix-ui/react-collapsible';
 import { 
   MeetingStatus, 
   MeetingStatusLabels, 
@@ -15,7 +15,6 @@ import {
   MeetingConfidentiality,
   MeetingChannelLabels,
   StatusBadge,
-  Tabs,
   DetailPageHeader,
   type TableColumn,
   AIGenerateButton,
@@ -33,6 +32,7 @@ import {
   MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
   formatDateArabic,
+  formatTimeAgoArabic,
   isValidPhone,
 } from '@/modules/shared'; 
 import {
@@ -98,6 +98,7 @@ import {
 import { EditMeeting } from '../../UC01/features/MeetingForm/features/edit';
 import FormMeetingModal from '../../UC01/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import { trackEvent } from '@analytics';
+import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -371,8 +372,9 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
-  // Scheduling consultation modal state (multiple consultants)
+  // Scheduling consultation inline chat state (multiple consultants)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+  const [showConsultantPicker, setShowConsultantPicker] = useState(false);
   const [consultationForm, setConsultationForm] = useState({
     consultant_user_ids: [] as string[],
     consultation_question: '',
@@ -519,6 +521,7 @@ const MeetingDetail: React.FC = () => {
     mobile?: string;
     attendance_channel?: AttendanceChannel;
     access_permission?: boolean;
+    isEditing?: boolean;
   }>>([]);
 
   // Add new invitee
@@ -534,6 +537,7 @@ const MeetingDetail: React.FC = () => {
       mobile: '',
       attendance_channel: 'PHYSICAL' as AttendanceChannel,
       access_permission: false,
+      isEditing: true,
     };
     setLocalInvitees((prev) => [...prev, newInvitee]);
   };
@@ -577,6 +581,7 @@ const MeetingDetail: React.FC = () => {
       justification: null,
       access_permission: inv.access_permission ?? false,
       isLocal: true,
+      isEditing: inv.isEditing ?? true,
       position: inv.position ?? '',
       sector: inv.sector ?? '',
       mobile: inv.mobile ?? '',
@@ -1023,7 +1028,7 @@ const MeetingDetail: React.FC = () => {
         page: 1,
         limit: 50,
       }),
-    enabled: isConsultationModalOpen,
+    enabled: activeTab === 'scheduling-consultation',
   });
 
   const consultants: ConsultantUser[] = consultantsResponse?.items || [];
@@ -1041,7 +1046,7 @@ const MeetingDetail: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       queryClient.invalidateQueries({ queryKey: ['consultation-records', id, 'SCHEDULING'] });
-      setIsConsultationModalOpen(false);
+      setShowConsultantPicker(false);
       setConsultationForm({
         consultant_user_ids: [],
         consultation_question: '',
@@ -2288,7 +2293,15 @@ const MeetingDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center" dir="rtl">
-        <div className="text-gray-600">جاري التحميل...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-[3px] border-[#EAECF0] border-t-[#048F86] animate-spin" />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[15px] font-semibold text-[#344054]">جاري تحميل بيانات الاجتماع</p>
+            <p className="text-[13px] text-[#667085]">يرجى الانتظار...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2297,47 +2310,47 @@ const MeetingDetail: React.FC = () => {
   if (error || !meeting) {
     return (
       <div className="w-full h-full flex items-center justify-center" dir="rtl">
-        <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
+        <div className="flex flex-col items-center gap-4 max-w-sm text-center">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center">
+            <AlertCircle className="w-7 h-7 text-red-500" />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[15px] font-bold text-[#101828]">حدث خطأ أثناء تحميل البيانات</p>
+            <p className="text-[13px] text-[#667085]">تعذر تحميل بيانات الاجتماع. يرجى المحاولة مرة أخرى.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-5 py-2 rounded-xl border border-[#D0D5DD] bg-white text-[#344054] text-sm font-semibold hover:bg-[#F9FAFB] transition-colors shadow-sm"
+          >
+            العودة
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
-      {/* Single parent: no bg, no extra container — only head and content are white cards with gap */}
-      <div className="flex-1 min-h-0 flex flex-col gap-2 pr-5 min-w-0">
-        {/* Head: shared detail page header (back, title, status, primary action, tabs) */}
-        <div className="flex flex-col flex-shrink-0 pb-3 min-w-0">
+      <div className="flex-1 min-h-0 flex flex-col gap-3 pr-5 min-w-0">
+        {/* Head: shared detail page header */}
+        <div className="flex flex-col flex-shrink-0 min-w-0">
           <DetailPageHeader
             title={`مراجعة طلب الاجتماع (${meeting.request_number})`}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
             onBack={() => navigate(-1)}
             statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />}
             hasChanges={hasChanges}
+            editAction={{
+              visible: meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED,
+              hasChanges,
+              onClick: () => setIsEditConfirmOpen(true),
+            }}
             primaryAction={
-              <button
-                type="button"
+              <AIGenerateButton
+                label="تقييم جاهزية الاجتماع"
                 onClick={() => setIsQualityModalOpen(true)}
-                className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-full flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
-                style={{
-                  fontSize: '11px',
-                  lineHeight: '14px',
-                  background: '#34C3BA',
-                  boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
-                }}
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  تقييم جاهزية الاجتماع
-                  <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
-                    <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
-                    <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
-                    <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
-                    <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
-                    <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
-                  </svg>
-                </span>
-              </button>
+              />
             }
             tabs={tabs}
             activeTab={activeTab}
@@ -2346,13 +2359,13 @@ const MeetingDetail: React.FC = () => {
           />
         </div>
 
-        {/* Content: white card, takes full remaining height, gap above from head - min-w-0 to prevent overflow */}
+        {/* Content card */}
         <div
-          className="w-full flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white"
-          style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
+          className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-white justify-center border border-[#EAECF0]"
+          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
         >
           {/* Edit button: in tab content area; opens UC01 EditMeeting form */}
-          {meeting && id && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
+          {/* {meeting && id && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
             <div className="flex justify-end flex-shrink-0" dir="rtl">
               <TooltipProvider>
                 <Tooltip>
@@ -2375,7 +2388,7 @@ const MeetingDetail: React.FC = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-          )}
+          )} */}
 
           {/* Tab content wrapper: flex-1 so it takes remaining space */}
           <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row justify-center">
@@ -2396,167 +2409,181 @@ const MeetingDetail: React.FC = () => {
 
           {/* Tab: المحتوى – العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
           {activeTab === 'content' && (
-            <div className="flex flex-col gap-8 w-full min-w-0 max-w-full self-stretch" dir="rtl" style={{ width: '100%', minWidth: 0, flex: '1 1 0%' }}>
-              {/* Section header with gradient accent */}
-              <div className="flex items-center gap-3 pb-2 border-b border-[#EAECF0]">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#048F86] to-[#34C3BA] text-white shadow-[0_4px_14px_rgba(4,143,134,0.35)]">
-                  <FileText className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#101828]">المحتوى</h3>
-                  <p className="text-sm text-[#667085]">العروض التقديمية والمرفقات والملاحظات</p>
-                </div>
-              </div>
+            <div className="flex flex-col gap-6 w-full min-w-0 max-w-full self-stretch" dir="rtl" style={{ width: '100%', minWidth: 0, flex: '1 1 0%' }}>
 
-              {/* التوجيهات المرتبطة بالاجتماع – same table as إضافة التوجيهات (contentRequestDetail) */}
+              {/* ─── التوجيهات المرتبطة بالاجتماع ─── */}
               {contentApprovalDirectivesRows.length > 0 && (
-                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                  <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                    <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                     </div>
-                    <label className="text-sm font-bold text-[#344054]">التوجيهات المرتبطة بالاجتماع</label>
+                    <h3 className="text-[15px] font-bold text-[#1F2937]">التوجيهات المرتبطة بالاجتماع</h3>
                   </div>
-                  <div className="p-5">
-                    <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-                      <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                          <tr>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">التوجيه</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-32">الموعد النهائي</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-28">الحالة</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 min-w-[120px]">المعينون</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {contentApprovalDirectivesRows.map((row, index) => {
-                            const d = row.deadline ? new Date(row.deadline) : null;
-                            const assigneesList = (row.responsible_persons ?? '')
-                              .split(/[،,]/)
-                              .map((s) => s.trim())
-                              .filter(Boolean);
-                            return (
-                              <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                                <td className="px-4 py-3 text-sm text-gray-700" dir="rtl">{row.directive_text || '—'}</td>
-                                <td className="px-4 py-3 text-sm text-gray-700">{d ? formatDateArabic(d) : '—'}</td>
-                                <td className="px-4 py-3 text-sm text-gray-700">{translateDirectiveStatus(row.directive_status)}</td>
-                                <td className="px-4 py-3" dir="rtl">
-                                  <div className="flex flex-wrap gap-1.5 items-center">
-                                    {assigneesList.length === 0 ? (
-                                      <span className="text-sm text-gray-500">—</span>
-                                    ) : (
-                                      assigneesList.map((email, i) => (
-                                        <span
-                                          key={`${email}-${i}`}
-                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#008774]/15 text-[#008774] text-xs"
-                                        >
-                                          {email}
-                                        </span>
-                                      ))
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                  <div className="p-5 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#F3F4F6]">
+                          <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-12">#</th>
+                          <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">التوجيه</th>
+                          <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-32">الموعد النهائي</th>
+                          <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-28">الحالة</th>
+                          <th className="px-4 py-3 text-right font-semibold text-[#6B7280] min-w-[120px]">المعينون</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F9FAFB]">
+                        {contentApprovalDirectivesRows.map((row, index) => {
+                          const d = row.deadline ? new Date(row.deadline) : null;
+                          const assigneesList = (row.responsible_persons ?? '')
+                            .split(/[،,]/)
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          return (
+                            <tr key={index} className="group hover:bg-[#F9FAFB] transition-colors">
+                              <td className="px-4 py-3.5 text-[#9CA3AF] font-medium">{index + 1}</td>
+                              <td className="px-4 py-3.5 text-[#374151]" dir="rtl">{row.directive_text || '—'}</td>
+                              <td className="px-4 py-3.5 text-[#6B7280]">{d ? formatDateArabic(d) : '—'}</td>
+                              <td className="px-4 py-3.5">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#F3F4F6] text-[#374151] text-xs font-medium">
+                                  {translateDirectiveStatus(row.directive_status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3.5" dir="rtl">
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                  {assigneesList.length === 0 ? (
+                                    <span className="text-[#9CA3AF]">—</span>
+                                  ) : (
+                                    assigneesList.map((email, i) => (
+                                      <span
+                                        key={`${email}-${i}`}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#048F86]/8 text-[#048F86] text-xs font-medium"
+                                      >
+                                        {email}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* الملخّص التنفيذي */}
-              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#8F751E]/08 to-transparent border-b border-[#EAECF0]">
-                  <div className="w-8 h-8 rounded-lg bg-[#8F751E]/12 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-[#8F751E]" strokeWidth={1.8} />
+              {/* ─── الملخّص التنفيذي ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
-                  <label className="text-sm font-bold text-[#344054]">الملخّص التنفيذي</label>
+                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
                 </div>
-                <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
+                <div className="p-6">
                   {(() => {
                     const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
                     const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
                     const hasExec = execSummaryText || execSummaryAttachments.length > 0;
                     if (!hasExec) {
-                      return <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">—</div>;
+                      return (
+                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                          </div>
+                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
+                        </div>
+                      );
                     }
                     return (
-                      <div className="flex flex-col gap-4 max-w-[800px]">
-                        {execSummaryText && <div className="w-full min-h-16 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-right text-[#475467] whitespace-pre-wrap">{execSummaryText}</div>}
-                        {execSummaryAttachments.length > 0 && execSummaryAttachments.map((att) => (
-                          <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
-                            <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#E4E7EC] rounded-xl">
-                              {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                              <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                              <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[rgba(143,117,30,0.08)] text-[#8F751E] transition-colors"><Download className="w-4 h-4" /></a>
-                              <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-gray-100 text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
-                            </div>
+                      <div className="flex flex-col gap-4">
+                        {execSummaryText && (
+                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
+                            {execSummaryText}
                           </div>
-                        ))}
+                        )}
+                        {execSummaryAttachments.length > 0 && (
+                          <div className="grid grid-cols-1 gap-3">
+                            {execSummaryAttachments.map((att) => (
+                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
+                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                                <div className="flex flex-col items-end min-w-0 flex-1">
+                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
+                                  <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                 </div>
-              </div>
+              </section>
 
-              {/* العرض التقديمي */}
-              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                  <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                    <FileCheck className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
+              {/* ─── العرض التقديمي ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <FileCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-[15px] font-bold text-[#1F2937]">العرض التقديمي</h3>
                   </div>
-                  <label className="text-sm font-bold text-[#344054]">العرض التقديمي</label>
+                  {canEdit && ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length > 0 || newPresentationAttachments.length > 0) && (
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] cursor-pointer transition-colors shadow-sm">
+                      <Plus className="w-4 h-4" />
+                      إضافة عرض
+                      <input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                    </label>
+                  )}
                 </div>
-                <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
-                <TooltipProvider>
-                    <div className="flex flex-col max-w-[800px] gap-4">
-                  {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
-                        <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
-                          <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#009883]/40 rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#009883] hover:shadow-[0px_2px_8px_rgba(4,143,134,0.12)] transition-all duration-200">
-                            {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                            <div className="flex flex-col items-end min-w-0 flex-1">
-                              <span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span>
-                              <span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <div className="flex items-center rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-0.5">
-                        {att.replaces_attachment_id != null && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                        onClick={() => {
-                                          compareAbortControllerRef.current?.abort();
-                                          compareAbortControllerRef.current = new AbortController();
-                                          setComparePresentationsResult(null);
-                                          setCompareErrorDetail(null);
-                                          setIsComparePresentationsModalOpen(true);
-                                          compareByAttachmentMutation.mutate({
-                                            attachmentId: att.id,
-                                            signal: compareAbortControllerRef.current.signal,
-                                          });
-                                        }}
-                                disabled={compareByAttachmentMutation.isPending}
-                                        className="p-2 rounded-md hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50 transition-colors"
-                              >
-                                        <Scale className="w-4 h-4" strokeWidth={1.26} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-right">
-                                      <p>تقييم الاختلاف بين العروض</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                              <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                              <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
-                              <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
-                            </div>
+                <div className="p-6">
+                  <TooltipProvider>
+                    <div className="flex flex-col gap-3">
+                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                        <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
+                          {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-11 h-11 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                          <div className="flex flex-col items-end min-w-0 flex-1">
+                            <span className="text-sm font-semibold text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                            <span className="text-xs text-[#9CA3AF] mt-0.5">{Math.round((att.file_size || 0) / 1024)} KB</span>
                           </div>
+                          <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            {att.replaces_attachment_id != null && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      compareAbortControllerRef.current?.abort();
+                                      compareAbortControllerRef.current = new AbortController();
+                                      setComparePresentationsResult(null);
+                                      setCompareErrorDetail(null);
+                                      setIsComparePresentationsModalOpen(true);
+                                      compareByAttachmentMutation.mutate({
+                                        attachmentId: att.id,
+                                        signal: compareAbortControllerRef.current.signal,
+                                      });
+                                    }}
+                                    disabled={compareByAttachmentMutation.isPending}
+                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 transition-colors"
+                                  >
+                                    <Scale className="w-4 h-4" strokeWidth={1.4} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p>تقييم الاختلاف بين العروض</p></TooltipContent>
+                              </Tooltip>
+                            )}
+                            <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
+                            <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                            <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                          {/* AI insights button */}
                           <button
                             onClick={() => {
                               insightsAbortControllerRef.current?.abort();
@@ -2569,159 +2596,181 @@ const MeetingDetail: React.FC = () => {
                               });
                             }}
                             disabled={insightsMutation.isPending}
-                            className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
-                            style={{
-                              fontSize: '11px',
-                              lineHeight: '14px',
-                              background: '#34C3BA',
-                              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
-                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-l from-[#048F86] to-[#34C3BA] shadow-[0_2px_8px_rgba(4,143,134,0.25)] hover:shadow-[0_4px_16px_rgba(4,143,134,0.35)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex-shrink-0 disabled:opacity-50"
                           >
-                            <span className="absolute left-0 top-1/2 pointer-events-none w-[86px] h-[74px] rounded-full opacity-80 -translate-y-1/2 -translate-x-1/3" style={{ background: '#87F8F8', filter: 'blur(9.41px)' }} aria-hidden />
-                            <span className="relative z-10 flex items-center gap-2">
-                              ملاحظات بالذكاء الاصطناعي
-                              <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
-                                <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
-                                <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
-                                <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
-                                <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
-                                <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
-                              </svg>
-                            </span>
+                            <span>ملاحظات بالذكاء الاصطناعي</span>
+                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
+                              <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012Z" fill="white"/>
+                            </svg>
                           </button>
-                    </div>
-                  ))}
-                  {newPresentationAttachments.map((file, idx) => (
-                        <div key={`new-pres-${idx}`} className="flex flex-row items-center px-4 py-3 gap-3 h-[56px] bg-[#F0FDFA] border border-dashed border-[#009883] rounded-xl">
-                          {file.name.toLowerCase().endsWith('pdf') ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135]">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>}
-                          <div className="flex flex-col items-end flex-1 min-w-0"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{file.name}</span><span className="text-xs text-[#048F86] font-medium">جديد</span></div>
-                          <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewPresentationAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))}
-                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed border-[#D0D5DD] min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
-                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
-                            <FileCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
+                        </div>
+                      ))}
+
+                      {/* New presentation attachments (not yet saved) */}
+                      {newPresentationAttachments.map((file, idx) => (
+                        <div key={`new-pres-${idx}`} className="flex items-center gap-3 px-5 py-4 bg-[#F0FDF9] border border-dashed border-[#048F86]/50 rounded-xl">
+                          {file.name.toLowerCase().endsWith('pdf') ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626]">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>}
+                          <div className="flex flex-col items-end flex-1 min-w-0">
+                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{file.name}</span>
+                            <span className="text-xs text-[#048F86] font-semibold">جديد</span>
                           </div>
-                          <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا يوجد عرض تقديمي</p>
-                          <p className="text-sm mb-5" style={{ color: '#667085' }}>أضف عرضاً تقديمياً للاجتماع باستخدام الزر أدناه</p>
+                          <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewPresentationAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+
+                      {/* Empty state */}
+                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
+                          <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                            <FileCheck className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
+                          </div>
+                          <p className="font-semibold text-[15px] text-[#374151] mb-1">لا يوجد عرض تقديمي</p>
+                          <p className="text-sm text-[#9CA3AF] mb-6">أضف عرضاً تقديمياً للاجتماع</p>
                           {canEdit && (
-                            <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-l from-[#048F86] to-[#34C3BA] text-white shadow-[0px_2px_8px_rgba(4,143,134,0.3)] hover:shadow-[0px_4px_14px_rgba(4,143,134,0.4)] hover:opacity-95 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
+                            <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] cursor-pointer transition-colors shadow-sm">
+                              <Plus className="w-4 h-4" />
+                              إضافة عرض تقديمي
+                              <input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                            </label>
                           )}
                         </div>
-                      ) : canEdit ? (
-                        <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-l from-[#048F86] to-[#34C3BA] text-white shadow-[0px_2px_8px_rgba(4,143,134,0.3)] hover:shadow-[0px_4px_14px_rgba(4,143,134,0.4)] hover:opacity-95 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة عرض تقديمي<input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
-                      ) : null}
+                      )}
+                    </div>
+                  </TooltipProvider>
                 </div>
-                </TooltipProvider>
-              </div>
-              </div>
+              </section>
 
-              {/* متى سيتم إرفاق العرض؟ – card */}
-              {   ((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && 
-              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                  <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
+              {/* ─── متى سيتم إرفاق العرض؟ ─── */}
+              {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <Clock className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-[15px] font-bold text-[#1F2937]">متى سيتم إرفاق العرض؟</h3>
                   </div>
-                  <label className="text-sm font-bold text-[#344054]">متى سيتم إرفاق العرض؟</label>
-                </div>
-                <div className="p-5 min-h-[120px]" style={{ minHeight: '120px' }}>
-                  <Input type="text" value={contentTabForm.when_presentation_attached} onChange={(e) => setContentTabForm((p) => ({ ...p, when_presentation_attached: e.target.value }))} disabled={!canEdit} className="w-full h-11 bg-white border border-[#D0D5DD] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] text-right placeholder:text-[#98A2B3]" placeholder="متى سيتم إرفاق العرض؟" />
-                  {!contentTabForm.when_presentation_attached?.trim() && (
-                    <div className="flex items-center gap-2 mt-3 py-4 px-4 rounded-xl min-h-[72px]" style={{ backgroundColor: '#F9FAFB', border: '2px dashed #D0D5DD' }}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#F2F4F7' }}>
-                        <Clock className="w-5 h-5" strokeWidth={1.5} style={{ color: '#98A2B3' }} />
+                  <div className="p-6">
+                    <Input type="text" value={contentTabForm.when_presentation_attached} onChange={(e) => setContentTabForm((p) => ({ ...p, when_presentation_attached: e.target.value }))} disabled={!canEdit} className="w-full h-11 bg-white border border-[#D1D5DB] rounded-xl text-right placeholder:text-[#9CA3AF] focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]/20" placeholder="متى سيتم إرفاق العرض؟" />
+                    {!contentTabForm.when_presentation_attached?.trim() && (
+                      <div className="flex items-center gap-3 mt-4 py-4 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-sm text-[#6B7280]">لم يتم تحديد موعد إرفاق العرض بعد</p>
                       </div>
-                      <p className="text-sm" style={{ color: '#667085' }}>لم يتم تحديد موعد إرفاق العرض بعد</p>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ─── مرفقات اختيارية ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-[15px] font-bold text-[#1F2937]">مرفقات اختيارية</h3>
+                  </div>
+                  {canEdit && ((meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).length > 0 || newAttachments.length > 0) && (
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#048F86]/30 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
+                      <Plus className="w-4 h-4" />
+                      إضافة مرفق
+                      <input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                    </label>
+                  )}
+                </div>
+                <div className="p-6">
+                  {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newAttachments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
+                      <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                        <FileText className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
+                      </div>
+                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد مرفقات اختيارية</p>
+                      <p className="text-sm text-[#9CA3AF] mb-6">يمكنك إرفاق مستندات إضافية إن رغبت</p>
+                      {canEdit && (
+                        <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-[#048F86]/40 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
+                          <Plus className="w-4 h-4" />
+                          إضافة مرفق
+                          <input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                        <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
+                          {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                          <div className="flex flex-col items-end min-w-0 flex-1">
+                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                            <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
+                          </div>
+                          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
+                            <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                            <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      ))}
+                      {newAttachments.map((file, idx) => (
+                        <div key={`new-${idx}`} className="flex items-center gap-3 px-4 py-3 bg-[#F0FDF9] border border-dashed border-[#048F86]/50 rounded-xl">
+                          <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>
+                          <div className="flex flex-col items-end flex-1 min-w-0">
+                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{file.name}</span>
+                            <span className="text-xs text-[#048F86] font-semibold">جديد</span>
+                          </div>
+                          <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>}
+              </section>
 
-              {/* مرفقات اختيارية – card */}
-              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                  <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
+              {/* ─── ملاحظات ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                    <ClipboardCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
-                  <label className="text-sm font-bold text-[#344054]">مرفقات اختيارية</label>
+                  {renderFieldLabel('general_notes', 'ملاحظات', 'text-[15px] font-bold text-[#1F2937]')}
                 </div>
-                <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
-                  <div className="flex flex-row gap-4 flex-wrap items-start">
-                    {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newAttachments.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed w-full min-w-0 min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
-                          <FileText className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
-                        </div>
-                        <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا توجد مرفقات اختيارية</p>
-                        <p className="text-sm mb-5" style={{ color: '#667085' }}>يمكنك إرفاق مستندات إضافية إن رغبت</p>
-                        {canEdit && (
-                          <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-dashed border-[#048F86] text-[#048F86] bg-[#048F86]/05 hover:bg-[#048F86]/10 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة مرفق<input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                  {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
-                          <div key={att.id} className="flex flex-row items-center px-4 py-3 gap-3 min-w-0 flex-1 max-w-[400px] h-[56px] bg-white border border-[#E4E7EC] rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#048F86]/50 hover:shadow-[0px_2px_8px_rgba(4,143,134,0.08)] transition-all duration-200">
-                            {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                            <div className="flex flex-col items-end min-w-0 flex-1"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{att.file_name}</span><span className="text-xs text-[#475467]">{Math.round((att.file_size || 0) / 1024)} KB</span></div>
-                            <div className="flex items-center gap-1 flex-shrink-0"><a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a><button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button><button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button></div>
-                    </div>
-                  ))}
-                  {newAttachments.map((file, idx) => (
-                          <div key={`new-${idx}`} className="flex flex-row items-center px-4 py-3 gap-3 h-[56px] bg-[#F0FDFA] border border-dashed border-[#048F86] rounded-xl flex-1 min-w-0 max-w-[400px]">
-                            <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</div>
-                            <div className="flex flex-col items-end flex-1 min-w-0"><span className="text-sm font-medium text-[#344054] truncate w-full text-right">{file.name}</span><span className="text-xs text-[#048F86] font-medium">جديد</span></div>
-                            <button type="button" disabled={!canEdit} onClick={() => handleRemoveNewAttachment(idx)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))}
-                        {canEdit && (
-                          <label className="flex items-center justify-center gap-2 w-fit px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-dashed border-[#048F86] text-[#048F86] bg-[#048F86]/05 hover:bg-[#048F86]/10 cursor-pointer transition-all duration-200"><Plus className="w-4 h-4" />إضافة مرفق<input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" /></label>
-                        )}
-                      </>
-                    )}
-                </div>
-              </div>
-              </div>
-
-              {/* ملاحظات – card */}
-              <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                  <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                    <ClipboardCheck className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
-                  </div>
-                  {renderFieldLabel('general_notes', 'ملاحظات', 'text-sm font-bold text-[#344054]')}
-                </div>
-                <div className="p-5 min-w-0 min-h-[140px]" style={{ minHeight: '140px' }}>
+                <div className="p-6">
                   {(() => {
                     const notesText = generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : (contentTabForm.general_notes || '').trim();
                     const isEmptyNotes = generalNotesList.length === 0 && (!notesText || notesText === '' || notesText === '—' || /^[\s—\-]+$/.test(notesText));
                     return isEmptyNotes ? (
-                      <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed w-full min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
-                          <ClipboardCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
+                      <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                          <ClipboardCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
                         </div>
-                        <p className="font-medium text-base mb-1" style={{ color: '#344054' }}>لا توجد ملاحظات</p>
-                        <p className="text-sm" style={{ color: '#667085' }}>لم تتم إضافة أي ملاحظات لهذا الطلب</p>
+                        <div>
+                          <p className="text-sm font-medium text-[#374151]">لا توجد ملاحظات</p>
+                          <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة أي ملاحظات لهذا الطلب</p>
+                        </div>
                       </div>
                     ) : (
-                      <div className="w-full min-h-[100px] px-4 py-3 bg-[#F9FAFB] border border-[#EAECF0] rounded-xl text-right text-[#475467]">
+                      <div className="w-full px-5 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-right text-[#374151] leading-relaxed whitespace-pre-wrap text-sm">
                         {generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : contentTabForm.general_notes}
                       </div>
                     );
                   })()}
                   {contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—' && (
-                    <div className="mt-4 pt-4 border-t border-[#EAECF0]">
-                      <span className="font-medium text-[#344054] block mb-1 text-right">ملاحظات مسؤول المحتوى</span>
-                      <div className="w-full min-h-[80px] px-4 py-3 bg-amber-50/50 border border-[#EAECF0] rounded-xl text-right text-[#475467] whitespace-pre-wrap text-sm">
+                    <div className="mt-5 pt-5 border-t border-[#F3F4F6]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-md bg-[#F59E0B]/10 flex items-center justify-center">
+                          <ClipboardCheck className="w-3.5 h-3.5 text-[#D97706]" strokeWidth={2} />
+                        </div>
+                        <span className="text-sm font-semibold text-[#92400E]">ملاحظات مسؤول المحتوى</span>
+                      </div>
+                      <div className="w-full px-5 py-4 bg-[#FFFBEB]/60 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] whitespace-pre-wrap text-sm leading-relaxed">
                         {contentOfficerNotesDisplay}
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
 
               {/* Compare presentations result modal (تقييم الاختلاف بين العروض) */}
               <Dialog open={isComparePresentationsModalOpen} onOpenChange={(open) => { if (!open) { compareAbortControllerRef.current?.abort(); compareAbortControllerRef.current = null; setCompareOpenedWithoutReplace(false); setComparePresentationsResult(null); setCompareErrorDetail(null); } setIsComparePresentationsModalOpen(!!open); }}>
@@ -2992,656 +3041,831 @@ const MeetingDetail: React.FC = () => {
               </Dialog>
             </div>
           )}
-          {/* Tab: قائمة المدعوين (Excel) – قائمة المدعوين (مقدم الطلب)، قائمة المدعوين (الوزير) */}
+          {/* Tab: قائمة المدعوين */}
           {activeTab === 'attendees' && (
-            <div className="flex flex-col items-stretch gap-6 w-full" dir="rtl">
-              <div className="flex flex-col gap-6 w-full">
-                {/* قائمة المدعوين (مقدّم الطلب) */}
-                <div className="flex flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '16px', lineHeight: '38px' }}>
-                    {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-right font-bold text-[#101828] text-[16px]')}
-                  </div>
-                  {allInvitees && allInvitees.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
-                      {allInvitees.map((row: any, idx: number) => {
-                        const isLocal = row.isLocal;
-                        const isConsultant = row.is_consultant === true;
-                        const name = row.external_name || row.user_id || '-';
-                        const position = row.position || '-';
-                        const sector = row.sector || '-';
-                        const email = row.external_email || '-';
-                        const mobile = row.mobile || '-';
-                        const attendVal = row.attendance_channel || 'PHYSICAL';
-                        const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
-                        const accessChecked = !!row.access_permission;
-                        const accessLabel = accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية';
-                        return (
-                          <div key={row.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                            <div className="flex flex-col gap-4 p-5">
-                              {/* Header: Avatar + Name/Position + Badges + Delete */}
-                              <div className="flex flex-row items-start justify-between gap-3">
-                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                  </div>
-                                  {isLocal ? (
-                                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                                      <div className="flex flex-col gap-0.5">
-                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الإسم *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].external_name}</span>}
-                                      </div>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="المنصب *" className={`h-9 text-right w-full ${inviteeValidationErrors[row.id]?.position ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                        {inviteeValidationErrors[row.id]?.position && <span className="text-xs text-red-600 text-right">{inviteeValidationErrors[row.id].position}</span>}
-                                      </div>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Input type="text" value={row.sector || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'sector', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجهة" className="h-9 text-right w-full" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                      <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                  {isLocal ? (
-                                    <>
-                                      <div onClick={(e) => e.stopPropagation()}>
-                                        <Select value={attendVal} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
-                                          <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse"><SelectValue /></SelectTrigger>
-                                          <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
-                                        </Select>
-                                      </div>
-                                      <div className="flex items-center gap-1 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                        <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateLocalInvitee(row.id, 'access_permission', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86] disabled:opacity-60" />
-                                        <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية</span>
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
-                                      <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                                    </>
-                                  )}
-                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                                  <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                </button>
-                              </div>
+            <div className="flex flex-col gap-6 w-full" dir="rtl">
+
+              {/* ─── قائمة المدعوين (مقدّم الطلب) ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                     </div>
-                              {/* Contact: Email + Phone */}
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                  </div>
-                                  {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                      {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].external_email}</span>}
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  {isLocal ? (
-                                    <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} disabled={!canEdit} placeholder="الجوال" className={`h-8 text-right text-[12px] w-full ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                      {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-600 text-right">{inviteeValidationErrors[row.id].mobile}</span>}
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              {sector !== '-' && (
-                                <div className="flex flex-row items-center gap-2.5 w-full">
-                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                    </div>
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="flex items-center gap-2.5">
+                      {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-[15px] font-bold text-[#1F2937]')}
+                      {allInvitees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{allInvitees.length}</span>}
                     </div>
-                  ) : (
-                    <p className="text-base text-gray-500 text-right py-4">لا توجد قائمة مدعوين</p>
-                  )}
-                  <div className="flex items-center justify-start mt-3">
-                    <button type="button" disabled={!canEdit} onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
+                  </div>
+                  {canEdit && (
+                    <button type="button" onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm" disabled={!canEdit}>
                       <Plus className="w-4 h-4" />
-                      إضافة مدعو جديد
+                      إضافة مدعو
                     </button>
-                  </div>
+                  )}
                 </div>
-
-                {/* قائمة المدعوين (الوزير) */}
-                <div className="flex pb-[30px] flex-col gap-4 w-full">
-                  <div className="w-full min-w-0 min-h-[38px] flex items-center justify-start" style={{ fontSize: '16px', lineHeight: '38px' }}>
-                    {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-right font-bold text-[#101828] text-[16px]')}
-                  </div>
-                  {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
-                      {scheduleForm.minister_attendees.map((row: any, index: number) => {
-                        const isConsultant = row.is_consultant === true;
-                        const isEditing = editingMinisterAttendees.has(index);
-                        const attendVal = row.attendance_channel || 'PHYSICAL';
-                        const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
-                        const accessChecked = row.access_permission === 'FULL';
-                        const name = row.external_name || row.username || '-';
-                        const position = row.position || '-';
-                        const sector = row.sector || '-';
-                        const email = row.external_email || '-';
-                        const mobile = row.mobile || '-';
-
-                        if (!isEditing) {
-                              return (
-                            <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                              <div className="flex flex-col gap-4 p-5">
-                                <div className="flex flex-row items-center justify-between gap-3">
-                                  <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                      <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
+                <div className="p-0">
+                  {allInvitees && allInvitees.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {allInvitees.map((row: any, idx: number) => {
+                            const isLocal = row.isLocal;
+                            const isEditingRow = row.isEditing === true;
+                            const isConsultant = row.is_consultant === true;
+                            const name = row.external_name || row.user_id || '-';
+                            const position = row.position || '-';
+                            const sector = row.sector || '-';
+                            const email = row.external_email || '-';
+                            const mobile = row.mobile || '-';
+                            const attendVal = row.attendance_channel || 'PHYSICAL';
+                            const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
+                            const accessChecked = !!row.access_permission;
+                            return (
+                              <tr key={row.id || idx} className={`group transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
                                     </div>
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                      <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-row items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
-                                    {isConsultant && <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">مستشار</span>}
-                                    <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessChecked ? 'صلاحية الاطلاع' : 'بدون صلاحية'}</span>
-                                    <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                                    {row.is_required && <span className="inline-flex items-center rounded-full bg-[#F2F4F7] px-2.5 py-1 text-[13px] text-[#475467] whitespace-nowrap">مطلوب</span>}
-                                    {canEdit && (
-                                      <>
-                                        <button type="button" onClick={() => setEditingMinisterAttendees((s) => new Set(s).add(index))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F6FF] hover:bg-[#DCEAFF] transition-colors">
-                                          <Pencil className="w-3.5 h-3.5 text-[#3C6FD1]" />
-                                        </button>
-                                        <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
-                                          <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                        </button>
-                                      </>
+                                    {isEditingRow ? (
+                                      <div className="flex flex-col gap-0.5 min-w-[120px]">
+                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} disabled={!canEdit} placeholder="الإسم *" className={`h-8 text-right text-xs rounded-lg ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_name}</span>}
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                        {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                      </div>
                                     )}
                                   </div>
-                                </div>
-                                <div className="flex flex-row items-center gap-2.5 w-full">
-                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                      <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                    </div>
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                      <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                    </div>
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                {sector !== '-' && (
-                                  <div className="flex flex-row items-center gap-2.5 w-full">
-                                    <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                        <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                      </div>
-                                      <div className="flex flex-col gap-1 min-w-0">
-                                        <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                        <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                {row.justification && (
-                                  <TooltipProvider delayDuration={200}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="text-[12px] text-[#475467] bg-[#F9FAFB] rounded-lg px-3 py-2 border border-gray-200 cursor-default overflow-hidden" style={{ lineHeight: '20px', maxHeight: '74px' }}>
-                                          <span className="font-semibold text-[#101828]">المبرر: </span>{row.justification}
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="max-w-[350px] text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif", lineHeight: '2.5' }}>
-                                        {row.justification}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                              </div>
-                                </div>
-                              );
-                        }
-
-                        const errName = ministerAttendeeValidationErrors[index]?.external_name;
-                        const errPos = ministerAttendeeValidationErrors[index]?.position;
-                        const errPhone = ministerAttendeeValidationErrors[index]?.mobile;
-                        const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
-                        const errJust = ministerAttendeeValidationErrors[index]?.justification;
-                              return (
-                          <div key={row.id || index} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'} ring-2 ring-[#048F86]/20`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                            <div className="flex flex-col gap-4 p-5">
-                              <div className="flex flex-row items-start justify-between gap-3">
-                                <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                    <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                </div>
-                                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الإسم *" className={`h-9 text-right w-full ${errName ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                      {errName && <span className="text-xs text-red-600 text-right">{errName}</span>}
+                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} disabled={!canEdit} placeholder="المنصب *" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.position ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {inviteeValidationErrors[row.id]?.position && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].position}</span>}
                                     </div>
+                                  ) : (
+                                    <span className="text-sm text-[#374151]">{position}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
+                                    <Input type="text" value={row.sector || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'sector', e.target.value); }} disabled={!canEdit} placeholder="الجهة" className="h-8 text-right text-xs rounded-lg border-[#E5E7EB] min-w-[90px]" />
+                                  ) : (
+                                    <span className="text-sm text-[#374151]">{sector}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
                                     <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المنصب *" className={`h-9 text-right w-full ${errPos ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                      {errPos && <span className="text-xs text-red-600 text-right">{errPos}</span>}
+                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-xs rounded-lg min-w-[140px] ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_email}</span>}
                                     </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}>
-                                      <SelectTrigger className="h-8 bg-[#EDF6FF] border-0 rounded-full px-2.5 text-[13px] text-[#4281BF] flex-row-reverse"><SelectValue /></SelectTrigger>
-                                      <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
-                                    </Select>
-                                  </div>
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#FFF4F4] hover:bg-[#FFE5E5] transition-colors">
-                                    <Trash2 className="w-4 h-4 text-[#CA4545]" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                    <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="البريد *" className={`h-8 text-right text-[12px] w-full ${errEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                    {errEmail && <span className="text-[10px] text-red-600 text-right">{errEmail}</span>}
-                                  </div>
-                                </div>
-                                <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 min-w-0 items-center flex-1">
-                                    <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="الجوال" className={`h-8 text-right text-[12px] w-full ${errPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                    {errPhone && <span className="text-[10px] text-red-600 text-right">{errPhone}</span>}
-                                  </div>
-                                </div>
-                              </div>
-                              {sector !== '-' && (
-                                <div className="flex flex-row items-center gap-2.5 w-full">
-                                  <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                      <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+                                  ) : (
+                                    <span className="text-sm text-[#374151] truncate max-w-[180px] block">{email}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} disabled={!canEdit} placeholder="الجوال" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].mobile}</span>}
                                     </div>
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                      <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
+                                  ) : (
+                                    <span className="text-sm text-[#374151]" dir="ltr">{mobile}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <Select value={attendVal} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
+                                        <SelectTrigger className="h-7 bg-[#EFF6FF] border-0 rounded-full px-2.5 text-xs text-[#3B82F6] flex-row-reverse gap-1 min-w-[80px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
+                                      </Select>
                                     </div>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${attendVal === 'REMOTE' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>{attendanceLabel}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditingRow ? (
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${accessChecked ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
+                                        {accessChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                      </div>
+                                      <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateLocalInvitee(row.id, 'access_permission', e.target.checked)} className="sr-only" />
+                                    </label>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${accessChecked ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {accessChecked ? 'نعم' : 'لا'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
+                                  <div className="flex items-center gap-0.5">
+                                    {isLocal && canEdit && isEditingRow && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const rowErrors: Record<string, string> = {};
+                                          const rName = (row.external_name ?? '').trim();
+                                          const rEmail = (row.external_email ?? '').trim();
+                                          const rPos = (row.position ?? '').trim();
+                                          const rPhone = (row.mobile ?? '').trim();
+                                          if (!rName) rowErrors.external_name = 'مطلوب';
+                                          if (!rEmail) rowErrors.external_email = 'مطلوب';
+                                          else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+                                          if (!rPos) rowErrors.position = 'مطلوب';
+                                          if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'صيغة غير صحيحة';
+                                          if (Object.keys(rowErrors).length > 0) {
+                                            setInviteeValidationErrors((prev) => ({ ...prev, [row.id]: rowErrors }));
+                                            return;
+                                          }
+                                          setInviteeValidationErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
+                                          setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: false } : inv));
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
+                                        title="حفظ"
+                                      >
+                                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                      </button>
+                                    )}
+                                    {isLocal && canEdit && !isEditingRow && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: true } : inv))}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] text-[#3B82F6]/50 hover:text-[#3B82F6] transition-colors"
+                                        title="تعديل"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    {canEdit && (
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
-                                </div>
-                              )}
-                              <div className="flex flex-row items-center gap-3 flex-wrap">
-                                <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={accessChecked} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
-                                  <span className="text-[12px] text-[#048F86] whitespace-nowrap">صلاحية الاطلاع</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 rounded-full bg-[#F2F4F7] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_required} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
-                                  <span className="text-[12px] text-[#475467] whitespace-nowrap">مطلوب</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 rounded-full bg-[#E6F9F8] px-2.5 py-1" onClick={(e) => e.stopPropagation()}>
-                                  <input type="checkbox" checked={!!row.is_consultant} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="w-3.5 h-3.5 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]" />
-                                  <span className="text-[12px] text-[#048F86] whitespace-nowrap">مستشار</span>
-                                </div>
-                                <div className="flex-1 min-w-[120px]">
-                                  <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="المبرر *" className={`h-8 text-right text-[12px] w-full ${errJust ? 'border-red-500 focus-visible:ring-red-500' : ''}`} />
-                                  {errJust && <span className="text-[10px] text-red-600 text-right">{errJust}</span>}
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const rowErrors: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>> = {};
-                                  const rName = (row.external_name ?? '').trim();
-                                  const rEmail = (row.external_email ?? '').trim();
-                                  const rPos = (row.position ?? '').trim();
-                                  const rPhone = (row.mobile ?? '').trim();
-                                  const rJust = (row.justification ?? '').trim();
-                                  if (!rName) rowErrors.external_name = 'مطلوب';
-                                  if (!rEmail) rowErrors.external_email = 'مطلوب';
-                                  else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
-                                  if (!rPos) rowErrors.position = 'مطلوب';
-                                  if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'الجوال: صيغة غير صحيحة (أرقام فقط، مع إمكانية + في البداية)';
-                                  if (!rJust) rowErrors.justification = 'مطلوب';
-                                  if (Object.keys(rowErrors).length > 0) {
-                                    setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
-                                    return;
-                                  }
-                                  setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
-                                  setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
-                                }}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#048F86] text-white hover:bg-[#037a71] transition-colors text-[14px] font-bold"
-                              
-                              >
-                                <Check className="w-4 h-4" />
-                                حفظ
-                              </button>
-                    </div>
-                  </div>
-                        );
-                      })}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   ) : (
-                    <p className="text-base text-gray-500 text-right py-4">لا توجد قائمة مدعوين</p>
+                    <div className="flex flex-col items-center justify-center py-14 m-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
+                      <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                        <User className="w-7 h-7 text-[#9CA3AF]" strokeWidth={1.2} />
+                      </div>
+                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد قائمة مدعوين</p>
+                      <p className="text-sm text-[#9CA3AF] mb-5">أضف مدعوين للاجتماع</p>
+                      {canEdit && (
+                        <button type="button" onClick={addInvitee} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm">
+                          <Plus className="w-4 h-4" />
+                          إضافة مدعو جديد
+                        </button>
+                      )}
+                    </div>
                   )}
-                  <div className="flex items-center justify-start mt-3 gap-4">
-                    <button type="button" disabled={!canEdit} onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-[8px] shadow-sm text-[#344054] disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}>
-                      <Plus className="w-4 h-4" />
-                      إضافة مدعو جديد
-                    </button>
+                </div>
+              </section>
+
+              {/* ─── قائمة المدعوين (الوزير) ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#92400E]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#92400E]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-[15px] font-bold text-[#1F2937]')}
+                      {scheduleForm.minister_attendees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{scheduleForm.minister_attendees.length}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <AIGenerateButton 
                       label="إضافة مدعوين آليًا"
                       disabled={!canEdit}
                       onClick={() => { setIsSuggestAttendeesModalOpen(true); }}
                     />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* استشارة الجدولة */}
-          {activeTab === 'scheduling-consultation' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.REJECTED && (
-                <div className="flex justify-end">
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <button
-                            type="button"
-                            onClick={() => setIsConsultationModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                          >
-                            <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                            طلب استشارة
-                          </button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[260px] text-right">
-                        طلب استشارة
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-              {isLoadingConsultationRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : consultationRecords && consultationRecords.items.length > 0 ? (
-                consultationRecords.items.map((row: ConsultationRecord, index: number) => {
-                  const recordId = row.id || row.consultation_id || `${index}`;
-                  const recordType = row.type || row.consultation_type || '';
-                  const recordQuestion = row.question || row.consultation_question || '';
-                  const isExpanded = expandedConsultationId === recordId;
-                  const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                  const displayRequestNumber = row.assignees?.[0]?.request_number || row.consultation_request_number || '';
-                  const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
-
-                  const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
-                  if (row.assignees?.length) {
-                    row.assignees.forEach(a => {
-                      if (a.answers?.length) {
-                        a.answers.forEach(ans => flatItems.push({ id: ans.answer_id, text: ans.text, status: a.status, name: a.name, respondedAt: ans.responded_at, requestNumber: a.request_number }));
-                      } else {
-                        flatItems.push({ id: a.user_id, text: '', status: a.status, name: a.name, respondedAt: a.responded_at, requestNumber: a.request_number });
-                      }
-                    });
-                  } else if (row.consultation_answers?.length) {
-                    row.consultation_answers.forEach(a => flatItems.push({ id: a.consultation_id || a.external_id || `ans-${index}`, text: a.consultation_answer, status: a.status, name: row.consultant_name || '', respondedAt: a.responded_at, requestNumber: row.consultation_request_number || null }));
-                  } else if (row.assignee_sections?.length) {
-                    row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at, requestNumber: a.consultation_record_number || null }));
-                  }
-
-                        return (
-                    <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedConsultationId((prev) => (prev === recordId ? null : recordId))}
-                        className={`
-                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                          ${isExpanded
-                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                        `}
-                        style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                      >
-                        <div className="flex flex-row items-start justify-between gap-4">
-                          <div className="flex flex-col items-start flex-1 min-w-0">
-                            <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                              <Clock className="w-4 h-4 flex-shrink-0" />
-                              <span>تاريخ الطلب : {requestDate}</span>
-                          </span>
-                            {displayRequestNumber && (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <Hash className="w-4 h-4 flex-shrink-0" />
-                                <span>رمز الطلب : {displayRequestNumber}</span>
-                            </span>
-                            )}
-                          </div>
-                        </div>
+                    {canEdit && (
+                      <button type="button" onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm" disabled={!canEdit}>
+                        <Plus className="w-4 h-4" />
+                        إضافة مدعو
                       </button>
-
-                      {isExpanded && flatItems.length > 0 && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          {flatItems.map((_, idx) =>
-                            <div key={`line-${idx}`} className="flex flex-shrink-0 w-12 flex-col items-center pt-1"
-                              style={idx > 0 ? { position: 'absolute', top: `${47 * idx}px`, height: `${136 * idx}px` } : {}}
-                            >
-                              <div className={`w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1]  max-h-[60%] ${flatItems.length > 1 ? '-mt-[38px]' : '-mt-[10px]'}`}/>
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                          )}
-                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                            {flatItems.map((item) => {
-                              const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
-                        return (
-                                <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                  <div className="flex w-full flex-row items-center justify-between gap-4">
-                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
-                                    <StatusBadge status={item.status} label={overallStatusLabels[item.status] || item.status} />
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{item.name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                    <span className="flex-shrink-0 text-sm text-gray-700">{item.name || '—'}</span>
-                                    {item.requestNumber && (
-                                      <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                        <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
-                          </span>
-                                    )}
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {isExpanded && flatItems.length === 0 && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
-                          <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                          </div>
-                        </div>
-                      )}
-                          </div>
-                        );
-                })
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">سجل الإستشارات</p>
-                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
+                    )}
                   </div>
                 </div>
-              )}
+                <div className="p-0">
+                  {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مطلوب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مستشار</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المبرر</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {scheduleForm.minister_attendees.map((row: any, index: number) => {
+                            const isConsultant = row.is_consultant === true;
+                            const isEditing = editingMinisterAttendees.has(index);
+                            const attendVal = row.attendance_channel || 'PHYSICAL';
+                            const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
+                            const accessChecked = row.access_permission === 'FULL';
+                            const name = row.external_name || row.username || '-';
+                            const position = row.position || '-';
+                            const email = row.external_email || '-';
+                            const mobile = row.mobile || '-';
+                            const errName = ministerAttendeeValidationErrors[index]?.external_name;
+                            const errPos = ministerAttendeeValidationErrors[index]?.position;
+                            const errPhone = ministerAttendeeValidationErrors[index]?.mobile;
+                            const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
+                            const errJust = ministerAttendeeValidationErrors[index]?.justification;
+
+                            return (
+                              <tr key={row.id || index} className={`group transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{index + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#FEF3C7] border border-[#FDE68A]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#92400E]'}`} strokeWidth={1.8} />
+                                    </div>
+                                    {isEditing ? (
+                                      <div className="flex flex-col gap-0.5 min-w-[120px]">
+                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} placeholder="الإسم *" className={`h-8 text-right text-xs rounded-lg ${errName ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                        {errName && <span className="text-[10px] text-red-500">{errName}</span>}
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                        {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} placeholder="المنصب *" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${errPos ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {errPos && <span className="text-[10px] text-red-500">{errPos}</span>}
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-[#374151]">{position}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} placeholder="البريد *" className={`h-8 text-right text-xs rounded-lg min-w-[140px] ${errEmail ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {errEmail && <span className="text-[10px] text-red-500">{errEmail}</span>}
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-[#374151] truncate max-w-[180px] block">{email}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} placeholder="الجوال" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${errPhone ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {errPhone && <span className="text-[10px] text-red-500">{errPhone}</span>}
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-[#374151]" dir="ltr">{mobile}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}>
+                                        <SelectTrigger className="h-7 bg-[#EFF6FF] border-0 rounded-full px-2.5 text-xs text-[#3B82F6] flex-row-reverse gap-1 min-w-[80px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
+                                      </Select>
+                                    </div>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${attendVal === 'REMOTE' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>{attendanceLabel}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${accessChecked ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
+                                        {accessChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                      </div>
+                                      <input type="checkbox" checked={accessChecked} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="sr-only" />
+                                    </label>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${accessChecked ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {accessChecked ? 'نعم' : 'لا'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${row.is_required ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
+                                        {row.is_required && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                      </div>
+                                      <input type="checkbox" checked={!!row.is_required} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="sr-only" />
+                                    </label>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${row.is_required ? 'bg-[#F3F4F6] text-[#6B7280]' : 'bg-[#F3F4F6] text-[#9CA3AF]'}`}>
+                                      {row.is_required ? 'نعم' : 'لا'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${row.is_consultant ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
+                                        {row.is_consultant && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                      </div>
+                                      <input type="checkbox" checked={!!row.is_consultant} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="sr-only" />
+                                    </label>
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isConsultant ? 'bg-[#ECFDF5] text-[#048F86]' : 'bg-[#F3F4F6] text-[#9CA3AF]'}`}>
+                                      {isConsultant ? 'نعم' : 'لا'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} placeholder="المبرر *" className={`h-8 text-right text-xs rounded-lg min-w-[120px] ${errJust ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
+                                      {errJust && <span className="text-[10px] text-red-500">{errJust}</span>}
+                                    </div>
+                                  ) : (
+                                    row.justification ? (
+                                      <Collapsible>
+                                        <CollapsibleTrigger asChild>
+                                          <button type="button" className="flex items-center gap-1 text-xs text-[#6B7280] hover:text-[#374151] transition-colors" title="المبرر">
+                                            <FileText className="w-3.5 h-3.5 text-[#9CA3AF]" strokeWidth={2} />
+                                            <span className="truncate max-w-[80px]">{row.justification}</span>
+                                            <ChevronDown className="w-3 h-3" />
+                                          </button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent className="mt-1">
+                                          <p className="text-xs text-[#6B7280] bg-[#F9FAFB] rounded-lg p-2 max-w-[200px] whitespace-pre-wrap leading-relaxed">{row.justification}</p>
+                                        </CollapsibleContent>
+                                      </Collapsible>
+                                    ) : (
+                                      <span className="text-xs text-[#9CA3AF]">—</span>
+                                    )
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]" style={{ backgroundColor: isConsultant ? '#F0FDF9' : 'white' }}>
+                                  <div className="flex items-center gap-0.5">
+                                    {isEditing ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const rowErrors: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>> = {};
+                                          const rName = (row.external_name ?? '').trim();
+                                          const rEmail = (row.external_email ?? '').trim();
+                                          const rPos = (row.position ?? '').trim();
+                                          const rPhone = (row.mobile ?? '').trim();
+                                          const rJust = (row.justification ?? '').trim();
+                                          if (!rName) rowErrors.external_name = 'مطلوب';
+                                          if (!rEmail) rowErrors.external_email = 'مطلوب';
+                                          else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+                                          if (!rPos) rowErrors.position = 'مطلوب';
+                                          if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'صيغة غير صحيحة';
+                                          if (!rJust) rowErrors.justification = 'مطلوب';
+                                          if (Object.keys(rowErrors).length > 0) {
+                                            setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
+                                            return;
+                                          }
+                                          setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
+                                          setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
+                                        title="حفظ"
+                                      >
+                                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                      </button>
+                                    ) : (
+                                      canEdit && (
+                                        <button type="button" onClick={() => setEditingMinisterAttendees((s) => new Set(s).add(index))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] text-[#3B82F6]/50 hover:text-[#3B82F6] transition-colors">
+                                          <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                      )
+                                    )}
+                                    {canEdit && (
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-14 m-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
+                      <div className="w-14 h-14 rounded-2xl bg-[#FEF3C7] flex items-center justify-center mb-4">
+                        <User className="w-7 h-7 text-[#92400E]" strokeWidth={1.2} />
+                      </div>
+                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد قائمة مدعوين</p>
+                      <p className="text-sm text-[#9CA3AF]">لم تتم إضافة مدعوين من قبل الوزير</p>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           )}
 
-          {/* سؤال tab */}
-          {activeTab === 'directive' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING &&
-                meetingStatus !== MeetingStatus.CLOSED &&
-                meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
-                meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
-                meetingStatus !== MeetingStatus.REJECTED &&
-                meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsRequestGuidanceModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                  >
-                    <FileCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
-              </div>
-              )}
-              {isLoadingGuidanceRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                <div className="flex flex-col gap-4 w-full" dir="rtl">
-                  {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
-                    const isExpanded = expandedGuidanceId === row.guidance_id;
-                    const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
+          {/* استشارة الجدولة – Chat-style like executive consultation */}
+          {activeTab === 'scheduling-consultation' && (
+            <div className="flex flex-col w-full max-h-[600px] rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+              {/* Scrollable messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {isLoadingConsultationRecords ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
+                  </div>
+                ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                  <div className="flex flex-col pb-4">
+                    {[...consultationRecords.items].reverse().map((row: ConsultationRecord, index: number) => {
+                      const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
+                      const consultationStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
+                      const recordQuestion = row.question || row.consultation_question || '';
+                      const requesterName = row.consultant_name || '-';
 
-                        return (
-                      <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedGuidanceId((prev) => (prev === row.guidance_id ? null : row.guidance_id))}
-                          className={`
-                            w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                            ${isExpanded
-                              ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                              : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                          `}
-                          style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                        >
-                          <div className="flex flex-row items-start justify-between gap-4">
-                            <div className="flex flex-col items-start flex-1 min-w-0">
-                              <p className="text-base font-bold text-[#048F86] mb-1">السؤال</p>
-                              <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {row.status && (
-                                <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                              )}
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <Clock className="w-4 h-4 flex-shrink-0" />
-                                <span>تاريخ الطلب : {requestDate}</span>
-                          </span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <User className="w-4 h-4 flex-shrink-0" />
-                                <span>{row.requested_by_name || '-'}</span>
-                            </span>
-                            </div>
-                          </div>
-                        </button>
+                      // Collect all responses
+                      const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null}> = [];
+                      if (row.assignees?.length) {
+                        row.assignees.forEach(a => {
+                          if (a.answers?.length) {
+                            a.answers.forEach(ans => flatItems.push({ id: ans.answer_id, text: ans.text, status: a.status, name: a.name, respondedAt: ans.responded_at }));
+                          } else {
+                            flatItems.push({ id: a.user_id, text: '', status: a.status, name: a.name, respondedAt: a.responded_at });
+                          }
+                        });
+                      } else if (row.consultation_answers?.length) {
+                        row.consultation_answers.forEach(a => flatItems.push({ id: a.consultation_id || a.external_id || `ans-${index}`, text: a.consultation_answer, status: a.status, name: row.consultant_name || '', respondedAt: a.responded_at }));
+                      } else if (row.assignee_sections?.length) {
+                        row.assignee_sections.forEach(a => flatItems.push({ id: a.user_id, text: a.answers?.join(' | ') || '', status: a.status, name: a.assignee_name, respondedAt: a.responded_at }));
+                      }
 
-                        {isExpanded && row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                            <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                              <div className="flex min-h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4 py-3" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                <div className="flex w-full flex-row items-center justify-between gap-4">
-                                  <p className="min-w-0 flex-1 text-right text-sm text-gray-700 whitespace-pre-wrap">{row.guidance_answer}</p>
-                                  <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                                  {row.responded_by_name && (
-                                    <>
-                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                      <span className="flex-shrink-0 text-sm text-gray-700">{row.responded_by_name}</span>
-                                    </>
-                                  )}
-                                  {row.responded_at && (
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {formatDateTimeArabic(row.responded_at)}</span>
-                          </span>
-                                  )}
+                      const recordId = row.id || row.consultation_id || `${index}`;
+
+                      return (
+                        <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
+                          {/* Question bubble (sent) */}
+                          <div className="px-5 pt-5 pb-3">
+                            <div className="flex items-start gap-3" dir="rtl">
+                              <div className="flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{requesterName?.charAt(0)?.toUpperCase() || '?'}</span>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-semibold text-[#1F2937]">{requesterName}</span>
+                                  <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
+                                  {row.status && <StatusBadge status={row.status} label={consultationStatusLabels[row.status] || row.status} />}
+                                </div>
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%]">
+                                  <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{recordQuestion || '-'}</p>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        )}
-                        {isExpanded && !row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                            <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                              <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                            </div>
+
+                          {/* Response bubbles */}
+                          <div className="px-5 pb-5 pt-1">
+                            {flatItems.length > 0 ? (
+                              <div className="flex flex-col gap-3">
+                                {flatItems.map((item) => (
+                                  <div key={item.id} className="flex items-start gap-3" dir="ltr">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
+                                        <span className="text-xs font-bold text-[#92400E]">{item.name?.charAt(0)?.toUpperCase() || '?'}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-semibold text-[#1F2937]">{item.name || '-'}</span>
+                                        {item.respondedAt && <span className="text-[11px] text-[#9CA3AF]">{formatTimeAgoArabic(item.respondedAt)}</span>}
+                                        <StatusBadge status={item.status} label={consultationStatusLabels[item.status] || item.status} />
+                                      </div>
+                                      <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                        <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{item.text?.trim() || '—'}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
+                                <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                          </div>
-                        );
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">استشارة المكتب التنفيذي</p>
-                    <p className="text-gray-500 text-sm">لا توجد استشارات مسجلة</p>
+                        </div>
+                      );
+                    })}
                   </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                      <ClipboardCheck className="w-6 h-6 text-[#98A2B3]" />
+                    </div>
+                    <p className="text-[15px] font-semibold text-[#344054]">استشارة الجدولة</p>
+                    <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Inline chat input – consultant picker + question */}
+              {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.REJECTED && (
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                  {/* Consultant picker (expandable) */}
+                  {showConsultantPicker && (
+                    <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#344054]">اختر المستشارين</span>
+                        {consultationForm.consultant_user_ids.length > 0 && (
+                          <span className="text-xs text-[#048F86] font-medium bg-[#048F86]/10 px-2 py-0.5 rounded-full">
+                            {consultationForm.consultant_user_ids.length} مستشار
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative mb-2">
+                        <Input
+                          type="text"
+                          value={consultationForm.search}
+                          onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))}
+                          placeholder="ابحث بالاسم أو البريد..."
+                          className="h-9 text-right text-sm rounded-lg border-[#E5E7EB] bg-white pr-3 pl-8"
+                        />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                      </div>
+                      <div className="max-h-[160px] overflow-y-auto rounded-lg border border-[#E5E7EB] bg-white">
+                        {isLoadingConsultants ? (
+                          <div className="py-4 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#048F86] mx-auto" />
+                          </div>
+                        ) : consultants.length === 0 ? (
+                          <div className="py-4 text-center text-sm text-[#9CA3AF]">لا توجد نتائج</div>
+                        ) : (
+                          <div className="py-1">
+                            {consultants.map((user) => {
+                              const isSelected = consultationForm.consultant_user_ids.includes(user.id);
+                              return (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => toggleConsultantSelection(user.id)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-right transition-colors hover:bg-[#F9FAFB] ${isSelected ? 'bg-[#048F86]/5' : ''}`}
+                                >
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-[#048F86] border-[#048F86]' : 'border-[#D1D5DB] bg-white'}`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                                        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-[#048F86]/15 text-[#048F86]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {user.first_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <span className="text-sm text-[#1F2937]">{user.first_name} {user.last_name}</span>
+                                    <span className="text-[11px] text-[#9CA3AF] mr-1.5">{user.email}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {/* Selected consultant chips */}
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {consultationForm.consultant_user_ids.map((uid) => {
+                            const user = consultants.find((c) => c.id === uid);
+                            return (
+                              <span key={uid} className="inline-flex items-center gap-1 bg-[#048F86]/10 text-[#048F86] text-xs font-medium px-2 py-1 rounded-full">
+                                {user ? `${user.first_name} ${user.last_name}` : uid}
+                                <button type="button" onClick={() => toggleConsultantSelection(uid)} className="hover:text-[#037A72]">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Input row */}
+                  <form
+                    onSubmit={handleConsultationSubmit}
+                    className="flex items-end gap-3 px-5 py-4"
+                  >
+                    {/* Toggle consultant picker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowConsultantPicker((v) => !v)}
+                      className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors border ${showConsultantPicker ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#048F86]/40 hover:text-[#048F86]'}`}
+                      title="اختيار المستشارين"
+                    >
+                      <Users className="w-5 h-5" />
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#048F86] text-white text-[9px] font-bold flex items-center justify-center">
+                          {consultationForm.consultant_user_ids.length}
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex-1 relative">
+                      <Textarea
+                        value={consultationForm.consultation_question}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))}
+                        placeholder={consultationForm.consultant_user_ids.length === 0 ? 'اختر المستشارين أولاً ثم اكتب سؤالك...' : 'اكتب سؤال الاستشارة...'}
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (consultationForm.consultant_user_ids.length > 0 && consultationForm.consultation_question.trim()) {
+                              handleConsultationSubmit(e as any);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {consultationMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* سؤال tab – Chat-style Q&A */}
+          {activeTab === 'directive' && (
+            <div className="flex flex-col w-full max-h-[600px] rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+              {/* Scrollable messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {isLoadingGuidanceRecords ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
+                  </div>
+                ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
+                  <div className="flex flex-col pb-4">
+                    {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
+                      const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
+                      const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
+
+                      return (
+                        <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
+                          <div className="px-5 pt-5 pb-3">
+                            <div className="flex items-start gap-3" dir="rtl">
+                              <div className="flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{row.requested_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-semibold text-[#1F2937]">{row.requested_by_name || '-'}</span>
+                                  <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
+                                  {row.status && <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />}
+                                </div>
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%]">
+                                  <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{row.guidance_question || '-'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="px-5 pb-5 pt-1">
+                            {row.guidance_answer ? (
+                              <div className="flex items-start gap-3" dir="ltr">
+                                <div className="flex-shrink-0">
+                                  <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
+                                    <span className="text-xs font-bold text-[#92400E]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {row.responded_by_name && <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>}
+                                    {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatTimeAgoArabic(row.responded_at)}</span>}
+                                  </div>
+                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
+                                <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                      <FileCheck className="w-6 h-6 text-[#98A2B3]" />
+                    </div>
+                    <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+                    <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Input – always visible at bottom */}
+              <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!requestGuidanceForm.notes.trim()) return;
+                    handleRequestGuidanceSubmit(e);
+                  }}
+                  className="flex items-end gap-3"
+                >
+                  <div className="flex-1">
+                    <Textarea
+                      value={requestGuidanceForm.notes}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
+                      placeholder="اكتب سؤالك هنا..."
+                      className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                      rows={1}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (requestGuidanceForm.notes.trim()) {
+                            handleRequestGuidanceSubmit(e as any);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                  >
+                    {requestGuidanceMutation.isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                      </svg>
+                    )}
+                  </button>
+                </form>
+              </div>
             </div>
           )}
 
@@ -3655,8 +3879,9 @@ const MeetingDetail: React.FC = () => {
             <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />
           )}
 
-          </div>
         </div>
+
+        {/* Edit button moved to DetailPageHeader */}
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
@@ -4180,93 +4405,9 @@ const MeetingDetail: React.FC = () => {
         attachment={previewAttachment}
       />
 
-      {/* Request Guidance – Drawer */}
-      <Drawer
-        open={isRequestGuidanceModalOpen}
-        onOpenChange={setIsRequestGuidanceModalOpen}
-        title={<span className="text-right">طلب استشارة</span>}
-        side="left"
-        width={500}
-        bodyClassName="dir-rtl"
-        footer={
-          <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
-          </div>
-        }
-      >
-        <form id="request-guidance-form" onSubmit={handleRequestGuidanceSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">ملاحظات</label>
-            <Textarea value={requestGuidanceForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })} placeholder="يرجى توفير التوجيهات اللازمة حول هذا الطلب" className="w-full min-h-[100px] text-right" />
-          </div>
-        </form>
-      </Drawer>
+      {/* Request Guidance – now inline in chat, drawer removed */}
 
-      {/* Scheduling Consultation – Drawer */}
-      <Drawer
-        open={isConsultationModalOpen}
-        onOpenChange={setIsConsultationModalOpen}
-        title={<span className="text-right">طلب استشارة جدولة</span>}
-        side="left"
-        width={520}
-        bodyClassName="dir-rtl"
-        footer={
-          <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_ids: [], consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : !consultationForm.consultation_question.trim() ? 'أدخل سؤال الاستشارة' : 'طلب استشارة'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        }
-      >
-        <form id="consultation-form" onSubmit={handleConsultationSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">المستشارون</label>
-            <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-10 text-right border border-gray-300 rounded-lg" />
-            <div className="border border-gray-300 rounded-lg bg-white max-h-[220px] overflow-y-auto dir-rtl">
-              {isLoadingConsultants ? (
-                <div className="py-6 text-center text-sm text-gray-500">جاري التحميل...</div>
-              ) : consultants.length === 0 ? (
-                <div className="py-6 text-center text-sm text-gray-500">لا توجد نتائج</div>
-              ) : (
-                <ul className="py-1">
-                  {consultants.map((user) => (
-                    <li key={user.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                      <input
-                        type="checkbox"
-                        id={`consultant-${user.id}`}
-                        checked={consultationForm.consultant_user_ids.includes(user.id)}
-                        onChange={() => toggleConsultantSelection(user.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
-                      />
-                      <label htmlFor={`consultant-${user.id}`} className="flex-1 text-right text-sm text-gray-700 cursor-pointer">
-                        {user.first_name} {user.last_name} <span className="text-gray-500">– {user.email}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {consultationForm.consultant_user_ids.length > 0 && (
-              <p className="text-xs text-gray-500 text-right">تم اختيار {consultationForm.consultant_user_ids.length} مستشار</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة *</label>
-            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" required />
-          </div>
-        </form>
-      </Drawer>
+      {/* Scheduling Consultation – now inline in chat, drawer removed */}
 
       {/* Approve Update – Drawer (مجدول - الجدولة → مجدول) */}
       <Drawer
@@ -5043,6 +5184,7 @@ const MeetingDetail: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
