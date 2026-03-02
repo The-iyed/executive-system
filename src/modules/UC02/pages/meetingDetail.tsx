@@ -3657,19 +3657,19 @@ const MeetingDetail: React.FC = () => {
                           {/* Answer bubble */}
                           <div className="px-5 pb-5 pt-1">
                             {row.guidance_answer ? (
-                              <div className="flex items-start gap-3 mr-12">
+                              <div className="flex items-start gap-3 ml-12 flex-row-reverse" dir="ltr">
                                 <div className="flex-shrink-0">
                                   <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
                                     <span className="text-xs font-bold text-[#92400E]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
                                   </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
+                                <div className="flex-1 min-w-0 flex flex-col items-end">
+                                  <div className="flex items-center gap-2 mb-1 flex-row-reverse">
                                     {row.responded_by_name && <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>}
                                     {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>}
                                   </div>
-                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-full">
-                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
+                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-full">
+                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap text-right">{row.guidance_answer}</p>
                                   </div>
                                 </div>
                               </div>
