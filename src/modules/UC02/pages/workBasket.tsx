@@ -100,10 +100,13 @@ const WorkBasket: React.FC = () => {
     return MeetingStatusLabels[status as MeetingStatus] || status;
   };
 
-  /* ─── Filter tabs ─── */
+  /* ─── Filter tabs with counts ─── */
   const filterTabs = [
-    { id: 'all', label: 'جميع الحالات' },
-    ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING),
+    { id: 'all', label: 'جميع الحالات', count: totalItems },
+    ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING).map(tab => ({
+      ...tab,
+      count: meetings.filter(m => m.status === tab.id).length,
+    })),
   ];
 
   /* ─── Stats ─── */
@@ -278,21 +281,41 @@ const WorkBasket: React.FC = () => {
       {/*     STATUS FILTER TABS                  */}
       {/* ════════════════════════════════════════ */}
       <div className="px-6 pb-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              className={cn(
-                'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all',
-                statusFilter === tab.id
-                  ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
-                  : 'bg-white text-[var(--color-text-gray-600)] border border-[var(--color-base-gray-200)] hover:bg-[var(--color-base-gray-50)]'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          {filterTabs.map((tab) => {
+            const isActive = statusFilter === tab.id;
+            const isAll = tab.id === 'all';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={cn(
+                  'group flex items-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
+                  isActive && isAll
+                    ? 'bg-[var(--color-primary-500)] text-white border-[var(--color-primary-500)] shadow-sm'
+                    : isActive
+                    ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]'
+                    : 'bg-white text-[var(--color-text-gray-500)] border-[var(--color-base-gray-200)] hover:border-[var(--color-base-gray-300)] hover:text-[var(--color-text-gray-700)]'
+                )}
+              >
+                <span>{tab.label}</span>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold tabular-nums',
+                      isActive && isAll
+                        ? 'bg-white/20 text-white'
+                        : isActive
+                        ? 'bg-[var(--color-primary-100)] text-[var(--color-primary-700)]'
+                        : 'bg-[var(--color-base-gray-100)] text-[var(--color-text-gray-500)] group-hover:bg-[var(--color-base-gray-200)]'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
