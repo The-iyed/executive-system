@@ -50,42 +50,39 @@ export function DetailPageHeader({
     <div
       className={cn(
         'w-full mt-[30px] flex flex-col rounded-2xl bg-white min-w-0 overflow-hidden',
-        'border border-[#E5E7EB] shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
+        'border border-[#E5E7EB] shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.03)]',
         className
       )}
       dir="rtl"
     >
-      {/* Top accent */}
-      <div
-        className="h-0.5 w-full flex-shrink-0"
-      />
+      {/* Top accent line */}
+      <div className="h-[3px] w-full flex-shrink-0 bg-gradient-to-l from-[#048F86] via-[#34C3BA] to-[#048F86]/30" />
 
       <div className="flex flex-col min-w-0">
-        {/* Row 1: Back + Title + Subtitle + (optional) unsaved badge */}
-        <div className="flex flex-row items-center justify-between gap-4 px-5 pt-5 pb-3 min-w-0">
+        {/* Row 1: Back + Title + Status + Primary action */}
+        <div className="flex flex-row items-center justify-between gap-4 px-6 pt-5 pb-4 min-w-0">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center justify-center w-10 h-10 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-colors flex-shrink-0 mt-0.5"
+              className="flex items-center justify-center w-10 h-10 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-all flex-shrink-0"
               aria-label="رجوع"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           )}
           <div className="flex flex-col min-w-0 flex-1 text-right">
-            <div className="flex flex-row items-center gap-2 flex-wrap">
-              <h1 className="text-base font-semibold text-[#111827] leading-tight truncate max-w-full">
+            <div className="flex flex-row items-center gap-2.5 flex-wrap">
+              <h1 className="text-[17px] font-bold text-[#101828] leading-tight truncate max-w-full">
                 {title}
               </h1>
-              
-            {statusBadge}
-            {hasChanges && (
+              {statusBadge}
+              {hasChanges && (
                 <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium text-white flex-shrink-0"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white flex-shrink-0"
                   style={{
                     background: 'linear-gradient(135deg, #3B82F6 0%, #048F86 50%, #22D3D3 100%)',
-                    boxShadow: '0 1px 2px rgba(4, 143, 134, 0.25)',
+                    boxShadow: '0 1px 3px rgba(4, 143, 134, 0.3)',
                   }}
                 >
                   تغييرات غير محفوظة
@@ -93,7 +90,7 @@ export function DetailPageHeader({
               )}
             </div>
             {subtitle && (
-              <p className="text-xs text-[#6B7280] leading-snug mt-0.5 truncate max-w-full">
+              <p className="text-[13px] text-[#667085] leading-snug mt-1 truncate max-w-full">
                 {subtitle}
               </p>
             )}
@@ -101,19 +98,10 @@ export function DetailPageHeader({
           {primaryAction && (
             <div className="flex-shrink-0">{primaryAction}</div>
           )}
-         
         </div>
 
-        {/* Row 2: Status + Primary action (aligned end in RTL) */}
-        <div className="flex flex-row items-center justify-between gap-4 px-5 pb-4 min-w-0">
-        
-          <div className="flex flex-row items-center gap-3 flex-wrap min-w-0">
-          </div>
-         
-        </div>
-
-        {/* Tabs strip: full width, light bg, clear separation */}
-        <div className="flex flex-row items-center gap-3 w-full min-w-0 bg-[#F9FAFB] border-t border-[#E5E7EB] px-4 py-3">
+        {/* Tabs strip */}
+        <div className="flex flex-row items-center gap-3 w-full min-w-0 bg-[#FAFBFC] border-t border-[#EAECF0] px-5 py-0">
           <div className="flex-1 flex justify-center min-w-0 overflow-x-auto">
             <Tabs
               items={tabs}
@@ -129,7 +117,7 @@ export function DetailPageHeader({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center justify-center w-9 h-9 rounded-lg text-[#6B7280] hover:bg-white hover:text-[#111827] hover:shadow-sm transition-all flex-shrink-0 border border-transparent hover:border-[#E5E7EB]"
+                    className="flex items-center justify-center w-9 h-9 rounded-lg text-[#98A2B3] hover:bg-white hover:text-[#344054] hover:shadow-sm transition-all flex-shrink-0 border border-transparent hover:border-[#E5E7EB]"
                     aria-label="مساعدة"
                   >
                     <HelpCircle className="w-5 h-5" strokeWidth={1.5} />
@@ -139,8 +127,8 @@ export function DetailPageHeader({
                   side="bottom"
                   className="max-w-[280px] text-right border border-[#E5E7EB] shadow-lg bg-white"
                 >
-                  <p className="font-semibold text-[#111827] mb-1">{helpTooltip.title}</p>
-                  <p className="text-sm text-[#6B7280]">{helpTooltip.description}</p>
+                  <p className="font-bold text-[#101828] mb-1">{helpTooltip.title}</p>
+                  <p className="text-sm text-[#667085]">{helpTooltip.description}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
