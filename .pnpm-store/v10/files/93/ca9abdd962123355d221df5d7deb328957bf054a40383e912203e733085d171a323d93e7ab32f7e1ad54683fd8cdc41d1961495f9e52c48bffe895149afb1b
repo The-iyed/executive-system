@@ -1,0 +1,103 @@
+declare class TokensStreamBuffer {
+    private _buffer;
+    wordCompleteListeners: Array<(word: string) => void>;
+    constructor();
+    processBufferForCompletion(): void;
+    private notifyWordCompletion;
+    subscribeToSegmentCompletion(listener: (word: string) => void): () => void;
+    unsubscribeFromSegmentCompletion(listener: (word: string) => void): void;
+    flushBuffer(): void;
+    set buffer(value: string);
+    get buffer(): string;
+    receiveChunk(chunk: string): void;
+}
+
+type ParsedSegment = {
+    segment: string;
+    content?: string;
+    type: string;
+    styles: any[];
+    language?: string;
+    level?: number;
+    origin?: string;
+    isProcessingNewLine: boolean;
+    isBlockDefining: boolean;
+};
+type ActionParams = {
+    styleGroup?: string;
+    match?: string;
+    origin?: string;
+    emitter?: (blockContent: ParsedSegment) => void;
+    isTruncateTrailingNewLine?: boolean;
+    skipStyles?: boolean;
+    isDebug?: boolean;
+    styleGroups?: any;
+};
+
+type EvaluationEvent = {
+    segment?: string;
+};
+
+type Context = {
+    isProcessingNewLine: boolean;
+    isProcessingStylingMarkerSegment: boolean;
+    blockContentBuffer: string;
+    blockType: string;
+    parsedSegment: string;
+    styles: any[];
+    isBlockDefining: boolean;
+    headerLevel: number;
+    codeBlockLanguage: string;
+    codeBlockSegmentsBuffer: string[];
+    encounteredCodeBlockExitMarkerCandidate: boolean;
+    parsedSegmentPrefixedContent?: string;
+    parsedSegmentPostfixedContent?: string;
+    prefixedContent?: string;
+    postfixedContent?: string;
+};
+declare class TextStreamStateMachine {
+    context: Context;
+    blockElementState: string;
+    inlineElementState: string;
+    parsedSegmentListeners: Array<(blockContent: ParsedSegment) => void>;
+    constructor();
+    subscribeToParsedSegment(listener: (blockContent: ParsedSegment) => void): () => void;
+    unsubscribeFromParsedSegment(listener: (blockContent: ParsedSegment) => void): void;
+    notifyParsedSegment(blockContent: ParsedSegment): void;
+    evaluate(evaluationName: string, { event, params }: {
+        event: EvaluationEvent;
+        params: ActionParams;
+    }): boolean;
+    act(actionName: string, { event, params }: {
+        event: any;
+        params: ActionParams;
+    }): void;
+    transitionBlockElementState(state: string): void;
+    transitionInlineElementState(state: string): void;
+    resetParser(): void;
+    processHeader(segment: string): void;
+    processInlineStylesGroup(segment: string, styleGroup: string): void;
+    processCodeBlock(segment: string): void;
+    processParagraph(segment: string): void;
+    parseSegment(segment: string): void;
+}
+
+declare class MarkdownStreamParser {
+    static instances: Map<any, any>;
+    tokensStreamProcessor: TokensStreamBuffer;
+    markdownStreamParser: TextStreamStateMachine;
+    unsubscribeFromProcessor: () => void;
+    unsubscribeFromStateMachine: () => void;
+    parsing: boolean;
+    tokenParseListeners: Array<(token: any) => void>;
+    static getInstance(instanceId: string): MarkdownStreamParser;
+    static removeInstance(instanceId: string): void;
+    constructor();
+    subscribeToTokenParse(listener: (token: any, unsubscribe: () => void) => void): () => void;
+    notifyTokenParse(token: any): void;
+    startParsing(): void;
+    parseToken(chunk: string): Error | void;
+    stopParsing(): void;
+}
+
+export { MarkdownStreamParser };
