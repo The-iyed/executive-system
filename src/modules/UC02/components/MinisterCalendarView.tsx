@@ -429,6 +429,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           currentDate={currentDate}
           onPreviousWeek={handlePreviousWeek}
           onNextWeek={handleNextWeek}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       </div>
 
