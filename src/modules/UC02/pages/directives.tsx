@@ -10,7 +10,6 @@ import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils
 import { PATH } from '../routes/paths';
 import '@/modules/shared/styles';
 import { trackEvent } from '@analytics';
-import '@shared/styles';
 import { useMeetingFormDrawer } from '../features/MeetingForm/hooks';
 import { MeetingFormDrawer } from '../features/MeetingForm/components/MeetingFormDrawer';
 
