@@ -1,21 +1,28 @@
-import React from 'react';
+import { useEffect } from 'react';
+import { usePostHog } from '@posthog/react';
 import { useAuth } from '../context/AuthProvider';
 
 /**
- * Identifies the current user in PostHog when authenticated.
- * No-op if PostHog is not configured (e.g. in this build).
+ * Identifies the authenticated user in PostHog with roles and use_cases from /api/auth/me.
+ * Renders nothing; mount inside AuthProvider.
  */
-export const PostHogIdentify: React.FC = () => {
+export function PostHogIdentify() {
+  const posthog = usePostHog();
   const { user } = useAuth();
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).posthog && user?.id) {
-      (window as any).posthog.identify(String(user.id), {
-        email: user.email,
-        name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username,
-      });
-    }
-  }, [user]);
+  useEffect(() => {
+    if (!posthog || !user) return;
+
+    const roles = user.roles?.map((r) => r.code) ?? [];
+    posthog.identify(user.id, {
+      email: user.email,
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      roles,
+      use_cases: user.use_cases ?? [],
+    });
+  }, [posthog, user]);
 
   return null;
-};
+}
