@@ -71,7 +71,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                   key={item.id}
                   onClick={() => handleClick(item.id, item.path)}
                   className={`
-                    flex items-center gap-2 h-8 px-4 rounded-lg text-[13px] font-medium
+                    flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-medium
                     transition-all duration-200 whitespace-nowrap cursor-pointer
                     ${isActive
                       ? 'bg-[var(--color-primary-700)] text-white'
