@@ -1,4 +1,5 @@
 export const PATH = {
+  DASHBOARD: '/dashboard',
   MEETING_DETAIL: '/meeting/:id',
   DIRECTIVES: '/directives',
   SCHEDULED_MEETINGS: '/scheduled-meetings',
