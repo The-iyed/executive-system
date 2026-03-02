@@ -42,6 +42,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
     handleCancel,
+    handlePrevious,
     isLoading,
     error,
     draftData,
@@ -101,6 +102,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
             replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             step2EditableMap={step2ContentHook.step2EditableMap}
           />
@@ -135,6 +137,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             step3EditableMap={step3InviteesHook.step3EditableMap}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
