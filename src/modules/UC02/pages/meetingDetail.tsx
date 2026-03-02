@@ -3627,7 +3627,7 @@ const MeetingDetail: React.FC = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
                   </div>
                 ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                  <div className="flex flex-col max-h-[500px] overflow-y-auto">
+                  <div className="flex flex-col max-h-[500px] overflow-y-auto pb-6">
                     {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
                       const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
                       const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
