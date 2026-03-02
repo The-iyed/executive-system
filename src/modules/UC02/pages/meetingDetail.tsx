@@ -3576,18 +3576,139 @@ const MeetingDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Bottom action bar */}
+              {/* Inline chat input – consultant picker + question */}
               {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.REJECTED && (
-                <div className="flex items-center gap-3 px-5 py-4 border-t border-[#E5E7EB]">
-                  <button
-                    type="button"
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                  {/* Consultant picker (expandable) */}
+                  {showConsultantPicker && (
+                    <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#344054]">اختر المستشارين</span>
+                        {consultationForm.consultant_user_ids.length > 0 && (
+                          <span className="text-xs text-[#048F86] font-medium bg-[#048F86]/10 px-2 py-0.5 rounded-full">
+                            {consultationForm.consultant_user_ids.length} مستشار
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative mb-2">
+                        <Input
+                          type="text"
+                          value={consultationForm.search}
+                          onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))}
+                          placeholder="ابحث بالاسم أو البريد..."
+                          className="h-9 text-right text-sm rounded-lg border-[#E5E7EB] bg-white pr-3 pl-8"
+                        />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                      </div>
+                      <div className="max-h-[160px] overflow-y-auto rounded-lg border border-[#E5E7EB] bg-white">
+                        {isLoadingConsultants ? (
+                          <div className="py-4 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#048F86] mx-auto" />
+                          </div>
+                        ) : consultants.length === 0 ? (
+                          <div className="py-4 text-center text-sm text-[#9CA3AF]">لا توجد نتائج</div>
+                        ) : (
+                          <div className="py-1">
+                            {consultants.map((user) => {
+                              const isSelected = consultationForm.consultant_user_ids.includes(user.id);
+                              return (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => toggleConsultantSelection(user.id)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-right transition-colors hover:bg-[#F9FAFB] ${isSelected ? 'bg-[#048F86]/5' : ''}`}
+                                >
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-[#048F86] border-[#048F86]' : 'border-[#D1D5DB] bg-white'}`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                                        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-[#048F86]/15 text-[#048F86]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {user.first_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <span className="text-sm text-[#1F2937]">{user.first_name} {user.last_name}</span>
+                                    <span className="text-[11px] text-[#9CA3AF] mr-1.5">{user.email}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {/* Selected consultant chips */}
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {consultationForm.consultant_user_ids.map((uid) => {
+                            const user = consultants.find((c) => c.id === uid);
+                            return (
+                              <span key={uid} className="inline-flex items-center gap-1 bg-[#048F86]/10 text-[#048F86] text-xs font-medium px-2 py-1 rounded-full">
+                                {user ? `${user.first_name} ${user.last_name}` : uid}
+                                <button type="button" onClick={() => toggleConsultantSelection(uid)} className="hover:text-[#037A72]">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Input row */}
+                  <form
+                    onSubmit={handleConsultationSubmit}
+                    className="flex items-end gap-3 px-5 py-4"
                   >
-                    <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
+                    {/* Toggle consultant picker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowConsultantPicker((v) => !v)}
+                      className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors border ${showConsultantPicker ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#048F86]/40 hover:text-[#048F86]'}`}
+                      title="اختيار المستشارين"
+                    >
+                      <Users className="w-5 h-5" />
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#048F86] text-white text-[9px] font-bold flex items-center justify-center">
+                          {consultationForm.consultant_user_ids.length}
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex-1 relative">
+                      <Textarea
+                        value={consultationForm.consultation_question}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))}
+                        placeholder={consultationForm.consultant_user_ids.length === 0 ? 'اختر المستشارين أولاً ثم اكتب سؤالك...' : 'اكتب سؤال الاستشارة...'}
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (consultationForm.consultant_user_ids.length > 0 && consultationForm.consultation_question.trim()) {
+                              handleConsultationSubmit(e as any);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {consultationMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
