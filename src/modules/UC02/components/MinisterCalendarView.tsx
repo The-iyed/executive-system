@@ -456,6 +456,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}
                 onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onDayOverflowClick={(date, dayEvents) => setDayEventsModal({ date, events: dayEvents })}
               />
             )}
             {isLoading && (
