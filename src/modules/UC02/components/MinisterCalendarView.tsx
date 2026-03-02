@@ -439,16 +439,25 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           <CalendarSkeleton />
         ) : (
           <>
-            <WeeklyCalendarGrid
-              weekStart={weekStart}
-              events={events}
-              startHour={8}
-              endHour={24}
-              onEventClick={(event) => setSelectedEventForDetails(event)}
-              onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-              onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
-            />
-            
+            {viewMode === 'weekly' ? (
+              <WeeklyCalendarGrid
+                weekStart={weekStart}
+                events={events}
+                startHour={8}
+                endHour={24}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            ) : (
+              <MonthlyCalendarGrid
+                currentDate={currentDate}
+                events={events}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            )}
             {isLoading && (
               <div className="absolute top-3 right-3 z-10">
                 <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-lg border border-gray-100 flex items-center gap-2.5">
