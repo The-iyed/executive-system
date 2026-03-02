@@ -29,12 +29,12 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      '@/lib/api': resolve(__dirname, './src/lib/api'),
-      '@/lib/ui': resolve(__dirname, './src/lib/ui'),
+      '@/lib/api': resolve(__dirname, './src/lib/api/index.ts'),
       '@/lib/ui/styles.css': resolve(__dirname, './src/lib/ui/styles.css'),
-      '@/modules/shared': resolve(__dirname, './src/modules/shared'),
-      '@/modules/auth': resolve(__dirname, './src/modules/auth'),
+      '@/lib/ui': resolve(__dirname, './src/lib/ui/index.ts'),
+      '@/modules/shared': resolve(__dirname, './src/modules/shared/index.ts'),
+      '@/modules/auth': resolve(__dirname, './src/modules/auth/index.ts'),
+      '@': resolve(__dirname, './src'),
     },
   },
   server: {
