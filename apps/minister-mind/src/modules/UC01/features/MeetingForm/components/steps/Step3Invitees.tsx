@@ -40,6 +40,7 @@ export interface Step3InviteesProps {
   handleUpdateAttendee: (id: string, field: string, value: any) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
+  handleBackClick?: () => void;
   handleCancelClick: () => void;
   /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
   step3EditableMap?: Record<string, boolean>;
@@ -69,6 +70,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleUpdateAttendee,
   handleNextClick,
   handleSaveDraftClick,
+  handleBackClick,
   handleCancelClick,
   step3EditableMap,
   suggestAttendeesMeetingParams,
@@ -380,6 +382,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
         )}
 
         <ActionButtons
+          onBack={handleBackClick}
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
