@@ -4,13 +4,44 @@ import type { CalendarEventData } from './WeeklyCalendarGrid';
 
 export type EventType = 'reserved' | 'optional' | 'compulsory' | 'available';
 
+const ROW_HEIGHT_PX = 53;
+
 export interface CalendarEventProps {
   event: CalendarEventData;
+  /** Slot time (e.g. "09:00") for computing exact-duration offset when event has exactStartTime */
+  slotTime?: string;
   onClick?: (e: React.MouseEvent) => void;
   onBook?: (event: CalendarEventData) => void;
   /** Open full event details (modal). Kept for API compatibility; use onClick to open details. */
   onShowDetails?: (event: CalendarEventData) => void;
   className?: string;
+}
+
+/** Compute height and top offset for events with exact start/end times */
+function getExactDurationStyle(
+  event: CalendarEventData,
+  slotTime: string
+): React.CSSProperties | undefined {
+  if (!event.exactStartTime || !event.exactEndTime) return undefined;
+  const [sh, sm] = event.exactStartTime.split(':').map(Number);
+  const [eh, em] = event.exactEndTime.split(':').map(Number);
+  const [slotH, slotM] = slotTime.split(':').map(Number);
+  const startM = (sh ?? 0) * 60 + (sm ?? 0);
+  const endM = (eh ?? 0) * 60 + (em ?? 0);
+  const slotStartM = (slotH ?? 0) * 60 + (slotM ?? 0);
+  const durationM = endM - startM;
+  if (durationM <= 0) return undefined;
+  const topOffsetPx = ((startM - slotStartM) / 60) * ROW_HEIGHT_PX;
+  const heightPx = (durationM / 60) * ROW_HEIGHT_PX;
+  return {
+    position: 'absolute',
+    top: topOffsetPx,
+    left: 0,
+    right: 0,
+    height: heightPx,
+    minHeight: heightPx,
+    maxHeight: heightPx,
+  };
 }
 
 const eventTypeStyles: Record<string, { bg: string; border: string; text: string; borderStyle?: string; borderRight?: string; contentStyle?: { text: string; bg: string } }> = {
@@ -142,6 +173,7 @@ const formatDate = (date: Date): string => {
 
 export const CalendarEvent: React.FC<CalendarEventProps> = ({
   event,
+  slotTime,
   onClick,
   onBook,
   onShowDetails,
@@ -153,6 +185,11 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   const typeLabel = eventTypeLabels[event.type] || 'اجتماع';
   const displayLabel = event.label || typeLabel;
   const isDisabled = !event.is_available && !event.variant;
+
+  const exactStyle = slotTime ? getExactDurationStyle(event, slotTime) : undefined;
+  const baseStyle: React.CSSProperties = exactStyle
+    ? { ...exactStyle }
+    : { minHeight: '53px', maxHeight: '53px' };
 
   const handleClick = (e: React.MouseEvent) => {
     if (event.id === 'highlighted-slot') return;
@@ -171,8 +208,9 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
       role="button"
       tabIndex={0}
       className={cn(
-        'relative transition-all w-full h-full min-h-0 flex flex-col justify-center px-2 py-1.5 text-right',
+        'relative transition-all w-full min-h-0 flex flex-col justify-center px-2 py-1.5 text-right',
         'rounded-[7.58038px]',
+        !exactStyle && 'h-full',
         styles?.bg,
         styles?.border,
         styles?.borderStyle,
@@ -180,7 +218,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         isDisabled ? 'cursor-not-allowed opacity-60' : (event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'),
         className
       )}
-      style={{ minHeight: '53px', maxHeight: '53px' }}
+      style={baseStyle}
       onClick={handleClick}
       onKeyDown={(e) => {
         if (event.id !== 'highlighted-slot' && (e.key === 'Enter' || e.key === ' ')) {
