@@ -6,7 +6,9 @@ import { Loader, MeetingCard } from '@/modules/shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
+  MonthlyCalendarGrid,
   type CalendarEventData,
+  type CalendarViewMode,
 } from '@/modules/shared';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
 import {
