@@ -341,10 +341,41 @@ const Dashboard: React.FC = () => {
           </div>
         </ChartCard>
 
-        {/* Monthly area chart */}
-        <ChartCard title="الطلبات حسب الشهر" delay={0.32} className="lg:col-span-4">
-          {monthlyData.length > 0 ? (
+        {/* Directive bar chart */}
+        <ChartCard title="حالات التوجيهات" delay={0.32} className="lg:col-span-4">
+          {directiveStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={directiveStatusData} barSize={40}>
+                <defs>
+                  {BAR_COLORS.map((c, i) => (
+                    <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={c} stopOpacity={1} />
+                      <stop offset="100%" stopColor={c} stopOpacity={0.6} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} allowDecimals={false} width={30} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="count" name="العدد" radius={[10, 10, 4, 4]}>
+                  {directiveStatusData.map((_, i) => (
+                    <Cell key={i} fill={`url(#barGrad${i % BAR_COLORS.length})`} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* ── Row 2: Bar + Recent meetings ────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Monthly area chart */}
+        <ChartCard title="الطلبات حسب الشهر" delay={0.36}>
+          {monthlyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
@@ -366,37 +397,6 @@ const Dashboard: React.FC = () => {
                   activeDot={{ r: 7, fill: '#048F86', stroke: '#fff', strokeWidth: 3 }}
                 />
               </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
-          )}
-        </ChartCard>
-      </div>
-
-      {/* ── Row 2: Bar + Recent meetings ────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Directive bar chart */}
-        <ChartCard title="حالات التوجيهات" delay={0.36}>
-          {directiveStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={directiveStatusData} barSize={40}>
-                <defs>
-                  {BAR_COLORS.map((c, i) => (
-                    <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={c} stopOpacity={1} />
-                      <stop offset="100%" stopColor={c} stopOpacity={0.6} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={8} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} allowDecimals={false} width={30} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" name="العدد" radius={[10, 10, 4, 4]}>
-                  {directiveStatusData.map((_, i) => (
-                    <Cell key={i} fill={`url(#barGrad${i % BAR_COLORS.length})`} />
-                  ))}
-                </Bar>
-              </BarChart>
             </ResponsiveContainer>
           ) : (
             <p className="text-center text-gray-400 py-16 text-sm">لا توجد بيانات</p>
