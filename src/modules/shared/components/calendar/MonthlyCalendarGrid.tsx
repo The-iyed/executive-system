@@ -133,12 +133,17 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span
-                    className="text-[10px] text-[#048F86] font-semibold text-center"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDayOverflowClick?.(date, dayEvents);
+                    }}
+                    className="text-[10px] text-[#048F86] font-semibold text-center hover:underline cursor-pointer py-0.5"
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
                     +{dayEvents.length - 3} المزيد
-                  </span>
+                  </button>
                 )}
               </div>
             </div>
