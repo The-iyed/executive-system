@@ -95,6 +95,9 @@ import {
   getMeetingLocationDropdownValue,
   showMeetingLocationOtherInput,
 } from '../../UC01/features/MeetingForm/utils/constants';
+import { EditMeeting } from '../../UC01/features/MeetingForm/features/edit';
+import FormMeetingModal from '../../UC01/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { trackEvent } from '@analytics';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -183,6 +186,7 @@ const MeetingDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
+  const [isEditMeetingOpen, setIsEditMeetingOpen] = useState(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
 
@@ -192,6 +196,12 @@ const MeetingDetail: React.FC = () => {
     queryFn: () => getMeetingById(id!),
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (meeting?.id) {
+      trackEvent('UC-02', 'uc02_meeting_detail_viewed', { meeting_id: meeting.id });
+    }
+  }, [meeting?.id]);
 
   const generalNotesList = React.useMemo(
     () => getGeneralNotesList(meeting?.general_notes),
@@ -1555,11 +1565,8 @@ const MeetingDetail: React.FC = () => {
   // Map status to MeetingStatus enum
   const meetingStatus = meeting?.status as MeetingStatus || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
-  /** When true, form is editable and all actions (FAB) are enabled. */
-  const canEdit =
-    meeting?.status === MeetingStatus.UNDER_REVIEW ||
-    meeting?.status === MeetingStatus.UNDER_GUIDANCE ||
-    meeting?.status === MeetingStatus.SCHEDULED;
+  /** Meeting detail is read-only; all edits happen in UC01 EditMeeting form (opened via Edit button). */
+  const canEdit = false;
 
   /** Tooltip content for help icon - shows permissions based on current status */
   const permissionTooltip = useMemo(() => {
@@ -2341,9 +2348,37 @@ const MeetingDetail: React.FC = () => {
 
         {/* Content: white card, takes full remaining height, gap above from head - min-w-0 to prevent overflow */}
         <div
-          className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white justify-center"
+          className="w-full flex-1 min-h-0 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
         >
+          {/* Edit button: in tab content area; opens UC01 EditMeeting form */}
+          {meeting && id && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
+            <div className="flex justify-end flex-shrink-0" dir="rtl">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditMeetingOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90"
+                        style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                      >
+                        <Pencil className="w-4 h-4" strokeWidth={1.26} />
+                        تعديل
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[280px] text-right">
+                    <p>فتح نموذج التعديل</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+
+          {/* Tab content wrapper: flex-1 so it takes remaining space */}
+          <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row justify-center">
           {/* Tab: معلومات الطلب */}
           {activeTab === 'request-info' && (
             <RequestInfoTab meeting={meeting} statusLabel={statusLabel} />
@@ -3620,34 +3655,8 @@ const MeetingDetail: React.FC = () => {
             <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />
           )}
 
-        </div>
-
-        {/* Edit button: bottom-left, when status allows edit; disabled when no changes */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
-          <div className="fixed bottom-6 left-6 z-40 flex-shrink-0" dir="rtl">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-block">
-                <button
-                      type="button"
-                      onClick={() => hasChanges && setIsEditConfirmOpen(true)}
-                disabled={!hasChanges}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
-                      style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                    >
-                      <Pencil className="w-4 h-4" strokeWidth={1.26} />
-                  تعديل
-              </button>
-                          </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[280px] text-right">
-                  <p>{hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
-        )}
+        </div>
 
         {/* Centered FAB: tap to show action bubbles in half-circle above */}
         {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
@@ -3670,6 +3679,27 @@ const MeetingDetail: React.FC = () => {
           />
         )}
       </div>
+
+      {/* UC01 Edit Meeting form: all edits happen here; on close refresh meeting detail */}
+      {id && (
+        <FormMeetingModal
+          open={isEditMeetingOpen}
+          onOpenChange={(open) => {
+            setIsEditMeetingOpen(open);
+            if (!open) queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+          }}
+        >
+          <EditMeeting
+            open={isEditMeetingOpen}
+            onOpenChange={(open) => {
+              setIsEditMeetingOpen(open);
+              if (!open) queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+            }}
+            meetingId={id}
+            initialMeetingData={meeting ?? undefined}
+          />
+        </FormMeetingModal>
+      )}
 
       {/* Meeting Quality Modal */}
      <QualityModal 

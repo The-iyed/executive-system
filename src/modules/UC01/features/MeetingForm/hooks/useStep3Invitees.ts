@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import axiosInstance from '@/modules/auth/utils/axios';
 import { useToast } from '@/lib/ui';
-import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
+import { createStep3InviteesSchema, MinisterAttendeeRowSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { AttendanceMechanism } from '@/modules/shared/types';
 import { getStep3EditableMap } from '../utils/editableFields';
 import { executeStep3SubmitFlow } from '../utils/step3SubmitFlow';
@@ -27,6 +27,11 @@ interface SubmitStep3InviteesPayload {
   inviteesRequired: boolean;
 }
 
+/** Map attendance_channel to API attendance_mechanism (Arabic) */
+function toAttendanceMechanism(ch: 'PHYSICAL' | 'REMOTE'): string {
+  return ch === 'REMOTE' ? 'عن بعد' : 'حضوري';
+}
+
 interface SubmitStep3InviteesResponse {
   success: boolean;
 }
@@ -46,30 +51,42 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
   const effectiveUserId = (uid: string | undefined) =>
     uid && uid !== '__manual__' ? uid : undefined;
 
-  const body = {
-    invitees: formData.invitees?.map((invitee, index) => {
-      const userId = effectiveUserId(invitee.user_id);
-      if (userId) {
-        return {
-          user_id: userId,
-          sector: invitee.sector?.trim() || '',
-          attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
-          is_required: invitee.is_required || false,
-        };
-      }
-
+  const inviteesPayload = formData.invitees?.map((invitee, index) => {
+    const userId = effectiveUserId(invitee.user_id);
+    if (userId) {
       return {
-        user_id: undefined,
-        name: invitee.name || '',
-        position: invitee.position || '',
-        mobile: invitee.mobile || '',
-        email: invitee.email || '',
+        user_id: userId,
         sector: invitee.sector?.trim() || '',
-        attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
-        item_number: index + 1,
+        attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
       };
-    }) || [],
+    }
+    return {
+      user_id: undefined,
+      name: invitee.name || '',
+      position: invitee.position || '',
+      mobile: invitee.mobile || '',
+      email: invitee.email || '',
+      sector: invitee.sector?.trim() || '',
+      attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
+      item_number: index + 1,
+      is_required: invitee.is_required || false,
+    };
+  }) || [];
+
+  const minister_invitees = (formData.minister_attendees ?? []).map((m) => ({
+    external_name: m.external_name?.trim() || '',
+    position: m.position?.trim() || '',
+    external_email: m.external_email?.trim() || '',
+    mobile: m.mobile?.trim() || '',
+    attendance_mechanism: toAttendanceMechanism(m.attendance_channel ?? 'PHYSICAL'),
+    is_required: m.is_required ?? false,
+    justification: m.justification?.trim() || '',
+  }));
+
+  const body = {
+    invitees: inviteesPayload,
+    minister_invitees,
   };
 
   await axiosInstance.patch(
@@ -97,6 +114,7 @@ export const useStep3Invitees = ({
   );
   const [formData, setFormData] = useState<Partial<Step3InviteesFormData>>({
     invitees: [],
+    minister_attendees: [],
     ...initialData,
   });
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
@@ -301,6 +319,42 @@ export const useStep3Invitees = ({
     }));
   }, []);
 
+  const handleAddMinisterAttendee = useCallback(() => {
+    const newRow: MinisterAttendeeRowSchema = {
+      id: nanoid(),
+      external_name: '',
+      position: '',
+      external_email: '',
+      mobile: '',
+      attendance_channel: 'PHYSICAL',
+      is_required: false,
+      justification: '',
+    };
+    setFormData((prev) => ({
+      ...prev,
+      minister_attendees: [...(prev.minister_attendees || []), newRow],
+    }));
+  }, []);
+
+  const handleDeleteMinisterAttendee = useCallback((index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      minister_attendees: (prev.minister_attendees || []).filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  const handleUpdateMinisterAttendee = useCallback((index: number, field: string, value: string | boolean) => {
+    setFormData((prev) => {
+      const list = prev.minister_attendees || [];
+      return {
+        ...prev,
+        minister_attendees: list.map((r, i) =>
+          i === index ? { ...r, [field]: value } : r
+        ),
+      };
+    });
+  }, []);
+
   const submitStep = useCallback(async (isDraft: boolean = false): Promise<void> => {
     if (!isDraft && !validateAll()) {
       return;
@@ -323,6 +377,9 @@ export const useStep3Invitees = ({
     handleDeleteAttendee,
     handleUpdateAttendee,
     handleAddSuggestedAttendees,
+    handleAddMinisterAttendee,
+    handleDeleteMinisterAttendee,
+    handleUpdateMinisterAttendee,
     validateAll,
     submitStep,
     step3EditableMap,

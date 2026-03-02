@@ -116,28 +116,55 @@ export const getOutlookTimelineEvents = async (
   return Array.isArray(events) ? events : [];
 };
 
-/** Invitee for create-scheduled-meeting: either by user_id or by name/position/mobile/email */
-export type CreateScheduledMeetingInvitee =
-  | { user_id: string }
-  | { name: string; position: string; mobile: string; email: string };
+/** Minister invitee for create-scheduled-meeting: name, position, mobile, email, meeting_owner */
+export interface CreateScheduledMeetingInvitee {
+  name: string;
+  position: string;
+  mobile: string;
+  email: string;
+  /** true when this invitee is selected as meeting owner */
+  meeting_owner?: boolean;
+}
 
+/** Payload for POST /api/scheduling/create-scheduled-meeting */
 export interface CreateScheduledMeetingPayload {
   meeting_title: string;
-  scheduled_start: string; // ISO datetime
-  scheduled_end: string;   // ISO datetime
-  invitees: CreateScheduledMeetingInvitee[];
+  scheduled_start: string; // ISO datetime e.g. "2026-03-06T11:00:00.000Z"
+  scheduled_end: string;   // ISO datetime e.g. "2026-03-06T12:00:00.000Z"
+  meeting_channel: string; // PHYSICAL | VIRTUAL | HYBRID
+  meeting_location?: string; // required when meeting_channel === PHYSICAL
+  meeting_link?: string; // Webex join link when meeting_channel is VIRTUAL/HYBRID
+  proposer_user_ids?: string[]; // users who receive notification without being invitees
+  minister_invitees?: CreateScheduledMeetingInvitee[];
 }
 
 /**
  * Create a scheduled meeting from the calendar slot form.
  * POST /api/scheduling/create-scheduled-meeting
+ * Payload: { meeting_title, scheduled_start, scheduled_end, invitees }
  */
 export const createScheduledMeeting = async (
   payload: CreateScheduledMeetingPayload
 ): Promise<unknown> => {
-  const { data } = await axiosInstance.post(
+  const body: Record<string, unknown> = {
+    meeting_title: payload.meeting_title,
+    scheduled_start: payload.scheduled_start,
+    scheduled_end: payload.scheduled_end,
+    meeting_channel: payload.meeting_channel,
+    minister_invitees: payload.minister_invitees ?? [],
+  };
+  if (payload.meeting_location) {
+    body.meeting_location = payload.meeting_location;
+  }
+  if (payload.meeting_link) {
+    body.meeting_link = payload.meeting_link;
+  }
+  if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
+    body.proposer_user_ids = payload.proposer_user_ids;
+  }
+  const { data } = await axiosInstance.post<{ id?: string }>(
     '/api/scheduling/create-scheduled-meeting',
-    payload
+    body
   );
   return data;
 };

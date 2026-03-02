@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import { FormField, FormInput, FormAsyncSelectV2 } from '@/modules/shared';
 import type { OptionType } from '@/modules/shared';
 import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
-import { getMeetings } from '../../../../../../data';
-import type { MeetingApiResponse } from '../../../../../../data';
+import { getMeetingsSearchForPrevious } from '../../../../../../data';
 
 export interface PreviousMeetingFieldProps {
   value: OptionType | string | null;
@@ -32,14 +31,14 @@ export function PreviousMeetingField({
 }: PreviousMeetingFieldProps) {
   const loadOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
-      const response = await getMeetings({
-        search: search.trim() || undefined,
+      const response = await getMeetingsSearchForPrevious({
+        q: search.trim() || undefined,
         skip,
         limit: limit || STEP1_ASYNC_SELECT_PAGE_SIZE,
       });
-      const items = (response?.items ?? []).map((m: MeetingApiResponse) => ({
-        value: m.id,
-        label: m.meeting_title || m.meeting_subject || m.request_number || m.id,
+      const items = (response?.items ?? []).map((m) => ({
+        value: String(m.id),
+        label: m.meeting_title || m.original_title,
       }));
       return {
         items,
