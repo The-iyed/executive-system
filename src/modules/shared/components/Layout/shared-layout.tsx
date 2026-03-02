@@ -56,8 +56,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
           className="
             sticky top-3 z-50 mx-4
             flex items-center justify-between
-            h-[56px] px-4
-            rounded-2xl
+            h-[60px] px-5
+            rounded-3xl
             bg-white
             shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]
             border border-gray-100
