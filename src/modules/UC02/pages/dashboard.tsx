@@ -68,11 +68,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient, subti
 const ChartCard: React.FC<{ title: string; children: React.ReactNode; delay?: number; className?: string }> = ({ title, children, delay = 0, className = '' }) => (
   <FadeUp delay={delay} className={className}>
     <div
-      className="rounded-[20px] bg-white p-6 h-full"
+      className="rounded-[20px] bg-white p-6 pb-4 h-full flex flex-col"
       style={{ border: '1px solid rgba(0,0,0,.06)' }}
     >
-      <h3 className="text-[15px] font-bold text-gray-700 mb-5 text-right">{title}</h3>
-      {children}
+      <h3 className="text-[15px] font-bold text-gray-700 mb-4 text-right flex-shrink-0">{title}</h3>
+      <div className="flex-1 min-h-0">{children}</div>
     </div>
   </FadeUp>
 );
