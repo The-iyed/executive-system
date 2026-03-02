@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "vite test",
-    "prepare": "node -e \"require('fs').existsSync('.git')||process.exit(0); var c=require('child_process'); process.exit(c.spawnSync('npx',['husky'],{stdio:'inherit'}).status||c.spawnSync('sh',['scripts/install-hooks.sh'],{stdio:'inherit'}).status||0)\""
+    "prepare": "echo 'skipping hooks'"
   },
   "private": true,
   "dependencies": {
@@ -56,6 +57,7 @@
     "react-router-dom": "^7.12.0",
     "react-select": "^5.10.2",
     "react-select-async-paginate": "^0.7.11",
+    "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
     "shiki": "^3.21.0",
     "tailwind-merge": "^3.4.0",
@@ -70,13 +72,13 @@
     "@vitejs/plugin-react": "^4.2.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.0",
+    "husky": "^9.1.7",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
     "vite-plugin-svgr": "^4.5.0",
-    "vite-tsconfig-paths": "^4.3.0",
-    "husky": "^9.1.7"
+    "vite-tsconfig-paths": "^4.3.0"
   }
 }

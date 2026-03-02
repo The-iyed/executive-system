@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, User } from 'lucide-react';
+import { ChevronDown, User, Calendar, Clock, MapPin, Paperclip, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader, MeetingCard } from '@/modules/shared';
 import {
   WeeklyCalendarNavigation,
   WeeklyCalendarGrid,
+  MonthlyCalendarGrid,
   type CalendarEventData,
+  type CalendarViewMode,
 } from '@/modules/shared';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
 import {
@@ -118,8 +120,7 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
   const endDate = new Date(event.end_datetime);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
-  const variantByInternal =
-    event.is_internal === true ? 'internal' : event.is_internal === false ? 'external' : getRandomVariant(id);
+  const variantByInternal = getRandomVariant(id);
   if (isNaN(startDate.getTime())) {
     return {
       id,
@@ -179,6 +180,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
+  const [dayEventsModal, setDayEventsModal] = useState<{ date: Date; events: CalendarEventData[] } | null>(null);
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
@@ -271,18 +274,26 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const handlePreviousWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() - 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setDate(prev.getDate() - 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   const handleNextWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() + 1);
+      } else {
+        newDate.setDate(prev.getDate() + 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   // Track if we've ever loaded data successfully
   const hasLoadedOnce = React.useRef(false);
@@ -400,66 +411,60 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   // Always show the calendar structure - never remove it after initial load
   return (
     <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
-      {/* Header: Frame 2147241014 - flex row justify-end align center, padding 10px, gap 10px */}
-      <div
-        className="flex flex-row justify-between items-center flex-none px-[10px] pt-4 pb-4 gap-[10px] bg-white"
-        style={{ borderRadius: '14px' }}
-      >
-        {/* Right in RTL: التقويم + subtitle + chevron-down button */}
-        <div className="flex flex-row items-center gap-2">
-          <button
-            type="button"
-            className="flex items-center justify-center w-6 h-6 rounded-[4.97024px] border border-[#D0D5DD] bg-white shadow-[0px_0.62px_1.24px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
-            aria-label="خيارات"
-          >
-            <ChevronDown className="w-3 h-3 text-[#667085]" />
-          </button>
+      {/* Header */}
+      <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-row items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+            <ChevronDown className="w-4 h-4 text-[#048F86]" />
+          </div>
           <div className="flex flex-col items-end">
-            <h1
-              className="font-bold text-[#101828] leading-tight"
-              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '15.7722px', lineHeight: '30px' }}
-            >
+            <h1 className="font-bold text-gray-800 text-[16px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
               التقويم
             </h1>
-            <p
-              className="text-[#475467] leading-tight"
-              style={{ fontFamily: "'Almarai', sans-serif", fontSize: '11.0405px', lineHeight: '19px' }}
-            >
+            <p className="text-gray-400 text-[11px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
               عرض الجدول الزمني للاجتماعات
             </p>
           </div>
         </div>
-
-        {/* Left in RTL: month nav with teal circles */}
         <WeeklyCalendarNavigation
           currentDate={currentDate}
           onPreviousWeek={handlePreviousWeek}
           onNextWeek={handleNextWeek}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       </div>
 
-      <div className="relative flex-1 min-h-0 bg-white overflow-auto" style={{ borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' }}>
-        {/* Show skeleton only on initial load when we have no data at all */}
+      <div className="relative flex-1 min-h-0 bg-white overflow-auto rounded-2xl shadow-sm border border-gray-100">
         {isInitialLoad ? (
           <CalendarSkeleton />
         ) : (
           <>
-            <WeeklyCalendarGrid
-              weekStart={weekStart}
-              events={events}
-              startHour={8}
-              endHour={24}
-              onEventClick={(event) => setSelectedEventForDetails(event)}
-              onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-              onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
-            />
-            
-            {/* Show "Updating" only when the currently selected week is loading (no data yet), not on background refetch */}
+            {viewMode === 'weekly' ? (
+              <WeeklyCalendarGrid
+                weekStart={weekStart}
+                events={events}
+                startHour={8}
+                endHour={24}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            ) : (
+              <MonthlyCalendarGrid
+                currentDate={currentDate}
+                events={events}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onDayOverflowClick={(date, dayEvents) => setDayEventsModal({ date, events: dayEvents })}
+              />
+            )}
             {isLoading && (
-              <div className="absolute top-2 right-2 z-10">
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-200 flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                  <span className="text-xs text-gray-700 font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <div className="absolute top-3 right-3 z-10">
+                <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-lg border border-gray-100 flex items-center gap-2.5">
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-[#048F86] rounded-full animate-spin" />
+                  <span className="text-[11px] text-gray-600 font-semibold" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     جاري التحديث...
                   </span>
                 </div>
@@ -480,19 +485,16 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
       {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
-        <DialogContent className="max-w-[520px] w-[95vw] max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle style={fontStyle}>{selectedEventForDetails?.title || 'تفاصيل الموعد'}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[460px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
           {selectedEventForDetails && (
-            <div className="flex flex-col gap-4 text-right" style={fontStyle}>
+            <>
               {isLoadingMeeting && (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-16">
                   <Loader />
                 </div>
               )}
               {!isOptimisticEvent && !isOutlookEvent && !isLoadingMeeting && meetingCardData && (
-                <>
+                <div className="p-5">
                   <MeetingCard
                     meeting={meetingCardData}
                     onDetails={() => {
@@ -500,88 +502,160 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       navigate(`/meeting/${selectedEventForDetails.id}`);
                     }}
                   />
-                </>
+                </div>
               )}
               {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
-                <div
-                  className="flex flex-col bg-white w-full overflow-hidden border-[1.5px] border-[rgba(230,236,245,1)] cursor-default"
-                  style={{
-                    borderRadius: '16px',
-                    boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
-                  }}
-                >
-                  <div className="flex flex-col gap-4 p-5">
-                    <div className="flex flex-row items-start justify-between gap-3">
-                      <h3 className="text-right flex-1 text-[#101828] font-bold leading-6" style={{ fontSize: '15px' }}>
+                <div className="flex flex-col" style={fontStyle}>
+                  {/* Header */}
+                  <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                      <h3 className="text-gray-900 font-bold text-[16px] leading-6">
                         {selectedEventForDetails.title}
                       </h3>
                       {selectedEventForDetails.is_internal !== undefined && (
-                        <span
-                          className={cn(
-                            'text-xs font-medium px-2 py-1 rounded-full shrink-0',
-                            selectedEventForDetails.is_internal
-                              ? 'bg-[#E6F6F4] text-[#008774]'
-                              : 'bg-amber-50 text-amber-700'
-                          )}
-                        >
+                        <span className={cn(
+                          'text-[11px] font-semibold px-2 py-0.5 rounded w-fit',
+                          selectedEventForDetails.is_internal
+                            ? 'bg-[#048F86]/10 text-[#048F86]'
+                            : 'bg-gray-100 text-gray-500'
+                        )}>
                           {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
                         </span>
                       )}
                     </div>
+                    <button
+                      onClick={() => setSelectedEventForDetails(null)}
+                      className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors shrink-0 mr-3"
+                    >
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex flex-col px-6 py-2">
+                    {/* Organizer */}
                     {selectedEventForDetails.organizer && (
-                      <div className="flex flex-row items-center gap-3">
-                        <div className="w-9 h-9 flex-shrink-0 rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)] flex items-center justify-center">
-                          <User className="w-4 h-4 text-[#98A2B3]" strokeWidth={1.5} />
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[13px] font-medium text-[#344054]">{selectedEventForDetails.organizer.name}</span>
-                          <span className="text-xs text-[#475467]">{selectedEventForDetails.organizer.email}</span>
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                          <span className="text-[13px] font-semibold text-gray-800 truncate w-full">{selectedEventForDetails.organizer.name}</span>
+                          <span className="text-[11px] text-gray-400 truncate w-full">{selectedEventForDetails.organizer.email}</span>
                         </div>
                       </div>
                     )}
-                    <p className="text-[#475467] text-sm">
-                      {formatDetailDate(selectedEventForDetails.date)}
-                    </p>
-                    <p className="text-[#101828] font-semibold text-sm">
-                      من {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} إلى{' '}
-                      {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
-                    </p>
+
+                    {/* Date */}
+                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Calendar className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-[13px] font-medium text-gray-700">
+                        {formatDetailDate(selectedEventForDetails.date)}
+                      </span>
+                    </div>
+
+                    {/* Time */}
+                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Clock className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-[13px] font-medium text-gray-700">
+                        {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} – {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
+                      </span>
+                    </div>
+
+                    {/* Location */}
                     {selectedEventForDetails.location && (
-                      <div>
-                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المكان</h4>
-                        <p className="text-sm text-[#101828] break-all">
-                          {selectedEventForDetails.location.startsWith('http')
-                            ? (
-                                <a
-                                  href={selectedEventForDetails.location}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#0E6F90] underline"
-                                >
-                                  {selectedEventForDetails.location}
-                                </a>
-                              )
-                            : selectedEventForDetails.location
-                          }
-                        </p>
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <MapPin className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {selectedEventForDetails.location.startsWith('http') ? (
+                            <a
+                              href={selectedEventForDetails.location}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[13px] font-medium text-[#048F86] underline underline-offset-2 truncate block"
+                            >
+                              {selectedEventForDetails.location}
+                            </a>
+                          ) : (
+                            <span className="text-[13px] font-medium text-gray-700 truncate block">
+                              {selectedEventForDetails.location}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Attachments */}
                     {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المرفقات</h4>
-                        <ul className="list-none space-y-1">
+                      <div className="flex items-start gap-3 py-3.5">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <Paperclip className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                           {selectedEventForDetails.attachments.map((att) => (
-                            <li key={att.attachment_id} className="text-sm text-[#101828] flex items-center gap-2">
-                              <span className="truncate flex-1" title={att.name}>{att.name}</span>
-                              <span className="text-xs text-[#475467] shrink-0">{formatAttachmentSize(att.size)}</span>
-                            </li>
+                            <div key={att.attachment_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                              <span className="text-[12px] text-gray-600 truncate flex-1" title={att.name}>{att.name}</span>
+                              <span className="text-[10px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Day events modal (monthly view overflow) */}
+      <Dialog open={!!dayEventsModal} onOpenChange={(open) => !open && setDayEventsModal(null)}>
+        <DialogContent className="max-w-[420px] w-[95vw] max-h-[80vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
+          {dayEventsModal && (
+            <div className="flex flex-col" style={fontStyle}>
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+                <h3 className="text-gray-900 font-bold text-[15px]">
+                  {formatDetailDate(dayEventsModal.date)}
+                </h3>
+                <button
+                  onClick={() => setDayEventsModal(null)}
+                  className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2 p-4">
+                {dayEventsModal.events.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => {
+                      setDayEventsModal(null);
+                      setSelectedEventForDetails(event);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-right w-full"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-gray-200/60 flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-[13px] font-semibold text-gray-800 truncate">{event.label}</span>
+                      {event.exactStartTime && event.exactEndTime && (
+                        <span className="text-[11px] text-gray-400">
+                          {event.exactStartTime} – {event.exactEndTime}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </DialogContent>

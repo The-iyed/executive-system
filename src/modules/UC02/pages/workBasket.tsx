@@ -1,11 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, ContentBar, MeetingOwnerType, getMeetingTabsByRole  } from '@/modules/shared';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, MeetingOwnerType, getMeetingTabsByRole } from '@/modules/shared';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
+import { Icon } from '@iconify/react';
+import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, Filter, X } from 'lucide-react';
 import { trackEvent } from '@analytics';
+import { Popover, PopoverTrigger, PopoverContent, cn } from '@/lib/ui';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -32,12 +35,14 @@ function getStatusFilterLabel(value: string): string {
   return getMeetingStatusLabel(value);
 }
 
+type MeetingClassification = keyof typeof MeetingClassificationLabels;
+
 const WorkBasket: React.FC = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
@@ -48,26 +53,24 @@ const WorkBasket: React.FC = () => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchValue);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Reset to page 1 when search or status filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilters]);
 
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), statusFilter, currentPage],
+    queryKey: ['work-basket', 'uc02', debouncedSearch.trim(), statusFilters, currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
         skip,
         limit: ITEMS_PER_PAGE,
       };
-      if (statusFilter !== 'all') {
-        params.status = statusFilter;
+      if (statusFilters.length === 1) {
+        params.status = statusFilters[0];
       }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
@@ -77,37 +80,48 @@ const WorkBasket: React.FC = () => {
     enabled: true,
   });
 
-  // Map API response to MeetingCardData for cards view
   const meetings: MeetingCardData[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
 
-  // Raw meetings data for table view
   const rawMeetings: MeetingApiResponse[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items;
   }, [meetingsResponse]);
 
-  // Calculate total pages from API response
   const totalItems = meetingsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   const formatDate = (dateString: string | null): string =>
     dateString ? (formatDateArabic(dateString) || '-') : '-';
 
-  // Get classification label
   const getClassificationLabel = (classification: string | null): string => {
     if (!classification) return '-';
     return MeetingClassificationLabels[classification as MeetingClassification] || classification;
   };
 
-  // Get status label
   const getStatusLabel = (status: string): string => {
     return MeetingStatusLabels[status as MeetingStatus] || status;
   };
 
-  // Define table columns
+  /* ─── Filter tabs with counts ─── */
+  const filterTabs = [
+    { id: 'all', label: 'جميع الحالات', count: totalItems },
+    ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING).map(tab => ({
+      ...tab,
+      count: meetings.filter(m => m.status === tab.id).length,
+    })),
+  ];
+
+  /* ─── Stats ─── */
+  const statsCards = [
+    { label: 'إجمالي الطلبات', value: totalItems, icon: Inbox, color: 'var(--color-primary-500)', bg: 'rgba(0,169,145,0.06)' },
+    { label: 'قيد المراجعة', value: meetings.filter(m => m.status === MeetingStatus.UNDER_REVIEW).length, icon: Clock, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+    { label: 'مجدول', value: meetings.filter(m => m.status === MeetingStatus.SCHEDULED).length, icon: CheckCircle2, color: '#10b981', bg: 'rgba(16,185,129,0.06)' },
+    { label: 'مرفوض', value: meetings.filter(m => m.status === MeetingStatus.REJECTED).length, icon: XCircle, color: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
+  ];
+
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
       id: 'request_number',
@@ -116,9 +130,7 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {row.request_number}
-          </span>
+          <span className="text-sm text-[var(--color-text-gray-600)]">{row.request_number}</span>
         </div>
       ),
     },
@@ -166,9 +178,7 @@ const WorkBasket: React.FC = () => {
       align: 'end',
       render: (row) => (
         <div className="w-full flex justify-end">
-          <span className="text-base font-normal text-right text-gray-600 leading-5 whitespace-nowrap">
-            {formatDate(row.scheduled_at)}
-          </span>
+          <span className="text-sm text-[var(--color-text-gray-600)]">{formatDate(row.scheduled_at)}</span>
         </div>
       ),
     },
@@ -190,58 +200,227 @@ const WorkBasket: React.FC = () => {
   ];
 
   return (
-    <div>
-      <ContentBar
-        showViewSwitcher={true}
-        onViewChange={setView}
-        view={view}
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        filterTabs={[ {id: 'all', label: 'جميع الحالات'}, ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING)]}
-        activeFilterId={statusFilter}
-        onFilterChange={setStatusFilter}
-      />
+    <div className="flex flex-col w-full min-h-0" dir="rtl">
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">جاري التحميل...</div>
+      {/* ════════════════════════════════════════ */}
+      {/* PAGE HEADER — Title + Search + Actions  */}
+      {/* ════════════════════════════════════════ */}
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* Right: Title area */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-[var(--color-primary-50)]">
+              <Icon icon="solar:inbox-bold" width={22} height={22} className="text-[var(--color-primary-500)]" />
             </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
+            <div>
+              <h1 className="text-xl font-bold text-[var(--color-text-gray-900)]">سلة العمل</h1>
+              <p className="text-xs text-[var(--color-text-gray-500)] mt-0.5">إدارة ومتابعة الطلبات المسندة إليك</p>
             </div>
-          ) : rawMeetings.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">لا توجد بيانات</div>
-            </div>
-          ) : (
-            <>
-              {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={rawMeetings}
-                  onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
-                  className="min-w-[900px]"
-                />
-              ) : (
-                <CardsGrid
-                  meetings={meetings}
-                  onView={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
-                  onDetails={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
-                />
-              )}
-              
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
+          </div>
+
+          {/* Left: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Multi-status filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className={cn(
+                  'h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all',
+                  statusFilters.length > 0
+                    ? 'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
+                    : 'bg-white border-[var(--color-base-gray-200)] text-[var(--color-text-gray-600)] hover:border-[var(--color-base-gray-300)]'
+                )}>
+                  <Filter className="w-4 h-4" />
+                  <span>{statusFilters.length > 0 ? `${statusFilters.length} حالة` : 'تصفية الحالة'}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-2" dir="rtl">
+                <div className="flex flex-col gap-0.5">
+                  {filterTabs.filter(t => t.id !== 'all').map((tab) => {
+                    const isChecked = statusFilters.includes(tab.id);
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setStatusFilters(prev =>
+                            isChecked ? prev.filter(s => s !== tab.id) : [...prev, tab.id]
+                          );
+                        }}
+                        className={cn(
+                          'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors',
+                          isChecked
+                            ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
+                            : 'text-[var(--color-text-gray-600)] hover:bg-[var(--color-base-gray-50)]'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
+                            isChecked
+                              ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)]'
+                              : 'border-[var(--color-base-gray-300)]'
+                          )}>
+                            {isChecked && (
+                              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          <span>{tab.label}</span>
+                        </div>
+                        {tab.count !== undefined && (
+                          <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-            </>
-          )}
+                {statusFilters.length > 0 && (
+                  <button
+                    onClick={() => setStatusFilters([])}
+                    className="w-full mt-2 pt-2 border-t border-[var(--color-base-gray-100)] text-xs text-[var(--color-text-gray-500)] hover:text-[var(--color-primary-600)] transition-colors text-center py-1.5"
+                  >
+                    مسح الكل
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {/* Active filter chips */}
+            {statusFilters.length > 0 && (
+              <div className="flex items-center gap-1">
+                {statusFilters.map(id => {
+                  const tab = filterTabs.find(t => t.id === id);
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-medium"
+                    >
+                      {tab?.label}
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-[var(--color-primary-900)]"
+                        onClick={() => setStatusFilters(prev => prev.filter(s => s !== id))}
+                      />
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="بحث في الطلبات..."
+                className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
+              />
+            </div>
+
+            {/* View switcher */}
+            <div className="flex items-center bg-white rounded-xl border border-[var(--color-base-gray-200)] p-1 gap-0.5">
+              <button
+                onClick={() => setView('cards')}
+                className={cn(
+                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                  view === 'cards' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setView('table')}
+                className={cn(
+                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                  view === 'table' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                )}
+              >
+                <LayoutList className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════ */}
+      {/*     STATS CARDS                         */}
+      {/* ════════════════════════════════════════ */}
+      <div className="px-6 pb-4">
+        <div className="grid grid-cols-4 gap-3">
+          {statsCards.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[var(--color-base-gray-100)]"
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: stat.bg }}
+              >
+                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-[var(--color-text-gray-500)]">{stat.label}</p>
+                <p className="text-lg font-bold text-[var(--color-text-gray-900)]">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+
+      {/* ════════════════════════════════════════ */}
+      {/*     CONTENT                              */}
+      {/* ════════════════════════════════════════ */}
+      <div className="flex-1 px-6 pb-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[var(--color-text-gray-600)]">جاري التحميل...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              <span>حدث خطأ أثناء تحميل البيانات</span>
+            </div>
+          </div>
+        ) : rawMeetings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--color-base-gray-100)] flex items-center justify-center">
+              <Inbox className="w-7 h-7 text-[var(--color-text-gray-500)]" />
+            </div>
+            <p className="text-sm text-[var(--color-text-gray-500)]">لا توجد طلبات</p>
+          </div>
+        ) : (
+          <>
+            {view === 'table' ? (
+              <DataTable
+                columns={tableColumns}
+                data={rawMeetings}
+                onRowClick={(row) => navigate(PATH.MEETING_DETAIL.replace(':id', row.id))}
+                className="min-w-[900px]"
+              />
+            ) : (
+              <CardsGrid
+                meetings={meetings}
+                onView={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
+                onDetails={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
+              />
+            )}
+            
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
