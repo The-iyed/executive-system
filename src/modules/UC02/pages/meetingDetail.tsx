@@ -363,8 +363,9 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
-  // Scheduling consultation modal state (multiple consultants)
+  // Scheduling consultation inline chat state (multiple consultants)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+  const [showConsultantPicker, setShowConsultantPicker] = useState(false);
   const [consultationForm, setConsultationForm] = useState({
     consultant_user_ids: [] as string[],
     consultation_question: '',
