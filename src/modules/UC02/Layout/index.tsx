@@ -82,7 +82,7 @@ export const Layout: React.FC<LayoutProps> = ({
         navigationItems={USE_CASE_CONFIGS['UC-02'].navigationItems}
         useDynamicNavigation={false}
         contentBarFilterTabs={hideContentBarFilterTabs ? [] : undefined}
-        hideContentBar={isMeetingDetail || isCalendar}
+        hideContentBar={isMeetingDetail || isCalendar || isDashboard}
         contentContainerClassName={isMeetingDetail ? 'bg-transparent' : undefined}
       />
   );
