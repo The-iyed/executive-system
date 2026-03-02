@@ -1019,7 +1019,7 @@ const MeetingDetail: React.FC = () => {
         page: 1,
         limit: 50,
       }),
-    enabled: isConsultationModalOpen,
+    enabled: activeTab === 'scheduling-consultation',
   });
 
   const consultants: ConsultantUser[] = consultantsResponse?.items || [];
