@@ -1,18 +1,19 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FormTable, FormInput, FormField, FormCheckbox, FormSelect, MeetingRangePicker, type MeetingRangeValue } from '@shared';
-import type { FormTableColumn } from '@shared';
+import { FormTable, FormInput, FormField, FormCheckbox, FormSelect, FormAsyncSelectV2, MeetingRangePicker, type MeetingRangeValue } from '@shared';
+import type { OptionType } from '@shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
   MEETING_CHANNEL_OPTIONS,
   MEETING_LOCATION_OPTIONS,
   LOCATION_OPTIONS,
+  MINISTER_INVITEES_TABLE_COLUMNS,
   getLocationDropdownValue,
   showLocationOtherInput,
 } from '../features/MeetingForm/utils/constants';
 import { createWebexMeeting } from '../data/meetingsApi';
-import { getUsers, type UserApiResponse } from '../data/usersApi';
-import { Check } from 'lucide-react';
+import { searchByEmail } from '../data/adIntegrationApi';
+import { X } from 'lucide-react';
 import { cn } from '@sanad-ai/ui';
 
 /** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
@@ -49,19 +50,7 @@ function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: stri
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-/** Minister invitees table: email + owner checkbox (for calendar-slot meeting form). */
-const MINISTER_INVITEES_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: '#', width: 'min-w-[80px]' },
-  {
-    id: 'email',
-    header: 'البريد الإلكتروني',
-    type: 'text',
-    placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[210px]',
-  },
-  { id: 'isOwner', header: 'مالك الاجتماع', width: 'min-w-[120px]' },
-  { id: 'action', header: '', width: 'w-[60px]' },
-];
+const MANUAL_ENTRY_VALUE = '__manual__';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
@@ -121,31 +110,166 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     return d;
   }, []);
   const [ministerInvitees, setMinisterInvitees] = useState<InviteeFormRow[]>([]);
-  const [proposerUserIds, setProposerUserIds] = useState<string[]>([]);
-  const [proposerUsers, setProposerUsers] = useState<{ id: string; label: string; email?: string }[]>([]);
-  const [proposerLoading, setProposerLoading] = useState(true);
+  const [proposerSelections, setProposerSelections] = useState<{ id: string; label: string; email?: string }[]>([]);
 
-  useEffect(() => {
-    getUsers({ limit: 50 })
-      .then((res) => {
-        setProposerUsers(
-          res.items.map((u: UserApiResponse) => ({
-            id: u.id,
-            label: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || u.id,
-            email: u.email,
-          }))
+  const loadProposerAdOptions = useCallback(
+    async (search: string, _skip: number, limit: number) => {
+      const trimmed = search?.trim() ?? '';
+      if (trimmed.length < 1) {
+        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+      }
+      try {
+        const users = await searchByEmail(trimmed, limit);
+        const selectedIds = new Set(proposerSelections.map((p) => p.id));
+        const items = users
+          .filter((u) => !selectedIds.has(u.objectGUID ?? u.mail ?? ''))
+          .map((u) => {
+            const fullName = u.displayNameAR ?? u.displayNameEN ?? u.displayName ?? '';
+            const email = u.mail ?? '';
+            const id = u.objectGUID ?? email ?? `ad-${email}`;
+            return {
+              value: id,
+              label: fullName ? `${fullName} (${email})` : email,
+              email,
+            };
+          });
+        return {
+          items,
+          total: items.length,
+          skip: 0,
+          limit,
+          has_next: false,
+          has_previous: false,
+        };
+      } catch {
+        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+      }
+    },
+    [proposerSelections]
+  );
+
+  const addProposer = useCallback((opt: { value: string; label: string; email?: string }) => {
+    setProposerSelections((prev) => {
+      if (prev.some((p) => p.id === opt.value)) return prev;
+      return [...prev, { id: opt.value, label: opt.label, email: opt.email }];
+    });
+  }, []);
+
+  const removeProposer = useCallback((id: string) => {
+    setProposerSelections((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const loadAdOptionsByEmail = useCallback(
+    async (search: string, skip: number, limit: number) => {
+      const trimmed = search?.trim() ?? '';
+      if (trimmed.length < 1) {
+        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+      }
+      try {
+        const users = await searchByEmail(trimmed, limit);
+        const items = users.map((u) => {
+          const fullName = u.displayNameAR ?? u.displayNameEN ?? u.displayName ?? '';
+          const email = u.mail ?? '';
+          return {
+            value: u.objectGUID ?? email ?? `ad-${email}`,
+            label: fullName ? `${fullName} (${email})` : email,
+            email,
+            full_name: fullName,
+            position_title: u.title ?? '',
+            mobile_number: u.mobile ?? '',
+            sector: u.department ?? u.company ?? '',
+          };
+        });
+        const manualOption = {
+          value: MANUAL_ENTRY_VALUE,
+          label: 'إدخال يدوي (بريد غير مسجل)',
+        };
+        return {
+          items: skip === 0 ? [...items, manualOption] : items,
+          total: skip === 0 ? items.length + 1 : items.length,
+          skip: 0,
+          limit,
+          has_next: false,
+          has_previous: false,
+        };
+      } catch {
+        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+      }
+    },
+    []
+  );
+
+  const ministerEmailCellRender = useCallback(
+    (params: import('@shared').CustomCellRenderParams) => {
+      const { row, onUpdateRow, disabled = false } = params;
+      const isManual = row._isManual === true;
+
+      if (isManual) {
+        return (
+          <FormInput
+            type="email"
+            inputMode="email"
+            value={row.email ?? ''}
+            onChange={(e) => onUpdateRow('email', e.target.value)}
+            placeholder="البريد"
+            fullWidth
+            disabled={disabled}
+          />
         );
-      })
-      .catch(() => setProposerUsers([]))
-      .finally(() => setProposerLoading(false));
-  }, []);
+      }
 
-  const selectedProposerIds = useMemo(() => new Set(proposerUserIds), [proposerUserIds]);
-  const toggleProposer = useCallback((userId: string) => {
-    setProposerUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  }, []);
+      const value: OptionType | null =
+        row.email
+          ? { value: (row as { _adUserId?: string })._adUserId || row.email, label: row.full_name ? `${row.full_name} (${row.email})` : row.email }
+          : null;
+
+      return (
+        <FormAsyncSelectV2
+          value={value}
+          onValueChange={(opt) => {
+            if (!opt) {
+              onUpdateRow('full_name', '');
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('email', '');
+              onUpdateRow('_isManual', false);
+              onUpdateRow('_adUserId', '');
+              return;
+            }
+            if (opt.value === MANUAL_ENTRY_VALUE) {
+              onUpdateRow('_isManual', true);
+              onUpdateRow('_adUserId', '');
+              onUpdateRow('full_name', '');
+              onUpdateRow('position_title', '');
+              onUpdateRow('mobile_number', '');
+              onUpdateRow('sector', '');
+              onUpdateRow('email', '');
+              return;
+            }
+            const u = opt as { full_name?: string; position_title?: string; mobile_number?: string; email?: string; sector?: string };
+            onUpdateRow('_isManual', false);
+            onUpdateRow('_adUserId', opt.value);
+            onUpdateRow('full_name', u.full_name ?? '');
+            onUpdateRow('position_title', u.position_title ?? '');
+            onUpdateRow('mobile_number', u.mobile_number ?? '');
+            onUpdateRow('email', u.email ?? '');
+            onUpdateRow('sector', u.sector ?? '');
+          }}
+          loadOptions={loadAdOptionsByEmail}
+          placeholder="ابحث بالبريد أو أدخل يدوياً"
+          isClearable
+          fullWidth
+          isSearchable
+          limit={10}
+          defaultOptions={false}
+          searchPlaceholder="اكتب البريد للبحث..."
+          emptyMessage="لم يتم العثور على مستخدمين"
+        />
+      );
+    },
+    [loadAdOptionsByEmail]
+  );
 
   const handleAddMinisterInvitee = useCallback(() => {
     setMinisterInvitees((prev) => [...prev, createEmptyStep3InviteeRow()]);
@@ -305,7 +429,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_channel: meetingChannel,
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
-      proposer_user_ids: proposerUserIds.length > 0 ? proposerUserIds : undefined,
+      proposer_user_ids: proposerSelections.length > 0 ? proposerSelections.map((p) => p.id) : undefined,
       minister_invitees: ministerInvitees,
     });
   };
@@ -425,69 +549,63 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           </>
         )}
 
-        {/* المقترحون — users who receive notification without being invitees */}
+        {/* المقترحون — search by email (AD), same as invitees */}
         <div className="w-full flex flex-col gap-3">
           <h3 className="text-right text-[22px] font-bold text-[#101828]">المقترحون</h3>
           <p className="text-right text-[14px] text-[#667085]">
             المستخدمون الذين يتلقون إشعاراً دون إضافتهم كمدعوين (اختياري).
           </p>
-          {proposerLoading ? (
-            <p className="text-right text-[14px] text-[#667085]">جاري التحميل...</p>
-          ) : (
+          <FormAsyncSelectV2
+            key={proposerSelections.length}
+            value={null}
+            onValueChange={(opt) => {
+              if (opt) addProposer(opt);
+            }}
+            loadOptions={loadProposerAdOptions}
+            placeholder="ابحث بالبريد أو اختر..."
+            isClearable
+            fullWidth
+            isSearchable
+            limit={10}
+            defaultOptions={false}
+            searchPlaceholder="اكتب البريد للبحث..."
+            emptyMessage="لم يتم العثور على مستخدمين"
+          />
+          {proposerSelections.length > 0 && (
             <div
               className={cn(
                 'w-full border border-[#D0D5DD] rounded-lg overflow-hidden p-4',
-                'bg-white max-h-[280px] overflow-y-auto'
+                'bg-white max-h-[200px] overflow-y-auto'
               )}
             >
-              {proposerUsers.length === 0 ? (
-                <p className="text-right text-[14px] text-[#667085]">لا يوجد مستخدمون متاحون.</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {proposerUsers.map((u) => {
-                    const isChecked = selectedProposerIds.has(u.id);
-                    return (
-                      <li
-                        key={u.id}
-                        className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
-                        onClick={() => toggleProposer(u.id)}
-                      >
-                        <span className="text-[14px] text-[#344054]">
-                          {u.label}
-                          {u.email ? ` (${u.email})` : ''}
-                        </span>
-                        <button
-                          type="button"
-                          role="checkbox"
-                          aria-checked={isChecked}
-                          aria-label={u.label}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleProposer(u.id);
-                          }}
-                          className={cn(
-                            'flex items-center justify-center shrink-0',
-                            'w-5 h-5 rounded border-2 transition-all',
-                            'focus:outline-none focus:ring-2 focus:ring-[#008774] focus:ring-offset-2',
-                            isChecked
-                              ? 'bg-[#008774] border-[#008774]'
-                              : 'bg-white border-[#D0D5DD] hover:border-[#008774]'
-                          )}
-                        >
-                          {isChecked && <Check className="w-4 h-4 text-white" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+              <ul className="flex flex-col gap-2">
+                {proposerSelections.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
+                  >
+                    <span className="text-[14px] text-[#344054]">
+                      {p.label}
+                      {p.email ? ` (${p.email})` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="إزالة"
+                      onClick={() => removeProposer(p.id)}
+                      className="flex items-center justify-center shrink-0 w-6 h-6 rounded border border-[#D0D5DD] hover:bg-red-50 hover:border-red-300 text-[#667085] hover:text-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
 
         <FormTable
-          title="قائمة المدعوين"
-          columns={MINISTER_INVITEES_COLUMNS}
+          title="قائمة المدعوين (الوزير)"
+          columns={MINISTER_INVITEES_TABLE_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}
           onDeleteRow={handleDeleteMinisterInvitee}
@@ -495,18 +613,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           addButtonLabel="إضافة مدعو للوزير"
           emptyStateMessage="لا يوجد مدعوون من الوزير"
           customCellRender={{
-            email: ({ value, onUpdateRow, placeholder, disabled, error }) => (
-              <FormInput
-                type="email"
-                inputMode="email"
-                value={value ?? ''}
-                onChange={(e) => onUpdateRow('email', e.target.value)}
-                placeholder={placeholder}
-                fullWidth
-                disabled={disabled}
-                error={error}
-              />
-            ),
+            email: ministerEmailCellRender,
             isOwner: ({ row, onUpdateRow, disabled }) => (
               <div className="flex justify-center" title="اختيار مالك الاجتماع">
                 <FormCheckbox
