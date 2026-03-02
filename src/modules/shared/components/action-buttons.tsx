@@ -1,7 +1,6 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/ui';
-import ArchiveIcon from '@/modules/shared/assets/archive.svg?react';
 
 export interface ActionButtonsProps {
   onCancel?: () => void;
@@ -19,8 +18,8 @@ export interface ActionButtonsProps {
 const getSecondaryButtonClass = (disabled: boolean) =>
   cn(
     'flex items-center justify-center gap-2',
-    'px-4 py-2 h-[45px] rounded-lg',
-    'w-full md:min-w-[190px] md:max-w-[220px]',
+    'py-2 h-[45px] rounded-lg',
+    'w-full md:min-w-[175px] md:max-w-[220px]',
     'border border-[#D0D5DD] bg-white',
     'text-[16px] font-bold text-[#344054]',
     'transition-colors',
@@ -43,7 +42,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div
       className={cn(
-        'w-full max-w-[1200px] mx-auto pt-4 px-4',
+        'w-full max-w-[1200px] mx-auto pt-4',
         'flex flex-col-reverse gap-4',
         'md:flex-row md:items-center md:justify-between',
         className
@@ -56,8 +55,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             onClick={onBack}
             disabled={disabled}
             className={getSecondaryButtonClass(disabled)}
+            aria-label={backLabel}
           >
-            <ArrowRight className="w-5 h-5 mt-[3px]" />
+            <ArrowRight className="w-5 h-5 shrink-0" aria-hidden />
             {backLabel}
           </button>
         )}
@@ -81,13 +81,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
                 ? 'linear-gradient(180deg, #9CA3AF 0%, #6B7280 0.01%, #4B5563 100%)'
                 : 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)',
             }}
+            aria-label={nextLabel}
           >
             {disabled ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin shrink-0" aria-hidden />
             ) : (
               <>
                 {nextLabel}
-                <ArrowLeft className="w-5 h-5 mt-[3px]" />
+                <ArrowLeft className="w-5 h-5 shrink-0" aria-hidden />
               </>
             )}
           </button>
@@ -107,11 +108,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
                 ? 'bg-[#E4E7EC] text-[#9CA3AF] opacity-50 cursor-not-allowed'
                 : 'bg-[#F2F4F7] text-[#494A4D] hover:bg-[#E4E7EC]'
             )}
+            aria-label={saveDraftLabel}
           >
             {disabled ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <ArchiveIcon className="w-4 h-4 mt-[2px]" />
+              <Save className="w-4 h-4 shrink-0" aria-hidden />
             )}
             {saveDraftLabel}
           </button>
@@ -126,6 +128,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
               onClick={onCancel}
               disabled={disabled}
               className={getSecondaryButtonClass(disabled)}
+              aria-label={cancelLabel}
             >
               {cancelLabel}
             </button>
