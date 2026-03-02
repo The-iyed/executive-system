@@ -3642,86 +3642,67 @@ const MeetingDetail: React.FC = () => {
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                <div className="flex flex-col gap-4 w-full" dir="rtl">
+                <div className="flex flex-col gap-5 w-full" dir="rtl">
                   {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
-                    const isExpanded = expandedGuidanceId === row.guidance_id;
                     const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
                     const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
-                        return (
-                      <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedGuidanceId((prev) => (prev === row.guidance_id ? null : row.guidance_id))}
-                          className={`
-                            w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                            ${isExpanded
-                              ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                              : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                          `}
-                          style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                        >
-                          <div className="flex flex-row items-start justify-between gap-4">
-                            <div className="flex flex-col items-start flex-1 min-w-0">
-                              <p className="text-base font-bold text-[#048F86] mb-1">السؤال</p>
-                              <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {row.status && (
-                                <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                              )}
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <Clock className="w-4 h-4 flex-shrink-0" />
-                                <span>تاريخ الطلب : {requestDate}</span>
-                          </span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                <User className="w-4 h-4 flex-shrink-0" />
-                                <span>{row.requested_by_name || '-'}</span>
-                            </span>
+                    return (
+                      <div key={`guidance-${row.guidance_id}-${index}`} className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
+                        {/* Question Header */}
+                        <div className="px-6 py-5 border-b border-[#F3F4F6]">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col gap-2 flex-1 min-w-0">
+                              <h3 className="text-[16px] font-bold text-[#1F2937]">السؤال</h3>
+                              <p className="text-[14px] text-[#4B5563] leading-relaxed">{row.guidance_question || '-'}</p>
                             </div>
                           </div>
-                        </button>
+                          {/* Meta chips */}
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
+                            {row.status && (
+                              <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
+                            )}
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F9FAFB] border border-[#F3F4F6] px-3 py-1.5 text-xs text-[#6B7280]">
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>تاريخ الطلب : {requestDate}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F9FAFB] border border-[#F3F4F6] px-3 py-1.5 text-xs text-[#6B7280]">
+                              <User className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{row.requested_by_name || '-'}</span>
+                            </span>
+                          </div>
+                        </div>
 
-                        {isExpanded && row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[38px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                            </div>
-                            <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                              <div className="flex min-h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4 py-3" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                <div className="flex w-full flex-row items-center justify-between gap-4">
-                                  <p className="min-w-0 flex-1 text-right text-sm text-gray-700 whitespace-pre-wrap">{row.guidance_answer}</p>
-                                  <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                                  {row.responded_by_name && (
-                                    <>
-                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                      <span className="flex-shrink-0 text-sm text-gray-700">{row.responded_by_name}</span>
-                                    </>
-                                  )}
-                                  {row.responded_at && (
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {formatDateTimeArabic(row.responded_at)}</span>
-                          </span>
-                                  )}
+                        {/* Answer(s) Section */}
+                        <div className="px-6 py-4 bg-[#FAFAFA]">
+                          {row.guidance_answer ? (
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
                                 </div>
                               </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  {row.responded_by_name && (
+                                    <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>
+                                  )}
+                                  {row.responded_at && (
+                                    <span className="text-xs text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {isExpanded && !row.guidance_answer && (
-                          <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                            <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                              <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                              <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                          ) : (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-2 h-2 rounded-full bg-[#D1D5DB]" />
+                              <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
                             </div>
-                            <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                              <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                            </div>
-                          </div>
-                        )}
-                          </div>
-                        );
+                          )}
+                        </div>
+                      </div>
+                    );
                   })}
                 </div>
               ) : (
