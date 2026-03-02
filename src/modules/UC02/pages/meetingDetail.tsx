@@ -3674,7 +3674,7 @@ const MeetingDetail: React.FC = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 mr-12 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit">
+                              <div className="flex items-center gap-2 mr-12 ml-auto px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
                                 <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
                               </div>
