@@ -7,6 +7,7 @@ import { UserAvatar } from '../user-avatar';
 import { WelcomeSectionProps } from '../welcome-section';
 import { type ContentBarFilterTab } from '../content-bar';
 import { Logo } from '../logo';
+import { Bell } from 'lucide-react';
 
 export interface SharedLayoutProps {
   children: React.ReactNode;
@@ -47,77 +48,56 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   }, [navigationItems, dynamicNavItems, useDynamicNavigation, user?.use_cases]);
 
   return (
-    <div className="h-screen flex flex-col relative w-full overflow-hidden" dir="rtl">
+    <div className="h-screen flex flex-col relative w-full overflow-hidden bg-gray-50" dir="rtl">
       <div className={twMerge('relative flex flex-col flex-1 min-h-0 z-10', headerClassName)}>
-         <header
+        {/* ─── Navbar ─── */}
+        <header
           className={twMerge(
-            `
-            sticky top-4 z-50
-            flex items-center justify-between gap-4
-            px-10
-            transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
-            `,
+            'sticky top-0 z-50 flex items-center justify-between gap-6 px-6 transition-all duration-300',
             isScrolled
-              ? `
-                py-3
-                rounded-full
-                bg-white/50
-                backdrop-blur-3xl
-                shadow-[0_10px_40px_rgba(0,0,0,0.12)]
-                border border-white/30
-                scale-[0.98]
-                `
-              : `
-                py-6
-                rounded-t-[14px]
-                bg-transparent
-                `
+              ? 'h-16 bg-white/80 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.08)] border-b border-gray-100'
+              : 'h-[72px] bg-white border-b border-gray-100'
           )}
         >
-          <div
-            className={twMerge(
-              'transition-all duration-500',
-              isScrolled ? 'scale-90' : 'scale-100'
-            )}
-          >
-            <Logo />
-          </div>
+          {/* Right: Logo */}
+          <Logo />
 
-          <div
-            className="flex flex-row-reverse items-center gap-4 flex-1 justify-center min-w-0"
-          >
+          {/* Center: Navigation */}
+          <nav className="flex-1 flex justify-center min-w-0">
             {isAuthenticated && (
-              <NavigationActions 
-                items={finalNavigationItems} 
-                variant="pill" 
+              <NavigationActions
+                items={finalNavigationItems}
+                variant="pill"
               />
             )}
-          </div>
+          </nav>
 
+          {/* Left: Actions */}
           {isAuthenticated && (
-                <div
-                 className={twMerge(
-                   'transition-all duration-500',
-                   isScrolled ? 'scale-90' : 'scale-100'
-                 )}
-               >            
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm border border-gray-200 p-0.5">
-                <UserAvatar compact />
-              </div>
-         
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Notification bell */}
+              <button
+                className="relative w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                aria-label="الإشعارات"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-2 left-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-8 bg-gray-200" />
+
+              {/* User avatar */}
+              <UserAvatar compact />
             </div>
           )}
         </header>
+
+        {/* ─── Content ─── */}
         <div
           ref={contentRef}
           className={twMerge(
-            `
-            flex-1 min-h-0
-            flex flex-col
-            rounded-t-[31px]
-            px-6 pb-6
-            overflow-auto
-            `,
+            'flex-1 min-h-0 flex flex-col px-6 pb-6 pt-4 overflow-auto',
             contentContainerClassName
           )}
         >
