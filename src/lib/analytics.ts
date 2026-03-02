@@ -1,13 +1,38 @@
+import posthog from 'posthog-js';
+import { usePostHog } from '@posthog/react';
+import { useCallback } from 'react';
+
 /**
- * Analytics / event tracking stub.
- * Implement with PostHog or your analytics provider when configured.
+ * Track an event with use_case for filtering in PostHog.
+ * Use this from React components via useAnalytics, or call directly from non-React code.
  */
 export function trackEvent(
-  _category: string,
-  _action: string,
-  _properties?: Record<string, unknown>
+  useCase: string,
+  eventName: string,
+  properties?: Record<string, unknown>
 ): void {
-  if (typeof window !== 'undefined' && (window as any).posthog) {
-    (window as any).posthog.capture(_action, { category: _category, ..._properties });
-  }
+  posthog?.capture(eventName, {
+    use_case: useCase,
+    ...properties,
+  });
+}
+
+/**
+ * Hook for tracking events from React components.
+ * Uses usePostHog for proper initialization handling.
+ */
+export function useAnalytics() {
+  const posthog = usePostHog();
+
+  const trackEvent = useCallback(
+    (useCase: string, eventName: string, properties?: Record<string, unknown>) => {
+      posthog?.capture(eventName, {
+        use_case: useCase,
+        ...properties,
+      });
+    },
+    [posthog]
+  );
+
+  return { trackEvent };
 }
