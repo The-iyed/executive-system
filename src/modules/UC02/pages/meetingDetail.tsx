@@ -2347,41 +2347,6 @@ const MeetingDetail: React.FC = () => {
           />
         </div>
 
-        {/* Inline actions toolbar */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
-          <div className="flex flex-row items-center justify-between gap-3 flex-shrink-0 px-2 py-2 min-w-0">
-            <MeetingActionsBar
-              meetingStatus={meetingStatus}
-              open={actionsBarOpen}
-              onOpenChange={setActionsBarOpen}
-              onOpenSchedule={() => setIsScheduleModalOpen(true)}
-              onOpenReject={() => setIsRejectModalOpen(true)}
-              onOpenCancel={meeting.status === MeetingStatus.SCHEDULED ? () => setIsCancelModalOpen(true) : undefined}
-              onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
-              onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
-              onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
-              onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => setIsApproveUpdateModalOpen(true) : undefined}
-              onAddToWaitingList={() => moveToWaitingListMutation.mutate()}
-              isAddToWaitingListPending={moveToWaitingListMutation.isPending}
-              hasChanges={hasChanges}
-              hasContent={hasContent}
-              inline
-            />
-            {(meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
-              <button
-                type="button"
-                onClick={() => hasChanges && setIsEditConfirmOpen(true)}
-                disabled={!hasChanges}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium text-sm transition-all shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #048F86 0%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-              >
-                <Pencil className="w-4 h-4" strokeWidth={1.26} />
-                تعديل
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Content card */}
         <div
           className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-white justify-center border border-[#EAECF0]"
@@ -3785,6 +3750,53 @@ const MeetingDetail: React.FC = () => {
 
         </div>
 
+        {/* Edit button: bottom-left, when status allows edit; disabled when no changes */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED) && (
+          <div className="fixed bottom-6 left-6 z-40 flex-shrink-0" dir="rtl">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                <button
+                      type="button"
+                      onClick={() => hasChanges && setIsEditConfirmOpen(true)}
+                disabled={!hasChanges}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all shadow-sm hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
+                      style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={1.26} />
+                  تعديل
+              </button>
+                          </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[280px] text-right">
+                  <p>{hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+
+        {/* Centered FAB: tap to show action bubbles in half-circle above */}
+        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
+          <MeetingActionsBar
+            meetingStatus={meetingStatus}
+            open={actionsBarOpen}
+            onOpenChange={setActionsBarOpen}
+            onOpenSchedule={() => setIsScheduleModalOpen(true)}
+            onOpenReject={() => setIsRejectModalOpen(true)}
+            onOpenCancel={meeting.status === MeetingStatus.SCHEDULED ? () => setIsCancelModalOpen(true) : undefined}
+            onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
+            onOpenReturnForInfo={() => setIsReturnForInfoModalOpen(true)}
+            onOpenSendToContent={() => setIsSendToContentModalOpen(true)}
+            onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => setIsApproveUpdateModalOpen(true) : undefined}
+            onAddToWaitingList={() => moveToWaitingListMutation.mutate()}
+            isAddToWaitingListPending={moveToWaitingListMutation.isPending}
+            hasChanges={hasChanges}
+            hasContent={hasContent}
+            hideEdit
+          />
+        )}
       </div>
 
       {/* Meeting Quality Modal */}
