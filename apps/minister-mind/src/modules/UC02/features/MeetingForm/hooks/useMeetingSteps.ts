@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { PATH as UC02_PATH } from '../../../../UC02/routes/paths';
 import { useStep1 } from './useStep1';
+import { trackEvent } from '@analytics';
 import { useStep2 } from './useStep2';
 import { useStep3 } from './useStep3';
 import { useDeleteDraft } from './useDeleteDraft';
@@ -76,14 +77,25 @@ export const useMeetingSteps = ({
     presentationRequiredOptional: true,
   });
 
+  const wrappedOnStep3Success = (isDraft: boolean) => {
+    if (!isDraft) {
+      if (isEditMode) {
+        trackEvent('UC-02', 'uc02_meeting_edited', { draft_id: draftId });
+      } else {
+        trackEvent('UC-02', 'uc02_meeting_created_from_directives', { draft_id: draftId });
+      }
+    }
+    (onStep3Success || (() => {
+      clearDraftData();
+      navigate(UC02_PATH.DIRECTIVES);
+    }))(isDraft);
+  };
+
   const step3Hook = useStep3({
     draftId: draftId || '',
     initialData: initialData?.step3,
     step1FormData: step1Hook.formData,
-    onSuccess: onStep3Success || ((_isDraft) => {
-      clearDraftData();
-      navigate(UC02_PATH.DIRECTIVES);
-    }),
+    onSuccess: wrappedOnStep3Success,
     onError: (error) => {
       console.error('Step3 error:', error);
     },

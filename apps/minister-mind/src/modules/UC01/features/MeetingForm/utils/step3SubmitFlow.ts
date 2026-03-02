@@ -8,6 +8,7 @@ import {
 import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { AttendanceMechanism, MeetingStatus } from '@shared/types';
 import { ERROR_MESSAGE, SUCCESS_MESSAGE } from '../../../hooks';
+import { trackEvent } from '@analytics';
 
 export interface Step3SubmitFlowParams {
   draftId: string;
@@ -42,27 +43,40 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
     }
   }
 
-  const body = {
-    invitees: formData.invitees?.map((invitee, index) => {
-      if (invitee.user_id) {
-        return {
-          user_id: invitee.user_id,
-          sector: invitee.sector?.trim() || '',
-          attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
-          is_required: invitee.is_required || false,
-        };
-      }
+  const inviteesPayload = formData.invitees?.map((invitee, index) => {
+    if (invitee.user_id) {
       return {
-        name: invitee.name || '',
-        position: invitee.position || '',
-        mobile: invitee.mobile || '',
-        email: invitee.email || '',
+        user_id: invitee.user_id,
         sector: invitee.sector?.trim() || '',
-        attendance_mechanism: invitee.attendance_mechanism || AttendanceMechanism.PHYSICAL,
-        item_number: index + 1,
+        attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
       };
-    }) ?? [],
+    }
+    return {
+      name: invitee.name || '',
+      position: invitee.position || '',
+      mobile: invitee.mobile || '',
+      email: invitee.email || '',
+      sector: invitee.sector?.trim() || '',
+      attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
+      item_number: index + 1,
+      is_required: invitee.is_required || false,
+    };
+  }) ?? [];
+
+  const minister_invitees = (formData.minister_attendees ?? []).map((m) => ({
+    external_name: m.external_name?.trim() ?? '',
+    position: m.position?.trim() ?? '',
+    external_email: m.external_email?.trim() ?? '',
+    mobile: m.mobile?.trim() ?? '',
+    attendance_mechanism: m.attendance_channel === 'REMOTE' ? 'عن بعد' : 'حضوري',
+    is_required: m.is_required ?? false,
+    justification: m.justification?.trim() ?? '',
+  }));
+
+  const body = {
+    invitees: inviteesPayload,
+    minister_invitees,
   };
 
   try {
@@ -80,6 +94,7 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
   }
 
   if (isDraft) {
+    trackEvent('UC-01', 'uc01_meeting_request_draft_saved', { draft_id: draftId });
     onSuccess();
     return;
   }
@@ -90,6 +105,7 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
   const callSubmitAndFinish = async (submitApi: (id: string) => Promise<unknown>) => {
     try {
       await submitApi(draftId);
+      trackEvent('UC-01', 'uc01_meeting_request_submitted', { draft_id: draftId });
       showSuccessToast(SUCCESS_MESSAGE);
       onSuccess();
     } catch (err) {
