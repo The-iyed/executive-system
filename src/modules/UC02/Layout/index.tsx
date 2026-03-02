@@ -73,6 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const hideContentBarFilterTabs = pathname === PATH.WORK_BASKET;
   const isMeetingDetail = pathname.startsWith('/meeting/') && pathname.split('/').filter(Boolean).length >= 2;
   const isCalendar = pathname === PATH.CALENDAR;
+  const isDashboard = pathname === PATH.DASHBOARD;
 
   return (
       <SharedLayout
