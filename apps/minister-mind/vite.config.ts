@@ -45,6 +45,7 @@ export default defineConfig(({ command }) => {
         '@sanad-ai/ui/styles.css': resolve(__dirname, '../../libs/ui/src/styles.css'),
         '@shared': resolve(__dirname, './src/modules/shared'),
         '@auth': resolve(__dirname, './src/modules/auth'),
+        '@analytics': resolve(__dirname, './src/lib/analytics.ts'),
       },
     },
     // PostCSS config is handled by postcss.config.js
