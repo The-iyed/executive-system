@@ -510,6 +510,7 @@ const MeetingDetail: React.FC = () => {
     mobile?: string;
     attendance_channel?: AttendanceChannel;
     access_permission?: boolean;
+    isEditing?: boolean;
   }>>([]);
 
   // Add new invitee
@@ -525,6 +526,7 @@ const MeetingDetail: React.FC = () => {
       mobile: '',
       attendance_channel: 'PHYSICAL' as AttendanceChannel,
       access_permission: false,
+      isEditing: true,
     };
     setLocalInvitees((prev) => [...prev, newInvitee]);
   };
@@ -568,6 +570,7 @@ const MeetingDetail: React.FC = () => {
       justification: null,
       access_permission: inv.access_permission ?? false,
       isLocal: true,
+      isEditing: inv.isEditing ?? true,
       position: inv.position ?? '',
       sector: inv.sector ?? '',
       mobile: inv.mobile ?? '',
@@ -3040,6 +3043,7 @@ const MeetingDetail: React.FC = () => {
                         <tbody className="divide-y divide-[#F9FAFB]">
                           {allInvitees.map((row: any, idx: number) => {
                             const isLocal = row.isLocal;
+                            const isEditingRow = row.isEditing === true;
                             const isConsultant = row.is_consultant === true;
                             const name = row.external_name || row.user_id || '-';
                             const position = row.position || '-';
@@ -3057,7 +3061,7 @@ const MeetingDetail: React.FC = () => {
                                     <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
                                       <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
                                     </div>
-                                    {isLocal ? (
+                                    {isEditingRow ? (
                                       <div className="flex flex-col gap-0.5 min-w-[120px]">
                                         <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} disabled={!canEdit} placeholder="الإسم *" className={`h-8 text-right text-xs rounded-lg ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
                                         {inviteeValidationErrors[row.id]?.external_name && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_name}</span>}
@@ -3071,7 +3075,7 @@ const MeetingDetail: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} disabled={!canEdit} placeholder="المنصب *" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.position ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
                                       {inviteeValidationErrors[row.id]?.position && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].position}</span>}
@@ -3081,14 +3085,14 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <Input type="text" value={row.sector || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'sector', e.target.value); }} disabled={!canEdit} placeholder="الجهة" className="h-8 text-right text-xs rounded-lg border-[#E5E7EB] min-w-[90px]" />
                                   ) : (
                                     <span className="text-sm text-[#374151]">{sector}</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-xs rounded-lg min-w-[140px] ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
                                       {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_email}</span>}
@@ -3098,7 +3102,7 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <div className="flex flex-col gap-0.5">
                                       <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} disabled={!canEdit} placeholder="الجوال" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
                                       {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].mobile}</span>}
@@ -3108,7 +3112,7 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <div onClick={(e) => e.stopPropagation()}>
                                       <Select value={attendVal} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
                                         <SelectTrigger className="h-7 bg-[#EFF6FF] border-0 rounded-full px-2.5 text-xs text-[#3B82F6] flex-row-reverse gap-1 min-w-[80px]"><SelectValue /></SelectTrigger>
@@ -3120,7 +3124,7 @@ const MeetingDetail: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isLocal ? (
+                                  {isEditingRow ? (
                                     <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
                                       <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${accessChecked ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
                                         {accessChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -3135,7 +3139,7 @@ const MeetingDetail: React.FC = () => {
                                 </td>
                                 <td className="px-4 py-3 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
                                   <div className="flex items-center gap-0.5">
-                                    {isLocal && canEdit && (
+                                    {isLocal && canEdit && isEditingRow && (
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -3155,18 +3159,29 @@ const MeetingDetail: React.FC = () => {
                                             return;
                                           }
                                           setInviteeValidationErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
-                                          // Mark as saved by removing isLocal flag
-                                          setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isLocal: false } : inv));
+                                          setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: false } : inv));
                                         }}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#048F86] hover:bg-[#037A72] text-white transition-colors"
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
                                         title="حفظ"
                                       >
                                         <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
                                       </button>
                                     )}
-                                    <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    {isLocal && canEdit && !isEditingRow && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: true } : inv))}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] text-[#3B82F6]/50 hover:text-[#3B82F6] transition-colors"
+                                        title="تعديل"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    {canEdit && (
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -3411,7 +3426,7 @@ const MeetingDetail: React.FC = () => {
                                           setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
                                           setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
                                         }}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#048F86] hover:bg-[#037A72] text-white transition-colors"
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
                                         title="حفظ"
                                       >
                                         <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
