@@ -12,6 +12,7 @@ export interface Step2Props {
   handleBlur: (field: keyof Step2FormData) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
+  handleBackClick?: () => void;
   handleCancelClick: () => void;
   /** Only when true is "العرض مطلوب؟" shown (Urgent meeting). Hidden by default; value resets when hidden. */
   showPresentationRequiredField?: boolean;
@@ -27,6 +28,7 @@ export const Step2: React.FC<Step2Props> = ({
   handleChange,
   handleNextClick,
   handleSaveDraftClick,
+  handleBackClick,
   handleCancelClick,
   showPresentationRequiredField = false,
   isPresentationRequiredRequired = false,
@@ -68,6 +70,7 @@ export const Step2: React.FC<Step2Props> = ({
         </div>
 
         <ActionButtons
+          onBack={handleBackClick}
           onCancel={handleCancelClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}

@@ -6,6 +6,8 @@ import { useIsMountedRef } from '../hooks';
 import { ScreenLoader } from '@/modules/shared';
 import { User, LoginPayload } from '../data/authApi';
 import { PATH } from '../routes/paths';
+import { PostHogIdentify } from '../components/PostHogIdentify';
+import { trackEvent } from '@analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -93,6 +95,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       const userResponse = await axiosInstance.get('/api/auth/me');
       const userData = userResponse.data?.data || userResponse.data?.payload || userResponse.data;
       setUser(userData);
+      trackEvent('auth', 'auth_login_success', { user_id: userData.id });
       return userData;
     } finally {
       setIsLoading(false);
@@ -100,6 +103,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = () => {
+    trackEvent('auth', 'auth_logout');
     clearTokens();
     setUser(null);
     // Navigate to login page using absolute URL to avoid base tag issues
@@ -119,7 +123,12 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <PostHogIdentify />
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = (): AuthContextType => {

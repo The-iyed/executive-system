@@ -38,6 +38,7 @@ export interface Step2ContentProps {
   replacementPresentationFiles?: Record<string, File>;
   replacementAdditionalFiles?: Record<string, File>;
   handleNextClick: () => void;
+  handleBackClick?: () => void;
   handleCancelClick: () => void;
   step2EditableMap?: Record<string, boolean>;
 }
@@ -64,6 +65,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   replacementPresentationFiles,
   replacementAdditionalFiles,
   handleNextClick,
+  handleBackClick,
   handleCancelClick,
   step2EditableMap,
 }) => {
@@ -138,6 +140,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
         </div>
 
         <ActionButtons
+          onBack={handleBackClick}
           onCancel={handleCancelClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}

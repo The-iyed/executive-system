@@ -56,6 +56,7 @@ import {
 } from '../data/contentApi';
 import { getConsultationRecords, getSuggestedActions, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { postMeetingsMatch } from '../../shared/api/meetings';
+import { trackEvent } from '@analytics';
 
 /** Action status options for manual/suggested directive rows (editable). */
 const ACTION_STATUS_OPTIONS = [
@@ -262,6 +263,14 @@ const ContentRequestDetail: React.FC = () => {
     queryFn: () => getContentRequestById(id!),
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (contentRequest?.id || id) {
+      trackEvent('UC-05', 'uc05_content_request_detail_viewed', {
+        content_request_id: contentRequest?.id ?? id,
+      });
+    }
+  }, [contentRequest?.id, id]);
 
   // meeting_id for suggested-actions: from content request detail or fallback to content-request id
   const rawMeetingId =

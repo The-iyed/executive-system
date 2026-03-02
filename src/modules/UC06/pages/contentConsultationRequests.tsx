@@ -23,6 +23,7 @@ import {
 import {
   mapContentConsultationRequestToCardData,
 } from '../utils/contentConsultantMapper';
+import { trackEvent } from '@analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -224,6 +225,10 @@ const ContentConsultationRequests: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Debounce search input
+  useEffect(() => {
+    trackEvent('UC-06', 'uc06_content_consultation_requests_viewed');
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchValue);

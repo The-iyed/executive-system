@@ -24,6 +24,7 @@ import {
   mapConsultationRequestToCardViewData,
 } from '../utils/consultationMapper';
 import { ConsultationRequestsGrid, ConsultationRequestCardData } from '../components';
+import { trackEvent } from '@analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +34,10 @@ const ConsultationRequests: React.FC = () => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    trackEvent('UC-03', 'uc03_consultation_requests_viewed');
+  }, []);
 
   // Debounce search input
   useEffect(() => {

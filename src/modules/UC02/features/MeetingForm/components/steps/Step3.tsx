@@ -26,6 +26,7 @@ export interface Step3Props {
   setProposerUserIds: (ids: string[]) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
+  handleBackClick?: () => void;
   handleCancelClick: () => void;
   nonDeletableInviteeIds: string[];
 }
@@ -51,6 +52,7 @@ export const Step3: React.FC<Step3Props> = ({
   setProposerUserIds,
   handleNextClick,
   handleSaveDraftClick,
+  handleBackClick,
   handleCancelClick,
   nonDeletableInviteeIds,
 }) => {
@@ -404,6 +406,7 @@ export const Step3: React.FC<Step3Props> = ({
         </div>
 
         <ActionButtons
+          onBack={handleBackClick}
           onCancel={handleCancelClick}
           onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}

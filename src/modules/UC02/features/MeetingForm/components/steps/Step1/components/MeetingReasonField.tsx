@@ -1,4 +1,4 @@
-import { FormTextArea } from '@/modules/shared';
+import { FormField, FormInput } from "@/modules/shared";
 
 export interface MeetingReasonFieldProps {
   value: string;
@@ -22,17 +22,20 @@ export function MeetingReasonField({
   className,
 }: MeetingReasonFieldProps) {
   return (
-    <div className={className}>
-      <FormTextArea
+    <FormField
+      className={className}
+      label="مبرّر اللقاء"
+      required={required}
+      error={touched ? error : undefined}
+    >
+      <FormInput
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        error={touched && error ? error : undefined}
-        label="مبرّر اللقاء"
-        placeholder="مبرّر اللقاء..."
+        placeholder="مبرّر اللقاء"
+        error={!!(touched && error)}
         disabled={disabled}
-        required={required}
       />
-    </div>
+    </FormField>
   );
 }

@@ -26,6 +26,7 @@ import {
   mapGuidanceRequestToCardViewData,
 } from '../utils/guidanceMapper';
 import { GuidanceRequestsGrid, GuidanceRequestCardData } from '../components';
+import { trackEvent } from '@analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,6 +36,10 @@ const GuidanceRequests: React.FC = () => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    trackEvent('UC-04', 'uc04_guidance_requests_viewed');
+  }, []);
 
   // Debounce search input
   useEffect(() => {

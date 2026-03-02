@@ -122,12 +122,18 @@ const getEventsForSlot = (slotDate: Date, time: string, events: CalendarEventDat
     return timeHour >= startHour && timeHour < endHour;
   });
 
-/** Events that **start** at this (date, time) – render once here and span duration */
+/** Events that **start** at this (date, time) – render once here and span duration. For exact times, match by hour. */
 const getEventsStartingAtSlot = (slotDate: Date, time: string, events: CalendarEventData[]): CalendarEventData[] =>
   events.filter((event) => {
     const eventStart = new Date(event.date);
     if (!isSameCalendarDay(eventStart, slotDate)) return false;
-    return event.startTime === time;
+    if (event.startTime === time) return true;
+    if (event.exactStartTime) {
+      const slotHour = time.split(':')[0];
+      const eventHour = event.startTime.split(':')[0];
+      return slotHour === eventHour;
+    }
+    return false;
   });
 
 /** True if this slot is inside a multi-hour event that started earlier (so we show empty cell and let the spanning block show) */
@@ -143,8 +149,17 @@ const isSlotCoveredByLongEvent = (slotDate: Date, time: string, events: Calendar
 
 const ROW_HEIGHT_PX = 53;
 
-/** Duration in grid rows (hours) for an event; minimum 1 */
+/** Duration in grid rows (hours) for an event; minimum 1. Uses exact times when available. */
 const eventSpanRows = (event: CalendarEventData): number => {
+  if (event.exactStartTime && event.exactEndTime) {
+    const [sh, sm] = event.exactStartTime.split(':').map(Number);
+    const [eh, em] = event.exactEndTime.split(':').map(Number);
+    const startM = (sh ?? 0) * 60 + (sm ?? 0);
+    const endM = (eh ?? 0) * 60 + (em ?? 0);
+    const durationM = endM - startM;
+    if (durationM <= 0) return 1;
+    return Math.max(1, Math.ceil(durationM / 60));
+  }
   const startH = parseInt(event.startTime.split(':')[0], 10);
   const endH = parseInt(event.endTime.split(':')[0], 10);
   return Math.max(1, endH - startH);
@@ -266,19 +281,29 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   }}
                   onClick={startingEvents.length === 0 && isSlotClickable ? () => onTimeSlotClick?.(date, time) : undefined}
                 >
-                  {startingEvents.map((event) => (
-                    <div key={event.id} className="min-w-0 flex-1 h-full overflow-hidden">
-                      <CalendarEvent
-                        event={event}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick?.(event);
-                        }}
-                        onBook={onEventBook}
-                        onShowDetails={onEventShowDetails}
-                      />
-                    </div>
-                  ))}
+                  {startingEvents.map((event) => {
+                    const hasExactDuration = !!(event.exactStartTime && event.exactEndTime);
+                    return (
+                      <div
+                        key={event.id}
+                        className={cn(
+                          'min-w-0 flex-1 h-full overflow-hidden',
+                          hasExactDuration && 'relative'
+                        )}
+                      >
+                        <CalendarEvent
+                          event={event}
+                          slotTime={time}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick?.(event);
+                          }}
+                          onBook={onEventBook}
+                          onShowDetails={onEventShowDetails}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
