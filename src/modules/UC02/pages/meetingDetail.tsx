@@ -3621,7 +3621,7 @@ const MeetingDetail: React.FC = () => {
           {activeTab === 'directive' && (
             <div className="flex flex-col w-full" dir="rtl">
               {/* Chat container */}
-              <div className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
+              <div className="rounded-2xl border border-[#E5E7EB] bg-white overflow-visible">
                 {isLoadingGuidanceRecords ? (
                   <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
@@ -3695,10 +3695,8 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 )}
 
-                {/* Inline chat input – only hide for terminal statuses */}
-                {meetingStatus !== MeetingStatus.CLOSED &&
-                  meetingStatus !== MeetingStatus.REJECTED &&
-                  meetingStatus !== MeetingStatus.CANCELLED && (
+                {/* Inline chat input – always visible */}
+                {(
                   <div className="border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
                     <form
                       onSubmit={(e) => {
