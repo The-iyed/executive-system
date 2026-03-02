@@ -53,14 +53,36 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
         {/* ─── Navbar ─── */}
         <header
           className={twMerge(
-            'sticky top-0 z-50 flex items-center justify-between gap-6 px-6 transition-all duration-300',
+            `
+            sticky top-0 z-50
+            flex items-center justify-between gap-6
+            transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+            `,
             isScrolled
-              ? 'h-16 bg-white/80 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.08)] border-b border-gray-100'
-              : 'h-[72px] bg-white border-b border-gray-100'
+              ? `
+                top-3 mx-4
+                h-14 px-5
+                rounded-2xl
+                bg-white/70
+                backdrop-blur-2xl
+                shadow-[0_8px_32px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]
+                border border-white/60
+                scale-[0.99]
+                `
+              : `
+                h-[72px] px-8
+                bg-white
+                border-b border-gray-100
+                `
           )}
         >
           {/* Right: Logo */}
-          <Logo />
+          <div className={twMerge(
+            'transition-all duration-500 flex-shrink-0',
+            isScrolled ? 'scale-[0.88]' : 'scale-100'
+          )}>
+            <Logo />
+          </div>
 
           {/* Center: Navigation */}
           <nav className="flex-1 flex justify-center min-w-0">
@@ -74,7 +96,10 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
           {/* Left: Actions */}
           {isAuthenticated && (
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className={twMerge(
+              'flex items-center gap-3 flex-shrink-0 transition-all duration-500',
+              isScrolled ? 'scale-[0.88]' : 'scale-100'
+            )}>
               {/* Notification bell */}
               <button
                 className="relative w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
