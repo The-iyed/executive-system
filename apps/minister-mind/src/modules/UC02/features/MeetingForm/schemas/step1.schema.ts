@@ -108,6 +108,37 @@ const dateFieldSchema = () =>
     'لا يمكن اختيار تاريخ في الماضي'
   );
 
+const MAX_MEETING_DURATION_MS = 24 * 60 * 60 * 1000;
+const isSameCalendarDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+/** Meeting duration in minutes from start/end (date or datetime). Returns null if invalid. */
+export function getMeetingDurationMinutes(
+  startISO: string | undefined,
+  endISO: string | undefined
+): number | null {
+  if (!startISO?.trim() || !endISO?.trim()) return null;
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (end < start) return null;
+  if (!isSameCalendarDay(start, end)) return null;
+  const ms = end.getTime() - start.getTime();
+  if (ms > MAX_MEETING_DURATION_MS) return null;
+  return Math.round(ms / (60 * 1000));
+}
+
+/** Sum of presentation_duration_minutes across agenda items (for duration validation). */
+export function getAgendaTotalDurationMinutes(
+  agenda: Array<Record<string, unknown>> | undefined
+): number {
+  if (!agenda?.length) return 0;
+  return agenda.reduce((sum, item) => {
+    const n = parseInt(String(item.presentation_duration_minutes ?? ''), 10);
+    return sum + (Number.isNaN(n) ? 0 : n);
+  }, 0);
+}
+
 export const step1BaseSchema = z.object({
   relatedDirective: optionType,
   requester: optionType,
@@ -137,6 +168,7 @@ export const step1BaseSchema = z.object({
   alternative2EndDate: emptyStr(),
   meeting_channel: emptyStr(),
   location: emptyStr(),
+  location_option: emptyStr(),
   requiresProtocol: z.boolean().optional().default(false),
   meetingGoals: z.array(meetingGoalItem).optional().default([]),
   meetingAgenda: z.array(agendaItemBase).optional().default([]),
@@ -174,10 +206,16 @@ export const step1ValidationSchema = step1BaseSchema
     ),
     meetingTitle: str('عنوان الاجتماع مطلوب', 1, 200),
     meetingCategory: str('فئة الاجتماع مطلوبة'),
+    sector: str('القطاع مطلوب'),
+    meetingType: str('نوع الاجتماع مطلوب'),
     meetingClassification1: str('تصنيف الاجتماع مطلوب'),
     meeting_channel: str('آلية انعقاد الاجتماع مطلوبة'),
     meetingGoals: z.array(meetingGoalItemStrict).optional().default([]),
-    meetingAgenda: z.array(agendaItem(false)).optional().default([]),
+    meetingAgenda: z
+      .array(agendaItem(true))
+      .min(1, 'أجندة الاجتماع مطلوبة - يرجى إضافة عنصر واحد على الأقل')
+      .optional()
+      .default([]),
     ministerSupport: z.array(ministerSupportItemStrict).optional().default([]),
     previousMeetings: z.array(previousMeetingItemStrict).optional().default([]),
   })
@@ -204,6 +242,20 @@ export const step1ValidationSchema = step1BaseSchema
           message: 'موعد نهاية الاجتماع مطلوب',
           path: ['meetingEndDate'],
         });
+      }
+    }
+    // UC01-style: agenda total duration must not exceed meeting duration
+    if (d.meetingStartDate && d.meetingEndDate && (d.meetingAgenda?.length ?? 0) > 0) {
+      const meetingMinutes = getMeetingDurationMinutes(d.meetingStartDate, d.meetingEndDate);
+      if (meetingMinutes != null) {
+        const agendaTotal = getAgendaTotalDurationMinutes(d.meetingAgenda as Array<Record<string, unknown>>);
+        if (agendaTotal > meetingMinutes) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`,
+            path: ['meetingAgenda'],
+          });
+        }
       }
     }
   });

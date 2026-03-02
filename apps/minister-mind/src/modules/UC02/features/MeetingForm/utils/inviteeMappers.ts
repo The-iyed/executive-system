@@ -114,11 +114,15 @@ export const mapUserToStep3InviteeRow = (
     user.username ||
     user.name ||
     '';
+  const sector = (user as { sector?: string; department_name?: string }).sector
+    ?? (user as { sector?: string; department_name?: string }).department_name
+    ?? '';
   return {
     id: options.id ?? nanoid(),
     full_name: fullName,
     position_title: user.position ?? '',
     mobile_number: user.phone_number ?? '',
+    sector,
     email: user.email ?? '',
     attendance_mode: 'IN_PERSON',
     view_permission: false,
@@ -133,6 +137,7 @@ export const createEmptyStep3InviteeRow = (): InviteeFormRow => ({
   full_name: '',
   position_title: '',
   mobile_number: '',
+  sector: '',
   email: '',
   attendance_mode: 'IN_PERSON',
   view_permission: false,
