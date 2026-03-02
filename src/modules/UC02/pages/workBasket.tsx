@@ -278,45 +278,21 @@ const WorkBasket: React.FC = () => {
       </div>
 
       {/* ════════════════════════════════════════ */}
-      {/*     STATUS FILTER TABS                  */}
+      {/*     STATUS FILTER (Dropdown)              */}
       {/* ════════════════════════════════════════ */}
       <div className="px-6 pb-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-          {filterTabs.map((tab) => {
-            const isActive = statusFilter === tab.id;
-            const isAll = tab.id === 'all';
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={cn(
-                  'group flex items-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
-                  isActive && isAll
-                    ? 'bg-[var(--color-primary-500)] text-white border-[var(--color-primary-500)] shadow-sm'
-                    : isActive
-                    ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]'
-                    : 'bg-white text-[var(--color-text-gray-500)] border-[var(--color-base-gray-200)] hover:border-[var(--color-base-gray-300)] hover:text-[var(--color-text-gray-700)]'
-                )}
-              >
-                <span>{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span
-                    className={cn(
-                      'inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold tabular-nums',
-                      isActive && isAll
-                        ? 'bg-white/20 text-white'
-                        : isActive
-                        ? 'bg-[var(--color-primary-100)] text-[var(--color-primary-700)]'
-                        : 'bg-[var(--color-base-gray-100)] text-[var(--color-text-gray-500)] group-hover:bg-[var(--color-base-gray-200)]'
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-10 px-4 pr-10 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm font-medium text-[var(--color-text-gray-700)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all cursor-pointer min-w-[200px]"
+          dir="rtl"
+        >
+          {filterTabs.map((tab) => (
+            <option key={tab.id} value={tab.id}>
+              {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ════════════════════════════════════════ */}
