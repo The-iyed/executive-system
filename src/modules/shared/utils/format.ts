@@ -66,4 +66,44 @@ export function translateDirectiveStatus(status: string | null | undefined): str
   return DIRECTIVE_STATUS_LABELS[String(status).toUpperCase()] ?? status;
 }
 
+/** Format a date as relative time in Arabic (e.g. "منذ دقيقة", "منذ 3 ساعات", "منذ يومين"). */
+export function formatTimeAgoArabic(date: Date | string | null | undefined): string {
+  if (date == null) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+
+  if (diffSec < 60) return 'الآن';
+  if (diffMin === 1) return 'منذ دقيقة';
+  if (diffMin === 2) return 'منذ دقيقتين';
+  if (diffMin <= 10) return `منذ ${diffMin} دقائق`;
+  if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+  if (diffHr === 1) return 'منذ ساعة';
+  if (diffHr === 2) return 'منذ ساعتين';
+  if (diffHr <= 10) return `منذ ${diffHr} ساعات`;
+  if (diffHr < 24) return `منذ ${diffHr} ساعة`;
+  if (diffDay === 1) return 'منذ يوم';
+  if (diffDay === 2) return 'منذ يومين';
+  if (diffDay <= 10) return `منذ ${diffDay} أيام`;
+  if (diffDay < 30) return `منذ ${diffDay} يوم`;
+  if (diffWeek <= 4) {
+    if (diffWeek === 1) return 'منذ أسبوع';
+    if (diffWeek === 2) return 'منذ أسبوعين';
+    return `منذ ${diffWeek} أسابيع`;
+  }
+  if (diffMonth === 1) return 'منذ شهر';
+  if (diffMonth === 2) return 'منذ شهرين';
+  if (diffMonth <= 10) return `منذ ${diffMonth} أشهر`;
+  if (diffMonth < 12) return `منذ ${diffMonth} شهر`;
+  // Fallback to full date for very old dates
+  return formatDateTimeArabic(d);
+}
+
 export { fontStyle };

@@ -34,6 +34,7 @@ import {
   MINISTER_SUPPORT_TYPE_OPTIONS,
   formatDateTimeArabic,
   formatDateArabic,
+  formatTimeAgoArabic,
   isValidPhone,
 } from '@/modules/shared'; 
 import {
@@ -3628,7 +3629,7 @@ const MeetingDetail: React.FC = () => {
                 ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
                   <div className="flex flex-col">
                     {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
-                      const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
+                      const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
                       const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       return (
@@ -3666,7 +3667,7 @@ const MeetingDetail: React.FC = () => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
                                     {row.responded_by_name && <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>}
-                                    {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>}
+                                    {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatTimeAgoArabic(row.responded_at)}</span>}
                                   </div>
                                   <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
                                     <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
