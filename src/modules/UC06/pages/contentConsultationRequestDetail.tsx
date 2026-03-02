@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Textarea } from '@/lib/ui';
 import { PATH } from '../routes/paths';
+import { trackEvent } from '@analytics';
 import pdfIcon from '../../shared/assets/pdf.svg';
 
 // Get status label with support for custom statuses
@@ -86,6 +87,14 @@ const ContentConsultationRequestDetail: React.FC = () => {
     queryFn: () => getContentConsultationRequestById(id!),
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (consultationData?.id || id) {
+      trackEvent('UC-06', 'uc06_content_consultation_request_detail_viewed', {
+        content_consultation_request_id: consultationData?.id ?? id,
+      });
+    }
+  }, [consultationData?.id, id]);
 
   // Fetch consultation records
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({

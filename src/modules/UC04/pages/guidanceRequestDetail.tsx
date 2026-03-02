@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useAuth } from '../../auth/context/AuthProvider';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/lib/ui';
 import { PATH } from '../routes/paths';
+import { trackEvent } from '@analytics';
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -127,6 +128,14 @@ const GuidanceRequestDetail: React.FC = () => {
 
   const meetingRequest = guidanceData?.meeting_request;
   const guidanceQuestion = guidanceData?.guidance_question || '';
+
+  useEffect(() => {
+    if (guidanceData?.id || id) {
+      trackEvent('UC-04', 'uc04_guidance_request_detail_viewed', {
+        guidance_request_id: guidanceData?.id ?? id,
+      });
+    }
+  }, [guidanceData?.id, id]);
 
   const meetingInfoData: MeetingInfoData = useMemo(() => {
     if (!meetingRequest) return {};

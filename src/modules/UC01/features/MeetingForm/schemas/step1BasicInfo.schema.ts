@@ -362,10 +362,10 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       );
       if (meetingMinutes != null && (data.meetingAgenda?.length ?? 0) > 0) {
         const agendaTotal = getAgendaTotalDurationMinutes(data.meetingAgenda);
-        if (agendaTotal > meetingMinutes) {
+        if (agendaTotal !== meetingMinutes) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي أو يقل عن مدة الاجتماع (${meetingMinutes} دقيقة)`,
+            message: `مجموع مدة عناصر الأجندة (${agendaTotal} دقيقة) يجب أن يساوي بالضبط مدة الاجتماع (${meetingMinutes} دقيقة)`,
             path: ['meetingAgenda'],
           });
         }

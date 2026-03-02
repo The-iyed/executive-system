@@ -18,7 +18,7 @@ import {
 import type { MeetingRangeValue, MeetingRangePickerProps } from './MeetingRangePicker.types';
 
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES_STEPS = [0, 15, 30, 45];
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i);
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -61,20 +61,71 @@ interface TimeSelectProps {
   disabled?: boolean;
 }
 
+/** Clamp minute to valid 00–59 range */
+function clampMinute(m: number): number {
+  if (Number.isNaN(m)) return 0;
+  return Math.max(0, Math.min(59, Math.round(m)));
+}
+
 function TimeSelect({ label, value, onChange, disabled }: TimeSelectProps) {
   const [h, m] = value.split(':').map(Number);
   const hour = Number.isNaN(h) ? 9 : Math.max(0, Math.min(23, h));
-  const minute = MINUTES_STEPS.includes(Number.isNaN(m) ? 0 : m)
-    ? Number.isNaN(m) ? 0 : m
-    : MINUTES_STEPS[0];
+  const minute = clampMinute(Number.isNaN(m) ? 0 : m);
+
+  const [minuteEditMode, setMinuteEditMode] = useState(false);
+  const [minuteInputValue, setMinuteInputValue] = useState(String(minute).padStart(2, '0'));
+  const minuteInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (!minuteEditMode) {
+      setMinuteInputValue(String(minute).padStart(2, '0'));
+    }
+  }, [minute, minuteEditMode]);
+
+  React.useEffect(() => {
+    if (minuteEditMode) {
+      minuteInputRef.current?.focus();
+      minuteInputRef.current?.select();
+    }
+  }, [minuteEditMode]);
 
   const handleHourChange = (v: string) => {
     const newH = Number(v);
     onChange(`${String(newH).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
   };
-  const handleMinuteChange = (v: string) => {
-    const newM = Number(v);
+
+  const handleMinuteSelectChange = (v: string) => {
+    const newM = clampMinute(Number(v));
     onChange(`${String(hour).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+  };
+
+  const handleMinuteDoubleClick = () => {
+    if (disabled) return;
+    setMinuteInputValue(String(minute).padStart(2, '0'));
+    setMinuteEditMode(true);
+  };
+
+  const handleMinuteInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setMinuteInputValue(raw.slice(0, 2));
+  };
+
+  const handleMinuteInputBlur = () => {
+    const parsed = parseInt(minuteInputValue, 10);
+    const validM =
+      minuteInputValue === '' || Number.isNaN(parsed)
+        ? minute
+        : clampMinute(parsed);
+    onChange(`${String(hour).padStart(2, '0')}:${String(validM).padStart(2, '0')}`);
+    setMinuteInputValue(String(validM).padStart(2, '0'));
+    setMinuteEditMode(false);
+  };
+
+  const handleMinuteInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur();
+    }
   };
 
   return (
@@ -104,26 +155,50 @@ function TimeSelect({ label, value, onChange, disabled }: TimeSelectProps) {
         <span className="text-[#667085] font-semibold tabular-nums" aria-hidden>
           :
         </span>
-        <Select value={String(minute)} onValueChange={handleMinuteChange} disabled={disabled}>
-          <SelectTrigger className={cn(timeSelectTriggerClass, 'flex-1 basis-0')} aria-label="دقيقة">
-            <SelectValue placeholder="00" />
-          </SelectTrigger>
-          <SelectContent
-            className="max-h-[220px] rounded-lg border-[#E4E7EC] bg-white shadow-lg"
-            position="popper"
-            sideOffset={4}
-          >
-            {MINUTES_STEPS.map((minVal) => (
-              <SelectItem
-                key={minVal}
-                value={String(minVal)}
-                className="cursor-pointer rounded-md py-2 pr-8 pl-2 text-right focus:bg-[#F0FDF9] focus:text-[#008774] data-[highlighted]:bg-[#F0FDF9] data-[highlighted]:text-[#008774]"
-              >
-                {String(minVal).padStart(2, '0')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {minuteEditMode ? (
+          <input
+            ref={minuteInputRef}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={minuteInputValue}
+            onChange={handleMinuteInputChange}
+            onBlur={handleMinuteInputBlur}
+            onKeyDown={handleMinuteInputKeyDown}
+            className={cn(
+              timeSelectTriggerClass,
+              'flex-1 basis-0 min-w-0 text-center',
+              'focus:outline-none focus:ring-2 focus:ring-[#008774]/20 focus:border-[#008774]'
+            )}
+            aria-label="دقيقة (أدخل 00–59)"
+          />
+        ) : (
+          <Select value={String(minute)} onValueChange={handleMinuteSelectChange} disabled={disabled}>
+            <SelectTrigger
+              className={cn(timeSelectTriggerClass, 'flex-1 basis-0')}
+              aria-label="دقيقة"
+              title="انقر مرتين للإدخال اليدوي (00–59)"
+              onDoubleClick={handleMinuteDoubleClick}
+            >
+              <SelectValue placeholder="00" />
+            </SelectTrigger>
+            <SelectContent
+              className="max-h-[220px] rounded-lg border-[#E4E7EC] bg-white shadow-lg"
+              position="popper"
+              sideOffset={4}
+            >
+              {MINUTES_60.map((minVal) => (
+                <SelectItem
+                  key={minVal}
+                  value={String(minVal)}
+                  className="cursor-pointer rounded-md py-2 pr-8 pl-2 text-right focus:bg-[#F0FDF9] focus:text-[#008774] data-[highlighted]:bg-[#F0FDF9] data-[highlighted]:text-[#008774]"
+                >
+                  {String(minVal).padStart(2, '0')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </div>
   );

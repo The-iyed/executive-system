@@ -141,4 +141,5 @@ export const createEmptyStep3InviteeRow = (): InviteeFormRow => ({
   email: '',
   attendance_mode: 'IN_PERSON',
   view_permission: false,
+  isOwner: false,
 });

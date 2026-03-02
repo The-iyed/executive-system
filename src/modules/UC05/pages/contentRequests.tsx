@@ -24,6 +24,7 @@ import {
 } from '../data/contentApi';
 import { mapContentRequestToCardViewData } from '../utils/contentMapper';
 import { ContentRequestsGrid, ContentRequestCardData } from '../components';
+import { trackEvent } from '@analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +34,10 @@ const ContentRequests: React.FC = () => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    trackEvent('UC-05', 'uc05_content_requests_viewed');
+  }, []);
 
   // Debounce search input
   useEffect(() => {

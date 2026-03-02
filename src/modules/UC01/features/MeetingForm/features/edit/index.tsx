@@ -1,24 +1,31 @@
 import React from 'react';
-import { Stepper, Loader } from '@/modules/shared';
+import { Stepper, Loader, hasUseCaseAccess } from '@/modules/shared';
 import { STEP_LABELS } from '../../utils';
 import { useEditMeeting } from '../../hooks/useEditMeeting';
 import { useFormMeetingModal } from '../../hooks';
+import type { MeetingForEdit } from '../../utils/transformMeetingToEditData';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
+import { useAuth } from '@/modules/auth';
+
+export type { MeetingForEdit };
 
 export interface EditMeetingProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   meetingId?: string;
+  /** When opening from meeting detail: pass meeting from getMeetingById so form uses same API data */
+  initialMeetingData?: MeetingForEdit | null;
 }
 
 export const EditMeeting: React.FC<EditMeetingProps> = ({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   meetingId,
+  initialMeetingData,
 } = {}) => {
   const uncontrolled = useFormMeetingModal();
   const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
@@ -35,10 +42,18 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     handleStep3InviteesNext,
     handleStep3InviteesSaveDraft,
     handleCancel,
+    handlePrevious,
     isLoading,
     error,
     draftData,
-  } = useEditMeeting(meetingId != null ? { meetingIdOverride: meetingId } : undefined);
+  } = useEditMeeting(
+    meetingId != null || initialMeetingData != null
+      ? { meetingIdOverride: meetingId ?? initialMeetingData?.id, initialMeetingData: initialMeetingData ?? undefined }
+      : undefined
+  );
+
+  const { user } = useAuth();
+  const showMinisterInvitees = hasUseCaseAccess(user?.use_cases, 'UC-02');
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -87,6 +102,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             replacementPresentationFiles={step2ContentHook.replacementPresentationFiles}
             replacementAdditionalFiles={step2ContentHook.replacementAdditionalFiles}
             handleNextClick={handleStep2ContentNext}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             step2EditableMap={step2ContentHook.step2EditableMap}
           />
@@ -121,10 +137,16 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleUpdateAttendee={step3InviteesHook.handleUpdateAttendee}
             handleNextClick={handleStep3InviteesNext}
             handleSaveDraftClick={handleStep3InviteesSaveDraft}
+            handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             step3EditableMap={step3InviteesHook.step3EditableMap}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
             onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
+            showMinisterInvitees={showMinisterInvitees}
+            ministerAttendees={step3InviteesHook.formData.minister_attendees ?? []}
+            onAddMinisterAttendee={step3InviteesHook.handleAddMinisterAttendee}
+            onDeleteMinisterAttendee={step3InviteesHook.handleDeleteMinisterAttendee}
+            onUpdateMinisterAttendee={step3InviteesHook.handleUpdateMinisterAttendee}
           />
         );
       }

@@ -9,6 +9,8 @@ import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem,
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import '@/modules/shared/styles';
+import { trackEvent } from '@analytics';
+import '@shared/styles';
 import { useMeetingFormDrawer } from '../features/MeetingForm/hooks';
 import { MeetingFormDrawer } from '../features/MeetingForm/components/MeetingFormDrawer';
 
@@ -30,6 +32,10 @@ const Directives: React.FC = () => {
     await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
     await refetch();
   };
+
+  useEffect(() => {
+    trackEvent('UC-02', 'uc02_directives_viewed');
+  }, []);
 
   // Debounce search input
   useEffect(() => {
