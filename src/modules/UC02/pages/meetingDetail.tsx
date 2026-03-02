@@ -3034,7 +3034,7 @@ const MeetingDetail: React.FC = () => {
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-16"></th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#F9FAFB]">
@@ -3133,10 +3133,41 @@ const MeetingDetail: React.FC = () => {
                                     </span>
                                   )}
                                 </td>
-                                <td className="px-4 py-3">
-                                  <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                <td className="px-4 py-3 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
+                                  <div className="flex items-center gap-0.5">
+                                    {isLocal && canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const rowErrors: Record<string, string> = {};
+                                          const rName = (row.external_name ?? '').trim();
+                                          const rEmail = (row.external_email ?? '').trim();
+                                          const rPos = (row.position ?? '').trim();
+                                          const rPhone = (row.mobile ?? '').trim();
+                                          if (!rName) rowErrors.external_name = 'مطلوب';
+                                          if (!rEmail) rowErrors.external_email = 'مطلوب';
+                                          else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
+                                          if (!rPos) rowErrors.position = 'مطلوب';
+                                          if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'صيغة غير صحيحة';
+                                          if (Object.keys(rowErrors).length > 0) {
+                                            setInviteeValidationErrors((prev) => ({ ...prev, [row.id]: rowErrors }));
+                                            return;
+                                          }
+                                          setInviteeValidationErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
+                                          // Mark as saved by removing isLocal flag
+                                          setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isLocal: false } : inv));
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#048F86] hover:bg-[#037A72] text-white transition-colors"
+                                        title="حفظ"
+                                      >
+                                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                      </button>
+                                    )}
+                                    <button type="button" disabled={!canEdit} onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -3204,7 +3235,7 @@ const MeetingDetail: React.FC = () => {
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مطلوب</th>
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مستشار</th>
                             <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المبرر</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20"></th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#F9FAFB]">
@@ -3354,7 +3385,7 @@ const MeetingDetail: React.FC = () => {
                                     )
                                   )}
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]" style={{ backgroundColor: isConsultant ? '#F0FDF9' : 'white' }}>
                                   <div className="flex items-center gap-0.5">
                                     {isEditing ? (
                                       <button
