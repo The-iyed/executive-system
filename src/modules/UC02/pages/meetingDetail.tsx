@@ -2368,7 +2368,7 @@ const MeetingDetail: React.FC = () => {
 
               {/* ─── التوجيهات المرتبطة بالاجتماع ─── */}
               {contentApprovalDirectivesRows.length > 0 && (
-                <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
                   <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
                     <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                       <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
@@ -2429,10 +2429,10 @@ const MeetingDetail: React.FC = () => {
               )}
 
               {/* ─── الملخّص التنفيذي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
-                  <div className="w-9 h-9 rounded-xl bg-[#92400E]/8 flex items-center justify-center">
-                    <FileText className="w-[18px] h-[18px] text-[#92400E]" strokeWidth={1.8} />
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
                   <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
                 </div>
@@ -2482,8 +2482,8 @@ const MeetingDetail: React.FC = () => {
               </section>
 
               {/* ─── العرض التقديمي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                       <FileCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
@@ -2598,8 +2598,8 @@ const MeetingDetail: React.FC = () => {
 
               {/* ─── متى سيتم إرفاق العرض؟ ─── */}
               {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
-                <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
                     <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                       <Clock className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                     </div>
@@ -2620,8 +2620,8 @@ const MeetingDetail: React.FC = () => {
               )}
 
               {/* ─── مرفقات اختيارية ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                       <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
@@ -2684,8 +2684,8 @@ const MeetingDetail: React.FC = () => {
               </section>
 
               {/* ─── ملاحظات ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
                   <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                     <ClipboardCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
