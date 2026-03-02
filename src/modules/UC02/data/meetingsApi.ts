@@ -774,7 +774,9 @@ export const getDirectives = async (params: GetDirectivesParams = {}): Promise<D
     queryParams.append('search', params.search.trim());
   }
 
-  const response = await axiosInstance.get<DirectivesListResponse>(`/api/scheduling/directives/current?${queryParams.toString()}`);
+  queryParams.append('status', 'TAKEN');
+
+  const response = await axiosInstance.get<DirectivesListResponse>(`/api/minister-directives?${queryParams.toString()}`);
   return response.data;
 };
 
@@ -789,7 +791,10 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   if (params.search != null && params.search.trim() !== '') {
     queryParams.append('search', params.search.trim());
   }
-  const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/scheduling/directives/previous?${queryParams.toString()}`);
+
+  queryParams.append('status', 'ADOPTED');
+
+  const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/minister-directives?${queryParams.toString()}`);
   return response.data;
 };
 
@@ -890,7 +895,7 @@ export const closeDirective = async (_directiveId: string, payload: CreateDirect
 };
 
 export const cancelDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post(`/api/external-directives/cancel`, payload);
+  await axiosInstance.post(`/api/minister-directives/${_directiveId}/request-meeting`, payload);
 };
 
 // Consultation Records API
