@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ActionButtons, MeetingAgendaTable, type OptionType } from '@/modules/shared';
+import { ActionButtons, MeetingAgendaTable, MeetingSubCategoryField, MeetingClassification, type OptionType } from '@/modules/shared';
 import { getMeetingById, type MeetingApiResponse } from '../../../../../data';
 import type { Step1FormData } from '../../../schemas/step1.schema';
 import { getMeetingDurationMinutes } from '../../../schemas/step1.schema';
@@ -318,6 +318,17 @@ export function Step1({
             disabled={isFieldDisabled('meetingCategory')}
             required={isRequired('meetingCategory')}
           />
+
+          {(formData.meetingCategory === MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL ||
+            formData.meetingCategory === MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL) && (
+            <MeetingSubCategoryField
+              className="w-full min-w-0"
+              value={formData.meetingSubCategory ?? ''}
+              onChange={(v) => handleChange('meetingSubCategory', v)}
+              error={errors.meetingSubCategory as string | undefined}
+              touched={touched.meetingSubCategory}
+            />
+          )}
 
           {isFieldVisible('meetingReason') && (
             <MeetingReasonField
