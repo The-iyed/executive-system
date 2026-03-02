@@ -80,15 +80,19 @@ export function formatTimeAgoArabic(date: Date | string | null | undefined): str
   const diffWeek = Math.floor(diffDay / 7);
   const diffMonth = Math.floor(diffDay / 30);
 
-  if (diffSec < 60) return 'الآن';
+  if (diffSec < 30) return 'الآن';
+  if (diffSec < 60) return 'منذ لحظات';
   if (diffMin === 1) return 'منذ دقيقة';
   if (diffMin === 2) return 'منذ دقيقتين';
-  if (diffMin <= 10) return `منذ ${diffMin} دقائق`;
-  if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+  if (diffMin >= 3 && diffMin <= 10) return `منذ ${diffMin} دقائق`;
+  if (diffMin >= 11 && diffMin <= 20) return `منذ ${diffMin} دقيقة`;
+  if (diffMin >= 21 && diffMin <= 30) return `منذ نصف ساعة`;
+  if (diffMin >= 31 && diffMin <= 45) return `منذ ${diffMin} دقيقة`;
+  if (diffMin >= 46 && diffMin <= 59) return `منذ ساعة تقريباً`;
   if (diffHr === 1) return 'منذ ساعة';
   if (diffHr === 2) return 'منذ ساعتين';
-  if (diffHr <= 10) return `منذ ${diffHr} ساعات`;
-  if (diffHr < 24) return `منذ ${diffHr} ساعة`;
+  if (diffHr >= 3 && diffHr <= 10) return `منذ ${diffHr} ساعات`;
+  if (diffHr >= 11 && diffHr < 24) return `منذ ${diffHr} ساعة`;
   if (diffDay === 1) return 'منذ يوم';
   if (diffDay === 2) return 'منذ يومين';
   if (diffDay <= 10) return `منذ ${diffDay} أيام`;
