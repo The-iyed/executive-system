@@ -53,39 +53,22 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
       <div className={twMerge('relative flex flex-col flex-1 min-h-0 z-10', headerClassName)}>
         {/* ─── Navbar ─── */}
         <header
-          className={twMerge(
-            `
-            sticky top-0 z-50
-            flex items-center justify-between gap-6
-            transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
-            `,
-            isScrolled
-              ? `
-                top-3 mx-6
-                h-14 px-5
-                rounded-2xl
-                bg-white/70
-                backdrop-blur-2xl
-                shadow-[0_8px_32px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]
-                border border-white/60
-                scale-[0.99]
-                `
-              : `
-                h-[72px] px-8
-                bg-white
-                border-b border-gray-100
-                `
-          )}
+          className="
+            sticky top-3 z-50 mx-4
+            flex items-center justify-between
+            h-[56px] px-4
+            rounded-2xl
+            bg-white
+            shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]
+            border border-gray-100
+          "
         >
           {/* Right: Logo */}
-          <div className={twMerge(
-            'transition-all duration-500 flex-shrink-0',
-            isScrolled ? 'scale-[0.88]' : 'scale-100'
-          )}>
+          <div className="flex-shrink-0">
             <Logo />
           </div>
 
-          {/* Center: Navigation */}
+          {/* Center: Navigation — no wrapper bg, no border-radius on container */}
           <nav className="flex-1 flex justify-center min-w-0">
             {isAuthenticated && (
               <NavigationActions
@@ -97,21 +80,18 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
           {/* Left: Actions */}
           {isAuthenticated && (
-            <div className={twMerge(
-              'flex items-center gap-3 flex-shrink-0 transition-all duration-500',
-              isScrolled ? 'scale-[0.88]' : 'scale-100'
-            )}>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Notification bell */}
               <button
-                className="relative w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
                 aria-label="الإشعارات"
               >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 left-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                <Bell className="w-[18px] h-[18px]" />
+                <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
               </button>
 
               {/* Divider */}
-              <div className="w-px h-8 bg-gray-200" />
+              <div className="w-px h-7 bg-gray-200" />
 
               {/* User avatar */}
               <UserAvatar compact />
