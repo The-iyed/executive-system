@@ -4,6 +4,7 @@ import type { FormTableColumn } from '@shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 
+/** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
   if (!startISO || !endISO) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
@@ -13,24 +14,27 @@ function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeV
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
   }
-  const toHHmm = (d: Date) =>
-    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const toHHmmUTC = (d: Date) =>
+    `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
   return {
     date: start,
-    startTime: toHHmm(start),
-    endTime: toHHmm(end),
+    startTime: toHHmmUTC(start),
+    endTime: toHHmmUTC(end),
     isFullDay: false,
   };
 }
 
+/** Build ISO in UTC so 13:00–14:00 displayed is sent as 13:00–14:00 UTC (no -1h). */
 function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
   if (!value.date) return null;
   const [sh, sm] = value.startTime.split(':').map(Number);
   const [eh, em] = value.endTime.split(':').map(Number);
-  const start = new Date(value.date);
-  start.setHours(sh, sm, 0, 0);
-  const end = new Date(value.date);
-  end.setHours(eh, em, 0, 0);
+  // Use local calendar day (picker gives midnight local) + time as UTC
+  const y = value.date.getFullYear();
+  const mo = value.date.getMonth();
+  const d = value.date.getDate();
+  const start = new Date(Date.UTC(y, mo, d, sh, sm, 0, 0));
+  const end = new Date(Date.UTC(y, mo, d, eh, em, 0, 0));
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
@@ -49,10 +53,10 @@ const MINISTER_INVITEES_EMAIL_ONLY_COLUMNS: FormTableColumn[] = [
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
-/** Format Date + "HH:00" to ISO string for shared date/time picker */
+/** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
-  const [h = 0] = time.split(':').map(Number);
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, 0, 0, 0);
+  const [h = 0, m = 0] = time.split(':').map(Number);
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0));
   return d.toISOString();
 }
 
@@ -84,9 +88,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const [title, setTitle] = useState('');
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
-    const [h = 0] = slotTime.split(':').map(Number);
-    const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h, 0, 0, 0);
-    d.setHours(d.getHours() + 1);
+    const [h = 0, m = 0] = slotTime.split(':').map(Number);
+    const d = new Date(Date.UTC(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0));
     return d.toISOString();
   }, [slotDate, slotTime]);
   const [startDate, setStartDate] = useState(startDefault);
