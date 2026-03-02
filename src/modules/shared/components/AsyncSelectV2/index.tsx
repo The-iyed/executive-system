@@ -268,8 +268,8 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
   }, [value]);
 
   return (
-    <div className={cn('async-select-v2-wrapper', fullWidth && 'w-full')}>
-      <div className={cn('async-select-v2-container', error && 'has-error', className)}>
+    <div className={cn('async-select-v2-wrapper', fullWidth && 'w-full min-w-0')}>
+      <div className={cn('async-select-v2-container', fullWidth && 'w-full min-w-0', error && 'has-error', className)}>
         <AsyncPaginate
           value={selectedOption}
           onChange={handleChange}
@@ -314,6 +314,8 @@ const AsyncSelectV2: React.FC<AsyncSelectV2Props> = ({
           styles={{
             control: (base, state) => ({
               ...base,
+              width: fullWidth ? '100%' : base.width,
+              minWidth: fullWidth ? 0 : base.minWidth,
               textAlign: 'right',
               direction: 'rtl',
               minHeight: '44px',
