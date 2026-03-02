@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ChevronDown, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@radix-ui/react-collapsible';
 import pdfIcon from '../../shared/assets/pdf.svg';
 import { 
@@ -363,8 +363,9 @@ const MeetingDetail: React.FC = () => {
     notes: '',
   });
 
-  // Scheduling consultation modal state (multiple consultants)
+  // Scheduling consultation inline chat state (multiple consultants)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+  const [showConsultantPicker, setShowConsultantPicker] = useState(false);
   const [consultationForm, setConsultationForm] = useState({
     consultant_user_ids: [] as string[],
     consultation_question: '',
@@ -1018,7 +1019,7 @@ const MeetingDetail: React.FC = () => {
         page: 1,
         limit: 50,
       }),
-    enabled: isConsultationModalOpen,
+    enabled: activeTab === 'scheduling-consultation',
   });
 
   const consultants: ConsultantUser[] = consultantsResponse?.items || [];
@@ -1036,7 +1037,7 @@ const MeetingDetail: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       queryClient.invalidateQueries({ queryKey: ['consultation-records', id, 'SCHEDULING'] });
-      setIsConsultationModalOpen(false);
+      setShowConsultantPicker(false);
       setConsultationForm({
         consultant_user_ids: [],
         consultation_question: '',
@@ -3575,18 +3576,139 @@ const MeetingDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Bottom action bar */}
+              {/* Inline chat input – consultant picker + question */}
               {meetingStatus !== MeetingStatus.WAITING && meetingStatus !== MeetingStatus.CLOSED && meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.REJECTED && (
-                <div className="flex items-center gap-3 px-5 py-4 border-t border-[#E5E7EB]">
-                  <button
-                    type="button"
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                  {/* Consultant picker (expandable) */}
+                  {showConsultantPicker && (
+                    <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#344054]">اختر المستشارين</span>
+                        {consultationForm.consultant_user_ids.length > 0 && (
+                          <span className="text-xs text-[#048F86] font-medium bg-[#048F86]/10 px-2 py-0.5 rounded-full">
+                            {consultationForm.consultant_user_ids.length} مستشار
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative mb-2">
+                        <Input
+                          type="text"
+                          value={consultationForm.search}
+                          onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))}
+                          placeholder="ابحث بالاسم أو البريد..."
+                          className="h-9 text-right text-sm rounded-lg border-[#E5E7EB] bg-white pr-3 pl-8"
+                        />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                      </div>
+                      <div className="max-h-[160px] overflow-y-auto rounded-lg border border-[#E5E7EB] bg-white">
+                        {isLoadingConsultants ? (
+                          <div className="py-4 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#048F86] mx-auto" />
+                          </div>
+                        ) : consultants.length === 0 ? (
+                          <div className="py-4 text-center text-sm text-[#9CA3AF]">لا توجد نتائج</div>
+                        ) : (
+                          <div className="py-1">
+                            {consultants.map((user) => {
+                              const isSelected = consultationForm.consultant_user_ids.includes(user.id);
+                              return (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => toggleConsultantSelection(user.id)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-right transition-colors hover:bg-[#F9FAFB] ${isSelected ? 'bg-[#048F86]/5' : ''}`}
+                                >
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-[#048F86] border-[#048F86]' : 'border-[#D1D5DB] bg-white'}`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                                        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-[#048F86]/15 text-[#048F86]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {user.first_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <span className="text-sm text-[#1F2937]">{user.first_name} {user.last_name}</span>
+                                    <span className="text-[11px] text-[#9CA3AF] mr-1.5">{user.email}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {/* Selected consultant chips */}
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {consultationForm.consultant_user_ids.map((uid) => {
+                            const user = consultants.find((c) => c.id === uid);
+                            return (
+                              <span key={uid} className="inline-flex items-center gap-1 bg-[#048F86]/10 text-[#048F86] text-xs font-medium px-2 py-1 rounded-full">
+                                {user ? `${user.first_name} ${user.last_name}` : uid}
+                                <button type="button" onClick={() => toggleConsultantSelection(uid)} className="hover:text-[#037A72]">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Input row */}
+                  <form
+                    onSubmit={handleConsultationSubmit}
+                    className="flex items-end gap-3 px-5 py-4"
                   >
-                    <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
+                    {/* Toggle consultant picker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowConsultantPicker((v) => !v)}
+                      className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors border ${showConsultantPicker ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#048F86]/40 hover:text-[#048F86]'}`}
+                      title="اختيار المستشارين"
+                    >
+                      <Users className="w-5 h-5" />
+                      {consultationForm.consultant_user_ids.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#048F86] text-white text-[9px] font-bold flex items-center justify-center">
+                          {consultationForm.consultant_user_ids.length}
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex-1 relative">
+                      <Textarea
+                        value={consultationForm.consultation_question}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))}
+                        placeholder={consultationForm.consultant_user_ids.length === 0 ? 'اختر المستشارين أولاً ثم اكتب سؤالك...' : 'اكتب سؤال الاستشارة...'}
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (consultationForm.consultant_user_ids.length > 0 && consultationForm.consultation_question.trim()) {
+                              handleConsultationSubmit(e as any);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {consultationMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
@@ -4230,70 +4352,7 @@ const MeetingDetail: React.FC = () => {
 
       {/* Request Guidance – now inline in chat, drawer removed */}
 
-      {/* Scheduling Consultation – Drawer */}
-      <Drawer
-        open={isConsultationModalOpen}
-        onOpenChange={setIsConsultationModalOpen}
-        title={<span className="text-right">طلب استشارة جدولة</span>}
-        side="left"
-        width={520}
-        bodyClassName="dir-rtl"
-        footer={
-          <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_ids: [], consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : !consultationForm.consultation_question.trim() ? 'أدخل سؤال الاستشارة' : 'طلب استشارة'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        }
-      >
-        <form id="consultation-form" onSubmit={handleConsultationSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">المستشارون</label>
-            <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-10 text-right border border-gray-300 rounded-lg" />
-            <div className="border border-gray-300 rounded-lg bg-white max-h-[220px] overflow-y-auto dir-rtl">
-              {isLoadingConsultants ? (
-                <div className="py-6 text-center text-sm text-gray-500">جاري التحميل...</div>
-              ) : consultants.length === 0 ? (
-                <div className="py-6 text-center text-sm text-gray-500">لا توجد نتائج</div>
-              ) : (
-                <ul className="py-1">
-                  {consultants.map((user) => (
-                    <li key={user.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                      <input
-                        type="checkbox"
-                        id={`consultant-${user.id}`}
-                        checked={consultationForm.consultant_user_ids.includes(user.id)}
-                        onChange={() => toggleConsultantSelection(user.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
-                      />
-                      <label htmlFor={`consultant-${user.id}`} className="flex-1 text-right text-sm text-gray-700 cursor-pointer">
-                        {user.first_name} {user.last_name} <span className="text-gray-500">– {user.email}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {consultationForm.consultant_user_ids.length > 0 && (
-              <p className="text-xs text-gray-500 text-right">تم اختيار {consultationForm.consultant_user_ids.length} مستشار</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة *</label>
-            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" required />
-          </div>
-        </form>
-      </Drawer>
+      {/* Scheduling Consultation – now inline in chat, drawer removed */}
 
       {/* Approve Update – Drawer (مجدول - الجدولة → مجدول) */}
       <Drawer
