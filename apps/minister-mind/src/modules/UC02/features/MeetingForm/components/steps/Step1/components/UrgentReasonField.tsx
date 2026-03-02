@@ -1,4 +1,4 @@
-import { FormTextArea } from '@shared';
+import { FormField, FormInput } from '@shared';
 
 export interface UrgentReasonFieldProps {
   value: string;
@@ -21,18 +21,22 @@ export function UrgentReasonField({
   required = false,
   className,
 }: UrgentReasonFieldProps) {
+  const showError = Boolean(touched || error);
   return (
-    <div className={className}>
-      <FormTextArea
+    <FormField
+      className={className}
+      label="السبب"
+      required={required}
+      error={showError ? error : undefined}
+    >
+      <FormInput
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        error={touched && error ? error : undefined}
-        label="السبب"
         placeholder="السبب..."
+        error={!!(showError && error)}
         disabled={disabled}
-        required={required}
       />
-    </div>
+    </FormField>
   );
 }

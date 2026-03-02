@@ -77,6 +77,7 @@ export {
 } from './form';
 
 export { AgendaPreviewTable, type AgendaPreviewTableProps, type AgendaItemPreview } from './AgendaPreviewTable';
+export { MeetingAgendaTable, type MeetingAgendaTableProps } from './MeetingAgendaTable';
 export {
   MeetingInfo,
   getMeetingInfoGridSpecs,
