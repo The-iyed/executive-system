@@ -3616,104 +3616,134 @@ const MeetingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* سؤال tab */}
+          {/* سؤال tab – Chat-style Q&A */}
           {activeTab === 'directive' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {meetingStatus !== MeetingStatus.WAITING &&
-                meetingStatus !== MeetingStatus.CLOSED &&
-                meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
-                meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
-                meetingStatus !== MeetingStatus.REJECTED &&
-                meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsRequestGuidanceModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50"
-                    style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
-                  >
-                    <FileCheck className="w-5 h-5" strokeWidth={1.26} />
-                    طلب استشارة
-                  </button>
-              </div>
-              )}
-              {isLoadingGuidanceRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                <div className="flex flex-col gap-5 w-full" dir="rtl">
-                  {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
-                    const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                    const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
+            <div className="flex flex-col w-full" dir="rtl">
+              {/* Chat container */}
+              <div className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
+                {isLoadingGuidanceRecords ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
+                  </div>
+                ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
+                  <div className="flex flex-col divide-y divide-[#F3F4F6]">
+                    {guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
+                      const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
+                      const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
-                    return (
-                      <div key={`guidance-${row.guidance_id}-${index}`} className="rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden">
-                        {/* Question Header */}
-                        <div className="px-6 py-5 border-b border-[#F3F4F6]">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-col gap-2 flex-1 min-w-0">
-                              <h3 className="text-[16px] font-bold text-[#1F2937]">السؤال</h3>
-                              <p className="text-[14px] text-[#4B5563] leading-relaxed">{row.guidance_question || '-'}</p>
-                            </div>
-                          </div>
-                          {/* Meta chips */}
-                          <div className="flex flex-wrap items-center gap-2 mt-3">
-                            {row.status && (
-                              <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
-                            )}
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F9FAFB] border border-[#F3F4F6] px-3 py-1.5 text-xs text-[#6B7280]">
-                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>تاريخ الطلب : {requestDate}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F9FAFB] border border-[#F3F4F6] px-3 py-1.5 text-xs text-[#6B7280]">
-                              <User className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>{row.requested_by_name || '-'}</span>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Answer(s) Section */}
-                        <div className="px-6 py-4 bg-[#FAFAFA]">
-                          {row.guidance_answer ? (
+                      return (
+                        <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
+                          {/* Question bubble */}
+                          <div className="px-5 pt-5 pb-3">
                             <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 mt-0.5">
-                                <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#048F86]/20 flex items-center justify-center">
-                                  <span className="text-xs font-bold text-[#048F86]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                              <div className="flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{row.requested_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
                                 </div>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  {row.responded_by_name && (
-                                    <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>
-                                  )}
-                                  {row.responded_at && (
-                                    <span className="text-xs text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>
-                                  )}
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-semibold text-[#1F2937]">{row.requested_by_name || '-'}</span>
+                                  <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
+                                  {row.status && <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />}
                                 </div>
-                                <p className="text-sm text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-full">
+                                  <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{row.guidance_question || '-'}</p>
+                                </div>
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-2 h-2 rounded-full bg-[#D1D5DB]" />
-                              <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
-                            </div>
-                          )}
+                          </div>
+
+                          {/* Answer bubble */}
+                          <div className="px-5 pb-5 pt-1">
+                            {row.guidance_answer ? (
+                              <div className="flex items-start gap-3 mr-12">
+                                <div className="flex-shrink-0">
+                                  <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
+                                    <span className="text-xs font-bold text-[#92400E]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {row.responded_by_name && <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name}</span>}
+                                    {row.responded_at && <span className="text-[11px] text-[#9CA3AF]">{formatDateTimeArabic(row.responded_at)}</span>}
+                                  </div>
+                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-full">
+                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 mr-12 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
+                                <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
-                    <FileCheck className="w-6 h-6 text-[#98A2B3]" />
+                      );
+                    })}
                   </div>
-                  <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
-                  <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
-                </div>
-              )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                      <FileCheck className="w-6 h-6 text-[#98A2B3]" />
+                    </div>
+                    <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+                    <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
+                  </div>
+                )}
+
+                {/* Inline chat input */}
+                {meetingStatus !== MeetingStatus.WAITING &&
+                  meetingStatus !== MeetingStatus.CLOSED &&
+                  meetingStatus !== MeetingStatus.RETURNED_FROM_SCHEDULING &&
+                  meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
+                  meetingStatus !== MeetingStatus.REJECTED &&
+                  meetingStatus !== MeetingStatus.UNDER_CONTENT_REVIEW && (
+                  <div className="border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!requestGuidanceForm.notes.trim()) return;
+                        handleRequestGuidanceSubmit(e);
+                      }}
+                      className="flex items-end gap-3"
+                    >
+                      <div className="flex-1">
+                        <Textarea
+                          value={requestGuidanceForm.notes}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
+                          placeholder="اكتب سؤالك هنا..."
+                          className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                          rows={1}
+                          onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (requestGuidanceForm.notes.trim()) {
+                                handleRequestGuidanceSubmit(e as any);
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
+                        className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                      >
+                        {requestGuidanceMutation.isPending ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                          </svg>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -4257,28 +4287,7 @@ const MeetingDetail: React.FC = () => {
         attachment={previewAttachment}
       />
 
-      {/* Request Guidance – Drawer */}
-      <Drawer
-        open={isRequestGuidanceModalOpen}
-        onOpenChange={setIsRequestGuidanceModalOpen}
-        title={<span className="text-right">طلب استشارة</span>}
-        side="left"
-        width={500}
-        bodyClassName="dir-rtl"
-        footer={
-          <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsRequestGuidanceModalOpen(false); setRequestGuidanceForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <button type="submit" form="request-guidance-form" disabled={requestGuidanceMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{requestGuidanceMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
-          </div>
-        }
-      >
-        <form id="request-guidance-form" onSubmit={handleRequestGuidanceSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">ملاحظات</label>
-            <Textarea value={requestGuidanceForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })} placeholder="يرجى توفير التوجيهات اللازمة حول هذا الطلب" className="w-full min-h-[100px] text-right" />
-          </div>
-        </form>
-      </Drawer>
+      {/* Request Guidance – now inline in chat, drawer removed */}
 
       {/* Scheduling Consultation – Drawer */}
       <Drawer
