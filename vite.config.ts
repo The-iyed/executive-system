@@ -28,14 +28,14 @@ export default defineConfig({
     } as Plugin,
   ],
   resolve: {
-    alias: {
-      '@/lib/api': resolve(__dirname, './src/lib/api/index.ts'),
-      '@/lib/ui/styles.css': resolve(__dirname, './src/lib/ui/styles.css'),
-      '@/lib/ui': resolve(__dirname, './src/lib/ui/index.ts'),
-      '@/modules/shared': resolve(__dirname, './src/modules/shared/index.ts'),
-      '@/modules/auth': resolve(__dirname, './src/modules/auth/index.ts'),
-      '@': resolve(__dirname, './src'),
-    },
+    alias: [
+      { find: /^@\/lib\/api$/, replacement: resolve(__dirname, './src/lib/api/index.ts') },
+      { find: /^@\/lib\/ui\/styles\.css$/, replacement: resolve(__dirname, './src/lib/ui/styles.css') },
+      { find: /^@\/lib\/ui$/, replacement: resolve(__dirname, './src/lib/ui/index.ts') },
+      { find: /^@\/modules\/shared$/, replacement: resolve(__dirname, './src/modules/shared/index.ts') },
+      { find: /^@\/modules\/auth$/, replacement: resolve(__dirname, './src/modules/auth/index.ts') },
+      { find: '@', replacement: resolve(__dirname, './src') },
+    ],
   },
   server: {
     port: 4404,
