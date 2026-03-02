@@ -5,7 +5,7 @@ import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMee
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
-import { cn } from '@/lib/ui';
+import { cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/lib/ui';
 import { Icon } from '@iconify/react';
 import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
@@ -215,6 +215,20 @@ const WorkBasket: React.FC = () => {
 
           {/* Left: Actions */}
           <div className="flex items-center gap-3">
+            {/* Status filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter} dir="rtl">
+              <SelectTrigger className="h-10 min-w-[180px] rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm font-medium text-[var(--color-text-gray-700)]">
+                <SelectValue placeholder="جميع الحالات" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                {filterTabs.map((tab) => (
+                  <SelectItem key={tab.id} value={tab.id}>
+                    {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
@@ -223,7 +237,7 @@ const WorkBasket: React.FC = () => {
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder="بحث في الطلبات..."
-                className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[260px]"
+                className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
               />
             </div>
 
@@ -277,23 +291,6 @@ const WorkBasket: React.FC = () => {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════ */}
-      {/*     STATUS FILTER (Dropdown)              */}
-      {/* ════════════════════════════════════════ */}
-      <div className="px-6 pb-3">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 px-4 pr-10 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm font-medium text-[var(--color-text-gray-700)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all cursor-pointer min-w-[200px]"
-          dir="rtl"
-        >
-          {filterTabs.map((tab) => (
-            <option key={tab.id} value={tab.id}>
-              {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
 
       {/* ════════════════════════════════════════ */}
       {/*     CONTENT                              */}
