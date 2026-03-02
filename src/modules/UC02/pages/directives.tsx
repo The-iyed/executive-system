@@ -272,10 +272,9 @@ const Directives: React.FC = () => {
             {/* Right: Title area */}
             <div className="flex items-center gap-3">
               <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))' }}
+                className="w-11 h-11 rounded-2xl flex items-center justify-center bg-[var(--color-primary-50)]"
               >
-                <Icon icon="solar:document-text-bold" width={22} height={22} className="text-white" />
+                <Icon icon="solar:document-text-bold" width={22} height={22} className="text-[var(--color-primary-500)]" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-[var(--color-text-gray-900)]">توجيهات الجدولة</h1>
@@ -322,8 +321,7 @@ const Directives: React.FC = () => {
               {/* Create meeting */}
               <button
                 onClick={() => openCreateDrawer()}
-                className="flex items-center gap-2 h-10 px-5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))' }}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98] bg-[var(--color-primary-500)]"
               >
                 <Plus className="w-4 h-4" />
                 <span>إنشاء اجتماع</span>
