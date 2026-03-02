@@ -67,13 +67,7 @@ export function DetailPageHeader({
         boxShadow: '0 4px 24px -4px rgba(4, 143, 134, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04)',
       }}
     >
-      {/* Top accent gradient bar */}
-      <div
-        className="h-1 w-full flex-shrink-0"
-        style={{
-          background: 'linear-gradient(90deg, #048F86 0%, #34C3BA 40%, #6DCDCD 70%, #048F86 100%)',
-        }}
-      />
+      {/* No top accent bar */}
 
       <div className="flex flex-col min-w-0">
         {/* Row 1: Back + Title + Status + Actions */}
