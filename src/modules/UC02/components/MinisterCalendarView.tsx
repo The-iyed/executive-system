@@ -482,19 +482,16 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
       {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
-        <DialogContent className="max-w-[520px] w-[95vw] max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle style={fontStyle}>{selectedEventForDetails?.title || 'تفاصيل الموعد'}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[480px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border-0 shadow-2xl" dir="rtl">
           {selectedEventForDetails && (
-            <div className="flex flex-col gap-4 text-right" style={fontStyle}>
+            <>
               {isLoadingMeeting && (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-16">
                   <Loader />
                 </div>
               )}
               {!isOptimisticEvent && !isOutlookEvent && !isLoadingMeeting && meetingCardData && (
-                <>
+                <div className="p-5">
                   <MeetingCard
                     meeting={meetingCardData}
                     onDetails={() => {
@@ -502,89 +499,112 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       navigate(`/meeting/${selectedEventForDetails.id}`);
                     }}
                   />
-                </>
+                </div>
               )}
               {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
-                <div
-                  className="flex flex-col bg-white w-full overflow-hidden border-[1.5px] border-[rgba(230,236,245,1)] cursor-default"
-                  style={{
-                    borderRadius: '16px',
-                    boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
-                  }}
-                >
-                  <div className="flex flex-col gap-4 p-5">
-                    <div className="flex flex-row items-start justify-between gap-3">
-                      <h3 className="text-right flex-1 text-[#101828] font-bold leading-6" style={{ fontSize: '15px' }}>
-                        {selectedEventForDetails.title}
-                      </h3>
-                      {selectedEventForDetails.is_internal !== undefined && (
-                        <span
-                          className={cn(
-                            'text-xs font-medium px-2 py-1 rounded-full shrink-0',
-                            selectedEventForDetails.is_internal
-                              ? 'bg-[#E6F6F4] text-[#008774]'
-                              : 'bg-amber-50 text-amber-700'
-                          )}
-                        >
-                          {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
-                        </span>
-                      )}
-                    </div>
+                <div className="flex flex-col" style={fontStyle}>
+                  {/* Header */}
+                  <div className="relative bg-gradient-to-bl from-[#048F86] to-[#036B64] px-6 py-5 rounded-t-2xl">
+                    <button
+                      onClick={() => setSelectedEventForDetails(null)}
+                      className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                    <h3 className="text-white font-bold text-[17px] leading-7 pr-0 pl-10">
+                      {selectedEventForDetails.title}
+                    </h3>
+                    {selectedEventForDetails.is_internal !== undefined && (
+                      <span className="inline-block mt-2 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white">
+                        {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex flex-col gap-0 px-6 py-4">
+                    {/* Organizer */}
                     {selectedEventForDetails.organizer && (
-                      <div className="flex flex-row items-center gap-3">
-                        <div className="w-9 h-9 flex-shrink-0 rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)] flex items-center justify-center">
-                          <User className="w-4 h-4 text-[#98A2B3]" strokeWidth={1.5} />
+                      <div className="flex items-center gap-3 py-4 border-b border-gray-100">
+                        <div className="w-10 h-10 rounded-full bg-[#048F86]/10 flex items-center justify-center shrink-0">
+                          <User className="w-5 h-5 text-[#048F86]" strokeWidth={1.5} />
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[13px] font-medium text-[#344054]">{selectedEventForDetails.organizer.name}</span>
-                          <span className="text-xs text-[#475467]">{selectedEventForDetails.organizer.email}</span>
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                          <span className="text-[14px] font-semibold text-gray-800 truncate w-full">{selectedEventForDetails.organizer.name}</span>
+                          <span className="text-[12px] text-gray-400 truncate w-full">{selectedEventForDetails.organizer.email}</span>
                         </div>
                       </div>
                     )}
-                    <p className="text-[#475467] text-sm">
-                      {formatDetailDate(selectedEventForDetails.date)}
-                    </p>
-                    <p className="text-[#101828] font-semibold text-sm">
-                      من {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} إلى{' '}
-                      {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
-                    </p>
+
+                    {/* Date & Time */}
+                    <div className="flex items-center gap-3 py-4 border-b border-gray-100">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                        <Calendar className="w-5 h-5 text-blue-500" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex flex-col items-start flex-1">
+                        <span className="text-[14px] font-semibold text-gray-800">
+                          {formatDetailDate(selectedEventForDetails.date)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 py-4 border-b border-gray-100">
+                      <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5 text-amber-500" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex flex-col items-start flex-1">
+                        <span className="text-[14px] font-semibold text-gray-800">
+                          {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} – {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Location */}
                     {selectedEventForDetails.location && (
-                      <div>
-                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المكان</h4>
-                        <p className="text-sm text-[#101828] break-all">
-                          {selectedEventForDetails.location.startsWith('http')
-                            ? (
-                                <a
-                                  href={selectedEventForDetails.location}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#0E6F90] underline"
-                                >
-                                  {selectedEventForDetails.location}
-                                </a>
-                              )
-                            : selectedEventForDetails.location
-                          }
-                        </p>
+                      <div className="flex items-center gap-3 py-4 border-b border-gray-100">
+                        <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
+                          <MapPin className="w-5 h-5 text-purple-500" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                          {selectedEventForDetails.location.startsWith('http') ? (
+                            <a
+                              href={selectedEventForDetails.location}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[14px] font-medium text-[#048F86] underline underline-offset-2 truncate w-full"
+                            >
+                              {selectedEventForDetails.location}
+                            </a>
+                          ) : (
+                            <span className="text-[14px] font-semibold text-gray-800 truncate w-full">
+                              {selectedEventForDetails.location}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Attachments */}
                     {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-semibold text-[#475467] mb-1">المرفقات</h4>
-                        <ul className="list-none space-y-1">
+                      <div className="flex items-start gap-3 py-4">
+                        <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0 mt-0.5">
+                          <Paperclip className="w-5 h-5 text-rose-400" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex flex-col gap-2 flex-1 min-w-0">
+                          <span className="text-[13px] font-semibold text-gray-500">المرفقات</span>
                           {selectedEventForDetails.attachments.map((att) => (
-                            <li key={att.attachment_id} className="text-sm text-[#101828] flex items-center gap-2">
-                              <span className="truncate flex-1" title={att.name}>{att.name}</span>
-                              <span className="text-xs text-[#475467] shrink-0">{formatAttachmentSize(att.size)}</span>
-                            </li>
+                            <div key={att.attachment_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                              <span className="text-[13px] text-gray-700 truncate flex-1" title={att.name}>{att.name}</span>
+                              <span className="text-[11px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
