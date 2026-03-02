@@ -604,7 +604,7 @@ const Directives: React.FC = () => {
                                   style={{ borderColor: 'var(--color-status-yellow)', color: 'var(--color-status-yellow)' }}
                                 >
                                   <XCircle className="w-3.5 h-3.5" />
-                                  إلغاء التوجيه
+                                  الأخذ بالتوجيه
                                 </button>
                                 <button
                                   onClick={async (e) => {
