@@ -30,6 +30,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@analytics': resolve(__dirname, './src/lib/analytics.ts'),
       '@/lib/api': resolve(__dirname, './src/lib/api'),
       '@/lib/ui': resolve(__dirname, './src/lib/ui'),
       '@/lib/ui/styles.css': resolve(__dirname, './src/lib/ui/styles.css'),

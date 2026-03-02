@@ -7,12 +7,12 @@
  * meetings list / draft) uses getDraftById + transformDraftToStep* in transformData.ts
  * and never uses this file.
  */
-import { formatDateStringToISO } from '@shared';
+import { formatDateStringToISO } from '@/modules/shared';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import type { Step2ContentFormData } from '../schemas/step2Content.schema';
 import type { Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { getMeetingLocationDropdownValue } from './constants';
-import { AttendanceMechanism } from '@shared/types';
+import { AttendanceMechanism } from '@/modules/shared/types';
 
 type InviteeFormData = Step3InviteesFormData['invitees'][number];
 
