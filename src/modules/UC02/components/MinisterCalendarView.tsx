@@ -482,7 +482,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
       {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
-        <DialogContent className="max-w-[480px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border-0 shadow-2xl" dir="rtl">
+        <DialogContent className="max-w-[460px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
           {selectedEventForDetails && (
             <>
               {isLoadingMeeting && (
@@ -504,79 +504,83 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
                 <div className="flex flex-col" style={fontStyle}>
                   {/* Header */}
-                  <div className="relative bg-gradient-to-bl from-[#048F86] to-[#036B64] px-6 py-5 rounded-t-2xl">
+                  <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                      <h3 className="text-gray-900 font-bold text-[16px] leading-6">
+                        {selectedEventForDetails.title}
+                      </h3>
+                      {selectedEventForDetails.is_internal !== undefined && (
+                        <span className={cn(
+                          'text-[11px] font-semibold px-2 py-0.5 rounded w-fit',
+                          selectedEventForDetails.is_internal
+                            ? 'bg-[#048F86]/10 text-[#048F86]'
+                            : 'bg-gray-100 text-gray-500'
+                        )}>
+                          {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => setSelectedEventForDetails(null)}
-                      className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors shrink-0 mr-3"
                     >
-                      <X className="w-4 h-4 text-white" />
+                      <X className="w-4 h-4 text-gray-500" />
                     </button>
-                    <h3 className="text-white font-bold text-[17px] leading-7 pr-0 pl-10">
-                      {selectedEventForDetails.title}
-                    </h3>
-                    {selectedEventForDetails.is_internal !== undefined && (
-                      <span className="inline-block mt-2 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white">
-                        {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
-                      </span>
-                    )}
                   </div>
 
                   {/* Body */}
-                  <div className="flex flex-col gap-0 px-6 py-4">
+                  <div className="flex flex-col px-6 py-2">
                     {/* Organizer */}
                     {selectedEventForDetails.organizer && (
-                      <div className="flex items-center gap-3 py-4 border-b border-gray-100">
-                        <div className="w-10 h-10 rounded-full bg-[#048F86]/10 flex items-center justify-center shrink-0">
-                          <User className="w-5 h-5 text-[#048F86]" strokeWidth={1.5} />
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col items-start flex-1 min-w-0">
-                          <span className="text-[14px] font-semibold text-gray-800 truncate w-full">{selectedEventForDetails.organizer.name}</span>
-                          <span className="text-[12px] text-gray-400 truncate w-full">{selectedEventForDetails.organizer.email}</span>
+                          <span className="text-[13px] font-semibold text-gray-800 truncate w-full">{selectedEventForDetails.organizer.name}</span>
+                          <span className="text-[11px] text-gray-400 truncate w-full">{selectedEventForDetails.organizer.email}</span>
                         </div>
                       </div>
                     )}
 
-                    {/* Date & Time */}
-                    <div className="flex items-center gap-3 py-4 border-b border-gray-100">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                        <Calendar className="w-5 h-5 text-blue-500" strokeWidth={1.5} />
+                    {/* Date */}
+                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Calendar className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                       </div>
-                      <div className="flex flex-col items-start flex-1">
-                        <span className="text-[14px] font-semibold text-gray-800">
-                          {formatDetailDate(selectedEventForDetails.date)}
-                        </span>
-                      </div>
+                      <span className="text-[13px] font-medium text-gray-700">
+                        {formatDetailDate(selectedEventForDetails.date)}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-3 py-4 border-b border-gray-100">
-                      <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                        <Clock className="w-5 h-5 text-amber-500" strokeWidth={1.5} />
+                    {/* Time */}
+                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Clock className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                       </div>
-                      <div className="flex flex-col items-start flex-1">
-                        <span className="text-[14px] font-semibold text-gray-800">
-                          {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} – {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
-                        </span>
-                      </div>
+                      <span className="text-[13px] font-medium text-gray-700">
+                        {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} – {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
+                      </span>
                     </div>
 
                     {/* Location */}
                     {selectedEventForDetails.location && (
-                      <div className="flex items-center gap-3 py-4 border-b border-gray-100">
-                        <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                          <MapPin className="w-5 h-5 text-purple-500" strokeWidth={1.5} />
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <MapPin className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
-                        <div className="flex flex-col items-start flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                           {selectedEventForDetails.location.startsWith('http') ? (
                             <a
                               href={selectedEventForDetails.location}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[14px] font-medium text-[#048F86] underline underline-offset-2 truncate w-full"
+                              className="text-[13px] font-medium text-[#048F86] underline underline-offset-2 truncate block"
                             >
                               {selectedEventForDetails.location}
                             </a>
                           ) : (
-                            <span className="text-[14px] font-semibold text-gray-800 truncate w-full">
+                            <span className="text-[13px] font-medium text-gray-700 truncate block">
                               {selectedEventForDetails.location}
                             </span>
                           )}
@@ -586,16 +590,15 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
                     {/* Attachments */}
                     {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-                      <div className="flex items-start gap-3 py-4">
-                        <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0 mt-0.5">
-                          <Paperclip className="w-5 h-5 text-rose-400" strokeWidth={1.5} />
+                      <div className="flex items-start gap-3 py-3.5">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <Paperclip className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
-                        <div className="flex flex-col gap-2 flex-1 min-w-0">
-                          <span className="text-[13px] font-semibold text-gray-500">المرفقات</span>
+                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                           {selectedEventForDetails.attachments.map((att) => (
                             <div key={att.attachment_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                              <span className="text-[13px] text-gray-700 truncate flex-1" title={att.name}>{att.name}</span>
-                              <span className="text-[11px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
+                              <span className="text-[12px] text-gray-600 truncate flex-1" title={att.name}>{att.name}</span>
+                              <span className="text-[10px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
                             </div>
                           ))}
                         </div>
