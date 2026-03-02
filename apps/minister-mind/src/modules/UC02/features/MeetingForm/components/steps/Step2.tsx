@@ -13,6 +13,8 @@ export interface Step2Props {
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleCancelClick: () => void;
+  /** Only when true is "العرض مطلوب؟" shown (Urgent meeting). Hidden by default; value resets when hidden. */
+  showPresentationRequiredField?: boolean;
   isPresentationRequiredRequired?: boolean;
 }
 
@@ -26,6 +28,7 @@ export const Step2: React.FC<Step2Props> = ({
   handleNextClick,
   handleSaveDraftClick,
   handleCancelClick,
+  showPresentationRequiredField = false,
   isPresentationRequiredRequired = false,
 }) => {
   return (
@@ -40,17 +43,19 @@ export const Step2: React.FC<Step2Props> = ({
             required={false}
           />
 
-          <FormField
-            label="العرض مطلوب؟"
-            required={isPresentationRequiredRequired}
-            error={touched.presentation_required ? errors.presentation_required : undefined}
-            className="w-full max-w-[1200px] h-auto"
-          >
-            <FormSwitch
-              checked={formData.presentation_required === true}
-              onCheckedChange={(checked) => handleChange('presentation_required', checked)}
-            />
-          </FormField>
+          {showPresentationRequiredField && (
+            <FormField
+              label="العرض مطلوب؟"
+              required={isPresentationRequiredRequired}
+              error={touched.presentation_required ? errors.presentation_required : undefined}
+              className="w-full max-w-[1200px] h-auto"
+            >
+              <FormSwitch
+                checked={formData.presentation_required === true}
+                onCheckedChange={(checked) => handleChange('presentation_required', checked)}
+              />
+            </FormField>
+          )}
 
           <FileUpload
             label="مرفقات اختيارية"
@@ -64,7 +69,6 @@ export const Step2: React.FC<Step2Props> = ({
 
         <ActionButtons
           onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
         />

@@ -25,7 +25,7 @@ import { getMeetingDurationMinutes } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
 import { MeetingDateFields } from '../MeetingDateFields/MeetingDateFields';
 import { MeetingLocationField } from '../MeetingLocationField';
-import { MeetingAgendaTable } from '../MeetingAgendaTable';
+import { MeetingAgendaTable } from '@shared';
 
 export interface Step1BasicInfoProps {
   formData: Partial<Step1BasicInfoFormData>;

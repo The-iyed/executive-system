@@ -1,41 +1,72 @@
-import { FormField, FormInput } from '@shared';
+import { FormField, FormInput, FormSelect } from '@shared';
+import type { Step1FormData } from '../../../../schemas/step1.schema';
+import {
+  MEETING_LOCATION_OPTIONS,
+  getLocationDropdownValue,
+  showLocationOtherInput,
+} from '../../../../utils/constants';
 
 export interface LocationFieldProps {
-  value: string;
-  onChange: (value: string) => void;
-  onBlur: () => void;
-  error?: string;
-  touched?: boolean;
-  disabled?: boolean;
-  required?: boolean;
+  formData: Pick<Partial<Step1FormData>, 'location' | 'location_option'>;
+  errors: Partial<Record<keyof Step1FormData, string>>;
+  touched: Partial<Record<keyof Step1FormData, boolean>>;
+  handleChange: (field: keyof Step1FormData, value: unknown) => void;
+  handleBlur: (field: keyof Step1FormData) => void;
+  isFieldDisabled: (field: keyof Step1FormData) => boolean;
+  isRequired: boolean;
   className?: string;
 }
 
 export function LocationField({
-  value,
-  onChange,
-  onBlur,
-  error,
+  formData,
+  errors,
   touched,
-  disabled = false,
-  required = true,
+  handleChange,
+  handleBlur,
+  isFieldDisabled,
+  isRequired,
   className,
 }: LocationFieldProps) {
+  const locationError = touched.location ? errors.location : undefined;
+  const hasError = !!(touched.location && errors.location);
+
+  const dropdownValue = getLocationDropdownValue(formData.location, formData.location_option);
+  const showOtherInput = showLocationOtherInput(formData.location, formData.location_option);
+
   return (
-    <FormField
-      className={className}
-      label="الموقع"
-      required={required}
-      error={touched ? error : undefined}
-    >
-      <FormInput
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        placeholder="الموقع"
-        error={!!(touched && error)}
-        disabled={disabled}
-      />
-    </FormField>
+    <>
+      <FormField
+        className={className}
+        label="الموقع"
+        required={isRequired}
+        error={locationError}
+      >
+        <FormSelect
+          value={dropdownValue || undefined}
+          onValueChange={(value) => handleChange('location_option', value ?? '')}
+          options={MEETING_LOCATION_OPTIONS}
+          placeholder="اختر الموقع"
+          error={hasError}
+          disabled={isFieldDisabled('location')}
+        />
+      </FormField>
+      {showOtherInput && (
+        <FormField
+          className={className}
+          label="تحديد الموقع (موقع آخر)"
+          required={isRequired}
+          error={locationError}
+        >
+          <FormInput
+            value={formData.location ?? ''}
+            onChange={(e) => handleChange('location', e.target.value)}
+            onBlur={() => handleBlur('location')}
+            placeholder="أدخل الموقع"
+            error={hasError}
+            disabled={isFieldDisabled('location')}
+          />
+        </FormField>
+      )}
+    </>
   );
 }
