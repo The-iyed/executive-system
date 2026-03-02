@@ -273,18 +273,26 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const handlePreviousWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() - 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setDate(prev.getDate() - 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   const handleNextWeek = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + 7);
+      if (viewMode === 'monthly') {
+        newDate.setMonth(prev.getMonth() + 1);
+      } else {
+        newDate.setDate(prev.getDate() + 7);
+      }
       return newDate;
     });
-  }, []);
+  }, [viewMode]);
 
   // Track if we've ever loaded data successfully
   const hasLoadedOnce = React.useRef(false);
