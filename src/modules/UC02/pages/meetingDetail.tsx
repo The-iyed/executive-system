@@ -4352,70 +4352,7 @@ const MeetingDetail: React.FC = () => {
 
       {/* Request Guidance – now inline in chat, drawer removed */}
 
-      {/* Scheduling Consultation – Drawer */}
-      <Drawer
-        open={isConsultationModalOpen}
-        onOpenChange={setIsConsultationModalOpen}
-        title={<span className="text-right">طلب استشارة جدولة</span>}
-        side="left"
-        width={520}
-        bodyClassName="dir-rtl"
-        footer={
-          <div className="flex flex-row-reverse gap-2">
-            <button type="button" onClick={() => { setIsConsultationModalOpen(false); setConsultationForm({ consultant_user_ids: [], consultation_question: '', search: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex">
-                    <button type="submit" form="consultation-form" disabled={consultationForm.consultant_user_ids.length === 0 || !consultationForm.consultation_question.trim() || consultationMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-[#29615C] rounded-lg hover:bg-[#1f4a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{consultationMutation.isPending ? 'جاري الإرسال...' : 'طلب استشارة'}</button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {consultationForm.consultant_user_ids.length === 0 ? 'اختر مستشاراً واحداً على الأقل' : !consultationForm.consultation_question.trim() ? 'أدخل سؤال الاستشارة' : 'طلب استشارة'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        }
-      >
-        <form id="consultation-form" onSubmit={handleConsultationSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">المستشارون</label>
-            <Input type="text" value={consultationForm.search} onChange={(e) => setConsultationForm((prev) => ({ ...prev, search: e.target.value }))} placeholder="ابحث عن المستشار بالاسم أو البريد" className="h-10 text-right border border-gray-300 rounded-lg" />
-            <div className="border border-gray-300 rounded-lg bg-white max-h-[220px] overflow-y-auto dir-rtl">
-              {isLoadingConsultants ? (
-                <div className="py-6 text-center text-sm text-gray-500">جاري التحميل...</div>
-              ) : consultants.length === 0 ? (
-                <div className="py-6 text-center text-sm text-gray-500">لا توجد نتائج</div>
-              ) : (
-                <ul className="py-1">
-                  {consultants.map((user) => (
-                    <li key={user.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                      <input
-                        type="checkbox"
-                        id={`consultant-${user.id}`}
-                        checked={consultationForm.consultant_user_ids.includes(user.id)}
-                        onChange={() => toggleConsultantSelection(user.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#048F86] focus:ring-[#048F86]"
-                      />
-                      <label htmlFor={`consultant-${user.id}`} className="flex-1 text-right text-sm text-gray-700 cursor-pointer">
-                        {user.first_name} {user.last_name} <span className="text-gray-500">– {user.email}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {consultationForm.consultant_user_ids.length > 0 && (
-              <p className="text-xs text-gray-500 text-right">تم اختيار {consultationForm.consultant_user_ids.length} مستشار</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700 text-right">سؤال الاستشارة *</label>
-            <Textarea value={consultationForm.consultation_question} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm((prev) => ({ ...prev, consultation_question: e.target.value }))} placeholder="هل يمكن جدولة هذا الاجتماع في الموعد المقترح؟" className="w-full min-h-[100px] text-right" required />
-          </div>
-        </form>
-      </Drawer>
+      {/* Scheduling Consultation – now inline in chat, drawer removed */}
 
       {/* Approve Update – Drawer (مجدول - الجدولة → مجدول) */}
       <Drawer
