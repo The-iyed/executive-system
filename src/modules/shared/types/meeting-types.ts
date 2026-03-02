@@ -40,7 +40,8 @@ export const MeetingStatusLabels: Record<MeetingStatus, string> = {
 };
 
 export enum MeetingClassification {
-  COUNCILS_AND_COMMITTEES = 'COUNCILS_AND_COMMITTEES',
+  COUNCILS_AND_COMMITTEES_EXTERNAL = 'COUNCILS_AND_COMMITTEES_EXTERNAL',
+  COUNCILS_AND_COMMITTEES_INTERNAL = 'COUNCILS_AND_COMMITTEES_INTERNAL',
   EVENTS_AND_VISITS = 'EVENTS_AND_VISITS',
   BILATERAL_MEETING = 'BILATERAL_MEETING',
   PRIVATE_MEETING = 'PRIVATE_MEETING',
@@ -51,7 +52,8 @@ export enum MeetingClassification {
 }
 
 export const MeetingClassificationLabels: Record<MeetingClassification, string> = {
-  [MeetingClassification.COUNCILS_AND_COMMITTEES]: 'المجالس واللجان',
+  [MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL]: 'المجالس واللجان الخارجية',
+  [MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL]: 'المجالس واللجان الداخلية',
   [MeetingClassification.EVENTS_AND_VISITS]: 'الفعاليات والزيارات',
   [MeetingClassification.BILATERAL_MEETING]: 'لقاء ثنائي',
   [MeetingClassification.PRIVATE_MEETING]: 'لقاء خاص',
@@ -63,8 +65,12 @@ export const MeetingClassificationLabels: Record<MeetingClassification, string> 
 
 export const MEETING_CATEGORY_OPTIONS = [
   {
-    value: MeetingClassification.COUNCILS_AND_COMMITTEES,
-    label: MeetingClassificationLabels[MeetingClassification.COUNCILS_AND_COMMITTEES],
+    value: MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL,
+    label: MeetingClassificationLabels[MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL],
+  },
+  {
+    value: MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL,
+    label: MeetingClassificationLabels[MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL],
   },
   {
     value: MeetingClassification.EVENTS_AND_VISITS,
@@ -98,7 +104,8 @@ export const MEETING_CATEGORY_OPTIONS = [
 
 /** Category values hidden when meeting type is EXTERNAL. */
 export const EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES: readonly MeetingClassification[] = [
-  MeetingClassification.COUNCILS_AND_COMMITTEES,
+  MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL,
+  MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL,
   MeetingClassification.EVENTS_AND_VISITS,
   MeetingClassification.GOVERNMENT_CENTER_TOPICS,
 ];

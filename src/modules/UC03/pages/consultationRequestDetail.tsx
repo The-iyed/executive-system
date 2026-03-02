@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck, User, Mail, Phone, Building2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { getMeetingStatusLabel } from '@/modules/shared';
 import { getConsultationRequestById, submitConsultationResponse, saveConsultationAsDraft, getPendingConsultations } from '../data/consultationsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/lib/ui';
 import { PATH } from '../routes/paths';
+import { trackEvent } from '@analytics';
 
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
@@ -69,6 +70,14 @@ const ConsultationRequestDetail: React.FC = () => {
   });
 
   const meetingRequest = consultationData?.meeting_request;
+
+  useEffect(() => {
+    if (consultationData?.id) {
+      trackEvent('UC-03', 'uc03_consultation_request_detail_viewed', {
+        consultation_request_id: consultationData.id,
+      });
+    }
+  }, [consultationData?.id]);
 
   const meetingInfoData: MeetingInfoData = useMemo(() => {
     

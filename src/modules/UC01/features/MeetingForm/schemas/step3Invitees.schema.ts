@@ -53,12 +53,27 @@ const inviteeSchema = z
     }
   });
 
+/** Minister attendee row (قائمة المدعوين الوزير) – optional, only for UC02 in edit form */
+export const ministerAttendeeRowSchema = z.object({
+  id: z.string(),
+  external_name: z.string().optional().default(''),
+  position: z.string().optional().default(''),
+  external_email: z.string().optional().default(''),
+  mobile: z.string().optional().default(''),
+  attendance_channel: z.enum(['PHYSICAL', 'REMOTE']).optional().default('PHYSICAL'),
+  is_required: z.boolean().optional().default(false),
+  justification: z.string().optional().default(''),
+});
+
+export type MinisterAttendeeRowSchema = z.infer<typeof ministerAttendeeRowSchema>;
+
 export const createStep3InviteesSchema = (opts?: { inviteesRequired?: boolean }) => {
   const inviteesRequired = opts?.inviteesRequired ?? true;
 
   return z
     .object({
       invitees: z.array(inviteeSchema).optional().default([]),
+      minister_attendees: z.array(ministerAttendeeRowSchema).optional().default([]),
     })
     .superRefine((data, ctx) => {
       if (inviteesRequired && (!data.invitees || data.invitees.length === 0)) {

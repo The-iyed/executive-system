@@ -103,9 +103,9 @@ const submitStep1Data = async (payload: SubmitStep1Payload, isEditMode: boolean)
   }
   const body = prepareFormData(formData);
   const url = isEditMode && draftId
-    ? `/api/meeting-requests/drafts/${draftId}/basic-info`
+    ? `/api/meeting-requests/direct-schedule/${draftId}/step1`
     : '/api/meeting-requests/direct-schedule/step1';
-  const method = isEditMode && draftId ? 'patch' : 'post';
+  const method = isEditMode && draftId ? 'put' : 'post';
   const { data } = await axiosInstance[method]<SubmitStep1Response>(url, body);
   const newDraftId = data?.id ?? draftId;
   if (!newDraftId) throw new Error('Invalid response format: missing draft ID');
