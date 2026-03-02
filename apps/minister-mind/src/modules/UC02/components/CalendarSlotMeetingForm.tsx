@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue } from '@shared';
+import { FormTable, FormInput, FormField, FormCheckbox, MeetingRangePicker, type MeetingRangeValue } from '@shared';
 import type { FormTableColumn } from '@shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
+import { ATTENDANCE_MODE_OPTIONS } from '../features/MeetingForm/utils/constants';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 
 /** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
@@ -38,8 +39,8 @@ function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: stri
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-/** Minister invitees table: email only (for calendar-slot meeting form). */
-const MINISTER_INVITEES_EMAIL_ONLY_COLUMNS: FormTableColumn[] = [
+/** Minister invitees table: email + attendance mode + owner checkbox (for calendar-slot meeting form). */
+const MINISTER_INVITEES_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: '#', width: 'min-w-[80px]' },
   {
     id: 'email',
@@ -48,6 +49,15 @@ const MINISTER_INVITEES_EMAIL_ONLY_COLUMNS: FormTableColumn[] = [
     placeholder: 'البريد الإلكتروني',
     width: 'min-w-[210px]',
   },
+  {
+    id: 'attendance_mode',
+    header: 'آلية انعقاد الاجتماع',
+    type: 'select',
+    selectOptions: [...ATTENDANCE_MODE_OPTIONS],
+    placeholder: 'حضوري / عن بُعد',
+    width: 'min-w-[160px]',
+  },
+  { id: 'isOwner', header: 'مالك الاجتماع', width: 'min-w-[120px]' },
   { id: 'action', header: '', width: 'w-[60px]' },
 ];
 
@@ -60,16 +70,18 @@ function toISOStart(date: Date, time: string): string {
   return d.toISOString();
 }
 
+export interface CalendarSlotMeetingFormSubmitValues {
+  title: string;
+  start_date: string;
+  end_date: string;
+  minister_invitees: InviteeFormRow[];
+}
+
 export interface CalendarSlotMeetingFormProps {
   /** Initial slot: date and time string "HH:00" */
   slotDate: Date;
   slotTime: string;
-  onSubmit: (values: {
-    title: string;
-    start_date: string;
-    end_date: string;
-    minister_invitees: InviteeFormRow[];
-  }) => void;
+  onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
   isSubmitting?: boolean;
@@ -110,9 +122,15 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   }, []);
 
   const handleUpdateMinisterInvitee = useCallback((id: string, field: string, value: unknown) => {
-    setMinisterInvitees((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
-    );
+    setMinisterInvitees((prev) => {
+      if (field === 'isOwner' && value === true) {
+        return prev.map((r) => ({
+          ...r,
+          isOwner: r.id === id,
+        }));
+      }
+      return prev.map((r) => (r.id === id ? { ...r, [field]: value } : r));
+    });
   }, []);
 
   const ministerRows = ministerInvitees.map((row) => ({ ...row, id: row.id }));
@@ -187,7 +205,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         <FormTable
           title="قائمة المدعوين"
-          columns={MINISTER_INVITEES_EMAIL_ONLY_COLUMNS}
+          columns={MINISTER_INVITEES_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}
           onDeleteRow={handleDeleteMinisterInvitee}
@@ -206,6 +224,19 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
                 disabled={disabled}
                 error={error}
               />
+            ),
+            isOwner: ({ row, onUpdateRow, disabled }) => (
+              <div className="flex justify-center" title="اختيار مالك الاجتماع">
+                <FormCheckbox
+                  checked={!!row.isOwner}
+                  onCheckedChange={(checked) => {
+                    if (disabled) return;
+                    onUpdateRow('isOwner', checked);
+                  }}
+                  label=""
+                  className="!flex-row !items-center !gap-0"
+                />
+              </div>
             ),
           }}
         />
