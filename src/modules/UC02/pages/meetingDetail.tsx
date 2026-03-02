@@ -3619,22 +3619,21 @@ const MeetingDetail: React.FC = () => {
 
           {/* سؤال tab – Chat-style Q&A */}
           {activeTab === 'directive' && (
-            <div className="flex flex-col w-full" dir="rtl">
-              {/* Chat container */}
-              <div className="rounded-2xl border border-[#E5E7EB] bg-white overflow-visible">
+            <div className="flex flex-col w-full max-h-[600px] rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+              {/* Scrollable messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {isLoadingGuidanceRecords ? (
                   <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-6 h-6 animate-spin text-[#048F86]" />
                   </div>
                 ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                  <div className="flex flex-col max-h-[500px] overflow-y-auto pb-6">
+                  <div className="flex flex-col pb-4">
                     {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
                       const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
                       const guidanceStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       return (
                         <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                          {/* Question bubble – sender (RTL, right side) */}
                           <div className="px-5 pt-5 pb-3">
                             <div className="flex items-start gap-3" dir="rtl">
                               <div className="flex-shrink-0">
@@ -3654,8 +3653,6 @@ const MeetingDetail: React.FC = () => {
                               </div>
                             </div>
                           </div>
-
-                          {/* Answer bubble – receiver (LTR, left side) */}
                           <div className="px-5 pb-5 pt-1">
                             {row.guidance_answer ? (
                               <div className="flex items-start gap-3" dir="ltr">
@@ -3694,51 +3691,49 @@ const MeetingDetail: React.FC = () => {
                     <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
                   </div>
                 )}
+              </div>
 
-                {/* Inline chat input – always visible */}
-                {(
-                  <div className="border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!requestGuidanceForm.notes.trim()) return;
-                        handleRequestGuidanceSubmit(e);
+              {/* Input – always visible at bottom */}
+              <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!requestGuidanceForm.notes.trim()) return;
+                    handleRequestGuidanceSubmit(e);
+                  }}
+                  className="flex items-end gap-3"
+                >
+                  <div className="flex-1">
+                    <Textarea
+                      value={requestGuidanceForm.notes}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
+                      placeholder="اكتب سؤالك هنا..."
+                      className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                      rows={1}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (requestGuidanceForm.notes.trim()) {
+                            handleRequestGuidanceSubmit(e as any);
+                          }
+                        }
                       }}
-                      className="flex items-end gap-3"
-                    >
-                      <div className="flex-1">
-                        <Textarea
-                          value={requestGuidanceForm.notes}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
-                          placeholder="اكتب سؤالك هنا..."
-                          className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
-                          rows={1}
-                          onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              if (requestGuidanceForm.notes.trim()) {
-                                handleRequestGuidanceSubmit(e as any);
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
-                        className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
-                      >
-                        {requestGuidanceMutation.isPending ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
-                            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                          </svg>
-                        )}
-                      </button>
-                    </form>
+                    />
                   </div>
-                )}
+                  <button
+                    type="submit"
+                    disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                  >
+                    {requestGuidanceMutation.isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                      </svg>
+                    )}
+                  </button>
+                </form>
               </div>
             </div>
           )}
