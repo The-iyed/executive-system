@@ -65,7 +65,7 @@ export const useMeetingSteps = ({
       console.error('Step1BasicInfo error:', error);
       showErrorToast(error);
     },
-    isEditMode,
+    isEditMode: isEditMode || !!draftId,
     editableFields,
   });
 
