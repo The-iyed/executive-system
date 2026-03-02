@@ -1,24 +1,31 @@
 import React from 'react';
-import { Stepper, Loader } from '@shared';
+import { Stepper, Loader, hasUseCaseAccess } from '@shared';
+import { useAuth } from '@auth';
 import { STEP_LABELS } from '../../utils';
 import { useEditMeeting } from '../../hooks/useEditMeeting';
 import { useFormMeetingModal } from '../../hooks';
+import type { MeetingForEdit } from '../../utils/transformMeetingToEditData';
 import { Step1BasicInfo } from '../../components/steps/Step1BasicInfo';
 import { Step2Content } from '../../components/steps/Step2Content';
 import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
 
+export type { MeetingForEdit };
+
 export interface EditMeetingProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   meetingId?: string;
+  /** When opening from meeting detail: pass meeting from getMeetingById so form uses same API data */
+  initialMeetingData?: MeetingForEdit | null;
 }
 
 export const EditMeeting: React.FC<EditMeetingProps> = ({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   meetingId,
+  initialMeetingData,
 } = {}) => {
   const uncontrolled = useFormMeetingModal();
   const open = controlledOnOpenChange !== undefined ? controlledOpen ?? false : uncontrolled.open;
@@ -38,7 +45,14 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     isLoading,
     error,
     draftData,
-  } = useEditMeeting(meetingId != null ? { meetingIdOverride: meetingId } : undefined);
+  } = useEditMeeting(
+    meetingId != null || initialMeetingData != null
+      ? { meetingIdOverride: meetingId ?? initialMeetingData?.id, initialMeetingData: initialMeetingData ?? undefined }
+      : undefined
+  );
+
+  const { user } = useAuth();
+  const showMinisterInvitees = hasUseCaseAccess(user?.use_cases, 'UC-02');
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -125,6 +139,11 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             step3EditableMap={step3InviteesHook.step3EditableMap}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
             onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
+            showMinisterInvitees={showMinisterInvitees}
+            ministerAttendees={step3InviteesHook.formData.minister_attendees ?? []}
+            onAddMinisterAttendee={step3InviteesHook.handleAddMinisterAttendee}
+            onDeleteMinisterAttendee={step3InviteesHook.handleDeleteMinisterAttendee}
+            onUpdateMinisterAttendee={step3InviteesHook.handleUpdateMinisterAttendee}
           />
         );
       }

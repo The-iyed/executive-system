@@ -28,7 +28,8 @@
       "@shared": ["apps/minister-mind/src/modules/shared/index.ts"],
       "@shared/*": ["apps/minister-mind/src/modules/shared/*"],
       "@auth": ["apps/minister-mind/src/modules/auth/index.ts"],
-      "@auth/*": ["apps/minister-mind/src/modules/auth/*"]
+      "@auth/*": ["apps/minister-mind/src/modules/auth/*"],
+      "@analytics": ["apps/minister-mind/src/lib/analytics.ts"]
     },
     "strict": true,
     "noImplicitAny": true,
