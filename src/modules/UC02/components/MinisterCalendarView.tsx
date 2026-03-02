@@ -180,6 +180,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
