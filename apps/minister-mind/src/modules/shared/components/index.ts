@@ -90,4 +90,6 @@ export {
   type MeetingInfoRenderField,
 } from './MeetingInfo';
 
+export { MeetingSubCategoryField, type MeetingSubCategoryFieldProps } from './MeetingSubCategoryField';
+
 export type { OptionType } from './AsyncSelectV2/types';

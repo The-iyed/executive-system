@@ -13,13 +13,16 @@ import {
   SECTOR_OPTIONS,
   MEETING_TYPE_OPTIONS,
   getMeetingCategoryOptions,
+  MeetingSubCategoryField,
 } from '@shared';
+import { MeetingClassification } from '@shared';
 import {
   MEETING_CLASSIFICATION_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
   DIRECTIVE_METHOD_OPTIONS,
 } from '../../utils/constants';
-import { getUsers, type UserApiResponse } from '../../../../data/usersApi';
+import { getUserDisplayId, getUserDisplayLabel } from '@shared/utils';
+import { searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
 import type { Step1BasicInfoFormData } from '../../schemas/step1BasicInfo.schema';
 import { getMeetingDurationMinutes } from '../../schemas/step1BasicInfo.schema';
 import type { Step1ErrorKey } from '../../hooks/useStep1BasicInfo';
@@ -79,23 +82,13 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
     limit: number
   ) => {
     try {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        role_code: 'SUBMITTER',
-        skip,
-        limit,
-      });
+      const response = await searchUsersByEmail(search, skip, limit);
 
       const items = response?.items.map((user: UserApiResponse) => {
-        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') 
-          || user?.username 
-          || user?.email 
-          || 'غير محدد';
-        
-        return {
-          label: fullName,
-          value: user?.id || '',
-        };
+        const rec = user as Record<string, unknown>;
+        const id = getUserDisplayId(rec) || user?.id || '';
+        const label = getUserDisplayLabel(rec) || 'غير محدد';
+        return { value: id, label };
       });
 
       return {
@@ -278,6 +271,15 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               disabled={isFieldDisabled('meetingCategory')}
             />
           </FormField>
+          {(formData.meetingCategory === MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL ||
+            formData.meetingCategory === MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL) && (
+            <MeetingSubCategoryField
+              className="w-full min-w-0"
+              value={formData.meetingSubCategory || ''}
+              onChange={(value) => handleChange('meetingSubCategory', value)}
+            />
+          )}
+ {/*فئة الاجتماع */}
           {isStep1BasicInfoFieldRequired('meetingReason') && (
             <FormField
               className="w-full min-w-0"
