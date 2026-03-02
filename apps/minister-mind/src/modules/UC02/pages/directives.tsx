@@ -551,7 +551,7 @@ const Directives: React.FC = () => {
                   boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
                 }}
               >
-                <span>إلغاء التوجيه</span>
+                <span>الأخذ بالتوجيه</span>
                 <X className="w-4 h-4" />
               </button>
               <button
@@ -702,7 +702,7 @@ const Directives: React.FC = () => {
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
                                 style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
                               >
-                                <span>إلغاء التوجيه</span>
+                                <span>الأخذ بالتوجيه</span>
                                 <X className="w-4 h-4" />
                               </button>
                               <button
@@ -838,7 +838,7 @@ const Directives: React.FC = () => {
                                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
                                   style={{ background: '#F59E0B', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
                                 >
-                                  <span>إلغاء التوجيه</span>
+                                  <span>الأخذ بالتوجيه</span>
                                   <X className="w-4 h-4" />
                                 </button>
                                 <button
