@@ -624,13 +624,16 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   position: m.position_title ?? '',
                   mobile: m.mobile_number ?? '',
                   email: m.email ?? '',
-                  attendance_mode: m.attendance_mode === 'REMOTE' ? 'REMOTE' : 'IN_PERSON',
                   ...(m.isOwner && { meeting_owner: true }),
                 }));
                 const result = await createScheduledMeeting({
                   meeting_title: values.title,
                   scheduled_start,
                   scheduled_end,
+                  meeting_channel: values.meeting_channel,
+                  meeting_location: values.meeting_location,
+                  meeting_link: values.meeting_link,
+                  proposer_user_ids: values.proposer_user_ids,
                   minister_invitees,
                 });
                 const meetingId = (result as { id?: string })?.id;
