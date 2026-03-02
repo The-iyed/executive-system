@@ -1,10 +1,13 @@
-import { SECTOR_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS, type FormTableColumn } from '@shared';
+import {
+  SECTOR_OPTIONS,
+  MINISTER_SUPPORT_TYPE_OPTIONS,
+  PRESENTATION_DURATION_MINUTES_OPTIONS,
+  MEETING_CLASSIFICATION_OPTIONS,
+  getInviteesTableColumns,
+  type FormTableColumn,
+} from '@shared';
 
-export const MEETING_CLASSIFICATION_OPTIONS = [
-  { value: 'STRATEGIC', label: 'استراتيجي' },
-  { value: 'OPERATIONAL', label: 'تشغيلي' },
-  { value: 'SPECIAL', label: 'خاص' },
-];
+export { MEETING_CLASSIFICATION_OPTIONS };
 
 export const CONFIDENTIALITY_OPTIONS = [
   { value: 'CONFIDENTIAL', label: 'سرّي' },
@@ -115,60 +118,18 @@ export const ATTENDANCE_MODE_OPTIONS = [
   { value: 'REMOTE', label: 'عن بُعد' },
 ] as const;
 
-export const INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
-  { id: 'itemNumber', header: '#', width: 'min-w-[80px]' },
-  {
-    id: 'full_name',
-    header: 'الإسم',
-    type: 'text',
-    placeholder: 'الإسم',
-    width: 'min-w-[180px]',
-  },
-  {
-    id: 'position_title',
-    header: 'المنصب',
-    type: 'text',
-    placeholder: 'المنصب',
-    width: 'min-w-[180px]',
-  },
-  {
-    id: 'mobile_number',
-    header: 'الجوال',
-    type: 'text',
-    placeholder: 'الجوال',
-    width: 'min-w-[160px]',
-  },
-  {
-    id: 'sector',
-    header: 'الجهة',
-    type: 'text',
-    placeholder: 'الجهة',
-    width: 'min-w-[160px]',
-  },
-  {
-    id: 'email',
-    header: 'البريد الإلكتروني',
-    type: 'text',
-    placeholder: 'البريد الإلكتروني',
-    width: 'min-w-[200px]',
-  },
-  {
-    id: 'attendance_mode',
-    header: 'آلية الحضور',
-    type: 'select',
-    selectOptions: [...ATTENDANCE_MODE_OPTIONS],
-    placeholder: 'حضوري / عن بُعد',
-    width: 'min-w-[160px]',
-  },
-  {
-    id: 'view_permission',
-    header: 'صلاحية الاطلاع',
-    type: 'switch',
-    label: false,
-    width: 'min-w-[140px]',
-  },
-  { id: 'action', header: '', width: 'w-[60px]' },
-];
+/** Shared invitees table columns (same structure as UC01 Step3); used for both قائمة المدعوين and مدعوو الوزير tables. */
+export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
+  nameFieldId: 'full_name',
+  positionFieldId: 'position_title',
+  sectorFieldId: 'sector',
+  mobileFieldId: 'mobile_number',
+  emailFieldId: 'email',
+  attendanceFieldId: 'attendance_mode',
+  attendanceOptions: [...ATTENDANCE_MODE_OPTIONS],
+  includeViewPermission: true,
+  viewPermissionFieldId: 'view_permission',
+});
 
 /** Max hours between now and meeting start without requiring presentation_required to be set when no file is uploaded. */
 export const MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION = 48;
