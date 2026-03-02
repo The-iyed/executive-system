@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { FormField, FormAsyncSelectV2 } from '@/modules/shared';
-import type { OptionType } from '@/modules/shared';
+import { FormField, FormAsyncSelectV2, type OptionType } from '@/modules/shared';
+import { getUserDisplayId, getUserDisplayLabel } from '@/modules/shared/utils';
+import { searchUsersByEmail, type UserApiResponse } from '@/modules/UC02/data/usersApi';
 import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
-import { getUsers, type UserApiResponse } from '@/modules/UC02/data/usersApi';
 
 export interface MeetingOwnerFieldProps {
   value: OptionType | null;
@@ -26,15 +26,12 @@ export function MeetingOwnerField({
 }: MeetingOwnerFieldProps) {
   const loadOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
-      const response = await getUsers({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
+      const response = await searchUsersByEmail(search, skip, limit);
       const items = (response?.items ?? []).map((u: UserApiResponse) => {
-        const fullName =
-          ([u.first_name, u.last_name].filter(Boolean).join(' ') || u?.username || u?.email) ?? '';
-        return { value: u?.id ?? '', label: fullName };
+        const rec = u as Record<string, unknown>;
+        const id = (getUserDisplayId(rec) || u?.id) ?? '';
+        const label = getUserDisplayLabel(rec) || 'غير محدد';
+        return { value: id, label };
       });
       return {
         items,

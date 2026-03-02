@@ -150,6 +150,7 @@ export const step1BasicInfoBaseSchema = z.object({
   meetingSubject: z.string(),
   meetingType: z.string(),
   meetingCategory: z.string(),
+  meetingSubCategory: z.string().optional().or(z.literal('')),
   meetingReason: z.string().optional().or(z.literal('')),
   meetingDescription: z.string().optional().or(z.literal('')),
   relatedTopic: z.string().optional().or(z.literal('')),
