@@ -9,6 +9,7 @@ export interface MonthlyCalendarGridProps {
   onEventClick?: (event: CalendarEventData) => void;
   onEventShowDetails?: (event: CalendarEventData) => void;
   onTimeSlotClick?: (date: Date, time: string) => void;
+  onDayOverflowClick?: (date: Date, events: CalendarEventData[]) => void;
 }
 
 const dayNamesShort = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -58,6 +59,7 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
   onEventClick,
   onEventShowDetails,
   onTimeSlotClick,
+  onDayOverflowClick,
 }) => {
   const monthDays = useMemo(() => getMonthGrid(currentDate), [currentDate]);
   const currentMonth = currentDate.getMonth();
@@ -131,12 +133,17 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span
-                    className="text-[10px] text-[#048F86] font-semibold text-center"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDayOverflowClick?.(date, dayEvents);
+                    }}
+                    className="text-[10px] text-[#048F86] font-semibold text-center hover:underline cursor-pointer py-0.5"
                     style={{ fontFamily: "'Almarai', sans-serif" }}
                   >
                     +{dayEvents.length - 3} المزيد
-                  </span>
+                  </button>
                 )}
               </div>
             </div>

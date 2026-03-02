@@ -180,6 +180,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
+  const [dayEventsModal, setDayEventsModal] = useState<{ date: Date; events: CalendarEventData[] } | null>(null);
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
@@ -455,6 +456,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}
                 onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onDayOverflowClick={(date, dayEvents) => setDayEventsModal({ date, events: dayEvents })}
               />
             )}
             {isLoading && (
@@ -608,6 +610,52 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 </div>
               )}
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Day events modal (monthly view overflow) */}
+      <Dialog open={!!dayEventsModal} onOpenChange={(open) => !open && setDayEventsModal(null)}>
+        <DialogContent className="max-w-[420px] w-[95vw] max-h-[80vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
+          {dayEventsModal && (
+            <div className="flex flex-col" style={fontStyle}>
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+                <h3 className="text-gray-900 font-bold text-[15px]">
+                  {formatDetailDate(dayEventsModal.date)}
+                </h3>
+                <button
+                  onClick={() => setDayEventsModal(null)}
+                  className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2 p-4">
+                {dayEventsModal.events.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => {
+                      setDayEventsModal(null);
+                      setSelectedEventForDetails(event);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-right w-full"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-gray-200/60 flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-[13px] font-semibold text-gray-800 truncate">{event.label}</span>
+                      {event.exactStartTime && event.exactEndTime && (
+                        <span className="text-[11px] text-gray-400">
+                          {event.exactStartTime} – {event.exactEndTime}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
