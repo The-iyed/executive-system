@@ -40,6 +40,7 @@ import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { trackEvent } from '@analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
@@ -85,18 +86,18 @@ const getRandomVariant = (id: string): string => {
   return variants[index];
 };
 
-/** Map a datetime to a grid slot string (HH:00) using local time */
+/** Map a datetime to a grid slot string (HH:00) using UTC so timeline slots match API times */
 const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
   slotHour = Math.max(0, Math.min(23, slotHour));
   return `${slotHour.toString().padStart(2, '0')}:00`;
 };
 
 const formatExactTime = (date: Date): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
@@ -619,16 +620,21 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
               try {
                 const invitees = values.minister_invitees.map((m) => ({
-                  name: m.full_name,
-                  position: m.position_title,
-                  mobile: m.mobile_number,
-                  email: m.email,
+                  name: m.full_name ?? '',
+                  position: m.position_title ?? '',
+                  mobile: m.mobile_number ?? '',
+                  email: m.email ?? '',
                 }));
-                await createScheduledMeeting({
+                const result = await createScheduledMeeting({
                   meeting_title: values.title,
                   scheduled_start,
                   scheduled_end,
                   invitees,
+                });
+                const meetingId = (result as { id?: string })?.id;
+                trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
+                  meeting_id: meetingId,
+                  meeting_title: values.title,
                 });
                 // Invalidate in background so next time we get server truth (no need to block UI)
                 queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
