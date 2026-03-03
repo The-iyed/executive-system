@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
-import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, type OptionType, type CustomCellRenderParams } from '@/modules/shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams } from '@/modules/shared';
 import { cn } from '@/lib/ui';
 import {
   INVITEES_TABLE_COLUMNS,
@@ -8,6 +8,8 @@ import {
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers, searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
 import { getUserDisplayId, getUserDisplayLabel } from '@/modules/shared/utils';
+import { SuggestAttendeesModal } from '../../../../components';
+import type { UseSuggestMeetingAttendeesParams } from '../../../../hooks/useSuggestMeetingAttendees';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
 const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
@@ -30,6 +32,8 @@ export interface Step3Props {
   handleBackClick?: () => void;
   handleCancelClick: () => void;
   nonDeletableInviteeIds: string[];
+  suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
+  onSuggestAttendeesSuccess?: (data: any) => void;
 }
 
 interface ProposerUser {
@@ -56,11 +60,14 @@ export const Step3: React.FC<Step3Props> = ({
   handleBackClick,
   handleCancelClick,
   nonDeletableInviteeIds,
+  suggestAttendeesMeetingParams,
+  onSuggestAttendeesSuccess,
 }) => {
   const [proposerUsers, setProposerUsers] = useState<ProposerUser[]>([]);
   const [proposerLoading, setProposerLoading] = useState(true);
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; position?: string; phone_number?: string; email?: string; sector?: string }>>(new Map());
   const searchInputByRowRef = useRef<Record<string, string>>({});
+  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
     try {
@@ -331,6 +338,14 @@ export const Step3: React.FC<Step3Props> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-8 max-w-[1200px] mx-auto">
+        {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestAttendeesModalOpen}
+            onOpenChange={setIsSuggestAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestAttendeesSuccess}
+          />
+        )}
         {/* Section 1 — Invitees (Request Submitter) */}
         <FormTable
           title='قائمة المدعوين (مقدّم الطلب)'
@@ -349,20 +364,31 @@ export const Step3: React.FC<Step3Props> = ({
           customCellRender={inviteesCustomCellRender}
         />
 
-        <FormTable
-          title='مدعوو الوزير'
-          columns={INVITEES_TABLE_COLUMNS}
-          rows={ministerRows}
-          onAddRow={handleAddMinisterInvitee}
-          onDeleteRow={handleDeleteMinisterInvitee}
-          onUpdateRow={handleUpdateMinisterInvitee}
-          addButtonLabel='إضافة مدعو للوزير'
-          errors={errors}
-          touched={touched}
-          errorMessage={errors['__minister_invitees_table__']?._}
-          emptyStateMessage="لا يوجد مدعوون من الوزير"
-          customCellRender={ministerCustomCellRender}
-        />
+        <div className="relative">
+          <FormTable
+            title='مدعوو الوزير'
+            columns={INVITEES_TABLE_COLUMNS}
+            rows={ministerRows}
+            onAddRow={handleAddMinisterInvitee}
+            onDeleteRow={handleDeleteMinisterInvitee}
+            onUpdateRow={handleUpdateMinisterInvitee}
+            addButtonLabel='إضافة مدعو للوزير'
+            errors={errors}
+            touched={touched}
+            errorMessage={errors['__minister_invitees_table__']?._}
+            emptyStateMessage="لا يوجد مدعوون من الوزير"
+            customCellRender={ministerCustomCellRender}
+          />
+          {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+            <div className="absolute bottom-[-3px] right-[170px]">
+              <AIGenerateButton
+                label="إضافة مدعوين آليًا"
+                disabled={isSubmitting || isDeleting}
+                onClick={() => setIsSuggestAttendeesModalOpen(true)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Section 3 — Suggested Participants (المقترحون) */}
         <div className="w-full flex flex-col gap-3">
