@@ -108,14 +108,11 @@ export function Step1({
     const searchParams = new URLSearchParams(location.search);
     const directiveId = searchParams.get('directive_id');
     const directiveText = searchParams.get('directive_text');
-    const relatedMeeting = searchParams.get('related_meeting') ?? '';
     if (directiveId && directiveText) {
       handleChange('relatedDirective', {
         value: directiveId,
         label: directiveText,
-        description: relatedMeeting,
       });
-      handleChange('previousMeeting', relatedMeeting);
     }
   }, [location.search, handleChange]);
 

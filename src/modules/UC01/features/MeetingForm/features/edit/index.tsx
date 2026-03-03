@@ -108,21 +108,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
           />
         );
       case 2: {
-        const step1 = step1BasicInfoHook.formData;
-        const suggestAttendeesMeetingParams = {
-          meeting: {
-            meeting_subject: step1.meetingSubject || '',
-            meeting_type: step1.meetingCategory || '',
-            meeting_classification: step1.meetingClassification1 || step1.meetingConfidentiality || '',
-            meeting_justification: step1.meetingReason || '',
-            related_topic: step1.relatedTopic || null,
-            objectives: [],
-            agenda_items: (step1.meetingAgenda || []).map((item) => ({ agenda_item: item.agenda_item || '' })),
-            minister_support: (step1.meetingAgenda || []).map((item) => ({
-              support_description: item.minister_support_type === 'أخرى' ? (item.minister_support_other || '') : (item.minister_support_type || ''),
-            })),
-          },
-        };
         return (
           <Step3Invitees
             formData={step3InviteesHook.formData}
@@ -140,8 +125,6 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             step3EditableMap={step3InviteesHook.step3EditableMap}
-            suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
-            onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
             showMinisterInvitees={showMinisterInvitees}
             ministerAttendees={step3InviteesHook.formData.minister_attendees ?? []}
             onAddMinisterAttendee={step3InviteesHook.handleAddMinisterAttendee}
