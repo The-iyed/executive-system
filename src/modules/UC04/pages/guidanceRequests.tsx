@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   DataTable,
   MeetingCardData,
+  CardsGrid,
   ViewType,
   TableColumn,
   StatusBadge,
@@ -23,9 +24,7 @@ import {
 } from '@/modules/shared/types';
 import {
   mapGuidanceRequestToCardData,
-  mapGuidanceRequestToCardViewData,
 } from '../utils/guidanceMapper';
-import { GuidanceRequestsGrid, GuidanceRequestCardData } from '../components';
 
 const ITEMS_PER_PAGE = 10;
 
