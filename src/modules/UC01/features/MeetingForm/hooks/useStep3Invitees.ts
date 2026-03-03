@@ -48,21 +48,22 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
     }
   }
 
-  const effectiveUserId = (uid: string | undefined) =>
-    uid && uid !== '__manual__' ? uid : undefined;
+  const MANUAL_ENTRY_VALUE = '__manual__';
+  const effectiveObjectGuid = (guid: string | undefined) =>
+    guid && guid !== MANUAL_ENTRY_VALUE ? guid : undefined;
 
   const inviteesPayload = formData.invitees?.map((invitee, index) => {
-    const userId = effectiveUserId(invitee.user_id);
-    if (userId) {
+    const objectGuid = effectiveObjectGuid((invitee as { object_guid?: string }).object_guid);
+    if (objectGuid) {
       return {
-        user_id: userId,
+        object_guid: objectGuid,
+        email: invitee.email || '',
         sector: invitee.sector?.trim() || '',
         attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
       };
     }
     return {
-      user_id: undefined,
       name: invitee.name || '',
       position: invitee.position || '',
       mobile: invitee.mobile || '',
@@ -79,7 +80,7 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
     position: m.position?.trim() || '',
     external_email: m.external_email?.trim() || '',
     mobile: m.mobile?.trim() || '',
-    attendance_mechanism: toAttendanceMechanism(m.attendance_channel ?? 'PHYSICAL'),
+      attendance_mechanism: toAttendanceMechanism(m.attendance_channel ?? 'PHYSICAL'),
     is_required: m.is_required ?? false,
     justification: m.justification?.trim() || '',
   }));
