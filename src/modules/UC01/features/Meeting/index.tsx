@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Search, LayoutList, LayoutGrid, Inbox, AlertCircle, Filter, ChevronDown, X, Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button, cn, Popover, PopoverTrigger, PopoverContent } from '@/lib/ui';
-import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, getMeetingTabsByRole, MeetingOwnerType } from '@/modules/shared';
+import { Send, Inbox, AlertCircle, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button, cn } from '@/lib/ui';
+import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, ViewSwitcher, SearchFilterBar, getMeetingTabsByRole, MeetingOwnerType } from '@/modules/shared';
 import { Icon } from '@iconify/react';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
@@ -151,86 +151,16 @@ const Meeting: React.FC = () => {
 
             {/* Left: Actions */}
             <div className="flex items-center gap-2">
-              {/* Status filter dropdown */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className={cn(
-                    'h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all',
-                    'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
-                  )}>
-                    <Filter className="w-4 h-4" />
-                    <span>{activeFilterLabel}</span>
-                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-56 p-2" dir="rtl">
-                  <div className="flex flex-col gap-0.5">
-                    {filterTabs.map((tab) => {
-                      const isActive = statusFilter === tab.id;
-                      return (
-                        <button
-                          key={tab.id}
-                          onClick={() => setStatusFilter(tab.id as MeetingStatus)}
-                          className={cn(
-                            'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors',
-                            isActive
-                              ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
-                              : 'text-[var(--color-text-gray-600)] hover:bg-[var(--color-base-gray-50)]'
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className={cn(
-                              'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all',
-                              isActive
-                                ? 'border-[var(--color-primary-500)]'
-                                : 'border-[var(--color-base-gray-300)]'
-                            )}>
-                              {isActive && (
-                                <div className="w-2 h-2 rounded-full bg-[var(--color-primary-500)]" />
-                              )}
-                            </div>
-                            <span>{tab.label}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder="بحث..."
-                  className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
-                />
-              </div>
-
-              {/* View switcher */}
-              <div className="flex items-center bg-white rounded-xl border border-[var(--color-base-gray-200)] p-1 gap-0.5">
-                <button
-                  onClick={() => setView('cards')}
-                  className={cn(
-                    'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
-                    view === 'cards' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setView('table')}
-                  className={cn(
-                    'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
-                    view === 'table' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
-                  )}
-                >
-                  <LayoutList className="w-4 h-4" />
-                </button>
-              </div>
+              <ViewSwitcher view={view} onViewChange={setView} />
+              <div className="w-px h-8 bg-gray-300 flex-shrink-0" aria-hidden />
+              <SearchFilterBar
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                statusFilter={statusFilter}
+                onStatusFilterChange={(val) => setStatusFilter(val === 'all' ? MeetingStatus.DRAFT : val as MeetingStatus)}
+                hideAllOption
+                statusOptions={filterTabs.map(t => t.id as MeetingStatus)}
+              />
 
               {/* Create meeting button */}
               <button
