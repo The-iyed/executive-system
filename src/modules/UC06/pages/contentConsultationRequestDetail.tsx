@@ -736,19 +736,8 @@ const ContentConsultationRequestDetail: React.FC = () => {
               </section>
             </div>
           )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    لا يوجد حضور من جهة الوزير
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+
+
 
           {/* Consultations Log Tab - Same as meetingDetail (consultation_answers, 44px sub-items) */}
           {activeTab === 'consultations-log' && (
