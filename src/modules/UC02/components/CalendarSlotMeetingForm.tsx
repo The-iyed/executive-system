@@ -603,7 +603,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </div>
 
         <FormTable
-          title="قائمة المدعوين (الوزير)"
+          title="المدعوون (الوزير)"
           columns={MINISTER_INVITEES_TABLE_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}
