@@ -8,7 +8,7 @@ import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, ty
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
-import { EditButton } from '../../components';
+
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
   if (meeting.note != null && typeof meeting.note === 'string' && meeting.note.trim()) return meeting.note.trim();
@@ -140,11 +140,13 @@ const PreviewMeeting: React.FC = () => {
           title={`عرض الطلب (${meeting?.request_number ?? ''})`}
           onBack={handleBack}
           statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
-          primaryAction={
-            canEdit ? (
-              <EditButton onClick={() => openEditDrawer(meeting.id)} />
-            ) : undefined
-          }
+          editAction={{
+            visible: canEdit,
+            hasChanges: true,
+            onClick: () => openEditDrawer(meeting.id),
+            label: 'تعديل',
+            tooltip: 'تعديل طلب الاجتماع',
+          }}
           tabs={MEETING_PREVIEW_TABS}
           activeTab={activeTab}
           onTabChange={handleTabChange}
