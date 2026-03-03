@@ -24,7 +24,7 @@ import {
   ContentRequestApiResponse,
 } from '../data/contentApi';
 import { mapContentRequestToCardViewData } from '../utils/contentMapper';
-import { ContentRequestsGrid, ContentRequestCardData } from '../components';
+import { CardsGrid, MeetingCardData } from '@/modules/shared';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -72,7 +72,7 @@ const ContentRequests: React.FC = () => {
   const originalRequests: ContentRequestApiResponse[] = requestsResponse?.items || [];
 
   // Map API response to ContentRequestCardData (for card view)
-  const cardViewRequests: ContentRequestCardData[] = useMemo(() => {
+  const cardViewRequests: MeetingCardData[] = useMemo(() => {
     if (!requestsResponse?.items) return [];
     return requestsResponse.items.map(mapContentRequestToCardViewData);
   }, [requestsResponse]);
@@ -309,10 +309,10 @@ const ContentRequests: React.FC = () => {
                 className="min-w-[1100px]"
               />
             ) : (
-              <ContentRequestsGrid
-                requests={cardViewRequests}
-                onView={(request) => navigate(`/content-request/${request.id}`)}
-                onDetails={(request) => navigate(`/content-request/${request.id}`)}
+              <CardsGrid
+                meetings={cardViewRequests}
+                onView={(m) => navigate(`/content-request/${m.id}`)}
+                onDetails={(m) => navigate(`/content-request/${m.id}`)}
               />
             )}
 
