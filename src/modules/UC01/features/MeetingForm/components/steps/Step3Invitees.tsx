@@ -168,7 +168,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               onUpdateRow('username', '');
               onUpdateRow('name', '');
               onUpdateRow('position', '');
-              onUpdateRow('sector', '');
               onUpdateRow('mobile', '');
               onUpdateRow('email', '');
               onUpdateRow('disabled', false);
@@ -183,7 +182,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               onUpdateRow('username', '');
               onUpdateRow('name', searchValue);
               onUpdateRow('position', '');
-              onUpdateRow('sector', '');
               onUpdateRow('mobile', '');
               onUpdateRow('email', '');
               onUpdateRow('disabled', false);
@@ -207,7 +205,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               onUpdateRow('username', label);
               onUpdateRow('name', label);
               onUpdateRow('position', u.position ?? '');
-              onUpdateRow('sector', u.sector ?? '');
               onUpdateRow('mobile', u.phone_number ?? '');
               onUpdateRow('email', u.description ?? '');
               onUpdateRow('disabled', true);
@@ -236,6 +233,11 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
     [inviteeNameCellRender]
   );
 
+  const inviteeRows = (formData.invitees ?? []).map((row) => ({
+    ...row,
+    id: row.id,
+  }));
+
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-6">
@@ -244,7 +246,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             title= 'قائمة المدعوين'
             columns={INVITEES_TABLE_COLUMNS}
             required={inviteesRequired}
-            rows={formData.invitees || []}
+            rows={inviteeRows}
             onAddRow={handleAddAttendee}
             onDeleteRow={handleDeleteAttendee}
             onUpdateRow={handleUpdateAttendee}

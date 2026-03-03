@@ -77,6 +77,7 @@ function mapDraftInviteeToStep3Row(invitee: DraftInvitee, index: number): Invite
   const sector = (invitee as { sector?: string; department_name?: string }).sector
     ?? (invitee as { sector?: string; department_name?: string }).department_name
     ?? '';
+  const isConsultant = (invitee as { is_consultant?: boolean }).is_consultant;
   const objectGuid = (invitee as { object_guid?: string }).object_guid ?? invitee.user_id;
   return {
     id: invitee.id,
@@ -87,6 +88,7 @@ function mapDraftInviteeToStep3Row(invitee: DraftInvitee, index: number): Invite
     email: invitee.external_email ?? '',
     attendance_mode: attendanceMode === 'REMOTE' ? 'REMOTE' : 'IN_PERSON',
     view_permission: viewPerm === true,
+    is_consultant: isConsultant === true,
     isOwner: index === 0,
     ...(objectGuid != null && { _objectGuid: objectGuid }),
   } as InviteeFormRow;
