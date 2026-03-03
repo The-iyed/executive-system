@@ -1380,7 +1380,7 @@ const ContentRequestDetail: React.FC = () => {
 
               {/* Inline chat input – consultant picker + question (like UC02) */}
               {meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO && (
-                <div className="sticky bottom-[-24px] z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
+                <div className="<div className="sticky bottom-[-132px] z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2"> border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
                   {/* Consultant picker (expandable) */}
                   {showConsultantPicker && (
                     <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
