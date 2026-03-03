@@ -69,8 +69,8 @@ const WorkBasket: React.FC = () => {
         skip,
         limit: ITEMS_PER_PAGE,
       };
-      if (statusFilters.length === 1) {
-        params.status = statusFilters[0];
+      if (statusFilters.length > 0) {
+        params.status_in = statusFilters;
       }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();

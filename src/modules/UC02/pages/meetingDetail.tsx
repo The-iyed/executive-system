@@ -2333,7 +2333,7 @@ const MeetingDetail: React.FC = () => {
         {/* Head: shared detail page header */}
         <div className="flex flex-col flex-shrink-0 min-w-0">
           <DetailPageHeader
-            title={`مراجعة طلب الاجتماع (${meeting.request_number})`}
+            title={` ${meeting.meeting_title}  (${meeting.request_number})`}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
             onBack={() => navigate(-1)}
             statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />}
