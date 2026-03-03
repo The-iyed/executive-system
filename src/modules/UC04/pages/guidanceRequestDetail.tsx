@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
 import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@/modules/shared/components';
-import { formatDateArabic, formatDateTimeArabic } from '@/modules/shared/utils';
+import { formatDateArabic, formatDateTimeArabic, formatTimeAgoArabic } from '@/modules/shared/utils';
 import { MeetingStatus } from '@/modules/shared/types';
 import { getMeetingStatusLabel } from '@/modules/shared';
 import { getGuidanceRequestById, getContentExceptionById, provideGuidance, saveGuidanceAsDraft, completeGuidance, handleContentException, ProvideGuidanceRequest, HandleContentExceptionRequest } from '../data/guidanceApi';
