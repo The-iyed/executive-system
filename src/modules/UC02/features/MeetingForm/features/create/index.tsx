@@ -84,6 +84,24 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
         );
       case 2:
         if (!draftId) return null;
+        const step1 = step1Hook.formData;
+        const suggestAttendeesMeetingParams = {
+          meeting: {
+            meeting_subject: step1.meetingSubject || '',
+            meeting_type: step1.meetingCategory || '',
+            meeting_classification: step1.meetingClassification1 || step1.meetingConfidentiality || '',
+            meeting_justification: step1.meetingReason || '',
+            related_topic: step1.relatedTopic || null,
+            objectives: [],
+            agenda_items: (step1.meetingAgenda || []).map((item) => ({ agenda_item: item.agenda_item || '' })),
+            minister_support: (step1.meetingAgenda || []).map((item) => ({
+              support_description:
+                item.minister_support_type === 'أخرى'
+                  ? (item.minister_support_other || '')
+                  : (item.minister_support_type || ''),
+            })),
+          },
+        };
         return (
           <Step3
             formData={step3Hook.formData}
@@ -97,12 +115,16 @@ export const CreateMeeting: React.FC<CreateMeetingProps> = ({ open: controlledOp
             handleAddMinisterInvitee={step3Hook.handleAddMinisterInvitee}
             handleDeleteMinisterInvitee={step3Hook.handleDeleteMinisterInvitee}
             handleUpdateMinisterInvitee={step3Hook.handleUpdateMinisterInvitee}
-            setProposerUserIds={step3Hook.setProposerUserIds}
+            setProposerObjectGuids={step3Hook.setProposerObjectGuids}
             handleNextClick={handleStep3Next}
             handleSaveDraftClick={handleStep3SaveDraft}
             handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             nonDeletableInviteeIds={step3Hook.nonDeletableInviteeIds}
+            suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
+            onSuggestAttendeesSuccess={(data) =>
+              data?.suggestions && step3Hook.handleAddSuggestedMinisterInvitees(data.suggestions)
+            }
           />
         );
       default:
