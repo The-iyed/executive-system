@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Eye, Download, Clock, User, Mail, Phone, Trash2, Hash, Building2 } from 'lucide-react';
-import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, type MeetingInfoData } from '@/modules/shared/components';
+import { ChevronDown, ChevronUp, Eye, Download, Clock, User, Hash } from 'lucide-react';
+import { DetailPageHeader, StatusBadge, MeetingInfo, Mou7tawaContentTab, AttachmentPreviewDrawer, ReadOnlyField, type MeetingInfoData } from '@/modules/shared/components';
 import { formatDateArabic, formatDateTimeArabic } from '@/modules/shared/utils';
 import {
   MeetingStatus,
   MeetingStatusLabels,
+  SectorLabels,
 } from '@/modules/shared/types';
 import {
   getContentConsultationRequestById,
@@ -281,128 +282,45 @@ const ContentConsultationRequestDetail: React.FC = () => {
           {/* Tab Content */}
         <div className=" overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
           {activeTab === 'request-info' && (
-            <div className="flex flex-col gap-6 w-full">
-              <div className="flex flex-col gap-4 w-full">
-                <div className="flex flex-row items-center justify-between gap-4">
-                
-                  <h2
-                    className="text-lg font-bold text-right text-[#101828]"
-                    style={{
-                      fontFamily: "'Almarai', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '16px',
-                      lineHeight: '28px',
-                    }}
-                  >
-                    معلومات الطلب
-                  </h2>
-
-                <div className="flex flex-row justify-start items-center gap-2"  >
-                {
-                    draftsRecords && draftsRecords?.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setIsDraftsModalOpen(true)}
-                        className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer"
-                        style={{ fontFamily: "'Almarai', sans-serif" }}
-                      >
-                         مسودات ({draftsRecords.length})
-                      </button>
-                    )
-                  }
+            <div className="flex flex-col gap-4 w-full">
+              <div className="flex flex-row items-center justify-between gap-4 mb-2">
+                <h2 className="text-base font-bold text-[#101828]">معلومات الطلب</h2>
+                <div className="flex flex-row items-center gap-2">
+                  {draftsRecords && draftsRecords?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsDraftsModalOpen(true)}
+                      className="flex items-center justify-center px-4 py-2 bg-[#F2F4F7] text-[#344054] rounded-full border-2 border-[#D0D5DD] transition-opacity hover:bg-gray-100 cursor-pointer text-sm"
+                    >
+                      مسودات ({draftsRecords.length})
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setIsConsultationModalOpen(true)}
                     disabled={submitMutation.isPending}
-                    className="flex items-center justify-center px-4 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full border-2 border-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
+                    className="flex items-center justify-center px-4 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full border-2 border-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
                     إضافة الاستشارة
                   </button>
-                  
-                  </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      رقم الطلب
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {meetingRequest.request_number ?? '-'}
-                    </p>
-
-                    
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      تاريخ الطلب
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {formatDateArabic((meetingRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (meetingRequest as { created_at?: string })?.created_at) || '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      حالة الطلب
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {statusLabel}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      مقدم الطلب
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {meetingRequest.submitter_name ?? '-'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-sm font-medium text-gray-700 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      مالك الاجتماع
-                    </label>
-                    <p
-                      className="text-base text-gray-900 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      {meetingRequest.current_owner_user
-                        ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
-                        : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.current_owner_user_id ?? '-'}
-                    </p>
-                  </div>
-                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <ReadOnlyField label="رقم الطلب" value={meetingRequest.request_number ?? '-'} />
+                <ReadOnlyField
+                  label="تاريخ الطلب"
+                  value={formatDateArabic((meetingRequest as { submitted_at?: string; created_at?: string })?.submitted_at ?? (meetingRequest as { created_at?: string })?.created_at) || '-'}
+                />
+                <ReadOnlyField label="حالة الطلب" value={statusLabel} />
+                <ReadOnlyField label="مقدم الطلب" value={meetingRequest.submitter_name ?? '-'} />
+                <ReadOnlyField
+                  label="مالك الاجتماع"
+                  value={
+                    meetingRequest.current_owner_user
+                      ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
+                      : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.current_owner_user_id ?? '-'
+                  }
+                />
               </div>
             </div>
           )}
@@ -644,183 +562,180 @@ const ContentConsultationRequestDetail: React.FC = () => {
           {/* Invitees Tab - قائمة المدعوين */}
           {activeTab === 'invitees' && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
-              {/* قائمة المدعوين (مقدّم الطلب) */}
-              <div className="flex flex-col gap-2">
-                <h2
-                  className="text-right"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '16px',
-                    lineHeight: '38px',
-                    color: '#101828',
-                  }}
-                >
-                  قائمة المدعوين (مقدّم الطلب)
-                </h2>
-                {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
-                    {meetingRequest.invitees.map((invitee: any, idx: number) => {
-                      const name = invitee.external_name || invitee.user_id || '-';
-                      const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
-                      const email = invitee.external_email || '-';
-                      const mobile = invitee.mobile || '-';
-                      const v = invitee.attendance_mechanism;
-                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
-                      const isConsultant = invitee.is_consultant === true;
-                      return (
-                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
-                            <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
-                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
-                            </button>
-                          </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                            <div className="flex flex-row items-center justify-between gap-3">
-                              <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                  <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                  <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
-                                <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-row items-center gap-2.5 w-full">
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {sector !== '-' && (
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  <div className="flex flex-col gap-1 min-w-0">
-                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+              {/* ─── قائمة المدعوين (مقدّم الطلب) ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-[#1F2937]">قائمة المدعوين (مقدّم الطلب)</span>
+                      {(meetingRequest.invitees?.length ?? 0) > 0 && (
+                        <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
+                          {meetingRequest.invitees!.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    لا توجد قائمة مدعوين من مقدّم الطلب
-                  </p>
-                )}
-              </div>
+                </div>
+                <div className="p-0">
+                  {meetingRequest.invitees && meetingRequest.invitees.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {meetingRequest.invitees.map((invitee: any, idx: number) => {
+                            const isConsultant = invitee.is_consultant === true;
+                            const name = invitee.external_name || invitee.user_id || '-';
+                            const position = invitee.position || '-';
+                            const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
+                            const email = invitee.external_email || '-';
+                            const mobile = invitee.mobile || '-';
+                            const v = invitee.attendance_mechanism;
+                            const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                            const accessLabel = invitee.access_permission === 'VIEW' ? 'اطلاع' : invitee.access_permission === 'EDIT' ? 'تعديل' : invitee.access_permission || 'اطلاع';
+                            return (
+                              <tr key={invitee.id || idx} className={`transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                      {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{position}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{sector}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151] truncate max-w-[180px]">{email}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]" dir="ltr">{mobile}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${v === 'VIRTUAL' || v === 'عن بعد' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>
+                                    {attendanceLabel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-[#ECFDF5] text-[#059669]">
+                                    {accessLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center text-[#6B7280] text-sm">
+                      لا توجد قائمة مدعوين من مقدّم الطلب
+                    </div>
+                  )}
+                </div>
+              </section>
 
-              {/* الحضور من جهة الوزير */}
-                    <div className="flex flex-col gap-2">
-                      <h2
-                        className="text-right"
-                        style={{
-                          fontFamily: "'Almarai', sans-serif",
-                          fontWeight: 700,
-                          fontSize: '16px',
-                          lineHeight: '38px',
-                          color: '#101828',
-                        }}
-                      >
-                  الحضور من جهة الوزير
-                      </h2>
-                {(meetingRequest as { minister_attendees?: any[] }).minister_attendees &&
-                (meetingRequest as { minister_attendees?: any[] }).minister_attendees!.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {(meetingRequest as { minister_attendees?: any[] }).minister_attendees!.map((invitee: any, idx: number) => {
-                      const name = invitee.external_name || invitee.user_id || '-';
-                      const position = invitee.position || '-';
-                      const sector = invitee.sector || '-';
-                      const email = invitee.external_email || '-';
-                      const mobile = invitee.mobile || '-';
-                      const v = invitee.attendance_mechanism;
-                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
-                      const isConsultant = invitee.is_consultant === true;
-                      return (
-                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
-                            <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
-                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
-                            </button>
-                          </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                            <div className="flex flex-row items-center justify-between gap-3">
-                              <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                  <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                  <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
-                                <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-row items-center gap-2.5 w-full">
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {sector !== '-' && (
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
+              {/* ─── الحضور من جهة الوزير ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-[#1F2937]">الحضور من جهة الوزير</span>
+                      {((meetingRequest as { minister_attendees?: any[] }).minister_attendees?.length ?? 0) > 0 && (
+                        <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
+                          {(meetingRequest as { minister_attendees?: any[] }).minister_attendees!.length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-0">
+                  {(meetingRequest as { minister_attendees?: any[] }).minister_attendees &&
+                  (meetingRequest as { minister_attendees?: any[] }).minister_attendees!.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {(meetingRequest as { minister_attendees?: any[] }).minister_attendees!.map((invitee: any, idx: number) => {
+                            const isConsultant = invitee.is_consultant === true;
+                            const name = invitee.external_name || invitee.user_id || '-';
+                            const position = invitee.position || '-';
+                            const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
+                            const email = invitee.external_email || '-';
+                            const mobile = invitee.mobile || '-';
+                            const v = invitee.attendance_mechanism;
+                            const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                            const accessLabel = invitee.access_permission === 'VIEW' ? 'اطلاع' : invitee.access_permission === 'EDIT' ? 'تعديل' : invitee.access_permission || 'اطلاع';
+                            return (
+                              <tr key={invitee.id || idx} className={`transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                      {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                    </div>
                                   </div>
-                                  <div className="flex flex-col gap-1 min-w-0">
-                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{position}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{sector}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151] truncate max-w-[180px]">{email}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]" dir="ltr">{mobile}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${v === 'VIRTUAL' || v === 'عن بعد' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>
+                                    {attendanceLabel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-[#ECFDF5] text-[#059669]">
+                                    {accessLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center text-[#6B7280] text-sm">
+                      لا يوجد حضور من جهة الوزير
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
                           </div>
                         </div>
                       );
