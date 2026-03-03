@@ -1,8 +1,6 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { useToast } from '@/lib/ui';
-import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams, getUserDisplayId, getUserDisplayLabel } from '@/modules/shared';
-import { SuggestAttendeesModal } from '../../../../../UC02/components';
-import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, type OptionType, type CustomCellRenderParams, getUserDisplayId, getUserDisplayLabel } from '@/modules/shared';
 import { INVITEES_TABLE_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import type { UserApiResponse } from '../../../../data/usersApi';
@@ -44,10 +42,6 @@ export interface Step3InviteesProps {
   handleCancelClick: () => void;
   /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
   step3EditableMap?: Record<string, boolean>;
-  /** When provided, enables "إضافة مدعوين آليًا" and renders SuggestAttendeesModal. */
-  suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
-  /** Called when suggest attendees modal returns success; receives API response with suggestions. */
-  onSuggestAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
   /** When true (UC02 scheduling officer), show قائمة المدعوين (الوزير) table. */
   showMinisterInvitees?: boolean;
   /** Minister attendees from formData (hook state); used when showMinisterInvitees. */
@@ -73,8 +67,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleBackClick,
   handleCancelClick,
   step3EditableMap,
-  suggestAttendeesMeetingParams,
-  onSuggestAttendeesSuccess,
   showMinisterInvitees = false,
   ministerAttendees = [],
   onAddMinisterAttendee,
@@ -83,8 +75,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
 }) => {
   const isFieldDisabled = (fieldKey: string) =>
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
-
-  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
 
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
@@ -249,14 +239,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-6">
-        {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
-          <SuggestAttendeesModal
-            isOpen={isSuggestAttendeesModalOpen}
-            onOpenChange={setIsSuggestAttendeesModalOpen}
-            meetingParams={suggestAttendeesMeetingParams}
-            onSuccess={onSuggestAttendeesSuccess}
-          />
-        )}
         <div className="relative w-full max-w-[1200px] mx-auto">
           <FormTable
             title= 'قائمة المدعوين'
@@ -273,15 +255,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             disabled={isFieldDisabled('invitees')}
             customCellRender={customCellRender}
           />
-          {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
-            <div className="absolute bottom-[-3px] right-[170px]">
-              <AIGenerateButton
-                label="إضافة مدعوين آليًا"
-                disabled={isFieldDisabled('invitees')}
-                onClick={() => setIsSuggestAttendeesModalOpen(true)}
-              />
-            </div>
-          )}
         </div>
 
         {showMinisterInvitees && (
