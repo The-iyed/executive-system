@@ -74,10 +74,6 @@ const ScheduledMeetings: React.FC = () => {
     return MeetingStatusLabels[status as MeetingStatus] || status;
   };
 
-  const statsCards = [
-    { label: 'إجمالي الاجتماعات', value: totalItems, icon: Inbox, color: 'var(--color-primary-500)', bg: 'rgba(0,169,145,0.06)' },
-    { label: 'مكتمل', value: totalItems, icon: CheckCircle2, color: '#10b981', bg: 'rgba(16,185,129,0.06)' },
-  ];
 
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
