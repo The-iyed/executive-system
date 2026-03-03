@@ -190,12 +190,13 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             const u = userOptionsMapRef.current.get(opt.value);
             if (u) {
               const label = u.username || u.label;
+              const email = (u.description ?? '').trim() || label;
               onUpdateRow('object_guid', u.value);
               onUpdateRow('username', label);
               onUpdateRow('name', label);
               onUpdateRow('position', u.position ?? '');
               onUpdateRow('mobile', u.phone_number ?? '');
-              onUpdateRow('email', u.description ?? '');
+              onUpdateRow('email', email);
               onUpdateRow('disabled', true);
             }
           }}
@@ -222,6 +223,114 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
     [inviteeNameCellRender]
   );
 
+  /** Minister invitees name cell – same behavior as UC02 minister_invitees (AD search + manual). */
+  const ministerNameCellRender = useCallback(
+    (params: CustomCellRenderParams) => {
+      const { row, onUpdateRow, disabled } = params;
+      const isManual = (row as { _isManual?: boolean })._isManual === true;
+
+      if (isManual) {
+        return (
+          <FormInput
+            value={row.external_email ?? ''}
+            onChange={(e) => onUpdateRow('external_email', e.target.value)}
+            placeholder="البريد الإلكتروني"
+            disabled={disabled}
+            fullWidth
+          />
+        );
+      }
+
+      const objectGuid = (row as { _objectGuid?: string })._objectGuid;
+      const value: OptionType | null =
+        objectGuid && row.external_email
+          ? { value: objectGuid, label: row.external_email }
+          : null;
+
+      return (
+        <div className="w-full min-w-0">
+          <FormAsyncSelectV2
+            value={value}
+            defaultOptions={false}
+            fullWidth
+            onValueChange={(opt) => {
+              if (!opt) {
+                onUpdateRow('external_name', '');
+                onUpdateRow('position', '');
+                onUpdateRow('mobile', '');
+                onUpdateRow('external_email', '');
+                onUpdateRow('_isManual', false);
+                onUpdateRow('_objectGuid', '');
+                return;
+              }
+              if (opt.value === MANUAL_ENTRY_VALUE) {
+                const searchFromOption = (opt as { __search?: string }).__search ?? '';
+                const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
+                const searchValue = (searchFromOption || searchFromRef).trim();
+                onUpdateRow('_isManual', true);
+                onUpdateRow('external_email', searchValue);
+                onUpdateRow('external_name', '');
+                onUpdateRow('position', '');
+                onUpdateRow('mobile', '');
+                onUpdateRow('_objectGuid', '');
+                return;
+              }
+              const u = userOptionsMapRef.current.get(opt.value);
+              if (u) {
+                const existing = ministerAttendees.find(
+                  (inv) => inv.id !== row.id && (inv as { _objectGuid?: string })._objectGuid === u.value
+                );
+                if (existing) return;
+                const email = (u.description ?? '').trim();
+                const isValidEmail = !!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                if (!isValidEmail) {
+                  toast({
+                    title: 'البريد الإلكتروني غير صحيح',
+                    description: 'لا يوجد بريد إلكتروني صالح لهذا المستخدم',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+                onUpdateRow('_objectGuid', u.value);
+                onUpdateRow('_isManual', false);
+                onUpdateRow('external_name', u.label);
+                onUpdateRow('position', u.position ?? '');
+                onUpdateRow('mobile', u.phone_number ?? '');
+                onUpdateRow('external_email', email);
+              }
+            }}
+            loadOptions={loadUserOptions}
+            placeholder="اختر مستخدم أو إدخال يدوي"
+            isClearable
+            isSearchable
+            limit={10}
+            searchPlaceholder="ابحث عن مستخدم..."
+            emptyMessage="لم يتم العثور على مستخدمين"
+            isDisabled={disabled}
+            onInputChange={(newValue) => {
+              searchInputByRowRef.current[row.id] = newValue;
+            }}
+          />
+        </div>
+      );
+    },
+    [loadUserOptions, ministerAttendees]
+  );
+
+  const ministerCustomCellRender = useMemo(
+    () => ({ full_name: ministerNameCellRender }),
+    [ministerNameCellRender]
+  );
+
+  // Use UC02 minister columns but relabel the first column to "البريد الإلكتروني" for UC01.
+  const ministerColumns = useMemo(
+    () =>
+      MINISTER_ATTENDEES_COLUMNS.map((col) =>
+        col.id === 'full_name' ? { ...col, header: 'البريد الإلكتروني' } : col
+      ),
+    []
+  );
+
   const inviteeRows = (formData.invitees ?? []).map((row) => ({
     ...row,
     id: row.id,
@@ -230,6 +339,10 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   const ministerRows = ministerAttendees.map((row) => ({
     ...row,
     id: row.id,
+    // bridge UC01 fields to UC02 column ids for display
+    full_name: (row as any).full_name ?? row.external_email,
+    position_title: (row as any).position_title ?? row.position,
+    mobile_number: (row as any).mobile_number ?? row.mobile,
   }));
 
   const handleMinisterRowAdd = useCallback(() => {
@@ -281,7 +394,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           <div className="relative w-full max-w-[1200px] mx-auto">
             <FormTable
               title='مدعوو الوزير'
-              columns={MINISTER_ATTENDEES_COLUMNS}
+              columns={ministerColumns}
               rows={ministerRows}
               onAddRow={handleMinisterRowAdd}
               onDeleteRow={handleMinisterRowDelete}
@@ -289,6 +402,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               addButtonLabel='إضافة مدعو للوزير'
               errors={errors}
               touched={touched}
+              customCellRender={ministerCustomCellRender}
               emptyStateMessage="لا يوجد مدعوون من الوزير"
             />
           </div>
