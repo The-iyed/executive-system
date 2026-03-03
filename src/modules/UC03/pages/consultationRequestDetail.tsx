@@ -550,7 +550,7 @@ const ConsultationRequestDetail: React.FC = () => {
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 <div className="flex flex-col pb-4">
-                  {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                  {[...consultationRecords.items].reverse().map((row: ConsultationRecord, index: number) => {
                     const recordId = row.id || row.consultation_id || `${index}`;
                     const recordType = row.type || row.consultation_type || '';
                     const recordQuestion = row.question || row.consultation_question || '';
