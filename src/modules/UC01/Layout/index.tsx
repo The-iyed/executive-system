@@ -36,12 +36,14 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   const welcome = welcomeByPath[pathname];
+  const hideContentBar = pathname === PATH.MEETINGS || pathname === PATH.WORK_BASKET || pathname === PATH.PREVIOUS_MEETINGS || pathname === PATH.SCHEDULED_MEETINGS;
 
   return (
     <TooltipProvider>
       <SharedLayout
         children={children}
         useDynamicNavigation={true}
+        hideContentBar={hideContentBar}
         welcomeSection={{
           title: welcome?.title ?? 'مرحباً بك',
           description: welcome?.description,
