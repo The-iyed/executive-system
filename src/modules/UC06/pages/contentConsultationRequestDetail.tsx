@@ -867,6 +867,49 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Sticky bottom input */}
+              <div className="border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!consultationNotes.trim()) return;
+                    handleSubmitConsultation('submit');
+                  }}
+                  className="flex items-end gap-3 px-5 py-4"
+                >
+                  <div className="flex-1 relative">
+                    <Textarea
+                      value={consultationNotes}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationNotes(e.target.value)}
+                      placeholder="اكتب ردك على الاستشارة..."
+                      className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                      rows={1}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (consultationNotes.trim()) {
+                            handleSubmitConsultation('submit');
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!consultationNotes.trim() || submitMutation.isPending}
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                  >
+                    {submitMutation.isPending ? (
+                      <Clock className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                      </svg>
+                    )}
+                  </button>
+                </form>
+              </div>
             </div>
           )}
 
