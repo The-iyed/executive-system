@@ -359,8 +359,8 @@ export const getMeetingsSearchForPrevious = async (
   const skip = params.skip ?? 0;
   const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
   const queryParams = new URLSearchParams();
-  const q = params.q != null && params.q.trim() !== '' ? params.q.trim() : null;
-  if (q != null) queryParams.set('q', q);
+  const q = params.q != null && params.q.trim() !== '' ? params.q.trim() : 'a';
+  queryParams.set('q', q);
   queryParams.set('skip', String(skip));
   queryParams.set('limit', String(limit));
   const response = await axiosInstance.get<MeetingSearchResult[] | MeetingsSearchForPreviousResponse>(
