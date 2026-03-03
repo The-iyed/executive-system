@@ -258,7 +258,7 @@ export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = 
   const queryParams = new URLSearchParams();
   
   if (params.status_in && params.status_in.length > 0) {
-    queryParams.append('status_in', params.status_in.join(','));
+    params.status_in.forEach(s => queryParams.append('status_in', s));
   } else if (params.status) {
     queryParams.append('status', params.status);
   }
