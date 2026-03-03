@@ -6,11 +6,11 @@ import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels }
 import { cn } from '@/lib/ui';
 import { Icon } from '@iconify/react';
 import {
-  MoreVertical, X, CalendarDays, Clock, Hash, ChevronDown,
+  MoreVertical, CalendarDays, Clock, Hash, ChevronDown,
   FileText, AlertCircle, Loader2, Search, LayoutList, LayoutGrid,
   Plus, CircleDot, CheckCircle2, XCircle, Timer
 } from 'lucide-react';
-import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
+import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, takeDirective, requestMeetingFromDirective, getMeetingById, MeetingApiResponse } from '../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../utils/directiveMapper';
 import { PATH } from '../routes/paths';
 import '@/modules/shared/styles';
@@ -33,11 +33,6 @@ const Directives: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const handleCloseDirective = async (directive: Directive) => {
-    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
-    await refetch();
-  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
@@ -422,17 +417,16 @@ const Directives: React.FC = () => {
                     }}
                   >
                     {[
-                      { label: 'إلغاء التوجيه', icon: XCircle, color: 'var(--color-status-yellow)', action: async () => {
+                      { label: 'الأخذ بالتوجيه', icon: XCircle, color: 'var(--color-status-yellow)', action: async () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
-                        if (d) { try { await cancelDirective(d.id, directiveToExternalDirectiveBody(d)); await refetch(); } catch { } }
+                        if (d) { try { await takeDirective(d.id); await refetch(); } catch { } }
                       }},
                       { label: 'طلب إجتماع', icon: CalendarDays, color: 'var(--color-primary-500)', action: async () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
-                        if (d) { try { await closeDirective(d.id, directiveToExternalDirectiveBody(d)); openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' }); } catch { } }
-                      }},
-                      { label: 'إغلاق التوجيه', icon: X, color: '#DC2626', action: async () => {
-                        const d = originalDirectives.find((x) => x.id === openDropdownId);
-                        if (d) { try { await handleCloseDirective(d); } catch { } }
+                        if (d) {
+                          openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' });
+                          try { await requestMeetingFromDirective(d.id); } catch { }
+                        }
                       }},
                     ].map((item, idx) => (
                       <button
@@ -594,8 +588,7 @@ const Directives: React.FC = () => {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      const body = isPrevious ? previousDirectiveToExternalDirectiveBody(original as PreviousDirectiveItem) : directiveToExternalDirectiveBody(original as Directive);
-                                      await cancelDirective(original.id, body);
+                                      await takeDirective(original.id);
                                       setExpandedId(null);
                                       isPrevious ? await refetchPrevious() : await refetch();
                                     } catch { }
@@ -604,19 +597,16 @@ const Directives: React.FC = () => {
                                   style={{ borderColor: 'var(--color-status-yellow)', color: 'var(--color-status-yellow)' }}
                                 >
                                   <XCircle className="w-3.5 h-3.5" />
-                                  إلغاء التوجيه
+                                  الأخذ بالتوجيه
                                 </button>
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    try {
-                                      const body = isPrevious ? previousDirectiveToExternalDirectiveBody(original as PreviousDirectiveItem) : directiveToExternalDirectiveBody(original as Directive);
-                                      await closeDirective(original.id, body);
-                                      const relatedMeeting = isPrevious
-                                        ? (Array.isArray((original as PreviousDirectiveItem).assignees) ? (original as PreviousDirectiveItem).assignees!.join(', ') : '')
-                                        : ((original as Directive).assignees || '');
-                                      openCreateDrawer({ directive_id: original.id, directive_text: original.title, related_meeting: relatedMeeting });
-                                    } catch { }
+                                    const relatedMeeting = isPrevious
+                                      ? (Array.isArray((original as PreviousDirectiveItem).assignees) ? (original as PreviousDirectiveItem).assignees!.join(', ') : '')
+                                      : ((original as Directive).assignees || '');
+                                    openCreateDrawer({ directive_id: original.id, directive_text: original.title, related_meeting: relatedMeeting });
+                                    try { await requestMeetingFromDirective(original.id); } catch { }
                                     setExpandedId(null);
                                   }}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors hover:opacity-90"
@@ -624,22 +614,6 @@ const Directives: React.FC = () => {
                                 >
                                   <CalendarDays className="w-3.5 h-3.5" />
                                   طلب إجتماع
-                                </button>
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                      const body = isPrevious ? previousDirectiveToExternalDirectiveBody(original as PreviousDirectiveItem) : directiveToExternalDirectiveBody(original as Directive);
-                                      await closeDirective(original.id, body);
-                                      isPrevious ? await refetchPrevious() : await refetch();
-                                    } catch { }
-                                    setExpandedId(null);
-                                  }}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border hover:shadow-sm"
-                                  style={{ borderColor: '#DC2626', color: '#DC2626' }}
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  إغلاق التوجيه
                                 </button>
                               </div>
                             </div>
