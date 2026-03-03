@@ -61,6 +61,7 @@ export interface DraftApiResponse {
   invitees?: Array<{
     id: string;
     user_id?: string | null;
+    object_guid?: string | null;
     external_email?: string | null;
     external_name?: string | null;
     position?: string | null;
