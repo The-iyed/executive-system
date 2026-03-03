@@ -75,15 +75,19 @@ const submitStep3InviteesData = async (payload: SubmitStep3InviteesPayload): Pro
     };
   }) || [];
 
-  const minister_invitees = (formData.minister_attendees ?? []).map((m) => ({
-    external_name: m.external_name?.trim() || '',
-    position: m.position?.trim() || '',
-    external_email: m.external_email?.trim() || '',
-    mobile: m.mobile?.trim() || '',
+  const minister_invitees = (formData.minister_attendees ?? []).map((m) => {
+    const name = (m.external_name ?? '').trim();
+    const email = (m.external_email ?? '').trim() || name;
+    return {
+      external_name: name,
+      position: m.position?.trim() || '',
+      external_email: email,
+      mobile: m.mobile?.trim() || '',
       attendance_mechanism: toAttendanceMechanism(m.attendance_channel ?? 'PHYSICAL'),
-    is_required: m.is_required ?? false,
-    justification: m.justification?.trim() || '',
-  }));
+      is_required: m.is_required ?? false,
+      justification: m.justification?.trim() || '',
+    };
+  });
 
   const body = {
     invitees: inviteesPayload,
@@ -204,11 +208,12 @@ export const useStep3Invitees = ({
       let newTableError = '';
 
       validationResult.error.errors.forEach((err) => {
-        if (err.path[0] === 'invitees' && err.path[1] !== undefined) {
-          const inviteeIndex = err.path[1] as number;
-          const field = err.path[2] as string;
+        const path = err.path as (string | number)[];
+        if (path[0] === 'invitees' && path[1] !== undefined) {
+          const inviteeIndex = path[1] as number;
+          const field = path[2] as string;
           const invitee = formData.invitees?.[inviteeIndex];
-          
+
           if (invitee?.id) {
             if (!newErrors[invitee.id]) {
               newErrors[invitee.id] = {};
@@ -220,9 +225,24 @@ export const useStep3Invitees = ({
             }
             newTouched[invitee.id][field] = true;
           }
-        } else if (err.path[0] === 'invitees') {
+        } else if (path[0] === 'invitees') {
           // Table-level error (e.g. invitees required)
           newTableError = err.message;
+        } else if (path[0] === 'minister_attendees' && path[1] !== undefined) {
+          const ministerIndex = path[1] as number;
+          const field = path[2] as string;
+          const minister = formData.minister_attendees?.[ministerIndex];
+
+          if (minister?.id) {
+            if (!newErrors[minister.id]) {
+              newErrors[minister.id] = {};
+            }
+            newErrors[minister.id][field] = err.message;
+            if (!newTouched[minister.id]) {
+              newTouched[minister.id] = {};
+            }
+            newTouched[minister.id][field] = true;
+          }
         }
       });
       setErrors(newErrors);
