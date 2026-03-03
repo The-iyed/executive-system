@@ -8,7 +8,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
     meetingTitle: draft.meeting_title || '',
     meetingSubject: draft.meeting_title || draft.meeting_subject || '',
     meetingSubjectOptional: draft.meeting_subject || '',
-    meetingDescription: draft?.description || draft.meeting_description || '',
+    meetingDescription: draft?.description ?? draft?.meeting_description ?? '',
     meetingType: draft.meeting_type || '',
     meetingCategory: draft.meeting_classification || '',
     meetingReason: draft.meeting_justification || '',
