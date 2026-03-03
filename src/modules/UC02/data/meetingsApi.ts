@@ -359,8 +359,8 @@ export const getMeetingsSearchForPrevious = async (
   const skip = params.skip ?? 0;
   const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
   const queryParams = new URLSearchParams();
-  const q = params.q != null && params.q.trim() !== '' ? params.q.trim() : null;
-  if (q != null) queryParams.set('q', q);
+  const q = params.q != null && params.q.trim() !== '' ? params.q.trim() : 'a';
+  queryParams.set('q', q);
   queryParams.set('skip', String(skip));
   queryParams.set('limit', String(limit));
   const response = await axiosInstance.get<MeetingSearchResult[] | MeetingsSearchForPreviousResponse>(
@@ -583,6 +583,7 @@ export interface ReturnForInfoRequest {
   editable_fields?: string[];
 }
 
+/** مجدول - الجدولة: إعادة – POST /api/meeting-requests/{meeting_id}/return-for-info */
 export const returnMeetingForInfo = async (
   meetingId: string,
   payload: ReturnForInfoRequest
@@ -590,7 +591,7 @@ export const returnMeetingForInfo = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/return-for-info`, payload);
 };
 
-/** مجدول - الجدولة → مجدول: إعتماد التحديث */
+/** مجدول - الجدولة: إعتماد التحديث – POST /api/meeting-requests/{meeting_id}/approve-update */
 export interface ApproveUpdateRequest {
   notes?: string;
 }
@@ -602,7 +603,7 @@ export const approveMeetingUpdate = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/approve-update`, payload);
 };
 
-/** مجدول - الجدولة → مجدول - المحتوى (مسؤول المحتوى): إرسال للمحتوى */
+/** مجدول - الجدولة: إرسال للمحتوى – POST /api/meeting-requests/{meeting_id}/send-to-content-scheduled */
 export interface SendToContentScheduledRequest {
   /** Optional notes / questions for content officer; each line can create a CONTENT consultation */
   notes?: string;
@@ -729,7 +730,23 @@ export interface DirectivesListResponse {
   has_previous: boolean;
 }
 
-// Previous directives API (matches /scheduling/directives/previous response)
+// Previous directives API – raw response from /api/minister-directives?status=ADOPTED
+export interface MinisterDirectiveApiItem {
+  id: string;
+  title: string;
+  status: string;
+  scheduling_officer_status?: string;
+  created_at: string;
+  updated_at: string;
+  action_number?: string;
+  due_date?: string;
+  is_completed?: boolean;
+  meeting_id?: string | null;
+  completed_at?: string | null;
+  assignees?: string[];
+}
+
+// Normalized previous directive (used by UI and close/cancel payloads)
 export interface PreviousDirectiveItem {
   id: string;
   external_id: string;
@@ -752,6 +769,25 @@ export interface PreviousDirectivesListResponse {
   limit: number;
   has_next: boolean;
   has_previous: boolean;
+}
+
+/** Map raw API item to PreviousDirectiveItem (id → external_id for close endpoint) */
+function mapMinisterDirectiveToPrevious(item: MinisterDirectiveApiItem): PreviousDirectiveItem {
+  const assignees = Array.isArray(item.assignees) ? item.assignees.filter(Boolean) : [];
+  return {
+    id: item.id,
+    external_id: item.id,
+    action_number: item.action_number ?? '',
+    title: item.title,
+    due_date: item.due_date ?? item.updated_at ?? item.created_at,
+    status: item.status,
+    is_completed: item.is_completed ?? item.status === 'ADOPTED',
+    meeting_id: item.meeting_id ?? null,
+    created_date: item.created_at,
+    mod_date: item.updated_at,
+    completed_at: item.completed_at ?? null,
+    assignees,
+  };
 }
 
 export interface GetDirectivesParams {
@@ -780,6 +816,15 @@ export const getDirectives = async (params: GetDirectivesParams = {}): Promise<D
   return response.data;
 };
 
+interface MinisterDirectivesApiResponse {
+  items: MinisterDirectiveApiItem[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
 export const getPreviousDirectives = async (params: GetDirectivesParams = {}): Promise<PreviousDirectivesListResponse> => {
   const queryParams = new URLSearchParams();
   if (params.skip !== undefined) {
@@ -794,8 +839,11 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
 
   queryParams.append('status', 'ADOPTED');
 
-  const response = await axiosInstance.get<PreviousDirectivesListResponse>(`/api/minister-directives?${queryParams.toString()}`);
-  return response.data;
+  const response = await axiosInstance.get<MinisterDirectivesApiResponse>(`/api/minister-directives?${queryParams.toString()}`);
+  return {
+    ...response.data,
+    items: response.data.items.map(mapMinisterDirectiveToPrevious),
+  };
 };
 
 /** Request body for POST /api/scheduling/directives (Create Scheduling Directive – UC-07) */
@@ -829,18 +877,28 @@ export const createSchedulingDirective = async (
   return response.data;
 };
 
-/** Request body for POST /api/external-directives (Create/Close/Cancel – same body) */
+/** Request body for POST /api/external-directives (Create/Close/Cancel – same body).
+ * Close: external_id required; optional full payload if directive does not exist (create then close).
+ */
 export interface CreateDirectivePayload {
-  external_id: number;
+  /** External system ID (e.g. 214) or internal UUID; API accepts int or str */
+  external_id: string | number;
   action_number: string;
   title: string;
   due_date: string; // ISO date-time
   status: string;
   is_completed: boolean;
+  meeting_id?: number | null;
   created_date: string; // ISO date-time
   mod_date?: string; // ISO date-time, optional on create
   completed_at?: string | null; // ISO date-time, optional when not completed
   assignees: string[]; // e.g. email addresses
+}
+
+/** Parse id to external_id: use number if numeric, else string (e.g. UUID) */
+function toExternalId(id: string): string | number {
+  const n = Number(id);
+  return Number.isFinite(n) ? n : id;
 }
 
 /** Build external-directives body from a Directive (for close/cancel or create). */
@@ -854,14 +912,15 @@ export const directiveToExternalDirectiveBody = (d: Directive): CreateDirectiveP
       : Array.isArray(d.assignees)
         ? d.assignees
         : [];
-  const externalId = Number(d.id);
+  const meetingId = d.meeting_id != null ? Number(d.meeting_id) : undefined;
   return {
-    external_id: Number.isFinite(externalId) ? externalId : 0,
+    external_id: toExternalId(d.id),
     action_number: d.action_number,
     title: d.title,
     due_date: d.due_date,
     status: d.status,
     is_completed: d.is_completed,
+    meeting_id: Number.isFinite(meetingId) ? meetingId : undefined,
     created_date: d.created_date,
     mod_date: d.mod_date ?? undefined,
     completed_at: d.completed_at ?? undefined,
@@ -869,17 +928,21 @@ export const directiveToExternalDirectiveBody = (d: Directive): CreateDirectiveP
   };
 };
 
-/** Build external-directives body from a PreviousDirectiveItem (for close/cancel). */
+/** Build external-directives body from a PreviousDirectiveItem (for close/cancel).
+ * external_id is required for close; use id when external_id is missing (legacy).
+ */
 export const previousDirectiveToExternalDirectiveBody = (d: PreviousDirectiveItem): CreateDirectivePayload => {
-  const externalId = Number(d.external_id);
+  const meetingId = d.meeting_id != null ? Number(d.meeting_id) : undefined;
+  const extId = d.external_id ?? d.id;
   return {
-    external_id: Number.isFinite(externalId) ? externalId : 0,
-    action_number: d.action_number,
+    external_id: toExternalId(extId),
+    action_number: d.action_number ?? '',
     title: d.title,
-    due_date: d.due_date,
+    due_date: d.due_date ?? d.mod_date ?? d.created_date ?? '',
     status: d.status,
-    is_completed: d.is_completed,
-    created_date: d.created_date,
+    is_completed: d.is_completed ?? false,
+    meeting_id: Number.isFinite(meetingId) ? meetingId : undefined,
+    created_date: d.created_date ?? '',
     mod_date: d.mod_date ?? undefined,
     completed_at: d.completed_at ?? undefined,
     assignees: Array.isArray(d.assignees) ? d.assignees.filter(Boolean) : [],
@@ -894,8 +957,14 @@ export const closeDirective = async (_directiveId: string, payload: CreateDirect
   await axiosInstance.post(`/api/external-directives/close`, payload);
 };
 
-export const cancelDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post(`/api/minister-directives/${_directiveId}/request-meeting`, payload);
+/** POST /api/minister-directives/{directive_id}/take-directive – Take Directive (الأخذ بالتوجيه) */
+export const takeDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/minister-directives/${directiveId}/take-directive`, {});
+};
+
+/** POST /api/minister-directives/{directive_id}/request-meeting – Request Meeting From Directive (طلب إجتماع) */
+export const requestMeetingFromDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/minister-directives/${directiveId}/request-meeting`, {});
 };
 
 // Consultation Records API
