@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
-import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, type OptionType, type CustomCellRenderParams } from '@/modules/shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams } from '@/modules/shared';
 import { cn } from '@/lib/ui';
 import {
   INVITEES_TABLE_COLUMNS,
@@ -8,6 +8,8 @@ import {
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers, searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
 import { getUserDisplayId, getUserDisplayLabel } from '@/modules/shared/utils';
+import { SuggestAttendeesModal } from '../../../../components';
+import type { UseSuggestMeetingAttendeesParams } from '../../../../hooks/useSuggestMeetingAttendees';
 
 const MANUAL_ENTRY_VALUE = '__manual__';
 const MANUAL_ENTRY_LABEL = 'إدخال يدوي (مستخدم غير مسجل)';
@@ -24,16 +26,18 @@ export interface Step3Props {
   handleAddMinisterInvitee: () => void;
   handleDeleteMinisterInvitee: (id: string) => void;
   handleUpdateMinisterInvitee: (id: string, field: string, value: unknown) => void;
-  setProposerUserIds: (ids: string[]) => void;
+  setProposerObjectGuids: (ids: string[]) => void;
   handleNextClick: () => void;
   handleSaveDraftClick: () => void;
   handleBackClick?: () => void;
   handleCancelClick: () => void;
   nonDeletableInviteeIds: string[];
+  suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
+  onSuggestAttendeesSuccess?: (data: any) => void;
 }
 
 interface ProposerUser {
-  id: string;
+  object_guid: string;
   label: string;
   email?: string;
 }
@@ -50,17 +54,20 @@ export const Step3: React.FC<Step3Props> = ({
   handleAddMinisterInvitee,
   handleDeleteMinisterInvitee,
   handleUpdateMinisterInvitee,
-  setProposerUserIds,
+  setProposerObjectGuids,
   handleNextClick,
   handleSaveDraftClick,
   handleBackClick,
   handleCancelClick,
   nonDeletableInviteeIds,
+  suggestAttendeesMeetingParams,
+  onSuggestAttendeesSuccess,
 }) => {
   const [proposerUsers, setProposerUsers] = useState<ProposerUser[]>([]);
   const [proposerLoading, setProposerLoading] = useState(true);
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; position?: string; phone_number?: string; email?: string; sector?: string }>>(new Map());
   const searchInputByRowRef = useRef<Record<string, string>>({});
+  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
     try {
@@ -82,14 +89,14 @@ export const Step3: React.FC<Step3Props> = ({
       const response = await searchUsersByEmail(search, skip, limit);
       const items = response.items.map((u: UserApiResponse) => {
         const rec = u as Record<string, unknown>;
-        const id = getUserDisplayId(rec) || u.id;
+        const objectGuid = getUserDisplayId(rec) || (u as { object_guid?: string }).object_guid || u.id;
         const label = getUserDisplayLabel(rec);
         const position = u.position ?? rec.position_name ?? rec.job_title ?? rec.title ?? '';
         const sector = rec.sector ?? rec.department_name ?? rec.department ?? '';
         const email = (u.email ?? rec.mail) as string | undefined;
         const phone = (u.phone_number ?? rec.mobile) as string | null | undefined;
         return {
-          value: id,
+          value: objectGuid,
           label,
           position: typeof position === 'string' ? position : '',
           phone_number: phone ?? '',
@@ -97,7 +104,7 @@ export const Step3: React.FC<Step3Props> = ({
           sector: typeof sector === 'string' ? sector : '',
         };
       });
-      items.forEach((o) => userOptionsMapRef.current.set(o.value, o));
+      items.forEach((o) => userOptionsMapRef.current.set(o.value as string, o));
       return {
         items: skip === 0 ? [manualOption, ...items] : items,
         total: skip === 0 ? response.total + 1 : response.total,
@@ -128,10 +135,10 @@ export const Step3: React.FC<Step3Props> = ({
         );
       }
 
-      const userId = (row as { _userId?: string })._userId;
+      const objectGuid = (row as { _objectGuid?: string })._objectGuid;
       const value: OptionType | null =
-        userId && row.full_name
-          ? { value: userId, label: row.full_name }
+        objectGuid && row.full_name
+          ? { value: objectGuid, label: row.full_name }
           : null;
 
       return (
@@ -148,7 +155,7 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_isManual', false);
-                onUpdateRow('_userId', '');
+                onUpdateRow('_objectGuid', '');
                 return;
               }
               if (opt.value === MANUAL_ENTRY_VALUE) {
@@ -161,16 +168,16 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('mobile_number', '');
                 onUpdateRow('sector', '');
                 onUpdateRow('email', '');
-                onUpdateRow('_userId', '');
+                onUpdateRow('_objectGuid', '');
                 return;
               }
               const u = userOptionsMapRef.current.get(opt.value);
               if (u) {
                 const existing = (formData.invitees ?? []).find(
-                  (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+                  (inv) => inv.id !== row.id && (inv as { _objectGuid?: string })._objectGuid === u.value
                 );
                 if (existing) return;
-                onUpdateRow('_userId', u.value);
+                onUpdateRow('_objectGuid', u.value);
                 onUpdateRow('_isManual', false);
                 onUpdateRow('full_name', u.label);
                 onUpdateRow('position_title', u.position ?? '');
@@ -218,10 +225,10 @@ export const Step3: React.FC<Step3Props> = ({
         );
       }
 
-      const userId = (row as { _userId?: string })._userId;
+      const objectGuid = (row as { _objectGuid?: string })._objectGuid;
       const value: OptionType | null =
-        userId && row.full_name
-          ? { value: userId, label: row.full_name }
+        objectGuid && row.full_name
+          ? { value: objectGuid, label: row.full_name }
           : null;
 
       return (
@@ -238,7 +245,7 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_isManual', false);
-                onUpdateRow('_userId', '');
+                onUpdateRow('_objectGuid', '');
                 return;
               }
               if (opt.value === MANUAL_ENTRY_VALUE) {
@@ -251,16 +258,16 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('mobile_number', '');
                 onUpdateRow('sector', '');
                 onUpdateRow('email', '');
-                onUpdateRow('_userId', '');
+                onUpdateRow('_objectGuid', '');
                 return;
               }
               const u = userOptionsMapRef.current.get(opt.value);
               if (u) {
                 const existing = (formData.minister_invitees ?? []).find(
-                  (inv) => inv.id !== row.id && (inv as { _userId?: string })._userId === u.value
+                  (inv) => inv.id !== row.id && (inv as { _objectGuid?: string })._objectGuid === u.value
                 );
                 if (existing) return;
-                onUpdateRow('_userId', u.value);
+                onUpdateRow('_objectGuid', u.value);
                 onUpdateRow('_isManual', false);
                 onUpdateRow('full_name', u.label);
                 onUpdateRow('position_title', u.position ?? '');
@@ -295,27 +302,30 @@ export const Step3: React.FC<Step3Props> = ({
     getUsers({ limit: 10 })
       .then((res) => {
         setProposerUsers(
-          res.items.map((u) => ({
-            id: u.id,
-            label: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || u.id,
-            email: u.email,
-          }))
+          res.items.map((u) => {
+            const objectGuid = (u as { object_guid?: string }).object_guid ?? u.id;
+            return {
+              object_guid: objectGuid,
+              label: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.name || u.id,
+              email: u.email,
+            };
+          })
         );
       })
       .catch(() => setProposerUsers([]))
       .finally(() => setProposerLoading(false));
   }, []);
 
-  const selectedProposerIds = new Set(formData.proposer_user_ids ?? []);
+  const selectedProposerGuids = new Set(formData.proposer_object_guids ?? []);
   const toggleProposer = useCallback(
-    (userId: string) => {
-      const current = formData.proposer_user_ids ?? [];
-      const next = current.includes(userId)
-        ? current.filter((id) => id !== userId)
-        : [...current, userId];
-      setProposerUserIds(next);
+    (objectGuid: string) => {
+      const current = formData.proposer_object_guids ?? [];
+      const next = current.includes(objectGuid)
+        ? current.filter((id) => id !== objectGuid)
+        : [...current, objectGuid];
+      setProposerObjectGuids(next);
     },
-    [formData.proposer_user_ids, setProposerUserIds]
+    [formData.proposer_object_guids, setProposerObjectGuids]
   );
 
   const inviteesTableError = errors['__invitees_table__']?._;
@@ -331,6 +341,14 @@ export const Step3: React.FC<Step3Props> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-8 max-w-[1200px] mx-auto">
+        {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestAttendeesModalOpen}
+            onOpenChange={setIsSuggestAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestAttendeesSuccess}
+          />
+        )}
         {/* Section 1 — Invitees (Request Submitter) */}
         <FormTable
           title='قائمة المدعوين (مقدّم الطلب)'
@@ -349,20 +367,31 @@ export const Step3: React.FC<Step3Props> = ({
           customCellRender={inviteesCustomCellRender}
         />
 
-        <FormTable
-          title='مدعوو الوزير'
-          columns={INVITEES_TABLE_COLUMNS}
-          rows={ministerRows}
-          onAddRow={handleAddMinisterInvitee}
-          onDeleteRow={handleDeleteMinisterInvitee}
-          onUpdateRow={handleUpdateMinisterInvitee}
-          addButtonLabel='إضافة مدعو للوزير'
-          errors={errors}
-          touched={touched}
-          errorMessage={errors['__minister_invitees_table__']?._}
-          emptyStateMessage="لا يوجد مدعوون من الوزير"
-          customCellRender={ministerCustomCellRender}
-        />
+        <div className="relative">
+          <FormTable
+            title='مدعوو الوزير'
+            columns={INVITEES_TABLE_COLUMNS}
+            rows={ministerRows}
+            onAddRow={handleAddMinisterInvitee}
+            onDeleteRow={handleDeleteMinisterInvitee}
+            onUpdateRow={handleUpdateMinisterInvitee}
+            addButtonLabel='إضافة مدعو للوزير'
+            errors={errors}
+            touched={touched}
+            errorMessage={errors['__minister_invitees_table__']?._}
+            emptyStateMessage="لا يوجد مدعوون من الوزير"
+            customCellRender={ministerCustomCellRender}
+          />
+          {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+            <div className="absolute bottom-[-3px] right-[170px]">
+              <AIGenerateButton
+                label="إضافة مدعوين آليًا"
+                disabled={isSubmitting || isDeleting}
+                onClick={() => setIsSuggestAttendeesModalOpen(true)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Section 3 — Suggested Participants (المقترحون) */}
         <div className="w-full flex flex-col gap-3">
@@ -386,12 +415,12 @@ export const Step3: React.FC<Step3Props> = ({
               ) : (
                 <ul className="flex flex-col gap-2">
                   {proposerUsers.map((u) => {
-                    const isChecked = selectedProposerIds.has(u.id);
+                    const isChecked = selectedProposerGuids.has(u.object_guid);
                     return (
                       <li
-                        key={u.id}
+                        key={u.object_guid}
                         className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
-                        onClick={() => toggleProposer(u.id)}
+                        onClick={() => toggleProposer(u.object_guid)}
                       >
                         <span className="text-[14px] text-[#344054]">
                           {u.label}
@@ -404,7 +433,7 @@ export const Step3: React.FC<Step3Props> = ({
                           aria-label={u.label}
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleProposer(u.id);
+                            toggleProposer(u.object_guid);
                           }}
                           className={cn(
                             'flex items-center justify-center shrink-0',
