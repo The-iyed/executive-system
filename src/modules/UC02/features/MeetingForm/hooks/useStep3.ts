@@ -11,6 +11,7 @@ import {
   mapUserToStep3InviteeRow,
   createEmptyStep3InviteeRow,
 } from '../utils/inviteeMappers';
+import type { SuggestedAttendee } from '../../../hooks/useSuggestMeetingAttendees';
 import type { Step1FormData } from '../schemas/step1.schema';
 
 interface UseStep3Props {
@@ -260,6 +261,31 @@ export const useStep3 = ({
     }));
   }, []);
 
+  const handleAddSuggestedMinisterInvitees = useCallback((suggestions: SuggestedAttendee[]) => {
+    if (!suggestions || suggestions.length === 0) return;
+    setFormData((prev) => {
+      const existing = prev.minister_invitees ?? [];
+      const newRows = suggestions.map((s) => {
+        const base = createEmptyStep3InviteeRow();
+        const fullName = [s.first_name, s.last_name].filter(Boolean).join(' ') || base.full_name;
+        return {
+          ...base,
+          full_name: fullName,
+          position_title: s.position_name || s.job_description || base.position_title,
+          mobile_number: s.phone || base.mobile_number,
+          sector: s.department_name || base.sector,
+          email: s.email || base.email,
+          attendance_mode: 'IN_PERSON',
+          view_permission: false,
+        } as InviteeFormRow;
+      });
+      return {
+        ...prev,
+        minister_invitees: [...newRows, ...existing],
+      };
+    });
+  }, []);
+
   const setProposerUserIds = useCallback((ids: string[]) => {
     setFormData((prev) => ({ ...prev, proposer_user_ids: ids }));
   }, []);
@@ -295,6 +321,7 @@ export const useStep3 = ({
     handleAddMinisterInvitee,
     handleDeleteMinisterInvitee,
     handleUpdateMinisterInvitee,
+    handleAddSuggestedMinisterInvitees,
     setProposerUserIds,
     validateAll,
     submitStep,
