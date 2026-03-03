@@ -1002,7 +1002,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
             </div>
 
             {/* Sticky bottom chat input */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#F3F4F6] bg-[#FAFAFA] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <div className="sticky bottom-0 z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
