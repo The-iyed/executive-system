@@ -2,13 +2,11 @@ import { MeetingCardData } from '@/modules/shared/components/meeting-card';
 import { formatDateArabic } from '@/modules/shared/utils';
 import { ContentRequestApiResponse } from '../data/contentApi';
 import { MeetingStatus, MeetingStatusLabels, getMeetingChannelLabel, getMeetingClassificationLabel } from '@/modules/shared/types';
-import { ContentRequestCardData } from '../components/content-request-card';
 
 /**
  * Map API status to component status
  */
 const mapStatus = (apiStatus: string): MeetingStatus | string => {
-  // Map API status to MeetingStatus enum
   const statusMap: Record<string, MeetingStatus | string> = {
     UNDER_CONTENT_REVIEW: 'UNDER_CONTENT_REVIEW',
     UNDER_REVIEW: MeetingStatus.UNDER_REVIEW,
@@ -18,7 +16,6 @@ const mapStatus = (apiStatus: string): MeetingStatus | string => {
     CANCELLED: MeetingStatus.CANCELLED,
     CLOSED: MeetingStatus.CLOSED,
   };
-
   return statusMap[apiStatus] || apiStatus;
 };
 
@@ -29,7 +26,6 @@ const getStatusLabel = (status: MeetingStatus | string): string => {
   if (status in MeetingStatusLabels) {
     return MeetingStatusLabels[status as MeetingStatus];
   }
-  // Handle custom statuses
   if (status === 'UNDER_CONTENT_REVIEW') {
     return 'قيد مراجعة المحتوى';
   }
@@ -44,8 +40,6 @@ export const mapContentRequestToCardData = (
 ): MeetingCardData => {
   const status = mapStatus(request.status);
   const statusLabel = getStatusLabel(status);
-
-  // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
 
   return {
@@ -53,7 +47,7 @@ export const mapContentRequestToCardData = (
     title: request.meeting_title || request.meeting_subject,
     date: formatDateArabic(dateToUse),
     coordinator: request.submitter_name ?? undefined,
-    coordinatorAvatar: undefined, // API doesn't provide avatar
+    coordinatorAvatar: undefined,
     status: status,
     statusLabel: statusLabel,
     location: request.meeting_channel,
@@ -61,24 +55,22 @@ export const mapContentRequestToCardData = (
 };
 
 /**
- * Map API content request response to ContentRequestCardData (for card view)
+ * Map API content request response to MeetingCardData (for card view — shared card)
  */
 export const mapContentRequestToCardViewData = (
   request: ContentRequestApiResponse
-): ContentRequestCardData => {
+): MeetingCardData => {
   const status = mapStatus(request.status);
   const statusLabel = getStatusLabel(status);
-
-  // Use submitted_at for date, fallback to created_at
   const dateToUse = request.submitted_at || request.created_at;
 
   return {
     id: request.id,
     requestNumber: request.request_number,
     title: request.meeting_title || request.meeting_subject,
-    meetingSubject: request.meeting_subject ?? '',
     date: formatDateArabic(dateToUse),
-    submitter: request.submitter_name ?? undefined,
+    coordinator: request.submitter_name ?? undefined,
+    coordinatorAvatar: undefined,
     status: status,
     statusLabel: statusLabel,
     meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
@@ -87,6 +79,4 @@ export const mapContentRequestToCardViewData = (
     isDataComplete: request.is_data_complete,
   };
 };
-
-
 
