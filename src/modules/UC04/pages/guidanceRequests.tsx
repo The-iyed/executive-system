@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   DataTable,
   MeetingCardData,
+  CardsGrid,
   ViewType,
   TableColumn,
   StatusBadge,
@@ -23,9 +24,7 @@ import {
 } from '@/modules/shared/types';
 import {
   mapGuidanceRequestToCardData,
-  mapGuidanceRequestToCardViewData,
 } from '../utils/guidanceMapper';
-import { GuidanceRequestsGrid, GuidanceRequestCardData } from '../components';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -78,11 +77,6 @@ const GuidanceRequests: React.FC = () => {
     return requestsResponse.items.map(mapGuidanceRequestToCardData);
   }, [requestsResponse]);
 
-  // Map API response to GuidanceRequestCardData (for card view)
-  const cardViewRequests: GuidanceRequestCardData[] = useMemo(() => {
-    if (!requestsResponse?.items) return [];
-    return requestsResponse.items.map(mapGuidanceRequestToCardViewData);
-  }, [requestsResponse]);
 
   // Calculate total pages from API response
   const totalItems = requestsResponse?.total || 0;
@@ -311,10 +305,10 @@ const GuidanceRequests: React.FC = () => {
                   onRowClick={(row) => navigate(`/guidance-request/${row.id}`)}
                 />
               ) : (
-                <GuidanceRequestsGrid
-                  requests={cardViewRequests}
-                  onView={(request) => navigate(`/guidance-request/${request.id}`)}
-                  onDetails={(request) => navigate(`/guidance-request/${request.id}`)}
+                <CardsGrid
+                  meetings={requests}
+                  onView={(meeting) => navigate(`/guidance-request/${meeting.id}`)}
+                  onDetails={(meeting) => navigate(`/guidance-request/${meeting.id}`)}
                 />
               )}
 
