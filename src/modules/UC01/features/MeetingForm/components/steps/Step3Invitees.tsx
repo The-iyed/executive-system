@@ -48,6 +48,8 @@ export interface Step3InviteesProps {
   suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
   /** Called when suggest attendees modal returns success; receives API response with suggestions. */
   onSuggestAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
+  /** Called when suggest attendees modal returns success for minister section; receives API response with suggestions. */
+  onSuggestMinisterAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
   /** When true (UC02 scheduling officer), show قائمة المدعوين (الوزير) table. */
   showMinisterInvitees?: boolean;
   /** Minister attendees from formData (hook state); used when showMinisterInvitees. */
@@ -75,6 +77,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   step3EditableMap,
   suggestAttendeesMeetingParams,
   onSuggestAttendeesSuccess,
+  onSuggestMinisterAttendeesSuccess,
   showMinisterInvitees = false,
   ministerAttendees = [],
   onAddMinisterAttendee,
@@ -85,6 +88,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
 
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
+  const [isSuggestMinisterAttendeesModalOpen, setIsSuggestMinisterAttendeesModalOpen] = useState(false);
 
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
@@ -257,9 +261,17 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             onSuccess={onSuggestAttendeesSuccess}
           />
         )}
+        {showMinisterInvitees && suggestAttendeesMeetingParams && onSuggestMinisterAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestMinisterAttendeesModalOpen}
+            onOpenChange={setIsSuggestMinisterAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestMinisterAttendeesSuccess}
+          />
+        )}
         <div className="relative w-full max-w-[1200px] mx-auto">
           <FormTable
-            title= 'قائمة المدعوين'
+            title= 'المدعوون (مقدم الطلب)'
             columns={INVITEES_TABLE_COLUMNS}
             required={inviteesRequired}
             rows={formData.invitees || []}
@@ -287,14 +299,23 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
         {showMinisterInvitees && (
           <div className="relative w-full max-w-[1200px] mx-auto flex flex-col gap-4" dir="rtl">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-[#101828]">قائمة المدعوين (الوزير)</h3>
-              <button
-                type="button"
-                onClick={() => onAddMinisterAttendee?.()}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg text-[#344054] hover:bg-gray-50 text-sm font-medium"
-              >
-                إضافة مدعو (الوزير)
-              </button>
+              <h3 className="text-base font-bold text-[#101828]">المدعوون (الوزير)</h3>
+              <div className="flex items-center gap-2">
+                {suggestAttendeesMeetingParams && onSuggestMinisterAttendeesSuccess && (
+                  <AIGenerateButton
+                    label="إضافة مدعوين آليًا"
+                    disabled={isFieldDisabled('minister_attendees')}
+                    onClick={() => setIsSuggestMinisterAttendeesModalOpen(true)}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onAddMinisterAttendee?.()}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D0D5DD] rounded-lg text-[#344054] hover:bg-gray-50 text-sm font-medium"
+                >
+                  إضافة مدعو (الوزير)
+                </button>
+              </div>
             </div>
             <div className="border border-[#EAECF0] rounded-xl overflow-hidden">
               <table className="w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -302,7 +323,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
                   <tr>
                     <th className="px-3 py-3 text-sm font-semibold text-[#344054]">الاسم</th>
                     <th className="px-3 py-3 text-sm font-semibold text-[#344054]">المنصب</th>
-                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">البريد</th>
+                    <th className="px-3 py-3 text-sm font-semibold text-[#344054]">البريد الإلكتروني</th>
                     <th className="px-3 py-3 text-sm font-semibold text-[#344054]">الجوال</th>
                     <th className="px-3 py-3 text-sm font-semibold text-[#344054]">آلية الحضور</th>
                     <th className="px-3 py-3 text-sm font-semibold text-[#344054]">مطلوب</th>
@@ -333,7 +354,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
                         <FormInput
                           value={row.external_email ?? ''}
                           onChange={(e) => onUpdateMinisterAttendee?.(index, 'external_email', e.target.value)}
-                          placeholder="البريد"
+                          placeholder="البريد الإلكتروني"
                           type="email"
                           className="h-9 text-right w-full"
                         />

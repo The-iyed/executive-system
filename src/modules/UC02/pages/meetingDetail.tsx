@@ -1178,7 +1178,7 @@ const MeetingDetail: React.FC = () => {
 
     // Validate minister attendees (قائمة المدعوين الوزير)
     if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
-      setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
+      setValidationError('يرجى تصحيح الأخطاء في المدعوون (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
       return;
     }
 
@@ -1697,7 +1697,7 @@ const MeetingDetail: React.FC = () => {
       { id: 'request-info', label: 'معلومات الطلب' },
       { id: 'meeting-info', label: 'معلومات الاجتماع' },
       { id: 'content', label: 'المحتوى' },
-      { id: 'attendees', label: 'قائمة المدعوين' },
+      { id: 'attendees', label: 'المدعوون' },
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
       { id: 'directive', label: 'استشارة المكتب التنفيذي' },
     ];
@@ -3051,7 +3051,7 @@ const MeetingDetail: React.FC = () => {
                       <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                     </div>
                     <div className="flex items-center gap-2.5">
-                      {renderFieldLabel('invitees', 'قائمة المدعوين (مقدّم الطلب)', 'text-[15px] font-bold text-[#1F2937]')}
+                      {renderFieldLabel('invitees', 'المدعوون (مقدم الطلب)', 'text-[15px] font-bold text-[#1F2937]')}
                       {allInvitees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{allInvitees.length}</span>}
                     </div>
                   </div>
@@ -3255,7 +3255,7 @@ const MeetingDetail: React.FC = () => {
                       <User className="w-[18px] h-[18px] text-[#92400E]" strokeWidth={1.8} />
                     </div>
                     <div className="flex items-center gap-2.5">
-                      {renderFieldLabel('minister_attendees', 'قائمة المدعوين (الوزير)', 'text-[15px] font-bold text-[#1F2937]')}
+                      {renderFieldLabel('minister_attendees', 'المدعوون (الوزير)', 'text-[15px] font-bold text-[#1F2937]')}
                       {scheduleForm.minister_attendees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{scheduleForm.minister_attendees.length}</span>}
                     </div>
                   </div>
@@ -4127,12 +4127,12 @@ const MeetingDetail: React.FC = () => {
           // Run validation when dialog opens so invalid data (e.g. bad mobile) is caught before confirm
           let hasErrors = false;
           if (localInvitees.length > 0 && !validateInvitees()) {
-            setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+            setValidationError('يرجى تصحيح الأخطاء في المدعوون (مقدم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
             setActiveTab('attendees');
             hasErrors = true;
           }
           if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
-            setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+            setValidationError('يرجى تصحيح الأخطاء في المدعوون (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
             setActiveTab('attendees');
             hasErrors = true;
           }
@@ -4215,14 +4215,14 @@ const MeetingDetail: React.FC = () => {
               onClick={() => {
                 // Validate invitees (قائمة المدعوين مقدّم الطلب) whenever there are local invitees
                 if (localInvitees.length > 0 && !validateInvitees()) {
-                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+                  setValidationError('يرجى تصحيح الأخطاء في المدعوون (مقدم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
                   setIsEditConfirmOpen(false);
                   setActiveTab('attendees');
                   return;
                 }
                 // Validate minister attendees (قائمة المدعوين الوزير) whenever any exist
                 if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
-                  setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
+                  setValidationError('يرجى تصحيح الأخطاء في المدعوون (الوزير) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
                   setIsEditConfirmOpen(false);
                   setActiveTab('attendees');
                   return;
