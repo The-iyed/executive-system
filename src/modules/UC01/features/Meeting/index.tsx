@@ -15,17 +15,20 @@ const Meeting: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<MeetingStatus>(MeetingStatus.DRAFT);
+  const [statusFilters, setStatusFilters] = useState<string[]>([MeetingStatus.DRAFT]);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
 
   useEffect(() => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
-  }, [searchValue, statusFilter]);
+  }, [searchValue, statusFilters]);
+
+  // Use first selected status for API call (API supports single status)
+  const activeStatus = statusFilters.length > 0 ? statusFilters[0] as MeetingStatus : MeetingStatus.DRAFT;
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,
-    statusFilter,
+    statusFilter: activeStatus,
     currentPage,
   });
 
@@ -91,7 +94,9 @@ const Meeting: React.FC = () => {
   ]);
 
   const filterTabs = getMeetingTabsByRole(MeetingOwnerType.SUBMITTER);
-  const activeFilterLabel = filterTabs.find(t => t.id === statusFilter)?.label ?? statusFilter;
+  const activeFilterLabel = statusFilters.length > 0
+    ? `${statusFilters.length} حالة`
+    : 'تصفية الحالة';
 
   return (
      <>
@@ -156,7 +161,9 @@ const Meeting: React.FC = () => {
                 <PopoverTrigger asChild>
                   <button className={cn(
                     'h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all',
-                    'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
+                    statusFilters.length > 0
+                      ? 'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
+                      : 'bg-white border-[var(--color-base-gray-200)] text-[var(--color-text-gray-600)] hover:border-[var(--color-base-gray-300)]'
                   )}>
                     <Filter className="w-4 h-4" />
                     <span>{activeFilterLabel}</span>
@@ -165,38 +172,78 @@ const Meeting: React.FC = () => {
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-56 p-2" dir="rtl">
                   <div className="flex flex-col gap-0.5">
-                    {filterTabs.map((tab) => {
-                      const isActive = statusFilter === tab.id;
+                    {filterTabs.filter(t => t.id !== 'all').map((tab) => {
+                      const isChecked = statusFilters.includes(tab.id);
                       return (
                         <button
                           key={tab.id}
-                          onClick={() => setStatusFilter(tab.id as MeetingStatus)}
+                          onClick={() => {
+                            setStatusFilters(prev =>
+                              isChecked ? prev.filter(s => s !== tab.id) : [...prev, tab.id]
+                            );
+                          }}
                           className={cn(
                             'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors',
-                            isActive
+                            isChecked
                               ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
                               : 'text-[var(--color-text-gray-600)] hover:bg-[var(--color-base-gray-50)]'
                           )}
                         >
                           <div className="flex items-center gap-2">
                             <div className={cn(
-                              'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all',
-                              isActive
-                                ? 'border-[var(--color-primary-500)]'
+                              'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
+                              isChecked
+                                ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)]'
                                 : 'border-[var(--color-base-gray-300)]'
                             )}>
-                              {isActive && (
-                                <div className="w-2 h-2 rounded-full bg-[var(--color-primary-500)]" />
+                              {isChecked && (
+                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                               )}
                             </div>
                             <span>{tab.label}</span>
                           </div>
+                          {tab.count !== undefined && (
+                            <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
+                          )}
                         </button>
                       );
                     })}
                   </div>
+                  {statusFilters.length > 0 && (
+                    <button
+                      onClick={() => setStatusFilters([])}
+                      className="w-full mt-2 pt-2 border-t border-[var(--color-base-gray-100)] text-xs text-[var(--color-text-gray-500)] hover:text-[var(--color-primary-600)] transition-colors text-center py-1.5"
+                    >
+                      مسح الكل
+                    </button>
+                  )}
                 </PopoverContent>
               </Popover>
+
+              {/* Active filter chips */}
+              {statusFilters.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {statusFilters.map(id => {
+                    const tab = filterTabs.find(t => t.id === id);
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-medium"
+                      >
+                        {tab?.label ?? id}
+                        <button
+                          onClick={() => setStatusFilters(prev => prev.filter(s => s !== id))}
+                          className="hover:text-[var(--color-primary-900)] transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )
 
               {/* Search */}
               <div className="relative">
