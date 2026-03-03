@@ -333,7 +333,7 @@ export const Step3: React.FC<Step3Props> = ({
       <div className="relative w-full flex flex-col gap-8 max-w-[1200px] mx-auto">
         {/* Section 1 — Invitees (Request Submitter) */}
         <FormTable
-          title='قائمة المدعوين (مقدّم الطلب)'
+          title='المدعوون (مقدم الطلب)'
           required
           columns={INVITEES_TABLE_COLUMNS}
           rows={inviteeRows}
@@ -350,7 +350,7 @@ export const Step3: React.FC<Step3Props> = ({
         />
 
         <FormTable
-          title='مدعوو الوزير'
+          title='المدعوون (الوزير)'
           columns={INVITEES_TABLE_COLUMNS}
           rows={ministerRows}
           onAddRow={handleAddMinisterInvitee}
