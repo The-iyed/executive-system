@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@/lib/ui';
-import { DataTable, Pagination, MeetingStatus, ContentBar, CardsGrid, ViewType, getMeetingTabsByRole, MeetingOwnerType } from '@/modules/shared';
-import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE, MEETING_TABS } from '../../utils';
+import { Send, Search, LayoutList, LayoutGrid, Inbox, AlertCircle, Filter, ChevronDown, X, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button, cn, Popover, PopoverTrigger, PopoverContent } from '@/lib/ui';
+import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, getMeetingTabsByRole, MeetingOwnerType } from '@/modules/shared';
+import { Icon } from '@iconify/react';
+import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
@@ -89,8 +90,12 @@ const Meeting: React.FC = () => {
     openConfirmModal,
   ]);
 
+  const filterTabs = getMeetingTabsByRole(MeetingOwnerType.SUBMITTER);
+  const activeFilterLabel = filterTabs.find(t => t.id === statusFilter)?.label ?? statusFilter;
+
   return (
      <>
+      {/* Confirm Dialog */}
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
           <DialogHeader className="text-right gap-2">
@@ -125,37 +130,145 @@ const Meeting: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div>
-        <ContentBar
-          showViewSwitcher={true}
-          onViewChange={setView}
-          view={view}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          primaryAction={{
-            label: 'إنشاء اجتماع',
-            variant: 'primary',
-            onClick: openCreateDrawer,
-          }}
-          filterTabs={getMeetingTabsByRole(MeetingOwnerType.SUBMITTER)}
-          activeFilterId={statusFilter}
-          onFilterChange={(id) => setStatusFilter(id as MeetingStatus)}
-        />
-         {isLoading ? (
-           <div className="flex items-center justify-center py-12">
-             <div className="text-gray-600">جاري التحميل...</div>
-           </div>
-         ) : error ? (
-           <div className="flex items-center justify-center py-12">
-             <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
-           </div>
-         ) : meetings.length === 0 ? (
-           <div className="flex items-center justify-center py-12">
-             <div className="text-gray-600">لا توجد بيانات</div>
-           </div>
-         ) : (
-           <>
-             {view === 'table' ? (
+
+      <div className="flex flex-col w-full min-h-0" dir="rtl">
+
+        {/* ════════════════════════════════════════ */}
+        {/* PAGE HEADER — Title + Search + Actions  */}
+        {/* ════════════════════════════════════════ */}
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* Right: Title area */}
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-[var(--color-primary-50)]">
+                <Icon icon="solar:document-text-bold" width={22} height={22} className="text-[var(--color-primary-500)]" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-[var(--color-text-gray-900)]">الطلبات الحالية</h1>
+                <p className="text-xs text-[var(--color-text-gray-500)] mt-0.5">الاطلاع على الطلبات الحالية</p>
+              </div>
+            </div>
+
+            {/* Left: Actions */}
+            <div className="flex items-center gap-2">
+              {/* Create meeting button */}
+              <button
+                onClick={openCreateDrawer}
+                className="h-10 px-4 rounded-xl bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إنشاء اجتماع</span>
+              </button>
+
+              {/* Status filter dropdown */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn(
+                    'h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all',
+                    'bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
+                  )}>
+                    <Filter className="w-4 h-4" />
+                    <span>{activeFilterLabel}</span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56 p-2" dir="rtl">
+                  <div className="flex flex-col gap-0.5">
+                    {filterTabs.map((tab) => {
+                      const isActive = statusFilter === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setStatusFilter(tab.id as MeetingStatus)}
+                          className={cn(
+                            'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors',
+                            isActive
+                              ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
+                              : 'text-[var(--color-text-gray-600)] hover:bg-[var(--color-base-gray-50)]'
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all',
+                              isActive
+                                ? 'border-[var(--color-primary-500)]'
+                                : 'border-[var(--color-base-gray-300)]'
+                            )}>
+                              {isActive && (
+                                <div className="w-2 h-2 rounded-full bg-[var(--color-primary-500)]" />
+                              )}
+                            </div>
+                            <span>{tab.label}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="بحث..."
+                  className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
+                />
+              </div>
+
+              {/* View switcher */}
+              <div className="flex items-center bg-white rounded-xl border border-[var(--color-base-gray-200)] p-1 gap-0.5">
+                <button
+                  onClick={() => setView('cards')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                    view === 'cards' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setView('table')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                    view === 'table' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                  )}
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ════════════════════════════════════════ */}
+        {/*     CONTENT                              */}
+        {/* ════════════════════════════════════════ */}
+        <div className="flex-1 px-6 pb-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-[var(--color-text-gray-600)]">جاري التحميل...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-5 h-5" />
+                <span>حدث خطأ أثناء تحميل البيانات</span>
+              </div>
+            </div>
+          ) : meetings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-[var(--color-base-gray-100)] flex items-center justify-center">
+                <Inbox className="w-7 h-7 text-[var(--color-text-gray-500)]" />
+              </div>
+              <p className="text-sm text-[var(--color-text-gray-500)]">لا توجد طلبات</p>
+            </div>
+          ) : (
+            <>
+              {view === 'table' ? (
                 <DataTable
                   columns={tableColumns}
                   data={meetings}
@@ -163,7 +276,7 @@ const Meeting: React.FC = () => {
                     navigate(PATH.MEETING_PREVIEW.replace(':id', row.id))
                   }
                 />
-             ) : (
+              ) : (
                 <CardsGrid
                   meetings={meetings}
                   onView={(meeting) => navigate(PATH.MEETING_PREVIEW.replace(':id', meeting.id))}
@@ -193,9 +306,9 @@ const Meeting: React.FC = () => {
                   }}
                   getActionLoading={(meeting) => isSubmitting && submittingMeetingId === meeting.id}
                 />
-             )}
-             
-             {totalPages > 1 && (
+              )}
+              
+              {totalPages > 1 && (
                 <div className="flex justify-center mt-6">
                   <Pagination
                     currentPage={currentPage}
@@ -203,9 +316,10 @@ const Meeting: React.FC = () => {
                     onPageChange={setCurrentPage}
                   />
                 </div>
-             )}
-           </>
-         )}
+              )}
+            </>
+          )}
+        </div>
       </div>
      </>
   );
