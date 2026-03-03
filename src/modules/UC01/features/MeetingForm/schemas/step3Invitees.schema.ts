@@ -7,7 +7,8 @@ const attendanceMechanismSchema = z.nativeEnum(AttendanceMechanism);
 const inviteeSchema = z
   .object({
     id: z.string(),
-    user_id: z.string().optional().or(z.literal('')), 
+    /** Directory identifier (object_guid from AD; legacy drafts may still use user_id which we map into this field). */
+    object_guid: z.string().optional().or(z.literal('')),
     email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')), 
     name: z.string().optional().or(z.literal('')), 
     position: z.string().optional().or(z.literal('')), 
@@ -30,8 +31,8 @@ const inviteeSchema = z
       });
     }
     // sector is no longer required in the invitees table UI
-    const hasUserId = !!data.user_id && data.user_id.trim().length > 0;
-    if (hasUserId) return;
+    const hasObjectGuid = !!data.object_guid && data.object_guid.trim().length > 0;
+    if (hasObjectGuid) return;
     if (!data.name || data.name.trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
