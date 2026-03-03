@@ -24,7 +24,7 @@ export const step3Schema = z
   .object({
     invitees: z.array(inviteeFormRowSchema).min(1, 'يجب إضافة مدعو واحد على الأقل'),
     minister_invitees: z.array(inviteeFormRowSchema).optional().default([]),
-    proposer_user_ids: z.array(z.string()).optional().default([]),
+    proposer_object_guids: z.array(z.string()).optional().default([]),
   })
   .refine(
     (data) => {
