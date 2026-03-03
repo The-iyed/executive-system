@@ -956,8 +956,14 @@ export const closeDirective = async (_directiveId: string, payload: CreateDirect
   await axiosInstance.post(`/api/external-directives/close`, payload);
 };
 
-export const cancelDirective = async (_directiveId: string, payload: CreateDirectivePayload): Promise<void> => {
-  await axiosInstance.post(`/api/minister-directives/${_directiveId}/request-meeting`, payload);
+/** POST /api/minister-directives/{directive_id}/take-directive – Take Directive (الأخذ بالتوجيه) */
+export const takeDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/minister-directives/${directiveId}/take-directive`, {});
+};
+
+/** POST /api/minister-directives/{directive_id}/request-meeting – Request Meeting From Directive (طلب إجتماع) */
+export const requestMeetingFromDirective = async (directiveId: string): Promise<void> => {
+  await axiosInstance.post(`/api/minister-directives/${directiveId}/request-meeting`, {});
 };
 
 // Consultation Records API
