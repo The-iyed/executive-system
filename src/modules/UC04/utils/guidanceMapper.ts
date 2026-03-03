@@ -40,8 +40,11 @@ export const mapGuidanceRequestToCardData = (
     title: request.meeting_title || request.meeting_subject,
     date: formatDateArabic(dateToUse),
     coordinator: request.submitter_name ?? undefined,
-    coordinatorAvatar: undefined, // API doesn't provide avatar
+    coordinatorAvatar: undefined,
     status: status,
+    requestNumber: request.request_number,
+    meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
+    meetingDate: request.scheduled_at ? formatDateArabic(request.scheduled_at) : undefined,
     statusLabel: statusLabel,
     location: request.meeting_channel,
   };
