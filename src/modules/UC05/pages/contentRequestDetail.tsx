@@ -28,7 +28,7 @@ import {
   StickyNote,
 } from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic } from '@/modules/shared/utils';
-import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, FormAsyncSelectV2, FormDatePicker, type MeetingInfoData, type OptionType } from '@/modules/shared/components';
+import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, FormAsyncSelectV2, FormDatePicker, Mou7tawaContentTab, type MeetingInfoData, type OptionType } from '@/modules/shared/components';
 import {
   MeetingStatus,
   MeetingStatusLabels,
@@ -999,204 +999,44 @@ const ContentRequestDetail: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'content' && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4 w-full mx-auto ">
-                <h2
-                  className="text-lg font-bold text-right text-[#101828]"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '28px',
+          {activeTab === 'content' && (() => {
+            const attachments = contentRequest?.attachments ?? [];
+            const presFiles = attachments.filter((a: Attachment) => a.is_presentation).map((a: Attachment) => ({
+              id: a.id,
+              file_name: a.file_name,
+              file_size: a.file_size ?? 0,
+              file_type: a.file_type ?? '',
+              blob_url: a.blob_url ?? null,
+            }));
+            const optFiles = attachments.filter((a: Attachment) => a.is_additional).map((a: Attachment) => ({
+              id: a.id,
+              file_name: a.file_name,
+              file_size: a.file_size ?? 0,
+              file_type: a.file_type ?? '',
+              blob_url: a.blob_url ?? null,
+            }));
+            const showContentOfficerNotes =
+              meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT && contentRequest.content_officer_notes;
+
+            return (
+              <div className="flex flex-col gap-6 w-full" dir="rtl">
+                <Mou7tawaContentTab
+                  presentationFiles={presFiles}
+                  optionalFiles={optFiles}
+                  attachmentTimingValue=""
+                  notesValue={getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
+                  contentOfficerNotes={showContentOfficerNotes ? contentRequest.content_officer_notes ?? null : null}
+                  readOnly
+                  formatDate={formatDateArabic}
+                  onView={(file) => {
+                    if (!file.blob_url) return;
+                    setPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
                   }}
-                >
-                  المحتوى
-                </h2>
-
-                {/* العرض التقديمي – same card as meeting detail */}
-                <div className="rounded-2xl border border-[#EAECF0] bg-white shadow-[0px_1px_3px_rgba(16,24,40,0.08),0px_4px_12px_rgba(16,24,40,0.04)]">
-                  <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-l from-[#048F86]/08 to-transparent border-b border-[#EAECF0]">
-                    <div className="w-8 h-8 rounded-lg bg-[#048F86]/12 flex items-center justify-center">
-                      <FileCheck className="w-4 h-4 text-[#048F86]" strokeWidth={1.8} />
-                    </div>
-                    <label className="text-sm font-bold text-[#344054]" style={{ fontFamily: "'Almarai', sans-serif" }}>العرض التقديمي</label>
-                  </div>
-                  <div className="p-5 min-h-[140px]" style={{ minHeight: '140px' }}>
-                    <TooltipProvider>
-                      <div className="flex flex-col max-w-[800px] gap-4">
-                        {presentationAttachments.map((att: Attachment) => (
-                          <div key={att.id} className="flex flex-row gap-4 justify-start items-center flex-wrap">
-                            <div className="flex flex-row items-center flex-1 min-w-0 px-4 py-3 gap-3 h-[56px] bg-white border border-[#009883]/40 rounded-xl shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:border-[#009883] hover:shadow-[0px_2px_8px_rgba(4,143,134,0.12)] transition-all duration-200">
-                              {att.file_type?.toLowerCase() === 'pdf' ? <img src={pdfIcon} alt="pdf" className="max-h-10 object-contain flex-shrink-0" /> : <div className="w-10 h-10 bg-[#E2E5E7] rounded-lg flex items-center justify-center text-xs font-semibold text-[#B04135] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                              <div className="flex flex-col items-end min-w-0 flex-1">
-                                <span className="text-sm font-medium text-[#344054] truncate w-full text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>{att.file_name}</span>
-                                <span className="text-xs text-[#475467]" style={{ fontFamily: "'Almarai', sans-serif" }}>{Math.round((att.file_size || 0) / 1024)} KB</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <div className="flex items-center rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-0.5">
-                                  {att.replaces_attachment_id != null && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setCompareResult(null);
-                                            setCompareErrorDetail(null);
-                                            setIsCompareModalOpen(true);
-                                            compareByAttachmentMutation.mutate(att.id);
-                                          }}
-                                          disabled={compareByAttachmentMutation.isPending}
-                                          className="p-2 rounded-md hover:bg-[#009883]/10 text-[#009883] disabled:opacity-50 transition-colors"
-                                        >
-                                          <Scale className="w-4 h-4" strokeWidth={1.26} />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="text-right">
-                                        <p>تقييم الاختلاف بين العروض</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                </div>
-                                {att.blob_url && (
-                                  <>
-                                    <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#009883]/10 text-[#009883] transition-colors"><Download className="w-4 h-4" /></a>
-                                    <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F2F4F7] text-[#475467] transition-colors"><Eye className="w-4 h-4" /></button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                insightsAbortControllerRef.current?.abort();
-                                insightsAbortControllerRef.current = new AbortController();
-                                setInsightsModalAttachment({ id: att.id, file_name: att.file_name });
-                                insightsMutation.reset();
-                                insightsMutation.mutate({
-                                  attachmentId: att.id,
-                                  signal: insightsAbortControllerRef.current.signal,
-                                });
-                              }}
-                              disabled={insightsMutation.isPending}
-                              className="relative flex flex-row justify-end items-center gap-2 w-fit min-w-[119px] h-[41px] rounded-[22.8393px] flex-shrink-0 text-white font-bold overflow-hidden box-border px-4 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]"
-                              style={{
-                                fontFamily: "'Almarai', sans-serif",
-                                fontSize: '11px',
-                                lineHeight: '14px',
-                                background: '#34C3BA',
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(4, 143, 134, 0.2), 0 4px 12px rgba(4, 143, 134, 0.25), 0 8px 24px rgba(4, 143, 134, 0.15)',
-                              }}
-                            >
-                              <span className="absolute left-0 top-1/2 pointer-events-none w-[86px] h-[74px] rounded-full opacity-80 -translate-y-1/2 -translate-x-1/3" style={{ background: '#87F8F8', filter: 'blur(9.41px)' }} aria-hidden />
-                              <span className="relative z-10 flex items-center gap-2">
-                                ملاحظات بالذكاء الاصطناعي
-                                <svg className="w-5 h-5 flex-shrink-0 animate-sparkle-stars inline-block" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M2.25398 4.43574C2.31098 4.48358 2.38555 4.51001 2.46286 4.50976C2.53984 4.50958 2.61395 4.48297 2.67057 4.43517C2.72718 4.38737 2.76217 4.32187 2.76864 4.25158C2.84188 3.81496 3.06712 3.41171 3.41081 3.10189C3.7545 2.79208 4.19824 2.59229 4.67592 2.5323C4.7458 2.51964 4.80871 2.48515 4.85393 2.43473C4.89915 2.38431 4.92387 2.32107 4.92387 2.25581C4.92387 2.19055 4.89915 2.12731 4.85393 2.07688C4.80871 2.02646 4.7458 1.99197 4.67592 1.97931C4.19728 1.92156 3.7522 1.7225 3.40806 1.41229C3.06392 1.10207 2.83945 0.697576 2.76864 0.260034C2.76264 0.189272 2.72773 0.123188 2.67087 0.0749826C2.61401 0.026777 2.5394 0 2.46193 0C2.38447 0 2.30985 0.026777 2.253 0.0749826C2.19614 0.123188 2.16123 0.189272 2.15523 0.260034C2.08199 0.696656 1.85675 1.09991 1.51306 1.40972C1.16937 1.71954 0.725625 1.91932 0.247945 1.97931C0.178069 1.99197 0.115154 2.02646 0.0699358 2.07688C0.024718 2.12731 0 2.19055 0 2.25581C0 2.32107 0.024718 2.38431 0.0699358 2.43473C0.115154 2.48515 0.178069 2.51964 0.247945 2.5323C0.72659 2.59006 1.17167 2.78911 1.51581 3.09933C1.85995 3.40955 2.08442 3.81404 2.15523 4.25158C2.16172 4.32216 2.19698 4.3879 2.25398 4.43574Z" fill="white"/>
-                                  <path d="M8.89539 12.4012C8.82392 12.4014 8.75502 12.377 8.70255 12.3328C8.65008 12.2887 8.61793 12.2282 8.61257 12.1634C8.59673 11.974 8.16938 7.50891 3.17558 6.48248C3.11281 6.46975 3.0567 6.43796 3.01648 6.39235C2.97626 6.34675 2.95435 6.29004 2.95435 6.23159C2.95435 6.17315 2.97626 6.11644 3.01648 6.07083C3.0567 6.02522 3.11281 5.99343 3.17558 5.98071C8.17985 4.95248 8.60861 0.346806 8.61228 0.299765C8.61778 0.235032 8.65003 0.174589 8.70255 0.130576C8.75506 0.0865641 8.82396 0.0622444 8.89539 0.062502C8.96691 0.0623238 9.03585 0.0867798 9.08833 0.130947C9.1408 0.175113 9.17292 0.235709 9.17821 0.300536C9.19405 0.489987 9.6214 4.95505 14.6152 5.98148C14.678 5.99421 14.7341 6.026 14.7743 6.0716C14.8145 6.11721 14.8364 6.17392 14.8364 6.23236C14.8364 6.29081 14.8145 6.34752 14.7743 6.39313C14.7341 6.43873 14.678 6.47052 14.6152 6.48325C9.61093 7.51148 9.18217 12.1171 9.1785 12.1642C9.17293 12.2289 9.14065 12.2893 9.08814 12.3332C9.03563 12.3772 8.96678 12.4015 8.89539 12.4012ZM7.94424 9.21753C8.70255 5.50911 8.61228 6.39236 8.70255 4.68951C9.16327 3.26696 10.5236 5.25548 13.5337 6.23185C10.5428 5.26172 12.5721 5.98071 8.89539 5.50911C8.31931 7.42187 8.70255 6.07083 7.94424 9.21753Z" fill="white"/>
-                                  <path d="M2.53536 10.8913C2.61385 10.9631 2.72031 11.0035 2.83131 11.0035C2.94231 11.0035 3.04876 10.9631 3.12725 10.8913C3.20574 10.8194 3.24983 10.7219 3.24983 10.6202V9.85354C3.24983 9.75188 3.20574 9.65438 3.12725 9.58249C3.04876 9.5106 2.94231 9.47021 2.83131 9.47021C2.72031 9.47021 2.61385 9.5106 2.53536 9.58249C2.45687 9.65438 2.41278 9.75188 2.41278 9.85354V10.6202C2.41278 10.7219 2.45687 10.8194 2.53536 10.8913Z" fill="white"/>
-                                  <path d="M1.15719 11.7702H1.99425C2.10525 11.7702 2.2117 11.7298 2.29019 11.6579C2.36868 11.586 2.41278 11.4885 2.41278 11.3869C2.41278 11.2852 2.36868 11.1877 2.29019 11.1158C2.2117 11.0439 2.10525 11.0035 1.99425 11.0035H1.15719C1.04619 11.0035 0.939736 11.0439 0.861247 11.1158C0.782758 11.1877 0.738663 11.2852 0.738663 11.3869C0.738663 11.4885 0.782758 11.586 0.861247 11.6579C0.939736 11.7298 1.04619 11.7702 1.15719 11.7702Z" fill="white"/>
-                                  <path d="M2.53536 13.1912C2.61385 13.2631 2.72031 13.3035 2.83131 13.3035C2.94231 13.3035 3.04876 13.2631 3.12725 13.1912C3.20574 13.1193 3.24983 13.0218 3.24983 12.9202V12.1535C3.24983 12.0519 3.20574 11.9544 3.12725 11.8825C3.04876 11.8106 2.94231 11.7702 2.83131 11.7702C2.72031 11.7702 2.61385 11.8106 2.53536 11.8825C2.45687 11.9544 2.41278 12.0519 2.41278 12.1535V12.9202C2.41278 13.0218 2.45687 13.1193 2.53536 13.1912Z" fill="white"/>
-                                  <path d="M3.66836 11.7702H4.50542C4.61642 11.7702 4.72288 11.7298 4.80137 11.6579C4.87986 11.586 4.92395 11.4885 4.92395 11.3869C4.92395 11.2852 4.87986 11.1877 4.80137 11.1158C4.72288 11.0439 4.61642 11.0035 4.50542 11.0035H3.66836C3.55736 11.0035 3.45091 11.0439 3.37242 11.1158C3.29393 11.1877 3.24983 11.2852 3.24983 11.3869C3.24983 11.4885 3.29393 11.586 3.37242 11.6579C3.45091 11.7298 3.55736 11.7702 3.66836 11.7702Z" fill="white"/>
-                                </svg>
-                              </span>
-                            </button>
-                          </div>
-                        ))}
-                        {presentationAttachments.length === 0 && (
-                          <div className="flex flex-col items-center justify-center py-12 px-6 rounded-xl border-2 border-dashed border-[#D0D5DD] min-h-[200px]" style={{ backgroundColor: '#F9FAFB', borderColor: '#D0D5DD', minHeight: '200px' }}>
-                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F2F4F7' }}>
-                              <FileCheck className="w-7 h-7" strokeWidth={1.2} style={{ color: '#98A2B3' }} />
-                            </div>
-                            <p className="font-medium text-base mb-1" style={{ fontFamily: "'Almarai', sans-serif", color: '#344054' }}>لا يوجد عرض تقديمي</p>
-                          </div>
-                        )}
-                      </div>
-                    </TooltipProvider>
-                  </div>
-                </div>
-
-                {/* متى سيتم إرفاق العرض؟ */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    متى سيتم إرفاق العرض؟
-                  </label>
-                  <p className="text-base text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    -
-                  </p>
-                </div>
-
-                {/* مرفقات اختيارية */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    مرفقات اختيارية
-                  </label>
-                  {additionalAttachments.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      {additionalAttachments.map((att: Attachment) => (
-                        <div
-                          key={att.id}
-                          className="flex flex-row items-center px-4 py-3 gap-4 bg-white border border-[#009883] rounded-[12px]"
-                        >
-                          <div className="flex flex-row items-center gap-3">
-                            {att.file_type?.toLowerCase() === 'pdf' ? (
-                              <img src={pdfIcon} alt="pdf" className="w-10 h-10 object-contain" />
-                            ) : (
-                              <div className="flex items-center justify-center w-10 h-10 bg-[#E2E5E7] rounded-md text-xs font-semibold text-[#B04135]">
-                                {att.file_type?.toUpperCase() || ''}
-                              </div>
-                            )}
-                            <div className="flex flex-col items-end">
-                              <span className="text-sm font-medium text-[#344054] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                {att.file_name}
-                              </span>
-                              <span className="text-xs text-[#475467] text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                                {formatFileSize(att.file_size || 0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-row items-center gap-2 ml-auto">
-                            {att.blob_url && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })}
-                                  className="inline-flex items-center justify-center w-9 h-9 bg-[rgba(71,84,103,0.08)] rounded-md hover:bg-[rgba(71,84,103,0.15)] transition-colors"
-                                >
-                                  <Eye className="w-5 h-5 text-[#475467]" />
-                                </button>
-                                <a
-                                  href={att.blob_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="relative inline-flex items-center justify-center w-9 h-9 bg-[rgba(0,152,131,0.09)] rounded-md hover:bg-[rgba(0,152,131,0.15)] transition-colors"
-                                >
-                                  <Download className="w-5 h-5 text-[#009883]" />
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-base text-gray-500 text-right py-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      لا توجد مرفقات اختيارية
-                    </p>
-                  )}
-                </div>
-
-                {/* ملاحظات */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    ملاحظات
-                  </label>
-                  <p className="text-base text-gray-900 text-right whitespace-pre-wrap" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    {getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
-                  </p>
-                </div>
+                  onDownload={(file) => file.blob_url && window.open(file.blob_url, '_blank')}
+                />
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'notes' && (
             <div className="flex flex-col gap-5 w-full max-w-[900px] mx-auto" dir="rtl">
@@ -1241,194 +1081,174 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'invitees' && (
-            <div className="flex flex-col gap-6 w-full max-w-[1321px] mx-auto" dir="rtl">
-              {/* قائمة المدعوين (مقدّم الطلب) */}
-              <div className="flex flex-col gap-2">
-                <h2
-                  className="text-right"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '16px',
-                    lineHeight: '38px',
-                    color: '#101828',
-                  }}
-                >
-                  قائمة المدعوين (مقدّم الطلب)
-                </h2>
-                {contentRequest.invitees && contentRequest.invitees.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
-                    {contentRequest.invitees.map((invitee: any, idx: number) => {
-                      const name = invitee.external_name || invitee.user_id || '-';
-                      const position = invitee.position || '-';
-                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
-                      const email = invitee.external_email || '-';
-                      const mobile = invitee.mobile || '-';
-                      const v = invitee.attendance_mechanism;
-                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
-                      const isConsultant = invitee.is_consultant === true;
-                      return (
-                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
-                            <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
-                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
-                            </button>
-                          </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                            <div className="flex flex-row items-center justify-between gap-3">
-                              <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                  <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                  <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
-                                <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-row items-center gap-2.5 w-full">
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {sector !== '-' && (
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  <div className="flex flex-col gap-1 min-w-0">
-                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+            <div className="flex flex-col gap-6 w-full" dir="rtl">
+              {/* ─── قائمة المدعوين (مقدّم الطلب) ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-[#1F2937]">قائمة المدعوين (مقدّم الطلب)</span>
+                      {(contentRequest.invitees?.length ?? 0) > 0 && (
+                        <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
+                          {contentRequest.invitees!.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    لا توجد قائمة مدعوين من مقدّم الطلب
-                  </p>
-                )}
-              </div>
+                </div>
+                <div className="p-0">
+                  {contentRequest.invitees && contentRequest.invitees.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {contentRequest.invitees.map((invitee: any, idx: number) => {
+                            const isConsultant = invitee.is_consultant === true;
+                            const name = invitee.external_name || invitee.user_id || '-';
+                            const position = invitee.position || '-';
+                            const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
+                            const email = invitee.external_email || '-';
+                            const mobile = invitee.mobile || '-';
+                            const v = invitee.attendance_mechanism;
+                            const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                            const accessLabel = invitee.access_permission === 'VIEW' ? 'اطلاع' : invitee.access_permission === 'EDIT' ? 'تعديل' : invitee.access_permission || 'اطلاع';
+                            return (
+                              <tr key={invitee.id || idx} className={`transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                      {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{position}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{sector}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151] truncate max-w-[180px]">{email}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]" dir="ltr">{mobile}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${v === 'VIRTUAL' || v === 'عن بعد' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>
+                                    {attendanceLabel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-[#ECFDF5] text-[#059669]">
+                                    {accessLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center text-[#6B7280] text-sm">لا توجد قائمة مدعوين من مقدّم الطلب</div>
+                  )}
+                </div>
+              </section>
 
-              {/* قائمة المدعوين (الوزير) */}
-              <div className="flex flex-col gap-2">
-                <h2
-                  className="text-right"
-                  style={{
-                    fontFamily: "'Almarai', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '16px',
-                    lineHeight: '38px',
-                    color: '#101828',
-                  }}
-                >
-                  قائمة المدعوين (الوزير)
-                </h2>
-                {contentRequest.minister_attendees && contentRequest.minister_attendees.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 min-[1640px]:grid-cols-3 gap-4">
-                    {contentRequest.minister_attendees.map((invitee: any, idx: number) => {
-                      const name = invitee.external_name || invitee.user_id || '-';
-                      const position = invitee.position || '-';
-                      const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
-                      const email = invitee.external_email || '-';
-                      const mobile = invitee.mobile || '-';
-                      const v = invitee.attendance_mechanism;
-                      const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
-                      const accessLabel = invitee.access_permission === 'VIEW' ? 'صلاحية الاطلاع' : invitee.access_permission === 'EDIT' ? 'صلاحية التعديل' : invitee.access_permission || 'صلاحية الاطلاع';
-                      const isConsultant = invitee.is_consultant === true;
-                      return (
-                        <div key={invitee.id || idx} className={`group relative overflow-hidden border-[1.5px] ${isConsultant ? 'bg-[rgba(4,143,134,0.04)] border-[#048F86]' : 'bg-white border-[rgba(230,236,245,1)]'}`} style={{ borderRadius: '16px', boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)' }}>
-                          <div className="absolute left-0 top-0 bottom-0 z-10 flex w-0 items-center justify-center overflow-hidden transition-all duration-200 ease-in-out group-hover:w-12 hidden" style={{ borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px', background: 'rgba(159, 183, 167, 0.1)', backdropFilter: 'blur(16.62px)' }}>
-                            <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/40" aria-label="حذف">
-                              <Trash2 className="h-[18px] w-[18px] text-[#D92D20]" strokeWidth={1.8} />
-                            </button>
-                          </div>
-                          <div className="flex flex-col gap-4 p-5" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                            <div className="flex flex-row items-center justify-between gap-3">
-                              <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
-                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F2F4F7] border-2 border-[rgba(217,217,217,1)]">
-                                  <User className="h-5 w-5 text-[#98A2B3]" strokeWidth={1.5} />
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[14px] font-bold text-[#101828] truncate leading-5">{name}</span>
-                                  <span className="text-[12px] text-[#667085] leading-4">{position}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-row items-center gap-1.5 flex-shrink-0">
-                                <span className="inline-flex items-center rounded-full bg-[#E6F9F8] px-2.5 py-1 text-[13px] text-[#048F86] whitespace-nowrap">{accessLabel}</span>
-                                <span className="inline-flex items-center rounded-full bg-[#EDF6FF] px-2.5 py-1 text-[13px] text-[#4281BF] whitespace-nowrap">{attendanceLabel}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-row items-center gap-2.5 w-full">
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Mail className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">البريد الإلكتروني</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4">{email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-1 max-w-[55%] flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                  <Phone className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                </div>
-                                <div className="flex flex-col gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-700 leading-3">الجوال</span>
-                                  <span className="text-[12px] text-gray-700 truncate leading-4" dir="ltr">{mobile}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {sector !== '-' && (
-                              <div className="flex flex-row items-center gap-2.5 w-full">
-                                <div className="flex flex-1 flex-row items-center gap-2.5 px-3 py-2" style={{ borderRadius: '12px', background: '#FFFF', boxShadow: '0px 3.79px 18.75px 0px rgba(0, 0, 0, 0.08)' }}>
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ background: '#FFFFFF', border: '1px solid #EAECF0', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}>
-                                    <Building2 className="h-4 w-4 text-[#020617]" strokeWidth={2} />
-                                  </div>
-                                  <div className="flex flex-col gap-1 min-w-0">
-                                    <span className="text-[10px] text-gray-700 leading-3">الجهة</span>
-                                    <span className="text-[12px] text-gray-700 truncate leading-4">{sector}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+              {/* ─── قائمة المدعوين (الوزير) ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-[#1F2937]">قائمة المدعوين (الوزير)</span>
+                      {(contentRequest.minister_attendees?.length ?? 0) > 0 && (
+                        <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
+                          {contentRequest.minister_attendees!.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-base text-gray-500 text-right py-4" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    لا توجد قائمة مدعوين من جهة الوزير
-                  </p>
-                )}
-              </div>
+                </div>
+                <div className="p-0">
+                  {contentRequest.minister_attendees && contentRequest.minister_attendees.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
+                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
+                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F9FAFB]">
+                          {contentRequest.minister_attendees.map((invitee: any, idx: number) => {
+                            const isConsultant = invitee.is_consultant === true;
+                            const name = invitee.external_name || invitee.user_id || '-';
+                            const position = invitee.position || '-';
+                            const sector = (invitee.sector && SectorLabels[invitee.sector as keyof typeof SectorLabels]) || invitee.sector || '-';
+                            const email = invitee.external_email || '-';
+                            const mobile = invitee.mobile || '-';
+                            const v = invitee.attendance_mechanism;
+                            const attendanceLabel = v === 'VIRTUAL' || v === 'عن بعد' ? 'عن بعد' : v === 'PHYSICAL' || v === 'حضوري' ? 'حضوري' : v || '-';
+                            const accessLabel = invitee.access_permission === 'VIEW' ? 'اطلاع' : invitee.access_permission === 'EDIT' ? 'تعديل' : invitee.access_permission || 'اطلاع';
+                            return (
+                              <tr key={invitee.id || idx} className={`transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
+                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
+                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
+                                      {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{position}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]">{sector}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151] truncate max-w-[180px]">{email}</td>
+                                <td className="px-4 py-3 text-sm text-[#374151]" dir="ltr">{mobile}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${v === 'VIRTUAL' || v === 'عن بعد' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>
+                                    {attendanceLabel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-[#ECFDF5] text-[#059669]">
+                                    {accessLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center text-[#6B7280] text-sm">لا توجد قائمة مدعوين من جهة الوزير</div>
+                  )}
+                </div>
+              </section>
             </div>
           )}
 
@@ -1440,7 +1260,18 @@ const ContentRequestDetail: React.FC = () => {
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
                 <>
-                 
+                  {/* Section header matching UC01/UC02 style */}
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <MessageSquare className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-[#1F2937]">سجل الاستشارات</span>
+                      <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
+                        {consultationRecords.items.length}
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex flex-col gap-4" dir="rtl">
                     {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
