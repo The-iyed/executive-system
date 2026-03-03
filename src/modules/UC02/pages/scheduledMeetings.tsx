@@ -216,28 +216,6 @@ const ScheduledMeetings: React.FC = () => {
         </div>
       </div>
 
-      {/* STATS CARDS */}
-      <div className="px-6 pb-4">
-        <div className="grid grid-cols-2 gap-3">
-          {statsCards.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[var(--color-base-gray-100)]"
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: stat.bg }}
-              >
-                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-[var(--color-text-gray-500)]">{stat.label}</p>
-                <p className="text-lg font-bold text-[var(--color-text-gray-900)]">{stat.value}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* CONTENT */}
       <div className="flex-1 px-6 pb-6">
