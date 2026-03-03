@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, LayoutList, LayoutGrid, Inbox, AlertCircle } from 'lucide-react';
-import { DataTable, Pagination, ViewType, CardsGrid, cn } from '@/modules/shared';
+import { DataTable, Pagination, ViewType, CardsGrid } from '@/modules/shared';
+import { cn } from '@/lib/ui';
 import { Icon } from '@iconify/react';
 import { PAGINATION, createTableColumns } from '../../utils';
 import { usePreviousMeetings } from '../../hooks';
