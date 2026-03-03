@@ -71,6 +71,41 @@ export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
   ],
 });
 
+/** Minister invitees table columns for UC01 (قائمة المدعوين - الوزير). */
+export const MINISTER_ATTENDEES_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: '#', width: 'w-14 shrink-0' },
+  { id: 'external_name', header: 'الإسم', type: 'text', placeholder: 'الإسم', width: 'w-[260px]' },
+  { id: 'position', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'w-[200px]' },
+  { id: 'external_email', header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: 'w-[240px]' },
+  { id: 'mobile', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'w-[180px]' },
+  {
+    id: 'attendance_channel',
+    header: 'آلية الحضور',
+    type: 'select',
+    selectOptions: [
+      { value: 'PHYSICAL', label: 'حضوري' },
+      { value: 'REMOTE', label: 'عن بُعد' },
+    ],
+    placeholder: 'حضوري / عن بُعد',
+    width: 'w-[180px]',
+  },
+  {
+    id: 'is_required',
+    header: 'مطلوب',
+    type: 'switch',
+    label: false,
+    width: 'w-[120px]',
+  },
+  {
+    id: 'justification',
+    header: 'المبرر',
+    type: 'text',
+    placeholder: 'المبرر',
+    width: 'w-[260px]',
+  },
+  { id: 'action', header: '', width: 'w-14 shrink-0' },
+];
+
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
   { id: 'step2', label: 'المحتوى' },

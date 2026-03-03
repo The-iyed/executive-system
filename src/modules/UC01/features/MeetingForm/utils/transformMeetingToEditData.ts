@@ -78,6 +78,8 @@ export interface MeetingForEdit {
   invitees?: Array<{
     id: string;
     user_id?: string | null;
+    /** New identifier preferred when present (directory object GUID). */
+    object_guid?: string | null;
     external_email?: string | null;
     external_name?: string | null;
     position?: string | null;
@@ -111,6 +113,7 @@ function mapMeetingInviteeToFormData(inv: MeetingInvitee): InviteeFormData {
   const invAny = inv as {
     id: string;
     user_id?: string | null;
+    object_guid?: string | null;
     external_email?: string | null;
     external_name?: string | null;
     position?: string | null;
@@ -131,7 +134,7 @@ function mapMeetingInviteeToFormData(inv: MeetingInvitee): InviteeFormData {
       attendance_mechanism: AttendanceMechanism.PHYSICAL,
     };
   }
-  const userId = invAny.user_id ?? undefined;
+  const objectGuid = (invAny.object_guid ?? invAny.user_id) ?? undefined;
   return {
     id: invAny.id,
     name: invAny.external_name ?? '',
@@ -140,9 +143,9 @@ function mapMeetingInviteeToFormData(inv: MeetingInvitee): InviteeFormData {
     email: invAny.external_email ?? '',
     sector: invAny.sector ?? '',
     is_required: invAny.is_required ?? false,
-    user_id: userId,
+    object_guid: objectGuid,
     username: undefined,
-    disabled: !!userId,
+    disabled: !!objectGuid,
     attendance_mechanism:
       (invAny.attendance_mechanism as AttendanceMechanism | null | undefined) ?? AttendanceMechanism.PHYSICAL,
   };
