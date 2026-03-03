@@ -129,6 +129,7 @@ export const mapUserToStep3InviteeRow = (
     email: user.email ?? '',
     attendance_mode: 'IN_PERSON',
     view_permission: false,
+    is_consultant: false,
     ...(options.isOwner && { isOwner: true }),
     _objectGuid: objectGuid,
   } as InviteeFormRow;
@@ -144,5 +145,6 @@ export const createEmptyStep3InviteeRow = (): InviteeFormRow => ({
   email: '',
   attendance_mode: 'IN_PERSON',
   view_permission: false,
+  is_consultant: false,
   isOwner: false,
 });

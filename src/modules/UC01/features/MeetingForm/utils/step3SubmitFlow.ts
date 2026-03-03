@@ -50,6 +50,7 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
         sector: invitee.sector?.trim() || '',
         attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
+        is_consultant: invitee.is_consultant ?? false,
       };
     }
     return {
@@ -61,6 +62,7 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
       attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
       item_number: index + 1,
       is_required: invitee.is_required || false,
+      is_consultant: invitee.is_consultant ?? false,
     };
   }) ?? [];
 
