@@ -27,6 +27,9 @@ import {
   FileText,
   CalendarClock,
   StickyNote,
+  Users,
+  Search,
+  X,
 } from 'lucide-react';
 import { formatDateArabic, formatDateTimeArabic, formatTimeAgoArabic } from '@/modules/shared/utils';
 import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, FormAsyncSelectV2, FormDatePicker, Mou7tawaContentTab, type MeetingInfoData, type OptionType } from '@/modules/shared/components';
@@ -207,6 +210,7 @@ const ContentRequestDetail: React.FC = () => {
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
   const [consultantSearch, setConsultantSearch] = useState<string>('');
+  const [showConsultantPicker, setShowConsultantPicker] = useState(false);
 
   // LLM notes/insights modal for presentation attachment
   const [insightsModalAttachment, setInsightsModalAttachment] = useState<{ id: string; file_name: string } | null>(null);
@@ -952,16 +956,7 @@ const ContentRequestDetail: React.FC = () => {
           onBack={() => navigate(-1)}
           statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
           primaryAction={
-            meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO ? (
-              <button
-                type="button"
-                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-[#038F86] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleRequestConsultation}
-              >
-                <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
-                طلب استشارة
-              </button>
-            ) : undefined
+            undefined
           }
           tabs={tabs}
           activeTab={activeTab}
@@ -1255,16 +1250,16 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col w-full rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+            <div className="flex flex-col w-full max-h-[700px] rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
               {/* Chat messages area */}
-              <div className="flex-1 min-h-0 overflow-y-auto max-h-[600px]">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {isLoadingConsultationRecords ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-gray-600">جاري التحميل...</div>
                   </div>
                 ) : consultationRecords && consultationRecords.items.length > 0 ? (
                   <div className="flex flex-col pb-4">
-                    {[...consultationRecords.items].reverse().map((row: ConsultationRecord, index: number) => {
+                    {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
                       const recordType = row.type || row.consultation_type || '';
                       const recordQuestion = row.question || row.consultation_question || '';
@@ -1382,6 +1377,144 @@ const ContentRequestDetail: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Inline chat input – consultant picker + question (like UC02) */}
+              {meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO && (
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                  {/* Consultant picker (expandable) */}
+                  {showConsultantPicker && (
+                    <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#344054]">اختر المستشار</span>
+                        {selectedConsultantId && (
+                          <span className="text-xs text-[#048F86] font-medium bg-[#048F86]/10 px-2 py-0.5 rounded-full">
+                            1 مستشار
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative mb-2">
+                        <Input
+                          type="text"
+                          value={consultantSearch}
+                          onChange={(e) => setConsultantSearch(e.target.value)}
+                          placeholder="ابحث بالاسم أو البريد..."
+                          className="h-9 text-right text-sm rounded-lg border-[#E5E7EB] bg-white pr-3 pl-8"
+                        />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                      </div>
+                      <div className="max-h-[160px] overflow-y-auto rounded-lg border border-[#E5E7EB] bg-white">
+                        {isLoadingConsultants ? (
+                          <div className="py-4 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#048F86] mx-auto" />
+                          </div>
+                        ) : consultants.length === 0 ? (
+                          <div className="py-4 text-center text-sm text-[#9CA3AF]">لا توجد نتائج</div>
+                        ) : (
+                          <div className="py-1">
+                            {consultants.map((c) => {
+                              const isSelected = selectedConsultantId === c.id;
+                              return (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => setSelectedConsultantId(isSelected ? '' : c.id)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-right transition-colors hover:bg-[#F9FAFB] ${isSelected ? 'bg-[#048F86]/5' : ''}`}
+                                >
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-[#048F86] border-[#048F86]' : 'border-[#D1D5DB] bg-white'}`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                                        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-[#048F86]/15 text-[#048F86]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                                      {c.first_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <span className="text-sm text-[#1F2937]">{c.first_name} {c.last_name}</span>
+                                    <span className="text-[11px] text-[#9CA3AF] mr-1.5">{c.email}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {/* Selected consultant chip */}
+                      {selectedConsultantId && (() => {
+                        const selected = consultants.find((c) => c.id === selectedConsultantId);
+                        return selected ? (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="inline-flex items-center gap-1 bg-[#048F86]/10 text-[#048F86] text-xs font-medium px-2 py-1 rounded-full">
+                              {selected.first_name} {selected.last_name}
+                              <button type="button" onClick={() => setSelectedConsultantId('')} className="hover:text-[#037A72]">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Input row */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!selectedConsultantId || !consultationNotes.trim()) return;
+                      handleSubmitConsultation('submit');
+                    }}
+                    className="flex items-end gap-3 px-5 py-4"
+                  >
+                    {/* Toggle consultant picker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowConsultantPicker((v) => !v)}
+                      className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors border relative ${showConsultantPicker ? 'bg-[#048F86]/10 border-[#048F86]/30 text-[#048F86]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#048F86]/40 hover:text-[#048F86]'}`}
+                      title="اختيار المستشار"
+                    >
+                      <Users className="w-5 h-5" />
+                      {selectedConsultantId && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#048F86] text-white text-[9px] font-bold flex items-center justify-center">
+                          1
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex-1 relative">
+                      <Textarea
+                        value={consultationNotes}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationNotes(e.target.value)}
+                        placeholder={!selectedConsultantId ? 'اختر المستشار أولاً ثم اكتب سؤالك...' : 'اكتب سؤال الاستشارة...'}
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (selectedConsultantId && consultationNotes.trim()) {
+                              handleSubmitConsultation('submit');
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!selectedConsultantId || !consultationNotes.trim() || submitConsultationMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {submitConsultationMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
 
@@ -2341,113 +2474,7 @@ const ContentRequestDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Consultation Request Modal */}
-      <Dialog open={isConsultationModalOpen} onOpenChange={setIsConsultationModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle
-              className="text-right"
-              style={{ fontFamily: "'Almarai', sans-serif" }}
-            >
-              طلب استشارة محتوى
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
-            {/* Consultant Select */}
-            <div className="flex flex-col gap-2">
-              <label
-                className="text-sm font-medium text-gray-700 text-right"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                المستشار *
-              </label>
-              <Select
-                value={selectedConsultantId}
-                onValueChange={setSelectedConsultantId}
-              >
-                <SelectTrigger
-                  className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  <SelectValue placeholder={isLoadingConsultants ? 'جاري التحميل...' : 'اختر المستشار'} />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  {/* Search inside dropdown */}
-                  <div className="px-2 py-1 border-b border-gray-200 sticky top-0 bg-white z-10">
-                    <Input
-                      type="text"
-                      value={consultantSearch}
-                      onChange={(e) => setConsultantSearch(e.target.value)}
-                      placeholder="ابحث عن المستشار بالاسم أو البريد"
-                      className="h-9 text-right"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    />
-                  </div>
-                  {consultants.length === 0 && !isLoadingConsultants ? (
-                    <SelectItem disabled value="__no_results__">
-                      لا توجد نتائج
-                    </SelectItem>
-                  ) : (
-                    consultants.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {`${user.first_name} ${user.last_name} - ${user.email}`}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Notes Textarea */}
-            <div className="flex flex-col gap-2">
-              <label
-                className="text-sm font-medium text-gray-700 text-right"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                الملاحظات *
-              </label>
-              <Textarea
-                value={consultationNotes}
-                onChange={(e) => setConsultationNotes(e.target.value)}
-                placeholder="أدخل الملاحظات...."
-                className="min-h-[150px] resize-none"
-                dir="rtl"
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex flex-row justify-between gap-2 sm:justify-between">
-            <button
-              type="button"
-              onClick={() => setIsConsultationModalOpen(false)}
-              className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Almarai', sans-serif" }}
-              disabled={submitConsultationMutation.isPending}
-            >
-              إلغاء
-            </button>
-            <div className="flex flex-row justify-between items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleSubmitConsultation('draft')}
-                disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
-                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                {submitConsultationMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSubmitConsultation('submit')}
-                disabled={submitConsultationMutation.isPending || !consultationNotes.trim() || !selectedConsultantId}
-                className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
-              >
-                {submitConsultationMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}
-              </button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Consultation Request Modal – removed, now inline in chat */}
 
       {/* Drafts Modal */}
       <Dialog open={isDraftsModalOpen} onOpenChange={setIsDraftsModalOpen}>
