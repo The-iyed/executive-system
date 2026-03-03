@@ -124,14 +124,13 @@ export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
   viewPermissionFieldId: 'view_permission',
 });
 
-/** Minister invitees: email first (AD search), then الإسم، المنصب، الجوال، الجهة، آلية الحضور، صلاحية الاطلاع + isOwner */
+/** Minister invitees: email first (AD search), then الإسم، المنصب، الجوال، آلية الحضور، صلاحية الاطلاع، مستشار + isOwner */
 export const MINISTER_INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
   { id: 'itemNumber', header: '#', width: 'w-14 shrink-0' },
   { id: 'email', header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: 'min-w-[220px]' },
   { id: 'full_name', header: 'الإسم', type: 'text', placeholder: 'الإسم', width: 'min-w-[180px]' },
   { id: 'position_title', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'min-w-[160px]' },
   { id: 'mobile_number', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'min-w-[140px]' },
-  { id: 'sector', header: 'الجهة', type: 'text', placeholder: 'الجهة', width: 'min-w-[140px]' },
   {
     id: 'attendance_mode',
     header: 'آلية الحضور',
@@ -141,10 +140,29 @@ export const MINISTER_INVITEES_TABLE_COLUMNS: FormTableColumn[] = [
     width: 'min-w-[140px]',
   },
   { id: 'view_permission', header: 'صلاحية الاطلاع', type: 'switch', label: false, width: 'min-w-[120px]' },
+  { id: 'is_consultant', header: 'مستشار', type: 'switch', label: false, width: 'min-w-[120px]' },
   { id: 'isOwner', header: 'مالك الاجتماع', width: 'min-w-[110px]' },
   { id: 'action', header: '', width: 'w-14 shrink-0' },
 ];
 
+/** Minister invitees without isOwner column (used in UC02 Step3 form table). */
+export const MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER: FormTableColumn[] = [
+  { id: 'itemNumber', header: '#', width: 'w-14 shrink-0' },
+  { id: 'full_name', header: 'الإسم', type: 'text', placeholder: 'الإسم', width: 'w-[300px]' },
+  { id: 'position_title', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'w-[200px]' },
+  { id: 'mobile_number', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'w-[180px]' },
+  {
+    id: 'attendance_mode',
+    header: 'آلية الحضور',
+    type: 'select',
+    selectOptions: [...ATTENDANCE_MODE_OPTIONS],
+    placeholder: 'حضوري / عن بُعد',
+    width: 'w-[180px]',
+  },
+  { id: 'view_permission', header: 'صلاحية الاطلاع', type: 'switch', label: false, width: 'w-[180px]' },
+  { id: 'is_consultant', header: 'مستشار', type: 'switch', label: false, width: 'w-[180px]' },
+  { id: 'action', header: '', width: 'w-14 shrink-0' },
+];
 /** Max hours between now and meeting start without requiring presentation_required to be set when no file is uploaded. */
 export const MAX_ALLOWED_HOURS_WITHOUT_PRESENTATION = 48;
 

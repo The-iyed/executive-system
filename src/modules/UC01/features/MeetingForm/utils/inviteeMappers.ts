@@ -25,6 +25,7 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
       disabled: true, 
       attendance_mechanism:
         (invitee.attendance_mechanism as AttendanceMechanism | null | undefined) ?? AttendanceMechanism.PHYSICAL,
+      is_consultant: (invitee as { is_consultant?: boolean }).is_consultant ?? false,
     };
   }
   
@@ -41,6 +42,7 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
     disabled: false,
     attendance_mechanism:
       (invitee.attendance_mechanism as AttendanceMechanism | null | undefined) ?? AttendanceMechanism.PHYSICAL,
+    is_consultant: (invitee as { is_consultant?: boolean }).is_consultant ?? false,
   };
 };
 
@@ -60,6 +62,7 @@ export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 
     username: user.username || fullName,
     disabled: true,
     attendance_mechanism:user.attendance_mechanism ?? AttendanceMechanism.PHYSICAL,
+    is_consultant: false,
   };
 };
 
