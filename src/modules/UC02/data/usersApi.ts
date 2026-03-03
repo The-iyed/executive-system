@@ -62,10 +62,8 @@ export const searchUsersByEmail = async (
 ): Promise<UsersListResponse> => {
   const queryParams = new URLSearchParams();
 
-  const trimmedEmail = email.trim();
-  if (trimmedEmail) {
-    queryParams.append('email', trimmedEmail);
-  }
+  const trimmedEmail = email.trim() || 'a';
+  queryParams.append('email', trimmedEmail);
   if (skip !== undefined) {
     queryParams.append('skip', skip.toString());
   }
