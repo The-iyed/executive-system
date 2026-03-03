@@ -22,9 +22,8 @@ import {
 } from '../data/consultationsApi';
 import {
   mapConsultationRequestToCardData,
-  mapConsultationRequestToCardViewData,
 } from '../utils/consultationMapper';
-import { ConsultationRequestsGrid, ConsultationRequestCardData } from '../components';
+import { CardsGrid } from '@/modules/shared';
 import { trackEvent } from '@/lib/analytics';
 
 const ITEMS_PER_PAGE = 10;
@@ -73,10 +72,6 @@ const ConsultationRequests: React.FC = () => {
     return requestsResponse.items.map(mapConsultationRequestToCardData);
   }, [requestsResponse]);
 
-  const cardViewRequests: ConsultationRequestCardData[] = useMemo(() => {
-    if (!requestsResponse?.items) return [];
-    return requestsResponse.items.map(mapConsultationRequestToCardViewData);
-  }, [requestsResponse]);
 
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -313,10 +308,10 @@ const ConsultationRequests: React.FC = () => {
                 onRowClick={(row) => navigate(`/consultation-request/${row.id}`)}
               />
             ) : (
-              <ConsultationRequestsGrid
-                requests={cardViewRequests}
-                onView={(request) => navigate(`/consultation-request/${request.id}`)}
-                onDetails={(request) => navigate(`/consultation-request/${request.id}`)}
+              <CardsGrid
+                meetings={requests}
+                onView={(meeting) => navigate(`/consultation-request/${meeting.id}`)}
+                onDetails={(meeting) => navigate(`/consultation-request/${meeting.id}`)}
               />
             )}
 
