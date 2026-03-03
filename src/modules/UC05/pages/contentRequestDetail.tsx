@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useAuth } from '@/modules/auth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -187,6 +188,7 @@ function translateCompareValue(
 const ContentRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [guidanceNotes, setGuidanceNotes] = useState<string>('');
   const [executiveSummaryFile, setExecutiveSummaryFile] = useState<File | null>(null);
