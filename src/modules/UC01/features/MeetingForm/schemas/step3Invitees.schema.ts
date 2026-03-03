@@ -49,12 +49,16 @@ const inviteeSchema = z
     }
   });
 
-/** Minister attendee row (قائمة المدعوين الوزير) – optional, only for UC02 in edit form */
+/** Minister attendee row (قائمة المدعوين الوزير). */
 export const ministerAttendeeRowSchema = z.object({
   id: z.string(),
   external_name: z.string().optional().default(''),
   position: z.string().optional().default(''),
-  external_email: z.string().optional().default(''),
+  external_email: z
+    .string()
+    .email('البريد الإلكتروني غير صحيح')
+    .optional()
+    .or(z.literal('')),
   mobile: z.string().optional().default(''),
   attendance_channel: z.enum(['PHYSICAL', 'REMOTE']).optional().default('PHYSICAL'),
   is_required: z.boolean().optional().default(false),
