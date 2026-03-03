@@ -869,7 +869,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
               </div>
 
               {/* Sticky bottom input */}
-              <div className="border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
+              <div className="sticky bottom-[-132px] z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
