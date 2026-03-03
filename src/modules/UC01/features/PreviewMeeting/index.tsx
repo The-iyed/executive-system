@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getMeetingById } from '../../../UC02/data/meetingsApi';
-import { MeetingOwnerType, MeetingStatus } from '@/modules/shared/types';
+import { MeetingOwnerType } from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
 import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
@@ -132,14 +132,6 @@ const PreviewMeeting: React.FC = () => {
     }
   };
 
-  const canEdit = [
-    MeetingStatus.DRAFT,
-    MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
-    MeetingStatus.SCHEDULED_DELAYED,
-    MeetingStatus.RETURNED_FROM_SCHEDULING,
-    MeetingStatus.RETURNED_FROM_CONTENT,
-  ].includes(meeting.status as MeetingStatus);
-
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
@@ -148,7 +140,7 @@ const PreviewMeeting: React.FC = () => {
           onBack={handleBack}
           statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
           editAction={{
-            visible: canEdit,
+            visible: true,
             hasChanges: true,
             onClick: () => openEditDrawer(meeting.id),
             label: 'تعديل',
