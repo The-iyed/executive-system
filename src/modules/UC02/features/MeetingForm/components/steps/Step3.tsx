@@ -4,6 +4,7 @@ import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButto
 import { cn } from '@/lib/ui';
 import {
   INVITEES_TABLE_COLUMNS,
+  MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER,
 } from '../../utils/constants';
 import type { Step3FormData } from '../../schemas/step3.schema';
 import { getUsers, searchUsersByEmail, type UserApiResponse } from '../../../../data/usersApi';
@@ -152,7 +153,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', '');
                 onUpdateRow('position_title', '');
                 onUpdateRow('mobile_number', '');
-                onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_isManual', false);
                 onUpdateRow('_objectGuid', '');
@@ -166,7 +166,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', searchValue);
                 onUpdateRow('position_title', '');
                 onUpdateRow('mobile_number', '');
-                onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_objectGuid', '');
                 return;
@@ -182,7 +181,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', u.label);
                 onUpdateRow('position_title', u.position ?? '');
                 onUpdateRow('mobile_number', u.phone_number ?? '');
-                onUpdateRow('sector', u.sector ?? '');
                 onUpdateRow('email', u.email ?? '');
               }
             }}
@@ -242,7 +240,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', '');
                 onUpdateRow('position_title', '');
                 onUpdateRow('mobile_number', '');
-                onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_isManual', false);
                 onUpdateRow('_objectGuid', '');
@@ -256,7 +253,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', searchValue);
                 onUpdateRow('position_title', '');
                 onUpdateRow('mobile_number', '');
-                onUpdateRow('sector', '');
                 onUpdateRow('email', '');
                 onUpdateRow('_objectGuid', '');
                 return;
@@ -272,7 +268,6 @@ export const Step3: React.FC<Step3Props> = ({
                 onUpdateRow('full_name', u.label);
                 onUpdateRow('position_title', u.position ?? '');
                 onUpdateRow('mobile_number', u.phone_number ?? '');
-                onUpdateRow('sector', u.sector ?? '');
                 onUpdateRow('email', u.email ?? '');
               }
             }}
@@ -370,7 +365,7 @@ export const Step3: React.FC<Step3Props> = ({
         <div className="relative">
           <FormTable
             title='مدعوو الوزير'
-            columns={INVITEES_TABLE_COLUMNS}
+            columns={MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER}
             rows={ministerRows}
             onAddRow={handleAddMinisterInvitee}
             onDeleteRow={handleDeleteMinisterInvitee}

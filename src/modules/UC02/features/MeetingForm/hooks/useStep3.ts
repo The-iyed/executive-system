@@ -30,7 +30,7 @@ interface SubmitStep3Payload {
 }
 
 function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
-  const r = row as InviteeFormRow & { _objectGuid?: string; _isManual?: boolean };
+  const r = row as InviteeFormRow & { _objectGuid?: string; _isManual?: boolean; is_consultant?: boolean };
   const object_guid = r._isManual === true ? undefined : r._objectGuid;
   return {
     object_guid,
@@ -41,6 +41,7 @@ function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
     email: row.email,
     attendance_mode: row.attendance_mode,
     view_permission: row.view_permission,
+    is_consultant: r.is_consultant ?? false,
   };
 }
 
