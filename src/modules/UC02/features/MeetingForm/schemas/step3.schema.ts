@@ -12,6 +12,7 @@ export const inviteeBackendSchema = z.object({
     invalid_type_error: 'آلية الحضور يجب أن تكون حضوري أو عن بُعد',
   }),
   view_permission: z.boolean(),
+  is_consultant: z.boolean().optional().default(false),
 });
 
 /** Form row for invitee (includes UI-only id and isOwner). */
