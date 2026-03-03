@@ -24,12 +24,6 @@ export function DirectivesPage() {
   const [directivesSubTab, setDirectivesSubTab] = useState<'current' | 'previous'>('current');
   const [expandedDirectiveId, setExpandedDirectiveId] = useState<string | null>(null);
 
-  /** Close directive via API only; no navigation. */
-  const handleCloseDirective = async (directive: Directive) => {
-    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
-    await refetch();
-  };
-
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -580,7 +574,7 @@ export function DirectivesPage() {
                     setDropdownPosition(null);
                   }
                 }}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
                 style={{
                   background: '#048F86',
                   boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
@@ -588,31 +582,6 @@ export function DirectivesPage() {
               >
                 <span>طلب إجتماع</span>
                 <CalendarDays className="w-4 h-4" />
-              </button>
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (openDropdownId) {
-                    const d = originalDirectives.find((x) => x.id === openDropdownId);
-                    if (d) {
-                      try {
-                        await handleCloseDirective(d);
-                      } catch (err) {
-                        console.error('Error closing directive:', err);
-                      }
-                    }
-                    setOpenDropdownId(null);
-                    setDropdownPosition(null);
-                  }
-                }}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: '#DC2626',
-                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-                }}
-              >
-                <span>إغلاق التوجيه</span>
-                <X className="w-4 h-4" />
               </button>
             </div>,
             document.body
@@ -746,24 +715,6 @@ export function DirectivesPage() {
                                 <span>طلب إجتماع</span>
                                 <CalendarDays className="w-4 h-4" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
-                                    await refetchPrevious();
-                                  } catch (err) {
-                                    console.error('Error closing directive:', err);
-                                  }
-                                  setExpandedDirectiveId(null);
-                                }}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-                                style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-                              >
-                                <span>إغلاق التوجيه</span>
-                                <X className="w-4 h-4" />
-                              </button>
                             </div>
                           </div>
                         </div>
@@ -881,23 +832,6 @@ export function DirectivesPage() {
                                 >
                                   <span>طلب إجتماع</span>
                                   <CalendarDays className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                      await handleCloseDirective(original);
-                                    } catch (err) {
-                                      console.error('Error closing directive:', err);
-                                    }
-                                    setExpandedDirectiveId(null);
-                                  }}
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-                                  style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-                                >
-                                  <span>إغلاق التوجيه</span>
-                                  <X className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>

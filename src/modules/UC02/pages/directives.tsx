@@ -6,7 +6,7 @@ import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels }
 import { cn } from '@/lib/ui';
 import { Icon } from '@iconify/react';
 import {
-  MoreVertical, X, CalendarDays, Clock, Hash, ChevronDown,
+  MoreVertical, CalendarDays, Clock, Hash, ChevronDown,
   FileText, AlertCircle, Loader2, Search, LayoutList, LayoutGrid,
   Plus, CircleDot, CheckCircle2, XCircle, Timer
 } from 'lucide-react';
@@ -33,11 +33,6 @@ const Directives: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const handleCloseDirective = async (directive: Directive) => {
-    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
-    await refetch();
-  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
@@ -430,10 +425,6 @@ const Directives: React.FC = () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
                         if (d) { try { await closeDirective(d.id, directiveToExternalDirectiveBody(d)); openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' }); } catch { } }
                       }},
-                      { label: 'إغلاق التوجيه', icon: X, color: '#DC2626', action: async () => {
-                        const d = originalDirectives.find((x) => x.id === openDropdownId);
-                        if (d) { try { await handleCloseDirective(d); } catch { } }
-                      }},
                     ].map((item, idx) => (
                       <button
                         key={idx}
@@ -624,22 +615,6 @@ const Directives: React.FC = () => {
                                 >
                                   <CalendarDays className="w-3.5 h-3.5" />
                                   طلب إجتماع
-                                </button>
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                      const body = isPrevious ? previousDirectiveToExternalDirectiveBody(original as PreviousDirectiveItem) : directiveToExternalDirectiveBody(original as Directive);
-                                      await closeDirective(original.id, body);
-                                      isPrevious ? await refetchPrevious() : await refetch();
-                                    } catch { }
-                                    setExpandedId(null);
-                                  }}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border hover:shadow-sm"
-                                  style={{ borderColor: '#DC2626', color: '#DC2626' }}
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  إغلاق التوجيه
                                 </button>
                               </div>
                             </div>
