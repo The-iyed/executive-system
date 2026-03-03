@@ -109,13 +109,6 @@ const WorkBasket: React.FC = () => {
     })),
   ];
 
-  /* ─── Stats ─── */
-  const statsCards = [
-    { label: 'إجمالي الطلبات', value: totalItems, icon: Inbox, color: 'var(--color-primary-500)', bg: 'rgba(0,169,145,0.06)' },
-    { label: 'قيد المراجعة', value: meetings.filter(m => m.status === MeetingStatus.UNDER_REVIEW).length, icon: Clock, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
-    { label: 'مجدول', value: meetings.filter(m => m.status === MeetingStatus.SCHEDULED).length, icon: CheckCircle2, color: '#10b981', bg: 'rgba(16,185,129,0.06)' },
-    { label: 'مرفوض', value: meetings.filter(m => m.status === MeetingStatus.REJECTED).length, icon: XCircle, color: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
-  ];
 
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
