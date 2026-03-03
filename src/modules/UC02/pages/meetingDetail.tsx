@@ -97,8 +97,8 @@ import {
   getMeetingLocationDropdownValue,
   showMeetingLocationOtherInput,
 } from '../../UC01/features/MeetingForm/utils/constants';
-import { EditMeeting } from '../../UC01/features/MeetingForm/features/edit';
-import FormMeetingModal from '../../UC01/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import MeetingFormDrawer from '../../UC01/features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
+import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 
@@ -189,9 +189,10 @@ const MeetingDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
-  const [isEditMeetingOpen, setIsEditMeetingOpen] = useState(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
+
+  const { openEditDrawer } = useMeetingFormDrawer();
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -2338,11 +2339,11 @@ const MeetingDetail: React.FC = () => {
             statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} className="flex-shrink-0" />}
             hasChanges={hasChanges}
             editAction={{
-              visible: meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED,
+              visible:true,
               hasChanges,
               opensForm: true,
               tooltip: 'فتح نموذج التعديل',
-              onClick: () => setIsEditMeetingOpen(true),
+              onClick: () => openEditDrawer(meeting.id),
             }}
             primaryAction={
               <AIGenerateButton
@@ -3903,26 +3904,8 @@ const MeetingDetail: React.FC = () => {
         )}
       </div>
 
-      {/* UC01 Edit Meeting form: all edits happen here; on close refresh meeting detail */}
-      {id && (
-        <FormMeetingModal
-          open={isEditMeetingOpen}
-          onOpenChange={(open) => {
-            setIsEditMeetingOpen(open);
-            if (!open) queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-          }}
-        >
-          <EditMeeting
-            open={isEditMeetingOpen}
-            onOpenChange={(open) => {
-              setIsEditMeetingOpen(open);
-              if (!open) queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-            }}
-            meetingId={id}
-            initialMeetingData={meeting ?? undefined}
-          />
-        </FormMeetingModal>
-      )}
+      {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
+      <MeetingFormDrawer initialMeetingData={meeting ?? undefined} />
 
       {/* Meeting Quality Modal */}
      <QualityModal 
