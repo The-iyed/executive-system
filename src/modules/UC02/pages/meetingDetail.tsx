@@ -1176,12 +1176,6 @@ const MeetingDetail: React.FC = () => {
       return;
     }
 
-    // Validate: if requires_protocol is true, protocol_type or protocol_type_text must be filled
-    if (scheduleForm.requires_protocol && !scheduleForm.protocol_type && !scheduleForm.protocol_type_text) {
-      setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
-      return;
-    }
-
     // Validate minister attendees (قائمة المدعوين الوزير)
     if ((scheduleForm.minister_attendees?.length ?? 0) > 0 && !validateMinisterAttendees()) {
       setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (الوزير) — جميع الحقول مطلوبة والبريد يجب أن يكون صالحاً');
@@ -4219,13 +4213,6 @@ const MeetingDetail: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                // Validate: if requires_protocol is true, protocol_type must be filled
-                const requiresProtocol = changedPayload.requires_protocol ?? scheduleForm.requires_protocol;
-                const protocolType = changedPayload.protocol_type ?? scheduleForm.protocol_type_text;
-                if (requiresProtocol === true && !protocolType) {
-                  setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
-                  return;
-                }
                 // Validate invitees (قائمة المدعوين مقدّم الطلب) whenever there are local invitees
                 if (localInvitees.length > 0 && !validateInvitees()) {
                   setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
@@ -4836,28 +4823,10 @@ const MeetingDetail: React.FC = () => {
           <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 flex flex-col gap-4">
             <FormField label="مبدئي" className="w-full max-w-none h-auto">
               <FormSwitch
-                checked={scheduleForm.requires_protocol}
-                onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: checked }))}
+                checked={!scheduleForm.requires_protocol}
+                onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: !checked }))}
               />
             </FormField>
-
-            {scheduleForm.requires_protocol && (
-              <FormField label="نوع المحضر" required className="w-full max-w-none h-auto">
-                <Select
-                  value={scheduleForm.protocol_type || ''}
-                  onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, protocol_type: value }))}
-                >
-                  <SelectTrigger className="w-full h-11 bg-white border border-[#D0D5DD] rounded-lg text-right flex-row-reverse">
-                    <SelectValue placeholder="اختر نوع المحضر" />
-                  </SelectTrigger>
-                  <SelectContent dir="rtl">
-                    <SelectItem value="DETAILED">مفصل</SelectItem>
-                    <SelectItem value="SUMMARY">ملخص</SelectItem>
-                    <SelectItem value="MINUTES">محضر</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
-            )}
 
             <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto">
               <FormSwitch
