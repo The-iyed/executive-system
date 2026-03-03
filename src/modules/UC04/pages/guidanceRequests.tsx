@@ -305,10 +305,10 @@ const GuidanceRequests: React.FC = () => {
                   onRowClick={(row) => navigate(`/guidance-request/${row.id}`)}
                 />
               ) : (
-                <GuidanceRequestsGrid
-                  requests={cardViewRequests}
-                  onView={(request) => navigate(`/guidance-request/${request.id}`)}
-                  onDetails={(request) => navigate(`/guidance-request/${request.id}`)}
+                <CardsGrid
+                  meetings={requests}
+                  onView={(meeting) => navigate(`/guidance-request/${meeting.id}`)}
+                  onDetails={(meeting) => navigate(`/guidance-request/${meeting.id}`)}
                 />
               )}
 
