@@ -559,16 +559,12 @@ export function DirectivesPage() {
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                      try {
-                        await requestMeetingFromDirective(d.id);
-                        openCreateDrawer({
-                          directive_id: d.id,
-                          directive_text: d.title,
-                          related_meeting: d.assignees || '',
-                        });
-                      } catch (err) {
-                        console.error('Error requesting meeting:', err);
-                      }
+                      openCreateDrawer({
+                        directive_id: d.id,
+                        directive_text: d.title,
+                        related_meeting: d.assignees || '',
+                      });
+                      try { await requestMeetingFromDirective(d.id); } catch (err) { console.error('Error requesting meeting:', err); }
                     }
                     setOpenDropdownId(null);
                     setDropdownPosition(null);
@@ -697,16 +693,12 @@ export function DirectivesPage() {
                                 type="button"
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  try {
-                                    await requestMeetingFromDirective(original.id);
-                                    openCreateDrawer({
-                                      directive_id: original.id,
-                                      directive_text: original.title,
-                                      related_meeting: Array.isArray(original.assignees) ? original.assignees.join(', ') : '',
-                                    });
-                                  } catch (err) {
-                                    console.error('Error requesting meeting:', err);
-                                  }
+                                  openCreateDrawer({
+                                    directive_id: original.id,
+                                    directive_text: original.title,
+                                    related_meeting: Array.isArray(original.assignees) ? original.assignees.join(', ') : '',
+                                  });
+                                  try { await requestMeetingFromDirective(original.id); } catch (err) { console.error('Error requesting meeting:', err); }
                                   setExpandedDirectiveId(null);
                                 }}
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -815,16 +807,12 @@ export function DirectivesPage() {
                                   type="button"
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    try {
-                                      await requestMeetingFromDirective(original.id);
-                                      openCreateDrawer({
-                                        directive_id: original.id,
-                                        directive_text: original.title,
-                                        related_meeting: original.assignees || '',
-                                      });
-                                    } catch (err) {
-                                      console.error('Error requesting meeting:', err);
-                                    }
+                                    openCreateDrawer({
+                                      directive_id: original.id,
+                                      directive_text: original.title,
+                                      related_meeting: original.assignees || '',
+                                    });
+                                    try { await requestMeetingFromDirective(original.id); } catch (err) { console.error('Error requesting meeting:', err); }
                                     setExpandedDirectiveId(null);
                                   }}
                                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"

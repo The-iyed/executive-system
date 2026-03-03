@@ -4370,6 +4370,7 @@ const MeetingDetail: React.FC = () => {
       </Dialog>
 
       {/* Send to Content – Drawer */}
+      {/* مجدول - الجدولة (SCHEDULED_SCHEDULING): POST /api/meeting-requests/{id}/send-to-content-scheduled (no draft) */}
       <Drawer
         open={isSendToContentModalOpen}
         onOpenChange={setIsSendToContentModalOpen}
@@ -4380,7 +4381,9 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsSendToContentModalOpen(false); setSendToContentForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <button type="button" onClick={handleSendToContentDraft} disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            {meeting?.status !== MeetingStatus.SCHEDULED_SCHEDULING && (
+              <button type="button" onClick={handleSendToContentDraft} disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            )}
             <button type="submit" form="send-to-content-form" disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}</button>
           </div>
         }
