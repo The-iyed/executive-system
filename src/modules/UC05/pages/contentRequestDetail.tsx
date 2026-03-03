@@ -1250,7 +1250,7 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col w-full max-h-[700px] rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+            <div className="flex flex-col w-full max-h-[700px] rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden" dir="rtl">
               {/* Chat messages area */}
               <div className="flex-1 min-h-0 overflow-y-auto">
                 {isLoadingConsultationRecords ? (
