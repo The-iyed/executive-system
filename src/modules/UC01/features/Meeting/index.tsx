@@ -151,15 +151,6 @@ const Meeting: React.FC = () => {
 
             {/* Left: Actions */}
             <div className="flex items-center gap-2">
-              {/* Create meeting button */}
-              <button
-                onClick={openCreateDrawer}
-                className="h-10 px-4 rounded-xl bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>إنشاء اجتماع</span>
-              </button>
-
               {/* Status filter dropdown */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -240,6 +231,15 @@ const Meeting: React.FC = () => {
                   <LayoutList className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Create meeting button */}
+              <button
+                onClick={openCreateDrawer}
+                className="h-10 px-4 rounded-xl bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إنشاء اجتماع</span>
+              </button>
             </div>
           </div>
         </div>
