@@ -1268,7 +1268,7 @@ const ContentRequestDetail: React.FC = () => {
                       const recordQuestion = row.question || row.consultation_question || '';
                       const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
                       const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                      const requesterName = row.consultant_name || '-';
+                      const requesterName = row.consultant_name || user?.username || user?.name || '-';
                       const consultationStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
