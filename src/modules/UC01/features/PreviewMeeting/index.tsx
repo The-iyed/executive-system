@@ -8,7 +8,7 @@ import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, ty
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
