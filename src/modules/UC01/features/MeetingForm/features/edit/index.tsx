@@ -142,6 +142,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             step3EditableMap={step3InviteesHook.step3EditableMap}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
             onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
+            onSuggestMinisterAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedMinisterAttendees(data.suggestions)}
             showMinisterInvitees={showMinisterInvitees}
             ministerAttendees={step3InviteesHook.formData.minister_attendees ?? []}
             onAddMinisterAttendee={step3InviteesHook.handleAddMinisterAttendee}
