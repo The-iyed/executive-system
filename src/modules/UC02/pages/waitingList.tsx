@@ -68,10 +68,6 @@ const WaitingList: React.FC = () => {
     return MeetingClassificationLabels[classification as MeetingClassification] || classification;
   };
 
-  const statsCards = [
-    { label: 'إجمالي الطلبات', value: totalItems, icon: Inbox, color: 'var(--color-primary-500)', bg: 'rgba(0,169,145,0.06)' },
-    { label: 'في الانتظار', value: totalItems, icon: Clock, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
-  ];
 
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
