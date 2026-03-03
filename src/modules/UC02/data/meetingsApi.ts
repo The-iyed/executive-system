@@ -583,6 +583,7 @@ export interface ReturnForInfoRequest {
   editable_fields?: string[];
 }
 
+/** مجدول - الجدولة: إعادة – POST /api/meeting-requests/{meeting_id}/return-for-info */
 export const returnMeetingForInfo = async (
   meetingId: string,
   payload: ReturnForInfoRequest
@@ -590,7 +591,7 @@ export const returnMeetingForInfo = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/return-for-info`, payload);
 };
 
-/** مجدول - الجدولة → مجدول: إعتماد التحديث */
+/** مجدول - الجدولة: إعتماد التحديث – POST /api/meeting-requests/{meeting_id}/approve-update */
 export interface ApproveUpdateRequest {
   notes?: string;
 }
@@ -602,7 +603,7 @@ export const approveMeetingUpdate = async (
   await axiosInstance.post(`/api/meeting-requests/${meetingId}/approve-update`, payload);
 };
 
-/** مجدول - الجدولة → مجدول - المحتوى (مسؤول المحتوى): إرسال للمحتوى */
+/** مجدول - الجدولة: إرسال للمحتوى – POST /api/meeting-requests/{meeting_id}/send-to-content-scheduled */
 export interface SendToContentScheduledRequest {
   /** Optional notes / questions for content officer; each line can create a CONTENT consultation */
   notes?: string;
