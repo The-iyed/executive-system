@@ -69,15 +69,19 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
     };
   }) ?? [];
 
-  const minister_invitees = (formData.minister_attendees ?? []).map((m) => ({
-    external_name: m.external_name?.trim() ?? '',
-    position: m.position?.trim() ?? '',
-    external_email: m.external_email?.trim() ?? '',
-    mobile: m.mobile?.trim() ?? '',
-    attendance_mechanism: m.attendance_channel === 'REMOTE' ? 'عن بعد' : 'حضوري',
-    is_required: m.is_required ?? false,
-    justification: m.justification?.trim() ?? '',
-  }));
+  const minister_invitees = (formData.minister_attendees ?? []).map((m) => {
+    const name = (m.external_name ?? '').trim();
+    const email = (m.external_email ?? '').trim() || name;
+    return {
+      external_name: name,
+      position: m.position?.trim() ?? '',
+      external_email: email,
+      mobile: m.mobile?.trim() ?? '',
+      attendance_mechanism: m.attendance_channel === 'REMOTE' ? 'عن بعد' : 'حضوري',
+      is_required: m.is_required ?? false,
+      justification: m.justification?.trim() ?? '',
+    };
+  });
 
   const body = {
     invitees: inviteesPayload,
