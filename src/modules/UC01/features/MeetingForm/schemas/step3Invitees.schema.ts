@@ -17,6 +17,7 @@ const inviteeSchema = z
     is_required: z.boolean().optional().default(false),
     username: z.string().optional(),
     disabled: z.boolean().optional(),
+    is_consultant: z.boolean().optional().default(false),
   })
   .superRefine((data, ctx) => {
     // Phone: when provided and non-empty, must be valid (digits only, optional leading +) — for all rows (manual and selected user)
@@ -28,13 +29,7 @@ const inviteeSchema = z
         path: ['mobile'],
       });
     }
-    if (!data.sector || String(data.sector).trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'الجهة مطلوب',
-        path: ['sector'],
-      });
-    }
+    // sector is no longer required in the invitees table UI
     const hasUserId = !!data.user_id && data.user_id.trim().length > 0;
     if (hasUserId) return;
     if (!data.name || data.name.trim().length === 0) {
