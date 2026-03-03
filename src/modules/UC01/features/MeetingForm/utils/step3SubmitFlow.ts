@@ -43,10 +43,13 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
     }
   }
 
+  const MANUAL_ENTRY_VALUE = '__manual__';
   const inviteesPayload = formData.invitees?.map((invitee, index) => {
-    if (invitee.user_id) {
+    const objectGuid = (invitee as { object_guid?: string }).object_guid;
+    if (objectGuid && objectGuid !== MANUAL_ENTRY_VALUE) {
       return {
-        user_id: invitee.user_id,
+        object_guid: objectGuid,
+        email: invitee.email || '',
         sector: invitee.sector?.trim() || '',
         attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
