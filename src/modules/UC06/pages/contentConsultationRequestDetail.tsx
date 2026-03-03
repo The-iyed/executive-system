@@ -823,7 +823,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
         {/* Consultations Log Tab – chat-bubble style like UC05 */}
         {activeTab === "consultations-log" && (
-          <div className="flex flex-col h-full w-full bg-white" dir="rtl">
+          <div className="flex flex-col w-full bg-white" dir="rtl">
             <div className="flex-1 min-h-0">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-16">
@@ -999,51 +999,6 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
                 </div>
               )}
-            </div>
-
-            {/* Sticky bottom chat input */}
-            <div className="sticky bottom-0 z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-6 mt-2">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (consultationNotes.trim() && consultationId) {
-                    handleSubmitConsultation('submit');
-                  }
-                }}
-                className="flex items-end gap-3 px-5 py-4"
-                dir="rtl"
-              >
-                <Textarea
-                  value={consultationNotes}
-                  onChange={(e) => setConsultationNotes(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (consultationNotes.trim() && consultationId) {
-                        handleSubmitConsultation('submit');
-                      }
-                    }
-                  }}
-                  placeholder="اكتب ردك على الاستشارة..."
-                  className="flex-1 min-h-[44px] max-h-[120px] resize-none rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-[14px] text-right text-[#1D2939] placeholder:text-[#98A2B3] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#048F86] focus-visible:border-[#048F86]"
-                  dir="rtl"
-                  rows={1}
-                />
-                <button
-                  type="submit"
-                  disabled={!consultationNotes.trim() || submitMutation.isPending || !consultationId}
-                  className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] flex items-center justify-center text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-                >
-                  {submitMutation.isPending ? (
-                    <Clock className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3332 1.66669L9.1665 10.8334" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M18.3332 1.66669L12.4998 18.3334L9.1665 10.8334L1.6665 7.50002L18.3332 1.66669Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-              </form>
             </div>
           </div>
         )}
