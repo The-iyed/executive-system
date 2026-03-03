@@ -311,14 +311,6 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     مسودات ({draftsRecords.length})
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setIsConsultationModalOpen(true)}
-                  disabled={submitMutation.isPending}
-                  className="flex items-center justify-center px-4 py-2 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] hover:opacity-90 text-white rounded-full border-2 border-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  إضافة الاستشارة
-                </button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
@@ -999,6 +991,47 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
                 </div>
               )}
+            </div>
+
+            {/* Sticky chat input at bottom of consultation tab */}
+            <div className="sticky bottom-0 z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl mt-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmitConsultation('submit');
+                }}
+                className="flex items-end gap-3 px-5 py-4"
+                dir="rtl"
+              >
+                <Textarea
+                  value={consultationNotes}
+                  onChange={(e) => setConsultationNotes(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmitConsultation('submit');
+                    }
+                  }}
+                  placeholder="اكتب استشارتك هنا..."
+                  className="flex-1 min-h-[44px] max-h-[120px] resize-none rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86] placeholder:text-[#9CA3AF]"
+                  dir="rtl"
+                  rows={1}
+                />
+                <button
+                  type="submit"
+                  disabled={!consultationNotes.trim() || submitMutation.isPending || !consultationId}
+                  className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white flex items-center justify-center transition-opacity disabled:opacity-40"
+                >
+                  {submitMutation.isPending ? (
+                    <Clock className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}>
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
         )}
