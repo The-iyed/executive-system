@@ -214,6 +214,8 @@ export interface MeetingsListResponse {
 
 export interface GetMeetingsParams {
   status?: MeetingStatus | string;
+  /** Filter by multiple statuses – overrides `status` when provided */
+  status_in?: string[];
   skip?: number;
   limit?: number;
   search?: string;
@@ -255,7 +257,9 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
 export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();
   
-  if (params.status) {
+  if (params.status_in && params.status_in.length > 0) {
+    queryParams.append('status_in', params.status_in.join(','));
+  } else if (params.status) {
     queryParams.append('status', params.status);
   }
   if (params.skip !== undefined) {
