@@ -2344,7 +2344,9 @@ const MeetingDetail: React.FC = () => {
             editAction={{
               visible: meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.SCHEDULED,
               hasChanges,
-              onClick: () => setIsEditConfirmOpen(true),
+              opensForm: true,
+              tooltip: 'فتح نموذج التعديل',
+              onClick: () => setIsEditMeetingOpen(true),
             }}
             primaryAction={
               <AIGenerateButton
