@@ -62,6 +62,33 @@ const TEXT_COLORS: Record<string, string> = {
   available: '#065F46',
 };
 
+/** Compute height and top offset for events with exact start/end times */
+function getExactDurationStyle(
+  event: CalendarEventData,
+  slotTime: string
+): React.CSSProperties | undefined {
+  if (!event.exactStartTime || !event.exactEndTime) return undefined;
+  const [sh, sm] = event.exactStartTime.split(':').map(Number);
+  const [eh, em] = event.exactEndTime.split(':').map(Number);
+  const [slotH, slotM] = slotTime.split(':').map(Number);
+  const startM = (sh ?? 0) * 60 + (sm ?? 0);
+  const endM = (eh ?? 0) * 60 + (em ?? 0);
+  const slotStartM = (slotH ?? 0) * 60 + (slotM ?? 0);
+  const durationM = endM - startM;
+  if (durationM <= 0) return undefined;
+  const topOffsetPx = ((startM - slotStartM) / 60) * ROW_HEIGHT_PX;
+  const heightPx = (durationM / 60) * ROW_HEIGHT_PX;
+  return {
+    position: 'absolute',
+    top: topOffsetPx,
+    left: 0,
+    right: 0,
+    height: heightPx,
+    minHeight: heightPx,
+    maxHeight: heightPx,
+  };
+}
+
 export const CalendarEvent: React.FC<CalendarEventProps> = ({
   event,
   slotTime,
@@ -104,8 +131,8 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         className
       )}
       style={{
+        ...baseStyle,
         background: bgColor,
-        minHeight: '48px',
       }}
       onClick={handleClick}
       onKeyDown={(e) => {
