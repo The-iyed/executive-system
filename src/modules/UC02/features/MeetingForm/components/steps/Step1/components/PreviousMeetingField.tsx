@@ -32,7 +32,7 @@ export function PreviousMeetingField({
   const loadOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
       const response = await getMeetingsSearchForPrevious({
-        q: search.trim() || undefined,
+        q: search.trim(),
         skip,
         limit: limit || STEP1_ASYNC_SELECT_PAGE_SIZE,
       });
