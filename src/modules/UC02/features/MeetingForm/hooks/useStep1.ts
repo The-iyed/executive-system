@@ -48,7 +48,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   if (formData.relatedDirective) fd.append('related_directive_id', getOptionValue(formData.relatedDirective) ?? '');
   if (formData.requester) fd.append('submitter_id', getOptionValue(formData.requester) ?? '');
   if (formData.meetingOwner) fd.append('owner_id', getOptionValue(formData.meetingOwner) ?? '');
-  if (formData.meetingDescription) fd.append('meeting_description', formData.meetingDescription);
+  if (formData.meetingDescription) fd.append('description', formData.meetingDescription);
   fd.append('is_urgent', formData.isUrgent ? 'true' : 'false');
   if (formData.isUrgent && formData.urgentReason) fd.append('urgent_reason', formData.urgentReason);
   if (formData.meeting_channel) fd.append('meeting_channel', formData.meeting_channel);
@@ -86,7 +86,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     const d = new Date(formData.previousMeetingDate + 'T00:00:00');
     if (!Number.isNaN(d.getTime())) fd.append('previous_meeting_date', d.toISOString());
   }
-  if (formData.notes) fd.append('general_notes', formData.notes);
+  if (formData.notes) fd.append('note', formData.notes);
   fd.append('is_data_complete', formData.isComplete ? 'true' : 'false');
   return fd;
 };
@@ -302,7 +302,7 @@ export function useStep1({
       ? (meeting.deadline.includes('T') ? meeting.deadline : `${meeting.deadline}T00:00:00`).slice(0, 10)
       : '';
     const meetingUnknown = meeting as unknown as Record<string, unknown>;
-    const meetingDesc = meetingUnknown.meeting_description;
+    const meetingDesc = meetingUnknown.description ?? '';
     const meetingLocation = typeof meetingUnknown.location === 'string' ? meetingUnknown.location : undefined;
     setFormData((prev) => ({
       ...prev,
