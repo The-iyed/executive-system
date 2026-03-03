@@ -106,6 +106,29 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleBackClick={handlePrevious}
             handleCancelClick={handleCancel}
             nonDeletableInviteeIds={step3Hook.nonDeletableInviteeIds}
+            suggestAttendeesMeetingParams={{
+              meeting: {
+                meeting_subject: step1Hook.formData.meetingSubject || '',
+                meeting_type: step1Hook.formData.meetingCategory || '',
+                meeting_classification:
+                  step1Hook.formData.meetingClassification1 || step1Hook.formData.meetingConfidentiality || '',
+                meeting_justification: step1Hook.formData.meetingReason || '',
+                related_topic: step1Hook.formData.relatedTopic || null,
+                objectives: [],
+                agenda_items: (step1Hook.formData.meetingAgenda || []).map((item) => ({
+                  agenda_item: item.agenda_item || '',
+                })),
+                minister_support: (step1Hook.formData.meetingAgenda || []).map((item) => ({
+                  support_description:
+                    item.minister_support_type === 'أخرى'
+                      ? (item.minister_support_other || '')
+                      : (item.minister_support_type || ''),
+                })),
+              },
+            }}
+            onSuggestAttendeesSuccess={(data) =>
+              data?.suggestions && step3Hook.handleAddSuggestedMinisterInvitees(data.suggestions)
+            }
           />
         );
       default:
