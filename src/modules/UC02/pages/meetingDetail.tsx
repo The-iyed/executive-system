@@ -97,7 +97,7 @@ import {
 } from '../../UC01/features/MeetingForm/utils/constants';
 import { EditMeeting } from '../../UC01/features/MeetingForm/features/edit';
 import FormMeetingModal from '../../UC01/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
