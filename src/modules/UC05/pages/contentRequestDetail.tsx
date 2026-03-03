@@ -1250,9 +1250,9 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col w-full max-h-[700px] rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden" dir="rtl">
+            <div className="flex flex-col w-full rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
               {/* Chat messages area */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex-1 min-h-0">
                 {isLoadingConsultationRecords ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-gray-600">جاري التحميل...</div>
@@ -1380,7 +1380,7 @@ const ContentRequestDetail: React.FC = () => {
 
               {/* Inline chat input – consultant picker + question (like UC02) */}
               {meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT && meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO && (
-                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                <div className="sticky bottom-0 z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
                   {/* Consultant picker (expandable) */}
                   {showConsultantPicker && (
                     <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
