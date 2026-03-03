@@ -243,7 +243,7 @@ const Meeting: React.FC = () => {
                     );
                   })}
                 </div>
-              )
+              )}
 
               {/* Search */}
               <div className="relative">
