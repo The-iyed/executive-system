@@ -21,6 +21,8 @@ export interface DetailPageHeaderProps {
   editAction?: {
     visible: boolean;
     hasChanges: boolean;
+    /** When true, button opens full edit form and is always enabled when visible (ignores hasChanges for enabled state) */
+    opensForm?: boolean;
     onClick: () => void;
     label?: string;
     tooltip?: string;
@@ -118,20 +120,20 @@ export function DetailPageHeader({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => editAction.hasChanges && editAction.onClick()}
-                      disabled={!editAction.hasChanges}
+                      onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
+                      disabled={!editAction.opensForm && !editAction.hasChanges}
                       className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all',
                         'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none',
-                        editAction.hasChanges
+                        (editAction.opensForm || editAction.hasChanges)
                           ? 'hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
                           : ''
                       )}
                       style={{
-                        background: editAction.hasChanges
+                        background: (editAction.opensForm || editAction.hasChanges)
                           ? 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)'
                           : 'linear-gradient(135deg, #9CA3AF 0%, #D1D5DB 100%)',
-                        boxShadow: editAction.hasChanges
+                        boxShadow: (editAction.opensForm || editAction.hasChanges)
                           ? '0 2px 8px rgba(4, 143, 134, 0.3)'
                           : 'none',
                       }}
@@ -141,7 +143,14 @@ export function DetailPageHeader({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                    <p>{editAction.tooltip ?? (editAction.hasChanges ? 'تأكيد التعديلات وإرسالها' : 'لا يوجد تغييرات لحفظها')}</p>
+                    <p>
+                      {editAction.tooltip ??
+                        (editAction.opensForm
+                          ? 'فتح نموذج التعديل'
+                          : editAction.hasChanges
+                            ? 'تأكيد التعديلات وإرسالها'
+                            : 'لا يوجد تغييرات لحفظها')}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
