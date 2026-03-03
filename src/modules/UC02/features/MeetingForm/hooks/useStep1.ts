@@ -45,7 +45,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     if (!Number.isNaN(d.getTime())) fd.append('deadline', d.toISOString());
   }
   if (formData.meetingReason) fd.append('meeting_justification', formData.meetingReason);
-  if (formData.relatedDirective) fd.append('related_directive_id', getOptionValue(formData.relatedDirective) ?? '');
+  // relatedDirective kept in form state only; not sent to API
   if (formData.requester) fd.append('submitter_id', getOptionValue(formData.requester) ?? '');
   if (formData.meetingOwner) fd.append('owner_id', getOptionValue(formData.meetingOwner) ?? '');
   if (formData.meetingDescription) fd.append('description', formData.meetingDescription);
@@ -325,8 +325,8 @@ export function useStep1({
       requester: meeting.submitter_id != null
         ? { value: meeting.submitter_id, label: meeting.submitter_name ?? '' }
         : prev.requester,
-      meetingOwner: meeting.current_owner_user_id != null
-        ? { value: meeting.current_owner_user_id, label: meeting.meeting_owner_name ?? '' }
+      meetingOwner: (meeting.current_owner_object_guid ?? meeting.current_owner_user_id) != null
+        ? { value: meeting.current_owner_object_guid ?? meeting.current_owner_user_id, label: meeting.meeting_owner_name ?? '' }
         : prev.meetingOwner,
     }));
   }, []);
