@@ -27,7 +27,7 @@ import {
   CalendarClock,
   StickyNote,
 } from 'lucide-react';
-import { formatDateArabic, formatDateTimeArabic } from '@/modules/shared/utils';
+import { formatDateArabic, formatDateTimeArabic, formatTimeAgoArabic } from '@/modules/shared/utils';
 import { DetailPageHeader, StatusBadge, MeetingActionsBar, DataTable, MeetingInfo, ReadOnlyField, AttachmentPreviewDrawer, FormAsyncSelectV2, FormDatePicker, Mou7tawaContentTab, type MeetingInfoData, type OptionType } from '@/modules/shared/components';
 import {
   MeetingStatus,
@@ -1253,34 +1253,23 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {isLoadingConsultationRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : consultationRecords && consultationRecords.items.length > 0 ? (
-                <>
-                  {/* Section header matching UC01/UC02 style */}
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                      <MessageSquare className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[15px] font-bold text-[#1F2937]">سجل الاستشارات</span>
-                      <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">
-                        {consultationRecords.items.length}
-                      </span>
-                    </div>
+            <div className="flex flex-col w-full rounded-2xl border border-[#E5E7EB] bg-white" dir="rtl">
+              {/* Chat messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto max-h-[600px]">
+                {isLoadingConsultationRecords ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-gray-600">جاري التحميل...</div>
                   </div>
-                  <div className="flex flex-col gap-4" dir="rtl">
-                    {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                  <div className="flex flex-col pb-4">
+                    {[...consultationRecords.items].reverse().map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
                       const recordType = row.type || row.consultation_type || '';
                       const recordQuestion = row.question || row.consultation_question || '';
-                      const isExpanded = expandedConsultationId === recordId;
+                      const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
                       const typeLabel = recordType === 'SCHEDULING' ? 'السؤال' : recordType === 'CONTENT' ? 'محتوى' : recordType;
-                      const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                      const overallStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
+                      const requesterName = row.consultant_name || '-';
+                      const consultationStatusLabels: Record<string, string> = { PENDING: 'قيد الانتظار', RESPONDED: 'تم الرد', CANCELLED: 'ملغاة', COMPLETED: 'مكتمل', DRAFT: 'مسودة', SUPERSEDED: 'معلق' };
 
                       const flatItems: Array<{id: string; text: string; status: string; name: string; respondedAt: string | null; requestNumber: string | null}> = [];
                       if (row.assignees?.length) {
@@ -1299,138 +1288,98 @@ const ContentRequestDetail: React.FC = () => {
 
                       return (
                         <div key={`consultation-${recordId}-${index}`} className="flex flex-col gap-0">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedConsultationId((prev) => (prev === recordId ? null : recordId))}
-                            className={`
-                              w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                              ${isExpanded
-                                ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                                : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                            `}
-                            style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                          >
-                            <div className="flex flex-row items-start justify-between gap-4">
-                              <div className="flex flex-col items-start flex-1 min-w-0">
-                                <p className="text-base font-bold text-[#048F86] mb-1">{typeLabel}</p>
-                                <p className="text-sm text-gray-700 leading-relaxed">{recordQuestion || '-'}</p>
+                          {/* Question bubble (sent – right-aligned teal) */}
+                          <div className="px-5 pt-5 pb-3">
+                            <div className="flex items-start gap-3" dir="rtl">
+                              <div className="flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{requesterName?.charAt(0)?.toUpperCase() || '?'}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                {row.round_number != null && (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-sm text-blue-700 font-medium">
-                                    <span>الجولة {row.round_number}</span>
-                                  </span>
-                                )}
-                                {row.status && (
-                                  <StatusBadge status={row.status} label={overallStatusLabels[row.status] || row.status} />
-                                )}
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                  <Clock className="w-4 h-4 flex-shrink-0" />
-                                  <span>تاريخ الطلب : {requestDate}</span>
-                                </span>
-                                {/* {displayRequestNumber && (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                                    <Hash className="w-4 h-4 flex-shrink-0" />
-                                    <span>رمز الطلب : {displayRequestNumber}</span>
-                                  </span>
-                                )} */}
-                               
-                                {flatItems?.length>1&&
-                                <div className="flex justify-end" dir="rtl">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const sentences: string[] = [];
-                                    flatItems.forEach((row:  {
-                                      id: string;
-                                      text: string;
-                                      status: string;
-                                      name: string;
-                                      respondedAt: string | null;
-                                      requestNumber: string | null;
-                                  }) => {
-
-                                            sentences.push(`${row.text}`);
-                                      
-                                    });
-                                    if (sentences.length > 0) {
-                                      setAnalyzingRecordId(recordId);
-                                      analyzeContradictionsMutation.mutate(sentences);
-                                    }
-                                  }}
-                                  disabled={analyzeContradictionsMutation.isPending && analyzingRecordId === recordId}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors bg-[#009883] text-white hover:bg-[#008274] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                                >
-                                  {analyzeContradictionsMutation.isPending && analyzingRecordId === recordId ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
-                                </button>
-                               </div>}
-                               <span className="flex-shrink-0 text-gray-500" aria-hidden>
-                                  {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-semibold text-[#1F2937]">{requesterName}</span>
+                                  <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
+                                  {row.round_number != null && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 font-medium">
+                                      الجولة {row.round_number}
+                                    </span>
+                                  )}
+                                  {row.status && <StatusBadge status={row.status} label={consultationStatusLabels[row.status] || row.status} />}
+                                </div>
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%]">
+                                  <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{recordQuestion || '-'}</p>
+                                </div>
                               </div>
                             </div>
-                          </button>
+                          </div>
 
-                          {isExpanded && flatItems.length > 0 && (
-                            <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                              {flatItems.map((_, idx) =>
-                                <div key={`line-${idx}`} className="flex flex-shrink-0 w-12 flex-col items-center pt-1"
-                                  style={idx > 0 ? { position: 'absolute', top: `${47 * idx}px`, height: `${136 * idx}px` } : {}}
-                                >
-                                  <div className={`w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] max-h-[60%] ${flatItems.length > 1 ? '-mt-[38px]' : '-mt-[10px]'}`} />
-                                  <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                                </div>
-                              )}
-                              <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                                {flatItems.map((item) => {
-                                  const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
-                                  return (
-                                    <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                      <div className="flex w-full flex-row items-center justify-between gap-4">
-                                        <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
-                                        <StatusBadge status={item.status} label={overallStatusLabels[item.status] || item.status} />
-                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">{item.name?.charAt(0)?.toUpperCase() || '?'}</div>
-                                        <span className="flex-shrink-0 text-sm text-gray-700">{item.name || '—'}</span>
-                                        {item.requestNumber && (
-                                          <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                            <Hash className="h-4 w-4 flex-shrink-0" /><span>{item.requestNumber}</span>
-                                          </span>
-                                        )}
-                                        <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                          <Clock className="h-4 w-4 flex-shrink-0" /><span>تاريخ الرد : {responseDate}</span>
-                                        </span>
+                          {/* Response bubbles (received – left-aligned gray) */}
+                          <div className="px-5 pb-5 pt-1">
+                            {flatItems.length > 0 ? (
+                              <div className="flex flex-col gap-3">
+                                {flatItems.map((item) => (
+                                  <div key={item.id} className="flex items-start gap-3" dir="ltr">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
+                                        <span className="text-xs font-bold text-[#92400E]">{item.name?.charAt(0)?.toUpperCase() || '?'}</span>
                                       </div>
                                     </div>
-                                  );
-                                })}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-semibold text-[#1F2937]">{item.name || '-'}</span>
+                                        {item.respondedAt && <span className="text-[11px] text-[#9CA3AF]">{formatTimeAgoArabic(item.respondedAt)}</span>}
+                                        <StatusBadge status={item.status} label={consultationStatusLabels[item.status] || item.status} />
+                                      </div>
+                                      <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                        <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{item.text?.trim() || '—'}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Analyze contradictions button (when multiple responses) */}
+                                {flatItems.length > 1 && (
+                                  <div className="flex justify-end mt-2" dir="rtl">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const sentences = flatItems.map(r => r.text).filter(Boolean);
+                                        if (sentences.length > 0) {
+                                          setAnalyzingRecordId(recordId);
+                                          analyzeContradictionsMutation.mutate(sentences);
+                                        }
+                                      }}
+                                      disabled={analyzeContradictionsMutation.isPending && analyzingRecordId === recordId}
+                                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-xs transition-colors bg-[#048F86]/10 text-[#048F86] hover:bg-[#048F86]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {analyzeContradictionsMutation.isPending && analyzingRecordId === recordId ? 'جاري التحليل...' : 'تقييم التعارض بين افادات المستشارين'}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
-                          {isExpanded && flatItems.length === 0 && (
-                            <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                              <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                                <div className={`w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%] ${flatItems.length > 1 ? '-mt-[38px]' : '-mt-[10px]'}`} />
-                                <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
+                            ) : (
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
+                                <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
                               </div>
-                              <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
-                                <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                              </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">سجلات التوجيهات</p>
-                    <p className="text-gray-500 text-sm">لا توجد سجلات</p>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                      <ClipboardCheck className="w-6 h-6 text-[#98A2B3]" />
+                    </div>
+                    <p className="text-[15px] font-semibold text-[#344054]">سجل الاستشارات</p>
+                    <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
