@@ -6,7 +6,7 @@ import { MeetingClassification, MeetingClassificationLabels, MeetingTypeLabels }
 import { cn } from '@/lib/ui';
 import '@/modules/shared/styles'; // Import shared styles including scrollbar
 import { MoreVertical, X, CalendarDays, Clock, Hash, ChevronUp, ChevronDown } from 'lucide-react';
-import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, closeDirective, cancelDirective, directiveToExternalDirectiveBody, previousDirectiveToExternalDirectiveBody, getMeetingById, MeetingApiResponse } from '../../data/meetingsApi';
+import { getDirectives, getPreviousDirectives, Directive, PreviousDirectiveItem, takeDirective, requestMeetingFromDirective, getMeetingById, MeetingApiResponse } from '../../data/meetingsApi';
 import { mapDirectiveToCardData, mapPreviousDirectiveToCardData } from '../../utils/directiveMapper';
 import { PATH } from '../../routes/paths';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks';
@@ -23,12 +23,6 @@ export function DirectivesPage() {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
   const [directivesSubTab, setDirectivesSubTab] = useState<'current' | 'previous'>('current');
   const [expandedDirectiveId, setExpandedDirectiveId] = useState<string | null>(null);
-
-  /** Close directive via API only; no navigation. */
-  const handleCloseDirective = async (directive: Directive) => {
-    await closeDirective(directive.id, directiveToExternalDirectiveBody(directive));
-    await refetch();
-  };
 
   // Debounce search input
   useEffect(() => {
@@ -537,15 +531,15 @@ export function DirectivesPage() {
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                    try {
-                        await cancelDirective(d.id, directiveToExternalDirectiveBody(d));
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
-                      await refetch();
-                    } catch (err) {
-                      console.error('Error cancelling directive:', err);
-                      setOpenDropdownId(null);
-                      setDropdownPosition(null);
+                      try {
+                        await takeDirective(d.id);
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
+                        await refetch();
+                      } catch (err) {
+                        console.error('Error taking directive:', err);
+                        setOpenDropdownId(null);
+                        setDropdownPosition(null);
                       }
                     }
                   }
@@ -565,41 +559,12 @@ export function DirectivesPage() {
                   if (openDropdownId) {
                     const d = originalDirectives.find((x) => x.id === openDropdownId);
                     if (d) {
-                      try {
-                        await closeDirective(d.id, directiveToExternalDirectiveBody(d));
-                        openCreateDrawer({
-                          directive_id: d.id,
-                          directive_text: d.title,
-                          related_meeting: d.assignees || '',
-                        });
-                      } catch (err) {
-                        console.error('Error closing directive:', err);
-                      }
-                    }
-                    setOpenDropdownId(null);
-                    setDropdownPosition(null);
-                  }
-                }}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs mb-1.5 transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: '#048F86',
-                  boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
-                }}
-              >
-                <span>طلب إجتماع</span>
-                <CalendarDays className="w-4 h-4" />
-              </button>
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (openDropdownId) {
-                    const d = originalDirectives.find((x) => x.id === openDropdownId);
-                    if (d) {
-                      try {
-                        await handleCloseDirective(d);
-                      } catch (err) {
-                        console.error('Error closing directive:', err);
-                      }
+                      openCreateDrawer({
+                        directive_id: d.id,
+                        directive_text: d.title,
+                        related_meeting: d.assignees || '',
+                      });
+                      try { await requestMeetingFromDirective(d.id); } catch (err) { console.error('Error requesting meeting:', err); }
                     }
                     setOpenDropdownId(null);
                     setDropdownPosition(null);
@@ -607,12 +572,12 @@ export function DirectivesPage() {
                 }}
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
                 style={{
-                  background: '#DC2626',
+                  background: '#048F86',
                   boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)',
                 }}
               >
-                <span>إغلاق التوجيه</span>
-                <X className="w-4 h-4" />
+                <span>طلب إجتماع</span>
+                <CalendarDays className="w-4 h-4" />
               </button>
             </div>,
             document.body
@@ -711,11 +676,11 @@ export function DirectivesPage() {
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   try {
-                                    await cancelDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
+                                    await takeDirective(original.id);
                                     setExpandedDirectiveId(null);
                                     await refetchPrevious();
                                   } catch (err) {
-                                    console.error('Error cancelling directive:', err);
+                                    console.error('Error taking directive:', err);
                                   }
                                 }}
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -728,16 +693,12 @@ export function DirectivesPage() {
                                 type="button"
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  try {
-                                    await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
-                                    openCreateDrawer({
-                                      directive_id: original.id,
-                                      directive_text: original.title,
-                                      related_meeting: Array.isArray(original.assignees) ? original.assignees.join(', ') : '',
-                                    });
-                                  } catch (err) {
-                                    console.error('Error closing directive:', err);
-                                  }
+                                  openCreateDrawer({
+                                    directive_id: original.id,
+                                    directive_text: original.title,
+                                    related_meeting: Array.isArray(original.assignees) ? original.assignees.join(', ') : '',
+                                  });
+                                  try { await requestMeetingFromDirective(original.id); } catch (err) { console.error('Error requesting meeting:', err); }
                                   setExpandedDirectiveId(null);
                                 }}
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -745,24 +706,6 @@ export function DirectivesPage() {
                               >
                                 <span>طلب إجتماع</span>
                                 <CalendarDays className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await closeDirective(original.id, previousDirectiveToExternalDirectiveBody(original));
-                                    await refetchPrevious();
-                                  } catch (err) {
-                                    console.error('Error closing directive:', err);
-                                  }
-                                  setExpandedDirectiveId(null);
-                                }}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-                                style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-                              >
-                                <span>إغلاق التوجيه</span>
-                                <X className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
@@ -847,11 +790,11 @@ export function DirectivesPage() {
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
-                                      await cancelDirective(original.id, directiveToExternalDirectiveBody(original));
+                                      await takeDirective(original.id);
                                       setExpandedDirectiveId(null);
                                       await refetch();
                                     } catch (err) {
-                                      console.error('Error cancelling directive:', err);
+                                      console.error('Error taking directive:', err);
                                     }
                                   }}
                                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -864,16 +807,12 @@ export function DirectivesPage() {
                                   type="button"
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    try {
-                                      await closeDirective(original.id, directiveToExternalDirectiveBody(original));
-                                      openCreateDrawer({
-                                        directive_id: original.id,
-                                        directive_text: original.title,
-                                        related_meeting: original.assignees || '',
-                                      });
-                                    } catch (err) {
-                                      console.error('Error closing directive:', err);
-                                    }
+                                    openCreateDrawer({
+                                      directive_id: original.id,
+                                      directive_text: original.title,
+                                      related_meeting: original.assignees || '',
+                                    });
+                                    try { await requestMeetingFromDirective(original.id); } catch (err) { console.error('Error requesting meeting:', err); }
                                     setExpandedDirectiveId(null);
                                   }}
                                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
@@ -881,23 +820,6 @@ export function DirectivesPage() {
                                 >
                                   <span>طلب إجتماع</span>
                                   <CalendarDays className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                      await handleCloseDirective(original);
-                                    } catch (err) {
-                                      console.error('Error closing directive:', err);
-                                    }
-                                    setExpandedDirectiveId(null);
-                                  }}
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white font-bold text-xs transition-all hover:scale-105 active:scale-95"
-                                  style={{ background: '#DC2626', boxShadow: '0px 1px 2px rgba(16, 24, 40, 0.05)' }}
-                                >
-                                  <span>إغلاق التوجيه</span>
-                                  <X className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
