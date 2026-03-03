@@ -102,6 +102,8 @@ export interface MeetingApiResponse {
   status: string;
   current_owner_type: string;
   current_owner_user_id: string;
+  /** Owner identifier; prefer over current_owner_user_id when present. */
+  current_owner_object_guid?: string;
   current_owner_role_id: string;
   current_owner_user: {
     id: string;
