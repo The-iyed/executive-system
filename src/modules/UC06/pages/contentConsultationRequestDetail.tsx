@@ -296,7 +296,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
       </div>
 
       {/* Tab Content */}
-      <div className=" overflow-y-auto p-6 h-full bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
+      <div className={`overflow-y-auto h-full bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0 ${activeTab === "consultations-log" ? "" : "p-6"}`}>
         {activeTab === "request-info" && (
           <div className="flex flex-col gap-4 w-full">
             <div className="flex flex-row items-center justify-between gap-4 mb-2">
