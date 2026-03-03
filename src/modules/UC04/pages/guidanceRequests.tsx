@@ -77,11 +77,6 @@ const GuidanceRequests: React.FC = () => {
     return requestsResponse.items.map(mapGuidanceRequestToCardData);
   }, [requestsResponse]);
 
-  // Map API response to GuidanceRequestCardData (for card view)
-  const cardViewRequests: GuidanceRequestCardData[] = useMemo(() => {
-    if (!requestsResponse?.items) return [];
-    return requestsResponse.items.map(mapGuidanceRequestToCardViewData);
-  }, [requestsResponse]);
 
   // Calculate total pages from API response
   const totalItems = requestsResponse?.total || 0;
