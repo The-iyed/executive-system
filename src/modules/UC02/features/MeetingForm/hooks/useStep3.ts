@@ -30,10 +30,10 @@ interface SubmitStep3Payload {
 }
 
 function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
-  const r = row as InviteeFormRow & { _userId?: string; _isManual?: boolean };
-  const user_id = r._isManual === true ? undefined : r._userId;
+  const r = row as InviteeFormRow & { _objectGuid?: string; _isManual?: boolean };
+  const object_guid = r._isManual === true ? undefined : r._objectGuid;
   return {
-    user_id,
+    object_guid,
     full_name: row.full_name,
     position_title: row.position_title ?? '',
     mobile_number: row.mobile_number,
@@ -62,8 +62,8 @@ const submitStep3Data = async (payload: SubmitStep3Payload): Promise<{ success: 
   if ((formData.minister_invitees?.length ?? 0) > 0) {
     body.minister_invitees = formData?.minister_invitees?.map(toBackendInvitee);
   }
-  if ((formData.proposer_user_ids?.length ?? 0) > 0) {
-    body.proposer_user_ids = formData.proposer_user_ids;
+  if ((formData.proposer_object_guids?.length ?? 0) > 0) {
+    body.proposer_object_guids = formData.proposer_object_guids;
   }
 
   await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/step3`, body);
@@ -81,7 +81,7 @@ export const useStep3 = ({
   const [formData, setFormData] = useState<Partial<Step3FormData>>({
     invitees: [],
     minister_invitees: [],
-    proposer_user_ids: [],
+    proposer_object_guids: [],
     ...initialData,
   });
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
@@ -102,7 +102,7 @@ export const useStep3 = ({
     ownerSeededRef.current = true;
     getUsers({ search: value, limit: 5 })
       .then((res) => {
-        const user = res.items.find((u) => u.id === value);
+        const user = res.items.find((u) => (u as { object_guid?: string }).object_guid === value || u.id === value);
         const ownerRow: InviteeFormRow = user
           ? mapUserToStep3InviteeRow(user, { isOwner: true })
           : {
@@ -286,8 +286,8 @@ export const useStep3 = ({
     });
   }, []);
 
-  const setProposerUserIds = useCallback((ids: string[]) => {
-    setFormData((prev) => ({ ...prev, proposer_user_ids: ids }));
+  const setProposerObjectGuids = useCallback((ids: string[]) => {
+    setFormData((prev) => ({ ...prev, proposer_object_guids: ids }));
   }, []);
 
   const submitStep = useCallback(
@@ -322,7 +322,7 @@ export const useStep3 = ({
     handleDeleteMinisterInvitee,
     handleUpdateMinisterInvitee,
     handleAddSuggestedMinisterInvitees,
-    setProposerUserIds,
+    setProposerObjectGuids,
     validateAll,
     submitStep,
     nonDeletableInviteeIds,
