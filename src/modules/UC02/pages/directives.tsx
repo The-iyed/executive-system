@@ -423,7 +423,10 @@ const Directives: React.FC = () => {
                       }},
                       { label: 'طلب إجتماع', icon: CalendarDays, color: 'var(--color-primary-500)', action: async () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
-                        if (d) { try { await requestMeetingFromDirective(d.id); openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' }); } catch { } }
+                        if (d) {
+                          openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' });
+                          try { await requestMeetingFromDirective(d.id); } catch { }
+                        }
                       }},
                     ].map((item, idx) => (
                       <button
@@ -599,13 +602,11 @@ const Directives: React.FC = () => {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    try {
-                                      const relatedMeeting = isPrevious
-                                        ? (Array.isArray((original as PreviousDirectiveItem).assignees) ? (original as PreviousDirectiveItem).assignees!.join(', ') : '')
-                                        : ((original as Directive).assignees || '');
-                                      await requestMeetingFromDirective(original.id);
-                                      openCreateDrawer({ directive_id: original.id, directive_text: original.title, related_meeting: relatedMeeting });
-                                    } catch { }
+                                    const relatedMeeting = isPrevious
+                                      ? (Array.isArray((original as PreviousDirectiveItem).assignees) ? (original as PreviousDirectiveItem).assignees!.join(', ') : '')
+                                      : ((original as Directive).assignees || '');
+                                    openCreateDrawer({ directive_id: original.id, directive_text: original.title, related_meeting: relatedMeeting });
+                                    try { await requestMeetingFromDirective(original.id); } catch { }
                                     setExpandedId(null);
                                   }}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors hover:opacity-90"

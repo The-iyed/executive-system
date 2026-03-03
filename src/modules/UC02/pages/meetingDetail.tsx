@@ -24,6 +24,8 @@ import {
   FormField,
   FormInput,
   FormSelect,
+  FormSwitch,
+  FormTextArea,
   type OptionType,
   Drawer,
   AttachmentPreviewDrawer,
@@ -1171,12 +1173,6 @@ const MeetingDetail: React.FC = () => {
     const scheduledEndAt = new Date(scheduleForm.scheduled_end_at);
     if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
       setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية');
-      return;
-    }
-
-    // Validate: if requires_protocol is true, protocol_type or protocol_type_text must be filled
-    if (scheduleForm.requires_protocol && !scheduleForm.protocol_type && !scheduleForm.protocol_type_text) {
-      setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
       return;
     }
 
@@ -4217,13 +4213,6 @@ const MeetingDetail: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                // Validate: if requires_protocol is true, protocol_type must be filled
-                const requiresProtocol = changedPayload.requires_protocol ?? scheduleForm.requires_protocol;
-                const protocolType = changedPayload.protocol_type ?? scheduleForm.protocol_type_text;
-                if (requiresProtocol === true && !protocolType) {
-                  setValidationError('يجب تحديد نوع البروتوكول عند تفعيل خيار "يتطلب بروتوكول"');
-                  return;
-                }
                 // Validate invitees (قائمة المدعوين مقدّم الطلب) whenever there are local invitees
                 if (localInvitees.length > 0 && !validateInvitees()) {
                   setValidationError('يرجى تصحيح الأخطاء في قائمة المدعوين (مقدّم الطلب) — جميع الحقول مطلوبة والبريد والجوال بصيغة صحيحة');
@@ -4370,6 +4359,7 @@ const MeetingDetail: React.FC = () => {
       </Dialog>
 
       {/* Send to Content – Drawer */}
+      {/* مجدول - الجدولة (SCHEDULED_SCHEDULING): POST /api/meeting-requests/{id}/send-to-content-scheduled (no draft) */}
       <Drawer
         open={isSendToContentModalOpen}
         onOpenChange={setIsSendToContentModalOpen}
@@ -4380,7 +4370,9 @@ const MeetingDetail: React.FC = () => {
         footer={
           <div className="flex flex-row-reverse gap-2">
             <button type="button" onClick={() => { setIsSendToContentModalOpen(false); setSendToContentForm({ notes: '' }); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-            <button type="button" onClick={handleSendToContentDraft} disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            {meeting?.status !== MeetingStatus.SCHEDULED_SCHEDULING && (
+              <button type="button" onClick={handleSendToContentDraft} disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'حفظ كمسودة'}</button>
+            )}
             <button type="submit" form="send-to-content-form" disabled={sendToContentMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">{sendToContentMutation.isPending ? 'جاري الإرسال...' : 'إرسال'}</button>
           </div>
         }
@@ -4628,27 +4620,28 @@ const MeetingDetail: React.FC = () => {
           </div>
         }
       >
-        <form id="schedule-meeting-form" onSubmit={handleScheduleSubmit} className="flex flex-col gap-4">
+        <form id="schedule-meeting-form" onSubmit={handleScheduleSubmit} className="flex flex-col gap-6">
               {validationError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-right text-sm text-red-600">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-right text-sm text-red-600">
                     {validationError}
                   </p>
                 </div>
               )}
               {scheduleMutation.isSuccess && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-right text-sm text-green-600">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <p className="text-right text-sm text-green-600">
                     تم جدولة الاجتماع بنجاح
                   </p>
                 </div>
               )}
+
           {/* Scheduled Date/Time – Start and End */}
-          <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right">
-                    تاريخ ووقت البداية <span className="text-red-500">*</span>
-                </label>
+          <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-[14px] font-medium text-[#344054] text-right">
+                تاريخ ووقت البداية <span className="text-red-500">*</span>
+              </label>
                 <DateTimePicker
                   value={scheduleForm.scheduled_at ? (scheduleForm.scheduled_at.includes('T') && !scheduleForm.scheduled_at.includes('Z') ? new Date(scheduleForm.scheduled_at).toISOString() : scheduleForm.scheduled_at) : undefined}
                   onChange={(isoString) => {
@@ -4682,11 +4675,11 @@ const MeetingDetail: React.FC = () => {
                     return d;
                   })()}
                 />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right">
-                    تاريخ ووقت النهاية <span className="text-red-500">*</span>
-                  </label>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[14px] font-medium text-[#344054] text-right">
+                تاريخ ووقت النهاية <span className="text-red-500">*</span>
+              </label>
                   <DateTimePicker
                     value={scheduleForm.scheduled_end_at ? (scheduleForm.scheduled_end_at.includes('T') && !scheduleForm.scheduled_end_at.includes('Z') ? new Date(scheduleForm.scheduled_end_at).toISOString() : scheduleForm.scheduled_end_at) : undefined}
                     onChange={(isoString) => {
@@ -4708,15 +4701,15 @@ const MeetingDetail: React.FC = () => {
                       return d;
                     })() : undefined}
                   />
-                </div>
-              </div>
+            </div>
+          </div>
 
-              {/* Meeting Channel */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 text-right">
-                  قناة الاجتماع <span className="text-red-500">*</span>
-                </label>
-                <Select
+          {/* Meeting Channel */}
+          <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 flex flex-col gap-2">
+            <label className="text-[14px] font-medium text-[#344054] text-right">
+              قناة الاجتماع <span className="text-red-500">*</span>
+            </label>
+            <Select
                   value={scheduleForm.meeting_channel}
                   onValueChange={(value) => {
                     setScheduleForm((prev) => ({ ...prev, meeting_channel: value as typeof prev.meeting_channel }));
@@ -4726,7 +4719,7 @@ const MeetingDetail: React.FC = () => {
                     }
                   }}
                 >
-                  <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse">
+                  <SelectTrigger className="w-full h-11 bg-white border border-[#D0D5DD] rounded-lg text-right flex-row-reverse">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent dir="rtl">
@@ -4738,9 +4731,9 @@ const MeetingDetail: React.FC = () => {
                     <SelectItem value="HYBRID">مختلط</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+          </div>
 
-              {/* Webex Meeting Loading - Show when creating */}
+          {/* Webex Meeting Loading - Show when creating */}
               {scheduleForm.meeting_channel === 'VIRTUAL' && isCreatingWebex && (
                 <div className="flex flex-col gap-2 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
@@ -4826,261 +4819,34 @@ const MeetingDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Requires Protocol */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="requires_protocol"
-                  checked={scheduleForm.requires_protocol}
-                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, requires_protocol: e.target.checked }))}
-                  className="w-4 h-4 rounded border-gray-300"
-                />
-                <label htmlFor="requires_protocol" className="text-sm font-medium text-gray-700 text-right">
-                  يتطلب محضر
-                </label>
-              </div>
+          {/* مبدئي + Protocol Type + Data Complete */}
+          <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 flex flex-col gap-4">
+            <FormField label="مبدئي" className="w-full max-w-none h-auto">
+              <FormSwitch
+                checked={!scheduleForm.requires_protocol}
+                onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: !checked }))}
+              />
+            </FormField>
 
-              {/* Protocol Type - Conditional */}
-              {scheduleForm.requires_protocol && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 text-right">
-                    نوع المحضر <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={scheduleForm.protocol_type || ''}
-                    onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, protocol_type: value }))}
-                  >
-                    <SelectTrigger className="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm text-right flex-row-reverse">
-                      <SelectValue placeholder="اختر نوع المحضر" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      <SelectItem value="DETAILED">مفصل</SelectItem>
-                      <SelectItem value="SUMMARY">ملخص</SelectItem>
-                      <SelectItem value="MINUTES">محضر</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto">
+              <FormSwitch
+                checked={scheduleForm.is_data_complete}
+                onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, is_data_complete: checked }))}
+              />
+            </FormField>
+          </div>
 
-              {/* Is Data Complete */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_data_complete"
-                  checked={scheduleForm.is_data_complete}
-                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, is_data_complete: e.target.checked }))}
-                  className="w-4 h-4 rounded border-gray-300"
-                />
-                <label htmlFor="is_data_complete" className="text-sm font-medium text-gray-700 text-right">
-                  البيانات مكتملة
-                </label>
-              </div>
-
-              {/* Notes */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 text-right">
-                  ملاحظات
-                </label>
-                <Textarea
-                  value={scheduleForm.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScheduleForm((prev) => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Meeting scheduled successfully"
-                  className="w-full min-h-[100px] text-right"
-                
-                />
-              </div>
-
-              {/* Minister Attendees */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700 text-right">
-                    الحضور الوزاري
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addMinisterAttendee}
-                    className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>إضافة</span>
-                  </button>
-                </div>
-
-                {scheduleForm.minister_attendees.map((attendee, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        حضور {index + 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeMinisterAttendee(index)}
-                        className="text-red-600 hover:text-red-700 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          اسم المستخدم
-                        </label>
-                        <Input
-                          type="text"
-                          value={attendee.username || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'username', e.target.value)}
-                          placeholder="john.doe"
-                          className="w-full h-9 text-right"
-                        
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          الاسم (خارجي)
-                        </label>
-                        <Input
-                          type="text"
-                          value={attendee.external_name || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'external_name', e.target.value)}
-                          placeholder="الاسم الخارجي"
-                          className="w-full h-9 text-right"
-                        
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          البريد الإلكتروني
-                        </label>
-                        <Input
-                          type="email"
-                          value={attendee.external_email || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'external_email', e.target.value)}
-                          placeholder="external@example.com"
-                          className="w-full h-9 text-right"
-                        
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          المنصب
-                        </label>
-                        <Input
-                          type="text"
-                          value={attendee.position || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'position', e.target.value)}
-                          placeholder="المنصب"
-                          className="w-full h-9 text-right"
-                        
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          الجوال
-                        </label>
-                        <Input
-                          type="text"
-                          value={attendee.mobile || ''}
-                          onChange={(e) => updateMinisterAttendee(index, 'mobile', e.target.value)}
-                          placeholder="الجوال"
-                          className="w-full h-9 text-right"
-                        
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          آلية الحضور
-                        </label>
-                        <Select
-                          value={attendee.attendance_channel || 'PHYSICAL'}
-                          onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v)}
-                        >
-                          <SelectTrigger className="w-full h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent dir="rtl">
-                            <SelectItem value="PHYSICAL">حضوري</SelectItem>
-                            <SelectItem value="REMOTE">عن بعد</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          مطلوب
-                        </label>
-                        <div className="flex items-center gap-2 justify-end">
-                          <input
-                            type="checkbox"
-                            checked={attendee.is_required}
-                            onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300"
-                          />
-                          <span className="text-xs text-gray-600">
-                            {attendee.is_required ? 'نعم' : 'لا'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          مستشار
-                        </label>
-                        <div className="flex items-center gap-2 justify-end">
-                          <input
-                            type="checkbox"
-                            checked={!!attendee.is_consultant}
-                            onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300"
-                          />
-                          <span className="text-xs text-gray-600">
-                            {attendee.is_consultant ? 'نعم' : 'لا'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-600 text-right">
-                          صلاحية الوصول
-                        </label>
-                        <Select
-                          value={attendee.access_permission || 'FULL'}
-                          onValueChange={(value) => updateMinisterAttendee(index, 'access_permission', value)}
-                        >
-                          <SelectTrigger className="w-full h-9 bg-white border border-gray-300 rounded-lg text-right flex-row-reverse">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent dir="rtl">
-                            <SelectItem value="FULL">كامل</SelectItem>
-                            <SelectItem value="READ_ONLY">قراءة فقط</SelectItem>
-                            <SelectItem value="LIMITED">محدود</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs text-gray-600 text-right">
-                        المبرر
-                      </label>
-                      <Input
-                        type="text"
-                        value={attendee.justification || ''}
-                        onChange={(e) => updateMinisterAttendee(index, 'justification', e.target.value)}
-                        placeholder="المبرر"
-                        className="w-full h-9 text-right"
-                      
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Notes */}
+          <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5">
+            <FormTextArea
+              label="ملاحظات"
+              value={scheduleForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScheduleForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Meeting scheduled successfully"
+              containerClassName="!px-0 !mx-0"
+              fullWidth={false}
+            />
+          </div>
           </form>
       </Drawer>
 

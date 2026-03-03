@@ -145,7 +145,7 @@ const PreviewMeeting: React.FC = () => {
           <div className="w-full flex flex-col pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white">
             <div className="flex flex-row justify-between items-center gap-2.5 w-full">
               <GoBackHeader
-                title={`عرض الطلب (${meeting?.request_number ?? ''})`}
+                title={`${meeting?.meeting_title || meeting?.meeting_subject || 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
                 status={meeting.status}
                 statusLabel={statusLabel}
                 onBack={handleBack}
