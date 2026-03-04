@@ -346,7 +346,7 @@ export const Step3: React.FC<Step3Props> = ({
         )}
         {/* Section 1 — Invitees (Request Submitter) */}
         <FormTable
-          title='المدعوون (مقدم الطلب)'
+          title='قائمة المدعوين'
           required
           columns={INVITEES_TABLE_COLUMNS}
           rows={inviteeRows}
@@ -362,7 +362,7 @@ export const Step3: React.FC<Step3Props> = ({
           customCellRender={inviteesCustomCellRender}
         />
 
-        <div className="relative">
+        {/* <div className="relative">
           <FormTable
             title='المدعوون (الوزير)'
             columns={MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER}
@@ -386,7 +386,7 @@ export const Step3: React.FC<Step3Props> = ({
               />
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Section 3 — Suggested Participants (المقترحون) */}
         <div className="w-full flex flex-col gap-3">

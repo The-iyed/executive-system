@@ -60,11 +60,11 @@ export const DIRECTIVE_METHOD_OPTIONS = [
 
 /** Shared invitees table columns (same structure as UC02 Step3 for alignment). */
 export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
+  emailFieldId: 'email',
   nameFieldId: 'name',
   positionFieldId: 'position',
   sectorFieldId: 'sector',
   mobileFieldId: 'mobile',
-  emailFieldId: 'email',
   attendanceFieldId: 'attendance_mechanism',
   attendanceOptions: [
     { value: AttendanceMechanism.PHYSICAL, label: AttendanceMechanism.PHYSICAL },

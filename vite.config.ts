@@ -44,6 +44,9 @@ export default defineConfig({
       },
     } as Plugin,
   ],
+  optimizeDeps: {
+    include: ['recharts'],
+  },
   resolve: {
     alias: [
       { find: '@analytics', replacement: resolve(__dirname, './src/lib/analytics.ts') },
