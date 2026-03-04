@@ -653,6 +653,8 @@ export interface ScheduleMeetingRequest {
   scheduled_end: string;
   meeting_channel: string;
   requires_protocol: boolean;
+  /** مبدئي – when true, booking is preliminary */
+  is_preliminary_booking?: boolean;
   protocol_type: string | null;
   is_data_complete: boolean;
   notes: string;
