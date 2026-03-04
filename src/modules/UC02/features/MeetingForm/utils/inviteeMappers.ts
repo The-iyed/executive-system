@@ -13,7 +13,7 @@ export interface InviteeFormData {
   mobile?: string;
   email?: string;
   is_required?: boolean;
-  user_id?: string;
+  object_guid?: string;
   username?: string;
   disabled?: boolean;
 }
@@ -21,23 +21,23 @@ export interface InviteeFormData {
 type DraftInvitee = NonNullable<DraftApiResponse['invitees']>[number];
 
 export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => {
-  const userId = invitee.user_id ?? undefined;
-  const hasUserId = !!userId;
-  
-  if (hasUserId) {
+  const objectGuid = (invitee as { object_guid?: string }).object_guid ?? invitee.user_id ?? undefined;
+  const hasObjectGuid = !!objectGuid;
+
+  if (hasObjectGuid) {
     return {
       id: invitee.id,
-      name: invitee.external_name || '', 
-      position: invitee.position || '', 
-      mobile: invitee.mobile || '', 
-      email: invitee.external_email || '', 
+      name: invitee.external_name || '',
+      position: invitee.position || '',
+      mobile: invitee.mobile || '',
+      email: invitee.external_email || '',
       is_required: invitee.is_required || false,
-      user_id: userId, 
-      username: undefined, 
-      disabled: true, 
+      object_guid: objectGuid,
+      username: undefined,
+      disabled: true,
     };
   }
-  
+
   return {
     id: invitee.id,
     name: invitee.external_name || '',
@@ -45,9 +45,9 @@ export const mapInviteeToFormData = (invitee: DraftInvitee): InviteeFormData => 
     mobile: invitee.mobile || '',
     email: invitee.external_email || '',
     is_required: invitee.is_required || false,
-    user_id: undefined,
+    object_guid: undefined,
     username: undefined,
-    disabled: false, 
+    disabled: false,
   };
 };
 
@@ -55,14 +55,15 @@ export const mapUserToFormData = (user: UserApiResponse): Omit<InviteeFormData, 
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
     .join(' ') || user.username || '';
-  
+  const objectGuid = (user as { object_guid?: string }).object_guid ?? user.id;
+
   return {
-    name: '', 
+    name: '',
     position: user.position || '',
     mobile: user.phone_number || '',
     email: user.email || '',
     is_required: false,
-    user_id: user.id,
+    object_guid: objectGuid,
     username: user.username || fullName,
     disabled: true, // System users have disabled fields
   };
@@ -83,7 +84,8 @@ export const enrichInviteeWithUserData = (
   invitee: InviteeFormData,
   user: UserApiResponse
 ): InviteeFormData => {
-  if (!invitee.user_id || invitee.user_id !== user.id) {
+  const userObjectGuid = (user as { object_guid?: string }).object_guid ?? user.id;
+  if (!invitee.object_guid || invitee.object_guid !== userObjectGuid) {
     return invitee;
   }
   
@@ -117,6 +119,7 @@ export const mapUserToStep3InviteeRow = (
   const sector = (user as { sector?: string; department_name?: string }).sector
     ?? (user as { sector?: string; department_name?: string }).department_name
     ?? '';
+  const objectGuid = (user as { object_guid?: string }).object_guid ?? user.id;
   return {
     id: options.id ?? nanoid(),
     full_name: fullName,
@@ -126,8 +129,9 @@ export const mapUserToStep3InviteeRow = (
     email: user.email ?? '',
     attendance_mode: 'IN_PERSON',
     view_permission: false,
+    is_consultant: false,
     ...(options.isOwner && { isOwner: true }),
-    _userId: user.id,
+    _objectGuid: objectGuid,
   } as InviteeFormRow;
 };
 
@@ -141,5 +145,6 @@ export const createEmptyStep3InviteeRow = (): InviteeFormRow => ({
   email: '',
   attendance_mode: 'IN_PERSON',
   view_permission: false,
+  is_consultant: false,
   isOwner: false,
 });

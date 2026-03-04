@@ -50,7 +50,7 @@ export function useMeetingFormDrawer() {
       trackEvent('UC-01', 'uc01_meeting_edit_opened', { meeting_id: meetingId });
       clearDraftData();
       const currentPath = window.location.pathname;
-      const isPreviewOrDetail = currentPath.includes('/meeting/') && currentPath.includes('/preview');
+      const isPreviewOrDetail = currentPath.includes('/meeting/');
       if (isPreviewOrDetail && params.id) {
         setSearchParams((prev) => {
           const next = new URLSearchParams(prev);

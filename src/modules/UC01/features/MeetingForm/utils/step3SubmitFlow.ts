@@ -43,13 +43,17 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
     }
   }
 
+  const MANUAL_ENTRY_VALUE = '__manual__';
   const inviteesPayload = formData.invitees?.map((invitee, index) => {
-    if (invitee.user_id) {
+    const objectGuid = (invitee as { object_guid?: string }).object_guid;
+    if (objectGuid && objectGuid !== MANUAL_ENTRY_VALUE) {
       return {
-        user_id: invitee.user_id,
+        object_guid: objectGuid,
+        email: invitee.email || '',
         sector: invitee.sector?.trim() || '',
         attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
         is_required: invitee.is_required || false,
+        is_consultant: invitee.is_consultant ?? false,
       };
     }
     return {
@@ -61,18 +65,23 @@ export async function executeStep3SubmitFlow(params: Step3SubmitFlowParams): Pro
       attendance_mechanism: invitee.attendance_mechanism === AttendanceMechanism.VIRTUAL ? 'عن بعد' : 'حضوري',
       item_number: index + 1,
       is_required: invitee.is_required || false,
+      is_consultant: invitee.is_consultant ?? false,
     };
   }) ?? [];
 
-  const minister_invitees = (formData.minister_attendees ?? []).map((m) => ({
-    external_name: m.external_name?.trim() ?? '',
-    position: m.position?.trim() ?? '',
-    external_email: m.external_email?.trim() ?? '',
-    mobile: m.mobile?.trim() ?? '',
-    attendance_mechanism: m.attendance_channel === 'REMOTE' ? 'عن بعد' : 'حضوري',
-    is_required: m.is_required ?? false,
-    justification: m.justification?.trim() ?? '',
-  }));
+  const minister_invitees = (formData.minister_attendees ?? []).map((m) => {
+    const name = (m.external_name ?? '').trim();
+    const email = (m.external_email ?? '').trim() || name;
+    return {
+      external_name: name,
+      position: m.position?.trim() ?? '',
+      external_email: email,
+      mobile: m.mobile?.trim() ?? '',
+      attendance_mechanism: m.attendance_channel === 'REMOTE' ? 'عن بعد' : 'حضوري',
+      is_required: m.is_required ?? false,
+      justification: m.justification?.trim() ?? '',
+    };
+  });
 
   const body = {
     invitees: inviteesPayload,
