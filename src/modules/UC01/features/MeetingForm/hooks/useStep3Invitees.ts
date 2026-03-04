@@ -340,6 +340,24 @@ export const useStep3Invitees = ({
     }));
   }, []);
 
+  const handleAddSuggestedMinisterAttendees = useCallback((suggestions: SuggestedAttendee[]) => {
+    if (!suggestions.length) return;
+    const newRows: MinisterAttendeeRowSchema[] = suggestions.map((s) => ({
+      id: nanoid(),
+      external_name: [s.first_name, s.last_name].filter(Boolean).join(' ') || '',
+      position: s.position_name || s.job_description || '',
+      external_email: s.email || '',
+      mobile: s.phone || '',
+      attendance_channel: 'PHYSICAL',
+      is_required: s.importance_level === 'مناسب جدا',
+      justification: '',
+    }));
+    setFormData((prev) => ({
+      ...prev,
+      minister_attendees: [...(prev.minister_attendees || []), ...newRows],
+    }));
+  }, []);
+
   const handleAddMinisterAttendee = useCallback(() => {
     const newRow: MinisterAttendeeRowSchema = {
       id: nanoid(),
@@ -398,6 +416,7 @@ export const useStep3Invitees = ({
     handleDeleteAttendee,
     handleUpdateAttendee,
     handleAddSuggestedAttendees,
+    handleAddSuggestedMinisterAttendees,
     handleAddMinisterAttendee,
     handleDeleteMinisterAttendee,
     handleUpdateMinisterAttendee,
