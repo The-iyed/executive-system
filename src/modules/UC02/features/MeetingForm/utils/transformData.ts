@@ -8,7 +8,7 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
     meetingTitle: draft.meeting_title || '',
     meetingSubject: draft.meeting_title || draft.meeting_subject || '',
     meetingSubjectOptional: draft.meeting_subject || '',
-    meetingDescription: draft?.description || draft.meeting_description || '',
+    meetingDescription: draft?.description ?? draft?.meeting_description ?? '',
     meetingType: draft.meeting_type || '',
     meetingCategory: draft.meeting_classification || '',
     meetingReason: draft.meeting_justification || '',
@@ -77,6 +77,8 @@ function mapDraftInviteeToStep3Row(invitee: DraftInvitee, index: number): Invite
   const sector = (invitee as { sector?: string; department_name?: string }).sector
     ?? (invitee as { sector?: string; department_name?: string }).department_name
     ?? '';
+  const isConsultant = (invitee as { is_consultant?: boolean }).is_consultant;
+  const objectGuid = (invitee as { object_guid?: string }).object_guid ?? invitee.user_id;
   return {
     id: invitee.id,
     full_name: invitee.external_name ?? '',
@@ -86,8 +88,10 @@ function mapDraftInviteeToStep3Row(invitee: DraftInvitee, index: number): Invite
     email: invitee.external_email ?? '',
     attendance_mode: attendanceMode === 'REMOTE' ? 'REMOTE' : 'IN_PERSON',
     view_permission: viewPerm === true,
+    is_consultant: isConsultant === true,
     isOwner: index === 0,
-  };
+    ...(objectGuid != null && { _objectGuid: objectGuid }),
+  } as InviteeFormRow;
 }
 
 export const transformDraftToStep3Data = (draft: DraftApiResponse): Partial<Step3FormData> => {
@@ -95,10 +99,11 @@ export const transformDraftToStep3Data = (draft: DraftApiResponse): Partial<Step
   const minister_invitees = (draft as { minister_invitees?: DraftInvitee[] }).minister_invitees?.map(
     (m) => mapDraftInviteeToStep3Row(m, -1)
   );
-  const proposer_user_ids = (draft as { proposer_user_ids?: string[] }).proposer_user_ids;
+  const proposer_object_guids = (draft as { proposer_object_guids?: string[] }).proposer_object_guids
+    ?? (draft as { proposer_user_ids?: string[] }).proposer_user_ids;
   return {
     invitees,
     ...(minister_invitees && minister_invitees.length > 0 && { minister_invitees }),
-    ...(proposer_user_ids && proposer_user_ids.length > 0 && { proposer_user_ids }),
+    ...(proposer_object_guids && proposer_object_guids.length > 0 && { proposer_object_guids }),
   };
 };
