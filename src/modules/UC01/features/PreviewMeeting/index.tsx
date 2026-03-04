@@ -1,17 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
 import { getMeetingById } from '../../../UC02/data/meetingsApi';
-import { GoBackHeader, EditButton } from '../../components';
-import { MeetingOwnerType, MeetingStatus } from '@/modules/shared/types';
+import { MeetingOwnerType } from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
-import { Tabs, MeetingInfo, AttachmentPreviewDrawer, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
+import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
+
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
   if (meeting.note != null && typeof meeting.note === 'string' && meeting.note.trim()) return meeting.note.trim();
@@ -84,11 +82,7 @@ const PreviewMeeting: React.FC = () => {
           minister_support_other: ext.minister_support_other ?? ext.support_description,
         };
       }),
-      is_based_on_directive: !!(
-      
-        m.is_based_on_directive === true 
-
-      ),
+      is_based_on_directive: !!(m.is_based_on_directive === true),
       directive_method: (meeting.related_directive_ids && meeting.related_directive_ids.length > 0) ? 'DIRECT_DIRECTIVE' : undefined,
       directive_text: meeting.related_guidance ?? undefined,
       notes: getNotesTextFromMeeting(meeting),
@@ -140,61 +134,32 @@ const PreviewMeeting: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 min-h-0 flex flex-col gap-8 pr-5">
-        <div className="flex flex-col flex-shrink-0 pb-3">
-          <div className="w-full flex flex-col pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white">
-            <div className="flex flex-row justify-between items-center gap-2.5 w-full">
-              <GoBackHeader
-                title={`${meeting?.meeting_title || meeting?.meeting_subject || 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
-                status={meeting.status}
-                statusLabel={statusLabel}
-                onBack={handleBack}
-              />
-              {[
-                MeetingStatus.DRAFT,
-                MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
-                MeetingStatus.SCHEDULED_DELAYED,
-                MeetingStatus.RETURNED_FROM_SCHEDULING,
-                MeetingStatus.RETURNED_FROM_CONTENT,
-              ].includes(meeting.status as MeetingStatus) && (
-                <EditButton onClick={() => openEditDrawer(meeting.id)} />
-              )}
-            </div>
-            <div className="flex flex-row items-center w-full gap-2.5">
-              <div className="flex-1 flex min-w-0 justify-center">
-                <Tabs
-                  items={MEETING_PREVIEW_TABS}
-                  activeTab={activeTab}
-                  onTabChange={handleTabChange}
-                  variant="underline"
-                  className="gap-2.5"
-                />
-              </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center justify-center w-6 h-6 text-[#020617] hover:opacity-80 flex-shrink-0 rounded-full"
-                      aria-label="مساعدة"
-                    >
-                      <HelpCircle className="w-4 h-4" strokeWidth={1.33} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                    <p className="font-semibold text-gray-900 mb-1">عرض تفاصيل طلب الاجتماع.</p>
-                    <p className="text-sm text-gray-600">يمكنك الاطلاع على معلومات الطلب والاجتماع والمحتوى والمدعوين والملاحظات.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </div>
+      <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
+        <DetailPageHeader
+          title={`عرض الطلب (${meeting?.request_number ?? ''})`}
+          onBack={handleBack}
+          statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
+          editAction={{
+            visible: true,
+            hasChanges: true,
+            onClick: () => openEditDrawer(meeting.id),
+            label: 'تعديل',
+            tooltip: 'تعديل طلب الاجتماع',
+          }}
+          tabs={MEETING_PREVIEW_TABS}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          helpTooltip={{
+            title: 'عرض تفاصيل طلب الاجتماع.',
+            description: 'يمكنك الاطلاع على معلومات الطلب والاجتماع والمحتوى والمدعوين والملاحظات.',
+          }}
+        />
+
         <div
-          className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto pr-6 pl-6 py-6 gap-6 rounded-2xl bg-white"
+          className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto px-6 py-6 gap-6 rounded-2xl bg-white border border-[#E5E7EB]"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}
         >
-          <div className="flex flex-col w-full flex-1 mt-6">
+          <div className="flex flex-col w-full flex-1">
             {renderTabContent()}
           </div>
         </div>

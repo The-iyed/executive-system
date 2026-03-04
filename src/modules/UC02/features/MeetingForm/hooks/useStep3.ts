@@ -11,6 +11,7 @@ import {
   mapUserToStep3InviteeRow,
   createEmptyStep3InviteeRow,
 } from '../utils/inviteeMappers';
+import type { SuggestedAttendee } from '../../../hooks/useSuggestMeetingAttendees';
 import type { Step1FormData } from '../schemas/step1.schema';
 
 interface UseStep3Props {
@@ -29,10 +30,10 @@ interface SubmitStep3Payload {
 }
 
 function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
-  const r = row as InviteeFormRow & { _userId?: string; _isManual?: boolean };
-  const user_id = r._isManual === true ? undefined : r._userId;
+  const r = row as InviteeFormRow & { _objectGuid?: string; _isManual?: boolean; is_consultant?: boolean };
+  const object_guid = r._isManual === true ? undefined : r._objectGuid;
   return {
-    user_id,
+    object_guid,
     full_name: row.full_name,
     position_title: row.position_title ?? '',
     mobile_number: row.mobile_number,
@@ -40,6 +41,7 @@ function toBackendInvitee(row: InviteeFormRow): Record<string, unknown> {
     email: row.email,
     attendance_mode: row.attendance_mode,
     view_permission: row.view_permission,
+    is_consultant: r.is_consultant ?? false,
   };
 }
 
@@ -61,8 +63,8 @@ const submitStep3Data = async (payload: SubmitStep3Payload): Promise<{ success: 
   if ((formData.minister_invitees?.length ?? 0) > 0) {
     body.minister_invitees = formData?.minister_invitees?.map(toBackendInvitee);
   }
-  if ((formData.proposer_user_ids?.length ?? 0) > 0) {
-    body.proposer_user_ids = formData.proposer_user_ids;
+  if ((formData.proposer_object_guids?.length ?? 0) > 0) {
+    body.proposer_object_guids = formData.proposer_object_guids;
   }
 
   await axiosInstance.put(`/api/meeting-requests/direct-schedule/${draftId}/step3`, body);
@@ -80,7 +82,7 @@ export const useStep3 = ({
   const [formData, setFormData] = useState<Partial<Step3FormData>>({
     invitees: [],
     minister_invitees: [],
-    proposer_user_ids: [],
+    proposer_object_guids: [],
     ...initialData,
   });
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
@@ -101,7 +103,7 @@ export const useStep3 = ({
     ownerSeededRef.current = true;
     getUsers({ search: value, limit: 5 })
       .then((res) => {
-        const user = res.items.find((u) => u.id === value);
+        const user = res.items.find((u) => (u as { object_guid?: string }).object_guid === value || u.id === value);
         const ownerRow: InviteeFormRow = user
           ? mapUserToStep3InviteeRow(user, { isOwner: true })
           : {
@@ -260,8 +262,33 @@ export const useStep3 = ({
     }));
   }, []);
 
-  const setProposerUserIds = useCallback((ids: string[]) => {
-    setFormData((prev) => ({ ...prev, proposer_user_ids: ids }));
+  const handleAddSuggestedMinisterInvitees = useCallback((suggestions: SuggestedAttendee[]) => {
+    if (!suggestions || suggestions.length === 0) return;
+    setFormData((prev) => {
+      const existing = prev.minister_invitees ?? [];
+      const newRows = suggestions.map((s) => {
+        const base = createEmptyStep3InviteeRow();
+        const fullName = [s.first_name, s.last_name].filter(Boolean).join(' ') || base.full_name;
+        return {
+          ...base,
+          full_name: fullName,
+          position_title: s.position_name || s.job_description || base.position_title,
+          mobile_number: s.phone || base.mobile_number,
+          sector: s.department_name || base.sector,
+          email: s.email || base.email,
+          attendance_mode: 'IN_PERSON',
+          view_permission: false,
+        } as InviteeFormRow;
+      });
+      return {
+        ...prev,
+        minister_invitees: [...newRows, ...existing],
+      };
+    });
+  }, []);
+
+  const setProposerObjectGuids = useCallback((ids: string[]) => {
+    setFormData((prev) => ({ ...prev, proposer_object_guids: ids }));
   }, []);
 
   const submitStep = useCallback(
@@ -295,7 +322,8 @@ export const useStep3 = ({
     handleAddMinisterInvitee,
     handleDeleteMinisterInvitee,
     handleUpdateMinisterInvitee,
-    setProposerUserIds,
+    handleAddSuggestedMinisterInvitees,
+    setProposerObjectGuids,
     validateAll,
     submitStep,
     nonDeletableInviteeIds,

@@ -12,6 +12,7 @@ export const inviteeBackendSchema = z.object({
     invalid_type_error: 'آلية الحضور يجب أن تكون حضوري أو عن بُعد',
   }),
   view_permission: z.boolean(),
+  is_consultant: z.boolean().optional().default(false),
 });
 
 /** Form row for invitee (includes UI-only id and isOwner). */
@@ -24,7 +25,7 @@ export const step3Schema = z
   .object({
     invitees: z.array(inviteeFormRowSchema).min(1, 'يجب إضافة مدعو واحد على الأقل'),
     minister_invitees: z.array(inviteeFormRowSchema).optional().default([]),
-    proposer_user_ids: z.array(z.string()).optional().default([]),
+    proposer_object_guids: z.array(z.string()).optional().default([]),
   })
   .refine(
     (data) => {
