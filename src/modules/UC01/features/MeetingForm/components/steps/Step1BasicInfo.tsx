@@ -108,7 +108,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   return (
     <div className="w-full flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
           <FormRow className='sm:justify-end'>
             <FormSwitch
               checked={formData.is_on_behalf_of || false}
@@ -378,6 +378,8 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               formData.meeting_end_date
             )}
           />
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
         <FormRow className='sm:justify-end'>
           <FormSwitch
             checked={formData.is_based_on_directive || false}
@@ -437,7 +439,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
             )}
           </>
         )}
-
+ </div>
         <FormTextArea
           label="ملاحظات"
           value={formData.notes || ''}
