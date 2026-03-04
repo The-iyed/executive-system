@@ -102,6 +102,8 @@ export interface MeetingApiResponse {
   status: string;
   current_owner_type: string;
   current_owner_user_id: string;
+  /** Owner identifier; prefer over current_owner_user_id when present. */
+  current_owner_object_guid?: string;
   current_owner_role_id: string;
   current_owner_user: {
     id: string;
@@ -214,6 +216,8 @@ export interface MeetingsListResponse {
 
 export interface GetMeetingsParams {
   status?: MeetingStatus | string;
+  /** Filter by multiple statuses – overrides `status` when provided */
+  status_in?: string[];
   skip?: number;
   limit?: number;
   search?: string;
@@ -255,7 +259,9 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
 export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();
   
-  if (params.status) {
+  if (params.status_in && params.status_in.length > 0) {
+    params.status_in.forEach(s => queryParams.append('status_in', s));
+  } else if (params.status) {
     queryParams.append('status', params.status);
   }
   if (params.skip !== undefined) {

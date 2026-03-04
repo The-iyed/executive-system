@@ -15,6 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         breadcrumbs: [{ label: 'تقييم المحتوى وإضافة التوجيهات', onClick: () => {} }],
       }}
       useDynamicNavigation={true}
+      hideContentBar={true}
     />
   );
 };

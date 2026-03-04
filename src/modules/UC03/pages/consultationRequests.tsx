@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Search, LayoutList, LayoutGrid, Inbox, AlertCircle, Calendar } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import {
   DataTable,
   MeetingCardData,
@@ -10,21 +12,19 @@ import {
   Pagination,
   TruncatedWithTooltip,
   formatDateArabic,
-  ContentBar,
 } from '@/modules/shared';
 import { MeetingClassification, getMeetingClassificationLabel } from '@/modules/shared/types';
-import '@/modules/shared/styles'; // Import shared styles including scrollbar
-import { Calendar } from 'lucide-react';
+import { cn } from '@/lib/ui';
+import '@/modules/shared/styles';
 import {
   getAssignedConsultationRequests,
   GetConsultationRequestsParams,
 } from '../data/consultationsApi';
 import {
   mapConsultationRequestToCardData,
-  mapConsultationRequestToCardViewData,
 } from '../utils/consultationMapper';
-import { ConsultationRequestsGrid, ConsultationRequestCardData } from '../components';
-import { trackEvent } from '@analytics';
+import { CardsGrid } from '@/modules/shared';
+import { trackEvent } from '@/lib/analytics';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,30 +41,23 @@ const ConsultationRequests: React.FC = () => {
 
   // Debounce search input
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchValue);
-    }, 300);
-
+    const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
-  // Calculate pagination values
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Fetch consultation requests from API
   const { data: requestsResponse, isLoading, error } = useQuery({
     queryKey: ['consultation-requests', debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetConsultationRequestsParams = {
-        skip: skip,
+        skip,
         limit: ITEMS_PER_PAGE,
       };
-      // Only add search if it's not empty
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
@@ -72,22 +65,14 @@ const ConsultationRequests: React.FC = () => {
     },
   });
 
-  // Store original API response items for table columns
   const originalRequests = requestsResponse?.items || [];
 
-  // Map API response to MeetingCardData (for table view)
   const requests: MeetingCardData[] = useMemo(() => {
     if (!requestsResponse?.items) return [];
     return requestsResponse.items.map(mapConsultationRequestToCardData);
   }, [requestsResponse]);
 
-  // Map API response to ConsultationRequestCardData (for card view)
-  const cardViewRequests: ConsultationRequestCardData[] = useMemo(() => {
-    if (!requestsResponse?.items) return [];
-    return requestsResponse.items.map(mapConsultationRequestToCardViewData);
-  }, [requestsResponse]);
 
-  // Calculate total pages from API response
   const totalItems = requestsResponse?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
@@ -97,7 +82,6 @@ const ConsultationRequests: React.FC = () => {
       header: 'بند',
       width: 'w-[100px]',
       render: (row) => {
-        // Get sequential number from original data
         const originalRequest = originalRequests.find((r) => r.id === row.id);
         const sequentialNumber = originalRequest?.sequential_number
           ? originalRequest.sequential_number.toString()
@@ -236,53 +220,113 @@ const ConsultationRequests: React.FC = () => {
   ];
 
   return (
-     <div>
-      <ContentBar
-        showViewSwitcher={true}
-        onViewChange={setView}
-        view={view}
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-      />
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">جاري التحميل...</div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-red-600">حدث خطأ أثناء تحميل البيانات</div>
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-gray-600">لا توجد بيانات</div>
-            </div>
-          ) : (
-            <>
-              {view === 'table' ? (
-                <DataTable
-                  columns={tableColumns}
-                  data={requests}
-                  onRowClick={(row) => navigate(`/consultation-request/${row.id}`)}
-                />
-              ) : (
-                <ConsultationRequestsGrid
-                  requests={cardViewRequests}
-                  onView={(request) => navigate(`/consultation-request/${request.id}`)}
-                  onDetails={(request) => navigate(`/consultation-request/${request.id}`)}
-                />
-              )}
+    <div className="flex flex-col w-full min-h-0" dir="rtl">
 
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
+      {/* ════════════════════════════════════════ */}
+      {/* PAGE HEADER — Title + Search + Actions  */}
+      {/* ════════════════════════════════════════ */}
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* Right: Title area */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-[var(--color-primary-50)]">
+              <Icon icon="solar:chat-round-check-bold" width={22} height={22} className="text-[var(--color-primary-500)]" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-[var(--color-text-gray-900)]">طلبات الاستشارات</h1>
+              <p className="text-xs text-[var(--color-text-gray-500)] mt-0.5">يمكنك تقديم الاستشارات للطلبات المحالة إليك</p>
+            </div>
+          </div>
+
+          {/* Left: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="بحث في الطلبات..."
+                className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
+              />
+            </div>
+
+            {/* View switcher */}
+            <div className="flex items-center bg-white rounded-xl border border-[var(--color-base-gray-200)] p-1 gap-0.5">
+              <button
+                onClick={() => setView('cards')}
+                className={cn(
+                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                  view === 'cards' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setView('table')}
+                className={cn(
+                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
+                  view === 'table' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
+                )}
+              >
+                <LayoutList className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════ */}
+      {/*     CONTENT                              */}
+      {/* ════════════════════════════════════════ */}
+      <div className="flex-1 px-6 pb-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[var(--color-text-gray-600)]">جاري التحميل...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              <span>حدث خطأ أثناء تحميل البيانات</span>
+            </div>
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--color-base-gray-100)] flex items-center justify-center">
+              <Inbox className="w-7 h-7 text-[var(--color-text-gray-500)]" />
+            </div>
+            <p className="text-sm text-[var(--color-text-gray-500)]">لا توجد طلبات</p>
+          </div>
+        ) : (
+          <>
+            {view === 'table' ? (
+              <DataTable
+                columns={tableColumns}
+                data={requests}
+                onRowClick={(row) => navigate(`/consultation-request/${row.id}`)}
+              />
+            ) : (
+              <CardsGrid
+                meetings={requests}
+                onView={(meeting) => navigate(`/consultation-request/${meeting.id}`)}
+                onDetails={(meeting) => navigate(`/consultation-request/${meeting.id}`)}
+              />
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

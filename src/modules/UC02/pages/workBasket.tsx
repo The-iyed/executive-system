@@ -69,8 +69,8 @@ const WorkBasket: React.FC = () => {
         skip,
         limit: ITEMS_PER_PAGE,
       };
-      if (statusFilters.length === 1) {
-        params.status = statusFilters[0];
+      if (statusFilters.length > 0) {
+        params.status_in = statusFilters;
       }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
@@ -114,13 +114,6 @@ const WorkBasket: React.FC = () => {
     })),
   ];
 
-  /* ─── Stats ─── */
-  const statsCards = [
-    { label: 'إجمالي الطلبات', value: totalItems, icon: Inbox, color: 'var(--color-primary-500)', bg: 'rgba(0,169,145,0.06)' },
-    { label: 'قيد المراجعة', value: meetings.filter(m => m.status === MeetingStatus.UNDER_REVIEW).length, icon: Clock, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
-    { label: 'مجدول', value: meetings.filter(m => m.status === MeetingStatus.SCHEDULED).length, icon: CheckCircle2, color: '#10b981', bg: 'rgba(16,185,129,0.06)' },
-    { label: 'مرفوض', value: meetings.filter(m => m.status === MeetingStatus.REJECTED).length, icon: XCircle, color: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
-  ];
 
   const tableColumns: TableColumn<MeetingApiResponse>[] = [
     {
@@ -341,31 +334,6 @@ const WorkBasket: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════ */}
-      {/*     STATS CARDS                         */}
-      {/* ════════════════════════════════════════ */}
-      <div className="px-6 pb-4">
-        <div className="grid grid-cols-4 gap-3">
-          {statsCards.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[var(--color-base-gray-100)]"
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: stat.bg }}
-              >
-                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-[var(--color-text-gray-500)]">{stat.label}</p>
-                <p className="text-lg font-bold text-[var(--color-text-gray-900)]">{stat.value}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 

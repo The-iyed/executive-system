@@ -45,10 +45,10 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     if (!Number.isNaN(d.getTime())) fd.append('deadline', d.toISOString());
   }
   if (formData.meetingReason) fd.append('meeting_justification', formData.meetingReason);
-  if (formData.relatedDirective) fd.append('related_directive_id', getOptionValue(formData.relatedDirective) ?? '');
+  // relatedDirective kept in form state only; not sent to API
   if (formData.requester) fd.append('submitter_id', getOptionValue(formData.requester) ?? '');
   if (formData.meetingOwner) fd.append('owner_id', getOptionValue(formData.meetingOwner) ?? '');
-  if (formData.meetingDescription) fd.append('meeting_description', formData.meetingDescription);
+  if (formData.meetingDescription) fd.append('description', formData.meetingDescription);
   fd.append('is_urgent', formData.isUrgent ? 'true' : 'false');
   if (formData.isUrgent && formData.urgentReason) fd.append('urgent_reason', formData.urgentReason);
   if (formData.meeting_channel) fd.append('meeting_channel', formData.meeting_channel);
@@ -86,7 +86,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
     const d = new Date(formData.previousMeetingDate + 'T00:00:00');
     if (!Number.isNaN(d.getTime())) fd.append('previous_meeting_date', d.toISOString());
   }
-  if (formData.notes) fd.append('general_notes', formData.notes);
+  if (formData.notes) fd.append('note', formData.notes);
   fd.append('is_data_complete', formData.isComplete ? 'true' : 'false');
   return fd;
 };
@@ -302,7 +302,7 @@ export function useStep1({
       ? (meeting.deadline.includes('T') ? meeting.deadline : `${meeting.deadline}T00:00:00`).slice(0, 10)
       : '';
     const meetingUnknown = meeting as unknown as Record<string, unknown>;
-    const meetingDesc = meetingUnknown.meeting_description;
+    const meetingDesc = meetingUnknown.description ?? '';
     const meetingLocation = typeof meetingUnknown.location === 'string' ? meetingUnknown.location : undefined;
     setFormData((prev) => ({
       ...prev,
@@ -325,8 +325,8 @@ export function useStep1({
       requester: meeting.submitter_id != null
         ? { value: meeting.submitter_id, label: meeting.submitter_name ?? '' }
         : prev.requester,
-      meetingOwner: meeting.current_owner_user_id != null
-        ? { value: meeting.current_owner_user_id, label: meeting.meeting_owner_name ?? '' }
+      meetingOwner: (meeting.current_owner_object_guid ?? meeting.current_owner_user_id) != null
+        ? { value: meeting.current_owner_object_guid ?? meeting.current_owner_user_id, label: meeting.meeting_owner_name ?? '' }
         : prev.meetingOwner,
     }));
   }, []);
