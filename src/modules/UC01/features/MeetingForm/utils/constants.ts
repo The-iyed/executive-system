@@ -1,4 +1,5 @@
 import { MEETING_CLASSIFICATION_OPTIONS, getInviteesTableColumns, type FormTableColumn } from '@/modules/shared';
+import { MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER } from '@/modules/UC02/features/MeetingForm/utils/constants';
 import { AttendanceMechanism } from '@/modules/shared/types';
 
 export { MEETING_CLASSIFICATION_OPTIONS };
@@ -70,6 +71,9 @@ export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
     { value: AttendanceMechanism.VIRTUAL, label: AttendanceMechanism.VIRTUAL },
   ],
 });
+
+/** Minister invitees table columns for UC01 (قائمة المدعوين - الوزير) – reuse UC02 definition. */
+export const MINISTER_ATTENDEES_COLUMNS: FormTableColumn[] = MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER;
 
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },

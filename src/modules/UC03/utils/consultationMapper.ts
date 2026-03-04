@@ -37,13 +37,16 @@ export const mapConsultationRequestToCardData = (
 
   return {
     id: request.id,
+    requestNumber: request.request_number,
     title: request.meeting_title || request.meeting_subject,
     date: formatDateArabic(dateToUse),
     coordinator: request.submitter_name ?? undefined,
-    coordinatorAvatar: undefined, // API doesn't provide avatar
+    coordinatorAvatar: undefined,
     status: status,
     statusLabel: statusLabel,
     location: locationLabel,
+    meetingCategory: getMeetingClassificationLabel(request.meeting_classification),
+    meetingDate: request.scheduled_at ? formatDateArabic(request.scheduled_at) : undefined,
   };
 };
 
