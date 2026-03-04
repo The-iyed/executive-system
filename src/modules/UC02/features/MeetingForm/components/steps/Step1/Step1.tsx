@@ -159,7 +159,7 @@ export function Step1({
   return (
     <div className="w-full min-w-0 flex flex-col gap-8" data-form-container>
       <form className="space-y-8 flex flex-col items-center w-full min-w-0 max-w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full space-y-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full space-y-0">
           <MeetingNatureField
             value={formData.meetingNature ?? ''}
             onChange={(v) => handleChange('meetingNature', v)}
@@ -383,7 +383,7 @@ export function Step1({
             disabled={isFieldDisabled('meetingConfidentiality')}
           />
 
-          <div className='sm:col-span-2 w-full min-w-0'>
+          <div className='md:col-span-2 lg:col-span-3 w-full min-w-0'>
           <MeetingAgendaTable
             rows={formData.meetingAgenda || []}
             required={isRequired('meetingAgenda')}
