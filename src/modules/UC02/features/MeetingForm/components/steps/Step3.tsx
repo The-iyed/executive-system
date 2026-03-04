@@ -364,7 +364,7 @@ export const Step3: React.FC<Step3Props> = ({
 
         {/* <div className="relative">
           <FormTable
-            title='مدعوو الوزير'
+            title='المدعوون (الوزير)'
             columns={MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER}
             rows={ministerRows}
             onAddRow={handleAddMinisterInvitee}

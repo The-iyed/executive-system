@@ -1,6 +1,8 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useToast } from '@/lib/ui';
-import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, type OptionType, type CustomCellRenderParams, getUserDisplayId, getUserDisplayLabel } from '@/modules/shared';
+import { FormTable, ActionButtons, FormAsyncSelectV2, FormInput, AIGenerateButton, type OptionType, type CustomCellRenderParams, getUserDisplayId, getUserDisplayLabel } from '@/modules/shared';
+import { SuggestAttendeesModal } from '../../../../../UC02/components';
+import type { UseSuggestMeetingAttendeesParams } from '../../../../../UC02/hooks/useSuggestMeetingAttendees';
 import { INVITEES_TABLE_COLUMNS, MINISTER_ATTENDEES_COLUMNS } from '../../utils/constants';
 import type { Step3InviteesFormData } from '../../schemas/step3Invitees.schema';
 import type { UserApiResponse } from '../../../../data/usersApi';
@@ -27,6 +29,13 @@ export interface Step3InviteesProps {
   handleBackClick?: () => void;
   handleCancelClick: () => void;
   step3EditableMap?: Record<string, boolean>;
+  /** When provided, enables "إضافة مدعوين آليًا" and renders SuggestAttendeesModal. */
+  suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
+  /** Called when suggest attendees modal returns success; receives API response with suggestions. */
+  onSuggestAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
+  /** Called when suggest attendees modal returns success for minister section; receives API response with suggestions. */
+  onSuggestMinisterAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
+  /** When true (UC02 scheduling officer), show قائمة المدعوين (الوزير) table. */
   showMinisterInvitees?: boolean;
   ministerAttendees?: Array<{ id: string; external_name?: string; position?: string; external_email?: string; mobile?: string; attendance_channel?: 'PHYSICAL' | 'REMOTE'; is_required?: boolean; justification?: string }>;
   onAddMinisterAttendee?: () => void;
@@ -48,9 +57,20 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleNextClick,
   handleBackClick,
   step3EditableMap,
+  suggestAttendeesMeetingParams,
+  onSuggestAttendeesSuccess,
+  onSuggestMinisterAttendeesSuccess,
+  showMinisterInvitees = false,
+  ministerAttendees = [],
+  onAddMinisterAttendee,
+  onDeleteMinisterAttendee,
+  onUpdateMinisterAttendee,
 }) => {
   const isFieldDisabled = (fieldKey: string) =>
     step3EditableMap != null && step3EditableMap[fieldKey] === false;
+
+  const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
+  const [isSuggestMinisterAttendeesModalOpen, setIsSuggestMinisterAttendeesModalOpen] = useState(false);
 
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
@@ -220,9 +240,25 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full flex flex-col gap-6">
+        {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestAttendeesModalOpen}
+            onOpenChange={setIsSuggestAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestAttendeesSuccess}
+          />
+        )}
+        {showMinisterInvitees && suggestAttendeesMeetingParams && onSuggestMinisterAttendeesSuccess && (
+          <SuggestAttendeesModal
+            isOpen={isSuggestMinisterAttendeesModalOpen}
+            onOpenChange={setIsSuggestMinisterAttendeesModalOpen}
+            meetingParams={suggestAttendeesMeetingParams}
+            onSuccess={onSuggestMinisterAttendeesSuccess}
+          />
+        )}
         <div className="relative w-full max-w-[1200px] mx-auto">
           <FormTable
-            title= 'قائمة المدعوين'
+            title= 'المدعوون (مقدم الطلب)'
             columns={INVITEES_TABLE_COLUMNS}
             required={inviteesRequired}
             rows={inviteeRows}
@@ -236,12 +272,21 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
             disabled={isFieldDisabled('invitees')}
             customCellRender={customCellRender}
           />
+          {suggestAttendeesMeetingParams && onSuggestAttendeesSuccess && (
+            <div className="absolute bottom-[-3px] right-[170px]">
+              <AIGenerateButton
+                label="إضافة مدعوين آليًا"
+                disabled={isFieldDisabled('invitees')}
+                onClick={() => setIsSuggestAttendeesModalOpen(true)}
+              />
+            </div>
+          )}
         </div>
 
         {/* {showMinisterInvitees && (
           <div className="relative w-full max-w-[1200px] mx-auto">
             <FormTable
-              title='مدعوو الوزير'
+              title='المدعوون (الوزير)'
               columns={ministerColumns}
               rows={ministerRows}
               onAddRow={handleMinisterRowAdd}
@@ -253,6 +298,15 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               customCellRender={ministerCustomCellRender}
               emptyStateMessage="لا يوجد مدعوون من الوزير"
             />
+            {suggestAttendeesMeetingParams && onSuggestMinisterAttendeesSuccess && (
+              <div className="absolute bottom-[-3px] right-[170px]">
+                <AIGenerateButton
+                  label="إضافة مدعوين آليًا"
+                  disabled={isFieldDisabled('minister_attendees')}
+                  onClick={() => setIsSuggestMinisterAttendeesModalOpen(true)}
+                />
+              </div>
+            )}
           </div>
         )} */}
 
