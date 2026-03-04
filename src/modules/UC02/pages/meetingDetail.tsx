@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@radix-ui/react-collapsible';
 import { 
   MeetingStatus, 
@@ -86,7 +86,7 @@ import {
 import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
-import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField } from '@/modules/shared';
+import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField, hasUseCaseAccess } from '@/modules/shared';
 import { type SuggestedAttendee } from '../hooks/useSuggestMeetingAttendees';
 import { RequestInfoTab, MeetingInfoTab, DirectivesTab, MeetingDocumentationTab, SchedulingConsultationTab, DirectiveTab } from '../features/meeting-detail';
 import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../features/meeting-detail/constants';
@@ -100,6 +100,7 @@ import {
 import MeetingFormDrawer from '../../UC01/features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
 import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
+import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
@@ -186,6 +187,8 @@ function getGeneralNotesList(
 const MeetingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isScheduleOfficer = hasUseCaseAccess(user?.use_cases, 'UC-02');
   const [activeTab, setActiveTab] = useState<string>('request-info');
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
@@ -401,6 +404,7 @@ const MeetingDetail: React.FC = () => {
 
   // Schedule modal state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleConfirmModalOpen, setScheduleConfirmModalOpen] = useState(false);
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
   const [webexMeetingDetails, setWebexMeetingDetails] = useState<{
     join_link: string;
@@ -1144,6 +1148,7 @@ const MeetingDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       // Close the form; do not navigate
         setIsScheduleModalOpen(false);
+        setScheduleConfirmModalOpen(false);
         setScheduleForm({
           scheduled_at: '',
         scheduled_end_at: '',
@@ -1163,15 +1168,19 @@ const MeetingDetail: React.FC = () => {
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scheduleForm.scheduled_at || !scheduleForm.scheduled_end_at) return;
+    // Use meeting start/end when available (e.g. schedule tab where those fields are hidden)
+    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
+    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    if (!startSource || !endSource) return;
+
+    const scheduledAt = new Date(startSource);
+    const scheduledEndAt = new Date(endSource);
 
     // Reject past date/time
-    const scheduledAt = new Date(scheduleForm.scheduled_at);
     if (scheduledAt.getTime() <= Date.now()) {
       setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي');
       return;
     }
-    const scheduledEndAt = new Date(scheduleForm.scheduled_end_at);
     if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
       setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية');
       return;
@@ -1185,13 +1194,18 @@ const MeetingDetail: React.FC = () => {
 
     setValidationError(null);
 
-    // Convert datetime-local to ISO strings (UTC) for schedule API
-    const scheduled_start = new Date(scheduleForm.scheduled_at).toISOString();
-    const scheduled_end = new Date(scheduleForm.scheduled_end_at).toISOString();
+    // Convert to ISO strings (UTC) for schedule API
+    const scheduled_start = scheduledAt.toISOString();
+    const scheduled_end = scheduledEndAt.toISOString();
+
+    // Meeting channel: from meeting or form (schedule tab hides the field but we still send it)
+    const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string))
+      ? meeting.meeting_channel
+      : scheduleForm.meeting_channel;
 
     // If meeting channel is VIRTUAL (عن بُعد), use the already-created Webex meeting link
     let meetingLink: string | undefined = undefined;
-    if (scheduleForm.meeting_channel === 'VIRTUAL') {
+    if (meetingChannel === 'VIRTUAL') {
       if (!webexMeetingDetails) {
         setValidationError('يرجى الانتظار حتى يتم إنشاء اجتماع Webex');
         return;
@@ -1205,8 +1219,9 @@ const MeetingDetail: React.FC = () => {
     const schedulePayload = {
       scheduled_start,
       scheduled_end,
-      meeting_channel: scheduleForm.meeting_channel,
+      meeting_channel: meetingChannel,
       requires_protocol: scheduleForm.requires_protocol,
+      is_preliminary_booking: !scheduleForm.requires_protocol,
       protocol_type: scheduleForm.requires_protocol ? (scheduleForm.protocol_type || scheduleForm.protocol_type_text || null) : null,
       is_data_complete: scheduleForm.is_data_complete,
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
@@ -1423,6 +1438,48 @@ const MeetingDetail: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
+
+  /** Create Webex meeting (for confirm modal or when VIRTUAL and no link yet). Uses meeting or scheduleForm for start/end. */
+  const createWebexLink = useCallback(async () => {
+    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
+    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    if (!startSource || !endSource) {
+      setValidationError('يجب تحديد تاريخ ووقت البداية والنهاية لإنشاء رابط Webex.');
+      return;
+    }
+    setIsCreatingWebex(true);
+    setValidationError(null);
+    try {
+      const scheduledAtISO = new Date(startSource).toISOString();
+      const scheduledDateUTC = new Date(scheduledAtISO);
+      const year = scheduledDateUTC.getUTCFullYear();
+      const month = String(scheduledDateUTC.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(scheduledDateUTC.getUTCDate()).padStart(2, '0');
+      const hours = String(scheduledDateUTC.getUTCHours()).padStart(2, '0');
+      const minutes = String(scheduledDateUTC.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(scheduledDateUTC.getUTCSeconds()).padStart(2, '0');
+      const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const durationMinutes = Math.max(1, Math.round((new Date(endSource).getTime() - new Date(startSource).getTime()) / (60 * 1000)));
+      const webexResponse = await createWebexMeeting({
+        meeting_title: meeting?.meeting_title || 'اجتماع',
+        start_datetime: webexDateTime,
+        time_zone: 'UTC',
+        duration_minutes: durationMinutes,
+      });
+      setWebexMeetingDetails({
+        join_link: webexResponse.data.webex_meeting_join_link,
+        meeting_number: webexResponse.data.meeting_access_details.meeting_number,
+        password: webexResponse.data.meeting_access_details.password,
+        sip_address: webexResponse.data.meeting_access_details.sip_address,
+        host_key: webexResponse.data.meeting_access_details.host_key,
+      });
+    } catch (error) {
+      console.error('Failed to create Webex meeting:', error);
+      setValidationError('فشل في إنشاء اجتماع Webex. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsCreatingWebex(false);
+    }
+  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at]);
 
   // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
   useEffect(() => {
@@ -1692,13 +1749,16 @@ const MeetingDetail: React.FC = () => {
 
   // Tabs per Excel "الجدولة - مراجعة الطلب": التبويب (column التبويب)
   // When status is SCHEDULED (مجدول), hide 4 tabs and add "توثيق الاجتماع"
+  // For schedule officer (UC-02): replace Invitees tab with Schedule tab in same position
   const TABS_HIDDEN_WHEN_SCHEDULED = ['scheduling-consultation', 'directive'];
   const tabs = useMemo(() => {
     const all = [
       { id: 'request-info', label: 'معلومات الطلب' },
       { id: 'meeting-info', label: 'معلومات الاجتماع' },
       { id: 'content', label: 'المحتوى' },
-      { id: 'attendees', label: 'المدعوون' },
+      ...(isScheduleOfficer
+        ? [{ id: 'schedule', label: 'الجدولة' }]
+        : [{ id: 'attendees', label: 'المدعوون' }]),
       { id: 'scheduling-consultation', label: 'استشارة الجدولة' },
       { id: 'directive', label: 'استشارة المكتب التنفيذي' },
     ];
@@ -1710,7 +1770,7 @@ const MeetingDetail: React.FC = () => {
       return [...all, { id: 'directives', label: 'التوجيهات' }];
     }
     return all;
-  }, [meetingStatus]);
+  }, [meetingStatus, isScheduleOfficer]);
 
   // Normalize content_approval_directives for table (same columns as DirectivesTab: رقم التوجيه، تاريخ التوجيه، نص التوجيه، الموعد النهائي، المسؤولون، الحالة)
   // API may return string[] or object[] with title/text/due_date/status/assignees/directive_number
@@ -1772,8 +1832,12 @@ const MeetingDetail: React.FC = () => {
       setActiveTab('request-info');
     } else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') {
       setActiveTab('request-info');
+    } else if (isScheduleOfficer && activeTab === 'attendees') {
+      setActiveTab('schedule');
+    } else if (!isScheduleOfficer && activeTab === 'schedule') {
+      setActiveTab('request-info');
     }
-  }, [meetingStatus, activeTab]);
+  }, [meetingStatus, activeTab, isScheduleOfficer]);
 
   /** Data for MeetingInfo (read-only) – built from meeting + form state so read-only tab can use shared component without modifying it. */
   const meetingInfoData = useMemo((): MeetingInfoData => {
@@ -3040,9 +3104,57 @@ const MeetingDetail: React.FC = () => {
               </Dialog>
             </div>
           )}
-          {/* Tab: قائمة المدعوين */}
-          {activeTab === 'attendees' && (
+          {/* Tab: قائمة المدعوين (non–schedule officer) OR الجدولة (schedule officer: إعدادات + مدعوون) */}
+          {((activeTab === 'attendees' && !isScheduleOfficer) || (activeTab === 'schedule' && isScheduleOfficer)) && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
+
+              {/* إعدادات الجدولة – only when schedule tab + schedule officer */}
+              {activeTab === 'schedule' && isScheduleOfficer && (
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <CalendarMinus className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <h2 className="text-[15px] font-bold text-[#1F2937]">إعدادات الجدولة</h2>
+                  </div>
+                  <div className="p-6">
+                    {validationError && (
+                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <p className="text-right text-sm text-red-600">{validationError}</p>
+                      </div>
+                    )}
+                    {scheduleMutation.isSuccess && (
+                      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <p className="text-right text-sm text-green-600">تم جدولة الاجتماع بنجاح</p>
+                      </div>
+                    )}
+                    {scheduleForm.meeting_channel === 'VIRTUAL' && isCreatingWebex && (
+                      <div className="flex items-center gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
+                        <div className="w-5 h-5 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                        <span className="text-sm text-[#374151]">جاري إنشاء اجتماع Webex...</span>
+                      </div>
+                    )}
+                    {scheduleForm.meeting_channel === 'VIRTUAL' && webexMeetingDetails && !isCreatingWebex && (
+                      <div className="flex flex-col gap-2 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
+                        <label className="text-sm font-semibold text-[#1F2937] text-right">تفاصيل اجتماع Webex</label>
+                        <div className="flex gap-2">
+                          <Input type="text" value={webexMeetingDetails.join_link} readOnly className="flex-1 h-9 bg-white border border-[#D0D5DD] rounded-lg text-right text-sm" />
+                          <button type="button" onClick={() => navigator.clipboard.writeText(webexMeetingDetails.join_link)} className="px-3 py-1.5 text-xs bg-[#048F86] text-white rounded-lg hover:bg-[#037A72] transition-colors">نسخ</button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-4">
+                      <FormField label="مبدئي" className="w-full max-w-none h-auto">
+                        <FormSwitch checked={!scheduleForm.requires_protocol} onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: !checked }))} />
+                      </FormField>
+                      <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto">
+                        <FormSwitch checked={scheduleForm.is_data_complete} onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, is_data_complete: checked }))} />
+                      </FormField>
+                      <FormTextArea label="ملاحظات" value={scheduleForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScheduleForm((prev) => ({ ...prev, notes: e.target.value }))} placeholder="Meeting scheduled successfully" containerClassName="!px-0 !mx-0" fullWidth={false} />
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* ─── قائمة المدعوين (مقدّم الطلب) ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
@@ -3888,7 +4000,7 @@ const MeetingDetail: React.FC = () => {
             meetingStatus={meetingStatus}
             open={actionsBarOpen}
             onOpenChange={setActionsBarOpen}
-            onOpenSchedule={() => setIsScheduleModalOpen(true)}
+            onOpenSchedule={isScheduleOfficer ? () => setScheduleConfirmModalOpen(true) : () => setIsScheduleModalOpen(true)}
             onOpenReject={() => setIsRejectModalOpen(true)}
             onOpenCancel={meeting.status === MeetingStatus.SCHEDULED ? () => setIsCancelModalOpen(true) : undefined}
             onOpenEditConfirm={() => setIsEditConfirmOpen(true)}
@@ -4044,6 +4156,127 @@ const MeetingDetail: React.FC = () => {
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule confirm modal (schedule officer): show details before submitting */}
+      <Dialog open={scheduleConfirmModalOpen} onOpenChange={(open) => { setScheduleConfirmModalOpen(open); if (!open) setValidationError(null); }}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              تأكيد الجدولة
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4 text-right">
+            {validationError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-600">{validationError}</p>
+              </div>
+            )}
+            {(() => {
+              const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
+              const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+              const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
+              const channelLabels: Record<string, string> = { PHYSICAL: 'حضوري', PHYSICAL_LOCATION_1: 'حضوري - الموقع 1', PHYSICAL_LOCATION_2: 'حضوري - الموقع 2', PHYSICAL_LOCATION_3: 'حضوري - الموقع 3', VIRTUAL: 'عن بُعد', HYBRID: 'مختلط' };
+              const formatDt = (s: string) => {
+                if (!s) return '—';
+                const d = new Date(s);
+                if (Number.isNaN(d.getTime())) return '—';
+                const datePart = d.toLocaleDateString('ar', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory', numberingSystem: 'latn' });
+                const timePart = d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: false, numberingSystem: 'latn' });
+                return `${datePart}، ${timePart}`;
+              };
+              return (
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 gap-3 text-sm">
+                    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                      <span className="text-[#6B7280] font-medium">تاريخ ووقت البداية</span>
+                      <span className="text-[#1F2937] font-medium">{formatDt(startSource)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                      <span className="text-[#6B7280] font-medium">تاريخ ووقت النهاية</span>
+                      <span className="text-[#1F2937] font-medium">{formatDt(endSource)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                      <span className="text-[#6B7280] font-medium">قناة الاجتماع</span>
+                      <span className="text-[#1F2937] font-medium">{channelLabels[meetingChannel as string] ?? meetingChannel}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                      <span className="text-[#6B7280] font-medium">مبدئي</span>
+                      <span className="text-[#1F2937] font-medium">{!scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                      <span className="text-[#6B7280] font-medium">البيانات مكتملة</span>
+                      <span className="text-[#1F2937] font-medium">{scheduleForm.is_data_complete ? 'نعم' : 'لا'}</span>
+                    </div>
+                    {scheduleForm.location && (
+                      <div className="flex justify-between items-start py-2 border-b border-[#F3F4F6] gap-2">
+                        <span className="text-[#6B7280] font-medium flex-shrink-0">الموقع</span>
+                        <span className="text-[#1F2937] font-medium text-left break-words">{scheduleForm.location}</span>
+                      </div>
+                    )}
+                    {(scheduleForm.minister_attendees?.length ?? 0) > 0 && (
+                      <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6]">
+                        <span className="text-[#6B7280] font-medium">مدعوو الوزير</span>
+                        <span className="text-[#1F2937] font-medium">{scheduleForm.minister_attendees!.length} مدعو</span>
+                      </div>
+                    )}
+                    {scheduleForm.notes && scheduleForm.notes !== 'Meeting scheduled successfully' && (
+                      <div className="flex flex-col gap-1 py-2 border-b border-[#F3F4F6]">
+                        <span className="text-[#6B7280] font-medium">ملاحظات</span>
+                        <p className="text-[#1F2937] text-sm leading-relaxed whitespace-pre-wrap">{scheduleForm.notes}</p>
+                      </div>
+                    )}
+                    {meetingChannel === 'VIRTUAL' && webexMeetingDetails?.join_link && (
+                      <div className="flex flex-col gap-1 py-2 border-b border-[#F3F4F6]">
+                        <span className="text-[#6B7280] font-medium">رابط Webex</span>
+                        <p className="text-[#048F86] text-sm truncate" dir="ltr">{webexMeetingDetails.join_link}</p>
+                      </div>
+                    )}
+                    {meetingChannel === 'VIRTUAL' && !webexMeetingDetails && (
+                      <div className="flex flex-col gap-3 py-3 px-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl">
+                        <span className="text-[#6B7280] font-medium text-right">رابط Webex</span>
+                        {isCreatingWebex ? (
+                          <div className="flex items-center gap-2 text-[#374151] text-sm">
+                            <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                            جاري إنشاء اجتماع Webex...
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => createWebexLink()}
+                            className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors"
+                          >
+                            إنشاء رابط Webex
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <button
+              type="button"
+              onClick={() => setScheduleConfirmModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              disabled={scheduleMutation.isPending}
+              onClick={() => {
+                const e = { preventDefault: () => {} } as React.FormEvent;
+                handleScheduleSubmit(e);
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {scheduleMutation.isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -4516,7 +4749,8 @@ const MeetingDetail: React.FC = () => {
         </form>
       </Drawer>
 
-      {/* Schedule Meeting – Drawer */}
+      {/* Schedule Meeting – Drawer (hidden for schedule officer; they use the Schedule tab and Submit) */}
+      {!isScheduleOfficer && (
       <Drawer
         open={isScheduleModalOpen}
         onOpenChange={(open: boolean) => {
@@ -4832,6 +5066,7 @@ const MeetingDetail: React.FC = () => {
           </div>
           </form>
       </Drawer>
+      )}
 
       {/* Delete minister attendee confirmation modal */}
       <Dialog
