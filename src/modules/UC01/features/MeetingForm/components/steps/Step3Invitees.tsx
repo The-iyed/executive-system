@@ -28,7 +28,6 @@ export interface Step3InviteesProps {
   handleSaveDraftClick: () => void;
   handleBackClick?: () => void;
   handleCancelClick: () => void;
-  /** Map of form field key -> editable. When provided, fields with false are disabled (edit mode with API editable_fields). */
   step3EditableMap?: Record<string, boolean>;
   /** When provided, enables "إضافة مدعوين آليًا" and renders SuggestAttendeesModal. */
   suggestAttendeesMeetingParams?: UseSuggestMeetingAttendeesParams | null;
@@ -38,7 +37,6 @@ export interface Step3InviteesProps {
   onSuggestMinisterAttendeesSuccess?: (data: { suggestions: Array<{ first_name: string; last_name: string; email: string; phone?: string; position_name?: string; job_description?: string; department_name?: string; importance_level?: string }> }) => void;
   /** When true (UC02 scheduling officer), show قائمة المدعوين (الوزير) table. */
   showMinisterInvitees?: boolean;
-  /** Minister attendees from formData (hook state); used when showMinisterInvitees. */
   ministerAttendees?: Array<{ id: string; external_name?: string; position?: string; external_email?: string; mobile?: string; attendance_channel?: 'PHYSICAL' | 'REMOTE'; is_required?: boolean; justification?: string }>;
   onAddMinisterAttendee?: () => void;
   onDeleteMinisterAttendee?: (index: number) => void;
@@ -57,9 +55,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   handleDeleteAttendee,
   handleUpdateAttendee,
   handleNextClick,
-  handleSaveDraftClick,
   handleBackClick,
-  handleCancelClick,
   step3EditableMap,
   suggestAttendeesMeetingParams,
   onSuggestAttendeesSuccess,
@@ -78,7 +74,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
 
   const { toast } = useToast();
   const userOptionsMapRef = useRef<Map<string, { value: string; label: string; description?: string; username?: string; position?: string; phone_number?: string; sector?: string; first_name?: string; last_name?: string }>>(new Map());
-  /** Last search input per row id – used when user selects "إدخال يدوي" to prefill name */
   const searchInputByRowRef = useRef<Record<string, string>>({});
 
   const loadUserOptions = useCallback(async (search: string, skip: number, limit: number) => {
@@ -237,151 +232,10 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
     [inviteeNameCellRender]
   );
 
-  /** Minister invitees name cell – same behavior as UC02 minister_invitees (AD search + manual). */
-  const ministerNameCellRender = useCallback(
-    (params: CustomCellRenderParams) => {
-      const { row, onUpdateRow, disabled } = params;
-      const isManual = (row as { _isManual?: boolean })._isManual === true;
-
-      if (isManual) {
-        return (
-          <FormInput
-            value={row.external_email ?? ''}
-            onChange={(e) => onUpdateRow('external_email', e.target.value)}
-            placeholder="البريد الإلكتروني"
-            disabled={disabled}
-            fullWidth
-          />
-        );
-      }
-
-      const objectGuid = (row as { _objectGuid?: string })._objectGuid;
-      const value: OptionType | null =
-        objectGuid && row.external_email
-          ? { value: objectGuid, label: row.external_email }
-          : null;
-
-      return (
-        <div className="w-full min-w-0">
-          <FormAsyncSelectV2
-            value={value}
-            defaultOptions={false}
-            fullWidth
-            onValueChange={(opt) => {
-              if (!opt) {
-                onUpdateRow('external_name', '');
-                onUpdateRow('position', '');
-                onUpdateRow('mobile', '');
-                onUpdateRow('external_email', '');
-                onUpdateRow('_isManual', false);
-                onUpdateRow('_objectGuid', '');
-                return;
-              }
-              if (opt.value === MANUAL_ENTRY_VALUE) {
-                const searchFromOption = (opt as { __search?: string }).__search ?? '';
-                const searchFromRef = (searchInputByRowRef.current[row.id] ?? '').trim();
-                const searchValue = (searchFromOption || searchFromRef).trim();
-                onUpdateRow('_isManual', true);
-                onUpdateRow('external_email', searchValue);
-                onUpdateRow('external_name', '');
-                onUpdateRow('position', '');
-                onUpdateRow('mobile', '');
-                onUpdateRow('_objectGuid', '');
-                return;
-              }
-              const u = userOptionsMapRef.current.get(opt.value);
-              if (u) {
-                const existing = ministerAttendees.find(
-                  (inv) => inv.id !== row.id && (inv as { _objectGuid?: string })._objectGuid === u.value
-                );
-                if (existing) return;
-                const email = (u.description ?? '').trim();
-                const isValidEmail = !!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-                if (!isValidEmail) {
-                  toast({
-                    title: 'البريد الإلكتروني غير صحيح',
-                    description: 'لا يوجد بريد إلكتروني صالح لهذا المستخدم',
-                    variant: 'destructive',
-                  });
-                  return;
-                }
-                onUpdateRow('_objectGuid', u.value);
-                onUpdateRow('_isManual', false);
-                onUpdateRow('external_name', u.label);
-                onUpdateRow('position', u.position ?? '');
-                onUpdateRow('mobile', u.phone_number ?? '');
-                onUpdateRow('external_email', email);
-              }
-            }}
-            loadOptions={loadUserOptions}
-            placeholder="اختر مستخدم أو إدخال يدوي"
-            isClearable
-            isSearchable
-            limit={10}
-            searchPlaceholder="ابحث عن مستخدم..."
-            emptyMessage="لم يتم العثور على مستخدمين"
-            isDisabled={disabled}
-            onInputChange={(newValue) => {
-              searchInputByRowRef.current[row.id] = newValue;
-            }}
-          />
-        </div>
-      );
-    },
-    [loadUserOptions, ministerAttendees]
-  );
-
-  const ministerCustomCellRender = useMemo(
-    () => ({ full_name: ministerNameCellRender }),
-    [ministerNameCellRender]
-  );
-
-  // Use UC02 minister columns but relabel the first column to "البريد الإلكتروني" for UC01.
-  const ministerColumns = useMemo(
-    () =>
-      MINISTER_ATTENDEES_COLUMNS.map((col) =>
-        col.id === 'full_name' ? { ...col, header: 'البريد الإلكتروني' } : col
-      ),
-    []
-  );
-
   const inviteeRows = (formData.invitees ?? []).map((row) => ({
     ...row,
     id: row.id,
   }));
-
-  const ministerRows = ministerAttendees.map((row) => ({
-    ...row,
-    id: row.id,
-    // bridge UC01 fields to UC02 column ids for display
-    full_name: (row as any).full_name ?? row.external_email,
-    position_title: (row as any).position_title ?? row.position,
-    mobile_number: (row as any).mobile_number ?? row.mobile,
-  }));
-
-  const handleMinisterRowAdd = useCallback(() => {
-    onAddMinisterAttendee?.();
-  }, [onAddMinisterAttendee]);
-
-  const handleMinisterRowDelete = useCallback(
-    (rowId: string) => {
-      if (!onDeleteMinisterAttendee) return;
-      const index = ministerAttendees.findIndex((row) => row.id === rowId);
-      if (index === -1) return;
-      onDeleteMinisterAttendee(index);
-    },
-    [ministerAttendees, onDeleteMinisterAttendee]
-  );
-
-  const handleMinisterRowUpdate = useCallback(
-    (rowId: string, field: string, value: any) => {
-      if (!onUpdateMinisterAttendee) return;
-      const index = ministerAttendees.findIndex((row) => row.id === rowId);
-      if (index === -1) return;
-      onUpdateMinisterAttendee(index, field, value as string | boolean);
-    },
-    [ministerAttendees, onUpdateMinisterAttendee]
-  );
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -429,7 +283,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           )}
         </div>
 
-        {showMinisterInvitees && (
+        {/* {showMinisterInvitees && (
           <div className="relative w-full max-w-[1200px] mx-auto">
             <FormTable
               title='المدعوون (الوزير)'
@@ -454,12 +308,12 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
               </div>
             )}
           </div>
-        )}
+        )} */}
 
         <ActionButtons
           onBack={handleBackClick}
-          onCancel={handleCancelClick}
-          onSaveDraft={handleSaveDraftClick}
+          // onCancel={handleCancelClick}
+          // onSaveDraft={handleSaveDraftClick}
           onNext={handleNextClick}
           disabled={isSubmitting || isDeleting}
           nextLabel='إرسال'
