@@ -78,5 +78,5 @@ export const MINISTER_ATTENDEES_COLUMNS: FormTableColumn[] = MINISTER_INVITEES_T
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },
   { id: 'step2', label: 'المحتوى' },
-  { id: 'step3', label: 'قائمة المدعوين' },
+  { id: 'step3', label: 'المدعوون' },
 ];
