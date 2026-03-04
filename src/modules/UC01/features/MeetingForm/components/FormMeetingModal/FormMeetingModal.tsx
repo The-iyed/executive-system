@@ -18,7 +18,7 @@ export function FormMeetingModal({
     <Drawer
       open={open}
       onOpenChange={onOpenChange}
-      width={850}
+      width='100%'
       className={className}
       bodyClassName="p-[10px]"
     >
