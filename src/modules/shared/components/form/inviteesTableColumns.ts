@@ -35,11 +35,11 @@ export function getInviteesTableColumns(options: InviteesTableColumnsOptions): F
 
   const columns: FormTableColumn[] = [
     { id: 'itemNumber', header: '#', width: WIDTH_INDEX },
+    { id: emailFieldId, header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: WIDTH_DATA },
     { id: nameFieldId, header: 'الإسم', type: 'text', placeholder: 'الإسم', width: WIDTH_DATA },
     { id: positionFieldId, header: 'المنصب', type: 'text', placeholder: 'المنصب', width: WIDTH_DATA },
     { id: sectorFieldId, header: 'الجهة', type: 'text', placeholder: 'الجهة', width: WIDTH_DATA },
     { id: mobileFieldId, header: 'الجوال', type: 'text', placeholder: 'الجوال', width: WIDTH_DATA },
-    { id: emailFieldId, header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: WIDTH_DATA },
     {
       id: attendanceFieldId,
       header: 'آلية الحضور',
