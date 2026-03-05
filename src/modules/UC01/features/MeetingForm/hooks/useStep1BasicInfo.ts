@@ -316,6 +316,15 @@ export const useStep1BasicInfo = ({
             });
           }
         }
+        // Clear meeting classification when category is not Business Meetings (اجتماعات الأعمال)
+        if (field === 'meetingCategory' && value !== 'BUSINESS') {
+          newData.meetingClassification1 = '';
+          setErrors((prevErrors) => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.meetingClassification1;
+            return newErrors;
+          });
+        }
         // Clear meeting_location and location option when meeting channel is not PHYSICAL (حضوري)
         if (field === 'meetingChannel' && value !== 'PHYSICAL') {
           newData.meeting_location = '';

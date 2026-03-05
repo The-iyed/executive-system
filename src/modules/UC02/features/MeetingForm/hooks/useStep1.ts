@@ -235,6 +235,9 @@ export function useStep1({
       if (field === 'meetingNature' && value !== 'SEQUENTIAL' && value !== 'PERIODIC') {
         next.previousMeeting = '';
       }
+      if (field === 'meetingCategory' && value !== 'BUSINESS') {
+        next.meetingClassification1 = '';
+      }
       if (field === 'meeting_channel' && value !== 'PHYSICAL') {
         next.location = '';
         next.location_option = '';
@@ -256,6 +259,13 @@ export function useStep1({
       setErrors((e) => {
         const next = { ...e };
         delete next.previousMeeting;
+        return next;
+      });
+    }
+    if (field === 'meetingCategory' && value !== 'BUSINESS') {
+      setErrors((e) => {
+        const next = { ...e };
+        delete next.meetingClassification1;
         return next;
       });
     }
