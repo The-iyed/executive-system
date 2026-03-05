@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getMeetingById } from '../../../UC02/data/meetingsApi';
+import { getMeetingRequestById } from '../../../UC02/data/meetingsApi';
 import { MeetingOwnerType } from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
 import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
@@ -9,6 +9,7 @@ import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
+import { getMeetingById } from '@/modules/shared/api';
 
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
