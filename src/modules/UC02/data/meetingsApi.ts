@@ -315,6 +315,20 @@ export const getMeetingById = async (meetingId: string): Promise<MeetingApiRespo
   return response.data;
 };
 
+/** Fetch meeting request by id (full payload including previous_meeting_attachment). Use for detail page when /api/meetings/:id omits it. */
+export const getMeetingRequestById = async (requestId: string): Promise<MeetingApiResponse> => {
+  try {
+    const response = await axiosInstance.get<MeetingApiResponse>(`/api/meeting-requests/${requestId}`);
+    return response.data;
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 404) {
+      return getMeetingById(requestId);
+    }
+    throw err;
+  }
+};
+
 /** Meeting search result from /api/v1/business-cards/meetings-search */
 export interface MeetingSearchResult {
   id: number;
