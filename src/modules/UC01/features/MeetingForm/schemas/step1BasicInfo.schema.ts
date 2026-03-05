@@ -200,7 +200,7 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
   const requiresMeetingManager = data.is_on_behalf_of === true;
   const requiresDirectiveMethod = data.is_based_on_directive === true;
   const requiresDirectiveText = data.directive_method === 'DIRECT_DIRECTIVE';
-  const requiresClassification = data.meetingCategory !== 'PRIVATE_MEETING';
+  const requiresClassification = data.meetingCategory === 'BUSINESS';
   const requiresAgenda = data.meetingCategory !== 'PRIVATE_MEETING';
   const requiresMeetingDates = data.is_urgent !== true;
   const requiresMeetingLocation = data.meetingChannel === 'PHYSICAL';
@@ -416,7 +416,7 @@ export const isStep1BasicInfoFieldRequired = (field: Step1FieldKey, data: Partia
     case 'meetingCategory':
     case 'meetingConfidentiality':
     case 'meetingClassification1':
-      return data.meetingCategory !== CATEGORY_PRIVATE_MEETING;
+      return data.meetingCategory === 'BUSINESS';
     case 'meetingReason':
       return !!data.meetingCategory && (CATEGORIES_REQUIRING_REASON as readonly string[]).includes(data.meetingCategory);
     case 'relatedTopic':
