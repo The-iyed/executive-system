@@ -39,6 +39,7 @@ import {
 } from '@/modules/shared'; 
 import {
   getMeetingById,
+  getMeetingRequestById,
   getMeetings,
   getMeetingsSearchForPrevious,
   type MeetingSearchResult,
@@ -200,7 +201,7 @@ const MeetingDetail: React.FC = () => {
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
     queryKey: ['meeting', id],
-    queryFn: () => getMeetingById(id!),
+    queryFn: () => getMeetingRequestById(id!),
     enabled: !!id,
   });
 
@@ -1686,6 +1687,20 @@ const MeetingDetail: React.FC = () => {
   const hasPresentation = presentationAttachments.length > 0 || newPresentationAttachments.length > 0;
   const hasObjectivesOrAgenda = (contentForm.objectives?.length ?? 0) > 0 || (contentForm.agendaItems?.length ?? 0) > 0;
   const hasContent = hasObjectivesOrAgenda && hasPresentation;
+console.log({meeting});
+
+  /** Optional attachments (مرفقات اختيارية): non‑presentation attachments only (previous_meeting_attachment is rendered separately in the Content tab) */
+  const optionalAttachmentsList = useMemo(() => {
+    return (meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id));
+  }, [meeting?.attachments, deletedAttachmentIds]);
+
+  /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
+  const hasPreviousMeetingAttachment = useMemo(() => {
+    const p = meeting && (meeting as Record<string, unknown>).previous_meeting_attachment;
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
+    const id = (p as Record<string, unknown>).id;
+    return typeof id === 'string' && !deletedAttachmentIds.includes(id);
+  }, [meeting, deletedAttachmentIds]);
 
   // Handle form field changes
   const handleFieldChange = (field: string, value: string) => {
@@ -2736,7 +2751,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                     <h3 className="text-[15px] font-bold text-[#1F2937]">مرفقات اختيارية</h3>
                   </div>
-                  {canEdit && ((meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).length > 0 || newAttachments.length > 0) && (
+                  {canEdit && (optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPreviousMeetingAttachment) && (
                     <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#048F86]/30 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
                       <Plus className="w-4 h-4" />
                       إضافة مرفق
@@ -2745,24 +2760,36 @@ const MeetingDetail: React.FC = () => {
                   )}
                 </div>
                 <div className="p-6">
-                  {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newAttachments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
-                      <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
-                        <FileText className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
-                      </div>
-                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد مرفقات اختيارية</p>
-                      <p className="text-sm text-[#9CA3AF] mb-6">يمكنك إرفاق مستندات إضافية إن رغبت</p>
-                      {canEdit && (
-                        <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-[#048F86]/40 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
-                          <Plus className="w-4 h-4" />
-                          إضافة مرفق
-                          <input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
-                        </label>
-                      )}
-                    </div>
-                  ) : (
+                  {(() => {
+                    const prevAtt = meeting && typeof (meeting as Record<string, unknown>).previous_meeting_attachment === 'object' && (meeting as Record<string, unknown>).previous_meeting_attachment != null && !Array.isArray((meeting as Record<string, unknown>).previous_meeting_attachment)
+                      ? (meeting as Record<string, unknown>).previous_meeting_attachment as Record<string, unknown>
+                      : null;
+                    const prevId = prevAtt && typeof prevAtt.id === 'string' ? prevAtt.id : null;
+                    const prevNotDeleted = prevId != null && !deletedAttachmentIds.includes(prevId);
+                    const hasPrevAttachment = prevAtt != null && prevNotDeleted;
+                    const hasAnyOptional = optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPrevAttachment;
+                  return hasAnyOptional ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {(meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
+                      {prevAtt != null && prevNotDeleted && (
+                        <div key={prevId ?? 'prev-meeting-att'} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
+                          {(typeof prevAtt.file_type === 'string' && prevAtt.file_type.toLowerCase() === 'pdf') ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{typeof prevAtt.file_type === 'string' ? prevAtt.file_type.toUpperCase() : 'FILE'}</div>}
+                          <div className="flex flex-col items-end min-w-0 flex-1">
+                            <span className="text-[10px] font-medium text-[#048F86] bg-[#048F86]/10 px-2 py-0.5 rounded-full mb-1">محضر الاجتماع السابق</span>
+                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{typeof prevAtt.file_name === 'string' ? prevAtt.file_name : ''}</span>
+                            <span className="text-xs text-[#9CA3AF]">{typeof prevAtt.file_size === 'number' ? Math.round(prevAtt.file_size / 1024) : 0} KB</span>
+                          </div>
+                          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            {typeof prevAtt.blob_url === 'string' && (
+                              <>
+                                <a href={prevAtt.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
+                                <button type="button" onClick={() => setPreviewAttachment({ blob_url: prevAtt.blob_url as string, file_name: typeof prevAtt.file_name === 'string' ? prevAtt.file_name : '', file_type: typeof prevAtt.file_type === 'string' ? prevAtt.file_type : undefined })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                              </>
+                            )}
+                            <button type="button" disabled={!canEdit} onClick={() => prevId && handleDeleteAttachment(prevId)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      )}
+                      {optionalAttachmentsList.map((att) => (
                         <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                           <div className="flex flex-col items-end min-w-0 flex-1">
@@ -2787,7 +2814,23 @@ const MeetingDetail: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
+                      <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                        <FileText className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
+                      </div>
+                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد مرفقات اختيارية</p>
+                      <p className="text-sm text-[#9CA3AF] mb-6">يمكنك إرفاق مستندات إضافية إن رغبت</p>
+                      {canEdit && (
+                        <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-[#048F86]/40 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
+                          <Plus className="w-4 h-4" />
+                          إضافة مرفق
+                          <input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                        </label>
+                      )}
+                    </div>
+                  );
+                  })()}
                 </div>
               </section>
 
