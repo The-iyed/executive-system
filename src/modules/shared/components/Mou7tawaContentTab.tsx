@@ -15,6 +15,8 @@ export interface ContentTabFileItem {
   file_size: number;
   file_type: string;
   blob_url?: string | null;
+  /** Optional label e.g. "محضر الاجتماع السابق" for previous meeting minutes */
+  badge?: string | null;
 }
 
 function getFileTypeKey(fileType: string | undefined, fileName: string | undefined): string {
@@ -65,6 +67,11 @@ function FileCard({
     >
       <FileIcon fileType={file.file_type} fileName={file.file_name} />
       <div className="flex-1 min-w-0 text-right">
+        {file.badge && (
+          <p className="text-[10px] font-medium text-[#009883] bg-[#009883]/10 px-2 py-0.5 rounded-full inline-block mb-1">
+            {file.badge}
+          </p>
+        )}
         <p className="text-sm font-medium text-[#344054] truncate">{file.file_name}</p>
         <p className="text-xs text-[#667085]">{Math.round((file.file_size || 0) / 1024)} KB</p>
       </div>
