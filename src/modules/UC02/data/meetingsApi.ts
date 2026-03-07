@@ -1,5 +1,6 @@
 // Import axios instance - using relative path since @auth doesn't export it
 import axiosInstance from '../../auth/utils/axios';
+import { EXECUTION_SYSTEM_BASE_URL, BUSINESS_CARDS_BASE_URL } from '@/lib/env';
 import { MeetingStatus } from '@/modules/shared/types';
 
 export interface Objective {
@@ -300,7 +301,7 @@ export const getWaitingList = async (params: GetMeetingsParams = {}): Promise<Me
 };
 
 /** Previous meetings list from execution system (الاجتماعات السابقة tab) */
-const EXECUTION_SYSTEM_MEETINGS_URL = 'https://execution-system.momrahai.com/api/meetings';
+const EXECUTION_SYSTEM_MEETINGS_URL = `${EXECUTION_SYSTEM_BASE_URL}/api/meetings`;
 
 export const getPreviousMeetingsFromExecutionSystem = async (params: { skip?: number; limit?: number } = {}): Promise<MeetingsListResponse> => {
   const skip = params.skip ?? 0;
@@ -1243,7 +1244,7 @@ export interface AdamMeetingSearchByTitleResponse {
 export const searchAdamMeetingByTitle = async (
   title: string
 ): Promise<AdamMeetingSearchByTitleResponse> => {
-  const baseUrl = 'https://momah-business-cards.momrahai.com/api/v1';
+  const baseUrl = BUSINESS_CARDS_BASE_URL;
   const encodedTitle = encodeURIComponent(title.trim());
   const url = `${baseUrl}/adam-meetings/search/${encodedTitle}`;
   const response = await axiosInstance.get<AdamMeetingSearchByTitleResponse>(url);
@@ -1375,9 +1376,7 @@ export const runCompareByAttachment = async (
 };
 
 // LLM notes/insights for a presentation attachment – icon on each attachment (ملاحظات على العرض)
-const INSIGHTS_API_BASE =
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EXECUTION_SYSTEM_URL) ||
-  'https://execution-system.momrahai.com';
+const INSIGHTS_API_BASE = EXECUTION_SYSTEM_BASE_URL;
 
 const INSIGHTS_POLL_INTERVAL_MS = 2000;
 const INSIGHTS_MAX_POLL_ATTEMPTS = 60; // 2 minutes at 2s interval
