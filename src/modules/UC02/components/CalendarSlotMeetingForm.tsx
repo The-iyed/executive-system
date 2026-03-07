@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormCheckbox, FormSelect } from '@/modules/shared';
+import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
   MEETING_CHANNEL_OPTIONS,
   MEETING_LOCATION_OPTIONS,
   LOCATION_OPTIONS,
-  MINISTER_INVITEES_TABLE_COLUMNS,
+  INVITEES_TABLE_COLUMNS,
   getLocationDropdownValue,
   showLocationOtherInput,
 } from '../features/MeetingForm/utils/constants';
@@ -68,7 +68,7 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_location?: string;
   meeting_link?: string;
   proposer_user_ids?: string[];
-  minister_invitees: InviteeFormRow[];
+  invitees: InviteeFormRow[];
 }
 
 export interface CalendarSlotMeetingFormProps {
@@ -108,7 +108,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [ministerInvitees, setMinisterInvitees] = useState<InviteeFormRow[]>([]);
+  const [invitees, setInvitees] = useState<InviteeFormRow[]>([]);
   const [proposerSelections, setProposerSelections] = useState<{ id: string; label: string; email?: string }[]>([]);
 
   const loadProposerAdOptions = useCallback(
@@ -198,7 +198,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     []
   );
 
-  const ministerEmailCellRender = useCallback(
+  const inviteeEmailCellRender = useCallback(
     (params: import('@/modules/shared').CustomCellRenderParams) => {
       const { row, onUpdateRow, disabled = false } = params;
       const isManual = row._isManual === true;
@@ -270,27 +270,21 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     [loadAdOptionsByEmail]
   );
 
-  const handleAddMinisterInvitee = useCallback(() => {
-    setMinisterInvitees((prev) => [...prev, createEmptyStep3InviteeRow()]);
+  const handleAddInvitee = useCallback(() => {
+    setInvitees((prev) => [...prev, createEmptyStep3InviteeRow()]);
   }, []);
 
-  const handleDeleteMinisterInvitee = useCallback((id: string) => {
-    setMinisterInvitees((prev) => prev.filter((r) => r.id !== id));
+  const handleDeleteInvitee = useCallback((id: string) => {
+    setInvitees((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  const handleUpdateMinisterInvitee = useCallback((id: string, field: string, value: unknown) => {
-    setMinisterInvitees((prev) => {
-      if (field === 'isOwner' && value === true) {
-        return prev.map((r) => ({
-          ...r,
-          isOwner: r.id === id,
-        }));
-      }
+  const handleUpdateInvitee = useCallback((id: string, field: string, value: unknown) => {
+    setInvitees((prev) => {
       return prev.map((r) => (r.id === id ? { ...r, [field]: value } : r));
     });
   }, []);
 
-  const ministerRows = ministerInvitees.map((row) => ({ ...row, id: row.id }));
+  const inviteeRows = invitees.map((row) => ({ ...row, id: row.id }));
 
   const [titleTouched, setTitleTouched] = useState(false);
   const titleTrimmed = title.trim();
@@ -429,7 +423,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
       proposer_user_ids: proposerSelections.length > 0 ? proposerSelections.map((p) => p.id) : undefined,
-      minister_invitees: ministerInvitees,
+      invitees,
     });
   };
 
@@ -603,29 +597,16 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </div>
 
         <FormTable
-          title="المدعوون (الوزير)"
-          columns={MINISTER_INVITEES_TABLE_COLUMNS}
-          rows={ministerRows}
-          onAddRow={handleAddMinisterInvitee}
-          onDeleteRow={handleDeleteMinisterInvitee}
-          onUpdateRow={handleUpdateMinisterInvitee}
-          addButtonLabel="إضافة مدعو للوزير"
-          emptyStateMessage="لا يوجد مدعوون من الوزير"
+          title="المدعوون (مقدم الطلب)"
+          columns={INVITEES_TABLE_COLUMNS}
+          rows={inviteeRows}
+          onAddRow={handleAddInvitee}
+          onDeleteRow={handleDeleteInvitee}
+          onUpdateRow={handleUpdateInvitee}
+          addButtonLabel="إضافة مدعو"
+          emptyStateMessage="لا يوجد مدعوون"
           customCellRender={{
-            email: ministerEmailCellRender,
-            isOwner: ({ row, onUpdateRow, disabled }) => (
-              <div className="flex justify-center" title="اختيار مالك الاجتماع">
-                <FormCheckbox
-                  checked={!!row.isOwner}
-                  onCheckedChange={(checked) => {
-                    if (disabled) return;
-                    onUpdateRow('isOwner', checked);
-                  }}
-                  label=""
-                  className="!flex-row !items-center !gap-0"
-                />
-              </div>
-            ),
+            email: inviteeEmailCellRender,
           }}
         />
 
