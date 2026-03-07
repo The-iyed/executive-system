@@ -116,14 +116,12 @@ export const getOutlookTimelineEvents = async (
   return Array.isArray(events) ? events : [];
 };
 
-/** Minister invitee for create-scheduled-meeting: name, position, mobile, email, meeting_owner */
+/** Invitee for create-scheduled-meeting: name, position, mobile, email */
 export interface CreateScheduledMeetingInvitee {
   name: string;
   position: string;
   mobile: string;
   email: string;
-  /** true when this invitee is selected as meeting owner */
-  meeting_owner?: boolean;
 }
 
 /** Payload for POST /api/scheduling/create-scheduled-meeting */
@@ -135,7 +133,7 @@ export interface CreateScheduledMeetingPayload {
   meeting_location?: string; // required when meeting_channel === PHYSICAL
   meeting_link?: string; // Webex join link when meeting_channel is VIRTUAL/HYBRID
   proposer_user_ids?: string[]; // users who receive notification without being invitees
-  minister_invitees?: CreateScheduledMeetingInvitee[];
+  invitees?: CreateScheduledMeetingInvitee[];
 }
 
 /**
@@ -151,7 +149,7 @@ export const createScheduledMeeting = async (
     scheduled_start: payload.scheduled_start,
     scheduled_end: payload.scheduled_end,
     meeting_channel: payload.meeting_channel,
-    minister_invitees: payload.minister_invitees ?? [],
+    invitees: payload.invitees ?? [],
   };
   if (payload.meeting_location) {
     body.meeting_location = payload.meeting_location;
