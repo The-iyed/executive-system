@@ -336,21 +336,23 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               </FormField>
             );
           })()}
-          <FormField
+          {formData.meetingCategory === MeetingClassification.BUSINESS && (
+            <FormField
               className="w-full min-w-0"
-            label="تصنيف الاجتماع"
-            required={isStep1BasicInfoFieldRequired('meetingClassification1')}
-            error={touched.meetingClassification1 ? errors.meetingClassification1 : undefined}
-          >
-            <FormSelect
-              value={formData.meetingClassification1}
-              onValueChange={(value) => handleChange('meetingClassification1', value)}
-              options={MEETING_CLASSIFICATION_OPTIONS}
-              placeholder="تصنيف الاجتماع"
-              error={!!(touched.meetingClassification1 && errors.meetingClassification1)}
-              disabled={isFieldDisabled('meetingClassification1')}
-            />
-          </FormField>
+              label="تصنيف الاجتماع"
+              required={isStep1BasicInfoFieldRequired('meetingClassification1')}
+              error={touched.meetingClassification1 ? errors.meetingClassification1 : undefined}
+            >
+              <FormSelect
+                value={formData.meetingClassification1}
+                onValueChange={(value) => handleChange('meetingClassification1', value)}
+                options={MEETING_CLASSIFICATION_OPTIONS}
+                placeholder="تصنيف الاجتماع"
+                error={!!(touched.meetingClassification1 && errors.meetingClassification1)}
+                disabled={isFieldDisabled('meetingClassification1')}
+              />
+            </FormField>
+          )}
           <FormRow className="sm:justify-end">
             <FormSwitch
               checked={formData.meetingConfidentiality === 'CONFIDENTIAL'}

@@ -223,8 +223,8 @@ export const step1ValidationSchema = step1BaseSchema
     previousMeetings: z.array(previousMeetingItemStrict).optional().default([]),
   })
   .superRefine((d, ctx) => {
-    // تصنيف الاجتماع: required for all فئة except "خاص" (PRIVATE_MEETING)
-    if (d.meetingCategory !== CATEGORY_PRIVATE_MEETING) {
+    // تصنيف الاجتماع: required only when فئة الاجتماع is "اجتماعات الأعمال" (Business Meetings)
+    if (d.meetingCategory === 'BUSINESS') {
       if (!d.meetingClassification1 || String(d.meetingClassification1).trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
