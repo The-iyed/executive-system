@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { INVITEE_SUGGESTIONS_URL } from '@/lib/env';
 
 export interface SuggestMeetingAttendeesPayload {
   meeting_subject: string;
@@ -93,9 +94,9 @@ export const useSuggestMeetingAttendees = () => {
         minister_support_required: minister_support_required || '',
       };
 
-      // Make API call - using fetch directly without base URL as requested
+      // Make API call - using fetch with base URL from env
       // Pass max_suggestions as a query parameter
-      const url = new URL('https://invitee.builtop.com/meeting-suggestions/suggest');
+      const url = new URL(`${INVITEE_SUGGESTIONS_URL}/meeting-suggestions/suggest`);
       url.searchParams.append('max_suggestions', numberOfAttendees.toString());
 
       const response = await fetch(url.toString(), {
