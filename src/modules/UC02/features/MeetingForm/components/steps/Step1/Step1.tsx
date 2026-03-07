@@ -94,8 +94,8 @@ export function Step1({
     (field: keyof Step1FormData): boolean => {
       if (REQUIRED_INDICATOR_FIELDS.has(field)) return true;
       if (field === 'location') return formData.meeting_channel === 'PHYSICAL';
-      // تصنيف الاجتماع: optional when فئة الاجتماع is "خاص" (PRIVATE_MEETING), required otherwise; field always visible
-      if (field === 'meetingClassification1') return formData.meetingCategory !== 'PRIVATE_MEETING';
+      // تصنيف الاجتماع: required only when فئة الاجتماع is "اجتماعات الأعمال" (Business Meetings)
+      if (field === 'meetingClassification1') return formData.meetingCategory === MeetingClassification.BUSINESS;
       if (field === 'previousMeeting' || field === 'urgentReason' || field === 'meetingReason' || field === 'relatedTopic' || field === 'dueDate') {
         return isFieldVisible(field);
       }
@@ -364,15 +364,17 @@ export function Step1({
             />
           )}
 
-          <MeetingClassificationField
-            className="w-full min-w-0"
-            value={formData.meetingClassification1 ?? ''}
-            onChange={(v) => handleChange('meetingClassification1', v)}
-            error={errors.meetingClassification1}
-            touched={touched.meetingClassification1}
-            disabled={isFieldDisabled('meetingClassification1')}
-            required={isRequired('meetingClassification1')}
-          />
+          {formData.meetingCategory === MeetingClassification.BUSINESS && (
+            <MeetingClassificationField
+              className="w-full min-w-0"
+              value={formData.meetingClassification1 ?? ''}
+              onChange={(v) => handleChange('meetingClassification1', v)}
+              error={errors.meetingClassification1}
+              touched={touched.meetingClassification1}
+              disabled={isFieldDisabled('meetingClassification1')}
+              required={isRequired('meetingClassification1')}
+            />
+          )}
 
           <MeetingConfidentialityField
             className="w-full min-w-0"
