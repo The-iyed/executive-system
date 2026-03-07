@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { clearTokens, getTokens, setTokens } from './token'
+import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env'
 
-const baseURL = 'https://execution-system.momrahai.com'
+const baseURL = EXECUTION_SYSTEM_BASE_URL
 const headers = {
   Accept: 'application/json',
   // 'Content-Type': 'application/json',

@@ -1,8 +1,6 @@
 // Import axios instance
 import axiosInstance from '../../auth/utils/axios';
-
-/** Base URL for business-cards / actions API (list actions). */
-const BUSINESS_CARDS_BASE_URL = 'https://momah-business-cards.momrahai.com';
+import { EXECUTION_SYSTEM_BASE_URL, TEXT_CONTRADICTION_DETECTOR_URL } from '@/lib/env';
 
 export interface Attachment {
   id: string;
@@ -498,9 +496,7 @@ export const runCompareByAttachment = async (
 };
 
 // LLM notes/insights for an attachment (presentation) – تقييم الاختلاف بين العروض
-const INSIGHTS_API_BASE =
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EXECUTION_SYSTEM_URL) ||
-  'https://execution-system.momrahai.com';
+const INSIGHTS_API_BASE = EXECUTION_SYSTEM_BASE_URL;
 
 export interface AttachmentInsightsResponse {
   attachment_id: string;
@@ -579,7 +575,7 @@ export interface AnalyzeResponse {
   categories: AnalyzeCategory[];
 }
 
-const ANALYZE_ENDPOINT = 'https://text-contradiction-detector.momrahai.com/analyze';
+const ANALYZE_ENDPOINT = `${TEXT_CONTRADICTION_DETECTOR_URL}/analyze`;
 
 export const analyzeContradictions = async (sentences: string[]): Promise<AnalyzeResponse> => {
   const response = await axiosInstance.post<AnalyzeResponse>(ANALYZE_ENDPOINT, { sentences });
