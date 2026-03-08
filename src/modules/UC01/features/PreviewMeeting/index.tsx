@@ -131,7 +131,7 @@ const PreviewMeeting: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
         <DetailPageHeader
-          title={`عرض الطلب (${meeting?.request_number ?? ''})`}
+          title={`${meeting?.meeting_title ?? meeting?.meeting_subject ?? 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
           onBack={handleBack}
           statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
           editAction={{
