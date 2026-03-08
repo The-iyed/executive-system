@@ -10,6 +10,7 @@ import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
 import RootCallback from '@/modules/auth/components/RootCallback';
 import { PATH } from '@/modules/auth/routes/paths';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
+import Onboarding from '@/modules/auth/features/Onboarding';
 
 type RouteConfig = {
   exact: boolean | null;
@@ -36,7 +37,11 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
     return <RootCallback />;
   }
 
-  const { user, isInitialised, isAuthenticated, isSsoEnabled: ssoEnabled } = useAuth();
+  const { user, isInitialised, isAuthenticated, isSsoEnabled: ssoEnabled, refreshUser } = useAuth();
+  // When /me returns is_registered: false, show onboarding until user submits verification
+  const showOnboarding =
+    isAuthenticated && user && user.is_registered === false;
+
   // Filter routes based on user's use cases
   let filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases);
   // When SSO enabled, remove /login route (unauthenticated → AuthProvider redirects to IdP from /)
@@ -55,6 +60,15 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
 
   // When SSO: unauthenticated → / (AuthProvider redirects to IdP). When basic auth: redirect to /login
   const catchAllRedirect = isAuthenticated ? defaultRoute : ssoEnabled ? '/' : '/login';
+
+  if (showOnboarding && user) {
+    return (
+      <Onboarding
+        user={user}
+        onSuccess={refreshUser}
+      />
+    );
+  }
 
   return (
     <Routes>
