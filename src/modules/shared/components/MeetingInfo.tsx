@@ -59,9 +59,7 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
     { key: 'meeting_type', label: 'نوع الاجتماع', getValue: (d) => getMeetingTypeLabel(d.meetingType) ?? '—' },
     { key: 'is_urgent', label: 'اجتماع عاجل؟', getValue: (d) => (d.is_urgent === true ? 'نعم' : d.is_urgent === false ? 'لا' : '—') },
     { key: 'urgent_reason', label: 'السبب', getValue: (d) => d.urgent_reason ?? '—' },
-    { key: 'selected_time_slot_id', label: 'موعد الاجتماع', getValue: (d) => formatIsoRange(d.meeting_start_date, d.meeting_end_date) },
-    { key: 'alternative_1', label: 'الموعد البديل الأول', getValue: (d) => formatIsoRange(d.alternative_1_start_date, d.alternative_1_end_date) },
-    { key: 'alternative_2', label: 'الموعد البديل الثاني', getValue: (d) => formatIsoRange(d.alternative_2_start_date, d.alternative_2_end_date) },
+    { key: 'selected_time_slot_id', label: 'موعد الاجتماع المقترح', getValue: (d) => formatIsoRange(d.meeting_start_date, d.meeting_end_date) },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', getValue: (d) => MeetingChannelLabels[d.meetingChannel ?? ''] ?? d.meetingChannel ?? '—' },
     { key: 'meeting_location', label: 'الموقع', getValue: (d) => d.meeting_location ?? '—' },
     { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingCategory) ?? '—' },
@@ -117,10 +115,6 @@ export interface MeetingInfoData {
   urgent_reason?: string;
   meeting_start_date?: string;
   meeting_end_date?: string;
-  alternative_1_start_date?: string;
-  alternative_1_end_date?: string;
-  alternative_2_start_date?: string;
-  alternative_2_end_date?: string;
   meetingChannel?: string;
   meeting_location?: string;
   meetingCategory?: string;

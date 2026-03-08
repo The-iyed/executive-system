@@ -1,6 +1,34 @@
-import { SECTOR_OPTIONS, MINISTER_SUPPORT_TYPE_OPTIONS, PRESENTATION_DURATION_MINUTES_OPTIONS, type FormTableColumn, MEETING_CLASSIFICATION_OPTIONS, getInviteesTableColumns } from '@/modules/shared';
+import {
+  SECTOR_OPTIONS,
+  MINISTER_SUPPORT_TYPE_OPTIONS,
+  PRESENTATION_DURATION_MINUTES_OPTIONS,
+  type FormTableColumn,
+  MEETING_CLASSIFICATION_OPTIONS,
+  MEETING_CHANNEL_OPTIONS,
+  MEETING_LOCATION_OPTIONS,
+  MeetingLocation,
+  getMeetingLocationDropdownValue,
+  showMeetingLocationOtherInput,
+  isPresetMeetingLocation,
+  getInviteesTableColumns,
+} from '@/modules/shared';
 
-export { MEETING_CLASSIFICATION_OPTIONS };
+export { MEETING_CLASSIFICATION_OPTIONS, MEETING_CHANNEL_OPTIONS, MEETING_LOCATION_OPTIONS, MeetingLocation, getMeetingLocationDropdownValue, showMeetingLocationOtherInput, isPresetMeetingLocation };
+
+/** @deprecated Use MeetingLocation */
+export const LOCATION_OPTIONS = MeetingLocation;
+
+/** @deprecated Use MeetingLocationValue */
+export type LocationOptionValue = import('@/modules/shared').MeetingLocationValue;
+
+/** @deprecated Use getMeetingLocationDropdownValue */
+export const getLocationDropdownValue = getMeetingLocationDropdownValue;
+
+/** @deprecated Use showMeetingLocationOtherInput */
+export const showLocationOtherInput = showMeetingLocationOtherInput;
+
+/** @deprecated Use isPresetMeetingLocation */
+export const isPresetLocation = isPresetMeetingLocation;
 
 export const CONFIDENTIALITY_OPTIONS = [
   { value: 'CONFIDENTIAL', label: 'سرّي' },
@@ -53,57 +81,6 @@ export const RELATED_DIRECTIVES_COLUMNS: FormTableColumn[] = [
   { id: 'responsible', header: 'المسؤول', type: 'text', placeholder: 'المسؤول', width: 'w-full' },
   { id: 'action', header: 'إجراء', width: 'w-[60px]' },
 ];
-
-export enum MeetingChannel {
-  PHYSICAL = 'PHYSICAL',
-  VIRTUAL = 'VIRTUAL',
-  HYBRID = 'HYBRID',
-}
-
-export const MEETING_CHANNEL_OPTIONS = [
-  { value: MeetingChannel.PHYSICAL, label: 'حضوري' },
-  { value: MeetingChannel.VIRTUAL, label: 'افتراضي' },
-  { value: MeetingChannel.HYBRID, label: 'مختلط' },
-];
-
-/** Location dropdown options (same as UC01). */
-export const LOCATION_OPTIONS = {
-  ALIYA: 'العليا',
-  GHADEER: 'الغدير',
-  OTHER: 'موقع آخر',
-} as const;
-
-export type LocationOptionValue = (typeof LOCATION_OPTIONS)[keyof typeof LOCATION_OPTIONS];
-
-export const MEETING_LOCATION_OPTIONS: { value: LocationOptionValue; label: string }[] = [
-  { value: LOCATION_OPTIONS.ALIYA, label: LOCATION_OPTIONS.ALIYA },
-  { value: LOCATION_OPTIONS.GHADEER, label: LOCATION_OPTIONS.GHADEER },
-  { value: LOCATION_OPTIONS.OTHER, label: LOCATION_OPTIONS.OTHER },
-];
-
-export function isPresetLocation(value: string | undefined): value is LocationOptionValue {
-  return value === LOCATION_OPTIONS.ALIYA || value === LOCATION_OPTIONS.GHADEER;
-}
-
-export function getLocationDropdownValue(
-  location: string | undefined,
-  location_option: string | undefined
-): '' | LocationOptionValue {
-  const loc = location?.trim() ?? '';
-  if (loc === LOCATION_OPTIONS.ALIYA || loc === LOCATION_OPTIONS.GHADEER) return loc;
-  if (loc !== '') return LOCATION_OPTIONS.OTHER;
-  return (location_option as '' | LocationOptionValue) ?? '';
-}
-
-export function showLocationOtherInput(
-  location: string | undefined,
-  location_option: string | undefined
-): boolean {
-  const loc = location?.trim() ?? '';
-  if (isPresetLocation(loc)) return false;
-  if (loc !== '') return true;
-  return location_option === LOCATION_OPTIONS.OTHER;
-}
 
 /** Attendance mode options for invitees (backend: IN_PERSON | REMOTE). */
 export const ATTENDANCE_MODE_OPTIONS = [
