@@ -50,13 +50,7 @@ export interface MeetingForEdit {
   scheduled_end?: string | null;
   meeting_start_date?: string | null;
   meeting_end_date?: string | null;
-  alternative_1_start_date?: string | null;
-  alternative_1_end_date?: string | null;
-  alternative_2_start_date?: string | null;
-  alternative_2_end_date?: string | null;
   selected_time_slot?: { slot_start?: string; slot_end?: string } | null;
-  alternative_time_slot_1?: { slot_start?: string; slot_end?: string } | null;
-  alternative_time_slot_2?: { slot_start?: string; slot_end?: string } | null;
   agenda_items?: Array<{
     id?: string;
     agenda_item?: string | null;
@@ -201,10 +195,6 @@ export function transformMeetingToStep1Data(meeting: MeetingForEdit): Partial<St
     directive_method: meeting.directive_method ?? '',
     meeting_start_date: toISOOrDateString(startSource) ?? '',
     meeting_end_date: toISOOrDateString(endSource) ?? '',
-    alternative_1_start_date: toISOOrDateString(meeting.alternative_time_slot_1?.slot_start ?? meeting.alternative_1_start_date) ?? '',
-    alternative_1_end_date: toISOOrDateString(meeting.alternative_time_slot_1?.slot_end ?? meeting.alternative_1_end_date) ?? '',
-    alternative_2_start_date: toISOOrDateString(meeting.alternative_time_slot_2?.slot_start ?? meeting.alternative_2_start_date) ?? '',
-    alternative_2_end_date: toISOOrDateString(meeting.alternative_time_slot_2?.slot_end ?? meeting.alternative_2_end_date) ?? '',
   };
 }
 
