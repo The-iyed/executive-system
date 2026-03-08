@@ -5,13 +5,15 @@ import {
   type FormTableColumn,
   MEETING_CLASSIFICATION_OPTIONS,
   MEETING_CHANNEL_OPTIONS,
+  getInviteesTableColumns,
+} from '@/modules/shared';
+import {
   MEETING_LOCATION_OPTIONS,
   MeetingLocation,
   getMeetingLocationDropdownValue,
   showMeetingLocationOtherInput,
   isPresetMeetingLocation,
-  getInviteesTableColumns,
-} from '@/modules/shared';
+} from '@/modules/shared/types/meeting-types';
 
 export { MEETING_CLASSIFICATION_OPTIONS, MEETING_CHANNEL_OPTIONS, MEETING_LOCATION_OPTIONS, MeetingLocation, getMeetingLocationDropdownValue, showMeetingLocationOtherInput, isPresetMeetingLocation };
 
