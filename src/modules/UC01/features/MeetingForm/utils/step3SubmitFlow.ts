@@ -8,7 +8,7 @@ import {
 import { createStep3InviteesSchema, type Step3InviteesFormData } from '../schemas/step3Invitees.schema';
 import { AttendanceMechanism, MeetingStatus } from '@/modules/shared/types';
 import { ERROR_MESSAGE, SUCCESS_MESSAGE } from '../../../hooks';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 export interface Step3SubmitFlowParams {
   draftId: string;
