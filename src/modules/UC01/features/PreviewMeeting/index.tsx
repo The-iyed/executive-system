@@ -47,8 +47,6 @@ const PreviewMeeting: React.FC = () => {
   const meetingInfoData = useMemo((): MeetingInfoData => {
     if (!meeting) return {};
     const m = meeting as unknown as Record<string, unknown>;
-    const alt1 = meeting.alternative_time_slot_1 as { slot_start?: string; slot_end?: string } | null | undefined;
-    const alt2 = meeting.alternative_time_slot_2 as { slot_start?: string; slot_end?: string } | null | undefined;
     return {
       ...meeting as MeetingInfoData,
       is_on_behalf_of: (m.is_on_behalf_of as boolean | undefined) ?? undefined,
@@ -61,10 +59,6 @@ const PreviewMeeting: React.FC = () => {
       urgent_reason: (m.urgent_reason as string | undefined) ?? undefined,
       meeting_start_date: (meeting.scheduled_start ?? meeting.meeting_start_date) ?? undefined,
       meeting_end_date: (meeting as { scheduled_end?: string | null }).scheduled_end ?? undefined,
-      alternative_1_start_date: alt1?.slot_start ?? undefined,
-      alternative_1_end_date: alt1?.slot_end ?? undefined,
-      alternative_2_start_date: alt2?.slot_start ?? undefined,
-      alternative_2_end_date: alt2?.slot_end ?? undefined,
       meetingChannel: meeting.meeting_channel ?? undefined,
       meeting_location: (m.meeting_location as string | undefined) ?? (m.location as string | undefined) ?? undefined,
       meetingCategory: meeting.meeting_classification_type ?? undefined,
