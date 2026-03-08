@@ -53,3 +53,18 @@ export const SENTRY_DSN = getEnv(
   'VITE_SENTRY_DSN',
   ''
 );
+
+/** SSO enabled (OIDC); when "true", login uses IdP redirect. */
+export const SSO_ENABLED = getEnv('VITE_SSO_ENABLED', '') === 'true';
+
+/** SSO authority URL (IdP). */
+export const SSO_AUTHORITY_URL = getEnv(
+  'VITE_SSO_AUTHORITY_URL',
+  'https://ssoappdev.momra.gov.sa'
+);
+
+/** SSO client id. */
+export const SSO_CLIENT_ID = getEnv(
+  'VITE_SSO_CLIENT_ID',
+  'Outbalady.LegislationLibrary'
+);
