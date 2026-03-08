@@ -24,9 +24,11 @@ export interface OnboardingFormData {
 export interface RegisterPayload {
   national_id: string;
   email: string;
+  first_name: string;
+  phone_number: string;
 }
 
-/** POST /api/auth/register – save رقم الهوية + email. */
+/** POST /api/auth/register – save رقم الهوية, email, first_name (full name), phone_number. */
 export async function submitOnboardingApi(
   payload: RegisterPayload
 ): Promise<void> {
@@ -42,8 +44,8 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
   const [form, setForm] = useState<OnboardingFormData>({
     full_name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '',
     email: user.email || '',
-    id_number: '',
-    mobile: '',
+    id_number: user.national_id ?? '',
+    mobile: user.phone_number ?? '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof OnboardingFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,9 +60,11 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     e.preventDefault();
     setSubmitError(null);
     const newErrors: Partial<Record<keyof OnboardingFormData, string>> = {};
+    if (!form.full_name?.trim()) newErrors.full_name = 'الاسم الكامل مطلوب';
     if (!form.email?.trim()) newErrors.email = 'البريد الإلكتروني مطلوب';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'البريد الإلكتروني غير صحيح';
     if (!form.id_number?.trim()) newErrors.id_number = 'رقم الهوية مطلوب';
+    if (!form.mobile?.trim()) newErrors.mobile = 'رقم الجوال مطلوب';
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       return;
@@ -68,9 +72,12 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     setErrors({});
     setIsSubmitting(true);
     try {
+      // Always send all four required fields to the API (even if user did not change pre-filled values)
       await submitOnboardingApi({
         national_id: form.id_number.trim(),
         email: form.email.trim(),
+        first_name: form.full_name.trim(),
+        phone_number: form.mobile.trim(),
       });
       onSuccess?.();
     } catch (err: unknown) {
@@ -88,8 +95,6 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     'h-11 px-3 text-right text-sm bg-[#F8FBFF] border border-[#EBF3FD] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E] w-full';
   const inputClassIdMobile =
     'h-11 px-3 text-right text-sm bg-white border border-[#D0D5DD] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E] w-full';
-  const inputDisabledClass =
-    'h-11 px-3 text-right text-sm bg-gray-100 border border-[#D0D5DD] rounded-lg w-full cursor-not-allowed opacity-80';
   const labelClass = 'text-sm text-[#344054] font-normal text-left';
 
   return (
@@ -116,15 +121,14 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
             onSubmit={handleSubmit}
             className="flex flex-col items-start w-full gap-5"
           >
-            {/* Row 1: الاسم الكامل (disabled) | البريد الإلكتروني (editable) */}
+            {/* Row 1: الاسم الكامل | البريد الإلكتروني */}
             <div className="flex flex-row items-start w-full gap-4 flex-wrap">
               <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.full_name}</label>
                 <Input
                   value={form.full_name}
-                  readOnly
-                  disabled
-                  className={inputDisabledClass}
+                  onChange={(e) => update('full_name', e.target.value)}
+                  className={inputClass}
                   dir="rtl"
                   placeholder={LABELS.full_name}
                 />
@@ -148,7 +152,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
               </div>
             </div>
 
-            {/* Row 2: رقم الهوية (editable) | رقم الجوال (disabled) */}
+            {/* Row 2: رقم الهوية | رقم الجوال */}
             <div className="flex flex-row items-start w-full gap-4 flex-wrap">
               <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.id_number}</label>
@@ -167,9 +171,8 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                 <label className={labelClass}>{LABELS.mobile}</label>
                 <Input
                   value={form.mobile}
-                  readOnly
-                  disabled
-                  className={inputDisabledClass}
+                  onChange={(e) => update('mobile', e.target.value)}
+                  className={inputClassIdMobile}
                   dir="rtl"
                   placeholder={LABELS.mobile}
                 />
