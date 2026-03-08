@@ -50,10 +50,13 @@ This is an Nx monorepo with the following structure:
 - Use Nx affected commands for efficient builds
 - Hot module replacement is enabled in dev mode
 - Environment variables: Copy `.env.example` to `.env` and configure:
-  - `VITE_API_BASE_URL` - API base URL (default: `http://localhost:3000/api`)
-  - `VITE_API_BASIC_AUTH_USERNAME` - Basic auth username (optional)
-  - `VITE_API_BASIC_AUTH_PASSWORD` - Basic auth password (optional)
-  - `VITE_API_BASIC_AUTH` - Pre-encoded base64 auth string (alternative to username/password)
+ - `VITE_APP_BASE_URL_MINISTER` - Execution system base URL (meetings, auth, presentations)
+ - `VITE_BUSINESS_CARDS_BASE_URL` - Business cards / Adam meetings API
+ - `VITE_UEP_REMOTE_URL` - Unified platform remote (UC-09, UC-13)
+ - `VITE_TEXT_CONTRADICTION_DETECTOR_URL` - Text contradiction detector
+ - `VITE_INVITEE_SUGGESTIONS_URL` - Meeting attendee suggestions API
+ - `VITE_SENTRY_DSN` - Sentry DSN (optional)
+ - `VITE_PUBLIC_POSTHOG_KEY` / `VITE_PUBLIC_POSTHOG_HOST` - PostHog (optional)
 
 ## Testing
 - Write tests alongside code

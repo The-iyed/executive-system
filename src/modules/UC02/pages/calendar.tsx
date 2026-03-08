@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { MinisterCalendarView } from '../components';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 const Calendar: React.FC = () => {
   useEffect(() => {
