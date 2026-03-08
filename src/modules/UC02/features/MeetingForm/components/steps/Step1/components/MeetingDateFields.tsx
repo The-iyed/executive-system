@@ -70,127 +70,43 @@ export function MeetingDateFields({
   const meetingError =
     (touched.meetingStartDate || touched.meetingEndDate) &&
     (errors.meetingStartDate || errors.meetingEndDate);
-  const alt1Error =
-    (touched.alternative1StartDate || touched.alternative1EndDate) &&
-    (errors.alternative1StartDate || errors.alternative1EndDate);
-  const alt2Error =
-    (touched.alternative2StartDate || touched.alternative2EndDate) &&
-    (errors.alternative2StartDate || errors.alternative2EndDate);
 
   return (
-    <>
-      <FormField
-        className="w-full min-w-0"
-        label="موعد الاجتماع"
-        required={mainDateRequired}
-        error={
-          meetingError ? errors.meetingStartDate || errors.meetingEndDate : undefined
-        }
-      >
-        <MeetingRangePicker
-          value={isoRangeToMeetingRange(
-            formData.meetingStartDate ?? '',
-            formData.meetingEndDate ?? ''
-          )}
-          onChange={(v) => {
-            const iso = meetingRangeToIso(v);
-            if (iso) {
-              handleChange('meetingStartDate', iso.start);
-              handleChange('meetingEndDate', iso.end);
-            } else {
-              handleChange('meetingStartDate', '');
-              handleChange('meetingEndDate', '');
-            }
-          }}
-          onBlur={() => {
-            handleBlur('meetingStartDate');
-            handleBlur('meetingEndDate');
-          }}
-          minDate={minDate}
-          disabled={isFieldDisabled('meetingStartDate')}
-          error={
-            !!(touched.meetingStartDate && errors.meetingStartDate) ||
-            !!(touched.meetingEndDate && errors.meetingEndDate)
+    <FormField
+      className="w-full min-w-0"
+      label="موعد الاجتماع المقترح"
+      required={mainDateRequired}
+      error={
+        meetingError ? errors.meetingStartDate || errors.meetingEndDate : undefined
+      }
+    >
+      <MeetingRangePicker
+        value={isoRangeToMeetingRange(
+          formData.meetingStartDate ?? '',
+          formData.meetingEndDate ?? ''
+        )}
+        onChange={(v) => {
+          const iso = meetingRangeToIso(v);
+          if (iso) {
+            handleChange('meetingStartDate', iso.start);
+            handleChange('meetingEndDate', iso.end);
+          } else {
+            handleChange('meetingStartDate', '');
+            handleChange('meetingEndDate', '');
           }
-          placeholder="اختر التاريخ والوقت"
-        />
-      </FormField>
-
-      <FormField
-        className="w-full min-w-0"
-        label="الموعد البديل الأول"
+        }}
+        onBlur={() => {
+          handleBlur('meetingStartDate');
+          handleBlur('meetingEndDate');
+        }}
+        minDate={minDate}
+        disabled={isFieldDisabled('meetingStartDate')}
         error={
-          alt1Error
-            ? errors.alternative1StartDate || errors.alternative1EndDate
-            : undefined
+          !!(touched.meetingStartDate && errors.meetingStartDate) ||
+          !!(touched.meetingEndDate && errors.meetingEndDate)
         }
-      >
-        <MeetingRangePicker
-          value={isoRangeToMeetingRange(
-            formData.alternative1StartDate ?? '',
-            formData.alternative1EndDate ?? ''
-          )}
-          onChange={(v) => {
-            const iso = meetingRangeToIso(v);
-            if (iso) {
-              handleChange('alternative1StartDate', iso.start);
-              handleChange('alternative1EndDate', iso.end);
-            } else {
-              handleChange('alternative1StartDate', '');
-              handleChange('alternative1EndDate', '');
-            }
-          }}
-          onBlur={() => {
-            handleBlur('alternative1StartDate');
-            handleBlur('alternative1EndDate');
-          }}
-          minDate={minDate}
-          disabled={isFieldDisabled('alternative1StartDate')}
-          error={
-            !!(touched.alternative1StartDate && errors.alternative1StartDate) ||
-            !!(touched.alternative1EndDate && errors.alternative1EndDate)
-          }
-          placeholder="اختر التاريخ والوقت"
-        />
-      </FormField>
-
-      <FormField
-        className="w-full min-w-0"
-        label="الموعد البديل الثاني"
-        error={
-          alt2Error
-            ? errors.alternative2StartDate || errors.alternative2EndDate
-            : undefined
-        }
-      >
-        <MeetingRangePicker
-          value={isoRangeToMeetingRange(
-            formData.alternative2StartDate ?? '',
-            formData.alternative2EndDate ?? ''
-          )}
-          onChange={(v) => {
-            const iso = meetingRangeToIso(v);
-            if (iso) {
-              handleChange('alternative2StartDate', iso.start);
-              handleChange('alternative2EndDate', iso.end);
-            } else {
-              handleChange('alternative2StartDate', '');
-              handleChange('alternative2EndDate', '');
-            }
-          }}
-          onBlur={() => {
-            handleBlur('alternative2StartDate');
-            handleBlur('alternative2EndDate');
-          }}
-          minDate={minDate}
-          disabled={isFieldDisabled('alternative2StartDate')}
-          error={
-            !!(touched.alternative2StartDate && errors.alternative2StartDate) ||
-            !!(touched.alternative2EndDate && errors.alternative2EndDate)
-          }
-          placeholder="اختر التاريخ والوقت"
-        />
-      </FormField>
-    </>
+        placeholder="اختر التاريخ والوقت"
+      />
+    </FormField>
   );
 }

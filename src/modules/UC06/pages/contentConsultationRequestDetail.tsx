@@ -141,10 +141,6 @@ const ContentConsultationRequestDetail: React.FC = () => {
     const owner = meetingRequest.current_owner_user
       ? `${meetingRequest.current_owner_user.first_name ?? ""} ${meetingRequest.current_owner_user.last_name ?? ""}`.trim()
       : (meetingRequest.current_owner_role?.name_ar ?? undefined);
-    const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } })
-      .alternative_time_slot_1;
-    const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } })
-      .alternative_time_slot_2;
     return {
       is_on_behalf_of: meetingRequest.is_on_behalf_of,
       meeting_manager_label: owner ?? undefined,
@@ -156,10 +152,6 @@ const ContentConsultationRequestDetail: React.FC = () => {
       urgent_reason: meetingRequest.meeting_justification ?? undefined,
       meeting_start_date: meetingRequest.scheduled_at ?? undefined,
       meeting_end_date: undefined,
-      alternative_1_start_date: alt1?.start ?? undefined,
-      alternative_1_end_date: alt1?.end ?? undefined,
-      alternative_2_start_date: alt2?.start ?? undefined,
-      alternative_2_end_date: alt2?.end ?? undefined,
       meetingChannel: meetingRequest.meeting_channel ?? undefined,
       meeting_location: undefined,
       meetingCategory:

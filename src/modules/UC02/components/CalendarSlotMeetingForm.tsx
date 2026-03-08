@@ -9,6 +9,7 @@ import {
   INVITEES_TABLE_COLUMNS,
   getLocationDropdownValue,
   showLocationOtherInput,
+  isPresetLocation,
 } from '../features/MeetingForm/utils/constants';
 import { createWebexMeeting } from '../data/meetingsApi';
 import { searchByEmail } from '../data/adIntegrationApi';
@@ -319,9 +320,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
   const handleLocationOptionChange = useCallback((value: string) => {
     setMeetingLocationOption(value);
-    setMeetingLocation(
-      value === LOCATION_OPTIONS.ALIYA || value === LOCATION_OPTIONS.GHADEER ? value : ''
-    );
+    setMeetingLocation(isPresetLocation(value) ? value : '');
   }, []);
 
   const webexSlotRef = React.useRef<string | null>(null);
@@ -389,11 +388,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
     if (!isPhysical) return undefined;
     const loc = meetingLocation?.trim() ?? '';
-    if (loc === LOCATION_OPTIONS.ALIYA || loc === LOCATION_OPTIONS.GHADEER) return loc;
+    if (isPresetLocation(loc)) return loc;
     if (loc !== '') return loc;
-    if (locationDropdownValue === LOCATION_OPTIONS.ALIYA || locationDropdownValue === LOCATION_OPTIONS.GHADEER) {
-      return locationDropdownValue;
-    }
+    if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
     if (locationDropdownValue === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
     return undefined;
   }, [isPhysical, meetingLocation, locationDropdownValue]);
@@ -450,7 +447,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           )}
         </div>
 
-        <FormField className="w-full min-w-0" label="موعد الاجتماع" required>
+        <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
           <MeetingRangePicker
             value={isoRangeToMeetingRange(startDate, endDate)}
             onChange={(v) => {
