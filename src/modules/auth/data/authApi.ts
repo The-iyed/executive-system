@@ -24,6 +24,12 @@ export interface User {
   }>;
   use_cases?: string[];
   is_active: boolean;
+  /** When false, user must complete onboarding (verify data). API may send is_registred. */
+  is_registered?: boolean;
+  /** Optional from GET /me – رقم الهوية. */
+  national_id?: string;
+  /** Optional from GET /me – رقم الجوال. */
+  phone_number?: string;
 }
 
 export interface UserResponse {
@@ -41,9 +47,12 @@ export const loginApi = async (payload: LoginPayload): Promise<LoginResponse> =>
 // Get current user API
 export const getCurrentUserApi = async (): Promise<User> => {
   const response = await axiosInstance.get<User | UserResponse>('/api/auth/me');
-  // Handle both response structures: direct user object or wrapped in data
-  if ('data' in response.data && typeof response.data.data === 'object') {
-    return response.data.data;
+  const raw = response.data;
+  const user = 'data' in raw && typeof raw.data === 'object' ? raw.data : (raw as User);
+  // Normalize is_registered (API may send is_registred)
+  const u = user as User & { is_registred?: boolean };
+  if (u && 'is_registred' in u && typeof u.is_registred === 'boolean') {
+    return { ...u, is_registered: u.is_registred } as User;
   }
-  return response.data as User;
+  return user;
 };
