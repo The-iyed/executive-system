@@ -163,6 +163,17 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
 };
 
 /**
+ * Normalize use case code from API (e.g. "UC01", "UC02", "uc-01") to config key ("UC-01", "UC-02").
+ */
+export function normalizeUseCaseCode(raw: string): string {
+  const s = String(raw || '').trim().toUpperCase();
+  if (!s) return '';
+  if (USE_CASE_CONFIGS[s]) return s;
+  const withHyphen = s.replace(/^UC-?(\d+)$/, 'UC-$1');
+  return USE_CASE_CONFIGS[withHyphen] ? withHyphen : s;
+}
+
+/**
  * Get the default route for a user based on their use cases
  * Returns the first use case's default route, or falls back to UC-01 meetings
  */
@@ -171,8 +182,9 @@ export const getDefaultRouteForUser = (useCases?: string[]): string => {
     return UC01_PATH.MEETINGS;
   }
 
-  // Find the first valid use case and return its default route
-  for (const useCase of useCases) {
+  for (const raw of useCases) {
+    const useCase = normalizeUseCaseCode(raw);
+    if (!useCase) continue;
     const config = USE_CASE_CONFIGS[useCase];
     if (config) {
       return config.defaultRoute;
@@ -197,13 +209,15 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
 
   // Collect navigation items from all allowed use cases
   for (const useCase of useCases) {
-    const config = USE_CASE_CONFIGS[useCase];
+    const normalized = normalizeUseCaseCode(useCase);
+    if (!normalized) continue;
+    const config = USE_CASE_CONFIGS[normalized];
     if (config) {
       for (const item of config.navigationItems) {
         // Check if item requires a specific use case
         if (item.requiresUseCase) {
           const requiredUseCase = item.requiresUseCase;
-          if (!useCases.includes(requiredUseCase)) {
+          if (!useCases.some((uc) => normalizeUseCaseCode(uc) === requiredUseCase)) {
             continue; // Skip this item if user doesn't have required use case
           }
         }
@@ -229,7 +243,9 @@ export const hasUseCaseAccess = (useCases: string[] | undefined, useCaseCode: st
   if (!useCases || useCases.length === 0) {
     return false;
   }
-  return useCases.includes(useCaseCode);
+  const normalizedRequired = normalizeUseCaseCode(useCaseCode);
+  if (!normalizedRequired) return false;
+  return useCases.some((uc) => normalizeUseCaseCode(uc) === normalizedRequired);
 };
 
 /**
@@ -239,6 +255,7 @@ export const getUserUseCaseCodes = (useCases?: string[]): string[] => {
   if (!useCases || useCases.length === 0) {
     return [];
   }
-  return useCases.filter((uc) => USE_CASE_CONFIGS[uc] !== undefined);
+  const normalized = useCases.map(normalizeUseCaseCode).filter((uc) => USE_CASE_CONFIGS[uc]);
+  return [...new Set(normalized)];
 };
 
