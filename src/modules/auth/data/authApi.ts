@@ -1,7 +1,5 @@
-import axios from 'axios';
 import axiosInstance from '../utils/axios';
 import { setTokens } from '../utils/token';
-import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env';
 
 export interface LoginPayload {
   email: string;
@@ -10,9 +8,8 @@ export interface LoginPayload {
 
 export interface LoginResponse {
   access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
+  token_type?: string;
+  expires_in?: number;
 }
 
 export interface User {
@@ -33,45 +30,11 @@ export interface UserResponse {
   data: User;
 }
 
-export interface RefreshTokenPayload {
-  refresh_token: string;
-}
-
-export interface RefreshTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-}
-
 // Login API
 export const loginApi = async (payload: LoginPayload): Promise<LoginResponse> => {
   const response = await axiosInstance.post<LoginResponse>('/api/auth/login', payload);
-  const { access_token, refresh_token } = response.data;
-  
-  // Store tokens
-  setTokens(access_token, refresh_token);
-  
-  return response.data;
-};
-
-// Refresh token API - Uses plain axios to avoid interceptor loops
-export const refreshTokenApi = async (refreshToken: string): Promise<RefreshTokenResponse> => {
-  const response = await axios.post<RefreshTokenResponse>(
-    `${EXECUTION_SYSTEM_BASE_URL}/api/auth/refresh`,
-    { refresh_token: refreshToken },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    }
-  );
-  const { access_token, refresh_token } = response.data;
-  
-  // Store new tokens
-  setTokens(access_token, refresh_token);
-  
+  const { access_token } = response.data;
+  setTokens(access_token);
   return response.data;
 };
 

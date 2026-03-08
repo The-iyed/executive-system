@@ -119,6 +119,9 @@ importers:
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6
+      oidc-client-ts:
+        specifier: ^3.4.1
+        version: 3.4.1
       posthog-js:
         specifier: ^1.200.0
         version: 1.356.2
@@ -2571,6 +2574,10 @@ packages:
   object-hash@3.0.0:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
+
+  oidc-client-ts@3.4.1:
+    resolution: {integrity: sha512-jNdst/U28Iasukx/L5MP6b274Vr7ftQs6qAhPBCvz6Wt5rPCA+Q/tUmCzfCHHWweWw5szeMy2Gfrm1rITwUKrw==}
+    engines: {node: '>=18'}
 
   oniguruma-parser@0.12.1:
     resolution: {integrity: sha512-8Unqkvk1RYc6yq2WBYRj4hdnsAxVze8i7iPfQr8e4uSP3tRv0rpZcbGUDvxfQQcdwHt/e9PrMvGCsa8OqG9X3w==}
@@ -5757,6 +5764,10 @@ snapshots:
   object-assign@4.1.1: {}
 
   object-hash@3.0.0: {}
+
+  oidc-client-ts@3.4.1:
+    dependencies:
+      jwt-decode: 4.0.0
 
   oniguruma-parser@0.12.1: {}
 
