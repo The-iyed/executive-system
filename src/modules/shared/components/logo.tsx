@@ -2,11 +2,13 @@ import React from 'react';
 
 export interface LogoProps {
   className?: string;
+  /** When 'column', logo and text stack vertically (e.g. for onboarding). */
+  variant?: 'row' | 'column';
 }
 
-export const Logo: React.FC<LogoProps> = () => {
+export const Logo: React.FC<LogoProps> = ({ variant = 'row' }) => {
   return (
-    <div className="flex items-center gap-3 flex-shrink-0">
+    <div className={`flex items-center gap-3 flex-shrink-0 ${variant === 'column' ? 'flex-col' : ''}`}>
      <img
        src="/assets/Logomark.png"
        alt=""
@@ -14,7 +16,7 @@ export const Logo: React.FC<LogoProps> = () => {
        width={40}
        height={40}
      />
-     <div className="flex flex-col items-start">
+     <div className={`flex flex-col ${variant === 'column' ? 'items-center text-center' : 'items-start'}`}>
        <h1 className="text-lg font-bold text-gray-800 leading-tight">
          المنصة الموحدة
        </h1>
