@@ -26,6 +26,10 @@ export interface User {
   is_active: boolean;
   /** When false, user must complete onboarding (verify data). API may send is_registred. */
   is_registered?: boolean;
+  /** Optional from GET /me – رقم الهوية. */
+  national_id?: string;
+  /** Optional from GET /me – رقم الجوال. */
+  phone_number?: string;
 }
 
 export interface UserResponse {
