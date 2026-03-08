@@ -7,7 +7,7 @@ import { ScreenLoader } from '@/modules/shared';
 import { User, LoginPayload } from '../data/authApi';
 import { PATH } from '../routes/paths';
 import { PostHogIdentify } from '../components/PostHogIdentify';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 interface AuthContextType {
   user: User | null;

@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { clearDraftData } from '../utils';
 import { PATH as PATH_UC02 } from '../../../../UC02/routes/paths';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 const FORM_PARAM = 'form';
 const ID_PARAM = 'id';

@@ -42,7 +42,7 @@ import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
