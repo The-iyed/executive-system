@@ -140,8 +140,6 @@ const GuidanceRequestDetail: React.FC = () => {
   const meetingInfoData: MeetingInfoData = useMemo(() => {
     if (!meetingRequest) return {};
     const execSummary = meetingRequest.attachments?.find((a: { is_executive_summary?: boolean }) => a.is_executive_summary);
-    const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } }).alternative_time_slot_1;
-    const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } }).alternative_time_slot_2;
     return {
       ...meetingRequest as MeetingInfoData,
       is_on_behalf_of: meetingRequest.is_on_behalf_of,
@@ -154,10 +152,6 @@ const GuidanceRequestDetail: React.FC = () => {
       urgent_reason: meetingRequest.urgent_reason ?? undefined,
       meeting_start_date: meetingRequest.scheduled_at ?? undefined,
       meeting_end_date: undefined,
-      alternative_1_start_date: alt1?.start ?? undefined,
-      alternative_1_end_date: alt1?.end ?? undefined,
-      alternative_2_start_date: alt2?.start ?? undefined,
-      alternative_2_end_date: alt2?.end ?? undefined,
       meetingChannel: meetingRequest.meeting_channel ?? undefined,
       meeting_location: undefined,
       meetingCategory: (meetingRequest.meeting_classification_type ?? meetingRequest.meeting_classification) ?? undefined,

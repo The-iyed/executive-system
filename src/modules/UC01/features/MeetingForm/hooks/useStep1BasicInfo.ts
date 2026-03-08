@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { Step1BasicInfoFormData } from '../schemas/step1BasicInfo.schema';
 import { validateStep1BasicInfo, extractStep1BasicInfoErrors, isStep1BasicInfoFieldRequired } from '../schemas/step1BasicInfo.schema';
 import { getStep1EditableMap } from '../utils';
-import { MeetingLocation } from '../utils/constants';
+import { MeetingLocation, isPresetMeetingLocation } from '../utils/constants';
 import { EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES } from '@/modules/shared';
 import { buildDraftBasicInfoFormData, submitDraftBasicInfo } from '../../../data';
 import { useMeetingAgenda } from './useMeetingAgenda';
@@ -13,10 +13,6 @@ export type Step1ErrorKey = keyof Step1BasicInfoFormData;
 const STEP1_DATE_TIME_FIELDS: Step1ErrorKey[] = [
   'meeting_start_date',
   'meeting_end_date',
-  'alternative_1_start_date',
-  'alternative_1_end_date',
-  'alternative_2_start_date',
-  'alternative_2_end_date',
 ];
 
 interface UseStep1BasicInfoProps {
@@ -168,11 +164,7 @@ export const useStep1BasicInfo = ({
       ];
       allFormFields.push(
         'meeting_start_date',
-        'meeting_end_date',
-        'alternative_1_start_date',
-        'alternative_1_end_date',
-        'alternative_2_start_date',
-        'alternative_2_end_date'
+        'meeting_end_date'
       );
 
       const buildTouched = (): Partial<Record<Step1ErrorKey, boolean>> => {
@@ -335,10 +327,9 @@ export const useStep1BasicInfo = ({
             return newErrors;
           });
         }
-        // Sync meeting_location when location dropdown changes
+        // Sync meeting_location when location dropdown changes (preset = fixed option, no free text)
         if (field === 'meeting_location_option') {
-          newData.meeting_location =
-            value === MeetingLocation.ALIYA || value === MeetingLocation.GHADEER ? value : '';
+          newData.meeting_location = isPresetMeetingLocation(value) ? (value as string) : '';
         }
         return newData;
       });
