@@ -21,11 +21,16 @@ export interface OnboardingFormData {
   mobile: string;
 }
 
-/** Submit verified onboarding data. Backend may PATCH /api/auth/me or a dedicated onboarding endpoint. */
+export interface RegisterPayload {
+  national_id: string;
+  email: string;
+}
+
+/** POST /api/auth/register – save رقم الهوية + email. */
 export async function submitOnboardingApi(
-  payload: OnboardingFormData
+  payload: RegisterPayload
 ): Promise<void> {
-  await axiosInstance.patch('/api/auth/me', payload);
+  await axiosInstance.post('/api/auth/register', payload);
 }
 
 interface OnboardingProps {
@@ -53,11 +58,9 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     e.preventDefault();
     setSubmitError(null);
     const newErrors: Partial<Record<keyof OnboardingFormData, string>> = {};
-    if (!form.full_name?.trim()) newErrors.full_name = 'الاسم الكامل مطلوب';
     if (!form.email?.trim()) newErrors.email = 'البريد الإلكتروني مطلوب';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'البريد الإلكتروني غير صحيح';
     if (!form.id_number?.trim()) newErrors.id_number = 'رقم الهوية مطلوب';
-    if (!form.mobile?.trim()) newErrors.mobile = 'رقم الجوال مطلوب';
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       return;
@@ -65,7 +68,10 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     setErrors({});
     setIsSubmitting(true);
     try {
-      await submitOnboardingApi(form);
+      await submitOnboardingApi({
+        national_id: form.id_number.trim(),
+        email: form.email.trim(),
+      });
       onSuccess?.();
     } catch (err: unknown) {
       const message =
@@ -79,57 +85,54 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
   };
 
   const inputClass =
-    'h-[26px] px-2 py-1.5 text-right text-[9.42px] leading-[14px] bg-[#F8FBFF] border border-[#EBF3FD] rounded-[4.71px] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E]';
+    'h-11 px-3 text-right text-sm bg-[#F8FBFF] border border-[#EBF3FD] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E] w-full';
   const inputClassIdMobile =
-    'h-[26px] px-2 py-1.5 text-right text-[9.42px] leading-[14px] bg-white border border-[#D0D5DD] rounded-[4.71px] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E]';
-  const labelClass = 'text-[8.24px] leading-[12px] text-[#344054] font-normal';
+    'h-11 px-3 text-right text-sm bg-white border border-[#D0D5DD] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044D4E]/30 focus:border-[#044D4E] w-full';
+  const inputDisabledClass =
+    'h-11 px-3 text-right text-sm bg-gray-100 border border-[#D0D5DD] rounded-lg w-full cursor-not-allowed opacity-80';
+  const labelClass = 'text-sm text-[#344054] font-normal text-left';
 
   return (
     <div
-      className="min-h-screen min-h-[100dvh] w-full flex flex-col justify-center items-center p-0 gap-6 bg-[#ECF0F1]"
+      className="min-h-screen min-h-[100dvh] w-full flex flex-col justify-center items-center p-6 gap-8 bg-[#ECF0F1]"
       dir="rtl"
       style={{ fontFamily: "'Almarai', sans-serif" }}
     >
-      {/* Frame 2147241214: flex column, center, gap 24px, max-width 678px */}
-      <div
-        className="flex flex-col justify-center items-center p-0 gap-6 w-full max-w-[678px]"
-        style={{ gap: 24 }}
-      >
-        {/* Logo + title block (Frame 2147240061 / 2147240274) */}
-        <div className="flex flex-row items-center gap-4" style={{ transform: 'matrix(-1, 0, 0, 1, 0, 0)' }}>
-          <Logo />
+      {/* Main content: flex column, center, max-width 678px */}
+      <div className="flex flex-col justify-center items-center w-full max-w-[678px] gap-8">
+        {/* Logo + title — column layout in onboarding */}
+        <div className="flex flex-row items-center gap-4">
+          <Logo variant="column" />
         </div>
 
-        {/* Frame 2147241213: instruction + form */}
-        <div className="flex flex-col items-start w-full gap-[18px]">
-          <p
-            className="w-full text-center font-bold text-[#1F1F1F] text-[14.81px] leading-[17px]"
-            style={{ fontFamily: "'Almarai', sans-serif" }}
-          >
+        {/* Instruction + form */}
+        <div className="flex flex-col items-start w-full gap-6">
+          <p className="w-full text-center font-bold text-[#1F1F1F] text-base leading-snug">
             {INSTRUCTION}
           </p>
 
-          {/* Frame 2147241212: form fields in 2 rows, 2 columns */}
+          {/* Form: 2 rows × 2 columns, RTL order (first field right, second left) */}
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start w-full gap-[9px]"
+            className="flex flex-col items-start w-full gap-5"
           >
-            {/* Row 1: الاسم الكامل | البريد الإلكتروني */}
-            <div className="flex flex-row items-start w-full gap-[14px] flex-wrap">
-              <div className="flex flex-col items-end gap-[3.5px] flex-1 min-w-0">
+            {/* Row 1: الاسم الكامل (disabled) | البريد الإلكتروني (editable) */}
+            <div className="flex flex-row items-start w-full gap-4 flex-wrap">
+              <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.full_name}</label>
                 <Input
                   value={form.full_name}
-                  onChange={(e) => update('full_name', e.target.value)}
-                  className={inputClass}
+                  readOnly
+                  disabled
+                  className={inputDisabledClass}
                   dir="rtl"
                   placeholder={LABELS.full_name}
                 />
                 {errors.full_name && (
-                  <span className="text-[10px] text-red-500">{errors.full_name}</span>
+                  <span className="text-xs text-red-500 text-left">{errors.full_name}</span>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-[3.5px] flex-1 min-w-0">
+              <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.email}</label>
                 <Input
                   type="email"
@@ -140,14 +143,14 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   placeholder={LABELS.email}
                 />
                 {errors.email && (
-                  <span className="text-[10px] text-red-500">{errors.email}</span>
+                  <span className="text-xs text-red-500 text-left">{errors.email}</span>
                 )}
               </div>
             </div>
 
-            {/* Row 2: رقم الهوية | رقم الجوال (no توثيق buttons) */}
-            <div className="flex flex-row items-start w-full gap-[14px] flex-wrap">
-              <div className="flex flex-col items-end gap-[3.5px] flex-1 min-w-0">
+            {/* Row 2: رقم الهوية (editable) | رقم الجوال (disabled) */}
+            <div className="flex flex-row items-start w-full gap-4 flex-wrap">
+              <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.id_number}</label>
                 <Input
                   value={form.id_number}
@@ -157,36 +160,37 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   placeholder={LABELS.id_number}
                 />
                 {errors.id_number && (
-                  <span className="text-[10px] text-red-500">{errors.id_number}</span>
+                  <span className="text-xs text-red-500 text-left">{errors.id_number}</span>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-[3.5px] flex-1 min-w-0">
+              <div className="flex flex-col items-start gap-1.5 flex-1 min-w-[200px]">
                 <label className={labelClass}>{LABELS.mobile}</label>
                 <Input
                   value={form.mobile}
-                  onChange={(e) => update('mobile', e.target.value)}
-                  className={inputClassIdMobile}
+                  readOnly
+                  disabled
+                  className={inputDisabledClass}
                   dir="rtl"
                   placeholder={LABELS.mobile}
                 />
                 {errors.mobile && (
-                  <span className="text-[10px] text-red-500">{errors.mobile}</span>
+                  <span className="text-xs text-red-500 text-left">{errors.mobile}</span>
                 )}
               </div>
             </div>
 
             {submitError && (
-              <p className="w-full text-right text-sm text-red-600">{submitError}</p>
+              <p className="w-full text-left text-sm text-red-600">{submitError}</p>
             )}
 
-            {/* Main submit button (replaces the two توثيق buttons) */}
-            <div className="w-full flex justify-center pt-2">
+            {/* Main submit button */}
+            <div className="w-full flex justify-center pt-4">
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#044D4E] hover:bg-[#044D4E]/90 text-white rounded px-4 py-2.5 text-[9.47px] leading-[12px] font-normal"
+                className="bg-[#044D4E] hover:bg-[#044D4E]/90 text-white rounded-lg px-8 py-3 text-sm font-medium"
               >
-                {isSubmitting ? 'جاري الإرسال...' : 'توثيق'}
+                {isSubmitting ? 'جاري الإرسال...' : 'إرسال'}
               </Button>
             </div>
           </form>
