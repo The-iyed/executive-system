@@ -24,8 +24,6 @@ export const fieldLabels: Record<string, string> = {
   protocol_type: 'نوع البروتوكول',
   is_data_complete: 'اكتمال البيانات',
   selected_time_slot_id: 'الموعد المحدد',
-  alternative_1: 'الموعد البديل الأول',
-  alternative_2: 'الموعد البديل الثاني',
   minister_attendees: 'حضور الوزير',
   invitees: 'المدعوون',
   deleted_attachment_ids: 'حذف المرفقات',
