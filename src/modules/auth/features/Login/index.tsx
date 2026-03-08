@@ -20,13 +20,25 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const TEAL_DARK = '#1f4848';
 
 const Login = () => {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isSsoEnabled } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof LoginFormData, boolean>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSsoLogin = async () => {
+    setSubmitError(null);
+    try {
+      await login();
+      // SSO redirects away; no navigation needed
+    } catch (error: any) {
+      setSubmitError(
+        error?.message || 'فشل تسجيل الدخول عبر SSO. يرجى المحاولة مرة أخرى.'
+      );
+    }
+  };
 
   const validateField = (field: keyof LoginFormData, value: string) => {
     const fieldSchema = field === 'email' ? loginSchema.shape.email : loginSchema.shape.password;
@@ -133,6 +145,26 @@ const Login = () => {
             قم بتسجيل الدخول للوصول إلى حسابك وإدارة اجتماعاتك بكل سهولة
           </p>
 
+          {isSsoEnabled ? (
+            <div className="flex flex-col gap-4">
+              <button
+                type="button"
+                onClick={handleSsoLogin}
+                disabled={isLoading}
+                className="w-full h-12 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: TEAL_DARK, fontFamily: "'Almarai', sans-serif" }}
+              >
+                {isLoading ? 'جاري التحويل...' : 'تسجيل الدخول عبر SSO'}
+              </button>
+              {submitError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                  <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    {submitError}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
             <div className="flex flex-col gap-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -199,6 +231,7 @@ const Login = () => {
               {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
+          )}
         </div>
       </div>
     </div>
