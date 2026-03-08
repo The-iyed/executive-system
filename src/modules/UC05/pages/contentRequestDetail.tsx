@@ -1359,8 +1359,29 @@ const ContentRequestDetail: React.FC = () => {
                     <div className="text-gray-600">جاري التحميل...</div>
                   </div>
                 ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                  (() => {
+                    const filteredConsultationItems = consultationRecords.items.filter((row: ConsultationRecord) => {
+                      // Do not show the scheduling officer note for content in الاستشارات;
+                      // it is shown only in الملاحظات → ملاحظات مسؤول الجدولة على المحتوى.
+                      const question = (row.question || row.consultation_question || "").toString().trim().replace(/\s+/g, " ");
+                      const schedulingNote = schedulingContentNote.trim().replace(/\s+/g, " ");
+                      if (schedulingNote && question === schedulingNote) return false;
+                      return true;
+                    });
+                    if (filteredConsultationItems.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                            <ClipboardCheck className="w-6 h-6 text-[#98A2B3]" />
+                          </div>
+                          <p className="text-[15px] font-semibold text-[#344054]">سجل الاستشارات</p>
+                          <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
+                        </div>
+                      );
+                    }
+                    return (
                   <div className="flex flex-col pb-4">
-                    {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                    {filteredConsultationItems.map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
                       const recordType = row.type || row.consultation_type || "";
                       const recordQuestion = row.question || row.consultation_question || "";
@@ -1543,6 +1564,8 @@ const ContentRequestDetail: React.FC = () => {
                       );
                     })}
                   </div>
+                    );
+                  })()
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
                     <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
