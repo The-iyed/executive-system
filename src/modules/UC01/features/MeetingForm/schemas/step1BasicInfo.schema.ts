@@ -174,10 +174,6 @@ export const step1BasicInfoBaseSchema = z.object({
   directive_text: z.string().optional().or(z.literal('')),
   meeting_start_date: z.string().optional().or(z.literal('')),
   meeting_end_date: z.string().optional().or(z.literal('')),
-  alternative_1_start_date: z.string().optional().or(z.literal('')),
-  alternative_1_end_date: z.string().optional().or(z.literal('')),
-  alternative_2_start_date: z.string().optional().or(z.literal('')),
-  alternative_2_end_date: z.string().optional().or(z.literal('')),
 });
 
 export type Step1BasicInfoFormData = z.infer<typeof step1BasicInfoBaseSchema>;
@@ -254,22 +250,6 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
       : optionalString('التوجيه يجب أن يكون نصاً'),
     meeting_start_date: dateTimeSchema(requiresMeetingDates, 'تاريخ ووقت بداية الاجتماع مطلوب'),
     meeting_end_date: dateTimeSchema(requiresMeetingDates, 'تاريخ ووقت نهاية الاجتماع مطلوب'),
-    alternative_1_start_date: optionalString('تاريخ بداية الموعد البديل الأول').refine(
-      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
-      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
-    ),
-    alternative_1_end_date: optionalString('تاريخ نهاية الموعد البديل الأول').refine(
-      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
-      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
-    ),
-    alternative_2_start_date: optionalString('تاريخ بداية الموعد البديل الثاني').refine(
-      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
-      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
-    ),
-    alternative_2_end_date: optionalString('تاريخ نهاية الموعد البديل الثاني').refine(
-      (val) => !val || val.trim() === '' || isValidDateOrDateTime(val),
-      'تاريخ ووقت غير صحيح. يرجى إدخال تاريخ ووقت صالح'
-    ),
   })
   .superRefine((data, ctx) => {
     if (data.directive_method === 'PREVIOUS_MEETING') {
@@ -310,49 +290,6 @@ export const createStep1BasicInfoSchema = (data: Partial<Step1BasicInfoFormData>
             message: 'مدة الاجتماع يجب ألا تتجاوز 24 ساعة',
             path: ['meeting_end_date'],
           });
-        }
-      }
-    }
-    // Alternative 1: if either date set, both required and end >= start
-    const alt1StartSet = !!(data.alternative_1_start_date?.trim());
-    const alt1EndSet = !!(data.alternative_1_end_date?.trim());
-    if (alt1StartSet || alt1EndSet) {
-      if (!alt1StartSet) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ بداية الموعد البديل الأول مطلوب', path: ['alternative_1_start_date'] });
-      } else if (!alt1EndSet) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ نهاية الموعد البديل الأول مطلوب', path: ['alternative_1_end_date'] });
-      } else {
-        const s = new Date(data.alternative_1_start_date!);
-        const e = new Date(data.alternative_1_end_date!);
-        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-          if (e < s) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية', path: ['alternative_1_end_date'] });
-          } else if (!isSameCalendarDay(s, e)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون في نفس يوم البداية', path: ['alternative_1_end_date'] });
-          } else if (e.getTime() - s.getTime() > MAX_MEETING_DURATION_MS) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'مدة الموعد البديل يجب ألا تتجاوز 24 ساعة', path: ['alternative_1_end_date'] });
-          }
-        }
-      }
-    }
-    const alt2StartSet = !!(data.alternative_2_start_date?.trim());
-    const alt2EndSet = !!(data.alternative_2_end_date?.trim());
-    if (alt2StartSet || alt2EndSet) {
-      if (!alt2StartSet) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ بداية الموعد البديل الثاني مطلوب', path: ['alternative_2_start_date'] });
-      } else if (!alt2EndSet) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ نهاية الموعد البديل الثاني مطلوب', path: ['alternative_2_end_date'] });
-      } else {
-        const s = new Date(data.alternative_2_start_date!);
-        const e = new Date(data.alternative_2_end_date!);
-        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-          if (e < s) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون بعد أو يساوي وقت البداية', path: ['alternative_2_end_date'] });
-          } else if (!isSameCalendarDay(s, e)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'وقت النهاية يجب أن يكون في نفس يوم البداية', path: ['alternative_2_end_date'] });
-          } else if (e.getTime() - s.getTime() > MAX_MEETING_DURATION_MS) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'مدة الموعد البديل يجب ألا تتجاوز 24 ساعة', path: ['alternative_2_end_date'] });
-          }
         }
       }
     }
