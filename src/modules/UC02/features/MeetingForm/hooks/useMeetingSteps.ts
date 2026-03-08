@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { PATH as UC02_PATH } from '../../../../UC02/routes/paths';
 import { useStep1 } from './useStep1';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 import { useStep2 } from './useStep2';
 import { useStep3 } from './useStep3';
 import { useDeleteDraft } from './useDeleteDraft';
