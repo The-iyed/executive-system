@@ -57,7 +57,6 @@ const SSO_AUTHORITY = getEnv('VITE_SSO_AUTHORITY_URL', 'https://ssoappdev.momra.
 const SSO_CLIENT_ID = getEnv('VITE_SSO_CLIENT_ID', 'Outbalady.LegislationLibrary');
 
 export function getRedirectUri(): string {
-  return 'https://unified-platform.momah.gov.sa';
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     const path = (window.location.pathname || '/').replace(/\/+$/, '') || '';
