@@ -244,15 +244,73 @@ export const SECTOR_OPTIONS: { value: Sector; label: string }[] = [
 
 /**
  * Meeting Channel (آلية انعقاد الاجتماع / قناة الاجتماع)
+ * Shared labels for forms and display.
  */
 export const MeetingChannelLabels: Record<string, string> = {
   PHYSICAL: 'حضوري',
-  PHYSICAL_LOCATION_1: 'حضوري (الموقع1)',
-  PHYSICAL_LOCATION_2: 'حضوري (الموقع2)',
-  PHYSICAL_LOCATION_3: 'حضوري (الموقع3)',
   VIRTUAL: 'عن بعد',
-  HYBRID: 'مختلط',
+  HYBRID: 'حضوري - عن بعد',
 };
+
+/** Shared meeting channel options for forms (UC01 & UC02). Same options and labels everywhere. */
+export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
+  { value: 'PHYSICAL', label: MeetingChannelLabels.PHYSICAL },
+  { value: 'VIRTUAL', label: MeetingChannelLabels.VIRTUAL },
+  { value: 'HYBRID', label: MeetingChannelLabels.HYBRID },
+];
+
+/**
+ * Meeting Location (موقع الاجتماع) — shared options for UC01 & UC02.
+ */
+export const MeetingLocation = {
+  ALIYA: 'العليا',
+  GHADEER: 'الغدير',
+  REAL_ESTATE_DEV_FUND: 'صندوق التنمية العقاري',
+  REAL_ESTATE_AUTHORITY: 'الهيئة العامة للعقار',
+  OTHER: 'موقع آخر',
+} as const;
+
+export type MeetingLocationValue = (typeof MeetingLocation)[keyof typeof MeetingLocation];
+
+/** Preset locations (no free-text "other" input). */
+const MEETING_LOCATION_PRESETS: readonly MeetingLocationValue[] = [
+  MeetingLocation.ALIYA,
+  MeetingLocation.GHADEER,
+  MeetingLocation.REAL_ESTATE_DEV_FUND,
+  MeetingLocation.REAL_ESTATE_AUTHORITY,
+];
+
+export const MEETING_LOCATION_OPTIONS: { value: MeetingLocationValue; label: string }[] = [
+  { value: MeetingLocation.ALIYA, label: MeetingLocation.ALIYA },
+  { value: MeetingLocation.GHADEER, label: MeetingLocation.GHADEER },
+  { value: MeetingLocation.REAL_ESTATE_DEV_FUND, label: MeetingLocation.REAL_ESTATE_DEV_FUND },
+  { value: MeetingLocation.REAL_ESTATE_AUTHORITY, label: MeetingLocation.REAL_ESTATE_AUTHORITY },
+  { value: MeetingLocation.OTHER, label: MeetingLocation.OTHER },
+];
+
+export function isPresetMeetingLocation(value: string | undefined): value is MeetingLocationValue {
+  return MEETING_LOCATION_PRESETS.includes(value as MeetingLocationValue);
+}
+
+export function getMeetingLocationDropdownValue(
+  meeting_location: string | undefined,
+  meeting_location_option: string | undefined
+): '' | MeetingLocationValue {
+  const loc = meeting_location?.trim() ?? '';
+  if (MEETING_LOCATION_PRESETS.includes(loc as MeetingLocationValue)) return loc as MeetingLocationValue;
+  if (loc !== '') return MeetingLocation.OTHER;
+  return (meeting_location_option as '' | MeetingLocationValue) ?? '';
+}
+
+export function showMeetingLocationOtherInput(
+  meeting_location: string | undefined,
+  meeting_location_option: string | undefined
+): boolean {
+  const loc = meeting_location?.trim() ?? '';
+  if (isPresetMeetingLocation(loc)) return false;
+  if (loc !== '') return true;
+  return meeting_location_option === MeetingLocation.OTHER;
+}
 
 /**
  * Attendance Mechanism (آلية الحضور) for invitees

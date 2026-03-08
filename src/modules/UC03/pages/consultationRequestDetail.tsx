@@ -18,7 +18,7 @@ import { getConsultationRequestById, submitConsultationResponse, saveConsultatio
 import { getConsultationRecords, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/lib/ui';
 import { PATH } from '../routes/paths';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
@@ -116,8 +116,6 @@ const ConsultationRequestDetail: React.FC = () => {
     const owner = meetingRequest.current_owner_user
       ? `${(meetingRequest.current_owner_user.first_name ?? '').trim()} ${(meetingRequest.current_owner_user.last_name ?? '').trim()}`.trim()
       : meetingRequest.current_owner_role?.name_ar ?? meetingRequest.submitter_name ?? undefined;
-    const alt1 = (meetingRequest as { alternative_time_slot_1?: { start?: string; end?: string } }).alternative_time_slot_1;
-    const alt2 = (meetingRequest as { alternative_time_slot_2?: { start?: string; end?: string } }).alternative_time_slot_2;
     return {
       ...meetingRequest as MeetingInfoData,
       is_on_behalf_of: meetingRequest.is_on_behalf_of,
@@ -130,10 +128,6 @@ const ConsultationRequestDetail: React.FC = () => {
       urgent_reason: meetingRequest.urgent_reason ?? undefined,
       meeting_start_date: meetingRequest.scheduled_at ?? undefined,
       meeting_end_date: undefined,
-      alternative_1_start_date: alt1?.start ?? undefined,
-      alternative_1_end_date: alt1?.end ?? undefined,
-      alternative_2_start_date: alt2?.start ?? undefined,
-      alternative_2_end_date: alt2?.end ?? undefined,
       meetingChannel: meetingRequest.meeting_channel ?? undefined,
       meeting_location: meetingRequest.location ?? (meetingRequest as { selected_time_slot?: { location?: string } }).selected_time_slot?.location ?? undefined,
       meetingCategory: (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ?? meetingRequest.meeting_classification ?? undefined,
@@ -168,7 +162,7 @@ const ConsultationRequestDetail: React.FC = () => {
     { id: 'meeting-info', label: 'معلومات الاجتماع' },
     { id: 'content', label: 'المحتوى' },
     { id: 'invitees', label: 'قائمة المدعوين' },
-    { id: 'consultations-log', label: 'سجل الإستشارات' },
+    { id: 'consultations-log', label: 'استشارة المكتب التنفيذي' },
   ];
 
   const queryClient = useQueryClient();
@@ -540,9 +534,13 @@ const ConsultationRequestDetail: React.FC = () => {
           </div>
         )}
 
-        {/* ═══ Consultations Log Tab — Chat-style ═══ */}
+        {/* ═══ استشارة المكتب التنفيذي — Chat-style (same as UC02 tab) ═══ */}
         {activeTab === 'consultations-log' && (
           <div className="flex flex-col w-full bg-white" dir="rtl">
+            <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
+              <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+              <p className="text-[13px] text-[#667085] mt-0.5">سجل الاستشارات والردود — واجهة محادثة</p>
+            </div>
             <div className="flex-1 min-h-0">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-16">
@@ -704,7 +702,7 @@ const ConsultationRequestDetail: React.FC = () => {
                   <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
                     <Clock className="w-6 h-6 text-[#98A2B3]" />
                   </div>
-                  <p className="text-[15px] font-semibold text-[#344054]">سجل الإستشارات</p>
+                  <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
                   <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
                 </div>
               )}
