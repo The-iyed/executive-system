@@ -39,10 +39,6 @@ export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step
       urgent_reason: draft.urgent_reason ?? '',
       meeting_start_date: toISOOrDateString(draft.selected_time_slot?.slot_start ?? draft.meeting_start_date) || '',
       meeting_end_date: toISOOrDateString(draft.selected_time_slot?.slot_end ?? draft.meeting_end_date) || '',
-      alternative_1_start_date: toISOOrDateString(draft.alternative_time_slot_1?.slot_start ?? draft.alternative_1_start_date) || '',
-      alternative_1_end_date: toISOOrDateString(draft.alternative_time_slot_1?.slot_end ?? draft.alternative_1_end_date) || '',
-      alternative_2_start_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_start ?? draft.alternative_2_start_date) || '',
-      alternative_2_end_date: toISOOrDateString(draft.alternative_time_slot_2?.slot_end ?? draft.alternative_2_end_date) || '',
     };
 };
 

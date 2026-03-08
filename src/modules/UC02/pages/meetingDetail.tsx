@@ -94,9 +94,9 @@ import { fieldLabels, EDITABLE_FIELD_IDS, DIRECTIVE_METHOD_OPTIONS } from '../fe
 import { translateDirectiveStatus } from '../features/meeting-detail/utils/meetingDetailHelpers';
 import {
   MEETING_LOCATION_OPTIONS,
-  MeetingLocation,
   getMeetingLocationDropdownValue,
   showMeetingLocationOtherInput,
+  isPresetMeetingLocation,
 } from '../../UC01/features/MeetingForm/utils/constants';
 import MeetingFormDrawer from '../../UC01/features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
 import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useMeetingFormDrawer';
@@ -1858,8 +1858,6 @@ console.log({meeting});
   const meetingInfoData = useMemo((): MeetingInfoData => {
     if (!meeting) return {};
     const slot = meeting.selected_time_slot;
-    const alt1 = meeting.alternative_time_slot_1;
-    const alt2 = meeting.alternative_time_slot_2;
     const notesList = getGeneralNotesList(meeting.general_notes);
     const notesText = notesList.length > 0 ? notesList.map((n) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') : undefined;
     return {
@@ -1873,10 +1871,6 @@ console.log({meeting});
       urgent_reason: formData.meeting_justification || undefined,
       meeting_start_date: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? slot?.slot_start ?? undefined,
       meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
-      alternative_1_start_date: alt1?.slot_start,
-      alternative_1_end_date: alt1?.slot_end ?? undefined,
-      alternative_2_start_date: alt2?.slot_start,
-      alternative_2_end_date: alt2?.slot_end ?? undefined,
       meetingChannel: scheduleForm.meeting_channel || undefined,
       meeting_location: scheduleForm.location || undefined,
       meetingCategory: formData.meeting_classification_type || undefined,
@@ -1957,8 +1951,6 @@ console.log({meeting});
           case 'meeting_justification':
             return <Textarea value={formData.meeting_justification} onChange={(e) => handleFieldChange('meeting_justification', e.target.value)} className={inputClass} placeholder={label} />;
           case 'selected_time_slot_id':
-          case 'alternative_1':
-          case 'alternative_2':
             return <div className={`${inputClass} bg-gray-50`}>{value ?? '—'}</div>;
           case 'meeting_channel':
             return (
@@ -1976,7 +1968,7 @@ console.log({meeting});
                   value={locDropdownValue}
                   onValueChange={(value) => {
                     const v = value ?? '';
-                    if (v === MeetingLocation.ALIYA || v === MeetingLocation.GHADEER) {
+                    if (isPresetMeetingLocation(v)) {
                       setScheduleForm((p) => ({ ...p, location_option: v, location: v }));
                     } else {
                       setScheduleForm((p) => ({ ...p, location_option: v, location: '' }));
