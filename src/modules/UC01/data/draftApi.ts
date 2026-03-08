@@ -85,10 +85,6 @@ export interface DraftApiResponse {
   alternative_time_slot_2?:TimeSlotApiResponse;
   meeting_start_date?: string | null;
   meeting_end_date?: string | null;
-  alternative_1_start_date?: string | null;
-  alternative_1_end_date?: string | null;
-  alternative_2_start_date?: string | null;
-  alternative_2_end_date?: string | null;
   editable_fields?: string[];
 }
 
