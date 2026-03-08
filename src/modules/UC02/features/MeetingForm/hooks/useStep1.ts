@@ -4,7 +4,7 @@ import axiosInstance from '@/modules/auth/utils/axios';
 import type { Step1FormData } from '../schemas/step1.schema';
 import { validateStep1, extractValidationErrors } from '../schemas/step1.schema';
 import { isStep1FieldVisible } from '../utils/step1FieldConditions';
-import { LOCATION_OPTIONS, getLocationDropdownValue } from '../utils/constants';
+import { LOCATION_OPTIONS, getLocationDropdownValue, isPresetLocation } from '../utils/constants';
 import { STEP1_FORM_FIELDS } from '../types/step1.types';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { useMeetingAgenda } from './useMeetingAgenda';
@@ -128,10 +128,6 @@ const INITIAL_STATE: Partial<Step1FormData> = {
   meeting_channel: '',
   meetingStartDate: '',
   meetingEndDate: '',
-  alternative1StartDate: '',
-  alternative1EndDate: '',
-  alternative2StartDate: '',
-  alternative2EndDate: '',
   location: '',
   location_option: '',
   requiresProtocol: false,
@@ -243,8 +239,8 @@ export function useStep1({
         next.location_option = '';
       }
       if (field === 'location_option') {
-        next.location =
-          value === LOCATION_OPTIONS.ALIYA || value === LOCATION_OPTIONS.GHADEER ? (value as string) : '';
+        const str = typeof value === 'string' ? value : '';
+        next.location = isPresetLocation(str) ? str : '';
       }
       return next;
     });
