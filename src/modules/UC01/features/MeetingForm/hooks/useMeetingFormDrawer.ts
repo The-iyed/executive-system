@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData } from '../utils';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 const FORM_PARAM = 'form';
 const ID_PARAM = 'id';

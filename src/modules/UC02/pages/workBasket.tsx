@@ -7,7 +7,7 @@ import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
 import { Icon } from '@iconify/react';
 import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, Filter, X } from 'lucide-react';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 import { Popover, PopoverTrigger, PopoverContent, cn } from '@/lib/ui';
 
 const ITEMS_PER_PAGE = 10;
