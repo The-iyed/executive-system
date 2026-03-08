@@ -11,7 +11,7 @@ import { useAuth } from '../../auth/context/AuthProvider';
 import { getGuidanceRecords, getConsultationRecordsWithParams, type GuidanceRecord, type ConsultationRecord } from '../../UC02/data/meetingsApi';
 import { Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/lib/ui';
 import { PATH } from '../routes/paths';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
@@ -220,9 +220,9 @@ const GuidanceRequestDetail: React.FC = () => {
     },
     onSuccess: ( data: ProvideGuidanceRequest ) => {
       // Disable queries first to prevent any new requests
-      if (data.is_draft) {
+
         navigate(PATH.GUIDANCE_REQUESTS);
-      }   
+   
       setQueriesDisabled(true);
       
       // Cancel any in-flight queries
@@ -385,8 +385,8 @@ const GuidanceRequestDetail: React.FC = () => {
         />
       </div>
 
-      {/* Tab Content Container */}
-      <div className="overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
+      {/* Tab Content Container — flex-1 so directives-log can pin input to bottom */}
+      <div className={`flex-1 flex flex-col min-h-0 m-6 mt-0 ${activeTab === 'directives-log' ? '' : 'overflow-y-auto p-6 pb-32 bg-white border border-[#E6E6E6] rounded-2xl'}`}>
           {/* Guidance Request Tab */}
           {activeTab === 'guidance-request' && (
             <div className="flex flex-col gap-6">
@@ -853,186 +853,146 @@ const GuidanceRequestDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Directives Log Tab */}
+          {/* استشارات Tab — Chat-style UI (like استشارة المكتب التنفيذي in UC02) */}
           {activeTab === 'directives-log' && (
-            <div className="flex flex-col gap-4 w-full" dir="rtl">
-              {/* Consultation Question Section - shown here for EXECUTIVE_OFFICE_MANAGER */}
-              {!isExceptionMode && isExecutiveManager && (
-                <div
-                  className="flex flex-col justify-start items-end p-[10px] gap-[10px] w-full max-w-[1321px] h-[265px] mx-auto"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
-                >
-                  <div className="flex flex-col items-start p-0 gap-[10px] w-full">
-                    <div className="flex flex-col items-start p-0 gap-[4px] w-full">
-                      <h2
-                        className="w-full h-[38px] font-bold text-lg leading-[38px] text-right text-[#101828]"
-                        style={{
-                          fontFamily: "'Almarai', sans-serif",
-                          fontWeight: 700,
-                          fontSize: '18px',
-                          lineHeight: '38px',
-                        }}
-                      >
-                        سؤال جدوى جدولة الاجتماع
-                      </h2>
-                      <div className="flex flex-col items-start p-0 gap-4 w-full min-h-[80px]">
-                        <p
-                          className="w-full text-base leading-6 text-right text-[#475467]"
-                          style={{
-                            fontFamily: "'Almarai', sans-serif",
-                            fontWeight: 400,
-                            fontSize: '16px',
-                            lineHeight: '24px',
-                          }}
-                        >
-                          {guidanceQuestion || 'لا يوجد سؤال متاح'}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleOpenSubmitModal}
-                      className="flex flex-row items-center px-3 py-2 gap-2 w-[158px] h-10 bg-[#29615C] rounded-[85px] flex-none"
-                      style={{ fontFamily: "'Almarai', sans-serif" }}
-                    >
-                      <div className="flex flex-row justify-end items-center p-0 gap-3 w-[134px] h-6">
-                        <ClipboardCheck className="w-6 h-6 text-white" strokeWidth={2} />
-                        <span
-                          className="w-[98px] h-5 font-bold text-base leading-6 text-white"
-                          style={{
-                            fontFamily: "'Almarai', sans-serif",
-                            fontWeight: 700,
-                            fontSize: '16px',
-                            lineHeight: '24px',
-                          }}
-                        >
-                          تقديم توجيه
-                        </span>
-                      </div>
-                    </button>
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden w-full bg-white border border-[#E6E6E6] rounded-2xl" dir="rtl">
+
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {isLoadingGuidanceRecords ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-gray-600">جاري التحميل...</div>
                   </div>
-                </div>
-              )}
-
-              { !isExecutiveManager && isLoadingGuidanceRecords ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">جاري التحميل...</div>
-                </div>
-              ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
-                guidanceRecords.items.map((row: GuidanceRecord, index: number) => {
-                  const isExpanded = expandedGuidanceId === row.guidance_id;
-                  const requestDate = row.requested_at ? formatDateTimeArabic(row.requested_at) : '-';
-                  const hasAnswer = !!row.guidance_answer;
-
-                  return (
-                    <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedGuidanceId((id) => (id === row.guidance_id ? null : row.guidance_id))}
-                        className={`
-                          w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2
-                          ${isExpanded
-                            ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                            : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}
-                        `}
-                        style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                      >
-                        <div className="flex flex-row items-start justify-between gap-4">
-                          <div className="flex flex-col items-start flex-1 min-w-0">
-                          <p className="text-base font-bold text-[#048F86] mb-1">السؤال</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{row.guidance_question || '-'}</p>
+                ) : guidanceRecords && guidanceRecords.items.length > 0 ? (
+                  <div className="flex flex-col pb-4">
+                    {[...guidanceRecords.items].reverse().map((row: GuidanceRecord, index: number) => {
+                      const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : '-';
+                      const requesterName = row.requested_by_name || '-';
+                      const responseDate = row.responded_at ? formatTimeAgoArabic(row.responded_at) : null;
+                      const guidanceStatusLabels: Record<string, string> = {
+                        PENDING: 'قيد الانتظار',
+                        RESPONDED: 'تم الرد',
+                        CANCELLED: 'ملغاة',
+                        DRAFT: 'مسودة',
+                        COMPLETED: 'مكتمل',
+                        SUPERSEDED: 'معلق',
+                      };
+                      return (
+                        <div key={`guidance-${row.guidance_id}-${index}`} className="flex flex-col gap-0">
+                          {/* Question bubble (right-aligned teal — like UC02 chat) */}
+                          <div className="px-5 pt-5 pb-3">
+                            <div className="flex items-start gap-3" dir="rtl">
+                              <div className="flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-[#048F86]/10 border border-[#048F86]/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-[#048F86]">{requesterName?.charAt(0)?.toUpperCase() || '?'}</span>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-semibold text-[#1F2937]">{requesterName}</span>
+                                  <span className="text-[11px] text-[#9CA3AF]">{requestDate}</span>
+                                  {row.status && (
+                                    <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
+                                  )}
+                                </div>
+                                <div className="bg-[#048F86]/5 border border-[#048F86]/10 rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%]">
+                                  <p className="text-[14px] text-[#1F2937] leading-relaxed whitespace-pre-wrap">{row.guidance_question || '-'}</p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600">
-                              <Clock className="w-4 h-4 flex-shrink-0" />
-                              <span>تاريخ الطلب : {requestDate}</span>
-                            </span>
-                            <span className="flex-shrink-0 text-gray-500" aria-hidden>
-                              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
 
-                      {isExpanded && hasAnswer && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
-                          <div className="z-[2] mt-4 mb-4 flex min-w-0 flex-1 flex-col gap-2">
-                            {(() => {
-                              const responseDate = row.responded_at ? formatDateTimeArabic(row.responded_at) : '—';
-                              const statusLabels: Record<string, string> = {
-                                PENDING: 'قيد الانتظار',
-                                RESPONDED: 'تم الرد',
-                                CANCELLED: 'ملغاة',
-                                DRAFT: 'مسودة',
-                                COMPLETED: 'مكتمل',
-                                SUPERSEDED: 'معلق',
-                              };
-                              const statusLabel = statusLabels[row.status] || row.status;
-                              return (
-                                <div
-                                  className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4"
-                                  style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                                >
-                                  <div className="flex w-full flex-row items-center justify-between gap-4">
-                                    <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">
-                                      {row.guidance_answer?.trim() || '—'}
-                                    </p>
-                                    <StatusBadge status={row.status} label={statusLabel} />
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
-                                      {row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}
-                                    </div>
-                                    <span className="flex-shrink-0 text-sm text-gray-700">{row.responded_by_name || '—'}</span>
-                                    <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                                      <Clock className="h-4 w-4 flex-shrink-0" />
-                                      <span>تاريخ الرد : {responseDate}</span>
-                                    </span>
+                          {/* Response bubble (left-aligned gray — like UC02 chat) */}
+                          <div className="px-5 pb-5 pt-1">
+                            {row.guidance_answer ? (
+                              <div className="flex items-start gap-3" dir="ltr">
+                                <div className="flex-shrink-0">
+                                  <div className="w-9 h-9 rounded-full bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center">
+                                    <span className="text-xs font-bold text-[#92400E]">{row.responded_by_name?.charAt(0)?.toUpperCase() || '?'}</span>
                                   </div>
                                 </div>
-                              );
-                            })()}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-semibold text-[#1F2937]">{row.responded_by_name || '-'}</span>
+                                    {responseDate && <span className="text-[11px] text-[#9CA3AF]">{responseDate}</span>}
+                                    <StatusBadge status={row.status} label={guidanceStatusLabels[row.status] || row.status} />
+                                  </div>
+                                  <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                    <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-wrap">{row.guidance_answer.trim()}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F9FAFB] border border-dashed border-[#E5E7EB] rounded-xl w-fit" dir="ltr">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]" />
+                                <p className="text-sm text-[#9CA3AF]">لا يوجد رد بعد</p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                      {isExpanded && !hasAnswer && (
-                        <div className="flex w-full flex-row items-stretch gap-0 mt-0 relative" dir="rtl">
-                          <div className="flex flex-shrink-0 w-12 flex-col items-center pt-1">
-                            <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
-                            <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
-                          </div>
-                          <div
-                            className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4"
-                            style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
-                          >
-                            <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
-                            { isExecutiveManager&&
-                           <>
-                          <StatusBadge status={row.status} label={statusLabel} />
-                          <div className="flex mr-2 h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 text-xs font-bold text-gray-600">
-                            E
-                          </div>
-                          <span className="flex-shrink-0 ml-2 text-sm text-gray-700">Executive Manager</span>
-                          <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                            <Clock className="h-4 w-4 flex-shrink-0" />
-                            <span>تاريخ الرد : -</span>
-                          </span>
-                          </>
-                          }
-                          </div>
-                      
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <p className="text-gray-600 text-lg mb-2">سجل التوجيهات</p>
-                    <p className="text-gray-500 text-sm">لا توجد توجيهات مسجلة</p>
+                      );
+                    })}
                   </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-[#98A2B3]" />
+                    </div>
+                    <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+                    <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Input fixed at bottom (flex-shrink-0) — only for Executive Manager in guidance flow */}
+              {!isExceptionMode && isExecutiveManager && meetingRequest?.id && (
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!guidanceResponse.trim()) return;
+                      submitMutation.mutate({
+                        guidance_notes: guidanceResponse,
+                        feasibility_answer: isSuitableForScheduling,
+                        is_draft: false,
+                      });
+                    }}
+                    className="flex items-end gap-3 px-5 py-4"
+                    dir="rtl"
+                  >
+                    <Textarea
+                      value={guidanceResponse}
+                      onChange={(e) => setGuidanceResponse(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!guidanceResponse.trim()) return;
+                          submitMutation.mutate({
+                            guidance_notes: guidanceResponse,
+                            feasibility_answer: isSuitableForScheduling,
+                            is_draft: false,
+                          });
+                        }
+                      }}
+                      placeholder="اكتب استشارتك هنا..."
+                      className="flex-1 min-h-[44px] max-h-[120px] resize-none rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-right focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86] placeholder:text-[#9CA3AF]"
+                      dir="rtl"
+                      rows={1}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!guidanceResponse.trim() || submitMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white flex items-center justify-center transition-opacity disabled:opacity-40"
+                    >
+                      {submitMutation.isPending ? (
+                        <Clock className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}>
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
