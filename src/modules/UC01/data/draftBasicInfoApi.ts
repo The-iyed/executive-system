@@ -86,13 +86,9 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
   if (form.is_urgent && form.urgent_reason) fd.append('urgent_reason', form.urgent_reason);
   if (form.is_on_behalf_of && form.meeting_manager_id) fd.append('meeting_manager_id', form.meeting_manager_id);
 
-  // Meeting date range: main slot + two alternatives (each start/end)
+  // Meeting date range: proposed meeting date (start/end)
   appendDateIf(form.meeting_start_date, 'meeting_start_date', fd);
   appendDateIf(form.meeting_end_date, 'meeting_end_date', fd);
-  appendDateIf(form.alternative_1_start_date, 'alternative_1_start_date', fd);
-  appendDateIf(form.alternative_1_end_date, 'alternative_1_end_date', fd);
-  appendDateIf(form.alternative_2_start_date, 'alternative_2_start_date', fd);
-  appendDateIf(form.alternative_2_end_date, 'alternative_2_end_date', fd);
 
   // Directive
   if (form.is_based_on_directive && form.directive_method) {
