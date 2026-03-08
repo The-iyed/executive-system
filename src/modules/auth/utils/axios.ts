@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { clearTokens } from './token'
+import { clearAllBrowserStorage, clearTokens } from './token'
 import { getAuthToken } from './tokenGetter'
 import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env'
 
@@ -38,7 +38,8 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const currentPath = window.location.pathname
     if (error?.response?.status === 401) {
-      clearTokens()
+      clearAllBrowserStorage()
+      return Promise.reject((error.response && error.response.data) || 'حدث خطأ غير متوقع!')
     }
     if (error?.response?.status >= 500 && currentPath !== '/500') {
       console.log('error', error)
