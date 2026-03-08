@@ -24,10 +24,6 @@ const STEP1_FORM_TO_API_FIELDS: Record<string, string[]> = {
   previous_meeting_minutes_file: ['previous_meeting_minutes_file'],
   meeting_start_date: ['meeting_start_date'],
   meeting_end_date: ['meeting_end_date'],
-  alternative_1_start_date: ['alternative_1_start_date'],
-  alternative_1_end_date: ['alternative_1_end_date'],
-  alternative_2_start_date: ['alternative_2_start_date'],
-  alternative_2_end_date: ['alternative_2_end_date'],
 };
 
 const STEP2_FORM_TO_API_FIELDS: Record<string, string[]> = {
