@@ -1,6 +1,7 @@
 import axios from 'axios';
 import axiosInstance from '../utils/axios';
 import { setTokens } from '../utils/token';
+import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env';
 
 export interface LoginPayload {
   email: string;
@@ -56,9 +57,8 @@ export const loginApi = async (payload: LoginPayload): Promise<LoginResponse> =>
 
 // Refresh token API - Uses plain axios to avoid interceptor loops
 export const refreshTokenApi = async (refreshToken: string): Promise<RefreshTokenResponse> => {
-  const baseURL = 'https://execution-system.momrahai.com';
   const response = await axios.post<RefreshTokenResponse>(
-    `${baseURL}/api/auth/refresh`,
+    `${EXECUTION_SYSTEM_BASE_URL}/api/auth/refresh`,
     { refresh_token: refreshToken },
     {
       headers: {

@@ -1365,8 +1365,7 @@ const ContentRequestDetail: React.FC = () => {
                       const recordType = row.type || row.consultation_type || "";
                       const recordQuestion = row.question || row.consultation_question || "";
                       const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : "-";
-                      const typeLabel =
-                        recordType === "SCHEDULING" ? "السؤال" : recordType === "CONTENT" ? "محتوى" : recordType;
+                      const typeLabel =  recordType === "SCHEDULING" ? "السؤال" : recordType === "CONTENT" ? "محتوى" : recordType;
                       const requesterName = row.consultant_name || user?.username || user?.name || "-";
                       const consultationStatusLabels: Record<string, string> = {
                         PENDING: "قيد الانتظار",

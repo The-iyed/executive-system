@@ -17,6 +17,7 @@ import {
 } from "@/lib/ui/components/dialog";
 import { cn } from "@/lib/ui/lib/utils";
 import type { ComponentProps, ReactNode } from "react";
+import { MODELS_LOGO_BASE_URL } from "@/lib/env";
 
 export type ModelSelectorProps = ComponentProps<typeof Dialog>;
 
@@ -175,7 +176,7 @@ export const ModelSelectorLogo = ({
     alt={`${provider} logo`}
     className={cn("size-3 dark:invert", className)}
     height={12}
-    src={`https://models.dev/logos/${provider}.svg`}
+    src={`${MODELS_LOGO_BASE_URL}/logos/${provider}.svg`}
     width={12}
   />
 );
