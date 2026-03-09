@@ -1314,8 +1314,12 @@ const MeetingDetail: React.FC = () => {
         (meeting as any).is_based_on_directive === 'true' ||
         (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
       );
-      const directiveMethod = (meeting as any).directive_method || '';
+      const directiveMethodRaw = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+      const hasPreviousMeetingContext = !!(meeting.previous_meeting_attachment || prevExtId != null || minutesId);
+      const directiveMethod =
+        directiveMethodRaw.trim() ||
+        (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
         meeting_type: meeting.meeting_type || '',
@@ -1557,8 +1561,12 @@ const MeetingDetail: React.FC = () => {
       (meeting as any).is_based_on_directive === 'true' ||
       (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
     );
-    const directiveMethod = (meeting as any).directive_method || '';
+    const directiveMethodRaw = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+    const hasPreviousMeetingContext = !!(meeting.previous_meeting_attachment || prevExtId != null || minutesId);
+    const directiveMethod =
+      directiveMethodRaw.trim() ||
+      (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
     const guidance = meeting.related_guidance ?? '';
     setOriginalSnapshot({
       formData: {
@@ -1688,12 +1696,17 @@ const MeetingDetail: React.FC = () => {
   const hasObjectivesOrAgenda = (contentForm.objectives?.length ?? 0) > 0 || (contentForm.agendaItems?.length ?? 0) > 0;
   const hasContent = hasObjectivesOrAgenda && hasPresentation;
 
-  /** Optional attachments (مرفقات اختيارية): non‑presentation and non–executive-summary (executive summary appears only in الملخّص التنفيذي) */
+  /** Optional attachments (مرفقات اختيارية): exclude presentation, executive summary, and previous_meeting_attachment (محضر الاجتماع – shown only in its dedicated card) */
   const optionalAttachmentsList = useMemo(() => {
+    const prevId = meeting?.previous_meeting_attachment?.id ?? null;
     return (meeting?.attachments || []).filter(
-      (a) => !a.is_presentation && !a.is_executive_summary && !deletedAttachmentIds.includes(a.id)
+      (a) =>
+        !a.is_presentation &&
+        !a.is_executive_summary &&
+        !deletedAttachmentIds.includes(a.id) &&
+        (prevId == null || a.id !== prevId)
     );
-  }, [meeting?.attachments, deletedAttachmentIds]);
+  }, [meeting?.attachments, meeting?.previous_meeting_attachment?.id, deletedAttachmentIds]);
 
   /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
   const hasPreviousMeetingAttachment = useMemo(() => {
@@ -1898,7 +1911,9 @@ const MeetingDetail: React.FC = () => {
               : 'غير موجود (إجباري)'
             : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
-      directive_method: formData.directive_method || undefined,
+      directive_method:
+        formData.directive_method ||
+        (formData.previous_meeting_attachment || formData.previous_meeting_ext_id != null ? 'PREVIOUS_MEETING' : undefined),
       previous_meeting_attachment: formData.previous_meeting_attachment ?? undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
