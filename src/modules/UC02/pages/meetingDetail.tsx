@@ -2579,20 +2579,29 @@ const MeetingDetail: React.FC = () => {
                 <div className="p-6">
                   <TooltipProvider>
                     <div className="flex flex-col gap-3">
-                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
-                        <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
+                      {(() => {
+                        const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
+                        return presentationAttachments.map((att) => {
+                          const showCompare = att.replaces_attachment_id != null;
+                          const compareDisabledReason =
+                            presentationAttachments.length < 2
+                              ? "يجب وجود عرضين تقديميين على الأقل للمقارنة"
+                              : "المقارنة متاحة فقط عند رفع نسخة جديدة تحل محل عرض سابق";
+                          return (
+                          <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-11 h-11 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                           <div className="flex flex-col items-end min-w-0 flex-1">
                             <span className="text-sm font-semibold text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
                             <span className="text-xs text-[#9CA3AF] mt-0.5">{Math.round((att.file_size || 0) / 1024)} KB</span>
                           </div>
                           <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                            {att.replaces_attachment_id != null && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
                                   <button
                                     type="button"
                                     onClick={() => {
+                                      if (!showCompare || compareByAttachmentMutation.isPending) return;
                                       compareAbortControllerRef.current?.abort();
                                       compareAbortControllerRef.current = new AbortController();
                                       setComparePresentationsResult(null);
@@ -2604,14 +2613,17 @@ const MeetingDetail: React.FC = () => {
                                       });
                                     }}
                                     disabled={compareByAttachmentMutation.isPending}
-                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    style={!showCompare ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
                                   >
                                     <Scale className="w-4 h-4" strokeWidth={1.4} />
                                   </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top"><p>تقييم الاختلاف بين العروض</p></TooltipContent>
-                              </Tooltip>
-                            )}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p>{showCompare ? "مقارنة بالذكاء الاصطناعي" : compareDisabledReason}</p>
+                              </TooltipContent>
+                            </Tooltip>
                             <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
                             <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
                             <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -2638,7 +2650,9 @@ const MeetingDetail: React.FC = () => {
                             </svg>
                           </button>
                         </div>
-                      ))}
+                          );
+                        });
+                      })()}
 
                       {/* New presentation attachments (not yet saved) */}
                       {newPresentationAttachments.map((file, idx) => (
