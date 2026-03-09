@@ -1687,11 +1687,12 @@ const MeetingDetail: React.FC = () => {
   const hasPresentation = presentationAttachments.length > 0 || newPresentationAttachments.length > 0;
   const hasObjectivesOrAgenda = (contentForm.objectives?.length ?? 0) > 0 || (contentForm.agendaItems?.length ?? 0) > 0;
   const hasContent = hasObjectivesOrAgenda && hasPresentation;
-console.log({meeting});
 
-  /** Optional attachments (مرفقات اختيارية): non‑presentation attachments only (previous_meeting_attachment is rendered separately in the Content tab) */
+  /** Optional attachments (مرفقات اختيارية): non‑presentation and non–executive-summary (executive summary appears only in الملخّص التنفيذي) */
   const optionalAttachmentsList = useMemo(() => {
-    return (meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id));
+    return (meeting?.attachments || []).filter(
+      (a) => !a.is_presentation && !a.is_executive_summary && !deletedAttachmentIds.includes(a.id)
+    );
   }, [meeting?.attachments, deletedAttachmentIds]);
 
   /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
@@ -2837,36 +2838,45 @@ console.log({meeting});
                 <div className="p-6">
                   {(() => {
                     const notesText = generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : (contentTabForm.general_notes || '').trim();
-                    const isEmptyNotes = generalNotesList.length === 0 && (!notesText || notesText === '' || notesText === '—' || /^[\s—\-]+$/.test(notesText));
-                    return isEmptyNotes ? (
-                      <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                          <ClipboardCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                    const hasGeneralNotes = generalNotesList.length > 0 || (notesText !== '' && notesText !== '—' && !/^[\s—\-]+$/.test(notesText));
+                    const hasContentOfficerNotes = contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—';
+                    const isEmptyNotes = !hasGeneralNotes && !hasContentOfficerNotes;
+                    if (isEmptyNotes) {
+                      return (
+                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                            <ClipboardCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-[#374151]">لا توجد ملاحظات</p>
+                            <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة أي ملاحظات لهذا الطلب</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-[#374151]">لا توجد ملاحظات</p>
-                          <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة أي ملاحظات لهذا الطلب</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full px-5 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-right text-[#374151] leading-relaxed whitespace-pre-wrap text-sm">
-                        {generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : contentTabForm.general_notes}
-                      </div>
+                      );
+                    }
+                    return (
+                      <>
+                        {hasGeneralNotes && (
+                          <div className="w-full px-5 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-right text-[#374151] leading-relaxed whitespace-pre-wrap text-sm">
+                            {generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : contentTabForm.general_notes}
+                          </div>
+                        )}
+                        {hasContentOfficerNotes && (
+                          <div className={hasGeneralNotes ? 'mt-5 pt-5 border-t border-[#F3F4F6]' : ''}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 rounded-md bg-[#F59E0B]/10 flex items-center justify-center">
+                                <ClipboardCheck className="w-3.5 h-3.5 text-[#D97706]" strokeWidth={2} />
+                              </div>
+                              <span className="text-sm font-semibold text-[#92400E]">ملاحظات مسؤول المحتوى</span>
+                            </div>
+                            <div className="w-full px-5 py-4 bg-[#FFFBEB]/60 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] whitespace-pre-wrap text-sm leading-relaxed">
+                              {contentOfficerNotesDisplay}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
-                  {contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—' && (
-                    <div className="mt-5 pt-5 border-t border-[#F3F4F6]">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 rounded-md bg-[#F59E0B]/10 flex items-center justify-center">
-                          <ClipboardCheck className="w-3.5 h-3.5 text-[#D97706]" strokeWidth={2} />
-                        </div>
-                        <span className="text-sm font-semibold text-[#92400E]">ملاحظات مسؤول المحتوى</span>
-                      </div>
-                      <div className="w-full px-5 py-4 bg-[#FFFBEB]/60 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] whitespace-pre-wrap text-sm leading-relaxed">
-                        {contentOfficerNotesDisplay}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </section>
 
