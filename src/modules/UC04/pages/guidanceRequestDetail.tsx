@@ -162,7 +162,12 @@ const GuidanceRequestDetail: React.FC = () => {
       meetingConfidentiality: meetingRequest.meeting_confidentiality ?? undefined,
       meetingAgenda: meetingRequest.agenda_items ?? undefined,
       is_based_on_directive: !!(meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0),
-      directive_method: (meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0) ? 'DIRECT_DIRECTIVE' : undefined,
+      directive_method:
+        (meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0)
+          ? 'DIRECT_DIRECTIVE'
+          : ((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment != null || meetingRequest.previous_meeting_id != null)
+            ? 'PREVIOUS_MEETING'
+            : (meetingRequest as { directive_method?: string }).directive_method ?? undefined,
       previous_meeting_minutes_file: execSummary ? { name: execSummary.file_name } : undefined,
       directive_text: formatRelatedGuidance(meetingRequest.related_guidance),
       notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
@@ -830,13 +835,18 @@ const GuidanceRequestDetail: React.FC = () => {
                   file_type: att.file_type ?? '',
                   blob_url: att.blob_url ?? null,
                 }))}
-                optionalFiles={(meetingRequest?.attachments ?? []).filter((a) => a.is_additional).map((att) => ({
-                  id: att.id,
-                  file_name: att.file_name,
-                  file_size: att.file_size ?? 0,
-                  file_type: att.file_type ?? '',
-                  blob_url: att.blob_url ?? null,
-                }))}
+                optionalFiles={(() => {
+                  const prevId = (meetingRequest as { previous_meeting_attachment?: { id?: string } | null })?.previous_meeting_attachment?.id ?? null;
+                  return (meetingRequest?.attachments ?? [])
+                    .filter((a) => a.is_additional && (prevId == null || a.id !== prevId))
+                    .map((att) => ({
+                      id: att.id,
+                      file_name: att.file_name,
+                      file_size: att.file_size ?? 0,
+                      file_type: att.file_type ?? '',
+                      blob_url: att.blob_url ?? null,
+                    }));
+                })()}
                 attachmentTimingValue=""
                 notesValue=""
                 readOnly

@@ -168,7 +168,12 @@ const ContentConsultationRequestDetail: React.FC = () => {
       is_based_on_directive: !!(
         meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0
       ),
-      directive_method: undefined,
+      directive_method:
+        (meetingRequest as { directive_method?: string }).directive_method ||
+        ((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment != null ||
+        meetingRequest.previous_meeting_id != null
+          ? 'PREVIOUS_MEETING'
+          : undefined) ?? undefined,
       previous_meeting_minutes_file: undefined,
       directive_text: undefined,
       notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
@@ -177,7 +182,13 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
   // Filter attachments
   const presentationAttachments = meetingRequest?.attachments?.filter((att) => att.is_presentation) || [];
-  const additionalAttachments = meetingRequest?.attachments?.filter((att) => att.is_additional) || [];
+  const prevAttId = (meetingRequest as { previous_meeting_attachment?: { id?: string } | null })?.previous_meeting_attachment?.id ?? null;
+  const additionalAttachments =
+    meetingRequest?.attachments?.filter(
+      (att) =>
+        att.is_additional &&
+        (prevAttId == null || att.id !== prevAttId)
+    ) || [];
 
   const tabs = [
     {
