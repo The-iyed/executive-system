@@ -599,6 +599,33 @@ const MeetingDetail: React.FC = () => {
     return [...apiInvitees, ...localInviteesMapped];
   }, [meeting?.invitees, localInvitees]);
 
+  /** Effective start/end for schedule confirm modal and submit: from meeting (scheduled_*, meeting_*_date), selected slot, or scheduleForm. */
+  const getEffectiveScheduleDates = useCallback(
+    (m: typeof meeting, form: typeof scheduleForm): { start: string | undefined; end: string | undefined } => {
+      if (!m) return { start: undefined, end: undefined };
+      const start =
+        (m as any).scheduled_start ?? (m as any).meeting_start_date ?? (form.scheduled_at || undefined);
+      const end =
+        (m as any).scheduled_end ?? (m as any).scheduled_end_at ?? (m as any).meeting_end_date ?? (form.scheduled_end_at || undefined);
+      if (start && end) return { start, end };
+      const slotId = form.selected_time_slot_id ?? (m as any).selected_time_slot_id;
+      if (!slotId) return { start, end };
+      const allSlots = [
+        (m as any).alternative_time_slot_1,
+        (m as any).alternative_time_slot_2,
+        (m as any).selected_time_slot,
+      ].filter(Boolean);
+      const slot = allSlots.find((s: any) => s?.id === slotId);
+      if (!slot?.slot_start) return { start, end };
+      const slotEnd = slot.slot_end ?? new Date(new Date(slot.slot_start).getTime() + 3600000).toISOString();
+      return {
+        start: start ?? slot.slot_start,
+        end: end ?? slotEnd,
+      };
+    },
+    []
+  );
+
   // Create highlighted event for the calendar from selected time slot
   const highlightedEvents = React.useMemo(() => {
     if (!scheduleForm.selected_time_slot_id || !meeting) return [];
@@ -1169,9 +1196,7 @@ const MeetingDetail: React.FC = () => {
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Use meeting start/end when available (e.g. schedule tab where those fields are hidden)
-    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
     if (!startSource || !endSource) return;
 
     const scheduledAt = new Date(startSource);
@@ -1446,8 +1471,7 @@ const MeetingDetail: React.FC = () => {
 
   /** Create Webex meeting (for confirm modal or when VIRTUAL and no link yet). Uses meeting or scheduleForm for start/end. */
   const createWebexLink = useCallback(async () => {
-    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
     if (!startSource || !endSource) {
       setValidationError('يجب تحديد تاريخ ووقت البداية والنهاية لإنشاء رابط Webex.');
       return;
@@ -1484,7 +1508,7 @@ const MeetingDetail: React.FC = () => {
     } finally {
       setIsCreatingWebex(false);
     }
-  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at]);
+  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, getEffectiveScheduleDates]);
 
   // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
   useEffect(() => {
@@ -1515,6 +1539,37 @@ const MeetingDetail: React.FC = () => {
     }));
   }, [isScheduleModalOpen, scheduleForm.selected_time_slot_id, meeting]);
 
+  // When Scheduling Officer opens confirm modal and موعد has a selected slot but form has no dates, sync from slot
+  useEffect(() => {
+    if (!scheduleConfirmModalOpen || !meeting || scheduleForm.scheduled_at) return;
+    const slotId = scheduleForm.selected_time_slot_id ?? (meeting as any).selected_time_slot_id;
+    if (!slotId) return;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot,
+    ].filter(Boolean);
+    const selectedSlot = allSlots.find((s: any) => s?.id === slotId);
+    if (!selectedSlot?.slot_start) return;
+    const toDatetimeLocal = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+    const startLocal = toDatetimeLocal(selectedSlot.slot_start);
+    const endLocal = selectedSlot.slot_end
+      ? toDatetimeLocal(selectedSlot.slot_end)
+      : (() => {
+          const start = new Date(selectedSlot.slot_start);
+          const end = new Date(start.getTime() + 60 * 60 * 1000);
+          return toDatetimeLocal(end.toISOString());
+        })();
+    setScheduleForm((prev) => ({
+      ...prev,
+      scheduled_at: startLocal,
+      scheduled_end_at: endLocal,
+    }));
+  }, [scheduleConfirmModalOpen, meeting, scheduleForm.scheduled_at, scheduleForm.selected_time_slot_id]);
+
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
     if (!meeting) return;
@@ -1528,7 +1583,7 @@ const MeetingDetail: React.FC = () => {
       return {
         ...prev,
         scheduled_at: meeting.scheduled_start ?? meeting.meeting_start_date ?? '',
-        scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? '',
+        scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? (meeting as any).meeting_end_date ?? '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
         protocol_type: meeting.protocol_type || prev.protocol_type,
@@ -4248,8 +4303,7 @@ const MeetingDetail: React.FC = () => {
               </div>
             )}
             {(() => {
-              const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-              const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+              const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
               const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
               const channelLabels: Record<string, string> = { PHYSICAL: 'حضوري', PHYSICAL_LOCATION_1: 'حضوري - الموقع 1', PHYSICAL_LOCATION_2: 'حضوري - الموقع 2', PHYSICAL_LOCATION_3: 'حضوري - الموقع 3', VIRTUAL: 'عن بُعد', HYBRID: 'مختلط' };
               const formatDt = (s: string) => {
@@ -4339,17 +4393,24 @@ const MeetingDetail: React.FC = () => {
             >
               إلغاء
             </button>
-            <button
-              type="button"
-              disabled={scheduleMutation.isPending}
-              onClick={() => {
-                const e = { preventDefault: () => {} } as React.FormEvent;
-                handleScheduleSubmit(e);
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {scheduleMutation.isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
-            </button>
+            {(() => {
+              const { start: effStart, end: effEnd } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
+              const meetingCh = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
+              const canConfirm = !!(effStart && effEnd && (meetingCh !== 'VIRTUAL' || webexMeetingDetails));
+              return (
+                <button
+                  type="button"
+                  disabled={scheduleMutation.isPending || !canConfirm}
+                  onClick={() => {
+                    const e = { preventDefault: () => {} } as React.FormEvent;
+                    handleScheduleSubmit(e);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {scheduleMutation.isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
+                </button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
       </Dialog>
