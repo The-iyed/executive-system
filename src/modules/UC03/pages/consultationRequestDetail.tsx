@@ -138,7 +138,12 @@ const ConsultationRequestDetail: React.FC = () => {
       meetingConfidentiality: (meetingRequest as { meeting_confidentiality?: string }).meeting_confidentiality ?? undefined,
       meetingAgenda: meetingRequest.agenda_items ?? undefined,
       is_based_on_directive: !!(meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0),
-      directive_method: (meetingRequest as { directive_method?: string }).directive_method ?? undefined,
+      directive_method:
+        (meetingRequest as { directive_method?: string }).directive_method ||
+        ((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment || (meetingRequest as { prev_ext_id?: unknown }).prev_ext_id != null
+          ? 'PREVIOUS_MEETING'
+          : undefined) ??
+        undefined,
       previous_meeting_minutes_file: undefined,
       directive_text: formatRelatedGuidance(meetingRequest.related_guidance),
       notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
@@ -154,8 +159,9 @@ const ConsultationRequestDetail: React.FC = () => {
   // Attachments grouping
   const presentationAttachments =
     meetingRequest?.attachments?.filter((att) => att.is_presentation) || [];
+  const prevAttId = (meetingRequest as { previous_meeting_attachment?: { id?: string } | null })?.previous_meeting_attachment?.id ?? null;
   const optionalAttachments =
-    meetingRequest?.attachments?.filter((att) => !att.is_presentation) || [];
+    meetingRequest?.attachments?.filter((att) => !att.is_presentation && (prevAttId == null || att.id !== prevAttId)) || [];
 
   const tabs = [
     { id: 'request-info', label: 'معلومات الطلب' },

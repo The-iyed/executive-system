@@ -1037,6 +1037,7 @@ const ContentRequestDetail: React.FC = () => {
           {activeTab === "content" &&
             (() => {
               const attachments = contentRequest?.attachments ?? [];
+              const prevId = (contentRequest as { previous_meeting_attachment?: { id?: string } | null })?.previous_meeting_attachment?.id ?? null;
               const presFiles = attachments
                 .filter((a: Attachment) => a.is_presentation)
                 .map((a: Attachment) => ({
@@ -1047,7 +1048,7 @@ const ContentRequestDetail: React.FC = () => {
                   blob_url: a.blob_url ?? null,
                 }));
               const optFiles = attachments
-                .filter((a: Attachment) => a.is_additional)
+                .filter((a: Attachment) => a.is_additional && (prevId == null || a.id !== prevId))
                 .map((a: Attachment) => ({
                   id: a.id,
                   file_name: a.file_name,
