@@ -140,10 +140,10 @@ const ConsultationRequestDetail: React.FC = () => {
       is_based_on_directive: !!(meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0),
       directive_method:
         (meetingRequest as { directive_method?: string }).directive_method ||
-        ((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment || (meetingRequest as { prev_ext_id?: unknown }).prev_ext_id != null
+        (((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment || (meetingRequest as { prev_ext_id?: unknown }).prev_ext_id != null
           ? 'PREVIOUS_MEETING'
           : undefined) ??
-        undefined,
+        undefined),
       previous_meeting_minutes_file: undefined,
       directive_text: formatRelatedGuidance(meetingRequest.related_guidance),
       notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
