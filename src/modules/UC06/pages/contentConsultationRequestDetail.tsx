@@ -173,7 +173,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
         ((meetingRequest as { previous_meeting_attachment?: unknown }).previous_meeting_attachment != null ||
         meetingRequest.previous_meeting_id != null
           ? 'PREVIOUS_MEETING'
-          : undefined) ?? undefined,
+          : undefined ) || undefined,
       previous_meeting_minutes_file: undefined,
       directive_text: undefined,
       notes: getNotesText(meetingRequest.general_notes, meetingRequest.content_officer_notes),
