@@ -292,6 +292,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const showTitleError = titleTouched && !titleTrimmed;
   const [pastDateError, setPastDateError] = useState<string | null>(null);
   const [locationTouched, setLocationTouched] = useState(false);
+  const [inviteesTouched, setInviteesTouched] = useState(false);
 
   const isPhysical = meetingChannel === 'PHYSICAL';
   const locationDropdownValue = getLocationDropdownValue(meetingLocation, meetingLocationOption);
@@ -400,6 +401,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     setTitleTouched(true);
     setPastDateError(null);
     setLocationTouched(true);
+    setInviteesTouched(true);
     if (!titleTrimmed) return;
     if (!meetingChannel.trim()) return;
     const start = startDate ? new Date(startDate).getTime() : 0;
@@ -409,6 +411,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     }
     if (locationRequired && !locationValid) return;
     if (isRemote && !webexMeetingLink) return;
+    if (invitees.length === 0) return;
 
     const meeting_location = getMeetingLocationForSubmit();
 
@@ -606,6 +609,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             email: inviteeEmailCellRender,
           }}
         />
+        {inviteesTouched && invitees.length === 0 && (
+          <p className="text-right text-sm text-red-600">يجب إضافة مدعو واحد على الأقل</p>
+        )}
 
         {submitError && (
           <div className="p-3 rounded-lg bg-red-50 border border-red-200">
@@ -629,7 +635,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
               !titleTrimmed ||
               !meetingChannel.trim() ||
               (locationRequired && !locationValid) ||
-              (isRemote && (!webexMeetingLink || isCreatingWebex))
+              (isRemote && (!webexMeetingLink || isCreatingWebex)) ||
+              invitees.length === 0
             }
             className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
