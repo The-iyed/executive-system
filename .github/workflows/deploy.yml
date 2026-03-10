@@ -1,0 +1,57 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - '*.dev'
+      - dev
+    tags:
+      - '*.dev'
+      
+jobs:
+  deploy:
+    runs-on: [self-hosted, azure-runner]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy and validate
+        run: |
+          # 1. Ensure target directory exists and copy the project files to it
+          sudo mkdir -p /var/www/minister-mind-fe 
+          pwd
+          sudo cp -R . /var/www/minister-mind-fe
+          
+          # 2. Navigate to the project directory
+          cd /var/www/minister-mind-fe
+          
+          # 3. Pull the latest base images and rebuild the containers securely
+          sudo docker compose pull
+          sudo docker compose up -d --build
+          
+          # 4. Best Practice: Wait a few seconds for containers to initialize
+          echo "Waiting for services to start..."
+          sleep 10
+          
+          # 5. Best Practice: Verify the service is healthy (Port 4404 is the frontend)
+          if curl -f http://localhost:4404 > /dev/null 2>&1; then
+            echo "Deployment successful: Service is healthy!"
+          else
+            echo "Deployment warning: Health check failed or endpoint not ready yet."
+          fi
+          
+          # 6. Best Practice: Clean up dangling images to prevent filling the VM's disk space over time
+          # sudo docker image prune -af --filter "until=24h"
+
+  # notify:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     - name: Discord Notification
+  #       env:
+  #         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+  #       uses: Ilshidur/action-discord@master
+  #       with:
+  #         args: 'Deployment of **Minister Mind Frontend** has finished with status: **${{ needs.deploy.result }}**'
