@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { Eye } from 'lucide-react';
 import UploadIcon from '@/modules/shared/assets/upload.svg?react';
 import { cn } from '@/lib/ui';
 
@@ -24,6 +25,8 @@ export interface FileUploadProps {
   /** When provided, for existing files with an id in this map, the card shows the replacement file instead of the original (with Replace/Clear). */
   replacementFiles?: Record<string, File>;
   onClearReplacement?: (existingId: string) => void;
+  /** When provided, shows an Eye button on existing files to open in preview drawer. */
+  onViewExistingFile?: (file: ExistingFile) => void;
   label?: string;
   maxFileSize?: number;
   acceptedTypes?: string[];
@@ -57,6 +60,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onExistingFileReplace,
   replacementFiles = {},
   onClearReplacement,
+  onViewExistingFile,
   label = 'العرض التقديمي',
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
@@ -404,6 +408,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                         <span className="text-[12px] text-[#667085] bg-[#F2F4F7] px-2 py-1 rounded">
                           ملف موجود
                         </span>
+                      )}
+                      {!isReplaced && onViewExistingFile && existingFile.blob_url && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewExistingFile(existingFile);
+                          }}
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                          aria-label="معاينة"
+                          title="معاينة"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                       )}
                       {onExistingFileReplace && !disabled && (
                         <button
