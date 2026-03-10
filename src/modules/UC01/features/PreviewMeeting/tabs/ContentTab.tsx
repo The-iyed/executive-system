@@ -64,14 +64,10 @@ export const ContentTab: React.FC<ContentTabProps> = ({ meeting, onPreviewAttach
         contentOfficerNotes={showContentOfficerNotes ? meeting.content_officer_notes ?? null : null}
         readOnly
         formatDate={formatDateArabic}
-        onView={(file) => {
+        onView={onPreviewAttachment ? (file) => {
           if (!file.blob_url) return;
-          if (onPreviewAttachment) {
-            onPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
-          } else {
-            window.open(file.blob_url, '_blank');
-          }
-        }}
+          onPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
+        } : undefined}
         onDownload={(file) => file.blob_url && window.open(file.blob_url, '_blank')}
       />
     </div>

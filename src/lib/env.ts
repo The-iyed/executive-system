@@ -24,11 +24,11 @@ export const BUSINESS_CARDS_ORIGIN = getEnv(
   'https://momah-business-cards.momrahai.com/api/v1'
 ).replace(/\/api\/v1\/?$/, '') || 'https://momah-business-cards.momrahai.com';
 
-/** Unified platform remote (UC-09, UC-13). */
-export const UEP_REMOTE_URL = getEnv(
+/** Unified platform remote (UC-09, UC-13). No trailing slash so /assets/remoteEntry.js concatenates correctly. */
+export const UEP_REMOTE_URL = (getEnv(
   'VITE_UEP_REMOTE_URL',
   'https://admin-unified-patform-dev-2.momrahai.com'
-);
+) || '').replace(/\/+$/, '');
 
 /** Text contradiction detector base (no trailing path). */
 export const TEXT_CONTRADICTION_DETECTOR_URL = getEnv(
