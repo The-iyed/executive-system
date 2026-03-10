@@ -3,10 +3,10 @@ name: Deploy to Azure VM
 on:
   push:
     branches:
-      - '*.dev'
-      - dev
+      - '*.prod'
+      - prod
     tags:
-      - '*.dev'
+      - '*.prod'
       
 jobs:
   deploy:
