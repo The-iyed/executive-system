@@ -242,6 +242,7 @@ const MeetingDetail: React.FC = () => {
 
   // Form state
   const [formData, setFormData] = useState({
+    description: '',
     meeting_type: '',
     meeting_title: '',
     meeting_classification: '',
@@ -1350,7 +1351,7 @@ const MeetingDetail: React.FC = () => {
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
-        meeting_subject: meeting.meeting_subject || '',
+        meeting_subject: meeting.description ?? meeting.meeting_subject ?? '',
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_urgent: (meeting as any)?.is_urgent ?? false,
@@ -1628,7 +1629,7 @@ const MeetingDetail: React.FC = () => {
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
-        meeting_subject: meeting.meeting_subject || '',
+        meeting_subject: meeting.description ?? meeting.meeting_subject ?? '',
         meeting_owner: meeting.meeting_owner_name ?? ownerDisplay ?? '',
         is_on_behalf_of: (meeting as any)?.is_on_behalf_of ?? false,
         is_urgent: (meeting as any)?.is_urgent ?? false,
