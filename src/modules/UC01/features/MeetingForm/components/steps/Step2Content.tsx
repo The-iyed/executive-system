@@ -1,6 +1,12 @@
-import React from 'react';
-import { FormField, FormDatePicker, FileUpload, ActionButtons, FormRow } from '@/modules/shared';
+import React, { useState } from 'react';
+import { FormField, FormDatePicker, FileUpload, ActionButtons, FormRow, AttachmentPreviewDrawer, type ExistingFile } from '@/modules/shared';
 import type { Step2ContentFormData } from '../../schemas/step2Content.schema';
+
+function toExistingFiles(arr: Step2ContentFormData['existingFiles']): ExistingFile[] {
+  return (arr ?? []).filter(
+    (f): f is ExistingFile => typeof f?.id === 'string' && typeof f?.file_name === 'string' && typeof f?.blob_url === 'string'
+  ) as ExistingFile[];
+}
 
 // PDF only for presentation
 const PRESENTATION_ACCEPTED_TYPES = ['application/pdf'];
@@ -69,6 +75,7 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
   handleCancelClick,
   step2EditableMap,
 }) => {
+  const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
   const isFieldDisabled = (fieldKey: string) =>
     step2EditableMap != null && step2EditableMap[fieldKey] === false;
 
@@ -83,11 +90,12 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
                 error={errors.presentation_files}
                 onFilesSelect={handleFilesSelect}
                 required={presentationRequired}
-                existingFiles={formData.existingFiles}
+                existingFiles={toExistingFiles(formData.existingFiles)}
                 onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'presentation') : undefined}
                 onExistingFileReplace={handleReplacePresentationFile}
                 replacementFiles={replacementPresentationFiles}
                 onClearReplacement={handleClearReplacementPresentation}
+                onViewExistingFile={(file) => setPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type })}
                 multiple
                 label="العرض التقديمي"
                 acceptedTypes={PRESENTATION_ACCEPTED_TYPES}
@@ -125,11 +133,12 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
             <FileUpload
               files={formData.additional_files}
               onFilesSelect={handleAdditionalFilesSelect}
-              existingFiles={formData.existingAdditionalFiles}
+              existingFiles={toExistingFiles(formData.existingAdditionalFiles)}
               onExistingFileDelete={handleDeleteExistingAttachment ? (id) => handleDeleteExistingAttachment(id, 'additional') : undefined}
               onExistingFileReplace={handleReplaceAdditionalFile}
               replacementFiles={replacementAdditionalFiles}
               onClearReplacement={handleClearReplacementAdditional}
+              onViewExistingFile={(file) => setPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type })}
               multiple
               label="مرفقات اختيارية (PDF، Word، Excel)"
               acceptedTypes={ADDITIONAL_ACCEPTED_TYPES}
@@ -138,6 +147,12 @@ export const Step2Content: React.FC<Step2ContentProps> = ({
             />
           </div>
         </div>
+
+        <AttachmentPreviewDrawer
+          open={!!previewAttachment}
+          onOpenChange={(open) => { if (!open) setPreviewAttachment(null); }}
+          attachment={previewAttachment}
+        />
 
         <ActionButtons
           onBack={handleBackClick}
