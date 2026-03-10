@@ -30,30 +30,30 @@ jobs:
           
           # 3. Pull the latest base images and rebuild the containers securely
           echo "$VM_PASSWORD" | sudo -S docker compose pull
-          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build
+          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate
           
           # 4. Best Practice: Wait a few seconds for containers to initialize
           echo "Waiting for services to start..."
           sleep 10
           
           # 5. Best Practice: Verify the service is healthy (Port 4404 is the frontend)
-          if curl -f http://localhost:4404 > /dev/null 2>&1; then
+          if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
             echo "Deployment successful: Service is healthy!"
           else
             echo "Deployment warning: Health check failed or endpoint not ready yet."
           fi
           
-          # 6. Best Practice: Clean up dangling images to prevent filling the VM's disk space over time
-          # sudo docker image prune -af --filter "until=24h"
+          # 6. Clean up dangling images to prevent filling the VM's disk space over time
+          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h"
 
-  # notify:
-  #   needs: deploy
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   steps:
-  #     - name: Discord Notification
-  #       env:
-  #         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-  #       uses: Ilshidur/action-discord@master
-  #       with:
-  #         args: 'Deployment of **Minister Mind Frontend** has finished with status: **${{ needs.deploy.result }}**'
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Discord Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: 'Deployment of **Minister Mind Frontend** on branch `${{ github.ref_name }}` finished with status: **${{ needs.deploy.result }}**'
