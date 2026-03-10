@@ -27,6 +27,7 @@ interface AuthContextType {
   login: (payload?: LoginPayload) => Promise<User | null>;
   logout: () => void | Promise<void>;
   setUserFromCallback: (oidcUser: OidcUser, appUser?: User | null) => void;
+  refreshUser: () => Promise<void>;
   isSsoEnabled: boolean;
 }
 
@@ -172,9 +173,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       const { access_token } = getTokens();
       if (access_token) {
         try {
-          const response = await axiosInstance.get('/api/auth/me');
-          const userData = response.data?.data || response.data?.payload || response.data;
-          setUser(userData);
+          const appUser = await getCurrentUserApi();
+          setUser(appUser);
           setIsInitialised(true);
         } catch {
           setUser(null);
@@ -244,6 +244,15 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsInitialised(true);
   };
 
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const appUser = await getCurrentUserApi();
+      setUser(appUser);
+    } catch {
+      setUser(null);
+    }
+  };
+
   if (!isInitialised || isLoading) {
     return <ScreenLoader />;
   }
@@ -256,6 +265,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     login,
     logout,
     setUserFromCallback,
+    refreshUser,
     isSsoEnabled: ssoEnabled,
   };
 

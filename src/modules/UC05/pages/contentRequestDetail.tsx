@@ -1037,9 +1037,9 @@ const ContentRequestDetail: React.FC = () => {
           {activeTab === "content" &&
             (() => {
               const attachments = contentRequest?.attachments ?? [];
-              const presFiles = attachments
-                .filter((a: Attachment) => a.is_presentation)
-                .map((a: Attachment) => ({
+              const prevId = (contentRequest as { previous_meeting_attachment?: { id?: string } | null })?.previous_meeting_attachment?.id ?? null;
+                        const presAttachments = attachments.filter((a: Attachment) => a.is_presentation);
+              const presFiles = presAttachments.map((a: Attachment) => ({
                   id: a.id,
                   file_name: a.file_name,
                   file_size: a.file_size ?? 0,
@@ -1047,7 +1047,7 @@ const ContentRequestDetail: React.FC = () => {
                   blob_url: a.blob_url ?? null,
                 }));
               const optFiles = attachments
-                .filter((a: Attachment) => a.is_additional)
+                .filter((a: Attachment) => a.is_additional && (prevId == null || a.id !== prevId))
                 .map((a: Attachment) => ({
                   id: a.id,
                   file_name: a.file_name,
@@ -1059,8 +1059,9 @@ const ContentRequestDetail: React.FC = () => {
                 meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT && contentRequest.content_officer_notes;
 
               return (
-                <div className="flex flex-col gap-6 w-full" dir="rtl">
-                  <Mou7tawaContentTab
+                <TooltipProvider delayDuration={200}>
+                  <div className="flex flex-col gap-6 w-full" dir="rtl">
+                    <Mou7tawaContentTab
                     presentationFiles={presFiles}
                     optionalFiles={optFiles}
                     attachmentTimingValue=""
@@ -1070,6 +1071,20 @@ const ContentRequestDetail: React.FC = () => {
                     }
                     readOnly
                     formatDate={formatDateArabic}
+                    compareEnabledForPresentation={(file) => {
+                      const att = presAttachments.find((a: Attachment) => a.id === file.id);
+                      return att?.replaces_attachment_id != null;
+                    }}
+                    compareDisabledReason={(file, _, total) => {
+                      if (total < 2) return "يجب وجود عرضين تقديميين على الأقل للمقارنة";
+                      return "المقارنة متاحة فقط عند رفع نسخة جديدة تحل محل عرض سابق";
+                    }}
+                    onComparePresentation={(file) => {
+                      setCompareResult(null);
+                      setCompareErrorDetail(null);
+                      setIsCompareModalOpen(true);
+                      compareByAttachmentMutation.mutate(file.id);
+                    }}
                     onView={(file) => {
                       if (!file.blob_url) return;
                       setPreviewAttachment({
@@ -1081,6 +1096,7 @@ const ContentRequestDetail: React.FC = () => {
                     onDownload={(file) => file.blob_url && window.open(file.blob_url, "_blank")}
                   />
                 </div>
+                </TooltipProvider>
               );
             })()}
 
@@ -1359,8 +1375,29 @@ const ContentRequestDetail: React.FC = () => {
                     <div className="text-gray-600">جاري التحميل...</div>
                   </div>
                 ) : consultationRecords && consultationRecords.items.length > 0 ? (
+                  (() => {
+                    const filteredConsultationItems = consultationRecords.items.filter((row: ConsultationRecord) => {
+                      // Do not show the scheduling officer note for content in الاستشارات;
+                      // it is shown only in الملاحظات → ملاحظات مسؤول الجدولة على المحتوى.
+                      const question = (row.question || row.consultation_question || "").toString().trim().replace(/\s+/g, " ");
+                      const schedulingNote = schedulingContentNote.trim().replace(/\s+/g, " ");
+                      if (schedulingNote && question === schedulingNote) return false;
+                      return true;
+                    });
+                    if (filteredConsultationItems.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
+                            <ClipboardCheck className="w-6 h-6 text-[#98A2B3]" />
+                          </div>
+                          <p className="text-[15px] font-semibold text-[#344054]">سجل الاستشارات</p>
+                          <p className="text-[13px] text-[#667085]">لا توجد استشارات بعد</p>
+                        </div>
+                      );
+                    }
+                    return (
                   <div className="flex flex-col pb-4">
-                    {consultationRecords.items.map((row: ConsultationRecord, index: number) => {
+                    {filteredConsultationItems.map((row: ConsultationRecord, index: number) => {
                       const recordId = row.id || row.consultation_id || `${index}`;
                       const recordType = row.type || row.consultation_type || "";
                       const recordQuestion = row.question || row.consultation_question || "";
@@ -1543,6 +1580,8 @@ const ContentRequestDetail: React.FC = () => {
                       );
                     })}
                   </div>
+                    );
+                  })()
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
                     <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">

@@ -599,6 +599,33 @@ const MeetingDetail: React.FC = () => {
     return [...apiInvitees, ...localInviteesMapped];
   }, [meeting?.invitees, localInvitees]);
 
+  /** Effective start/end for schedule confirm modal and submit: from meeting (scheduled_*, meeting_*_date), selected slot, or scheduleForm. */
+  const getEffectiveScheduleDates = useCallback(
+    (m: typeof meeting, form: typeof scheduleForm): { start: string | undefined; end: string | undefined } => {
+      if (!m) return { start: undefined, end: undefined };
+      const start =
+        (m as any).scheduled_start ?? (m as any).meeting_start_date ?? (form.scheduled_at || undefined);
+      const end =
+        (m as any).scheduled_end ?? (m as any).scheduled_end_at ?? (m as any).meeting_end_date ?? (form.scheduled_end_at || undefined);
+      if (start && end) return { start, end };
+      const slotId = form.selected_time_slot_id ?? (m as any).selected_time_slot_id;
+      if (!slotId) return { start, end };
+      const allSlots = [
+        (m as any).alternative_time_slot_1,
+        (m as any).alternative_time_slot_2,
+        (m as any).selected_time_slot,
+      ].filter(Boolean);
+      const slot = allSlots.find((s: any) => s?.id === slotId);
+      if (!slot?.slot_start) return { start, end };
+      const slotEnd = slot.slot_end ?? new Date(new Date(slot.slot_start).getTime() + 3600000).toISOString();
+      return {
+        start: start ?? slot.slot_start,
+        end: end ?? slotEnd,
+      };
+    },
+    []
+  );
+
   // Create highlighted event for the calendar from selected time slot
   const highlightedEvents = React.useMemo(() => {
     if (!scheduleForm.selected_time_slot_id || !meeting) return [];
@@ -1169,9 +1196,7 @@ const MeetingDetail: React.FC = () => {
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Use meeting start/end when available (e.g. schedule tab where those fields are hidden)
-    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
     if (!startSource || !endSource) return;
 
     const scheduledAt = new Date(startSource);
@@ -1314,8 +1339,12 @@ const MeetingDetail: React.FC = () => {
         (meeting as any).is_based_on_directive === 'true' ||
         (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
       );
-      const directiveMethod = (meeting as any).directive_method || '';
+      const directiveMethodRaw = (meeting as any).directive_method || '';
       const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+      const hasPreviousMeetingContext = !!(meeting.previous_meeting_attachment || prevExtId != null || minutesId);
+      const directiveMethod =
+        directiveMethodRaw.trim() ||
+        (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
         meeting_type: meeting.meeting_type || '',
@@ -1442,8 +1471,7 @@ const MeetingDetail: React.FC = () => {
 
   /** Create Webex meeting (for confirm modal or when VIRTUAL and no link yet). Uses meeting or scheduleForm for start/end. */
   const createWebexLink = useCallback(async () => {
-    const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-    const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
     if (!startSource || !endSource) {
       setValidationError('يجب تحديد تاريخ ووقت البداية والنهاية لإنشاء رابط Webex.');
       return;
@@ -1480,7 +1508,7 @@ const MeetingDetail: React.FC = () => {
     } finally {
       setIsCreatingWebex(false);
     }
-  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at]);
+  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, getEffectiveScheduleDates]);
 
   // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
   useEffect(() => {
@@ -1511,6 +1539,37 @@ const MeetingDetail: React.FC = () => {
     }));
   }, [isScheduleModalOpen, scheduleForm.selected_time_slot_id, meeting]);
 
+  // When Scheduling Officer opens confirm modal and موعد has a selected slot but form has no dates, sync from slot
+  useEffect(() => {
+    if (!scheduleConfirmModalOpen || !meeting || scheduleForm.scheduled_at) return;
+    const slotId = scheduleForm.selected_time_slot_id ?? (meeting as any).selected_time_slot_id;
+    if (!slotId) return;
+    const allSlots = [
+      meeting.alternative_time_slot_1,
+      meeting.alternative_time_slot_2,
+      meeting.selected_time_slot,
+    ].filter(Boolean);
+    const selectedSlot = allSlots.find((s: any) => s?.id === slotId);
+    if (!selectedSlot?.slot_start) return;
+    const toDatetimeLocal = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+    const startLocal = toDatetimeLocal(selectedSlot.slot_start);
+    const endLocal = selectedSlot.slot_end
+      ? toDatetimeLocal(selectedSlot.slot_end)
+      : (() => {
+          const start = new Date(selectedSlot.slot_start);
+          const end = new Date(start.getTime() + 60 * 60 * 1000);
+          return toDatetimeLocal(end.toISOString());
+        })();
+    setScheduleForm((prev) => ({
+      ...prev,
+      scheduled_at: startLocal,
+      scheduled_end_at: endLocal,
+    }));
+  }, [scheduleConfirmModalOpen, meeting, scheduleForm.scheduled_at, scheduleForm.selected_time_slot_id]);
+
   // Initialize scheduleForm and original snapshot when meeting loads
   useEffect(() => {
     if (!meeting) return;
@@ -1524,7 +1583,7 @@ const MeetingDetail: React.FC = () => {
       return {
         ...prev,
         scheduled_at: meeting.scheduled_start ?? meeting.meeting_start_date ?? '',
-        scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? '',
+        scheduled_end_at: meeting.scheduled_end ?? (meeting as any).scheduled_end_at ?? (meeting as any).meeting_end_date ?? '',
         meeting_channel: meetingChannel,
         requires_protocol: meeting.requires_protocol ?? prev.requires_protocol,
         protocol_type: meeting.protocol_type || prev.protocol_type,
@@ -1557,8 +1616,12 @@ const MeetingDetail: React.FC = () => {
       (meeting as any).is_based_on_directive === 'true' ||
       (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0)
     );
-    const directiveMethod = (meeting as any).directive_method || '';
+    const directiveMethodRaw = (meeting as any).directive_method || '';
     const minutesId = (meeting as any).previous_meeting_minutes_id || '';
+    const hasPreviousMeetingContext = !!(meeting.previous_meeting_attachment || prevExtId != null || minutesId);
+    const directiveMethod =
+      directiveMethodRaw.trim() ||
+      (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
     const guidance = meeting.related_guidance ?? '';
     setOriginalSnapshot({
       formData: {
@@ -1687,16 +1750,22 @@ const MeetingDetail: React.FC = () => {
   const hasPresentation = presentationAttachments.length > 0 || newPresentationAttachments.length > 0;
   const hasObjectivesOrAgenda = (contentForm.objectives?.length ?? 0) > 0 || (contentForm.agendaItems?.length ?? 0) > 0;
   const hasContent = hasObjectivesOrAgenda && hasPresentation;
-console.log({meeting});
 
-  /** Optional attachments (مرفقات اختيارية): non‑presentation attachments only (previous_meeting_attachment is rendered separately in the Content tab) */
+  /** Optional attachments (مرفقات اختيارية): exclude presentation, executive summary, and previous_meeting_attachment (محضر الاجتماع – shown only in its dedicated card) */
   const optionalAttachmentsList = useMemo(() => {
-    return (meeting?.attachments || []).filter((a) => !a.is_presentation && !deletedAttachmentIds.includes(a.id));
-  }, [meeting?.attachments, deletedAttachmentIds]);
+    const prevId = meeting?.previous_meeting_attachment?.id ?? null;
+    return (meeting?.attachments || []).filter(
+      (a) =>
+        !a.is_presentation &&
+        !a.is_executive_summary &&
+        !deletedAttachmentIds.includes(a.id) &&
+        (prevId == null || a.id !== prevId)
+    );
+  }, [meeting?.attachments, meeting?.previous_meeting_attachment?.id, deletedAttachmentIds]);
 
   /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
   const hasPreviousMeetingAttachment = useMemo(() => {
-    const p = meeting && (meeting as Record<string, unknown>).previous_meeting_attachment;
+    const p = meeting && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment;
     if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
     const id = (p as Record<string, unknown>).id;
     return typeof id === 'string' && !deletedAttachmentIds.includes(id);
@@ -1897,7 +1966,9 @@ console.log({meeting});
               : 'غير موجود (إجباري)'
             : 'غير موجود',
       is_based_on_directive: formData.is_based_on_directive,
-      directive_method: formData.directive_method || undefined,
+      directive_method:
+        formData.directive_method ||
+        (formData.previous_meeting_attachment || formData.previous_meeting_ext_id != null ? 'PREVIOUS_MEETING' : undefined),
       previous_meeting_attachment: formData.previous_meeting_attachment ?? undefined,
       previous_meeting_minutes_file: previousMeetingMinutesOption ? { name: previousMeetingMinutesOption.label ?? previousMeetingMinutesOption.value } : undefined,
       directive_text: formData.related_guidance || undefined,
@@ -2616,20 +2687,29 @@ console.log({meeting});
                 <div className="p-6">
                   <TooltipProvider>
                     <div className="flex flex-col gap-3">
-                      {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).map((att) => (
-                        <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
+                      {(() => {
+                        const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
+                        return presentationAttachments.map((att) => {
+                          const showCompare = att.replaces_attachment_id != null;
+                          const compareDisabledReason =
+                            presentationAttachments.length < 2
+                              ? "يجب وجود عرضين تقديميين على الأقل للمقارنة"
+                              : "المقارنة متاحة فقط عند رفع نسخة جديدة تحل محل عرض سابق";
+                          return (
+                          <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-11 h-11 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                           <div className="flex flex-col items-end min-w-0 flex-1">
                             <span className="text-sm font-semibold text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
                             <span className="text-xs text-[#9CA3AF] mt-0.5">{Math.round((att.file_size || 0) / 1024)} KB</span>
                           </div>
                           <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                            {att.replaces_attachment_id != null && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
                                   <button
                                     type="button"
                                     onClick={() => {
+                                      if (!showCompare || compareByAttachmentMutation.isPending) return;
                                       compareAbortControllerRef.current?.abort();
                                       compareAbortControllerRef.current = new AbortController();
                                       setComparePresentationsResult(null);
@@ -2641,14 +2721,17 @@ console.log({meeting});
                                       });
                                     }}
                                     disabled={compareByAttachmentMutation.isPending}
-                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    style={!showCompare ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
                                   >
                                     <Scale className="w-4 h-4" strokeWidth={1.4} />
                                   </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top"><p>تقييم الاختلاف بين العروض</p></TooltipContent>
-                              </Tooltip>
-                            )}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p>{showCompare ? "مقارنة بالذكاء الاصطناعي" : compareDisabledReason}</p>
+                              </TooltipContent>
+                            </Tooltip>
                             <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
                             <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
                             <button type="button" disabled={!canEdit} onClick={() => handleDeleteAttachment(att.id)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -2675,7 +2758,9 @@ console.log({meeting});
                             </svg>
                           </button>
                         </div>
-                      ))}
+                          );
+                        });
+                      })()}
 
                       {/* New presentation attachments (not yet saved) */}
                       {newPresentationAttachments.map((file, idx) => (
@@ -2753,8 +2838,8 @@ console.log({meeting});
                 </div>
                 <div className="p-6">
                   {(() => {
-                    const prevAtt = meeting && typeof (meeting as Record<string, unknown>).previous_meeting_attachment === 'object' && (meeting as Record<string, unknown>).previous_meeting_attachment != null && !Array.isArray((meeting as Record<string, unknown>).previous_meeting_attachment)
-                      ? (meeting as Record<string, unknown>).previous_meeting_attachment as Record<string, unknown>
+                    const prevAtt = meeting && typeof (meeting as unknown as Record<string, unknown>).previous_meeting_attachment === 'object' && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment != null && !Array.isArray((meeting as unknown as Record<string, unknown>).previous_meeting_attachment)
+                      ? (meeting as unknown as unknown as Record<string, unknown>).previous_meeting_attachment as Record<string, unknown>
                       : null;
                     const prevId = prevAtt && typeof prevAtt.id === 'string' ? prevAtt.id : null;
                     const prevNotDeleted = prevId != null && !deletedAttachmentIds.includes(prevId);
@@ -2826,6 +2911,59 @@ console.log({meeting});
                 </div>
               </section>
 
+              {/* ─── الملخّص التنفيذي ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
+                </div>
+                <div className="p-6">
+                  {(() => {
+                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
+                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
+                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
+                    if (!hasExec) {
+                      return (
+                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                          </div>
+                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex flex-col gap-4">
+                        {execSummaryText && (
+                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
+                            {execSummaryText}
+                          </div>
+                        )}
+                        {execSummaryAttachments.length > 0 && (
+                          <div className="grid grid-cols-1 gap-3">
+                            {execSummaryAttachments.map((att) => (
+                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
+                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                                <div className="flex flex-col items-end min-w-0 flex-1">
+                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
+                                  <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </section>
+
               {/* ─── ملاحظات ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
@@ -2837,36 +2975,45 @@ console.log({meeting});
                 <div className="p-6">
                   {(() => {
                     const notesText = generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : (contentTabForm.general_notes || '').trim();
-                    const isEmptyNotes = generalNotesList.length === 0 && (!notesText || notesText === '' || notesText === '—' || /^[\s—\-]+$/.test(notesText));
-                    return isEmptyNotes ? (
-                      <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                          <ClipboardCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                    const hasGeneralNotes = generalNotesList.length > 0 || (notesText !== '' && notesText !== '—' && !/^[\s—\-]+$/.test(notesText));
+                    const hasContentOfficerNotes = contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—';
+                    const isEmptyNotes = !hasGeneralNotes && !hasContentOfficerNotes;
+                    if (isEmptyNotes) {
+                      return (
+                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                            <ClipboardCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-[#374151]">لا توجد ملاحظات</p>
+                            <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة أي ملاحظات لهذا الطلب</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-[#374151]">لا توجد ملاحظات</p>
-                          <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة أي ملاحظات لهذا الطلب</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full px-5 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-right text-[#374151] leading-relaxed whitespace-pre-wrap text-sm">
-                        {generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : contentTabForm.general_notes}
-                      </div>
+                      );
+                    }
+                    return (
+                      <>
+                        {hasGeneralNotes && (
+                          <div className="w-full px-5 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-right text-[#374151] leading-relaxed whitespace-pre-wrap text-sm">
+                            {generalNotesList.length > 0 ? generalNotesList.map((n) => n.text).join('\n\n') : contentTabForm.general_notes}
+                          </div>
+                        )}
+                        {hasContentOfficerNotes && (
+                          <div className={hasGeneralNotes ? 'mt-5 pt-5 border-t border-[#F3F4F6]' : ''}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 rounded-md bg-[#F59E0B]/10 flex items-center justify-center">
+                                <ClipboardCheck className="w-3.5 h-3.5 text-[#D97706]" strokeWidth={2} />
+                              </div>
+                              <span className="text-sm font-semibold text-[#92400E]">ملاحظات مسؤول المحتوى</span>
+                            </div>
+                            <div className="w-full px-5 py-4 bg-[#FFFBEB]/60 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] whitespace-pre-wrap text-sm leading-relaxed">
+                              {contentOfficerNotesDisplay}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
-                  {contentOfficerNotesDisplay && contentOfficerNotesDisplay !== '—' && (
-                    <div className="mt-5 pt-5 border-t border-[#F3F4F6]">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 rounded-md bg-[#F59E0B]/10 flex items-center justify-center">
-                          <ClipboardCheck className="w-3.5 h-3.5 text-[#D97706]" strokeWidth={2} />
-                        </div>
-                        <span className="text-sm font-semibold text-[#92400E]">ملاحظات مسؤول المحتوى</span>
-                      </div>
-                      <div className="w-full px-5 py-4 bg-[#FFFBEB]/60 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] whitespace-pre-wrap text-sm leading-relaxed">
-                        {contentOfficerNotesDisplay}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </section>
 
@@ -4209,8 +4356,7 @@ console.log({meeting});
               </div>
             )}
             {(() => {
-              const startSource = meeting?.scheduled_start ?? meeting?.meeting_start_date ?? scheduleForm.scheduled_at;
-              const endSource = meeting?.scheduled_end ?? (meeting as any)?.scheduled_end_at ?? meeting?.meeting_end_date ?? scheduleForm.scheduled_end_at;
+              const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
               const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
               const channelLabels: Record<string, string> = { PHYSICAL: 'حضوري', PHYSICAL_LOCATION_1: 'حضوري - الموقع 1', PHYSICAL_LOCATION_2: 'حضوري - الموقع 2', PHYSICAL_LOCATION_3: 'حضوري - الموقع 3', VIRTUAL: 'عن بُعد', HYBRID: 'مختلط' };
               const formatDt = (s: string) => {
@@ -4300,17 +4446,24 @@ console.log({meeting});
             >
               إلغاء
             </button>
-            <button
-              type="button"
-              disabled={scheduleMutation.isPending}
-              onClick={() => {
-                const e = { preventDefault: () => {} } as React.FormEvent;
-                handleScheduleSubmit(e);
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {scheduleMutation.isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
-            </button>
+            {(() => {
+              const { start: effStart, end: effEnd } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
+              const meetingCh = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
+              const canConfirm = !!(effStart && effEnd && (meetingCh !== 'VIRTUAL' || webexMeetingDetails));
+              return (
+                <button
+                  type="button"
+                  disabled={scheduleMutation.isPending || !canConfirm}
+                  onClick={() => {
+                    const e = { preventDefault: () => {} } as React.FormEvent;
+                    handleScheduleSubmit(e);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {scheduleMutation.isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
+                </button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
       </Dialog>
