@@ -2502,6 +2502,44 @@ const MeetingDetail: React.FC = () => {
           />
         </div>
 
+        {/* Rejection / Cancellation reason and notes (when status is REJECTED or CANCELLED) */}
+        {(meetingStatus === MeetingStatus.REJECTED || meetingStatus === MeetingStatus.CANCELLED) && (meeting?.rejection_reason || meeting?.rejection_note || meeting?.cancellation_reason || meeting?.cancellation_note) && (
+          <div className="flex-shrink-0 rounded-2xl border px-5 py-4 gap-3 flex flex-col min-w-0" style={{ borderColor: meetingStatus === MeetingStatus.REJECTED ? '#FEE2E2' : '#E5E7EB', backgroundColor: meetingStatus === MeetingStatus.REJECTED ? '#FEF2F2' : '#F9FAFB' }}>
+            {meetingStatus === MeetingStatus.REJECTED && (
+              <>
+                {meeting.rejection_reason && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-[#1F2937] text-right">سبب الرفض</span>
+                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.rejection_reason}</p>
+                  </div>
+                )}
+                {meeting.rejection_note && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-[#1F2937] text-right">ملاحظات إضافية</span>
+                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.rejection_note}</p>
+                  </div>
+                )}
+              </>
+            )}
+            {meetingStatus === MeetingStatus.CANCELLED && (
+              <>
+                {meeting.cancellation_reason && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-[#1F2937] text-right">سبب الإلغاء</span>
+                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.cancellation_reason}</p>
+                  </div>
+                )}
+                {meeting.cancellation_note && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-[#1F2937] text-right">ملاحظات إضافية</span>
+                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.cancellation_note}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* Content card */}
         <div
           className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-white justify-center border border-[#EAECF0]"
