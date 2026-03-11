@@ -2475,7 +2475,7 @@ const MeetingDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 pr-5 min-w-0">
         {/* Head: shared detail page header */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
+        <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
             title={` ${meeting.meeting_title}  (${meeting.request_number})`}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
@@ -2500,45 +2500,44 @@ const MeetingDetail: React.FC = () => {
             onTabChange={setActiveTab}
             helpTooltip={permissionTooltip}
           />
+          {/* Rejection / Cancellation: small collapsible in header (REJECTED or CANCELLED; fallback to the other when missing) */}
+          {(meetingStatus === MeetingStatus.REJECTED || meetingStatus === MeetingStatus.CANCELLED) && (() => {
+            const reasonRejected = meeting?.rejection_reason || meeting?.cancellation_reason;
+            const noteRejected = meeting?.rejection_note || meeting?.cancellation_note;
+            const reasonCancelled = meeting?.cancellation_reason || meeting?.rejection_reason;
+            const noteCancelled = meeting?.cancellation_note || meeting?.rejection_note;
+            const isRejected = meetingStatus === MeetingStatus.REJECTED;
+            const reason = isRejected ? reasonRejected : reasonCancelled;
+            const note = isRejected ? noteRejected : noteCancelled;
+            if (!reason && !note) return null;
+            const label = isRejected ? 'سبب الرفض وملاحظاته' : 'سبب الإلغاء وملاحظاته';
+            return (
+              <Collapsible className="group rounded-lg border border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
+                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-right hover:bg-[#F9FAFB] transition-colors data-[state=open]:bg-[#F9FAFB]">
+                  <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isRejected ? 'text-red-500' : 'text-[#6B7280]'}`} strokeWidth={1.8} />
+                  <span className={`text-[13px] font-medium flex-1 ${isRejected ? 'text-[#991B1B]' : 'text-[#374151]'}`}>{label}</span>
+                  <ChevronDown className="w-4 h-4 flex-shrink-0 text-[#6B7280] transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-3 py-2 pt-0 border-t border-[#F3F4F6] flex flex-col gap-2 text-right">
+                    {reason && (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">{isRejected ? 'سبب الرفض' : 'سبب الإلغاء'}</p>
+                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{reason}</p>
+                      </div>
+                    )}
+                    {note && (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">ملاحظات إضافية</p>
+                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{note}</p>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })()}
         </div>
-
-        {/* Rejection / Cancellation reason and notes (when status is REJECTED or CANCELLED) */}
-        {(meetingStatus === MeetingStatus.REJECTED || meetingStatus === MeetingStatus.CANCELLED) && (meeting?.rejection_reason || meeting?.rejection_note || meeting?.cancellation_reason || meeting?.cancellation_note) && (
-          <div className="flex-shrink-0 rounded-2xl border px-5 py-4 gap-3 flex flex-col min-w-0" style={{ borderColor: meetingStatus === MeetingStatus.REJECTED ? '#FEE2E2' : '#E5E7EB', backgroundColor: meetingStatus === MeetingStatus.REJECTED ? '#FEF2F2' : '#F9FAFB' }}>
-            {meetingStatus === MeetingStatus.REJECTED && (
-              <>
-                {meeting.rejection_reason && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-[#1F2937] text-right">سبب الرفض</span>
-                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.rejection_reason}</p>
-                  </div>
-                )}
-                {meeting.rejection_note && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-[#1F2937] text-right">ملاحظات إضافية</span>
-                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.rejection_note}</p>
-                  </div>
-                )}
-              </>
-            )}
-            {meetingStatus === MeetingStatus.CANCELLED && (
-              <>
-                {meeting.cancellation_reason && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-[#1F2937] text-right">سبب الإلغاء</span>
-                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.cancellation_reason}</p>
-                  </div>
-                )}
-                {meeting.cancellation_note && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-[#1F2937] text-right">ملاحظات إضافية</span>
-                    <p className="text-sm text-[#374151] text-right whitespace-pre-wrap">{meeting.cancellation_note}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
 
         {/* Content card */}
         <div
