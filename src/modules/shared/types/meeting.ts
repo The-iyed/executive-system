@@ -193,6 +193,12 @@ export interface MeetingApiResponse {
   previous_meeting_minutes_id?: string | null;
   when_presentation_attached?: string | null;
   scheduled_end_at?: string | null;
+  /** When status is REJECTED. */
+  rejection_reason?: string | null;
+  rejection_note?: string | null;
+  /** When status is CANCELLED. */
+  cancellation_reason?: string | null;
+  cancellation_note?: string | null;
 }
 
 export interface MeetingsListResponse {
