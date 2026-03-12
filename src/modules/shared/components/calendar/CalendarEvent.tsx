@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/ui';
 import { Clock, MapPin, Plus } from 'lucide-react';
 import type { CalendarEventData } from './WeeklyCalendarGrid';
@@ -89,10 +90,57 @@ function getExactDurationStyle(
   };
 }
 
-/** Get organizer initials (first letter of first name) */
 function getInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase();
 }
+
+/** Shared card content — rendered in both compact card and expanded portal */
+const CardContent: React.FC<{
+  event: CalendarEventData;
+  accentColor: string;
+  textColor: string;
+  displayLabel: string;
+  isAvailable: boolean;
+  compact?: boolean; // true = truncated compact layout
+}> = ({ event, accentColor, textColor, displayLabel, isAvailable, compact = false }) => (
+  <div className={cn('flex flex-col justify-center w-full min-w-0', compact ? 'pr-4 pl-2' : 'pr-5 pl-3 py-2 gap-1')}>
+    {isAvailable && !compact && (
+      <div className="flex items-center gap-1 mb-0.5">
+        <Plus className="w-3 h-3 shrink-0" style={{ color: accentColor }} />
+        <span className="text-[10px] font-semibold" style={{ color: accentColor, fontFamily: "'Almarai', sans-serif" }}>
+          متاح للحجز
+        </span>
+      </div>
+    )}
+    <span
+      className={compact ? 'truncate font-bold' : 'line-clamp-2 font-bold'}
+      style={{
+        color: textColor,
+        fontFamily: "'Almarai', sans-serif",
+        fontSize: compact ? '10px' : '12px',
+        lineHeight: '140%',
+      }}
+    >
+      {displayLabel}
+    </span>
+    {!compact && event.exactStartTime && event.exactEndTime && (
+      <div className="flex items-center gap-1">
+        <Clock className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.6 }} />
+        <span className="text-[10px] font-medium" style={{ color: accentColor, opacity: 0.7, fontFamily: "'Almarai', sans-serif" }}>
+          {event.exactStartTime} – {event.exactEndTime}
+        </span>
+      </div>
+    )}
+    {!compact && event.location && (
+      <div className="flex items-center gap-1">
+        <MapPin className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.5 }} />
+        <span className="truncate text-[10px] font-medium" style={{ color: accentColor, opacity: 0.65, fontFamily: "'Almarai', sans-serif" }}>
+          {event.location}
+        </span>
+      </div>
+    )}
+  </div>
+);
 
 export const CalendarEvent: React.FC<CalendarEventProps> = ({
   event,
@@ -102,6 +150,10 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   onShowDetails,
   className,
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardRect, setCardRect] = useState<DOMRect | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const cardVariant = event.variant || event.type;
   const accentColor = ACCENT_COLORS[cardVariant] || ACCENT_COLORS.reserved;
   const bgColor = BG_COLORS[cardVariant] || BG_COLORS.reserved;
@@ -115,12 +167,10 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
     ? { ...exactStyle }
     : { minHeight: '53px', maxHeight: '53px' };
 
-  // Determine layout based on event height
   const eventHeightPx = exactStyle?.height as number | undefined;
-  const isVeryShort = eventHeightPx !== undefined && eventHeightPx < 24; // < ~27min
-  const isShort = eventHeightPx !== undefined && eventHeightPx < 44;     // < ~50min
+  const isVeryShort = eventHeightPx !== undefined && eventHeightPx < 24;
+  const isShort = eventHeightPx !== undefined && eventHeightPx < 44;
 
-  // Native tooltip for full info on hover (especially useful for short events)
   const tooltipParts = [
     displayLabel,
     event.exactStartTime && event.exactEndTime ? `${event.exactStartTime} – ${event.exactEndTime}` : null,
@@ -128,6 +178,22 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
     event.organizer ? event.organizer.name : null,
   ].filter(Boolean);
   const tooltipText = tooltipParts.join('\n');
+
+  const handleMouseEnter = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    if (cardRef.current) {
+      setCardRect(cardRef.current.getBoundingClientRect());
+    }
+  };
+
+  const handleMouseLeave = () => {
+    closeTimer.current = setTimeout(() => {
+      setCardRect(null);
+    }, 80);
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     if (event.id === 'highlighted-slot') return;
@@ -141,107 +207,98 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
     }
   };
 
+  const expandedWidth = Math.max(cardRect?.width ?? 0, 220);
+
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      title={tooltipText}
-      className={cn(
-        'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-all duration-200',
-        isAvailable
-          ? 'border border-dashed'
-          : 'border border-transparent',
-        event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:shadow-md hover:brightness-[0.97]',
-        className
-      )}
-      style={{
-        ...baseStyle,
-        background: bgColor,
-        borderColor: isAvailable ? accentColor : 'transparent',
-        boxShadow: isSelected ? `0 0 0 2px ${accentColor}, 0 0 0 4px ${accentColor}22` : undefined,
-      }}
-      onClick={handleClick}
-      onKeyDown={(e) => {
-        if (event.id !== 'highlighted-slot' && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          handleClick(e as unknown as React.MouseEvent);
-        }
-      }}
-    >
-      {/* Leading-edge accent bar (right side in RTL) */}
+    <>
+      {/* ── Compact card (stays in grid, never moves) ── */}
       <div
-        className="absolute top-0 right-0 bottom-0 w-[3px]"
-        style={{ background: accentColor }}
-        aria-hidden
-      />
-
-      <div className={cn(
-        'flex flex-col justify-center w-full min-w-0',
-        isVeryShort ? 'pr-4 pl-2' : 'pr-5 pl-3 py-2 gap-1'
-      )}>
-        {/* Available slot CTA */}
-        {isAvailable && !isVeryShort && (
-          <div className="flex items-center gap-1 mb-0.5">
-            <Plus className="w-3 h-3 shrink-0" style={{ color: accentColor }} />
-            <span
-              className="text-[10px] font-semibold"
-              style={{ color: accentColor, fontFamily: "'Almarai', sans-serif" }}
-            >
-              متاح للحجز
-            </span>
-          </div>
+        ref={cardRef}
+        role="button"
+        tabIndex={0}
+        title={tooltipText}
+        className={cn(
+          'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-colors duration-150',
+          isAvailable ? 'border border-dashed' : 'border border-transparent',
+          event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
+          className
         )}
-
-        {/* Title */}
-        <span
-          className={isShort ? 'truncate font-bold' : 'line-clamp-2 font-bold'}
-          style={{
-            color: textColor,
-            fontFamily: "'Almarai', sans-serif",
-            fontSize: isVeryShort ? '10px' : '12px',
-            lineHeight: '140%',
-          }}
-        >
-          {displayLabel}
-        </span>
-
-        {/* Time row */}
-        {!isShort && event.exactStartTime && event.exactEndTime && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.6 }} />
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: accentColor, opacity: 0.7, fontFamily: "'Almarai', sans-serif" }}
-            >
-              {event.exactStartTime} – {event.exactEndTime}
-            </span>
-          </div>
-        )}
-
-        {/* Location row */}
-        {!isShort && event.location && (
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.5 }} />
-            <span
-              className="truncate text-[10px] font-medium"
-              style={{ color: accentColor, opacity: 0.65, fontFamily: "'Almarai', sans-serif" }}
-            >
-              {event.location}
-            </span>
-          </div>
-        )}
+        style={{
+          ...baseStyle,
+          background: bgColor,
+          borderColor: isAvailable ? accentColor : 'transparent',
+          boxShadow: isSelected ? `0 0 0 2px ${accentColor}, 0 0 0 4px ${accentColor}22` : undefined,
+        }}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onKeyDown={(e) => {
+          if (event.id !== 'highlighted-slot' && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            handleClick(e as unknown as React.MouseEvent);
+          }
+        }}
+      >
+        {/* Accent bar */}
+        <div className="absolute top-0 right-0 bottom-0 w-[3px]" style={{ background: accentColor }} aria-hidden />
+        <CardContent
+          event={event}
+          accentColor={accentColor}
+          textColor={textColor}
+          displayLabel={displayLabel}
+          isAvailable={isAvailable}
+          compact={isVeryShort || isShort}
+        />
       </div>
 
-      {/* Organizer initials avatar — bottom-left corner for full-size events */}
-      {!isShort && event.organizer?.name && (
+      {/* ── Expanded floating card via portal (escapes overflow-auto scroll container) ── */}
+      {cardRect && createPortal(
         <div
-          className="absolute bottom-1.5 left-2 w-[18px] h-[18px] rounded-full flex items-center justify-center text-white text-[9px] font-bold select-none"
-          style={{ background: accentColor, opacity: 0.75 }}
-          aria-label={event.organizer.name}
+          role="button"
+          tabIndex={-1}
+          className={cn(
+            'flex flex-col justify-start text-right rounded-lg border shadow-2xl',
+            isAvailable ? 'border-dashed' : 'border-transparent',
+          )}
+          style={{
+            position: 'fixed',
+            top: cardRect.top,
+            right: window.innerWidth - cardRect.right,
+            width: expandedWidth,
+            minHeight: cardRect.height,
+            zIndex: 9999,
+            background: bgColor,
+            borderColor: isAvailable ? accentColor : 'transparent',
+            boxShadow: `0 8px 32px ${accentColor}44`,
+            pointerEvents: 'auto',
+          }}
+          onClick={handleClick}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          {getInitial(event.organizer.name)}
-        </div>
+          {/* Accent bar */}
+          <div className="absolute top-0 right-0 bottom-0 w-[3px] rounded-r-lg" style={{ background: accentColor }} aria-hidden />
+          <CardContent
+            event={event}
+            accentColor={accentColor}
+            textColor={textColor}
+            displayLabel={displayLabel}
+            isAvailable={isAvailable}
+            compact={false}
+          />
+          {/* Organizer avatar */}
+          {event.organizer?.name && (
+            <div
+              className="absolute bottom-1.5 left-2 w-[18px] h-[18px] rounded-full flex items-center justify-center text-white text-[9px] font-bold select-none"
+              style={{ background: accentColor, opacity: 0.75 }}
+              aria-label={event.organizer.name}
+            >
+              {getInitial(event.organizer.name)}
+            </div>
+          )}
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
