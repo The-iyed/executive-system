@@ -3,9 +3,9 @@ import { FormField } from "./FieldGroup";
 import { DirectiveSelect } from "./DirectiveSelect";
 import { useIsFieldEditable } from "../hooks";
 
-interface Props { disabled?: boolean }
+interface Props { disabled?: boolean, defaultDirectiveLabel?:string }
 
-export function RelatedDirectiveField({ disabled }: Props) {
+export function RelatedDirectiveField({ disabled , defaultDirectiveLabel}: Props) {
   const { control, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("related_directive");
   const isDisabled = disabled || !editable;
@@ -23,6 +23,7 @@ export function RelatedDirectiveField({ disabled }: Props) {
             placeholder="ابحث عن توجيه..."
             disabled={isDisabled}
             hasError={hasError}
+            defaultLabel={defaultDirectiveLabel}
           />
         )}
       />
