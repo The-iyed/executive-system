@@ -1,4 +1,8 @@
 
+export enum MeetingStatusUnCommitted {
+  DRAFT_UNCOMMITTED = "DRAFT_UNCOMMITTED",
+}
+
 export enum MeetingStatus {
   DRAFT = 'DRAFT',
   UNDER_REVIEW = 'UNDER_REVIEW',
