@@ -12,6 +12,7 @@ import {
   MeetingChannelLabels,
 } from '../types';
 import { FileIcon } from 'lucide-react';
+import { ContentTabFileCard, type ContentTabFileItem } from './Mou7tawaContentTab';
 
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
   if (!startISO && !endISO) return '—';
@@ -73,7 +74,7 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
 
 /** Specs for the second grid (directive + notes). */
 export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
-  const fileDisplay = (d: MeetingInfoData) => {
+  const fileDisplay = (d: MeetingInfoData): React.ReactNode => {
     const attachment = d.previous_meeting_attachment;
     const legacyFile = d.previous_meeting_minutes_file;
     const name =
@@ -82,11 +83,30 @@ export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
       (legacyFile != null && typeof legacyFile === 'object' && 'name' in legacyFile
         ? (legacyFile as { name?: string }).name
         : (legacyFile as File)?.name);
+
+    if (attachment && (attachment.file_name || attachment.blob_url)) {
+      const fileItem: ContentTabFileItem = {
+        id: attachment.id ?? 'previous-meeting-minutes',
+        file_name: attachment.file_name ?? name ?? '—',
+        file_size: attachment.file_size ?? 0,
+        file_type: attachment.file_type ?? '',
+        blob_url: attachment.blob_url ?? null,
+      };
+      return (
+        <ContentTabFileCard
+          file={fileItem}
+          readOnly
+          onView={fileItem.blob_url ? () => window.open(fileItem.blob_url!, '_blank') : undefined}
+          onDownload={fileItem.blob_url ? () => window.open(fileItem.blob_url!, '_blank') : undefined}
+        />
+      );
+    }
+
     if (name) {
       return (
-        <div className="flex items-center gap-2">
-          <FileIcon className="h-4 w-4 flex-shrink-0" />
-          {name}
+        <div className="flex items-center gap-3 bg-white border border-[#E4E7EC] rounded-lg px-4 py-3" dir="rtl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <FileIcon className="h-5 w-5 text-[#667085] flex-shrink-0" />
+          <p className="text-sm font-medium text-[#344054] truncate flex-1 text-right">{name}</p>
         </div>
       );
     }
@@ -96,7 +116,7 @@ export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
   return [
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', getValue: (d) => (d.is_based_on_directive === true ? 'نعم' : d.is_based_on_directive === false ? 'لا' : '—') },
     { key: 'directive_method', label: 'طريقة التوجيه', getValue: (d) => getDirectiveMethodLabel(d.directive_method) ?? '—' },
-    { key: 'previous_meeting_minutes_id', label: 'محضر الاجتماع', getValue: fileDisplay },
+    { key: 'previous_meeting_minutes_id', label: 'محضر الاجتماع', getValue: fileDisplay, className: 'sm:col-span-2' },
     { key: 'related_guidance', label: 'التوجيه', getValue: (d) => d.directive_text ?? '—' },
     { key: 'general_notes', label: 'ملاحظات', getValue: (d) => d.notes ?? '—', className: 'sm:col-span-2' },
   ];
