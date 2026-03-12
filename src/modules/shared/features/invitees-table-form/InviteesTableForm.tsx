@@ -18,6 +18,7 @@ const InviteesTableForm = ({
   meetingParams,
   excludeColumns = [],
   viewLayout = "table",
+  showAiSuggest = true,
 }: {
   tableValidation?: TableValidation;
   tableRef?: React.RefObject<DynamicTableFormHandle>;
@@ -26,6 +27,7 @@ const InviteesTableForm = ({
   meetingParams?: UseSuggestMeetingAttendeesParams["meeting"];
   excludeColumns?: string[];
   viewLayout?: InviteesViewLayout;
+  showAiSuggest?: boolean;
 }) => {
   const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees);
   const filteredColumns = excludeColumns.length > 0
@@ -89,8 +91,8 @@ const InviteesTableForm = ({
       }}
       mapSearchResultToRow={handleSearchResultToRow}
       maxHeight="360px"
-      aiGenerateFn={handleAiGenerate}
-      aiGenerateLabel="إضافة مدعوين آليًا"
+      aiGenerateFn={showAiSuggest ? handleAiGenerate : undefined}
+      aiGenerateLabel={showAiSuggest ? "إضافة مدعوين آليًا" : undefined}
     />
   )
 }
