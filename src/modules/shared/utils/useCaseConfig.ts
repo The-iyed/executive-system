@@ -101,7 +101,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'exception-request',
         icon: 'solar:hand-stars-outline',
-        label: 'طلب استثناء',
+        label: 'طلبات الاستثناء',
         path: UC04_PATH.EXCEPTION_REQUEST,
       },
       {
