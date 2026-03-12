@@ -16,6 +16,7 @@ import { PATH } from '../routes/paths';
 import '@/modules/shared/styles';
 import { useMeetingFormDrawer } from '../features/MeetingForm/hooks';
 import { MeetingFormDrawer } from '../features/MeetingForm/components/MeetingFormDrawer';
+import { SchedulerModal } from '@/modules/shared/features/meeting-request-form';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +34,9 @@ const Directives: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; right: number; bottom: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [schedulerDirective, setSchedulerDirective] = useState<{ directiveId?: string; directiveText?: string }>({});
+  const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const openForm = (directiveId?:string, directiveText?: string) => { setMeetingFormOpen(true);  setSchedulerDirective({ directiveId, directiveText }); };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
@@ -246,8 +250,6 @@ const Directives: React.FC = () => {
     [originalPreviousDirectives]
   );
 
-  const { openCreateDrawer } = useMeetingFormDrawer({ createEditBasePath: PATH.DIRECTIVES });
-
   /* ═══════════ RENDER ═══════════ */
   const isCurrentTab = activeTab === 'current';
   const loading = isCurrentTab ? isLoading : isLoadingPrevious;
@@ -257,8 +259,8 @@ const Directives: React.FC = () => {
 
   return (
     <>
+      <SchedulerModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} directiveId={schedulerDirective?.directiveId} directiveText={schedulerDirective?.directiveText} />
       <div className="flex flex-col w-full min-h-0" dir="rtl">
-
         {/* ════════════════════════════════════════ */}
         {/* PAGE HEADER — Title + Action + Search   */}
         {/* ════════════════════════════════════════ */}
@@ -315,7 +317,7 @@ const Directives: React.FC = () => {
 
               {/* Create meeting */}
               <button
-                onClick={() => openCreateDrawer()}
+                onClick={() => openForm()}
                 className="flex items-center gap-2 h-10 px-5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98] bg-[var(--color-primary-500)]"
               >
                 <Plus className="w-4 h-4" />
@@ -424,7 +426,7 @@ const Directives: React.FC = () => {
                       { label: 'طلب إجتماع', icon: CalendarDays, color: 'var(--color-primary-500)', action: async () => {
                         const d = originalDirectives.find((x) => x.id === openDropdownId);
                         if (d) {
-                          openCreateDrawer({ directive_id: d.id, directive_text: d.title, related_meeting: d.assignees || '' });
+                          openForm(d.id, d.title);
                           try { await requestMeetingFromDirective(d.id); } catch { }
                         }
                       }},
@@ -605,7 +607,7 @@ const Directives: React.FC = () => {
                                     const relatedMeeting = isPrevious
                                       ? (Array.isArray((original as PreviousDirectiveItem).assignees) ? (original as PreviousDirectiveItem).assignees!.join(', ') : '')
                                       : ((original as Directive).assignees || '');
-                                    openCreateDrawer({ directive_id: original.id, directive_text: original.title, related_meeting: relatedMeeting });
+                                    openForm(original.id, original.title );
                                     try { await requestMeetingFromDirective(original.id); } catch { }
                                     setExpandedId(null);
                                   }}
@@ -634,8 +636,6 @@ const Directives: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <MeetingFormDrawer />
     </>
   );
 };
