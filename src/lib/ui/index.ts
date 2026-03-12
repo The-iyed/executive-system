@@ -64,6 +64,10 @@ export {
   useSidebar,
 } from './components/sidebar';
 
+export { Switch } from './components/switch';
+
+export { Label } from './components/label';
+
 // Export document sources and related questions
 export {
   DocumentSource,
