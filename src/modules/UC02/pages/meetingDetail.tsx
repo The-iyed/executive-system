@@ -1348,6 +1348,7 @@ const MeetingDetail: React.FC = () => {
         (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
+        description: meeting.description ?? '',
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
