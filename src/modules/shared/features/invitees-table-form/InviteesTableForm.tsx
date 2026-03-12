@@ -1,0 +1,98 @@
+import React, { useState, useCallback, useRef } from "react";
+import { DynamicTableFormHandle, InputTableRow, SearchApiUser, TableFormSection, TableRow, TableValidation } from "@/lib/dynamic-table-form";
+import { searchUsersByEmail } from "../meeting-request-form/api"
+import { useSuggestAttendees } from "./useSuggestAttendees";
+import type { UseSuggestMeetingAttendeesParams } from "./api";
+import InviteeCardList from "./InviteeCardList";
+import { INVITEE_COLUMNS } from "./columns";
+
+export type InviteesTableForm = TableRow[]
+
+export type InviteesViewLayout = "table" | "cards";
+
+const InviteesTableForm = ({
+  tableValidation = { required: true, minItems: 1 },
+  tableRef = useRef<DynamicTableFormHandle>(null),
+  initialInvitees = [],
+  mode = "create",
+  meetingParams,
+  excludeColumns = [],
+  viewLayout = "table",
+}: {
+  tableValidation?: TableValidation;
+  tableRef?: React.RefObject<DynamicTableFormHandle>;
+  initialInvitees?: TableRow[];
+  mode?: "create" | "edit" | "view";
+  meetingParams?: UseSuggestMeetingAttendeesParams["meeting"];
+  excludeColumns?: string[];
+  viewLayout?: InviteesViewLayout;
+}) => {
+  const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees);
+  const filteredColumns = excludeColumns.length > 0
+    ? INVITEE_COLUMNS.filter(col => !excludeColumns.includes(col.key))
+    : INVITEE_COLUMNS;
+
+  const { mutateAsync: suggestAttendees } = useSuggestAttendees();
+
+  const handleAiGenerate = useCallback(async (count: number): Promise<TableRow[]> => {
+    if (!meetingParams) return [];
+    const result = await suggestAttendees({ count, meeting: meetingParams });
+    return result.suggestions.map((s) => ({
+      _id: `ai-${s.employee_id.toString()}`,
+      email: s.email,
+      position: s.position_name,
+      mobile: s.phone,
+      sector: s.department_name,
+      access_permission: false,
+      is_consultant: false,
+      meeting_owner: false,
+      isExternal: false,
+      _aiSuggestionReason: s.suggestion_reason,
+      _aiImportanceLevel: s.importance_level,
+    }));
+  }, [meetingParams, suggestAttendees]);
+
+  const handleSearchResultToRow = useCallback((result: SearchApiUser): Partial<InputTableRow> => ({
+    email: result.mail || "",
+    name: result.givenName || result.displayName || result.displayNameAR || result.displayNameEN || "",
+    mobile: result.mobile || "",
+    sector: result.department || "",
+    position: result.title || "",
+    object_guid: result.objectGUID || null,
+  }), []);
+
+  // In view mode with cards layout, render card list if there are invitees
+  if (mode === "view" && viewLayout === "cards" && invitees?.length > 0) {
+    return <InviteeCardList invitees={invitees} columns={filteredColumns} />;
+  }
+
+  return (
+    <TableFormSection
+      ref={tableRef}
+      title="قائمة المدعوين"
+      entityKey="invitees"
+      mode={mode}
+      value={invitees}
+      onChange={setInvitees}
+      columns={filteredColumns}
+      tableValidation={tableValidation}
+      emptyStateTitle="لا يوجد مدعوون بعد"
+      emptyStateDescription="ابدأ بإضافة مدعو جديد لحضور الاجتماع"
+      addButtonLabel="إضافة مدعو جديد"
+      searchFn={async (query) => {
+        const result = await searchUsersByEmail(query, 0);
+        return result.items.map((item) => ({
+          label: item.mail,
+          value: item.objectGUID || "",
+          raw: item as unknown as SearchApiUser,
+        }));
+      }}
+      mapSearchResultToRow={handleSearchResultToRow}
+      maxHeight="360px"
+      aiGenerateFn={handleAiGenerate}
+      aiGenerateLabel="إضافة مدعوين آليًا"
+    />
+  )
+}
+
+export default InviteesTableForm
