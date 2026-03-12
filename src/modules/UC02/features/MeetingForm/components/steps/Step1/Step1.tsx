@@ -38,7 +38,6 @@ const REQUIRED_INDICATOR_FIELDS = new Set<keyof Step1FormData>([
   'meetingOwner',
   'sector',
   'meetingType',
-  'meetingAgenda',
   'meetingStartDate',
 ]);
 
@@ -92,6 +91,7 @@ export function Step1({
 
   const isRequired = useCallback(
     (field: keyof Step1FormData): boolean => {
+      if (field === 'meetingAgenda') return false; // UC02: أجندة الاجتماع always optional
       if (REQUIRED_INDICATOR_FIELDS.has(field)) return true;
       if (field === 'location') return formData.meeting_channel === 'PHYSICAL';
       // تصنيف الاجتماع: required only when فئة الاجتماع is "اجتماعات الأعمال" (Business Meetings)
@@ -388,7 +388,7 @@ export function Step1({
           <div className='md:col-span-2 lg:col-span-3 w-full min-w-0'>
           <MeetingAgendaTable
             rows={formData.meetingAgenda || []}
-            required={isRequired('meetingAgenda')}
+            required={false}
             onAddRow={handleAddAgendaWithScroll}
             onDeleteRow={handleDeleteAgenda}
             onUpdateRow={handleUpdateAgenda}

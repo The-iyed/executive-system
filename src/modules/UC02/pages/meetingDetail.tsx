@@ -103,6 +103,7 @@ import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useM
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -195,8 +196,8 @@ const MeetingDetail: React.FC = () => {
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
-
-  const { openEditDrawer } = useMeetingFormDrawer();
+  const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const openEditForm = () => { setMeetingFormOpen(true); };
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -2487,7 +2488,7 @@ const MeetingDetail: React.FC = () => {
               hasChanges,
               opensForm: true,
               tooltip: 'فتح نموذج التعديل',
-              onClick: () => openEditDrawer(meeting.id),
+              onClick: () => openEditForm(),
             }}
             primaryAction={
               <AIGenerateButton
@@ -4201,7 +4202,8 @@ const MeetingDetail: React.FC = () => {
       </div>
 
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
-      <MeetingFormDrawer initialMeetingData={meeting ?? undefined} />
+      {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
+      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
 
       {/* Meeting Quality Modal */}
      <QualityModal 
