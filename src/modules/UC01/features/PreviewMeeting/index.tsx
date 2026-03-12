@@ -80,7 +80,12 @@ const PreviewMeeting: React.FC = () => {
         };
       }),
       is_based_on_directive: !!(m.is_based_on_directive === true),
-      directive_method: (meeting.related_directive_ids && meeting.related_directive_ids.length > 0) ? 'DIRECT_DIRECTIVE' : undefined,
+      directive_method:
+        (meeting.related_directive_ids && meeting.related_directive_ids.length > 0)
+          ? 'DIRECT_DIRECTIVE'
+          : ((meeting as { previous_meeting_attachment?: unknown }).previous_meeting_attachment != null || (m.prev_ext_id != null) || (m.previous_meeting_id != null))
+            ? 'PREVIOUS_MEETING'
+            : (m.directive_method as string | undefined) ?? undefined,
       directive_text: meeting.related_guidance ?? undefined,
       notes: getNotesTextFromMeeting(meeting),
     };
@@ -136,7 +141,7 @@ const PreviewMeeting: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
         <DetailPageHeader
-          title={`عرض الطلب (${meeting?.request_number ?? ''})`}
+          title={`${meeting?.meeting_title ?? meeting?.meeting_subject ?? 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
           onBack={handleBack}
           statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
           editAction={{
