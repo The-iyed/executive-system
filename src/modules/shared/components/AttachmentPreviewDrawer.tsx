@@ -1,8 +1,8 @@
 /**
  * Drawer that shows a PDF preview (iframe) or download fallback for other file types.
  * Use with Eye button: set attachment state on click, drawer opens with preview.
- * PDFs are fetched and shown via a blob URL so the server's Content-Disposition: attachment
- * does not force a download; the PDF is displayed inline in the iframe.
+ * Cross-origin document URLs (e.g. execution-system) are loaded directly in the iframe
+ * to avoid CORS; same-origin URLs may be fetched as blob to avoid Content-Disposition.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Download } from 'lucide-react';
@@ -18,7 +18,7 @@ export interface AttachmentPreviewDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   attachment: AttachmentPreviewItem | null;
-  /** Optional: drawer width (default 90vw) */
+  /** Optional: drawer width (default 700px max) */
   width?: number | string;
 }
 
@@ -26,7 +26,7 @@ export function AttachmentPreviewDrawer({
   open,
   onOpenChange,
   attachment,
-  width = '90vw',
+  width = '70vw',
 }: AttachmentPreviewDrawerProps) {
   const isPdf = attachment?.file_type?.toLowerCase() === 'pdf';
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
@@ -49,6 +49,23 @@ export function AttachmentPreviewDrawer({
 
     const url = attachment.blob_url;
     if (url.startsWith('blob:')) {
+      setPdfBlobUrl(url);
+      setPdfError(null);
+      setPdfLoading(false);
+      return;
+    }
+
+    // Cross-origin: use URL directly in iframe so the browser loads it (no CORS from fetch).
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const isSameOrigin = origin && (url.startsWith(origin) || url.startsWith('/'));
+      if (!isSameOrigin) {
+        setPdfBlobUrl(url);
+        setPdfError(null);
+        setPdfLoading(false);
+        return;
+      }
+    } catch {
       setPdfBlobUrl(url);
       setPdfError(null);
       setPdfLoading(false);
