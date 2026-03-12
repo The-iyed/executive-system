@@ -1,58 +1,26 @@
 import { useState, useEffect, useRef } from "react";
-import { cn } from "@/lib/ui";
 import { ChevronDown, Search, Loader2, X } from "lucide-react";
-import { useDirectiveSearch, type DirectiveOption } from "../hooks/useDirectiveSearch";
+import { useMeetingSearch, type MeetingOption } from "../hooks/useMeetingSearch";
+import { cn } from "@/lib/ui";
 
-interface DirectiveSelectProps {
+interface MeetingSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
-  defaultLabel?:string
+  /** Fallback display label for edit mode */
+  initialLabel?: string;
 }
 
-function StatusBadge({ status }: { status?: string }) {
-  if (!status) return null;
-  const isCompleted = status === "COMPLETED";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0",
-        isCompleted
-          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-      )}
-    >
-      {isCompleted ? "مكتمل" : "قيد التنفيذ"}
-    </span>
-  );
-}
-
-function OptionItem({ opt, isSelected, onSelect }: { opt: DirectiveOption; isSelected: boolean; onSelect: () => void }) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "w-full rounded-md px-3 py-2.5 text-right transition-colors hover:bg-accent",
-        isSelected && "bg-accent",
-      )}
-      onClick={onSelect}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className={cn("text-sm leading-relaxed", isSelected && "font-medium")}>{opt.label}</p>
-          {opt.actionNumber && (
-            <p className="mt-0.5 text-xs text-muted-foreground font-mono">{opt.actionNumber}</p>
-          )}
-        </div>
-        <StatusBadge status={opt.status} />
-      </div>
-    </button>
-  );
-}
-
-export function DirectiveSelect({ value, onChange, placeholder, disabled, hasError, defaultLabel }: DirectiveSelectProps) {
+export function MeetingSelect({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  hasError,
+  initialLabel,
+}: MeetingSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -65,10 +33,11 @@ export function DirectiveSelect({ value, onChange, placeholder, disabled, hasErr
   }, [search]);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useDirectiveSearch(debouncedSearch, open);
+    useMeetingSearch(debouncedSearch, open);
 
   const options = data?.options ?? [];
-  const selectedLabel = options.find((o) => o.value === value)?.label || defaultLabel || value || "";
+  const selectedLabel =
+    options.find((o) => o.value === value)?.label || initialLabel || "";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -101,14 +70,17 @@ export function DirectiveSelect({ value, onChange, placeholder, disabled, hasErr
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
-        <span className={cn("truncate text-right", !value && "text-muted-foreground")}>
-          {value ? selectedLabel : placeholder || "ابحث عن توجيه..."}
+        <span className={cn("truncate", !value && "text-muted-foreground")}>
+          {value ? selectedLabel : placeholder || "ابحث عن اجتماع سابق..."}
         </span>
         <div className="flex items-center gap-1">
-          {value && (
+          {value && !disabled && (
             <X
               className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer"
-              onClick={(e) => { e.stopPropagation(); onChange(""); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange("");
+              }}
             />
           )}
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -121,20 +93,32 @@ export function DirectiveSelect({ value, onChange, placeholder, disabled, hasErr
             <Search className="h-4 w-4 text-muted-foreground" />
             <input
               className="flex-1 bg-transparent py-2 px-2 text-sm outline-none placeholder:text-muted-foreground"
-              placeholder="ابحث بالعنوان أو رقم التوجيه..."
+              placeholder="ابحث عن اجتماع..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
             />
           </div>
-          <div ref={scrollRef} onScroll={handleScroll} className="max-h-60 overflow-auto p-1">
-            {options.map((opt) => (
-              <OptionItem
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="max-h-48 overflow-auto p-1"
+          >
+            {options.map((opt: MeetingOption) => (
+              <button
                 key={opt.value}
-                opt={opt}
-                isSelected={opt.value === value}
-                onSelect={() => { onChange(opt.value); setOpen(false); }}
-              />
+                type="button"
+                className={cn(
+                  "w-full rounded-md px-3 py-2 text-right text-sm transition-colors hover:bg-accent",
+                  opt.value === value && "bg-accent font-medium",
+                )}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+              >
+                <div className="font-medium">{opt.label}</div>
+              </button>
             ))}
             {(isLoading || isFetchingNextPage) && (
               <div className="flex justify-center py-2">
@@ -142,7 +126,9 @@ export function DirectiveSelect({ value, onChange, placeholder, disabled, hasErr
               </div>
             )}
             {!isLoading && options.length === 0 && (
-              <p className="py-3 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
+              <p className="py-3 text-center text-sm text-muted-foreground">
+                لا توجد نتائج
+              </p>
             )}
           </div>
         </div>

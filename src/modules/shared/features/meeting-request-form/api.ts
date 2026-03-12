@@ -1,5 +1,6 @@
 import axiosInstance from '@/modules/auth/utils/axios';
 import { type UsersListResponse } from './shared/hooks/useManagerSearch';
+import { MeetingSearchResponse } from './shared/hooks/useMeetingSearch';
 
 /** Normalize axios error to a plain Error with a message for consistent handling. */
 function toError(message: string, err: unknown): Error {
@@ -283,5 +284,101 @@ export async function resubmitToContent(draftId: string): Promise<unknown> {
     return data;
   } catch (err) {
     throw toError('Failed to resubmit to content', err);
+  }
+}
+
+export async function searchMeetings(
+  query: string,
+  skip = 0,
+  limit = PAGE_SIZE,
+): Promise<MeetingSearchResponse> {
+  const safeSkip = skip ?? 0;
+  const safeLimit = Math.min(Math.max(limit ?? PAGE_SIZE, 1), 100);
+  const q = query != null && query.trim() !== '' ? query.trim() : 'a';
+
+  const params = new URLSearchParams();
+  params.set('q', q);
+  params.set('skip', String(safeSkip));
+  params.set('limit', String(safeLimit));
+
+  try {
+    const { data } = await axiosInstance.get<MeetingSearchResponse['items'] | MeetingSearchResponse>(
+      `/api/v1/business-cards/meetings-search?${params.toString()}`,
+    );
+
+    if (Array.isArray(data)) {
+      return {
+        items: data,
+        total: data.length,
+        skip: safeSkip,
+        limit: safeLimit,
+        has_next: data.length === safeLimit,
+        has_previous: safeSkip > 0,
+      };
+    }
+
+    const payload = data as Partial<MeetingSearchResponse> & { items?: unknown };
+    const items = Array.isArray(payload.items)
+      ? payload.items as MeetingSearchResponse['items']
+      : [];
+
+    return {
+      items,
+      total: typeof payload.total === 'number' ? payload.total : items.length,
+      skip: typeof payload.skip === 'number' ? payload.skip : safeSkip,
+      limit: typeof payload.limit === 'number' ? payload.limit : safeLimit,
+      has_next: Boolean(payload.has_next),
+      has_previous: Boolean(payload.has_previous ?? safeSkip > 0),
+    };
+  } catch (err) {
+    throw toError('Meeting search failed', err);
+  }
+}
+
+// ── Scheduler: Direct Schedule (Step 1–3) ───────────────────────────────────
+
+export async function createSchedulerStep1(payload: FormData): Promise<string> {
+  try {
+    const { data } = await axiosInstance.post<{ id?: string | number; meeting_id?: string | number }>(
+      '/api/meeting-requests/direct-schedule/step1',
+      payload,
+    );
+    const id = data?.id ?? data?.meeting_id;
+    if (!id) {
+      throw new Error('Invalid response format: missing meeting ID');
+    }
+    return String(id);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Invalid response format')) throw err;
+    throw toError('Failed to create scheduler step 1', err);
+  }
+}
+
+export async function saveSchedulerStep2Content(
+  meetingId: string,
+  payload: FormData,
+): Promise<void> {
+  try {
+    await axiosInstance.put(
+      `/api/meeting-requests/direct-schedule/${meetingId}/content`,
+      payload,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  } catch (err) {
+    throw toError('Failed to save scheduler step 2 content', err);
+  }
+}
+
+export async function saveSchedulerStep3Invitees(
+  meetingId: string,
+  invitees: Record<string, unknown>[],
+): Promise<void> {
+  try {
+    await axiosInstance.put(
+      `/api/meeting-requests/direct-schedule/${meetingId}/step3`,
+      { invitees },
+    );
+  } catch (err) {
+    throw toError('Failed to save scheduler step 3 invitees', err);
   }
 }

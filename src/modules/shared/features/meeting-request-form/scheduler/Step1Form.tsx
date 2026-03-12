@@ -19,16 +19,27 @@ interface Props {
   onSubmit: (data: SchedulerStep1Values) => void;
   renderActions?: (actions: { submit: () => void; reset: () => void }) => React.ReactNode;
   initialValues?: Partial<SchedulerStep1Values>;
+  /** Fallback label for a pre-selected directive before API options load. */
+  defaultDirectiveLabel?: string;
 }
 
-export function SchedulerStep1Form({ onSubmit, renderActions, initialValues }: Props) {
-  const { form, visibility, watched, isFieldDisabled } = useSchedulerStep1Form(initialValues);
+export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, defaultDirectiveLabel }: Props) {
+  const { form, visibility, watched } = useSchedulerStep1Form(initialValues);
 
   const minDate = useMemo(() => {
     return watched.is_urgent === BOOL.TRUE ? startOfDay(new Date()) : startOfDay(addDays(new Date(), 7));
   }, [watched.is_urgent]);
 
-  const handleSubmit = form.handleSubmit(onSubmit, (errors) => scrollToFirstError(form, errors));
+  const handleSubmit = form.handleSubmit(
+    (data) => {
+      console.log("[SchedulerStep1Form] ✅ Validation passed, submitting:", data);
+      onSubmit(data);
+    },
+    (errors) => {
+      console.error("[SchedulerStep1Form] ❌ Validation errors:", errors);
+      scrollToFirstError(form, errors);
+    }
+  );
 
   return (
     <FormProvider {...form}>
@@ -40,13 +51,13 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues }: P
           <MeetingManagerField name="submitter_id" label="مقدّم الطلب" placeholder="ابحث عن مقدّم الطلب..." />
 
           {/* Row 2 */}
-          <MeetingOwnerField disabled={isFieldDisabled("owner_id")} />
+          <MeetingOwnerField />
           <MeetingTitleField />
-          <DescriptionField disabled={isFieldDisabled("description")} />
+          <DescriptionField />
 
           {/* Row 3 */}
-          <SectorField required disabled={isFieldDisabled("sector")} />
-          <MeetingTypeField disabled={isFieldDisabled("meeting_type")} />
+          <SectorField required />
+          <MeetingTypeField />
           <IsUrgentField />
 
           {/* Conditional */}
@@ -63,16 +74,16 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues }: P
               {visibility.meeting_location_custom && <LocationCustomField />}
             </>
           )}
-          <RequiresProtocolField disabled={isFieldDisabled("requires_protocol")} />
+          <RequiresProtocolField />
 
           {/* Category */}
-          <MeetingCategoryField meetingType={watched.meeting_type} disabled={isFieldDisabled("meeting_classification")} />
-          {visibility.meeting_justification && <MeetingJustificationField disabled={isFieldDisabled("meeting_justification")} />}
-          {visibility.meeting_classification_type && <ClassificationTypeField disabled={isFieldDisabled("meeting_classification_type")} />}
-          {visibility.meetingSubCategory && <SubCategoryField disabled={isFieldDisabled("meeting_sub_category")} />}
-          {visibility.related_topic && <RelatedTopicField disabled={isFieldDisabled("related_topic")} />}
-          {visibility.deadline && <DeadlineField disabled={isFieldDisabled("deadline")} />}
-          <ConfidentialityField disabled={isFieldDisabled("meeting_confidentiality")} />
+          <MeetingCategoryField meetingType={watched.meeting_type} />
+          {visibility.meeting_justification && <MeetingJustificationField />}
+          {visibility.meeting_classification_type && <ClassificationTypeField />}
+          {visibility.meetingSubCategory && <SubCategoryField />}
+          {visibility.related_topic && <RelatedTopicField />}
+          {visibility.deadline && <DeadlineField />}
+          <ConfidentialityField />
         </div>
 
         {/* Agenda */}
@@ -82,8 +93,8 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues }: P
 
         {/* Notes + Directive */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <NoteField disabled={isFieldDisabled("note")} />
-          <RelatedDirectiveField disabled={isFieldDisabled("related_directive")} />
+          <NoteField />
+          <RelatedDirectiveField defaultDirectiveLabel={defaultDirectiveLabel} />
         </div>
       </form>
 
