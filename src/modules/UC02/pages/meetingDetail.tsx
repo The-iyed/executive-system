@@ -65,6 +65,9 @@ import {
   type GeneralNoteItem,
   moveToWaitingList,
 } from '../data/meetingsApi';
+import { deleteDraft } from '../data/draftApi';
+import { PATH as UC02_PATH } from '../routes/paths';
+import { PATH as UC01_PATH } from '../../UC01/routes/paths';
 import {
   Select,
   SelectContent,
@@ -76,7 +79,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  Button,
   Textarea,
   DateTimePicker,
   Tooltip,
@@ -197,7 +202,23 @@ const MeetingDetail: React.FC = () => {
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
   const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const [isDeleteDraftModalOpen, setIsDeleteDraftModalOpen] = useState(false);
   const openEditForm = () => { setMeetingFormOpen(true); };
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      setIsDeleteDraftModalOpen(false);
+      navigate(isScheduleOfficer ? UC02_PATH.WORK_BASKET : UC01_PATH.MEETINGS);
+    },
+  });
+
+  const handleDeleteDraftConfirm = useCallback(() => {
+    if (id) deleteDraftMutation.mutate(id);
+  }, [id, deleteDraftMutation]);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -2491,6 +2512,20 @@ const MeetingDetail: React.FC = () => {
               tooltip: 'فتح نموذج التعديل',
               onClick: () => openEditForm(),
             }}
+            secondaryAction={
+              meetingStatus === MeetingStatus.DRAFT ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDeleteDraftModalOpen(true)}
+                  disabled={deleteDraftMutation.isPending}
+                  className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
+                </Button>
+              ) : undefined
+            }
             primaryAction={
               <AIGenerateButton
                 label="تقييم جاهزية الاجتماع"
@@ -4189,6 +4224,39 @@ const MeetingDetail: React.FC = () => {
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
       {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
       <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
+
+      {/* Delete draft confirmation (Draft status only) */}
+      <Dialog open={isDeleteDraftModalOpen} onOpenChange={(open) => !deleteDraftMutation.isPending && setIsDeleteDraftModalOpen(open)}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              حذف المسودة
+            </DialogTitle>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              هل أنت متأكد من حذف هذه المسودة؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDraftModalOpen(false)}
+              className="min-w-[100px]"
+              disabled={deleteDraftMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteDraftConfirm}
+              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDraftMutation.isPending}
+            >
+              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Meeting Quality Modal */}
      <QualityModal 
