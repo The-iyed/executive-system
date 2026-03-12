@@ -1,0 +1,18 @@
+import { useFormContext } from "react-hook-form";
+import { Input } from "@/lib/ui";
+import { FormField, inputClass } from "./FieldGroup";
+import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
+
+interface Props { disabled?: boolean }
+
+export function UrgentReasonField({ disabled }: Props) {
+  const { register, formState: { errors } } = useFormContext();
+  const editable = useIsFieldEditable("urgent_reason");
+  const isDisabled = disabled || !editable;
+  return (
+    <FormField label="السبب" name="urgent_reason" required errors={errors} colSpan={4}>
+      <Input placeholder="السبب" disabled={isDisabled} className={inputClass(!!errors.urgent_reason)} {...register("urgent_reason")} />
+    </FormField>
+  );
+}
+
