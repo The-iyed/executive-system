@@ -103,6 +103,7 @@ import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useM
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -195,8 +196,8 @@ const MeetingDetail: React.FC = () => {
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
-
-  const { openEditDrawer } = useMeetingFormDrawer();
+  const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const openEditForm = () => { setMeetingFormOpen(true); };
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -1348,6 +1349,7 @@ const MeetingDetail: React.FC = () => {
         (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
+        description: meeting.description ?? '',
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
@@ -2487,7 +2489,7 @@ const MeetingDetail: React.FC = () => {
               hasChanges,
               opensForm: true,
               tooltip: 'فتح نموذج التعديل',
-              onClick: () => openEditDrawer(meeting.id),
+              onClick: () => openEditForm(),
             }}
             primaryAction={
               <AIGenerateButton
@@ -2946,59 +2948,6 @@ const MeetingDetail: React.FC = () => {
                       )}
                     </div>
                   );
-                  })()}
-                </div>
-              </section>
-
-              {/* ─── الملخّص التنفيذي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
-                </div>
-                <div className="p-6">
-                  {(() => {
-                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
-                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
-                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
-                    if (!hasExec) {
-                      return (
-                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
-                          </div>
-                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-col gap-4">
-                        {execSummaryText && (
-                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
-                            {execSummaryText}
-                          </div>
-                        )}
-                        {execSummaryAttachments.length > 0 && (
-                          <div className="grid grid-cols-1 gap-3">
-                            {execSummaryAttachments.map((att) => (
-                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
-                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                                <div className="flex flex-col items-end min-w-0 flex-1">
-                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
-                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                                </div>
-                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
-                                  <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
                   })()}
                 </div>
               </section>
@@ -4238,7 +4187,8 @@ const MeetingDetail: React.FC = () => {
       </div>
 
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
-      <MeetingFormDrawer initialMeetingData={meeting ?? undefined} />
+      {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
+      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
 
       {/* Meeting Quality Modal */}
      <QualityModal 
