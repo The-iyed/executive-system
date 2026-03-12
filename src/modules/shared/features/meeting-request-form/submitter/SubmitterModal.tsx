@@ -98,6 +98,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId }: SubmitterM
               related_topic: step1Data.related_topic,
               agenda_items: step1Data.agenda_items?.map((a) => ({ agenda_item: a.agenda_item })),
             } : undefined}
+            showAiSuggest={false}
           />
         </div>
       </EditableFieldsProvider>
