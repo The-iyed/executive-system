@@ -17,6 +17,8 @@ export interface DetailPageHeaderProps {
   hasChanges?: boolean;
   /** Primary action button (e.g. "تقييم جاهزية الاجتماع") – rendered at start in RTL */
   primaryAction?: React.ReactNode;
+  /** Optional secondary action (e.g. "حذف" for draft) – rendered before edit in RTL */
+  secondaryAction?: React.ReactNode;
   /** Edit action config – renders the edit/save button inline in the header */
   editAction?: {
     visible: boolean;
@@ -50,6 +52,7 @@ export function DetailPageHeader({
   statusBadge,
   hasChanges = false,
   primaryAction,
+  secondaryAction,
   editAction,
   tabs,
   activeTab,
@@ -112,8 +115,9 @@ export function DetailPageHeader({
             </div>
           </div>
 
-          {/* Left side: actions */}
-          <div className="flex items-center gap-2.5 flex-shrink-0">
+          {/* Left side: actions (RTL: secondary, edit, primary from right to left) */}
+          <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
+            {secondaryAction && <div className="flex-shrink-0">{secondaryAction}</div>}
             {editAction?.visible && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>

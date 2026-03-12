@@ -132,3 +132,12 @@ export const resubmitToContent = async (draftId: string): Promise<unknown> => {
   );
   return response.data;
 };
+
+/**
+ * Delete a meeting request draft (Draft / جديد status only).
+ * DELETE /api/meeting-requests/drafts/{draft_id}
+ * Allowed for Request Submitters and Scheduling Officers.
+ */
+export const deleteDraft = async (draftId: string): Promise<void> => {
+  await axiosInstance.delete(`/api/meeting-requests/drafts/${draftId}`);
+};
