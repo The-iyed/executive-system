@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, MeetingOwnerType, getMeetingTabsByRole } from '@/modules/shared';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic } from '@/modules/shared';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
@@ -105,12 +105,13 @@ const WorkBasket: React.FC = () => {
     return MeetingStatusLabels[status as MeetingStatus] || status;
   };
 
-  /* ─── Filter tabs with counts ─── */
+  /* ─── Filter options: use full status list so "قيد المراجعة - محتوى" (UNDER_CONTENT_REVIEW) appears; getMeetingTabsByRole collapses it into RETURNED_FROM_CONTENT ─── */
   const filterTabs = [
     { id: 'all', label: 'جميع الحالات', count: totalItems },
-    ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING).map(tab => ({
-      ...tab,
-      count: meetings.filter(m => m.status === tab.id).length,
+    ...WORK_BASKET_STATUS_OPTIONS.map((status) => ({
+      id: status,
+      label: getMeetingStatusLabel(status),
+      count: meetings.filter((m) => m.status === status).length,
     })),
   ];
 
@@ -261,9 +262,6 @@ const WorkBasket: React.FC = () => {
                           </div>
                           <span>{tab.label}</span>
                         </div>
-                        {tab.count !== undefined && (
-                          <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
-                        )}
                       </button>
                     );
                   })}
