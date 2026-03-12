@@ -7,7 +7,7 @@ import { useVisibilityCleanup } from "../shared";
 
 /** Fields that stay editable when following up a previous meeting */
 const FOLLOW_UP_EDITABLE = new Set([
-  "meeting_nature", "submitter_id", "owner_id", "meeting_title",
+  "meeting_nature", "submitter_id", "meeting_owner_id", "meeting_title",
   "meeting_start_date", "meeting_end_date",
   "meeting_channel", "meeting_location", "meeting_location_custom",
   "is_urgent", "urgent_reason",
@@ -18,7 +18,7 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
     meeting_nature: MeetingNature.NORMAL,
     previous_meeting_id: "",
     submitter_id: "",
-    owner_id: "",
+    meeting_owner_id: "",
     meeting_title: "",
     meeting_subject: "",
     description: "",

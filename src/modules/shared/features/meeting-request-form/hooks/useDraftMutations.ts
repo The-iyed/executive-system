@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { saveDraftBasicInfo, saveDraftContent, saveDraftInvitees, submitDraft, resubmitToScheduling, resubmitToContent } from "../api";
+import { saveDraftBasicInfo, saveDraftContent, saveDraftInvitees, submitDraft, resubmitToScheduling, resubmitToContent, createSchedulerStep1, saveSchedulerStep2Content, saveSchedulerStep3Invitees } from "../api";
 
 // ── Step 1: Basic Info ──────────────────────────────────────────────────────
 
@@ -12,6 +12,14 @@ export function useSaveDraftBasicInfo() {
   return useMutation({
     mutationFn: ({ formData, draftId }: SaveBasicInfoParams) =>
       saveDraftBasicInfo(formData, draftId),
+  });
+}
+
+// ── Scheduler Step 1: Direct Schedule ────────────────────────────────────────
+
+export function useCreateSchedulerStep1() {
+  return useMutation({
+    mutationFn: (formData: FormData) => createSchedulerStep1(formData),
   });
 }
 
@@ -29,6 +37,20 @@ export function useSaveDraftContent() {
   });
 }
 
+// ── Scheduler Step 2: Content ───────────────────────────────────────────────
+
+interface SaveSchedulerContentParams {
+  meetingId: string;
+  payload: FormData;
+}
+
+export function useSaveSchedulerStep2Content() {
+  return useMutation({
+    mutationFn: ({ meetingId, payload }: SaveSchedulerContentParams) =>
+      saveSchedulerStep2Content(meetingId, payload),
+  });
+}
+
 // ── Step 3: Invitees ────────────────────────────────────────────────────────
 
 interface SaveInviteesParams {
@@ -40,6 +62,20 @@ export function useSaveDraftInvitees() {
   return useMutation({
     mutationFn: ({ draftId, invitees }: SaveInviteesParams) =>
       saveDraftInvitees(draftId, invitees),
+  });
+}
+
+// ── Scheduler Step 3: Invitees ──────────────────────────────────────────────
+
+interface SaveSchedulerInviteesParams {
+  meetingId: string;
+  invitees: Record<string, unknown>[];
+}
+
+export function useSaveSchedulerStep3Invitees() {
+  return useMutation({
+    mutationFn: ({ meetingId, invitees }: SaveSchedulerInviteesParams) =>
+      saveSchedulerStep3Invitees(meetingId, invitees),
   });
 }
 
