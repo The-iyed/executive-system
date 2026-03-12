@@ -8,8 +8,11 @@ import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING
 import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 const Meeting: React.FC = () => {
+  const [submitterOpen, setSubmitterOpen] = useState(false);
+  const openNewSubmitter = () => { setSubmitterOpen(true); };
   const navigate = useNavigate();
   const { openCreateDrawer } = useMeetingFormDrawer();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -100,6 +103,7 @@ const Meeting: React.FC = () => {
 
   return (
      <>
+      <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} />
       {/* Confirm Dialog */}
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
@@ -281,7 +285,7 @@ const Meeting: React.FC = () => {
 
               {/* Create meeting button */}
               <button
-                onClick={openCreateDrawer}
+                onClick={openNewSubmitter}
                 className="h-10 px-4 rounded-xl bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
               >
                 <Plus className="w-4 h-4" />

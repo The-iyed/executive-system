@@ -1,0 +1,26 @@
+import { TableRow, ColumnConfig } from "./types";
+
+export function mapRowToPayload(
+  row: TableRow,
+  columns: ColumnConfig[],
+  index: number
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = { item_number: index };
+
+  for (const col of columns) {
+    payload[col.key] = row[col.key];
+  }
+
+  if (row.isExternal === false && row.object_guid) {
+    payload.object_guid = row.object_guid;
+  }
+
+  return payload;
+}
+
+export function mapAllRowsToPayload(
+  rows: TableRow[],
+  columns: ColumnConfig[]
+): Record<string, unknown>[] {
+  return rows.map((row, i) => mapRowToPayload(row, columns, i));
+}
