@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Plus, Trash2, Eye, Download, FileText, Calendar } from 'lucide-react';
-import { Input, Textarea } from '@/lib/ui';
+import { Input, Textarea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/lib/ui';
 import pdfIcon from '../assets/pdf.svg';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
@@ -49,6 +49,9 @@ function FileCard({
   onDelete,
   onView,
   onDownload,
+  onCompare,
+  compareDisabled,
+  compareDisabledReason,
   readOnly,
 }: {
   file: ContentTabFileItem;
@@ -56,6 +59,9 @@ function FileCard({
   onDelete?: () => void;
   onView?: () => void;
   onDownload?: () => void;
+  onCompare?: () => void;
+  compareDisabled?: boolean;
+  compareDisabledReason?: string;
   readOnly?: boolean;
 }) {
   const borderClass = variant === 'presentation' ? 'border-[#009883]/40' : 'border-[#E4E7EC]';
@@ -76,6 +82,34 @@ function FileCard({
         <p className="text-xs text-[#667085]">{Math.round((file.file_size || 0) / 1024)} KB</p>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
+        {onCompare !== undefined && (
+          compareDisabled && compareDisabledReason ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <button
+                    type="button"
+                    disabled
+                    className="px-2 py-1.5 rounded text-xs font-medium text-[#009883] bg-[#009883]/10 opacity-50 cursor-not-allowed"
+                  >
+                    مقارنة بالذكاء الاصطناعي
+                  </button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>{compareDisabledReason}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <button
+              type="button"
+              onClick={onCompare}
+              className="px-2 py-1.5 rounded text-xs font-medium text-[#009883] bg-[#009883]/10 hover:bg-[#009883]/20 transition-colors"
+            >
+              مقارنة بالذكاء الاصطناعي
+            </button>
+          )
+        )}
         {onDownload && file.blob_url && (
           <a
             href={file.blob_url}
@@ -154,6 +188,11 @@ export interface Mou7tawaContentTabProps {
   onNotesChange?: (value: string) => void;
   /** Optional: format date for display when read-only */
   formatDate?: (value: string) => string;
+  /** When provided, compare button is shown on every presentation file. When false, button is disabled and compareDisabledReason is shown on hover. */
+  compareEnabledForPresentation?: (file: ContentTabFileItem, index: number, total: number) => boolean;
+  /** Reason shown on hover when compare button is disabled. */
+  compareDisabledReason?: (file: ContentTabFileItem, index: number, total: number) => string;
+  onComparePresentation?: (file: ContentTabFileItem) => void;
 }
 
 export function Mou7tawaContentTab({
@@ -171,6 +210,9 @@ export function Mou7tawaContentTab({
   onAttachmentTimingChange,
   onNotesChange,
   formatDate,
+  compareEnabledForPresentation,
+  compareDisabledReason,
+  onComparePresentation,
 }: Mou7tawaContentTabProps) {
   const displayDate = readOnly && formatDate && attachmentTimingValue ? formatDate(attachmentTimingValue) : attachmentTimingValue;
 
@@ -182,17 +224,25 @@ export function Mou7tawaContentTab({
 
         {presentationFiles.length > 0 ? (
           <div className="space-y-3">
-            {presentationFiles.map((file) => (
-              <FileCard
-                key={file.id}
-                file={file}
-                variant="presentation"
-                onView={onView ? () => onView(file) : undefined}
-                onDownload={onDownload ? () => onDownload(file) : undefined}
-                onDelete={onDelete ? () => onDelete(file) : undefined}
-                readOnly={readOnly}
-              />
-            ))}
+            {presentationFiles.map((file, index) => {
+              const total = presentationFiles.length;
+              const enabled = compareEnabledForPresentation?.(file, index, total) ?? true;
+              const disabledReason = compareDisabledReason?.(file, index, total);
+              return (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  variant="presentation"
+                  onView={onView ? () => onView(file) : undefined}
+                  onDownload={onDownload ? () => onDownload(file) : undefined}
+                  onDelete={onDelete ? () => onDelete(file) : undefined}
+                  onCompare={onComparePresentation ? () => onComparePresentation(file) : undefined}
+                  compareDisabled={onComparePresentation ? !enabled : undefined}
+                  compareDisabledReason={disabledReason}
+                  readOnly={readOnly}
+                />
+              );
+            })}
           </div>
         ) : null}
 
