@@ -28,7 +28,7 @@ export const DeleteDraftConfirmationModal: React.FC<DeleteDraftConfirmationModal
           <p
             className="text-right text-sm text-[#475467] line-height-normal"
           >
-            هل أنت متأكد من حذف هذه المسودة؟ سيتم فقدان جميع البيانات المدخلة.
+            هل أنت متأكد من حذف هذه المسودة؟
           </p>
         </div>
         <DialogFooter className="flex-row-reverse gap-2">
@@ -46,7 +46,7 @@ export const DeleteDraftConfirmationModal: React.FC<DeleteDraftConfirmationModal
             disabled={isDeleting}
             className="px-4 py-2 rounded-lg bg-[#CA4545] text-white hover:bg-[#B63D3D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isDeleting ? 'جاري الحذف...' : 'حذف'}
+            {isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف'}
           </button>
         </DialogFooter>
       </DialogContent>

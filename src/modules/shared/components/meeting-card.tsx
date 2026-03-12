@@ -43,6 +43,10 @@ export interface MeetingCardProps {
   onAction?: () => void;
   actionLabel?: string;
   actionLoading?: boolean;
+  /** Optional secondary action (e.g. "حذف" for draft) */
+  onSecondaryAction?: () => void;
+  secondaryActionLabel?: string;
+  secondaryActionLoading?: boolean;
   className?: string;
   hideStatus?: boolean;
 }
@@ -54,6 +58,9 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   onAction,
   actionLabel,
   actionLoading,
+  onSecondaryAction,
+  secondaryActionLabel,
+  secondaryActionLoading,
   hideStatus = false,
   className = '',
 }) => {
@@ -87,7 +94,17 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           <span />
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onSecondaryAction && secondaryActionLabel && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onSecondaryAction(); }}
+              disabled={secondaryActionLoading}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-medium disabled:opacity-50 transition-colors"
+            >
+              {secondaryActionLabel}
+            </button>
+          )}
           {onAction && actionLabel && (
             <button
               type="button"

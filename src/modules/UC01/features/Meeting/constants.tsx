@@ -1,5 +1,5 @@
 import { NavigateFunction } from 'react-router-dom';
-import { Calendar, Send } from 'lucide-react';
+import { Calendar, Send, Trash2 } from 'lucide-react';
 import { TableColumn, TruncatedWithTooltip } from '@/modules/shared';
 import { StatusBadge } from '@/modules/shared/components/status-badge';
 import { MeetingStatus } from '@/modules/shared/types';
@@ -14,6 +14,8 @@ export interface CreateTableColumnsOptions {
   onResubmitToContent?: (draftId: string) => void;
   submittingResubmitToContentId?: string | null;
   openConfirmModal?: (message: string, onConfirm: () => void) => void;
+  onDeleteDraft?: (draftId: string) => void;
+  deletingDraftId?: string | null;
 }
 
 const ACTION_BTN_CLASS =
@@ -34,8 +36,10 @@ export const createTableColumns = (
   const onResubmitToContent = options?.onResubmitToContent;
   const submittingResubmitToContentId = options?.submittingResubmitToContentId;
   const openConfirmModal = options?.openConfirmModal;
+  const onDeleteDraft = options?.onDeleteDraft;
+  const deletingDraftId = options?.deletingDraftId;
   const hasActions =
-    onSubmitDraft || onResubmitToScheduling || onResubmitToContent;
+    onSubmitDraft || onResubmitToScheduling || onResubmitToContent || onDeleteDraft;
 
   const handleActionClick = (handler: (draftId: string) => void, draftId: string) => {
     if (openConfirmModal) {
@@ -164,21 +168,37 @@ export const createTableColumns = (
             width: 'min-w-[200px] w-[200px]',
             align: 'center' as const,
             render: (row: MeetingDisplayData) => {
-              if (row.status === MeetingStatus.DRAFT && onSubmitDraft) {
+              if (row.status === MeetingStatus.DRAFT) {
                 return (
-                  <div className="flex justify-center w-full min-w-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleActionClick(onSubmitDraft, row.id);
-                      }}
-                      disabled={submittingDraftId === row.id}
-                      className={ACTION_BTN_CLASS}
-                    >
-                      <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
-                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
-                    </button>
+                  <div className="flex justify-center items-center gap-2 w-full min-w-0 flex-wrap">
+                    {onSubmitDraft && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleActionClick(onSubmitDraft, row.id);
+                        }}
+                        disabled={submittingDraftId === row.id}
+                        className={ACTION_BTN_CLASS}
+                      >
+                        <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
+                        <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                      </button>
+                    )}
+                    {onDeleteDraft && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteDraft(row.id);
+                        }}
+                        disabled={deletingDraftId === row.id}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                      >
+                        <span>{deletingDraftId === row.id ? 'جاري الحذف...' : 'حذف المسودة'}</span>
+                        <Trash2 className="w-4 h-4 flex-shrink-0" />
+                      </button>
+                    )}
                   </div>
                 );
               }
