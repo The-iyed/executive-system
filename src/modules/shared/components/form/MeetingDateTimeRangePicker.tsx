@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import { toISOStringWithTimezone } from '@/lib/ui';
 import { FormField } from './FormField';
 import { FormDateTimePicker } from './FormDateTimePicker';
 
@@ -79,7 +80,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
       if (Number.isNaN(start.getTime())) return;
       const endDefault = new Date(start.getTime() + ONE_HOUR_MS);
       if (endDefault > endOfDay(start)) endDefault.setHours(23, 59, 0, 0);
-      onEndChange(endDefault.toISOString());
+      onEndChange(toISOStringWithTimezone(endDefault));
     },
     [onStartChange, onEndChange, endValue]
   );
