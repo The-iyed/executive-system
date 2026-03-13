@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getMeetingRequestById } from '../../../UC02/data/meetingsApi';
-import { MeetingOwnerType } from '@/modules/shared/types';
+import { MeetingOwnerType, MeetingStatus } from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
 import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/lib/ui';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
@@ -54,7 +55,7 @@ const PreviewMeeting: React.FC = () => {
       is_on_behalf_of: (m.is_on_behalf_of as boolean | undefined) ?? undefined,
       meeting_manager_label: (meeting as { meeting_owner_name?: string }).meeting_owner_name ?? undefined,
       meetingSubject: meeting.meeting_title ?? undefined,
-      meetingDescription: meeting.meeting_subject ?? undefined,
+      meetingDescription: meeting.description ?? undefined,
       sector: meeting.sector ?? undefined,
       meetingType: meeting.meeting_type ?? undefined,
       is_urgent: !!(m.urgent_reason as string | undefined),
@@ -134,32 +135,74 @@ const PreviewMeeting: React.FC = () => {
     }
   };
 
+  const meetingStatus = meeting?.status as MeetingStatus;
+  const isRejected = meetingStatus === MeetingStatus.REJECTED;
+  const isCancelled = meetingStatus === MeetingStatus.CANCELLED;
+  const reasonRejected = meeting?.rejection_reason || meeting?.cancellation_reason;
+  const noteRejected = meeting?.rejection_note || meeting?.cancellation_note;
+  const reasonCancelled = meeting?.cancellation_reason || meeting?.rejection_reason;
+  const noteCancelled = meeting?.cancellation_note || meeting?.rejection_note;
+  const reason = isRejected ? reasonRejected : reasonCancelled;
+  const note = isRejected ? noteRejected : noteCancelled;
+  const showRefusalCollapsible = (isRejected || isCancelled) && (reason || note);
+
   return (
   <>
     <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} editMeetingId={meeting.id} />
    
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
-      <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
-        <DetailPageHeader
-          title={`${meeting?.meeting_title ?? meeting?.meeting_subject ?? 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
-          onBack={handleBack}
-          statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
-          editAction={{
-            visible: true,
-            hasChanges: true,
-            onClick: () => openEditSubmitter(),
-            label: 'تعديل',
-            tooltip: 'تعديل طلب الاجتماع',
-          }}
-          tabs={MEETING_PREVIEW_TABS}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          helpTooltip={{
-            title: 'عرض تفاصيل طلب الاجتماع.',
-            description: 'يمكنك الاطلاع على معلومات الطلب والاجتماع والمحتوى والمدعوين والملاحظات.',
-          }}
-        />
+      <div className="flex-1 min-h-0 flex flex-col gap-3 px-1">
+        {/* Head: header + refusal/cancellation collapsible (like UC02) */}
+        <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
+          <DetailPageHeader
+            title={`${meeting?.meeting_title ?? meeting?.meeting_subject ?? 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
+            onBack={handleBack}
+            statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
+            editAction={{
+              visible: true,
+              hasChanges: true,
+              onClick: () => openEditSubmitter(),
+              label: 'تعديل',
+              tooltip: 'تعديل طلب الاجتماع',
+            }}
+            tabs={MEETING_PREVIEW_TABS}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            helpTooltip={{
+              title: 'عرض تفاصيل طلب الاجتماع.',
+              description: 'يمكنك الاطلاع على معلومات الطلب والاجتماع والمحتوى والمدعوين والملاحظات.',
+            }}
+          />
+          {showRefusalCollapsible && (
+            <Collapsible className="group rounded-lg border border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
+              <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-right hover:bg-[#F9FAFB] transition-colors data-[state=open]:bg-[#F9FAFB]">
+                <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isRejected ? 'text-red-500' : 'text-[#6B7280]'}`} strokeWidth={1.8} />
+                <span className={`text-[13px] font-medium flex-1 ${isRejected ? 'text-[#991B1B]' : 'text-[#374151]'}`}>
+                  {isRejected ? 'سبب الرفض وملاحظاته' : 'سبب الإلغاء وملاحظاته'}
+                </span>
+                <ChevronDown className="w-4 h-4 flex-shrink-0 text-[#6B7280] transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-3 py-2 pt-0 border-t border-[#F3F4F6] flex flex-col gap-2 text-right">
+                  {reason && (
+                    <div>
+                      <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">{isRejected ? 'سبب الرفض' : 'سبب الإلغاء'}</p>
+                      <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{reason}</p>
+                    </div>
+                  )}
+                  {note && (
+                    <div>
+                      <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">ملاحظات إضافية</p>
+                      <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{note}</p>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
 
+        {/* Content card */}
         <div
           className="w-full flex-1 min-h-0 flex flex-col overflow-y-auto px-6 py-6 gap-6 rounded-2xl bg-white border border-[#E5E7EB]"
           style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.06)' }}

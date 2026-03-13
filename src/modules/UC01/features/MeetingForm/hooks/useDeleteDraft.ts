@@ -1,22 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '@/modules/auth/utils/axios';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData } from '../utils';
+import { deleteDraft } from '../../../data/draftApi';
 
 interface UseDeleteDraftProps {
   draftId?: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
 }
-
-/**
- * API function to delete a draft
- */
-const deleteDraft = async (draftId: string): Promise<void> => {
-  await axiosInstance.delete(`/api/meeting-requests/drafts/${draftId}`);
-};
 
 /**
  * Shared hook for deleting meeting draft with confirmation modal
