@@ -1,4 +1,5 @@
 import axiosInstance from '@/modules/auth/utils/axios';
+import { toISOStringWithTimezone } from '@/lib/ui';
 import type { Step1BasicInfoFormData } from '../features/MeetingForm/schemas/step1BasicInfo.schema';
 
 /** Payload for one time slot: create sends slot_start/slot_end; edit (from get-details) can include id. */
@@ -32,7 +33,7 @@ function appendDateIf(value: string | undefined, key: string, fd: FormData): voi
   if (!value || value.trim() === '') return;
   const raw = value.trim();
   const date = raw.includes('T') ? new Date(raw) : new Date(raw + 'T00:00:00');
-  if (!Number.isNaN(date.getTime())) fd.append(key, date.toISOString());
+  if (!Number.isNaN(date.getTime())) fd.append(key, toISOStringWithTimezone(date));
 }
 
 /** Maps step1 form data to the backend FormData payload for draft basic-info. */

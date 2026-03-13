@@ -8,6 +8,7 @@ import { LOCATION_OPTIONS, getLocationDropdownValue, isPresetLocation } from '..
 import { STEP1_FORM_FIELDS } from '../types/step1.types';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { useMeetingAgenda } from './useMeetingAgenda';
+import { toISOStringWithTimezone } from '@/modules/shared';
 
 interface UseStep1Props {
   draftId?: string;
@@ -42,7 +43,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   if (formData.relatedTopic) fd.append('related_topic', formData.relatedTopic);
   if (formData.dueDate && formData.dueDate !== '') {
     const d = new Date(formData.dueDate + 'T00:00:00');
-    if (!Number.isNaN(d.getTime())) fd.append('deadline', d.toISOString());
+    if (!Number.isNaN(d.getTime())) fd.append('deadline', toISOStringWithTimezone(d));
   }
   if (formData.meetingReason) fd.append('meeting_justification', formData.meetingReason);
   // relatedDirective kept in form state only; not sent to API
@@ -84,7 +85,7 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   fd.append('topic_discussed_before', formData.wasDiscussedPreviously ? 'true' : 'false');
   if (formData.wasDiscussedPreviously && formData.previousMeetingDate) {
     const d = new Date(formData.previousMeetingDate + 'T00:00:00');
-    if (!Number.isNaN(d.getTime())) fd.append('previous_meeting_date', d.toISOString());
+    if (!Number.isNaN(d.getTime())) fd.append('previous_meeting_date', toISOStringWithTimezone(d));
   }
   if (formData.notes) fd.append('note', formData.notes);
   fd.append('is_data_complete', formData.isComplete ? 'true' : 'false');
