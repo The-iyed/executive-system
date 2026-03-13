@@ -2,7 +2,6 @@ import React from 'react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 import { MeetingStatus, MeetingStatusLabels } from '@/modules/shared/types';
 import { formatDateArabic } from '@/modules/shared/utils';
-
 const labelClass = 'text-sm font-medium text-gray-700';
 const valueClass = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right';
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
