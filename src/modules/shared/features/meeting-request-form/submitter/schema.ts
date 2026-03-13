@@ -6,12 +6,15 @@ import {
   MeetingLocation,
   MeetingConfidentiality,
   BOOL,
+  MeetingNature,
 } from "../enums";
 import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from "../shared/schema";
 
 /* ─── Submitter Step 1 Schema ─── */
 
 export const submitterStep1Schema = z.object({
+  meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
+  previous_meeting_id: z.string().optional(),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
@@ -55,6 +58,9 @@ export const submitterStep1Schema = z.object({
   }
   if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner_id) {
     ctx.addIssue({ code: "custom", path: ["meeting_owner_id"], message: "يرجى تحديد مالك الاجتماع" });
+  }
+  if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
+    ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
   }
   if (!data.meeting_start_date) {
     ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
