@@ -10,7 +10,7 @@ import {
   type CalendarEventData,
   type CalendarViewMode,
 } from '@/modules/shared';
-import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
+import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle, toISOStringWithTimezone } from '@/lib/ui';
 import {
   getOutlookTimelineEvents,
   getCalendarWeekRange,
@@ -236,17 +236,17 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     return getWeekEnd(weekStart);
   }, [currentDate, viewMode, weekStart]);
 
-  // Format dates as ISO strings for API
+  // Format dates as ISO strings with timezone for API
   const startDateISO = useMemo(() => {
     const date = new Date(weekStart);
     date.setHours(0, 0, 0, 0);
-    return date.toISOString();
+    return toISOStringWithTimezone(date);
   }, [weekStart]);
 
   const endDateISO = useMemo(() => {
     const date = new Date(weekEnd);
     date.setHours(23, 59, 59, 999);
-    return date.toISOString();
+    return toISOStringWithTimezone(date);
   }, [weekEnd]);
 
   const { data: timelineEvents, isLoading, isFetching, error } = useQuery({
@@ -703,8 +703,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             onSubmit={async (values) => {
               setSlotFormError(null);
               setSlotFormSubmitting(true);
-              const scheduled_start = new Date(values.start_date).toISOString();
-              const scheduled_end = new Date(values.end_date).toISOString();
+              const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
+              const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
               const optimisticId = `optimistic-${Date.now()}`;
               const optimisticEvent = buildOptimisticOutlookEvent(
                 values.title,
