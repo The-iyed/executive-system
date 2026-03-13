@@ -41,6 +41,8 @@ export interface CalendarEventData {
 export interface WeeklyCalendarGridProps {
   weekStart: Date;
   events: CalendarEventData[];
+  /** When set, show only this single day (daily view) instead of the full week */
+  singleDay?: Date;
   onEventClick?: (event: CalendarEventData) => void;
   onEventBook?: (event: CalendarEventData) => void;
   onEventShowDetails?: (event: CalendarEventData) => void;
@@ -137,6 +139,7 @@ const eventSpanRows = (event: CalendarEventData): number => {
 export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   weekStart,
   events,
+  singleDay,
   onEventClick,
   onEventBook,
   onEventShowDetails,
@@ -144,7 +147,10 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   startHour = 8,
   endHour = 24,
 }) => {
-  const weekDates = getWeekDates(weekStart);
+  const weekDates = singleDay
+    ? [new Date(singleDay.getFullYear(), singleDay.getMonth(), singleDay.getDate(), 0, 0, 0, 0)]
+    : getWeekDates(weekStart);
+  const gridColsClass = singleDay ? 'grid-cols-[1fr_56px]' : 'grid-cols-[repeat(7,minmax(0,1fr))_56px]';
 
   const timeSlots = React.useMemo(() => {
     const slots = [];
@@ -157,7 +163,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   return (
     <div className="w-full min-h-0 flex flex-col rounded-2xl border border-gray-200" dir="rtl">
       {/* ── Day header row ── */}
-      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] shrink-0 sticky top-0 z-10 bg-white border-b border-gray-200 rounded-t-2xl overflow-hidden">
+      <div className={cn('grid shrink-0 sticky top-0 z-10 bg-white border-b border-gray-200 rounded-t-2xl overflow-hidden', gridColsClass)}>
         {weekDates.map((date, index) => {
           const dayName = dayNamesShort[date.getDay()];
           const dayNumber = date.getDate();
@@ -200,7 +206,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
 
       {/* ── Time grid ── */}
       <div
-        className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] min-h-0 flex-1 rounded-b-2xl"
+        className={cn('grid min-h-0 flex-1 rounded-b-2xl', gridColsClass)}
         style={{ gridAutoRows: `${ROW_HEIGHT_PX}px` }}
       >
         {timeSlots.map((time, timeIndex) => (
