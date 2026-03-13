@@ -444,7 +444,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               <WeeklyCalendarGrid
                 weekStart={weekStart}
                 events={events}
-                startHour={8}
+                startHour={0}
                 endHour={24}
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}

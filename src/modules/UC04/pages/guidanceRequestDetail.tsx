@@ -375,7 +375,7 @@ const GuidanceRequestDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="p-6">
         <DetailPageHeader
-          title={`تعديل طلب معاد من مسؤول الجدولة (${meetingRequest.request_number})`}
+          title={`${meetingRequest.meeting_title} (${meetingRequest.request_number})`}
           onBack={() => navigate(-1)}
           statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
           tabs={tabs}

@@ -9,7 +9,6 @@ import {
   getInviteesTableColumns,
   type FormTableColumn,
 } from '@/modules/shared';
-import { MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER } from '@/modules/UC02/features/MeetingForm/utils/constants';
 import { AttendanceMechanism } from '@/modules/shared/types';
 
 export { MEETING_CLASSIFICATION_OPTIONS, MEETING_CHANNEL_OPTIONS, MEETING_LOCATION_OPTIONS, MeetingLocation, getMeetingLocationDropdownValue, showMeetingLocationOtherInput, isPresetMeetingLocation };
@@ -40,8 +39,27 @@ export const INVITEES_TABLE_COLUMNS = getInviteesTableColumns({
   ],
 });
 
-/** Minister invitees table columns for UC01 (قائمة المدعوين - الوزير) – reuse UC02 definition. */
-export const MINISTER_ATTENDEES_COLUMNS: FormTableColumn[] = MINISTER_INVITEES_TABLE_COLUMNS_NO_OWNER;
+/** Minister invitees table columns for UC01 (قائمة المدعوين - الوزير).
+ * Uses UC01 field IDs (external_email, external_name, position, mobile, attendance_channel). */
+export const MINISTER_ATTENDEES_COLUMNS: FormTableColumn[] = [
+  { id: 'itemNumber', header: '#', width: 'min-w-[60px]' },
+  { id: 'external_email', header: 'البريد الإلكتروني', type: 'text', placeholder: 'البريد الإلكتروني', width: 'min-w-[220px]' },
+  { id: 'external_name', header: 'الإسم', type: 'text', placeholder: 'الإسم', width: 'min-w-[180px]' },
+  { id: 'position', header: 'المنصب', type: 'text', placeholder: 'المنصب', width: 'min-w-[160px]' },
+  { id: 'mobile', header: 'الجوال', type: 'text', placeholder: 'الجوال', width: 'min-w-[140px]' },
+  {
+    id: 'attendance_channel',
+    header: 'آلية الحضور',
+    type: 'select',
+    selectOptions: [
+      { value: 'PHYSICAL', label: 'حضوري' },
+      { value: 'REMOTE', label: 'عن بُعد' },
+    ],
+    placeholder: 'حضوري / عن بُعد',
+    width: 'min-w-[150px]',
+  },
+  { id: 'action', header: '', width: 'w-[60px]' },
+];
 
 export const STEP_LABELS = [
   { id: 'step1', label: 'معلومات الاجتماع' },

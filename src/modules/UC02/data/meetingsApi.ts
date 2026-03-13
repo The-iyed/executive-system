@@ -206,6 +206,12 @@ export interface MeetingApiResponse {
     source?: string;
     name?: string;
   } | null;
+  /** When status is REJECTED. */
+  rejection_reason?: string | null;
+  rejection_note?: string | null;
+  /** When status is CANCELLED. */
+  cancellation_reason?: string | null;
+  cancellation_note?: string | null;
 }
 
 export interface MeetingsListResponse {
