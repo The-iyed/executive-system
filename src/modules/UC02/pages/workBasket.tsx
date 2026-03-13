@@ -30,6 +30,7 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.REJECTED,
   MeetingStatus.CANCELLED,
   MeetingStatus.CLOSED,
+  MeetingStatus.CLOSED_PASS,
 ];
 
 function getStatusFilterLabel(value: string): string {
