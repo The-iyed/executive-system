@@ -72,6 +72,13 @@ export interface CalendarSlotMeetingFormProps {
   /** Initial slot: date and time string "HH:00" */
   slotDate: Date;
   slotTime: string;
+  /** Optional initial values when editing an existing scheduled meeting from the calendar */
+  initialTitle?: string;
+  initialMeetingChannel?: string;
+  initialMeetingLocation?: string;
+  initialMeetingLink?: string;
+  /** Pre-fill invitees table when editing (e.g. from event.attendees) */
+  initialInvitees?: Array<Record<string, unknown>>;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
@@ -83,12 +90,17 @@ export interface CalendarSlotMeetingFormProps {
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   slotDate,
   slotTime,
+  initialTitle,
+  initialMeetingChannel,
+  initialMeetingLocation,
+  initialMeetingLink,
+  initialInvitees,
   onSubmit,
   onCancel,
   isSubmitting = false,
   submitError = null,
 }) => {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle ?? '');
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
@@ -97,9 +109,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   }, [slotDate, slotTime]);
   const [startDate, setStartDate] = useState(startDefault);
   const [endDate, setEndDate] = useState(endDefault);
-  const [meetingChannel, setMeetingChannel] = useState('');
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [meetingLocationOption, setMeetingLocationOption] = useState('');
+  const [meetingChannel, setMeetingChannel] = useState(initialMeetingChannel ?? '');
+  const [meetingLocation, setMeetingLocation] = useState(initialMeetingLocation ?? '');
+  const [meetingLocationOption, setMeetingLocationOption] = useState(
+    initialMeetingLocation && isPresetLocation(initialMeetingLocation) ? initialMeetingLocation : ''
+  );
   const minStartDate = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -169,7 +183,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(null);
+  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
   const [webexError, setWebexError] = useState<string | null>(null);
 
   const isRemote = meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID';
@@ -479,6 +493,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         <InviteesTableForm
           tableRef={inviteesRef}
+          initialInvitees={initialInvitees ?? []}
           showAiSuggest={false}
         />
 
