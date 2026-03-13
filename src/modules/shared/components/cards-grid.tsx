@@ -8,6 +8,10 @@ export interface CardsGridProps {
   onAction?: (meeting: MeetingCardData) => void;
   getActionLabel?: (meeting: MeetingCardData) => string | undefined;
   getActionLoading?: (meeting: MeetingCardData) => boolean;
+  /** Optional secondary action (e.g. delete draft) */
+  onSecondaryAction?: (meeting: MeetingCardData) => void;
+  getSecondaryActionLabel?: (meeting: MeetingCardData) => string | undefined;
+  getSecondaryActionLoading?: (meeting: MeetingCardData) => boolean;
   className?: string;
   hideStatus?: boolean;
 }
@@ -19,6 +23,9 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
   onAction,
   getActionLabel,
   getActionLoading,
+  onSecondaryAction,
+  getSecondaryActionLabel,
+  getSecondaryActionLoading,
   className = '',
   hideStatus = false,
 }) => {
@@ -33,6 +40,7 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
     >
       {meetings.map((meeting) => {
         const label = getActionLabel?.(meeting);
+        const secondaryLabel = getSecondaryActionLabel?.(meeting);
         return (
           <div key={meeting.id} className="w-full">
             <MeetingCard
@@ -41,8 +49,11 @@ export const CardsGrid: React.FC<CardsGridProps> = ({
               onDetails={() => onDetails?.(meeting)}
               onAction={onAction && label ? () => onAction(meeting) : undefined}
               actionLabel={label}
-              hideStatus={hideStatus}
               actionLoading={getActionLoading?.(meeting)}
+              onSecondaryAction={onSecondaryAction && secondaryLabel ? () => onSecondaryAction(meeting) : undefined}
+              secondaryActionLabel={secondaryLabel}
+              secondaryActionLoading={getSecondaryActionLoading?.(meeting)}
+              hideStatus={hideStatus}
               className="w-full h-full"
             />
           </div>
