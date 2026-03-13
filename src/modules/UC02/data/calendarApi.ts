@@ -89,6 +89,18 @@ export interface OutlookTimelineEvent {
   attachments?: OutlookAttachment[] | null;
   /** true = internal, false = external */
   is_internal: boolean;
+  /** Optional attendees list from timeline API (قائمة المدعوين) */
+  attendees?: Array<{
+    name: string;
+    email?: string | null;
+  }> | null;
+  /** When present, this Outlook event is a scheduled meeting from our system; use for edit and PATCH */
+  meeting_id?: string | null;
+  /** Scheduled meeting fields from API (for edit drawer defaults) */
+  meeting_title?: string | null;
+  meeting_channel?: string | null;
+  meeting_location?: string | null;
+  meeting_link?: string | null;
 }
 
 export interface OutlookTimelineResponse {
@@ -137,6 +149,9 @@ export interface CreateScheduledMeetingPayload {
   invitees?: CreateScheduledMeetingInvitee[];
 }
 
+/** Payload for PATCH /api/scheduling/scheduled-meeting/{meeting_id} (same shape as create). */
+export type UpdateScheduledMeetingPayload = CreateScheduledMeetingPayload;
+
 /**
  * Create a scheduled meeting from the calendar slot form.
  * POST /api/scheduling/create-scheduled-meeting
@@ -163,6 +178,37 @@ export const createScheduledMeeting = async (
   }
   const { data } = await axiosInstance.post<{ id?: string }>(
     '/api/scheduling/create-scheduled-meeting',
+    body
+  );
+  return data;
+};
+
+/**
+ * Update an existing scheduled meeting from the calendar.
+ * PATCH /api/scheduling/scheduled-meeting/{meeting_id}
+ */
+export const updateScheduledMeeting = async (
+  meetingId: string,
+  payload: UpdateScheduledMeetingPayload
+): Promise<unknown> => {
+  const body: Record<string, unknown> = {
+    meeting_title: payload.meeting_title,
+    scheduled_start: payload.scheduled_start,
+    scheduled_end: payload.scheduled_end,
+    meeting_channel: payload.meeting_channel,
+    invitees: payload.invitees ?? [],
+  };
+  if (payload.meeting_location) {
+    body.meeting_location = payload.meeting_location;
+  }
+  if (payload.meeting_link) {
+    body.meeting_link = payload.meeting_link;
+  }
+  if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
+    body.proposer_user_ids = payload.proposer_user_ids;
+  }
+  const { data } = await axiosInstance.patch(
+    `/api/scheduling/scheduled-meeting/${meetingId}`,
     body
   );
   return data;

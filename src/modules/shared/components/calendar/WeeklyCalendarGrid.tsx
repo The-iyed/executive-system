@@ -36,6 +36,14 @@ export interface CalendarEventData {
   location?: string | null;
   organizer?: CalendarEventOrganizer;
   attachments?: CalendarEventAttachment[] | null;
+  attendees?: Array<{ name: string; email?: string | null }> | null;
+  /** When present, event can be edited via PATCH scheduled-meeting (show Edit button) */
+  meeting_id?: string | null;
+  /** Pre-fill edit drawer from API when available */
+  meeting_title?: string | null;
+  meeting_channel?: string | null;
+  meeting_location?: string | null;
+  meeting_link?: string | null;
 }
 
 export interface WeeklyCalendarGridProps {
