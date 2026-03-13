@@ -1105,6 +1105,17 @@ const ContentRequestDetail: React.FC = () => {
                       });
                     }}
                     onDownload={(file) => file.blob_url && window.open(file.blob_url, "_blank")}
+                    onAiNotesPresentation={(file) => {
+                      insightsAbortControllerRef.current?.abort();
+                      insightsAbortControllerRef.current = new AbortController();
+                      setInsightsModalAttachment({ id: file.id, file_name: file.file_name });
+                      insightsMutation.reset();
+                      insightsMutation.mutate({
+                        attachmentId: file.id,
+                        signal: insightsAbortControllerRef.current.signal,
+                      });
+                    }}
+                    aiNotesPending={insightsMutation.isPending}
                   />
                 </div>
                 </TooltipProvider>
