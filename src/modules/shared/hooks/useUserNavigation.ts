@@ -6,8 +6,8 @@ export const useUserNavigation = () => {
   const { user } = useAuth();
 
   const navigationItems = useMemo(() => {
-    return getNavigationItemsForUser(user?.use_cases);
-  }, [user?.use_cases]);
+    return getNavigationItemsForUser(user?.use_cases, user?.roles);
+  }, [user?.use_cases, user?.roles]);
 
   const defaultRoute = useMemo(() => {
     return getDefaultRouteForUser(user?.use_cases);

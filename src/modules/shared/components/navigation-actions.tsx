@@ -11,6 +11,8 @@ export interface NavItem {
   path?: string;
   actions?: ActionButton[];
   requiresUseCase?: string;
+  /** If set, hide this item when the user has any of these role codes */
+  excludeRoleCodes?: string[];
 }
 
 export interface NavigationActionsProps {
