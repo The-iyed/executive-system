@@ -11,6 +11,7 @@ type RouteConfig = {
   guard?: React.ComponentType<any> | typeof Fragment | any;
   layout?: React.ComponentType<any> | typeof Fragment;
   useCase?: string;
+  excludeRoleCodes?: string[];
 } & RouteProps;
 
 const routes: RouteConfig[] = [
@@ -53,6 +54,7 @@ const routes: RouteConfig[] = [
     component: lazy(() => import('../pages/evaluation')),
     layout: Layout,
     useCase: 'UC-04',
+    excludeRoleCodes: ['EXECUTIVE_OFFICE_MANAGER'],
   },
 ];
 
