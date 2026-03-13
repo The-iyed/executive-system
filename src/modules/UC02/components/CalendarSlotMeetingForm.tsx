@@ -18,7 +18,10 @@ import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
-/** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
+/**
+ * Show the same local date/time the user chose on the calendar.
+ * startISO/endISO are UTC instants (e.g. from toISOString); local getters match wall clock in the browser.
+ */
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
   if (!startISO || !endISO) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
@@ -28,12 +31,13 @@ function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeV
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
   }
-  const toHHmmUTC = (d: Date) =>
-    `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  const toHHmmLocal = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const dateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
   return {
-    date: start,
-    startTime: toHHmmUTC(start),
-    endTime: toHHmmUTC(end),
+    date: dateOnly,
+    startTime: toHHmmLocal(start),
+    endTime: toHHmmLocal(end),
     isFullDay: false,
   };
 }
@@ -69,9 +73,11 @@ export interface CalendarSlotMeetingFormSubmitValues {
 }
 
 export interface CalendarSlotMeetingFormProps {
-  /** Initial slot: date and time string "HH:00" */
+  /** Initial slot start (HH:mm) */
   slotDate: Date;
   slotTime: string;
+  /** Initial slot end (HH:mm). If set, form shows exact range (e.g. 7:00–7:30). */
+  slotEndTime?: string;
   /** Optional initial values when editing an existing scheduled meeting from the calendar */
   initialTitle?: string;
   initialMeetingChannel?: string;
@@ -90,6 +96,7 @@ export interface CalendarSlotMeetingFormProps {
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   slotDate,
   slotTime,
+  slotEndTime,
   initialTitle,
   initialMeetingChannel,
   initialMeetingLocation,
@@ -103,10 +110,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const [title, setTitle] = useState(initialTitle ?? '');
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
+    if (slotEndTime) return toISOStart(slotDate, slotEndTime);
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
     const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
     return toISOStringWithTimezone(d);
-  }, [slotDate, slotTime]);
+  }, [slotDate, slotTime, slotEndTime]);
   const [startDate, setStartDate] = useState(startDefault);
   const [endDate, setEndDate] = useState(endDefault);
   const [meetingChannel, setMeetingChannel] = useState(initialMeetingChannel ?? '');

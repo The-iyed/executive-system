@@ -1,0 +1,321 @@
+import React, { useMemo, useRef, useEffect, useCallback } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import type {
+  EventClickArg,
+  DateSelectArg,
+  DatesSetArg,
+  DateClickArg,
+} from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import arLocale from '@fullcalendar/core/locales/ar';
+import type { CalendarEventData } from '@/modules/shared';
+import type { OutlookTimelineEvent } from '../data/calendarApi';
+import { cn } from '@/lib/ui';
+import './minister-fullcalendar.css';
+
+export type MinisterFcViewMode = 'daily' | 'weekly' | 'monthly';
+
+const pad2 = (n: number) => n.toString().padStart(2, '0');
+
+/** Same palette as CalendarEvent — pastel blocks, dark text */
+const EVENT_STYLE: Record<
+  string,
+  { backgroundColor: string; textColor: string; borderColor: string }
+> = {
+  variant1: { backgroundColor: '#F0FDFA', textColor: '#115E59', borderColor: '#99F6E4' },
+  variant2: { backgroundColor: '#EEF2FF', textColor: '#3730A3', borderColor: '#C7D2FE' },
+  variant3: { backgroundColor: '#FFFBEB', textColor: '#92400E', borderColor: '#FDE68A' },
+  variant4: { backgroundColor: '#EFF6FF', textColor: '#1E40AF', borderColor: '#BFDBFE' },
+  variant5: { backgroundColor: '#F5F3FF', textColor: '#5B21B6', borderColor: '#DDD6FE' },
+  variant6: { backgroundColor: '#ECFEFF', textColor: '#155E75', borderColor: '#A5F3FC' },
+  internal: { backgroundColor: '#F0FDFA', textColor: '#115E59', borderColor: '#99F6E4' },
+  external: { backgroundColor: '#FFFBEB', textColor: '#92400E', borderColor: '#FDE68A' },
+};
+
+function variantFromId(id: string): string {
+  const variants = ['variant1', 'variant2', 'variant3', 'variant4', 'variant5', 'variant6'];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return variants[Math.abs(hash) % variants.length]!;
+}
+
+function styleForOutlook(e: OutlookTimelineEvent): { backgroundColor: string; textColor: string; borderColor: string } {
+  const v = variantFromId(e.item_id);
+  return EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
+}
+
+/** Build CalendarEventData using local wall time (matches how users see the calendar). */
+export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): CalendarEventData {
+  const start = new Date(event.start_datetime);
+  const end = new Date(event.end_datetime);
+  const id = event.item_id;
+  const title = event.subject || 'اجتماع';
+  if (Number.isNaN(start.getTime())) {
+    return {
+      id,
+      type: 'reserved',
+      variant: 'variant1',
+      label: title,
+      title,
+      startTime: '08:00',
+      endTime: '09:00',
+      date: new Date(),
+      is_available: false,
+      is_internal: event.is_internal,
+    };
+  }
+  const exactStart = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+  const exactEnd = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+  let startHour = start.getHours();
+  let endHour = end.getHours();
+  if (end.getMinutes() > 0 || end.getSeconds() > 0) endHour = Math.min(23, endHour + 1);
+  if (endHour <= startHour && end > start) endHour = Math.min(23, startHour + 1);
+  const variant = variantFromId(id);
+  return {
+    id,
+    type: 'reserved',
+    variant,
+    label: title,
+    title,
+    is_available: false,
+    is_internal: event.is_internal,
+    location: event.location ?? undefined,
+    organizer: event.organizer,
+    attachments: Array.isArray(event.attachments)
+      ? event.attachments.map((a) => ({
+          name: a.name,
+          content_type: a.content_type,
+          size: a.size,
+          is_inline: a.is_inline,
+          attachment_id: a.attachment_id,
+        }))
+      : undefined,
+    attendees: event.attendees ?? null,
+    meeting_id: event.meeting_id ?? undefined,
+    meeting_title: event.meeting_title ?? undefined,
+    meeting_channel: event.meeting_channel ?? undefined,
+    meeting_location: event.meeting_location ?? undefined,
+    meeting_link: event.meeting_link ?? undefined,
+    startTime: `${pad2(startHour)}:00`,
+    endTime: `${pad2(endHour)}:00`,
+    date: new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0),
+    exactStartTime: exactStart,
+    exactEndTime: exactEnd,
+  };
+}
+
+function extraEventToDetail(ev: CalendarEventData): CalendarEventData {
+  const d = new Date(ev.date);
+  const [sh, sm] = (ev.exactStartTime || ev.startTime).split(':').map(Number);
+  const [eh, em] = (ev.exactEndTime || ev.endTime).split(':').map(Number);
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh || 0, sm || 0, 0, 0);
+  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh || 0, em || 0, 0, 0);
+  if (end <= start) end.setHours(start.getHours() + 1);
+  return {
+    ...ev,
+    date: d,
+    exactStartTime: ev.exactStartTime || `${pad2(sh)}:${pad2(sm ?? 0)}`,
+    exactEndTime: ev.exactEndTime || `${pad2(eh)}:${pad2(em ?? 0)}`,
+  };
+}
+
+function openSlotFromDate(clicked: Date, allDay: boolean): { day: Date; time: string } | null {
+  const now = Date.now();
+  const day = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
+  if (allDay) {
+    const slot = new Date(day);
+    slot.setHours(9, 0, 0, 0);
+    if (slot.getTime() < now - 60000) return null;
+    return { day, time: '09:00' };
+  }
+  if (clicked.getTime() < now - 60000) return null;
+  return {
+    day,
+    time: `${pad2(clicked.getHours())}:${pad2(clicked.getMinutes())}`,
+  };
+}
+
+export interface MinisterFullCalendarProps {
+  viewMode: MinisterFcViewMode;
+  currentDate: Date;
+  onCurrentDateChange?: (d: Date) => void;
+  outlookEvents: OutlookTimelineEvent[];
+  extraEvents: CalendarEventData[];
+  onEventClick: (ev: CalendarEventData) => void;
+  /** endHHmm omitted → form defaults (e.g. single click). Pass end from drag selection. */
+  onTimeSlotSelect: (date: Date, startHHmm: string, endHHmm?: string) => void;
+  className?: string;
+}
+
+export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
+  viewMode,
+  currentDate,
+  onCurrentDateChange,
+  outlookEvents,
+  extraEvents,
+  onEventClick,
+  onTimeSlotSelect,
+  className,
+}) => {
+  const apiRef = useRef<FullCalendar | null>(null);
+
+  const initialView =
+    viewMode === 'monthly' ? 'dayGridMonth' : viewMode === 'daily' ? 'timeGridDay' : 'timeGridWeek';
+
+  const fcEvents = useMemo(() => {
+    const out: {
+      id: string;
+      title: string;
+      start: Date;
+      end: Date;
+      backgroundColor: string;
+      textColor: string;
+      borderColor: string;
+      extendedProps: { detail: CalendarEventData };
+    }[] = [];
+    for (const e of outlookEvents) {
+      const start = new Date(e.start_datetime);
+      const end = new Date(e.end_datetime);
+      if (Number.isNaN(start.getTime())) continue;
+      let endT = end;
+      if (Number.isNaN(end.getTime()) || end <= start) {
+        endT = new Date(start.getTime() + 60 * 60 * 1000);
+      }
+      const sty = styleForOutlook(e);
+      out.push({
+        id: e.item_id,
+        title: e.subject || 'اجتماع',
+        start,
+        end: endT,
+        backgroundColor: sty.backgroundColor,
+        textColor: sty.textColor,
+        borderColor: sty.borderColor,
+        extendedProps: { detail: outlookEventToCalendarDetail(e) },
+      });
+    }
+    for (const ev of extraEvents) {
+      const detail = extraEventToDetail(ev);
+      const d = new Date(detail.date);
+      const [sh, sm] = (detail.exactStartTime || detail.startTime).split(':').map(Number);
+      const [eh, em] = (detail.exactEndTime || detail.endTime).split(':').map(Number);
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh || 0, sm || 0, 0, 0);
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh || 0, em || 0, 0, 0);
+      if (end <= start) end.setTime(start.getTime() + 3600000);
+      const v = detail.variant && EVENT_STYLE[detail.variant] ? detail.variant : variantFromId(ev.id);
+      const sty = EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
+      out.push({
+        id: ev.id,
+        title: ev.label || ev.title || 'حدث',
+        start,
+        end,
+        backgroundColor: sty.backgroundColor,
+        textColor: sty.textColor,
+        borderColor: sty.borderColor,
+        extendedProps: { detail },
+      });
+    }
+    return out;
+  }, [outlookEvents, extraEvents]);
+
+  useEffect(() => {
+    const api = apiRef.current?.getApi();
+    if (!api) return;
+    const view =
+      viewMode === 'monthly' ? 'dayGridMonth' : viewMode === 'daily' ? 'timeGridDay' : 'timeGridWeek';
+    if (api.view.type !== view) api.changeView(view);
+    api.gotoDate(currentDate);
+    // Re-sync event source after view jumps (FC sometimes stale after changeView)
+    api.refetchEvents();
+  }, [viewMode, currentDate]);
+
+  const onDatesSet = (arg: DatesSetArg) => {
+    if (onCurrentDateChange && arg.view.type === 'dayGridMonth') {
+      onCurrentDateChange(arg.view.currentStart);
+    }
+  };
+
+  const handleEventClick = (arg: EventClickArg) => {
+    arg.jsEvent.preventDefault();
+    arg.jsEvent.stopPropagation();
+    const detail = arg.event.extendedProps.detail as CalendarEventData | undefined;
+    if (detail) onEventClick(detail);
+  };
+
+  const fireSlot = useCallback(
+    (day: Date, start: string, end?: string) => {
+      onTimeSlotSelect(day, start, end);
+    },
+    [onTimeSlotSelect]
+  );
+
+  /** Single click — default 30 min block (matches slot duration). */
+  const handleDateClick = (arg: DateClickArg) => {
+    const slot = openSlotFromDate(arg.date, arg.allDay);
+    if (!slot) return;
+    const [h, m] = slot.time.split(':').map(Number);
+    const endD = new Date(slot.day);
+    endD.setHours(h || 0, (m || 0) + 30, 0, 0);
+    const endTime = `${pad2(endD.getHours())}:${pad2(endD.getMinutes())}`;
+    fireSlot(slot.day, slot.time, endTime);
+  };
+
+  /** Drag selection — use real end time (e.g. 7:00–7:30). */
+  const handleSelect = (arg: DateSelectArg) => {
+    arg.view.calendar.unselect();
+    const slot = openSlotFromDate(arg.start, false);
+    if (!slot) return;
+    let end = arg.end;
+    if (end.getTime() <= arg.start.getTime()) {
+      end = new Date(arg.start.getTime() + 30 * 60 * 1000);
+    }
+    const endTime = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+    fireSlot(slot.day, slot.time, endTime);
+  };
+
+  return (
+    <div
+      className={cn(
+        'minister-fc fc-direction-rtl min-h-[560px] w-full rounded-2xl',
+        className
+      )}
+      dir="rtl"
+    >
+      <FullCalendar
+        key={viewMode}
+        ref={apiRef}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView={initialView}
+        initialDate={currentDate}
+        locale={arLocale}
+        direction="rtl"
+        firstDay={1}
+        headerToolbar={false}
+        height="auto"
+        contentHeight="auto"
+        events={fcEvents}
+        eventClick={handleEventClick}
+        dateClick={handleDateClick}
+        selectable
+        selectMirror
+        selectMinDistance={0}
+        longPressDelay={0}
+        unselectAuto
+        select={handleSelect}
+        datesSet={onDatesSet}
+        slotMinTime="00:00:00"
+        slotMaxTime="24:00:00"
+        allDaySlot={false}
+        nowIndicator
+        dayMaxEvents={4}
+        moreLinkClick="popover"
+        eventDisplay="block"
+        slotDuration="00:30:00"
+        snapDuration="00:15:00"
+        slotLabelInterval="01:00:00"
+        buttonText={{ today: 'اليوم' }}
+      />
+    </div>
+  );
+};
