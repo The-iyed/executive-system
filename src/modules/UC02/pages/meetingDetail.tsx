@@ -4105,48 +4105,50 @@ const MeetingDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Input – always visible at bottom */}
-              <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!requestGuidanceForm.notes.trim()) return;
-                    handleRequestGuidanceSubmit(e);
-                  }}
-                  className="flex items-end gap-3"
-                >
-                  <div className="flex-1">
-                    <Textarea
-                      value={requestGuidanceForm.notes}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
-                      placeholder="اكتب سؤالك هنا..."
-                      className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
-                      rows={1}
-                      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (requestGuidanceForm.notes.trim()) {
-                            handleRequestGuidanceSubmit(e as any);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
-                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+              {/* Input – hidden when meeting is rejected (scheduling officer cannot ask for guidance) */}
+              {meetingStatus !== MeetingStatus.REJECTED && (
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!requestGuidanceForm.notes.trim()) return;
+                      handleRequestGuidanceSubmit(e);
+                    }}
+                    className="flex items-end gap-3"
                   >
-                    {requestGuidanceMutation.isPending ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
-                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                      </svg>
-                    )}
-                  </button>
-                </form>
-              </div>
+                    <div className="flex-1">
+                      <Textarea
+                        value={requestGuidanceForm.notes}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
+                        placeholder="اكتب سؤالك هنا..."
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (requestGuidanceForm.notes.trim()) {
+                              handleRequestGuidanceSubmit(e as any);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {requestGuidanceMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
 
