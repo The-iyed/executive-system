@@ -47,6 +47,8 @@ export interface Attachment {
   is_latest: boolean;
   /** When set, this attachment is a new version replacing another; enables compare. */
   replaces_attachment_id?: string | null;
+  /** Presentation version order; when > 1, compare button is enabled. */
+  presentation_sequence?: number | null;
 }
 
 export interface TimeSlot {

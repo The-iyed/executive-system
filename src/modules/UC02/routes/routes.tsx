@@ -13,6 +13,7 @@ type RouteConfig = {
   layout?: React.ComponentType<any> | typeof Fragment
   useCase?: string
   useCases?: string[]
+  excludeRoleCodes?: string[]
 } & RouteProps
 
 const routes: RouteConfig[] = [
@@ -64,6 +65,7 @@ const routes: RouteConfig[] = [
     component: lazy(() => import('../pages/calendar')),
     layout: Layout,
     useCase: 'UC-02',
+    excludeRoleCodes: ['EXECUTIVE_OFFICE_MANAGER'],
   },
   {
     exact: true,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, Scale, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@radix-ui/react-collapsible';
 import { 
   MeetingStatus, 
@@ -718,6 +718,24 @@ const MeetingDetail: React.FC = () => {
     deadline: '',
     responsible_persons: '', // comma or newline separated, parsed to string[]
   });
+  /** Deadline picker: no past calendar days; if directive_date is in the future, deadline cannot precede that day. */
+  const addDirectiveDeadlineMinDate = React.useMemo(() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (!addDirectiveForm.directive_date) return startOfToday;
+    const dir = new Date(addDirectiveForm.directive_date);
+    if (Number.isNaN(dir.getTime())) return startOfToday;
+    const startOfDirectiveDay = new Date(dir);
+    startOfDirectiveDay.setHours(0, 0, 0, 0);
+    return startOfDirectiveDay > startOfToday ? startOfDirectiveDay : startOfToday;
+  }, [addDirectiveForm.directive_date]);
+  React.useEffect(() => {
+    if (!addDirectiveForm.deadline) return;
+    const deadlineMs = new Date(addDirectiveForm.deadline).getTime();
+    if (Number.isNaN(deadlineMs) || deadlineMs < addDirectiveDeadlineMinDate.getTime()) {
+      setAddDirectiveForm((p) => ({ ...p, deadline: '' }));
+    }
+  }, [addDirectiveDeadlineMinDate, addDirectiveForm.deadline]);
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
@@ -958,7 +976,7 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  // Compare by attachment (تقييم الاختلاف بين العروض) – only for attachments with replaces_attachment_id; stops when modal closes (signal aborted)
+  // Compare by attachment (تقييم الاختلاف بين العروض) – enabled when attachment has presentation_sequence > 1; stops when modal closes (signal aborted)
   const compareByAttachmentMutation = useMutation({
     mutationFn: (payload: { attachmentId: string; signal?: AbortSignal }) =>
       runCompareByAttachment(payload.attachmentId, { signal: payload.signal }),
@@ -2759,19 +2777,27 @@ const MeetingDetail: React.FC = () => {
                       {(() => {
                         const presentationAttachments = (meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id));
                         return presentationAttachments.map((att) => {
-                          const showCompare = att.replaces_attachment_id != null;
+                          const seq = att.presentation_sequence ?? 0;
+                          const showCompare = seq > 1;
                           const compareDisabledReason =
                             presentationAttachments.length < 2
                               ? "يجب وجود عرضين تقديميين على الأقل للمقارنة"
-                              : "المقارنة متاحة فقط عند رفع نسخة جديدة تحل محل عرض سابق";
+                              : "المقارنة متاحة عندما يكون رقم التسلسل أكبر من 1";
                           return (
                           <div key={att.id} className="group flex items-center gap-4 px-5 py-4 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/40 hover:shadow-[0_2px_12px_rgba(4,143,134,0.08)] transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-11 h-11 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
                           <div className="flex flex-col items-end min-w-0 flex-1">
-                            <span className="text-sm font-semibold text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                            <div className="flex items-center gap-2 w-full justify-end flex-wrap">
+                              {seq > 0 && (
+                                <span className="text-[10px] font-medium text-[#048F86] bg-[#048F86]/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                                  نسخة {seq}
+                                </span>
+                              )}
+                              <span className="text-sm font-semibold text-[#1F2937] truncate">{att.file_name}</span>
+                            </div>
                             <span className="text-xs text-[#9CA3AF] mt-0.5">{Math.round((att.file_size || 0) / 1024)} KB</span>
                           </div>
-                          <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="inline-flex">
@@ -2790,15 +2816,17 @@ const MeetingDetail: React.FC = () => {
                                       });
                                     }}
                                     disabled={compareByAttachmentMutation.isPending}
-                                    className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    style={!showCompare ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#048F86]/35 bg-[#048F86]/5 hover:bg-[#048F86]/12 text-[#048F86] text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                    style={!showCompare ? { opacity: 0.65, cursor: "not-allowed" } : undefined}
+                                    aria-label={showCompare ? "مقارنة هذا العرض بالنسخة السابقة بالذكاء الاصطناعي" : compareDisabledReason}
                                   >
-                                    <Scale className="w-4 h-4" strokeWidth={1.4} />
+                                    <GitCompare className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden />
+                                    <span>مقارنة بالذكاء الاصطناعي</span>
                                   </button>
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p>{showCompare ? "مقارنة بالذكاء الاصطناعي" : compareDisabledReason}</p>
+                              <TooltipContent side="top" className="max-w-xs text-right">
+                                <p>{showCompare ? "مقارنة هذا العرض مع النسخة السابقة (فروقات ودرجة التطابق)" : compareDisabledReason}</p>
                               </TooltipContent>
                             </Tooltip>
                             <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
@@ -4735,7 +4763,7 @@ const MeetingDetail: React.FC = () => {
                 placeholder="اختر الموعد النهائي"
                 className="w-full"
                 fullWidth
-                minDate={addDirectiveForm.directive_date ? new Date(addDirectiveForm.directive_date) : undefined}
+                minDate={addDirectiveDeadlineMinDate}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -4766,6 +4794,8 @@ const MeetingDetail: React.FC = () => {
                 const meetingId = id || addDirectiveForm.related_meeting;
                 if (!meetingId || !addDirectiveForm.directive_text.trim()) return;
                 const directiveDate = addDirectiveForm.directive_date ? toISOStringWithTimezone(new Date(addDirectiveForm.directive_date)) : toISOStringWithTimezone(new Date());
+                const deadlineMs = addDirectiveForm.deadline ? new Date(addDirectiveForm.deadline).getTime() : NaN;
+                if (addDirectiveForm.deadline && (Number.isNaN(deadlineMs) || deadlineMs < addDirectiveDeadlineMinDate.getTime())) return;
                 const deadline = addDirectiveForm.deadline ? toISOStringWithTimezone(new Date(addDirectiveForm.deadline)) : toISOStringWithTimezone(new Date());
                 const persons = addDirectiveForm.responsible_persons
                   .split(/[\n,،]+/)

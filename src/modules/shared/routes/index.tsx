@@ -7,6 +7,7 @@ import { getDefaultRouteForUser } from '../utils/useCaseConfig';
 import pages from './routes';
 import uc02Routes from '../../UC02/routes/routes';
 import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
+import { PATH as UC04_PATH } from '../../UC04/routes/paths';
 import RootCallback from '@/modules/auth/components/RootCallback';
 import { PATH } from '@/modules/auth/routes/paths';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
@@ -42,15 +43,19 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
   const showOnboarding =
     isAuthenticated && user && user.is_registered === false;
 
-  // Filter routes based on user's use cases
-  let filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases);
+  const isExecutiveOfficeManager =
+    user?.roles?.some((r) => r.code === 'EXECUTIVE_OFFICE_MANAGER') ?? false;
+
+  // Filter routes based on user's use cases (and role exclusions, e.g. /evaluation)
+  let filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases, user?.roles);
   // When SSO enabled, remove /login route (unauthenticated → AuthProvider redirects to IdP from /)
   if (ssoEnabled) {
     filteredRoutes = filteredRoutes.filter((r) => r.path !== PATH.LOGIN);
   }
   // Exclude UC-02 routes so they are rendered inside UC02LayoutRouter (persistent layout)
   const routesWithoutUC02 = filteredRoutes.filter((route) => !UC02_PATHS.has(route.path));
-  const hasUC02Access = filterRoutesByUseCase(uc02Routes, user?.use_cases).length > 0;
+  const hasUC02Access =
+    filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles).length > 0;
   const defaultRoute = getDefaultRouteForUser(user?.use_cases);
 
   // Show loader while auth is initializing to prevent redirect issues
@@ -72,6 +77,13 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
 
   return (
     <Routes>
+      {/* Before UC-02 *, so /evaluation does not fall through to UC02 layout when route is role-filtered */}
+      {isExecutiveOfficeManager && (
+        <Route
+          path={UC04_PATH.EVALUATION}
+          element={<Navigate to={UC04_PATH.GUIDANCE_REQUESTS} replace />}
+        />
+      )}
       {routesWithoutUC02.map((route, index) => {
         const Component = route.component;
         const Guard = route?.guard || Fragment;
