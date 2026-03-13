@@ -110,6 +110,7 @@ const STATUS_COLORS: Record<string, string> = {
   [MeetingStatus.REJECTED]: '#EF4444',
   [MeetingStatus.CANCELLED]: '#9CA3AF',
   [MeetingStatus.CLOSED]: '#6366F1',
+  [MeetingStatus.CLOSED_PASS]: '#6366F1',
   [MeetingStatus.UNDER_GUIDANCE]: '#8B5CF6',
   [MeetingStatus.UNDER_CONTENT_REVIEW]: '#EC4899',
   [MeetingStatus.RETURNED_FROM_SCHEDULING]: '#F97316',
