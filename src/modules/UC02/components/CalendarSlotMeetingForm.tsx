@@ -15,7 +15,6 @@ import { createWebexMeeting } from '../data/meetingsApi';
 import { searchByEmail } from '../data/adIntegrationApi';
 import { X } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
-import { cn } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
