@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MeetingStatus } from '@/modules/shared/types';
 import { getDraftById, getSubmitterMeeting } from '../../../data';
 import { PATH } from '../../../routes/paths';
 import { clearDraftData, transformDraftToStep1Data, transformDraftToStep2ContentData, transformDraftToStep3InviteesData } from '../utils';
@@ -37,6 +38,22 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
 
   const draftData = fromMeetingDetail ? (options!.initialMeetingData ?? null) : draftDataFromApi;
   const isLoading = fromMeetingDetail ? false : isLoadingDraft;
+
+  const submitterStatus = submitterMeeting?.status as MeetingStatus | undefined;
+  const underReviewBlocked = useMemo(() => {
+    if (options?.initialMeetingData?.status === MeetingStatus.UNDER_REVIEW) return true;
+    // Drawer edit without meeting payload: block once submitter meeting reports UNDER_REVIEW
+    if (fromMeetingDetail) return false;
+    if (!id) return false;
+    if (submitterMeeting === undefined) return false; // still loading or no fetch yet
+    return submitterStatus === MeetingStatus.UNDER_REVIEW;
+  }, [
+    options?.initialMeetingData?.status,
+    fromMeetingDetail,
+    id,
+    submitterMeeting,
+    submitterStatus,
+  ]);
 
   const editableFields = useMemo(
     () => (fromMeetingDetail ? null : (submitterMeeting?.editable_fields ?? draftDataFromApi?.editable_fields ?? null)),
@@ -111,6 +128,7 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
     error,
     draftData,
     initialData,
+    underReviewBlocked,
     ...stepHandlers,
   };
 };
