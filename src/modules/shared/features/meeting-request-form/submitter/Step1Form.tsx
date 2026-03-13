@@ -9,6 +9,8 @@ import {
   ConfidentialityField, ClassificationTypeField, SubCategoryField,
   RelatedTopicField, DeadlineField, NoteField, OnBehalfField, MeetingOwnerField,
   DirectiveSection, AgendaSection,
+  MeetingNatureField,
+  PreviousMeetingField,
 } from "../shared";
 import { BOOL } from "../enums";
 import type { SubmitterStep1Values } from "./schema";
@@ -33,6 +35,8 @@ export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) 
     <FormProvider {...form}>
       <form onSubmit={handleSubmit} dir="rtl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-5">
+          <MeetingNatureField />
+          {visibility.previous_meeting_id && <PreviousMeetingField />}
           <OnBehalfField />
           {visibility.meeting_owner_id && <MeetingOwnerField name="meeting_owner_id" initialLabel={initialValues?.meeting_manager_name} />}
           <MeetingTitleField />
