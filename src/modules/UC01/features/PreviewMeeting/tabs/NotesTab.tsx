@@ -1,25 +1,39 @@
 import React from 'react';
-import { FileText, CalendarClock, StickyNote, MessageSquare } from 'lucide-react';
+import { FileText, CalendarClock, StickyNote, MessageSquare, AlertCircle } from 'lucide-react';
+import { MeetingStatus } from '@/modules/shared/types';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 
+/** API note fields: often `[]` or `[{ text: "..." }]` — never assume string (avoid .trim on array). */
 interface NotesTabProps {
   meeting: MeetingApiResponse & {
-    content_officer_notes?: string | null;
-    scheduling_officer_note?: string | null;
+    content_officer_notes?: string | Array<{ text?: string }> | null;
+    scheduling_officer_note?: string | Array<{ text?: string }> | null;
+    rejection_reason?: string | null;
+    rejection_note?: string | null;
+    cancellation_reason?: string | null;
+    cancellation_note?: string | null;
   };
 }
 
-/** Normalize API general_notes (array of { text } or string) to a single string. */
-function getGeneralNotesText(generalNotes: unknown): string {
-  if (generalNotes == null) return '';
-  if (typeof generalNotes === 'string' && generalNotes.trim()) return generalNotes.trim();
-  if (Array.isArray(generalNotes)) {
-    const parts = generalNotes
-      .map((n: { text?: string }) => (n && typeof n.text === 'string' ? n.text.trim() : ''))
-      .filter(Boolean);
-    if (parts.length) return parts.join('\n');
-  }
-  return '';
+/**
+ * Normalize API note fields to display text.
+ * Response shape: `[]`, `[{ text: "..." }]`, legacy string, or array of strings.
+ */
+function normalizeNotesFromApi(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (!Array.isArray(value)) return '';
+  const parts = value
+    .map((n: unknown) => {
+      if (n == null) return '';
+      if (typeof n === 'string') return n.trim();
+      if (typeof n === 'object' && n !== null && 'text' in n && typeof (n as { text?: string }).text === 'string') {
+        return (n as { text: string }).text.trim();
+      }
+      return '';
+    })
+    .filter(Boolean);
+  return parts.join('\n');
 }
 
 const noteConfig = {
@@ -41,6 +55,18 @@ const noteConfig = {
     iconBg: 'bg-amber-50',
     iconColor: 'text-amber-700',
   },
+  refusal: {
+    title: 'سبب الرفض',
+    icon: AlertCircle,
+    iconBg: 'bg-red-50',
+    iconColor: 'text-red-600',
+  },
+  cancellation: {
+    title: 'سبب الإلغاء',
+    icon: AlertCircle,
+    iconBg: 'bg-slate-100',
+    iconColor: 'text-slate-600',
+  },
 } as const;
 
 function NoteBlock({
@@ -50,7 +76,7 @@ function NoteBlock({
 }: {
   title: string;
   text: string;
-  variant: 'content' | 'scheduling' | 'general';
+  variant: 'content' | 'scheduling' | 'general' | 'refusal' | 'cancellation';
 }) {
   const config = noteConfig[variant];
   const Icon = config.icon;
@@ -77,14 +103,38 @@ function NoteBlock({
 }
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
-  const contentOfficerNotes = (meeting.content_officer_notes ?? '').trim();
-  const schedulingOfficerNote = (meeting.scheduling_officer_note ?? '').trim();
-  const generalNotesText = getGeneralNotesText(meeting.general_notes);
+  const status = meeting.status as MeetingStatus;
+  const isRejected = status === MeetingStatus.REJECTED;
+  const isCancelled = status === MeetingStatus.CANCELLED;
+  const str = (v: unknown) => (v != null && typeof v === 'string' ? v.trim() : '');
+  const refusalReason = isRejected
+    ? str(meeting.rejection_reason) || str(meeting.cancellation_reason)
+    : '';
+  const refusalExtra = isRejected
+    ? str(meeting.rejection_note) || str(meeting.cancellation_note)
+    : '';
+  const cancelReason = isCancelled
+    ? str(meeting.cancellation_reason) || str(meeting.rejection_reason)
+    : '';
+  const cancelExtra = isCancelled
+    ? str(meeting.cancellation_note) || str(meeting.rejection_note)
+    : '';
 
+  const contentOfficerNotes = normalizeNotesFromApi(meeting.content_officer_notes);
+  const schedulingOfficerNote = normalizeNotesFromApi(meeting.scheduling_officer_note);
+  const generalNotesText = normalizeNotesFromApi(meeting.general_notes);
+
+  const hasRefusalBlock = isRejected && (refusalReason.length > 0 || refusalExtra.length > 0);
+  const hasCancellationBlock = isCancelled && (cancelReason.length > 0 || cancelExtra.length > 0);
   const hasContentNotes = contentOfficerNotes.length > 0;
   const hasSchedulingNotes = schedulingOfficerNote.length > 0;
   const hasGeneralNotes = generalNotesText.length > 0;
-  const hasAnyNotes = hasContentNotes || hasSchedulingNotes || hasGeneralNotes;
+  const hasAnyNotes =
+    hasRefusalBlock ||
+    hasCancellationBlock ||
+    hasContentNotes ||
+    hasSchedulingNotes ||
+    hasGeneralNotes;
 
   if (!hasAnyNotes) {
     return (
@@ -115,10 +165,30 @@ export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
     <div className="flex flex-col gap-5 w-full" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-800">
-          الملاحظات المسجلة
+          الملاحظات على الطلب
         </h2>
       </div>
       <div className="flex flex-col gap-4">
+        {hasRefusalBlock && (
+          <>
+            {refusalReason.length > 0 && (
+              <NoteBlock title={noteConfig.refusal.title} text={refusalReason} variant="refusal" />
+            )}
+            {refusalExtra.length > 0 && (
+              <NoteBlock title="ملاحظات إضافية (الرفض)" text={refusalExtra} variant="general" />
+            )}
+          </>
+        )}
+        {hasCancellationBlock && (
+          <>
+            {cancelReason.length > 0 && (
+              <NoteBlock title={noteConfig.cancellation.title} text={cancelReason} variant="cancellation" />
+            )}
+            {cancelExtra.length > 0 && (
+              <NoteBlock title="ملاحظات إضافية (الإلغاء)" text={cancelExtra} variant="general" />
+            )}
+          </>
+        )}
         {hasContentNotes && (
           <NoteBlock
             title={noteConfig.content.title}

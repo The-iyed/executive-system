@@ -46,6 +46,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     isLoading,
     error,
     draftData,
+    underReviewBlocked,
   } = useEditMeeting(
     meetingId != null || initialMeetingData != null
       ? { meetingIdOverride: meetingId ?? initialMeetingData?.id, initialMeetingData: initialMeetingData ?? undefined }
@@ -158,6 +159,12 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
 
   const content = isLoading ? (
     <Loader message="جاري تحميل البيانات..." />
+  ) : underReviewBlocked ? (
+    <div className="flex flex-col items-center justify-center min-h-[200px] gap-4 px-6">
+      <div className="text-lg text-center text-red-600">
+        لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.
+      </div>
+    </div>
   ) : error || !draftData ? (
     <div className="flex items-center justify-center min-h-[200px]">
       <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
