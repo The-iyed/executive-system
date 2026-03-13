@@ -14,7 +14,7 @@ import {
 import { createWebexMeeting } from '../data/meetingsApi';
 import { searchByEmail } from '../data/adIntegrationApi';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/ui';
+import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
@@ -38,25 +38,23 @@ function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeV
   };
 }
 
-/** Build ISO in UTC so 13:00–14:00 displayed is sent as 13:00–14:00 UTC (no -1h). */
+/** Build ISO with timezone offset for API (e.g. 2026-03-31T09:00:00+03:00). */
 function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
   if (!value.date) return null;
   const [sh, sm] = value.startTime.split(':').map(Number);
   const [eh, em] = value.endTime.split(':').map(Number);
-  // Use local calendar day (picker gives midnight local) + time as UTC
-  const y = value.date.getFullYear();
-  const mo = value.date.getMonth();
-  const d = value.date.getDate();
-  const start = new Date(Date.UTC(y, mo, d, sh, sm, 0, 0));
-  const end = new Date(Date.UTC(y, mo, d, eh, em, 0, 0));
-  return { start: start.toISOString(), end: end.toISOString() };
+  const start = new Date(value.date);
+  start.setHours(sh, sm, 0, 0);
+  const end = new Date(value.date);
+  end.setHours(eh, em, 0, 0);
+  return { start: toISOStringWithTimezone(start), end: toISOStringWithTimezone(end) };
 }
 
 /** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
   const [h = 0, m = 0] = time.split(':').map(Number);
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0));
-  return d.toISOString();
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
+  return toISOStringWithTimezone(d);
 }
 
 export interface CalendarSlotMeetingFormSubmitValues {
@@ -94,8 +92,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
-    const d = new Date(Date.UTC(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0));
-    return d.toISOString();
+    const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
+    return toISOStringWithTimezone(d);
   }, [slotDate, slotTime]);
   const [startDate, setStartDate] = useState(startDefault);
   const [endDate, setEndDate] = useState(endDefault);
