@@ -110,6 +110,7 @@ import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
+import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -1874,6 +1875,7 @@ const MeetingDetail: React.FC = () => {
   const tabs = useMemo(() => {
     const all = [
       { id: 'request-info', label: 'معلومات الطلب' },
+      { id: 'request-notes', label: 'الملاحظات على الطلب' },
       { id: 'meeting-info', label: 'معلومات الاجتماع' },
       { id: 'content', label: 'المحتوى' },
       ...(isScheduleOfficer
@@ -1947,8 +1949,6 @@ const MeetingDetail: React.FC = () => {
     if (meetingStatus === MeetingStatus.SCHEDULED && TABS_HIDDEN_WHEN_SCHEDULED.includes(activeTab)) {
       setActiveTab('request-info');
     } else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') {
-      setActiveTab('request-info');
-    } else if (activeTab === 'request-notes') {
       setActiveTab('request-info');
     } else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') {
       setActiveTab('request-info');
@@ -2548,43 +2548,6 @@ const MeetingDetail: React.FC = () => {
             onTabChange={setActiveTab}
             helpTooltip={permissionTooltip}
           />
-          {/* Rejection / Cancellation: small collapsible in header (REJECTED or CANCELLED; fallback to the other when missing) */}
-          {(meetingStatus === MeetingStatus.REJECTED || meetingStatus === MeetingStatus.CANCELLED) && (() => {
-            const reasonRejected = meeting?.rejection_reason || meeting?.cancellation_reason;
-            const noteRejected = meeting?.rejection_note || meeting?.cancellation_note;
-            const reasonCancelled = meeting?.cancellation_reason || meeting?.rejection_reason;
-            const noteCancelled = meeting?.cancellation_note || meeting?.rejection_note;
-            const isRejected = meetingStatus === MeetingStatus.REJECTED;
-            const reason = isRejected ? reasonRejected : reasonCancelled;
-            const note = isRejected ? noteRejected : noteCancelled;
-            if (!reason && !note) return null;
-            const label = isRejected ? 'سبب الرفض وملاحظاته' : 'سبب الإلغاء وملاحظاته';
-            return (
-              <Collapsible className="group rounded-lg border border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
-                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-right hover:bg-[#F9FAFB] transition-colors data-[state=open]:bg-[#F9FAFB]">
-                  <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isRejected ? 'text-red-500' : 'text-[#6B7280]'}`} strokeWidth={1.8} />
-                  <span className={`text-[13px] font-medium flex-1 ${isRejected ? 'text-[#991B1B]' : 'text-[#374151]'}`}>{label}</span>
-                  <ChevronDown className="w-4 h-4 flex-shrink-0 text-[#6B7280] transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="px-3 py-2 pt-0 border-t border-[#F3F4F6] flex flex-col gap-2 text-right">
-                    {reason && (
-                      <div>
-                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">{isRejected ? 'سبب الرفض' : 'سبب الإلغاء'}</p>
-                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{reason}</p>
-                      </div>
-                    )}
-                    {note && (
-                      <div>
-                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">ملاحظات إضافية</p>
-                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{note}</p>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            );
-          })()}
         </div>
 
         {/* Content card */}
@@ -2623,6 +2586,12 @@ const MeetingDetail: React.FC = () => {
           {/* Tab: معلومات الطلب */}
           {activeTab === 'request-info' && (
             <RequestInfoTab meeting={meeting} statusLabel={statusLabel} />
+          )}
+
+          {activeTab === 'request-notes' && meeting && (
+            <div className="w-full max-w-4xl mx-auto" dir="rtl">
+              <NotesTab meeting={meeting} />
+            </div>
           )}
 
           {/* Tab: معلومات الاجتماع – MeetingInfo (read-only when !canEdit; with قابل للتعديل + editable when canEdit) */}

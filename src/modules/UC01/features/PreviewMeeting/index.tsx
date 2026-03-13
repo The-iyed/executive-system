@@ -4,8 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { MeetingOwnerType, MeetingStatus } from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
 import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/lib/ui';
-import { AlertCircle, ChevronDown } from 'lucide-react';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
 import { trackEvent } from '@/lib/analytics';
@@ -135,15 +133,6 @@ const PreviewMeeting: React.FC = () => {
   };
 
   const meetingStatus = meeting?.status as MeetingStatus;
-  const isRejected = meetingStatus === MeetingStatus.REJECTED;
-  const isCancelled = meetingStatus === MeetingStatus.CANCELLED;
-  const reasonRejected = meeting?.rejection_reason || meeting?.cancellation_reason;
-  const noteRejected = meeting?.rejection_note || meeting?.cancellation_note;
-  const reasonCancelled = meeting?.cancellation_reason || meeting?.rejection_reason;
-  const noteCancelled = meeting?.cancellation_note || meeting?.rejection_note;
-  const reason = isRejected ? reasonRejected : reasonCancelled;
-  const note = isRejected ? noteRejected : noteCancelled;
-  const showRefusalCollapsible = (isRejected || isCancelled) && (reason || note);
 
   return (
   <>
@@ -151,7 +140,6 @@ const PreviewMeeting: React.FC = () => {
    
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 px-1">
-        {/* Head: header + refusal/cancellation collapsible (like UC02) */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
             title={`${meeting?.meeting_title ?? meeting?.meeting_subject ?? 'عرض الطلب'} (${meeting?.request_number ?? ''})`}
@@ -175,33 +163,6 @@ const PreviewMeeting: React.FC = () => {
               description: 'يمكنك الاطلاع على معلومات الطلب والاجتماع والمحتوى والمدعوين والملاحظات.',
             }}
           />
-          {showRefusalCollapsible && (
-            <Collapsible className="group rounded-lg border border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
-              <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-right hover:bg-[#F9FAFB] transition-colors data-[state=open]:bg-[#F9FAFB]">
-                <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isRejected ? 'text-red-500' : 'text-[#6B7280]'}`} strokeWidth={1.8} />
-                <span className={`text-[13px] font-medium flex-1 ${isRejected ? 'text-[#991B1B]' : 'text-[#374151]'}`}>
-                  {isRejected ? 'سبب الرفض وملاحظاته' : 'سبب الإلغاء وملاحظاته'}
-                </span>
-                <ChevronDown className="w-4 h-4 flex-shrink-0 text-[#6B7280] transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="px-3 py-2 pt-0 border-t border-[#F3F4F6] flex flex-col gap-2 text-right">
-                  {reason && (
-                    <div>
-                      <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">{isRejected ? 'سبب الرفض' : 'سبب الإلغاء'}</p>
-                      <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{reason}</p>
-                    </div>
-                  )}
-                  {note && (
-                    <div>
-                      <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">ملاحظات إضافية</p>
-                      <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{note}</p>
-                    </div>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
         </div>
 
         {/* Content card */}
