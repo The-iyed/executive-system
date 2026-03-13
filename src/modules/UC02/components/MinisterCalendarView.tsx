@@ -787,7 +787,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
                     meeting_link: values.meeting_link,
-                    proposer_user_ids: values.proposer_user_ids,
+                    proposers: values.proposers,
                     invitees,
                   });
                   trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
@@ -816,7 +816,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
                     meeting_link: values.meeting_link,
-                    proposer_user_ids: values.proposer_user_ids,
+                    proposers: values.proposers,
                     invitees,
                   });
                   const meetingId = (result as { id?: string })?.id;
