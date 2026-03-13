@@ -2,24 +2,33 @@ import React from 'react';
 import { FileText, CalendarClock, StickyNote, MessageSquare } from 'lucide-react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 
+/** API note fields: often `[]` or `[{ text: "..." }]` — never assume string (avoid .trim on array). */
 interface NotesTabProps {
   meeting: MeetingApiResponse & {
-    content_officer_notes?: string | null;
-    scheduling_officer_note?: string | null;
+    content_officer_notes?: string | Array<{ text?: string }> | null;
+    scheduling_officer_note?: string | Array<{ text?: string }> | null;
   };
 }
 
-/** Normalize API general_notes (array of { text } or string) to a single string. */
-function getGeneralNotesText(generalNotes: unknown): string {
-  if (generalNotes == null) return '';
-  if (typeof generalNotes === 'string' && generalNotes.trim()) return generalNotes.trim();
-  if (Array.isArray(generalNotes)) {
-    const parts = generalNotes
-      .map((n: { text?: string }) => (n && typeof n.text === 'string' ? n.text.trim() : ''))
-      .filter(Boolean);
-    if (parts.length) return parts.join('\n');
-  }
-  return '';
+/**
+ * Normalize API note fields to display text.
+ * Response shape: `[]`, `[{ text: "..." }]`, legacy string, or array of strings.
+ */
+function normalizeNotesFromApi(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (!Array.isArray(value)) return '';
+  const parts = value
+    .map((n: unknown) => {
+      if (n == null) return '';
+      if (typeof n === 'string') return n.trim();
+      if (typeof n === 'object' && n !== null && 'text' in n && typeof (n as { text?: string }).text === 'string') {
+        return (n as { text: string }).text.trim();
+      }
+      return '';
+    })
+    .filter(Boolean);
+  return parts.join('\n');
 }
 
 const noteConfig = {
@@ -77,9 +86,9 @@ function NoteBlock({
 }
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
-  const contentOfficerNotes = (meeting.content_officer_notes ?? '').trim();
-  const schedulingOfficerNote = (meeting.scheduling_officer_note ?? '').trim();
-  const generalNotesText = getGeneralNotesText(meeting.general_notes);
+  const contentOfficerNotes = normalizeNotesFromApi(meeting.content_officer_notes);
+  const schedulingOfficerNote = normalizeNotesFromApi(meeting.scheduling_officer_note);
+  const generalNotesText = normalizeNotesFromApi(meeting.general_notes);
 
   const hasContentNotes = contentOfficerNotes.length > 0;
   const hasSchedulingNotes = schedulingOfficerNote.length > 0;
