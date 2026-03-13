@@ -70,6 +70,11 @@ import {
 import { getConsultationRecords, getSuggestedActions, type ConsultationRecord } from "../../UC02/data/meetingsApi";
 import { postMeetingsMatch } from "../../shared/api/meetings";
 
+/** Start of local calendar day (for date pickers: no past due dates). */
+function startOfLocalDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 /** Action status options for manual/suggested directive rows (editable). */
 const ACTION_STATUS_OPTIONS = [
   { value: "PENDING", label: "قيد الانتظار" },
@@ -283,6 +288,12 @@ const ContentRequestDetail: React.FC = () => {
   >({});
   /** Inline input value for adding assignee (per manual action id). */
   const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number, string>>({});
+  /** Earliest selectable day for directive الموعد النهائي (today, local). */
+  const directiveDueDateFromDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   // Fetch content request data from API
   const {
@@ -2192,9 +2203,15 @@ const ContentRequestDetail: React.FC = () => {
                                     <td className="px-4 py-3">
                                       <FormDatePicker
                                         value={dueDate ?? ""}
-                                        onChange={(v) => updateManualActionDueDate(a.id, v || null)}
+                                        onChange={(v) => {
+                                          if (v && startOfLocalDay(new Date(v + "T12:00:00")) < startOfLocalDay(new Date())) {
+                                            return;
+                                          }
+                                          updateManualActionDueDate(a.id, v || null);
+                                        }}
                                         placeholder="dd/mm/yyyy"
                                         className="min-w-[120px] text-right"
+                                        fromDate={directiveDueDateFromDate}
                                       />
                                     </td>
                                     <td className="px-4 py-3">
