@@ -24,7 +24,7 @@ const Meeting: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [draftIdToDelete, setDraftIdToDelete] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
-  const [statusFilters, setStatusFilters] = useState<string[]>([MeetingStatus.DRAFT]);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');
 
@@ -32,8 +32,9 @@ const Meeting: React.FC = () => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
   }, [searchValue, statusFilters]);
 
-  // Use first selected status for API call (API supports single status)
-  const activeStatus = statusFilters.length > 0 ? statusFilters[0] as MeetingStatus : MeetingStatus.DRAFT;
+  // Use first selected status for API call (API supports single status); when none selected, show all
+  const activeStatus: MeetingStatus | 'all' =
+    statusFilters.length > 0 ? (statusFilters[0] as MeetingStatus) : 'all';
 
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,

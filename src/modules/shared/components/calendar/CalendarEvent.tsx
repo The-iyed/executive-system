@@ -263,7 +263,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
           role="button"
           tabIndex={-1}
           className={cn(
-            'flex flex-col justify-start text-right rounded-lg border shadow-2xl',
+            'flex flex-col justify-start text-right rounded-xl border',
             isAvailable ? 'border-dashed' : 'border-transparent',
           )}
           style={{
@@ -274,8 +274,8 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
             minHeight: cardRect.height,
             zIndex: 9999,
             background: bgColor,
-            borderColor: isAvailable ? accentColor : 'transparent',
-            boxShadow: `0 8px 32px ${accentColor}44`,
+            borderColor: isAvailable ? accentColor : 'rgba(0,0,0,0.06)',
+            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.07), 0 10px 20px -5px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03)',
             pointerEvents: 'auto',
           }}
           onClick={handleClick}

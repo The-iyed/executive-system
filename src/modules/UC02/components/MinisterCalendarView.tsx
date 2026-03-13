@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, User, Calendar, Clock, MapPin, Paperclip, X } from 'lucide-react';
+import { ChevronDown, User, Calendar, Clock, MapPin, Paperclip, X, Pencil } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader, MeetingCard } from '@/modules/shared';
 import {
@@ -42,6 +42,9 @@ import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { useMeetingFormDrawer } from '../features/MeetingForm/hooks/useMeetingFormDrawer';
+import MeetingFormDrawer from '../features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
+import { PATH } from '../routes/paths';
 import { trackEvent } from '@/lib/analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
@@ -220,8 +223,18 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     }
   }, [initialDate]);
 
-  const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
-  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
+  const weekStart = useMemo(() => {
+    if (viewMode === 'daily') {
+      return new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0, 0);
+    }
+    return getWeekStart(currentDate);
+  }, [currentDate, viewMode]);
+  const weekEnd = useMemo(() => {
+    if (viewMode === 'daily') {
+      return new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999);
+    }
+    return getWeekEnd(weekStart);
+  }, [currentDate, viewMode, weekStart]);
 
   // Format dates as ISO strings with timezone for API
   const startDateISO = useMemo(() => {
@@ -276,6 +289,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       const newDate = new Date(prev);
       if (viewMode === 'monthly') {
         newDate.setMonth(prev.getMonth() - 1);
+      } else if (viewMode === 'daily') {
+        newDate.setDate(prev.getDate() - 1);
       } else {
         newDate.setDate(prev.getDate() - 7);
       }
@@ -288,6 +303,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       const newDate = new Date(prev);
       if (viewMode === 'monthly') {
         newDate.setMonth(prev.getMonth() + 1);
+      } else if (viewMode === 'daily') {
+        newDate.setDate(prev.getDate() + 1);
       } else {
         newDate.setDate(prev.getDate() + 7);
       }
@@ -440,7 +457,18 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           <CalendarSkeleton />
         ) : (
           <>
-            {viewMode === 'weekly' ? (
+            {viewMode === 'daily' ? (
+              <WeeklyCalendarGrid
+                weekStart={weekStart}
+                singleDay={currentDate}
+                events={events}
+                startHour={0}
+                endHour={24}
+                onEventClick={(event) => setSelectedEventForDetails(event)}
+                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+              />
+            ) : viewMode === 'weekly' ? (
               <WeeklyCalendarGrid
                 weekStart={weekStart}
                 events={events}
@@ -485,7 +513,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
       {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
-        <DialogContent className="max-w-[460px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
+        <DialogContent className="max-w-[860px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
           {selectedEventForDetails && (
             <>
               {isLoadingMeeting && (
