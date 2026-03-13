@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { FormField, MeetingRangePicker, type MeetingRangeValue } from '@/modules/shared';
+import { FormField, MeetingRangePicker, type MeetingRangeValue, toISOStringWithTimezone } from '@/modules/shared';
 import type { Step1FormData } from '../../../../schemas/step1.schema';
 
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
@@ -36,7 +36,7 @@ function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: stri
   start.setHours(sh, sm, 0, 0);
   const end = new Date(value.date);
   end.setHours(eh, em, 0, 0);
-  return { start: start.toISOString(), end: end.toISOString() };
+  return { start: toISOStringWithTimezone(start), end: toISOStringWithTimezone(end) };
 }
 
 export interface MeetingDateFieldsProps {
