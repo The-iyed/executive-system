@@ -4,7 +4,7 @@
  */
 export function getBrowserTimezone(): string {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    return "Asia/Riyadh" || 'UTC';
   } catch {
     return 'UTC';
   }
