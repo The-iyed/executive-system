@@ -10,9 +10,10 @@ interface SubmitterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editMeetingId?: string | null;
+  showAiSuggest?: boolean
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSuggest = false }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
@@ -88,17 +89,8 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId }: SubmitterM
           <InviteesTableForm
             tableRef={inviteesRef}
             initialInvitees={initialStep3Values}
-            mode="create"
             excludeColumns={["access_permission", "is_consultant"]}
-            meetingParams={step1Data ? {
-              meeting_subject: step1Data.meeting_title,
-              meeting_type: step1Data.meeting_type,
-              meeting_classification: step1Data.meeting_classification,
-              meeting_justification: step1Data.meeting_justification,
-              related_topic: step1Data.related_topic,
-              agenda_items: step1Data.agenda_items?.map((a) => ({ agenda_item: a.agenda_item })),
-            } : undefined}
-            showAiSuggest={false}
+            showAiSuggest={showAiSuggest}
           />
         </div>
       </EditableFieldsProvider>
