@@ -4193,7 +4193,7 @@ const MeetingDetail: React.FC = () => {
 
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
       {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
-      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
+      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
 
       {/* Delete draft confirmation (Draft status only) */}
       <Dialog open={isDeleteDraftModalOpen} onOpenChange={(open) => !deleteDraftMutation.isPending && setIsDeleteDraftModalOpen(open)}>
