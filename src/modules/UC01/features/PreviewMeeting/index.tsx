@@ -8,7 +8,6 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/lib/ui';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
 import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } from './tabs';
-import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
 import { getMeetingById } from '@/modules/shared/api';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
@@ -159,11 +158,14 @@ const PreviewMeeting: React.FC = () => {
             onBack={handleBack}
             statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
             editAction={{
-              visible: true,
-              hasChanges: true,
+              visible: meetingStatus !== MeetingStatus.UNDER_REVIEW,
+              hasChanges: meetingStatus !== MeetingStatus.UNDER_REVIEW,
               onClick: () => openEditSubmitter(),
               label: 'تعديل',
-              tooltip: 'تعديل طلب الاجتماع',
+              tooltip:
+                meetingStatus === MeetingStatus.UNDER_REVIEW
+                  ? 'لا يمكن التعديل أثناء قيد المراجعة'
+                  : 'تعديل طلب الاجتماع',
             }}
             tabs={MEETING_PREVIEW_TABS}
             activeTab={activeTab}
