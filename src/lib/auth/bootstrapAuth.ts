@@ -3,6 +3,7 @@ import { userManager, PKCE_BACKUP_PREFIX, clearPkceBackup, getRedirectUri } from
 import { cookieStorage } from './cookieStorage';
 import { User } from 'oidc-client-ts';
 import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env';
+import { getApiTimezoneHeaders } from '@/lib/api/apiTimezone';
 
 /** App user shape returned by GET /api/auth/me (matches backend). */
 export interface AppUserFromMe {
@@ -135,6 +136,7 @@ export async function exchangeCodeForToken(
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
+      ...getApiTimezoneHeaders(),
     },
     body: formData.toString(),
   });
