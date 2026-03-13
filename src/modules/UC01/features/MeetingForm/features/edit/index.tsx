@@ -10,6 +10,7 @@ import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
 import { useAuth } from '@/modules/auth';
+import { SUBMITTER_EDIT_BLOCKED_MESSAGE } from '@/modules/shared/types';
 
 export type { MeetingForEdit };
 
@@ -162,7 +163,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
   ) : underReviewBlocked ? (
     <div className="flex flex-col items-center justify-center min-h-[200px] gap-4 px-6">
       <div className="text-lg text-center text-red-600">
-        لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.
+        {SUBMITTER_EDIT_BLOCKED_MESSAGE}
       </div>
     </div>
   ) : error || !draftData ? (

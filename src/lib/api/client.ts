@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { getBrowserTimezone } from './apiTimezone';
 
 export interface ApiClientConfig {
   baseURL?: string;
@@ -44,6 +45,7 @@ export const createApiClient = (config: ApiClientConfig = {}): AxiosInstance => 
 
   client.interceptors.request.use(
     (requestConfig: InternalAxiosRequestConfig) => {
+      requestConfig.headers['X-Timezone'] = getBrowserTimezone();
       // Ensure Authorization header is always set if basicAuth is configured
       if (basicAuthHeader && !requestConfig.headers['Authorization']) {
         requestConfig.headers['Authorization'] = basicAuthHeader;

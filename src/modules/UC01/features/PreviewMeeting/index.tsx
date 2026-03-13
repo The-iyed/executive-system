@@ -1,7 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MeetingOwnerType, MeetingStatus } from '@/modules/shared/types';
+import {
+  MeetingOwnerType,
+  MeetingStatus,
+  isSubmitterEditBlockedStatus,
+  SUBMITTER_EDIT_BLOCKED_MESSAGE,
+} from '@/modules/shared/types';
 import { PATH } from '../../routes/paths';
 import { DetailPageHeader, MeetingInfo, AttachmentPreviewDrawer, StatusBadge, type MeetingInfoData, getMeetingStatusLabel } from '@/modules/shared';
 import { MEETING_PREVIEW_TABS, MeetingPreviewTabs } from './constants';
@@ -133,6 +138,7 @@ const PreviewMeeting: React.FC = () => {
   };
 
   const meetingStatus = meeting?.status as MeetingStatus;
+  const submitterEditBlocked = isSubmitterEditBlockedStatus(meetingStatus);
 
   return (
   <>
@@ -146,14 +152,13 @@ const PreviewMeeting: React.FC = () => {
             onBack={handleBack}
             statusBadge={<StatusBadge status={meeting.status} label={statusLabel} />}
             editAction={{
-              visible: meetingStatus !== MeetingStatus.UNDER_REVIEW,
-              hasChanges: meetingStatus !== MeetingStatus.UNDER_REVIEW,
+              visible: !submitterEditBlocked,
+              hasChanges: !submitterEditBlocked,
               onClick: () => openEditSubmitter(),
               label: 'تعديل',
-              tooltip:
-                meetingStatus === MeetingStatus.UNDER_REVIEW
-                  ? 'لا يمكن التعديل أثناء قيد المراجعة'
-                  : 'تعديل طلب الاجتماع',
+              tooltip: submitterEditBlocked
+                ? SUBMITTER_EDIT_BLOCKED_MESSAGE
+                : 'تعديل طلب الاجتماع',
             }}
             tabs={MEETING_PREVIEW_TABS}
             activeTab={activeTab}
