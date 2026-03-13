@@ -248,7 +248,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                     'flex flex-row gap-0.5 shrink-0 border-b border-gray-100 overflow-visible',
                     dayIndex < 6 && 'border-l border-gray-50',
                     today && 'bg-[#048F86]/[0.02]',
-                    startingEvents.length > 0 && 'z-[1] hover:z-50',
+                    startingEvents.length > 0 && 'z-[1] hover:z-40',
                     startingEvents.length === 0 && isSlotClickable && 'cursor-pointer hover:bg-[#048F86]/[0.06] transition-colors duration-150',
                     startingEvents.length === 0 && !isSlotClickable && 'cursor-not-allowed',
                     isPast && startingEvents.length === 0 && 'opacity-40',

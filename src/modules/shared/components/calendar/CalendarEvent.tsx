@@ -198,6 +198,12 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     if (event.id === 'highlighted-slot') return;
     e.stopPropagation();
+    // Hide expanded hover card immediately so it doesn't sit on top of the modal
+    setCardRect(null);
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
     if (onBook && isAvailable) {
       onBook(event);
     } else if (onShowDetails) {
