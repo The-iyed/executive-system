@@ -9,11 +9,14 @@ import {
   MeetingLocation,
   BOOL,
   MeetingConfidentiality,
+  MeetingNature,
 } from "../../enums";
 import { useVisibilityCleanup } from "../../shared";
 
 export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>) {
   const defaults: SubmitterStep1Values = {
+    meeting_nature: MeetingNature.NORMAL,
+    previous_meeting_id: "",
     meeting_title: "",
     meeting_subject: "",
     description: "",
@@ -53,6 +56,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
   const watched = form.watch();
 
   const visibility = useMemo(() => ({
+    previous_meeting_id: [MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(watched.meeting_nature),
     sector: watched.meeting_type === MeetingType.INTERNAL,
     meeting_location: [AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(watched.meeting_channel),
     meeting_location_custom: watched.meeting_location === MeetingLocation.OTHER,
@@ -73,6 +77,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     previous_meeting_minutes_file_content: watched.directive_method === "PREVIOUS_MEETING",
     directive_text: watched.directive_method === "DIRECT_DIRECTIVE",
   }), [
+    watched.meeting_nature,
     watched.meeting_type,
     watched.meeting_channel,
     watched.meeting_location,
@@ -85,6 +90,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
 
   // Clean up hidden field values when visibility toggles off
   const SUBMITTER_FIELD_RESET_MAP = useMemo(() => ({
+    previous_meeting_id: ["previous_meeting_id"],
     sector: ["sector"],
     meeting_location: ["meeting_location", "meeting_location_custom"],
     meeting_location_custom: ["meeting_location_custom"],
