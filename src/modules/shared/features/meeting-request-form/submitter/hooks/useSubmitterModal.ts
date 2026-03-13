@@ -69,13 +69,21 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
   const resolvedStatus = fetchedStatus || MeetingStatus.DRAFT;
   const canSaveAsDraft = SAVEABLE_DRAFT_STATUSES.has(resolvedStatus);
 
+  /** UC01 (submitter) must not update a request while it is under review */
+  const editBlockedUnderReview =
+    isEditMode && !draftLoading && !!draftData && resolvedStatus === MeetingStatus.UNDER_REVIEW;
+
   // Apply editable-fields restrictions when the draft was returned from scheduling or content
   const resolvedEditableFields =
     resolvedStatus === MeetingStatus.RETURNED_FROM_SCHEDULING ||
     resolvedStatus === MeetingStatus.RETURNED_FROM_CONTENT
       ? editableFields
       : null;
-  const fetchError = isError ? (error?.message || "فشل تحميل بيانات الاجتماع") : null;
+  const fetchError = isError
+    ? error?.message || "فشل تحميل بيانات الاجتماع"
+    : editBlockedUnderReview
+      ? "لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة."
+      : null;
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const basicInfoMutation = useSaveDraftBasicInfo();
@@ -103,6 +111,10 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleStep1Submit = useCallback(
     (data: SubmitterStep1Values) => {
+      if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
+        toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+        return;
+      }
       const formData = buildStep1FormData(data);
 
       basicInfoMutation.mutate(
@@ -118,11 +130,15 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
         },
       );
     },
-    [draftId, basicInfoMutation],
+    [draftId, basicInfoMutation, isEditMode, resolvedStatus],
   );
 
   const handleStep2Submit = useCallback(
     (formData: FormData) => {
+      if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
+        toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+        return;
+      }
       if (!draftId) return;
       if (!formData) {
         setCurrentStep(3);
@@ -137,7 +153,7 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
         },
       );
     },
-    [draftId, contentMutation],
+    [draftId, contentMutation, isEditMode, resolvedStatus],
   );
 
   const getSubmitFn = useCallback(
@@ -151,6 +167,10 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleFinalSubmit = useCallback(async () => {
     if (!draftId) return;
+    if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
+      toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+      return;
+    }
 
     const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
@@ -164,10 +184,14 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "فشل إرسال الطلب");
     }
-  }, [draftId, inviteesMutation, getSubmitFn, resetModal]);
+  }, [draftId, inviteesMutation, getSubmitFn, resetModal, isEditMode, resolvedStatus]);
 
   const handleSaveAsDraft = useCallback(async () => {
     if (!draftId) return;
+    if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
+      toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+      return;
+    }
 
     const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
@@ -179,7 +203,7 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "فشل حفظ المسودة");
     }
-  }, [draftId, inviteesMutation, resetModal]);
+  }, [draftId, inviteesMutation, resetModal, isEditMode, resolvedStatus]);
 
   const goToPrevStep = useCallback(() => setCurrentStep((s) => s - 1), []);
 

@@ -9,7 +9,18 @@ type RouteConfig = {
   layout?: React.ComponentType<any> | typeof Fragment;
   useCase?: string; // Optional single use case requirement
   useCases?: string[]; // Optional multiple use case codes (OR logic)
+  /** If user has any of these role codes, route is not registered (e.g. calendar for executive office manager) */
+  excludeRoleCodes?: string[];
 };
+
+function userHasExcludedRole(
+  userRoles: Array<{ code: string }> | undefined,
+  excludeRoleCodes?: string[]
+): boolean {
+  if (!excludeRoleCodes?.length || !userRoles?.length) return false;
+  const codes = new Set(userRoles.map((r) => r.code));
+  return excludeRoleCodes.some((c) => codes.has(c));
+}
 
 /**
  * Filter routes based on user's use cases
@@ -18,31 +29,30 @@ type RouteConfig = {
  */
 export const filterRoutesByUseCase = (
   routes: RouteConfig[],
-  userUseCases?: string[]
+  userUseCases?: string[],
+  userRoles?: Array<{ code: string }>
 ): RouteConfig[] => {
-  if (!userUseCases || userUseCases.length === 0) {
-    // If user has no use cases, only return routes without any useCase requirements
-    return routes.filter(
-      (route) => !route.useCase && (!route.useCases || route.useCases.length === 0)
-    );
-  }
-
-  return routes.filter((route) => {
-    const hasMultipleUseCases = Array.isArray(route.useCases) && route.useCases.length > 0;
-    const hasSingleUseCase = !!route.useCase;
-
-    // Include routes without any use case requirement
-    if (!hasSingleUseCase && !hasMultipleUseCases) {
-      return true;
+  const byUseCase = (() => {
+    if (!userUseCases || userUseCases.length === 0) {
+      return routes.filter(
+        (route) => !route.useCase && (!route.useCases || route.useCases.length === 0)
+      );
     }
+    return routes.filter((route) => {
+      const hasMultipleUseCases = Array.isArray(route.useCases) && route.useCases.length > 0;
+      const hasSingleUseCase = !!route.useCase;
+      if (!hasSingleUseCase && !hasMultipleUseCases) {
+        return true;
+      }
+      if (hasMultipleUseCases) {
+        return route.useCases!.some((code) => hasUseCaseAccess(userUseCases, code));
+      }
+      return hasUseCaseAccess(userUseCases, route.useCase!);
+    });
+  })();
 
-    // If route specifies multiple allowed use cases, allow if user has ANY of them
-    if (hasMultipleUseCases) {
-      return route.useCases!.some((code) => hasUseCaseAccess(userUseCases, code));
-    }
-
-    // Fallback to single useCase check
-    return hasUseCaseAccess(userUseCases, route.useCase!);
-  });
+  return byUseCase.filter(
+    (route) => !userHasExcludedRole(userRoles, route.excludeRoleCodes)
+  );
 };
 
