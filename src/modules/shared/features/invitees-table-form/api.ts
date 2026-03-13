@@ -1,3 +1,5 @@
+import { getApiTimezoneHeaders } from "@/lib/api/apiTimezone";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface SuggestMeetingAttendeesPayload {
@@ -92,7 +94,10 @@ export async function suggestMeetingAttendees(
 
   const res = await fetch(url.toString(), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...getApiTimezoneHeaders(),
+    },
     body: JSON.stringify(buildSuggestionPayload(meeting)),
   });
 
