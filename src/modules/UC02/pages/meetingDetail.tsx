@@ -36,6 +36,7 @@ import {
   formatDateArabic,
   formatTimeAgoArabic,
   isValidPhone,
+  toISOStringWithTimezone,
 } from '@/modules/shared'; 
 import {
   getMeetingById,
@@ -640,7 +641,7 @@ const MeetingDetail: React.FC = () => {
       ].filter(Boolean);
       const slot = allSlots.find((s: any) => s?.id === slotId);
       if (!slot?.slot_start) return { start, end };
-      const slotEnd = slot.slot_end ?? new Date(new Date(slot.slot_start).getTime() + 3600000).toISOString();
+      const slotEnd = slot.slot_end ?? toISOStringWithTimezone(new Date(new Date(slot.slot_start).getTime() + 3600000));
       return {
         start: start ?? slot.slot_start,
         end: end ?? slotEnd,
@@ -1243,9 +1244,9 @@ const MeetingDetail: React.FC = () => {
 
     setValidationError(null);
 
-    // Convert to ISO strings (UTC) for schedule API
-    const scheduled_start = scheduledAt.toISOString();
-    const scheduled_end = scheduledEndAt.toISOString();
+    // Convert to ISO strings with timezone for schedule API (e.g. 2026-03-31T09:00:00+03:00)
+    const scheduled_start = toISOStringWithTimezone(scheduledAt);
+    const scheduled_end = toISOStringWithTimezone(scheduledEndAt);
 
     // Meeting channel: from meeting or form (schedule tab hides the field but we still send it)
     const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string))
@@ -4764,8 +4765,8 @@ const MeetingDetail: React.FC = () => {
               onClick={() => {
                 const meetingId = id || addDirectiveForm.related_meeting;
                 if (!meetingId || !addDirectiveForm.directive_text.trim()) return;
-                const directiveDate = addDirectiveForm.directive_date ? new Date(addDirectiveForm.directive_date).toISOString() : new Date().toISOString();
-                const deadline = addDirectiveForm.deadline ? new Date(addDirectiveForm.deadline).toISOString() : new Date().toISOString();
+                const directiveDate = addDirectiveForm.directive_date ? toISOStringWithTimezone(new Date(addDirectiveForm.directive_date)) : toISOStringWithTimezone(new Date());
+                const deadline = addDirectiveForm.deadline ? toISOStringWithTimezone(new Date(addDirectiveForm.deadline)) : toISOStringWithTimezone(new Date());
                 const persons = addDirectiveForm.responsible_persons
                   .split(/[\n,،]+/)
                   .map((s) => s.trim())
