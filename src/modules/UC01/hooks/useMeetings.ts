@@ -7,7 +7,7 @@ import { PAGINATION, MeetingOwnerType } from '../utils/constants';
 
 interface UseMeetingsOptions {
   searchValue: string;
-  statusFilter: MeetingStatus;
+  statusFilter: MeetingStatus | 'all';
   currentPage: number;
   itemsPerPage?: number;
   ownerType?: MeetingOwnerType;
@@ -37,7 +37,10 @@ export const useMeetings = ({
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  const mapStatusToApi = (status: MeetingStatus | string): string => {
+  const mapStatusToApi = (status: MeetingStatus | 'all' | string): string => {
+    if (status === 'all') {
+      return '';
+    }
     if (status === MeetingStatus.RETURNED_FROM_CONTENT) {
       return 'RETURNED_FROM_CONTENT';
     }
@@ -61,11 +64,13 @@ export const useMeetings = ({
     queryKey: ['meetings', 'uc01', apiFilters.status, apiFilters.owner_type, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        status: apiFilters.status,
         owner_type: apiFilters.owner_type,
         skip: skip,
         limit: itemsPerPage,
       };
+      if (apiFilters.status) {
+        params.status = apiFilters.status;
+      }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
