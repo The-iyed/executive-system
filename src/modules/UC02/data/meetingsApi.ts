@@ -1,6 +1,7 @@
 // Import axios instance - using relative path since @auth doesn't export it
 import axiosInstance from '../../auth/utils/axios';
 import { EXECUTION_SYSTEM_BASE_URL, BUSINESS_CARDS_BASE_URL } from '@/lib/env';
+import { toISOStringWithTimezoneFromString } from '@/lib/ui';
 import { MeetingStatus } from '@/modules/shared/types';
 
 export interface Objective {
@@ -884,13 +885,9 @@ export interface CreateSchedulingDirectivePayload {
   responsible_persons: string[];
 }
 
-/** Normalize ISO datetime for backend: use +00:00 instead of Z, optional strip milliseconds (avoids DatetimeTimezoneError). */
+/** Format ISO datetime for backend with explicit timezone offset (e.g. 2026-03-31T09:00:00+03:00). */
 function toTimezoneAwareISO(isoOrEmpty: string): string {
-  if (!isoOrEmpty || typeof isoOrEmpty !== 'string') return isoOrEmpty;
-  let s = isoOrEmpty.replace(/Z$/i, '+00:00');
-  // Optional: remove milliseconds so backend gets e.g. 2026-02-10T08:00:00+00:00
-  s = s.replace(/\.\d{3}(\+\d{2}:\d{2})$/, '$1');
-  return s;
+  return toISOStringWithTimezoneFromString(isoOrEmpty);
 }
 
 /** POST /api/scheduling/directives – create a new scheduling directive (DRYYMMDDXXX format). */
