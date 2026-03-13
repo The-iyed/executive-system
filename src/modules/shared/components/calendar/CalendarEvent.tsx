@@ -16,6 +16,10 @@ export interface CalendarEventProps {
   onBook?: (event: CalendarEventData) => void;
   onShowDetails?: (event: CalendarEventData) => void;
   className?: string;
+  /**
+   * When true, no hover-expanded floating card (keeps dense calendars stable; use title + click for details).
+   */
+  disableHoverExpand?: boolean;
 }
 
 const ACCENT_COLORS: Record<string, string> = {
@@ -149,6 +153,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   onBook,
   onShowDetails,
   className,
+  disableHoverExpand = false,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardRect, setCardRect] = useState<DOMRect | null>(null);
@@ -180,6 +185,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   const tooltipText = tooltipParts.join('\n');
 
   const handleMouseEnter = () => {
+    if (disableHoverExpand) return;
     if (closeTimer.current) {
       clearTimeout(closeTimer.current);
       closeTimer.current = null;
@@ -190,6 +196,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   };
 
   const handleMouseLeave = () => {
+    if (disableHoverExpand) return;
     closeTimer.current = setTimeout(() => {
       setCardRect(null);
     }, 80);
@@ -224,7 +231,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         tabIndex={0}
         title={tooltipText}
         className={cn(
-          'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-colors duration-150',
+          'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-colors duration-150 pointer-events-auto',
           isAvailable ? 'border border-dashed' : 'border border-transparent',
           event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
           className
@@ -258,7 +265,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
       </div>
 
       {/* ── Expanded floating card via portal (escapes overflow-auto scroll container) ── */}
-      {cardRect && createPortal(
+      {!disableHoverExpand && cardRect && createPortal(
         <div
           role="button"
           tabIndex={-1}
