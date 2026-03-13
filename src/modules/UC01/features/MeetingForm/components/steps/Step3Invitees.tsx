@@ -332,17 +332,8 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   );
 
   const ministerCustomCellRender = useMemo(
-    () => ({ full_name: ministerNameCellRender }),
+    () => ({ external_email: ministerNameCellRender }),
     [ministerNameCellRender]
-  );
-
-  // Use UC02 minister columns but relabel the first column to "البريد الإلكتروني" for UC01.
-  const ministerColumns = useMemo(
-    () =>
-      MINISTER_ATTENDEES_COLUMNS.map((col) =>
-        col.id === 'full_name' ? { ...col, header: 'البريد الإلكتروني' } : col
-      ),
-    []
   );
 
   const inviteeRows = (formData.invitees ?? []).map((row) => ({
@@ -353,10 +344,6 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
   const ministerRows = ministerAttendees.map((row) => ({
     ...row,
     id: row.id,
-    // bridge UC01 fields to UC02 column ids for display
-    full_name: (row as any).full_name ?? row.external_email,
-    position_title: (row as any).position_title ?? row.position,
-    mobile_number: (row as any).mobile_number ?? row.mobile,
   }));
 
   const handleMinisterRowAdd = useCallback(() => {
@@ -433,7 +420,7 @@ export const Step3Invitees: React.FC<Step3InviteesProps> = ({
           <div className="relative w-full max-w-[1200px] mx-auto">
             <FormTable
               title='المدعوون (الوزير)'
-              columns={ministerColumns}
+              columns={MINISTER_ATTENDEES_COLUMNS}
               rows={ministerRows}
               onAddRow={handleMinisterRowAdd}
               onDeleteRow={handleMinisterRowDelete}

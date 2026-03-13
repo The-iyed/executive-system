@@ -1,18 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic, MeetingOwnerType, getMeetingTabsByRole } from '@/modules/shared';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MeetingStatus, MeetingClassificationLabels, MeetingStatusLabels, getMeetingStatusLabel, DataTable, CardsGrid, MeetingCardData, ViewType, TableColumn, StatusBadge, Pagination, TruncatedWithTooltip, formatDateArabic } from '@/modules/shared';
 import { getAssignedSchedulingRequests, GetMeetingsParams, MeetingApiResponse } from '../data/meetingsApi';
+import { deleteDraft } from '../data/draftApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { PATH } from '../routes/paths';
 import { Icon } from '@iconify/react';
-import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, Filter, X } from 'lucide-react';
+import { Search, LayoutList, LayoutGrid, Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, Filter, X, Trash2 } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
-import { Popover, PopoverTrigger, PopoverContent, cn } from '@/lib/ui';
+import { Popover, PopoverTrigger, PopoverContent, cn, Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@/lib/ui';
 
 const ITEMS_PER_PAGE = 10;
 
 const WORK_BASKET_STATUS_OPTIONS: string[] = [
+  MeetingStatus.DRAFT,
   MeetingStatus.UNDER_REVIEW,
   MeetingStatus.UNDER_GUIDANCE,
   MeetingStatus.UNDER_CONTENT_REVIEW,
@@ -28,6 +30,7 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.REJECTED,
   MeetingStatus.CANCELLED,
   MeetingStatus.CLOSED,
+  MeetingStatus.CLOSED_PASS,
 ];
 
 function getStatusFilterLabel(value: string): string {
@@ -39,11 +42,14 @@ type MeetingClassification = keyof typeof MeetingClassificationLabels;
 
 const WorkBasket: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [draftIdToDelete, setDraftIdToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     trackEvent('UC-02', 'uc02_work_basket_viewed');
@@ -105,12 +111,33 @@ const WorkBasket: React.FC = () => {
     return MeetingStatusLabels[status as MeetingStatus] || status;
   };
 
-  /* ─── Filter tabs with counts ─── */
+  const deleteDraftMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      setDraftIdToDelete(null);
+      setDeleteConfirmOpen(false);
+    },
+  });
+
+  const onDeleteDraft = useCallback((draftId: string) => {
+    setDraftIdToDelete(draftId);
+    setDeleteConfirmOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (draftIdToDelete) {
+      deleteDraftMutation.mutate(draftIdToDelete);
+    }
+  }, [draftIdToDelete, deleteDraftMutation]);
+
+  /* ─── Filter options: use full status list so "قيد المراجعة - محتوى" (UNDER_CONTENT_REVIEW) appears; getMeetingTabsByRole collapses it into RETURNED_FROM_CONTENT ─── */
   const filterTabs = [
     { id: 'all', label: 'جميع الحالات', count: totalItems },
-    ...getMeetingTabsByRole(MeetingOwnerType.SCHEDULING).map(tab => ({
-      ...tab,
-      count: meetings.filter(m => m.status === tab.id).length,
+    ...WORK_BASKET_STATUS_OPTIONS.map((status) => ({
+      id: status,
+      label: getMeetingStatusLabel(status),
+      count: meetings.filter((m) => m.status === status).length,
     })),
   ];
 
@@ -190,10 +217,64 @@ const WorkBasket: React.FC = () => {
         );
       },
     },
+    {
+      id: 'actions',
+      header: 'إجراءات',
+      width: 'w-40',
+      align: 'center',
+      render: (row: MeetingApiResponse) => {
+        if (row.status !== MeetingStatus.DRAFT) return null;
+        return (
+          <div className="flex justify-center w-full">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDeleteDraft(row.id); }}
+              disabled={deleteDraftMutation.isPending && draftIdToDelete === row.id}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              <span>{deleteDraftMutation.isPending && draftIdToDelete === row.id ? 'جاري الحذف...' : 'حذف المسودة'}</span>
+              <Trash2 className="w-4 h-4 flex-shrink-0" />
+            </button>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
     <div className="flex flex-col w-full min-h-0" dir="rtl">
+      {/* Delete draft confirmation */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open) { setDeleteConfirmOpen(false); setDraftIdToDelete(null); } }}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              حذف المسودة
+            </DialogTitle>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              هل أنت متأكد من حذف هذه المسودة؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setDeleteConfirmOpen(false); setDraftIdToDelete(null); }}
+              className="min-w-[100px]"
+              disabled={deleteDraftMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDraftMutation.isPending}
+            >
+              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ════════════════════════════════════════ */}
       {/* PAGE HEADER — Title + Search + Actions  */}
@@ -261,9 +342,6 @@ const WorkBasket: React.FC = () => {
                           </div>
                           <span>{tab.label}</span>
                         </div>
-                        {tab.count !== undefined && (
-                          <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
-                        )}
                       </button>
                     );
                   })}
@@ -374,6 +452,13 @@ const WorkBasket: React.FC = () => {
                 meetings={meetings}
                 onView={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
                 onDetails={(meeting) => navigate(PATH.MEETING_DETAIL.replace(':id', meeting.id))}
+                onSecondaryAction={(meeting) => meeting.status === MeetingStatus.DRAFT && onDeleteDraft(meeting.id)}
+                getSecondaryActionLabel={(meeting) =>
+                  meeting.status === MeetingStatus.DRAFT
+                    ? (deleteDraftMutation.isPending && draftIdToDelete === meeting.id ? 'جاري الحذف...' : 'حذف')
+                    : undefined
+                }
+                getSecondaryActionLoading={(meeting) => deleteDraftMutation.isPending && draftIdToDelete === meeting.id}
               />
             )}
             

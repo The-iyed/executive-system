@@ -65,6 +65,9 @@ import {
   type GeneralNoteItem,
   moveToWaitingList,
 } from '../data/meetingsApi';
+import { deleteDraft } from '../data/draftApi';
+import { PATH as UC02_PATH } from '../routes/paths';
+import { PATH as UC01_PATH } from '../../UC01/routes/paths';
 import {
   Select,
   SelectContent,
@@ -76,7 +79,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  Button,
   Textarea,
   DateTimePicker,
   Tooltip,
@@ -197,7 +202,23 @@ const MeetingDetail: React.FC = () => {
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
   const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const [isDeleteDraftModalOpen, setIsDeleteDraftModalOpen] = useState(false);
   const openEditForm = () => { setMeetingFormOpen(true); };
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      setIsDeleteDraftModalOpen(false);
+      navigate(isScheduleOfficer ? UC02_PATH.WORK_BASKET : UC01_PATH.MEETINGS);
+    },
+  });
+
+  const handleDeleteDraftConfirm = useCallback(() => {
+    if (id) deleteDraftMutation.mutate(id);
+  }, [id, deleteDraftMutation]);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -1767,14 +1788,6 @@ const MeetingDetail: React.FC = () => {
     );
   }, [meeting?.attachments, meeting?.previous_meeting_attachment?.id, deletedAttachmentIds]);
 
-  /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
-  const hasPreviousMeetingAttachment = useMemo(() => {
-    const p = meeting && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment;
-    if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
-    const id = (p as Record<string, unknown>).id;
-    return typeof id === 'string' && !deletedAttachmentIds.includes(id);
-  }, [meeting, deletedAttachmentIds]);
-
   // Handle form field changes
   const handleFieldChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -2491,6 +2504,20 @@ const MeetingDetail: React.FC = () => {
               tooltip: 'فتح نموذج التعديل',
               onClick: () => openEditForm(),
             }}
+            secondaryAction={
+              meetingStatus === MeetingStatus.DRAFT ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDeleteDraftModalOpen(true)}
+                  disabled={deleteDraftMutation.isPending}
+                  className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
+                </Button>
+              ) : undefined
+            }
             primaryAction={
               <AIGenerateButton
                 label="تقييم جاهزية الاجتماع"
@@ -2869,7 +2896,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                     <h3 className="text-[15px] font-bold text-[#1F2937]">مرفقات اختيارية</h3>
                   </div>
-                  {canEdit && (optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPreviousMeetingAttachment) && (
+                  {canEdit && (optionalAttachmentsList.length > 0 || newAttachments.length > 0) && (
                     <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#048F86]/30 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
                       <Plus className="w-4 h-4" />
                       إضافة مرفق
@@ -2879,34 +2906,9 @@ const MeetingDetail: React.FC = () => {
                 </div>
                 <div className="p-6">
                   {(() => {
-                    const prevAtt = meeting && typeof (meeting as unknown as Record<string, unknown>).previous_meeting_attachment === 'object' && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment != null && !Array.isArray((meeting as unknown as Record<string, unknown>).previous_meeting_attachment)
-                      ? (meeting as unknown as unknown as Record<string, unknown>).previous_meeting_attachment as Record<string, unknown>
-                      : null;
-                    const prevId = prevAtt && typeof prevAtt.id === 'string' ? prevAtt.id : null;
-                    const prevNotDeleted = prevId != null && !deletedAttachmentIds.includes(prevId);
-                    const hasPrevAttachment = prevAtt != null && prevNotDeleted;
-                    const hasAnyOptional = optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPrevAttachment;
+                    const hasAnyOptional = optionalAttachmentsList.length > 0 || newAttachments.length > 0;
                   return hasAnyOptional ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {prevAtt != null && prevNotDeleted && (
-                        <div key={prevId ?? 'prev-meeting-att'} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
-                          {(typeof prevAtt.file_type === 'string' && prevAtt.file_type.toLowerCase() === 'pdf') ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{typeof prevAtt.file_type === 'string' ? prevAtt.file_type.toUpperCase() : 'FILE'}</div>}
-                          <div className="flex flex-col items-end min-w-0 flex-1">
-                            <span className="text-[10px] font-medium text-[#048F86] bg-[#048F86]/10 px-2 py-0.5 rounded-full mb-1">محضر الاجتماع السابق</span>
-                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{typeof prevAtt.file_name === 'string' ? prevAtt.file_name : ''}</span>
-                            <span className="text-xs text-[#9CA3AF]">{typeof prevAtt.file_size === 'number' ? Math.round(prevAtt.file_size / 1024) : 0} KB</span>
-                          </div>
-                          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                            {typeof prevAtt.blob_url === 'string' && (
-                              <>
-                                <a href={prevAtt.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
-                                <button type="button" onClick={() => setPreviewAttachment({ blob_url: prevAtt.blob_url as string, file_name: typeof prevAtt.file_name === 'string' ? prevAtt.file_name : '', file_type: typeof prevAtt.file_type === 'string' ? prevAtt.file_type : undefined })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                              </>
-                            )}
-                            <button type="button" disabled={!canEdit} onClick={() => prevId && handleDeleteAttachment(prevId)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </div>
-                      )}
                       {optionalAttachmentsList.map((att) => (
                         <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
@@ -4191,6 +4193,39 @@ const MeetingDetail: React.FC = () => {
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
       {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
       <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
+
+      {/* Delete draft confirmation (Draft status only) */}
+      <Dialog open={isDeleteDraftModalOpen} onOpenChange={(open) => !deleteDraftMutation.isPending && setIsDeleteDraftModalOpen(open)}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              حذف المسودة
+            </DialogTitle>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              هل أنت متأكد من حذف هذه المسودة؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDraftModalOpen(false)}
+              className="min-w-[100px]"
+              disabled={deleteDraftMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteDraftConfirm}
+              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDraftMutation.isPending}
+            >
+              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Meeting Quality Modal */}
      <QualityModal 
