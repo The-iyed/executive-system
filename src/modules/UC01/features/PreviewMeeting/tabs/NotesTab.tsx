@@ -1,12 +1,25 @@
 import React from 'react';
-import { FileText, CalendarClock, StickyNote } from 'lucide-react';
+import { FileText, CalendarClock, StickyNote, MessageSquare } from 'lucide-react';
 import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
 
 interface NotesTabProps {
   meeting: MeetingApiResponse & {
-    content_officer_note?: string | null;
+    content_officer_notes?: string | null;
     scheduling_officer_note?: string | null;
   };
+}
+
+/** Normalize API general_notes (array of { text } or string) to a single string. */
+function getGeneralNotesText(generalNotes: unknown): string {
+  if (generalNotes == null) return '';
+  if (typeof generalNotes === 'string' && generalNotes.trim()) return generalNotes.trim();
+  if (Array.isArray(generalNotes)) {
+    const parts = generalNotes
+      .map((n: { text?: string }) => (n && typeof n.text === 'string' ? n.text.trim() : ''))
+      .filter(Boolean);
+    if (parts.length) return parts.join('\n');
+  }
+  return '';
 }
 
 const noteConfig = {
@@ -22,6 +35,12 @@ const noteConfig = {
     iconBg: 'bg-slate-100',
     iconColor: 'text-slate-600',
   },
+  general: {
+    title: 'ملاحظات إضافية',
+    icon: MessageSquare,
+    iconBg: 'bg-amber-50',
+    iconColor: 'text-amber-700',
+  },
 } as const;
 
 function NoteBlock({
@@ -31,7 +50,7 @@ function NoteBlock({
 }: {
   title: string;
   text: string;
-  variant: 'content' | 'scheduling';
+  variant: 'content' | 'scheduling' | 'general';
 }) {
   const config = noteConfig[variant];
   const Icon = config.icon;
@@ -58,12 +77,14 @@ function NoteBlock({
 }
 
 export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
-  const contentOfficerNotes = (meeting.content_officer_note ?? '').trim();
+  const contentOfficerNotes = (meeting.content_officer_notes ?? '').trim();
   const schedulingOfficerNote = (meeting.scheduling_officer_note ?? '').trim();
+  const generalNotesText = getGeneralNotesText(meeting.general_notes);
 
   const hasContentNotes = contentOfficerNotes.length > 0;
   const hasSchedulingNotes = schedulingOfficerNote.length > 0;
-  const hasAnyNotes = hasContentNotes || hasSchedulingNotes;
+  const hasGeneralNotes = generalNotesText.length > 0;
+  const hasAnyNotes = hasContentNotes || hasSchedulingNotes || hasGeneralNotes;
 
   if (!hasAnyNotes) {
     return (
@@ -110,6 +131,13 @@ export const NotesTab: React.FC<NotesTabProps> = ({ meeting }) => {
             title={noteConfig.scheduling.title}
             text={schedulingOfficerNote}
             variant="scheduling"
+          />
+        )}
+        {hasGeneralNotes && (
+          <NoteBlock
+            title={noteConfig.general.title}
+            text={generalNotesText}
+            variant="general"
           />
         )}
       </div>
