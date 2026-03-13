@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import axiosInstance from '@/modules/auth/utils/axios';
+import { toISOStringWithTimezone } from '@/lib/ui';
 
 /** Monday of the given week at local midnight (must match MinisterCalendarView) */
 function getWeekStart(date: Date): Date {
@@ -21,9 +22,9 @@ function getWeekEnd(weekStart: Date): Date {
 export function getCalendarWeekRange(centerDate: Date): { startISO: string; endISO: string } {
   const start = getWeekStart(centerDate);
   const end = getWeekEnd(start);
-  const startISO = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0).toISOString();
-  const endISO = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
-  return { startISO, endISO };
+  const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+  const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
+  return { startISO: toISOStringWithTimezone(startDate), endISO: toISOStringWithTimezone(endDate) };
 }
 
 /** Same staleTime as calendar useQuery so prefetched data is used when calendar mounts */

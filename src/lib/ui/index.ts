@@ -190,4 +190,4 @@ export { DateTimePicker } from './components/date-time-picker';
 
 // Export utilities
 export { cn } from './lib/utils';
-export { formatDateToISO, formatDateStringToISO } from './lib/dateUtils';
+export { formatDateToISO, formatDateStringToISO, toISOStringWithTimezone, toISOStringWithTimezoneFromString } from './lib/dateUtils';
