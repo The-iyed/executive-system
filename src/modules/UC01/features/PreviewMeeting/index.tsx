@@ -54,7 +54,7 @@ const PreviewMeeting: React.FC = () => {
       is_on_behalf_of: (m.is_on_behalf_of as boolean | undefined) ?? undefined,
       meeting_manager_label: (meeting as { meeting_owner_name?: string }).meeting_owner_name ?? undefined,
       meetingSubject: meeting.meeting_title ?? undefined,
-      meetingDescription: meeting.meeting_subject ?? undefined,
+      meetingDescription: meeting.description ?? undefined,
       sector: meeting.sector ?? undefined,
       meetingType: meeting.meeting_type ?? undefined,
       is_urgent: !!(m.urgent_reason as string | undefined),

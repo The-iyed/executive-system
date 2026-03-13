@@ -155,9 +155,9 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   }, [startHour, endHour]);
 
   return (
-    <div className="w-full min-h-0 flex flex-col rounded-2xl overflow-hidden" dir="rtl">
+    <div className="w-full min-h-0 flex flex-col rounded-2xl border border-gray-200" dir="rtl">
       {/* ── Day header row ── */}
-      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] shrink-0 sticky top-0 z-10 bg-white border-b border-gray-200">
+      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] shrink-0 sticky top-0 z-10 bg-white border-b border-gray-200 rounded-t-2xl overflow-hidden">
         {weekDates.map((date, index) => {
           const dayName = dayNamesShort[date.getDay()];
           const dayNumber = date.getDate();
@@ -200,7 +200,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
 
       {/* ── Time grid ── */}
       <div
-        className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] min-h-0 flex-1"
+        className="grid grid-cols-[repeat(7,minmax(0,1fr))_56px] min-h-0 flex-1 rounded-b-2xl"
         style={{ gridAutoRows: `${ROW_HEIGHT_PX}px` }}
       >
         {timeSlots.map((time, timeIndex) => (
@@ -245,17 +245,17 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                 <div
                   key={dayIndex}
                   className={cn(
-                    'flex flex-row gap-0.5 overflow-hidden shrink-0 transition-all duration-150 border-b border-gray-100',
+                    'flex flex-row gap-0.5 shrink-0 border-b border-gray-100 overflow-visible',
                     dayIndex < 6 && 'border-l border-gray-50',
                     today && 'bg-[#048F86]/[0.02]',
-                    startingEvents.length === 0 && isSlotClickable && 'cursor-pointer hover:bg-[#048F86]/[0.04]',
+                    startingEvents.length > 0 && 'z-[1] hover:z-40',
+                    startingEvents.length === 0 && isSlotClickable && 'cursor-pointer hover:bg-[#048F86]/[0.06] transition-colors duration-150',
                     startingEvents.length === 0 && !isSlotClickable && 'cursor-not-allowed',
                     isPast && startingEvents.length === 0 && 'opacity-40',
                   )}
                   style={{
                     gridRow: spanRows > 1 ? `${row} / span ${spanRows}` : row,
                     gridColumn: col,
-                    zIndex: startingEvents.length > 0 ? 1 : undefined,
                     padding: startingEvents.length > 0 ? '2px' : undefined,
                   }}
                   onClick={startingEvents.length === 0 && isSlotClickable ? () => onTimeSlotClick?.(date, time) : undefined}
@@ -265,10 +265,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                     return (
                       <div
                         key={event.id}
-                        className={cn(
-                          'min-w-0 flex-1 h-full overflow-hidden',
-                          hasExactDuration && 'relative'
-                        )}
+                        className="min-w-0 flex-1 relative overflow-visible h-full"
                       >
                         <CalendarEvent
                           event={event}
