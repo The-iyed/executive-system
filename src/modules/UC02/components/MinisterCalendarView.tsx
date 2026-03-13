@@ -18,6 +18,7 @@ import {
   prefetchOutlookTimelineWeeksAround,
   OUTLOOK_TIMELINE_STALE_MS,
   createScheduledMeeting,
+  updateScheduledMeeting,
   type OutlookTimelineEvent,
 } from '../data/calendarApi';
 
@@ -42,9 +43,6 @@ import { getMeetingById } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
-import { useMeetingFormDrawer } from '../features/MeetingForm/hooks/useMeetingFormDrawer';
-import MeetingFormDrawer from '../features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
-import { PATH } from '../routes/paths';
 import { trackEvent } from '@/lib/analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
@@ -124,21 +122,30 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
   const variantByInternal = getRandomVariant(id);
+  const baseFields = {
+    id,
+    type: 'reserved' as const,
+    variant: variantByInternal,
+    label: title,
+    title,
+    is_available: false,
+    is_internal: event.is_internal,
+    location: event.location ?? undefined,
+    organizer: event.organizer,
+    attachments: mapAttachments(event.attachments),
+    attendees: event.attendees ?? null,
+    meeting_id: event.meeting_id ?? undefined,
+    meeting_title: event.meeting_title ?? undefined,
+    meeting_channel: event.meeting_channel ?? undefined,
+    meeting_location: event.meeting_location ?? undefined,
+    meeting_link: event.meeting_link ?? undefined,
+  };
   if (isNaN(startDate.getTime())) {
     return {
-      id,
-      type: 'reserved',
-      variant: variantByInternal,
-      label: title,
+      ...baseFields,
       startTime: '08:00',
       endTime: '09:00',
       date: new Date(),
-      title,
-      is_available: false,
-      is_internal: event.is_internal,
-      location: event.location ?? undefined,
-      organizer: event.organizer,
-      attachments: mapAttachments(event.attachments),
     };
   }
   const startTime = formatTimeToSlot(startDate, false);
@@ -148,21 +155,12 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
     endTime = `${Math.min(23, startHour + 1).toString().padStart(2, '0')}:00`;
   }
   return {
-    id,
-    type: 'reserved',
-    variant: variantByInternal,
-    label: title,
+    ...baseFields,
     startTime,
     endTime,
     date: startDate,
-    title,
-    is_available: false,
     exactStartTime: formatExactTime(startDate),
     exactEndTime: formatExactTime(endDate),
-    is_internal: event.is_internal,
-    location: event.location ?? undefined,
-    organizer: event.organizer,
-    attachments: mapAttachments(event.attachments),
   };
 };
 
@@ -180,7 +178,18 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
-  const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
+  const [slotForNewMeeting, setSlotForNewMeeting] = useState<{
+    date: Date;
+    time: string;
+    title?: string;
+    meetingLocation?: string | null;
+    meetingChannel?: string;
+    meetingLink?: string | null;
+    meetingId?: string;
+    mode?: 'create' | 'edit';
+    /** Pre-fill invitees table when editing (from event.attendees) */
+    initialInvitees?: Array<Record<string, unknown>>;
+  } | null>(null);
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
@@ -466,7 +475,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 endHour={24}
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time, mode: 'create' })}
               />
             ) : viewMode === 'weekly' ? (
               <WeeklyCalendarGrid
@@ -476,7 +485,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 endHour={24}
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time, mode: 'create' })}
               />
             ) : (
               <MonthlyCalendarGrid
@@ -484,7 +493,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 events={events}
                 onEventClick={(event) => setSelectedEventForDetails(event)}
                 onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
+                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time, mode: 'create' })}
                 onDayOverflowClick={(date, dayEvents) => setDayEventsModal({ date, events: dayEvents })}
               />
             )}
@@ -550,6 +559,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
                         </span>
                       )}
+                    
                     </div>
                     <button
                       onClick={() => setSelectedEventForDetails(null)}
@@ -619,6 +629,42 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       </div>
                     )}
 
+                    {/* Invitees – قائمة المدعوين (from timeline attendees) */}
+                    {selectedEventForDetails.attendees && selectedEventForDetails.attendees.length > 0 && (
+                      <div className="flex flex-col gap-2 py-3.5 border-b border-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                            </div>
+                            <span className="text-[13px] font-semibold text-gray-800">
+                              قائمة المدعوين
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-gray-500 bg-gray-50 rounded-full px-2 py-0.5">
+                            {selectedEventForDetails.attendees.length} مدعو
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1.5 mt-1">
+                          {selectedEventForDetails.attendees.map((attendee, idx) => (
+                            <div
+                              key={`${attendee.name}-${attendee.email}-${idx}`}
+                              className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50"
+                            >
+                              <span className="text-[13px] font-medium text-gray-800 truncate">
+                                {attendee.name || '—'}
+                              </span>
+                              {attendee.email && (
+                                <span className="text-[11px] text-gray-500 truncate max-w-[180px]">
+                                  {attendee.email}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Attachments */}
                     {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
                       <div className="flex items-start gap-3 py-3.5">
@@ -636,6 +682,50 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       </div>
                     )}
                   </div>
+                  <div className="flex w-full justify-end ">
+                  {selectedEventForDetails.meeting_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEventForDetails(null);
+                          const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
+                          const location = selectedEventForDetails.location ?? null;
+                          const inferredChannel =
+                            location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
+                          const attendees = selectedEventForDetails.attendees ?? [];
+                          const initialInvitees = attendees.length > 0
+                            ? attendees.map((a, i) => ({
+                                _id: `inv-edit-${i}-${Date.now()}`,
+                                email: a.email ?? '',
+                                position: a.name ?? '',
+                                name: a.name ?? '',
+                                mobile: '',
+                                sector: '',
+                                attendance_mechanism: 'PHYSICAL',
+                                access_permission: false,
+                                is_consultant: false,
+                                meeting_owner: false,
+                              }))
+                            : undefined;
+                          setSlotForNewMeeting({
+                            date: selectedEventForDetails.date,
+                            time: startTime,
+                            title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
+                            meetingLocation: selectedEventForDetails.meeting_location ?? location,
+                            meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
+                            meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
+                            meetingId: selectedEventForDetails.meeting_id,
+                            mode: 'edit',
+                            initialInvitees,
+                          });
+                        }}
+                        className="inline-flex max-w-[130px] items-center gap-1.5 px-3 m-4 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        تعديل
+                      </button>
+                    )}
+                    </div>
                 </div>
               )}
             </>
@@ -696,8 +786,14 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       >
         {slotForNewMeeting && (
           <CalendarSlotMeetingForm
+            key={slotForNewMeeting.meetingId ?? `create-${slotForNewMeeting.date.getTime()}-${slotForNewMeeting.time}`}
             slotDate={slotForNewMeeting.date}
             slotTime={slotForNewMeeting.time}
+            initialTitle={slotForNewMeeting.title ?? ''}
+            initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
+            initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
+            initialMeetingLink={slotForNewMeeting.meetingLink ?? undefined}
+            initialInvitees={slotForNewMeeting.initialInvitees}
             isSubmitting={slotFormSubmitting}
             submitError={slotFormError}
             onSubmit={async (values) => {
@@ -705,55 +801,75 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               setSlotFormSubmitting(true);
               const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
               const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
-              const optimisticId = `optimistic-${Date.now()}`;
-              const optimisticEvent = buildOptimisticOutlookEvent(
-                values.title,
-                scheduled_start,
-                scheduled_end,
-                optimisticId
-              );
-
-              // Optimistic update: add the new meeting to the calendar cache immediately
-              queryClient.setQueryData<OutlookTimelineEvent[]>(
-                ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                (old) => [...(old ?? []), optimisticEvent]
-              );
-              setSlotForNewMeeting(null);
+              const isEdit = slotForNewMeeting?.mode === 'edit' && slotForNewMeeting.meetingId;
 
               try {
-                const invitees = values.invitees.map((m) => ({
-                  name: m.full_name ?? '',
-                  position: m.position_title ?? '',
-                  mobile: m.mobile_number ?? '',
-                  email: m.email ?? '',
+                const invitees = values.invitees.map((m: Record<string, unknown>) => ({
+                  name: (m.name ?? m.full_name ?? m.position ?? '') as string,
+                  position: (m.position ?? m.position_title ?? '') as string,
+                  mobile: (m.mobile ?? m.mobile_number ?? '') as string,
+                  email: (m.email ?? '') as string,
                 }));
-                const result = await createScheduledMeeting({
-                  meeting_title: values.title,
-                  scheduled_start,
-                  scheduled_end,
-                  meeting_channel: values.meeting_channel,
-                  meeting_location: values.meeting_location,
-                  meeting_link: values.meeting_link,
-                  proposer_user_ids: values.proposer_user_ids,
-                  invitees,
-                });
-                const meetingId = (result as { id?: string })?.id;
-                trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
-                  meeting_id: meetingId,
-                  meeting_title: values.title,
-                });
+
+                if (isEdit) {
+                  await updateScheduledMeeting(slotForNewMeeting!.meetingId!, {
+                    meeting_title: values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    meeting_channel: values.meeting_channel,
+                    meeting_location: values.meeting_location,
+                    meeting_link: values.meeting_link,
+                    proposer_user_ids: values.proposer_user_ids,
+                    invitees,
+                  });
+                  trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
+                    meeting_id: slotForNewMeeting!.meetingId,
+                    meeting_title: values.title,
+                  });
+                } else {
+                  const optimisticId = `optimistic-${Date.now()}`;
+                  const optimisticEvent = buildOptimisticOutlookEvent(
+                    values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    optimisticId
+                  );
+
+                  // Optimistic update: add the new meeting to the calendar cache immediately
+                  queryClient.setQueryData<OutlookTimelineEvent[]>(
+                    ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                    (old) => [...(old ?? []), optimisticEvent]
+                  );
+
+                  const result = await createScheduledMeeting({
+                    meeting_title: values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    meeting_channel: values.meeting_channel,
+                    meeting_location: values.meeting_location,
+                    meeting_link: values.meeting_link,
+                    proposer_user_ids: values.proposer_user_ids,
+                    invitees,
+                  });
+                  const meetingId = (result as { id?: string })?.id;
+                  trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
+                    meeting_id: meetingId,
+                    meeting_title: values.title,
+                  });
+                }
+
+                setSlotForNewMeeting(null);
                 // Invalidate in background so next time we get server truth (no need to block UI)
                 queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
               } catch (err: unknown) {
-                // Rollback: remove the optimistic event from the cache
-                queryClient.setQueryData<OutlookTimelineEvent[]>(
-                  ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                  (old) => (old ?? []).filter((e) => e.item_id !== optimisticId)
-                );
+                if (!isEdit) {
+                  // For create we may have added an optimistic event – roll it back
+                  queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+                }
                 const message =
                   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                   (err as Error)?.message ||
-                  'حدث خطأ أثناء إنشاء الاجتماع';
+                  (isEdit ? 'حدث خطأ أثناء تحديث الاجتماع' : 'حدث خطأ أثناء إنشاء الاجتماع');
                 setSlotFormError(message);
               } finally {
                 setSlotFormSubmitting(false);
