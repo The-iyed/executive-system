@@ -23,6 +23,37 @@ export enum MeetingStatus {
   CLOSED = 'CLOSED',
 }
 
+/**
+ * UC01 (request submitter) cannot edit while the request is in any of these statuses:
+ * under review, closed, cancelled, rejected.
+ */
+const SUBMITTER_NON_EDITABLE_STATUSES = new Set<string>([
+  MeetingStatus.UNDER_REVIEW,
+  MeetingStatus.UNDER_GUIDANCE,
+  MeetingStatus.UNDER_CONTENT_REVIEW,
+  MeetingStatus.REJECTED,
+  MeetingStatus.CANCELLED,
+  MeetingStatus.CLOSED,
+  MeetingStatus.CLOSED_PASS,
+  MeetingStatus.SCHEDULED,
+  MeetingStatus.SCHEDULED_DELAYED,
+  MeetingStatus.SCHEDULED_ADDITIONAL_INFO,
+  MeetingStatus.SCHEDULED_CONTENT,
+  MeetingStatus.SCHEDULED_SCHEDULING,
+  MeetingStatus.SCHEDULED_DELEGATED,
+]);
+
+export function isSubmitterEditBlockedStatus(
+  status: MeetingStatus | string | null | undefined
+): boolean {
+  if (status == null || status === '') return false;
+  return SUBMITTER_NON_EDITABLE_STATUSES.has(String(status));
+}
+
+/** Arabic message when submitter edit is blocked by status */
+export const SUBMITTER_EDIT_BLOCKED_MESSAGE =
+  'لا يمكن تعديل طلب الاجتماع في حالته الحالية (قيد المراجعة، مجدول، مرفوض، ملغى، أو مغلق).';
+
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.DRAFT]: 'جديد',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',

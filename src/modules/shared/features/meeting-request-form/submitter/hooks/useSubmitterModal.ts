@@ -10,6 +10,10 @@ import {
   useResubmitToContent,
 } from "../../hooks/useDraftMutations";
 import { MeetingStatus, SAVEABLE_DRAFT_STATUSES } from "../../types";
+import {
+  isSubmitterEditBlockedStatus,
+  SUBMITTER_EDIT_BLOCKED_MESSAGE,
+} from "@/modules/shared/types";
 import { mapMeetingToSubmitterStep1, transformDraftToInvitees, transformDraftToStep2ContentData } from "../utils/mappers";
 import { buildStep1FormData } from "../utils/buildStep1FormData";
 import type { DynamicTableFormHandle } from "@/lib/dynamic-table-form";
@@ -69,9 +73,9 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
   const resolvedStatus = fetchedStatus || MeetingStatus.DRAFT;
   const canSaveAsDraft = SAVEABLE_DRAFT_STATUSES.has(resolvedStatus);
 
-  /** UC01 (submitter) must not update a request while it is under review */
+  /** UC01 (submitter) must not update in non-editable statuses */
   const editBlockedUnderReview =
-    isEditMode && !draftLoading && !!draftData && resolvedStatus === MeetingStatus.UNDER_REVIEW;
+    isEditMode && !draftLoading && !!draftData && isSubmitterEditBlockedStatus(resolvedStatus);
 
   // Apply editable-fields restrictions when the draft was returned from scheduling or content
   const resolvedEditableFields =
@@ -82,7 +86,7 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
   const fetchError = isError
     ? error?.message || "فشل تحميل بيانات الاجتماع"
     : editBlockedUnderReview
-      ? "لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة."
+      ? SUBMITTER_EDIT_BLOCKED_MESSAGE
       : null;
 
   // ── Mutations ───────────────────────────────────────────────────────────────
@@ -111,8 +115,8 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleStep1Submit = useCallback(
     (data: SubmitterStep1Values) => {
-      if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
-        toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+      if (isEditMode && isSubmitterEditBlockedStatus(resolvedStatus)) {
+        toast.error(SUBMITTER_EDIT_BLOCKED_MESSAGE);
         return;
       }
       const formData = buildStep1FormData(data);
@@ -135,8 +139,8 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleStep2Submit = useCallback(
     (formData: FormData) => {
-      if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
-        toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+      if (isEditMode && isSubmitterEditBlockedStatus(resolvedStatus)) {
+        toast.error(SUBMITTER_EDIT_BLOCKED_MESSAGE);
         return;
       }
       if (!draftId) return;
@@ -167,8 +171,8 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleFinalSubmit = useCallback(async () => {
     if (!draftId) return;
-    if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
-      toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+    if (isEditMode && isSubmitterEditBlockedStatus(resolvedStatus)) {
+      toast.error(SUBMITTER_EDIT_BLOCKED_MESSAGE);
       return;
     }
 
@@ -188,8 +192,8 @@ export function useSubmitterModal({ editMeetingId, onClose }: UseSubmitterModalO
 
   const handleSaveAsDraft = useCallback(async () => {
     if (!draftId) return;
-    if (isEditMode && resolvedStatus === MeetingStatus.UNDER_REVIEW) {
-      toast.error("لا يمكن تعديل طلب الاجتماع وهو قيد المراجعة.");
+    if (isEditMode && isSubmitterEditBlockedStatus(resolvedStatus)) {
+      toast.error(SUBMITTER_EDIT_BLOCKED_MESSAGE);
       return;
     }
 
