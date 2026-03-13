@@ -12,7 +12,8 @@ import {
   isPresetLocation,
 } from '../features/MeetingForm/utils/constants';
 import { createWebexMeeting } from '../data/meetingsApi';
-import { searchByEmail } from '../data/adIntegrationApi';
+import { searchByEmail, type ADUserByEmail } from '../data/adIntegrationApi';
+import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import { X } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
@@ -68,7 +69,8 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_channel: string;
   meeting_location?: string;
   meeting_link?: string;
-  proposer_user_ids?: string[];
+  /** Full proposer payloads for API */
+  proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
 }
 
@@ -128,7 +130,10 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     return d;
   }, []);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
-  const [proposerSelections, setProposerSelections] = useState<{ id: string; label: string; email?: string }[]>([]);
+  /** Each selected proposer keeps full AD row for API */
+  const [proposerSelections, setProposerSelections] = useState<
+    (ADUserByEmail & { id: string; label: string })[]
+  >([]);
 
   const loadProposerAdOptions = useCallback(
     async (search: string, _skip: number, limit: number) => {
@@ -138,6 +143,10 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       }
       try {
         const users = await searchByEmail(trimmed, limit);
+        users.forEach((u) => {
+          const k = u.objectGUID ?? u.mail ?? '';
+          if (k) proposerAdByIdRef.current[k] = u;
+        });
         const selectedIds = new Set(proposerSelections.map((p) => p.id));
         const items = users
           .filter((u) => !selectedIds.has(u.objectGUID ?? u.mail ?? ''))
@@ -166,10 +175,19 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     [proposerSelections]
   );
 
+  const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
+
   const addProposer = useCallback((opt: { value: string; label: string; email?: string }) => {
+    const fromMap = proposerAdByIdRef.current[opt.value];
+    const base: ADUserByEmail = fromMap ?? {
+      objectGUID: opt.value.startsWith('ad-') ? undefined : opt.value,
+      mail: opt.email ?? (opt.value.startsWith('ad-') ? opt.value.slice(3) : opt.value),
+      displayName: opt.label.split(/\s+\(/)[0]?.trim(),
+    };
+    const id = base.objectGUID ?? base.mail ?? opt.value;
     setProposerSelections((prev) => {
-      if (prev.some((p) => p.id === opt.value)) return prev;
-      return [...prev, { id: opt.value, label: opt.label, email: opt.email }];
+      if (prev.some((p) => p.id === id)) return prev;
+      return [...prev, { ...base, id, label: opt.label }];
     });
   }, []);
 
@@ -304,6 +322,24 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
     const meeting_location = getMeetingLocationForSubmit();
 
+    const proposers: CreateScheduledMeetingProposer[] | undefined =
+      proposerSelections.length > 0
+        ? proposerSelections.map((p) => ({
+            object_guid: p.objectGUID ?? p.mail ?? p.id,
+            email: p.mail ?? '',
+            name: p.displayNameAR ?? p.displayNameEN ?? p.displayName ?? p.label ?? p.mail ?? '',
+            name_ar: p.displayNameAR,
+            name_en: p.displayNameEN,
+            mobile: p.mobile,
+            title: p.title,
+            department: p.department,
+            company: p.company,
+            given_name: p.givenName,
+            sn: p.sn,
+            cn: p.cn,
+          }))
+        : undefined;
+
     onSubmit({
       title: titleTrimmed,
       start_date: startDate,
@@ -311,7 +347,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_channel: meetingChannel,
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
-      proposer_user_ids: proposerSelections.length > 0 ? proposerSelections.map((p) => p.id) : undefined,
+      proposers,
       invitees: inviteesPayload,
     });
   };
@@ -468,7 +504,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
                   >
                     <span className="text-[14px] text-[#344054]">
                       {p.label}
-                      {p.email ? ` (${p.email})` : ''}
+                      {p.mail ? ` (${p.mail})` : ''}
                     </span>
                     <button
                       type="button"
