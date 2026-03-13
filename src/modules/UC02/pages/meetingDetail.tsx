@@ -65,6 +65,9 @@ import {
   type GeneralNoteItem,
   moveToWaitingList,
 } from '../data/meetingsApi';
+import { deleteDraft } from '../data/draftApi';
+import { PATH as UC02_PATH } from '../routes/paths';
+import { PATH as UC01_PATH } from '../../UC01/routes/paths';
 import {
   Select,
   SelectContent,
@@ -76,7 +79,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  Button,
   Textarea,
   DateTimePicker,
   Tooltip,
@@ -197,7 +202,23 @@ const MeetingDetail: React.FC = () => {
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
   const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const [isDeleteDraftModalOpen, setIsDeleteDraftModalOpen] = useState(false);
   const openEditForm = () => { setMeetingFormOpen(true); };
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      setIsDeleteDraftModalOpen(false);
+      navigate(isScheduleOfficer ? UC02_PATH.WORK_BASKET : UC01_PATH.MEETINGS);
+    },
+  });
+
+  const handleDeleteDraftConfirm = useCallback(() => {
+    if (id) deleteDraftMutation.mutate(id);
+  }, [id, deleteDraftMutation]);
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -1349,6 +1370,7 @@ const MeetingDetail: React.FC = () => {
         (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
+        description: meeting.description ?? '',
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
@@ -1765,14 +1787,6 @@ const MeetingDetail: React.FC = () => {
         (prevId == null || a.id !== prevId)
     );
   }, [meeting?.attachments, meeting?.previous_meeting_attachment?.id, deletedAttachmentIds]);
-
-  /** Whether meeting has a non-deleted previous_meeting_attachment (for optional attachments section) */
-  const hasPreviousMeetingAttachment = useMemo(() => {
-    const p = meeting && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment;
-    if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
-    const id = (p as Record<string, unknown>).id;
-    return typeof id === 'string' && !deletedAttachmentIds.includes(id);
-  }, [meeting, deletedAttachmentIds]);
 
   // Handle form field changes
   const handleFieldChange = (field: string, value: string) => {
@@ -2476,7 +2490,7 @@ const MeetingDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 pr-5 min-w-0">
         {/* Head: shared detail page header */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
+        <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
             title={` ${meeting.meeting_title}  (${meeting.request_number})`}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
@@ -2490,6 +2504,20 @@ const MeetingDetail: React.FC = () => {
               tooltip: 'فتح نموذج التعديل',
               onClick: () => openEditForm(),
             }}
+            secondaryAction={
+              meetingStatus === MeetingStatus.DRAFT ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDeleteDraftModalOpen(true)}
+                  disabled={deleteDraftMutation.isPending}
+                  className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
+                </Button>
+              ) : undefined
+            }
             primaryAction={
               <AIGenerateButton
                 label="تقييم جاهزية الاجتماع"
@@ -2501,6 +2529,43 @@ const MeetingDetail: React.FC = () => {
             onTabChange={setActiveTab}
             helpTooltip={permissionTooltip}
           />
+          {/* Rejection / Cancellation: small collapsible in header (REJECTED or CANCELLED; fallback to the other when missing) */}
+          {(meetingStatus === MeetingStatus.REJECTED || meetingStatus === MeetingStatus.CANCELLED) && (() => {
+            const reasonRejected = meeting?.rejection_reason || meeting?.cancellation_reason;
+            const noteRejected = meeting?.rejection_note || meeting?.cancellation_note;
+            const reasonCancelled = meeting?.cancellation_reason || meeting?.rejection_reason;
+            const noteCancelled = meeting?.cancellation_note || meeting?.rejection_note;
+            const isRejected = meetingStatus === MeetingStatus.REJECTED;
+            const reason = isRejected ? reasonRejected : reasonCancelled;
+            const note = isRejected ? noteRejected : noteCancelled;
+            if (!reason && !note) return null;
+            const label = isRejected ? 'سبب الرفض وملاحظاته' : 'سبب الإلغاء وملاحظاته';
+            return (
+              <Collapsible className="group rounded-lg border border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
+                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-right hover:bg-[#F9FAFB] transition-colors data-[state=open]:bg-[#F9FAFB]">
+                  <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isRejected ? 'text-red-500' : 'text-[#6B7280]'}`} strokeWidth={1.8} />
+                  <span className={`text-[13px] font-medium flex-1 ${isRejected ? 'text-[#991B1B]' : 'text-[#374151]'}`}>{label}</span>
+                  <ChevronDown className="w-4 h-4 flex-shrink-0 text-[#6B7280] transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-3 py-2 pt-0 border-t border-[#F3F4F6] flex flex-col gap-2 text-right">
+                    {reason && (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">{isRejected ? 'سبب الرفض' : 'سبب الإلغاء'}</p>
+                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{reason}</p>
+                      </div>
+                    )}
+                    {note && (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#6B7280] mb-0.5">ملاحظات إضافية</p>
+                        <p className="text-[12px] text-[#1F2937] whitespace-pre-wrap leading-relaxed">{note}</p>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })()}
         </div>
 
         {/* Content card */}
@@ -2831,7 +2896,7 @@ const MeetingDetail: React.FC = () => {
                     </div>
                     <h3 className="text-[15px] font-bold text-[#1F2937]">مرفقات اختيارية</h3>
                   </div>
-                  {canEdit && (optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPreviousMeetingAttachment) && (
+                  {canEdit && (optionalAttachmentsList.length > 0 || newAttachments.length > 0) && (
                     <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#048F86]/30 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
                       <Plus className="w-4 h-4" />
                       إضافة مرفق
@@ -2841,34 +2906,9 @@ const MeetingDetail: React.FC = () => {
                 </div>
                 <div className="p-6">
                   {(() => {
-                    const prevAtt = meeting && typeof (meeting as unknown as Record<string, unknown>).previous_meeting_attachment === 'object' && (meeting as unknown as Record<string, unknown>).previous_meeting_attachment != null && !Array.isArray((meeting as unknown as Record<string, unknown>).previous_meeting_attachment)
-                      ? (meeting as unknown as unknown as Record<string, unknown>).previous_meeting_attachment as Record<string, unknown>
-                      : null;
-                    const prevId = prevAtt && typeof prevAtt.id === 'string' ? prevAtt.id : null;
-                    const prevNotDeleted = prevId != null && !deletedAttachmentIds.includes(prevId);
-                    const hasPrevAttachment = prevAtt != null && prevNotDeleted;
-                    const hasAnyOptional = optionalAttachmentsList.length > 0 || newAttachments.length > 0 || hasPrevAttachment;
+                    const hasAnyOptional = optionalAttachmentsList.length > 0 || newAttachments.length > 0;
                   return hasAnyOptional ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {prevAtt != null && prevNotDeleted && (
-                        <div key={prevId ?? 'prev-meeting-att'} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
-                          {(typeof prevAtt.file_type === 'string' && prevAtt.file_type.toLowerCase() === 'pdf') ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{typeof prevAtt.file_type === 'string' ? prevAtt.file_type.toUpperCase() : 'FILE'}</div>}
-                          <div className="flex flex-col items-end min-w-0 flex-1">
-                            <span className="text-[10px] font-medium text-[#048F86] bg-[#048F86]/10 px-2 py-0.5 rounded-full mb-1">محضر الاجتماع السابق</span>
-                            <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{typeof prevAtt.file_name === 'string' ? prevAtt.file_name : ''}</span>
-                            <span className="text-xs text-[#9CA3AF]">{typeof prevAtt.file_size === 'number' ? Math.round(prevAtt.file_size / 1024) : 0} KB</span>
-                          </div>
-                          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                            {typeof prevAtt.blob_url === 'string' && (
-                              <>
-                                <a href={prevAtt.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#048F86]/8 text-[#048F86] transition-colors"><Download className="w-4 h-4" /></a>
-                                <button type="button" onClick={() => setPreviewAttachment({ blob_url: prevAtt.blob_url as string, file_name: typeof prevAtt.file_name === 'string' ? prevAtt.file_name : '', file_type: typeof prevAtt.file_type === 'string' ? prevAtt.file_type : undefined })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                              </>
-                            )}
-                            <button type="button" disabled={!canEdit} onClick={() => prevId && handleDeleteAttachment(prevId)} className="p-2 rounded-lg hover:bg-red-50 text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </div>
-                      )}
                       {optionalAttachmentsList.map((att) => (
                         <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#048F86]/30 hover:shadow-sm transition-all duration-200">
                           {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon />: <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
@@ -2910,59 +2950,6 @@ const MeetingDetail: React.FC = () => {
                       )}
                     </div>
                   );
-                  })()}
-                </div>
-              </section>
-
-              {/* ─── الملخّص التنفيذي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
-                </div>
-                <div className="p-6">
-                  {(() => {
-                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
-                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
-                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
-                    if (!hasExec) {
-                      return (
-                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
-                          </div>
-                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-col gap-4">
-                        {execSummaryText && (
-                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
-                            {execSummaryText}
-                          </div>
-                        )}
-                        {execSummaryAttachments.length > 0 && (
-                          <div className="grid grid-cols-1 gap-3">
-                            {execSummaryAttachments.map((att) => (
-                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
-                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                                <div className="flex flex-col items-end min-w-0 flex-1">
-                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
-                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                                </div>
-                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
-                                  <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
                   })()}
                 </div>
               </section>
@@ -4120,48 +4107,50 @@ const MeetingDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Input – always visible at bottom */}
-              <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!requestGuidanceForm.notes.trim()) return;
-                    handleRequestGuidanceSubmit(e);
-                  }}
-                  className="flex items-end gap-3"
-                >
-                  <div className="flex-1">
-                    <Textarea
-                      value={requestGuidanceForm.notes}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
-                      placeholder="اكتب سؤالك هنا..."
-                      className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
-                      rows={1}
-                      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (requestGuidanceForm.notes.trim()) {
-                            handleRequestGuidanceSubmit(e as any);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
-                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+              {/* Input – hidden when meeting is rejected (scheduling officer cannot ask for guidance) */}
+              {meetingStatus !== MeetingStatus.REJECTED && (
+                <div className="flex-shrink-0 border-t border-[#F3F4F6] px-5 py-4 bg-[#FAFAFA] rounded-b-2xl">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!requestGuidanceForm.notes.trim()) return;
+                      handleRequestGuidanceSubmit(e);
+                    }}
+                    className="flex items-end gap-3"
                   >
-                    {requestGuidanceMutation.isPending ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
-                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                      </svg>
-                    )}
-                  </button>
-                </form>
-              </div>
+                    <div className="flex-1">
+                      <Textarea
+                        value={requestGuidanceForm.notes}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestGuidanceForm({ notes: e.target.value })}
+                        placeholder="اكتب سؤالك هنا..."
+                        className="w-full min-h-[44px] max-h-[120px] text-right text-sm rounded-xl border-[#E5E7EB] bg-white resize-none focus:border-[#048F86] focus:ring-[#048F86]/20"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (requestGuidanceForm.notes.trim()) {
+                              handleRequestGuidanceSubmit(e as any);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!requestGuidanceForm.notes.trim() || requestGuidanceMutation.isPending}
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#048F86] hover:bg-[#037A72] text-white"
+                    >
+                      {requestGuidanceMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-180">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
 
@@ -4204,6 +4193,39 @@ const MeetingDetail: React.FC = () => {
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
       {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
       <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
+
+      {/* Delete draft confirmation (Draft status only) */}
+      <Dialog open={isDeleteDraftModalOpen} onOpenChange={(open) => !deleteDraftMutation.isPending && setIsDeleteDraftModalOpen(open)}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              حذف المسودة
+            </DialogTitle>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              هل أنت متأكد من حذف هذه المسودة؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDraftModalOpen(false)}
+              className="min-w-[100px]"
+              disabled={deleteDraftMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteDraftConfirm}
+              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDraftMutation.isPending}
+            >
+              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Meeting Quality Modal */}
      <QualityModal 
