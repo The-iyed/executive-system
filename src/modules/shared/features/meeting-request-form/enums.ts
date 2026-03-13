@@ -48,19 +48,22 @@ export enum AttendanceMechanism {
   PHYSICAL = 'PHYSICAL',
   VIRTUAL = 'VIRTUAL',
   HYBRID = 'HYBRID',
+  TBD = 'TBD',
 }
 
 export const MeetingChannelLabels: Record<string, string> = {
   PHYSICAL: 'حضوري',
   VIRTUAL: 'عن بعد',
   HYBRID: 'حضوري - عن بعد',
+  TBD: 'يحدد لاحقًا',
 };
 
 /** Shared meeting channel options for forms (UC01 & UC02). */
 export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
-  { value: 'PHYSICAL', label: MeetingChannelLabels.PHYSICAL },
-  { value: 'VIRTUAL', label: MeetingChannelLabels.VIRTUAL },
-  { value: 'HYBRID', label: MeetingChannelLabels.HYBRID },
+  { value: AttendanceMechanism.PHYSICAL, label: MeetingChannelLabels.PHYSICAL },
+  { value: AttendanceMechanism.VIRTUAL, label: MeetingChannelLabels.VIRTUAL },
+  { value: AttendanceMechanism.HYBRID, label: MeetingChannelLabels.HYBRID },
+  { value: AttendanceMechanism.TBD, label: MeetingChannelLabels.TBD },
 ];
 
 /* ═══ Meeting Location ═══ */

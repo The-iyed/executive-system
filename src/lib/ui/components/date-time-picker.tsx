@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, Clock } from "lucide-react"
 import { ar } from "date-fns/locale"
 
 import { cn } from "@/lib/ui/lib/utils"
+import { toISOStringWithTimezone } from "@/lib/ui/lib/dateUtils"
 import { Button } from "@/lib/ui/components/button"
 import { Calendar } from "@/lib/ui/components/calendar"
 import {
@@ -221,7 +222,7 @@ export function DateTimePicker({
         d.setTime(minDate.getTime())
       }
       if (maxDate != null && d > maxDate) return
-      onChange?.(d.toISOString())
+      onChange?.(toISOStringWithTimezone(d))
     },
     [onChange, minDate, maxDate]
   )
