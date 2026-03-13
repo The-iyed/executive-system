@@ -1,4 +1,5 @@
 import { TableRow } from "@/lib/dynamic-table-form";
+import { toISOStringWithTimezoneFromString } from "@/lib/ui";
 import type { ExistingAttachment, Step2ContentInitialData } from "../../shared/hooks/useStep2Content";
 import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality } from "../../enums";
 import type { SubmitterStep1Values } from "../schema";
@@ -8,7 +9,7 @@ import type { SubmitterStep1Values } from "../schema";
 function formatDateStringToISO(value: string): string {
   if (!value) return "";
   try {
-    return new Date(value).toISOString();
+    return toISOStringWithTimezoneFromString(value);
   } catch {
     return value;
   }

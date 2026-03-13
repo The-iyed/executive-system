@@ -1,4 +1,4 @@
-import { formatDateStringToISO } from "@/modules/shared";
+import { formatDateStringToISO, toISOStringWithTimezone } from "@/modules/shared";
 import type { Step1BasicInfoFormData } from "../schemas/step1BasicInfo.schema";
 import type { Step2ContentFormData } from "../schemas/step2Content.schema";
 import type { Step3InviteesFormData } from "../schemas/step3Invitees.schema";
@@ -9,7 +9,7 @@ import { getMeetingLocationDropdownValue } from './constants';
 function toISOOrDateString(val: string | null | undefined): string {
   if (!val || val.trim() === '') return '';
   const d = new Date(val.trim());
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+  return Number.isNaN(d.getTime()) ? '' : toISOStringWithTimezone(d);
 }
 
 export const transformDraftToStep1Data = (draft: DraftApiResponse): Partial<Step1BasicInfoFormData> => {
