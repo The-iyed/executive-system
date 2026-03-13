@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '@/modules/auth/utils/axios';
 import { PATH as UC02_PATH } from '../../../../UC02/routes/paths';
 import { clearDraftData } from '../utils';
+import { deleteDraft } from '../../../data/draftApi';
 
 interface UseDeleteDraftProps {
   draftId?: string;
@@ -12,13 +12,6 @@ interface UseDeleteDraftProps {
   /** When set (e.g. drawer mode), close drawer instead of navigating to MEETINGS */
   onClose?: () => void;
 }
-
-/**
- * API function to delete a draft
- */
-const deleteDraft = async (draftId: string): Promise<void> => {
-  await axiosInstance.delete(`/api/meeting-requests/drafts/${draftId}`);
-};
 
 /**
  * Shared hook for deleting meeting draft with confirmation modal
