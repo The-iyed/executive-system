@@ -78,9 +78,85 @@ const formatTimeLabelArabic = (time: string): string => {
 };
 
 const isSlotInPast = (date: Date, time: string): boolean => {
-  const [h = 0] = time.split(':').map(Number);
-  const slotStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, 0, 0, 0);
+  const [h = 0, min = 0] = time.split(':').map(Number);
+  const slotStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, min, 0, 0);
   return slotStart.getTime() <= Date.now();
+};
+
+const parseTimeToMinutes = (t: string): number => {
+  const [h = 0, m = 0] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const formatMinutesToTime = (totalMin: number): string => {
+  const h = Math.floor(totalMin / 60) % 24;
+  const m = totalMin % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+/** Event occupancy [startRel, endRel) within this hour row (0–60), for one event */
+const getEventOccupancyRelativeToHour = (
+  slotTime: string,
+  ev: CalendarEventData
+): [number, number] => {
+  const slotStartMin = parseTimeToMinutes(slotTime);
+  const hourEndAbs = slotStartMin + 60;
+  let startAbs: number;
+  let endAbs: number;
+  if (ev.exactStartTime && ev.exactEndTime) {
+    startAbs = parseTimeToMinutes(ev.exactStartTime);
+    endAbs = parseTimeToMinutes(ev.exactEndTime);
+  } else {
+    startAbs = parseTimeToMinutes(ev.startTime);
+    endAbs = parseTimeToMinutes(ev.endTime);
+    if (endAbs <= startAbs) endAbs = startAbs + 60;
+  }
+  const lo = Math.max(0, Math.min(60, Math.max(slotStartMin, startAbs) - slotStartMin));
+  const hi = Math.max(0, Math.min(60, Math.min(hourEndAbs, endAbs) - slotStartMin));
+  return [lo, Math.max(lo, hi)];
+};
+
+/**
+ * Parallel meetings (same hour, side‑by‑side columns) each get their own vertical free band.
+ * Merging all intervals into one timeline wrongly hides e.g. 4:30–5:00 when one column is 4–4:30 and another 4–5.
+ */
+const getPerColumnFreeSlots = (
+  slotTime: string,
+  startingEvents: CalendarEventData[]
+): { fromRel: number; toRel: number; columnIndex: number; columnCount: number }[] => {
+  const n = startingEvents.length;
+  if (n === 0) return [];
+  const out: { fromRel: number; toRel: number; columnIndex: number; columnCount: number }[] = [];
+  startingEvents.forEach((ev, columnIndex) => {
+    const [, endRel] = getEventOccupancyRelativeToHour(slotTime, ev);
+    if (endRel >= 60 - 4) return;
+    out.push({ fromRel: endRel, toRel: 60, columnIndex, columnCount: n });
+  });
+  return out;
+};
+
+/** Single-track free time when only one column or no parallel overlap concern — full width */
+const getMergedFreeSubSlotsRelative = (
+  slotTime: string,
+  startingEvents: CalendarEventData[]
+): [number, number][] => {
+  const intervals: [number, number][] = startingEvents.map((ev) =>
+    getEventOccupancyRelativeToHour(slotTime, ev)
+  );
+  intervals.sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const [a, b] of intervals) {
+    if (!merged.length || a > merged[merged.length - 1][1]) merged.push([a, b]);
+    else merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], b);
+  }
+  const free: [number, number][] = [];
+  let cursor = 0;
+  for (const [a, b] of merged) {
+    if (a > cursor) free.push([cursor, a]);
+    cursor = Math.max(cursor, b);
+  }
+  if (cursor < 60) free.push([cursor, 60]);
+  return free;
 };
 
 const getEventsForSlot = (slotDate: Date, time: string, events: CalendarEventData[]): CalendarEventData[] =>
@@ -247,14 +323,36 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                 );
               }
 
+              const perColumnFree =
+                startingEvents.length > 0 && onTimeSlotClick
+                  ? getPerColumnFreeSlots(time, startingEvents).filter((s) => s.toRel - s.fromRel >= 5)
+                  : [];
+              const fullWidthFree =
+                startingEvents.length === 1 && onTimeSlotClick
+                  ? getMergedFreeSubSlotsRelative(time, startingEvents).filter(([a, b]) => b - a >= 5)
+                  : [];
+              const freeSubSlotsToRender =
+                startingEvents.length > 1
+                  ? perColumnFree
+                  : startingEvents.length === 1
+                    ? fullWidthFree.map(([fromRel, toRel]) => ({
+                        fromRel,
+                        toRel,
+                        columnIndex: 0,
+                        columnCount: 1,
+                      }))
+                    : [];
+              const cellRelative = startingEvents.length > 0;
+
               return (
                 <div
                   key={dayIndex}
                   className={cn(
                     'flex flex-row gap-0.5 shrink-0 border-b border-gray-100 overflow-visible',
+                    cellRelative && 'relative',
                     dayIndex < 6 && 'border-l border-gray-50',
                     today && 'bg-[#048F86]/[0.02]',
-                    startingEvents.length > 0 && 'z-[1] hover:z-40',
+                    startingEvents.length > 0 && 'z-[1]',
                     startingEvents.length === 0 && isSlotClickable && 'cursor-pointer hover:bg-[#048F86]/[0.06] transition-colors duration-150',
                     startingEvents.length === 0 && !isSlotClickable && 'cursor-not-allowed',
                     isPast && startingEvents.length === 0 && 'opacity-40',
@@ -266,16 +364,17 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   }}
                   onClick={startingEvents.length === 0 && isSlotClickable ? () => onTimeSlotClick?.(date, time) : undefined}
                 >
+                  {/* Events first: wrappers pass through clicks except on the real card (pointer-events) */}
                   {startingEvents.map((event) => {
-                    const hasExactDuration = !!(event.exactStartTime && event.exactEndTime);
                     return (
                       <div
                         key={event.id}
-                        className="min-w-0 flex-1 relative overflow-visible h-full"
+                        className="min-w-0 flex-1 relative overflow-visible h-full z-[1] pointer-events-none"
                       >
                         <CalendarEvent
                           event={event}
                           slotTime={time}
+                          disableHoverExpand={!!onTimeSlotClick}
                           onClick={(e) => {
                             e.stopPropagation();
                             onEventClick?.(event);
@@ -284,6 +383,46 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                           onShowDetails={onEventShowDetails}
                         />
                       </div>
+                    );
+                  })}
+                  {/* Per-column free bands: parallel 4–4:30 + 4–5 still leaves 4:30–5 in the short column */}
+                  {freeSubSlotsToRender.map((slot, idx) => {
+                    const { fromRel, toRel, columnIndex, columnCount } = slot;
+                    const startTimeStr = formatMinutesToTime(parseTimeToMinutes(time) + fromRel);
+                    const subPast = onTimeSlotClick != null && isSlotInPast(date, startTimeStr);
+                    if (subPast) return null;
+                    const topPx = (fromRel / 60) * ROW_HEIGHT_PX;
+                    const hPx = ((toRel - fromRel) / 60) * ROW_HEIGHT_PX;
+                    const minHitPx = 14;
+                    const pct = 100 / columnCount;
+                    return (
+                      <button
+                        key={`free-${columnIndex}-${idx}`}
+                        type="button"
+                        aria-label={`حجز موعد من ${startTimeStr}`}
+                        className={cn(
+                          'absolute z-[5] rounded-md',
+                          'bg-[#048F86]/[0.08] border border-[#048F86]/20',
+                          'cursor-pointer hover:bg-[#048F86]/[0.22] hover:border-[#048F86]/40',
+                          'transition-colors duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#048F86]/50',
+                          'flex items-center justify-center text-[8px] font-bold text-[#048F86]/95',
+                          'shadow-sm',
+                        )}
+                        style={{
+                          top: Math.max(0, topPx - 1),
+                          height: Math.max(hPx + 2, minHitPx),
+                          padding: '0 2px',
+                          fontFamily: "'Almarai', sans-serif",
+                          right: `${columnIndex * pct}%`,
+                          width: `calc(${pct}% - 3px)`,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTimeSlotClick(date, startTimeStr);
+                        }}
+                      >
+                        + {startTimeStr}
+                      </button>
                     );
                   })}
                 </div>
