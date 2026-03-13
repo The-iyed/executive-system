@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Send, Search, LayoutList, LayoutGrid, Inbox, AlertCircle, Filter, ChevronDown, X, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button, cn, Popover, PopoverTrigger, PopoverContent } from '@/lib/ui';
 import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, getMeetingTabsByRole, MeetingOwnerType } from '@/modules/shared';
@@ -9,14 +10,19 @@ import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
+import { deleteDraft } from '../../data/draftApi';
+import { clearDraftData } from '../MeetingForm/utils';
 
 const Meeting: React.FC = () => {
   const [submitterOpen, setSubmitterOpen] = useState(false);
   const openNewSubmitter = () => { setSubmitterOpen(true); };
   const navigate = useNavigate();
   const { openCreateDrawer } = useMeetingFormDrawer();
+  const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [draftIdToDelete, setDraftIdToDelete] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
   const [statusFilters, setStatusFilters] = useState<string[]>([MeetingStatus.DRAFT]);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
@@ -55,6 +61,27 @@ const Meeting: React.FC = () => {
     [submitMeeting]
   );
 
+  const deleteDraftMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      clearDraftData();
+      setDraftIdToDelete(null);
+      setDeleteConfirmOpen(false);
+    },
+  });
+
+  const onDeleteDraft = useCallback((draftId: string) => {
+    setDraftIdToDelete(draftId);
+    setDeleteConfirmOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (draftIdToDelete) {
+      deleteDraftMutation.mutate(draftIdToDelete);
+    }
+  }, [draftIdToDelete, deleteDraftMutation]);
+
   const openConfirmModal = useCallback((_message: string, onConfirm: () => void) => {
     pendingConfirmRef.current = onConfirm;
     setConfirmOpen(true);
@@ -84,6 +111,8 @@ const Meeting: React.FC = () => {
       onResubmitToContent,
       submittingResubmitToContentId: submittingStatus === MeetingStatus.RETURNED_FROM_CONTENT ? submittingMeetingId : null,
       openConfirmModal,
+      onDeleteDraft,
+      deletingDraftId: deleteDraftMutation.isPending ? draftIdToDelete : null,
     });
   }, [
     navigate,
@@ -94,6 +123,9 @@ const Meeting: React.FC = () => {
     submittingMeetingId,
     submittingStatus,
     openConfirmModal,
+    onDeleteDraft,
+    deleteDraftMutation.isPending,
+    draftIdToDelete,
   ]);
 
   const filterTabs = getMeetingTabsByRole(MeetingOwnerType.SUBMITTER);
@@ -135,6 +167,39 @@ const Meeting: React.FC = () => {
               className="min-w-[100px] bg-[#048F86] hover:bg-[#037a72] text-white"
             >
               تأكيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete draft confirmation */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open) { setDeleteConfirmOpen(false); setDraftIdToDelete(null); } }}>
+        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
+          <DialogHeader className="text-right gap-2">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              حذف المسودة
+            </DialogTitle>
+            <DialogDescription className="text-right text-base text-gray-600 pt-1">
+              هل أنت متأكد من حذف هذه المسودة؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setDeleteConfirmOpen(false); setDraftIdToDelete(null); }}
+              className="min-w-[100px]"
+              disabled={deleteDraftMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteDraftMutation.isPending}
+            >
+              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -356,6 +421,13 @@ const Meeting: React.FC = () => {
                     return undefined;
                   }}
                   getActionLoading={(meeting) => isSubmitting && submittingMeetingId === meeting.id}
+                  onSecondaryAction={(meeting) => meeting.status === MeetingStatus.DRAFT && onDeleteDraft(meeting.id)}
+                  getSecondaryActionLabel={(meeting) =>
+                    meeting.status === MeetingStatus.DRAFT
+                      ? (deleteDraftMutation.isPending && draftIdToDelete === meeting.id ? 'جاري الحذف...' : 'حذف')
+                      : undefined
+                  }
+                  getSecondaryActionLoading={(meeting) => deleteDraftMutation.isPending && draftIdToDelete === meeting.id}
                 />
               )}
               
