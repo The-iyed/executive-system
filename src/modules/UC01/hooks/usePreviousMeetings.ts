@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@/modules/shared/types';
+import { toISOStringWithTimezone } from '@/lib/ui';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
 import { PAGINATION } from '../utils/constants';
@@ -44,7 +45,7 @@ export const usePreviousMeetings = ({
         // owner_type: MeetingOwnerType.SUBMITTER,
         skip,
         limit: itemsPerPage,
-        date_now: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        date_now: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return toISOStringWithTimezone(d); })(),
       };
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
