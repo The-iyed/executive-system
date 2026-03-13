@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
@@ -15,6 +15,9 @@ import { createWebexMeeting } from '../data/meetingsApi';
 import { searchByEmail } from '../data/adIntegrationApi';
 import { X } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
+import { cn } from '@/lib/ui';
+import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
+import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
 /** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
@@ -48,11 +51,7 @@ function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: stri
   return { start: toISOStringWithTimezone(start), end: toISOStringWithTimezone(end) };
 }
 
-const MANUAL_ENTRY_VALUE = '__manual__';
-
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
-
-/** Build ISO with timezone offset for API (e.g. 2026-03-31T09:00:00+03:00). */
+/** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
   const [h = 0, m = 0] = time.split(':').map(Number);
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
@@ -107,7 +106,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [invitees, setInvitees] = useState<InviteeFormRow[]>([]);
+  const inviteesRef = useRef<DynamicTableFormHandle>(null);
   const [proposerSelections, setProposerSelections] = useState<{ id: string; label: string; email?: string }[]>([]);
 
   const loadProposerAdOptions = useCallback(
@@ -157,140 +156,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     setProposerSelections((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  const loadAdOptionsByEmail = useCallback(
-    async (search: string, skip: number, limit: number) => {
-      const trimmed = search?.trim() ?? '';
-      if (trimmed.length < 1) {
-        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
-      }
-      try {
-        const users = await searchByEmail(trimmed, limit);
-        const items = users.map((u) => {
-          const fullName = u.displayNameAR ?? u.displayNameEN ?? u.displayName ?? '';
-          const email = u.mail ?? '';
-          return {
-            value: u.objectGUID ?? email ?? `ad-${email}`,
-            label: fullName ? `${fullName} (${email})` : email,
-            email,
-            full_name: fullName,
-            position_title: u.title ?? '',
-            mobile_number: u.mobile ?? '',
-            sector: u.department ?? u.company ?? '',
-          };
-        });
-        const manualOption = {
-          value: MANUAL_ENTRY_VALUE,
-          label: 'إدخال يدوي (بريد غير مسجل)',
-        };
-        return {
-          items: skip === 0 ? [...items, manualOption] : items,
-          total: skip === 0 ? items.length + 1 : items.length,
-          skip: 0,
-          limit,
-          has_next: false,
-          has_previous: false,
-        };
-      } catch {
-        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
-      }
-    },
-    []
-  );
-
-  const inviteeEmailCellRender = useCallback(
-    (params: import('@/modules/shared').CustomCellRenderParams) => {
-      const { row, onUpdateRow, disabled = false } = params;
-      const isManual = row._isManual === true;
-
-      if (isManual) {
-        return (
-          <FormInput
-            type="email"
-            inputMode="email"
-            value={row.email ?? ''}
-            onChange={(e) => onUpdateRow('email', e.target.value)}
-            placeholder="البريد"
-            fullWidth
-            disabled={disabled}
-          />
-        );
-      }
-
-      const value: OptionType | null =
-        row.email
-          ? { value: (row as { _adUserId?: string })._adUserId || row.email, label: row.full_name ? `${row.full_name} (${row.email})` : row.email }
-          : null;
-
-      return (
-        <FormAsyncSelectV2
-          value={value}
-          onValueChange={(opt) => {
-            if (!opt) {
-              onUpdateRow('full_name', '');
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              onUpdateRow('_isManual', false);
-              onUpdateRow('_adUserId', '');
-              return;
-            }
-            if (opt.value === MANUAL_ENTRY_VALUE) {
-              onUpdateRow('_isManual', true);
-              onUpdateRow('_adUserId', '');
-              onUpdateRow('full_name', '');
-              onUpdateRow('position_title', '');
-              onUpdateRow('mobile_number', '');
-              onUpdateRow('sector', '');
-              onUpdateRow('email', '');
-              return;
-            }
-            const u = opt as { full_name?: string; position_title?: string; mobile_number?: string; email?: string; sector?: string };
-            onUpdateRow('_isManual', false);
-            onUpdateRow('_adUserId', opt.value);
-            onUpdateRow('full_name', u.full_name ?? '');
-            onUpdateRow('position_title', u.position_title ?? '');
-            onUpdateRow('mobile_number', u.mobile_number ?? '');
-            onUpdateRow('email', u.email ?? '');
-            onUpdateRow('sector', u.sector ?? '');
-          }}
-          loadOptions={loadAdOptionsByEmail}
-          placeholder="ابحث بالبريد أو أدخل يدوياً"
-          isClearable
-          fullWidth
-          isSearchable
-          limit={10}
-          defaultOptions={false}
-          searchPlaceholder="اكتب البريد للبحث..."
-          emptyMessage="لم يتم العثور على مستخدمين"
-        />
-      );
-    },
-    [loadAdOptionsByEmail]
-  );
-
-  const handleAddInvitee = useCallback(() => {
-    setInvitees((prev) => [...prev, createEmptyStep3InviteeRow()]);
-  }, []);
-
-  const handleDeleteInvitee = useCallback((id: string) => {
-    setInvitees((prev) => prev.filter((r) => r.id !== id));
-  }, []);
-
-  const handleUpdateInvitee = useCallback((id: string, field: string, value: unknown) => {
-    setInvitees((prev) => {
-      return prev.map((r) => (r.id === id ? { ...r, [field]: value } : r));
-    });
-  }, []);
-
-  const inviteeRows = invitees.map((row) => ({ ...row, id: row.id }));
-
   const [titleTouched, setTitleTouched] = useState(false);
   const titleTrimmed = title.trim();
   const showTitleError = titleTouched && !titleTrimmed;
   const [pastDateError, setPastDateError] = useState<string | null>(null);
   const [locationTouched, setLocationTouched] = useState(false);
-  const [inviteesTouched, setInviteesTouched] = useState(false);
 
   const isPhysical = meetingChannel === 'PHYSICAL';
   const locationDropdownValue = getLocationDropdownValue(meetingLocation, meetingLocationOption);
@@ -399,7 +269,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     setTitleTouched(true);
     setPastDateError(null);
     setLocationTouched(true);
-    setInviteesTouched(true);
     if (!titleTrimmed) return;
     if (!meetingChannel.trim()) return;
     const start = startDate ? new Date(startDate).getTime() : 0;
@@ -409,7 +278,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     }
     if (locationRequired && !locationValid) return;
     if (isRemote && !webexMeetingLink) return;
-    if (invitees.length === 0) return;
+    const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
+    if (!inviteesPayload) return;
 
     const meeting_location = getMeetingLocationForSubmit();
 
@@ -421,12 +291,12 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
       proposer_user_ids: proposerSelections.length > 0 ? proposerSelections.map((p) => p.id) : undefined,
-      invitees,
+      invitees: inviteesPayload,
     });
   };
 
   return (
-    <div className="flex flex-col gap-6 p-2" dir="rtl" style={fontStyle}>
+    <div className="flex flex-col gap-6 p-2" dir="rtl">
       <h2 className="text-xl font-bold text-[#101828] text-right">إنشاء اجتماع من الموعد</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -593,7 +463,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             </div>
           )}
         </div>
-
+{/* 
         <FormTable
           title="المدعوون (مقدم الطلب)"
           columns={INVITEES_TABLE_COLUMNS}
@@ -606,10 +476,12 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           customCellRender={{
             email: inviteeEmailCellRender,
           }}
+        /> */}
+
+        <InviteesTableForm
+          tableRef={inviteesRef}
+          showAiSuggest={false}
         />
-        {inviteesTouched && invitees.length === 0 && (
-          <p className="text-right text-sm text-red-600">يجب إضافة مدعو واحد على الأقل</p>
-        )}
 
         {submitError && (
           <div className="p-3 rounded-lg bg-red-50 border border-red-200">
@@ -633,8 +505,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
               !titleTrimmed ||
               !meetingChannel.trim() ||
               (locationRequired && !locationValid) ||
-              (isRemote && (!webexMeetingLink || isCreatingWebex)) ||
-              invitees.length === 0
+              (isRemote && (!webexMeetingLink || isCreatingWebex))
             }
             className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
