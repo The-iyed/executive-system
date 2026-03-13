@@ -4,6 +4,7 @@ import type {
   StreamEvent,
 } from './legislator-types';
 import type { ApiClientConfig } from './client';
+import { getApiTimezoneHeaders } from './apiTimezone';
 
 export interface StreamController {
   abort: () => void;
@@ -94,7 +95,9 @@ export async function sendStreamingMessage(
   const abortController = new AbortController();
 
   // Prepare headers for fetch - ALWAYS include Authorization if available
-  const headers: HeadersInit = {};
+  const headers: HeadersInit = {
+    ...getApiTimezoneHeaders(),
+  };
   if (authHeader) {
     headers['Authorization'] = authHeader;
   }
