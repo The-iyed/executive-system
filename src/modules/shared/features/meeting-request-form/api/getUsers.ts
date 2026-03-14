@@ -1,0 +1,30 @@
+import type { UsersListResponse } from '../shared/hooks/useManagerSearch';
+import { axiosInstance, toError } from './config';
+
+export interface GetUsersParams {
+  search?: string;
+  role_code?: string;
+  user_type?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export async function getUsers(params: GetUsersParams = {}): Promise<UsersListResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params.search) queryParams.append('search', params.search);
+  if (params.role_code) queryParams.append('role_code', params.role_code);
+  if (params.user_type) queryParams.append('user_type', params.user_type);
+  if (params.skip !== undefined) queryParams.append('skip', params.skip.toString());
+  if (params.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+  try {
+    const { data } = await axiosInstance.get<UsersListResponse>(
+      `/api/meeting-requests/users?${queryParams.toString()}`,
+    );
+    return data;
+  } catch (err) {
+    throw toError('Failed to fetch users', err);
+  }
+}
+

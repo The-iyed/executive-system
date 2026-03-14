@@ -7,7 +7,7 @@ import {
   MeetingConfidentiality,
   BOOL,
   MeetingNature,
-} from "../enums";
+} from "../shared/types/enums";
 import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from "../shared/schema";
 
 /* ─── Submitter Step 1 Schema ─── */
