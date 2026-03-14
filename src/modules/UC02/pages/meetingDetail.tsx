@@ -1442,10 +1442,52 @@ const MeetingDetail: React.FC = () => {
         when_presentation_attached: (meeting as any).when_presentation_attached ?? '',
         general_notes: '', // new note to add; existing notes come from meeting.general_notes (array)
       });
+
+      const schedStart = (meeting as any).scheduled_start ?? meeting.scheduled_at;
+      const schedEnd = (meeting as any).scheduled_end ?? (meeting as any).scheduled_end_at;
+      const toDatetimeLocal = (iso: string | null | undefined) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      };
+      const ch = meeting.meeting_channel;
+      const validChannel =
+        ch && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(ch)
+          ? (ch as typeof scheduleForm.meeting_channel)
+          : scheduleForm.meeting_channel;
+      setScheduleForm((prev) => ({
+        ...prev,
+        scheduled_at: toDatetimeLocal(schedStart) || prev.scheduled_at,
+        scheduled_end_at: toDatetimeLocal(schedEnd) || prev.scheduled_end_at,
+        meeting_channel: validChannel,
+        location: (meeting as any).location ?? prev.location,
+      }));
+      const joinUrl = ((meeting as any).meeting_url || (meeting as any).meeting_link || '').trim();
+      if ((ch === 'VIRTUAL' || ch === 'HYBRID') && joinUrl) {
+        setWebexMeetingDetails({
+          join_link: joinUrl,
+          meeting_number: '',
+          password: '',
+          sip_address: '',
+          host_key: '',
+        });
+      }
     }
   }, [meeting]);
- 
- 
+
+  /** Refetch may add meeting_url after calendar create — keep Webex block in sync without re-running full init. */
+  useEffect(() => {
+    if (!meeting?.id) return;
+    const m = meeting as any;
+    const url = String(m.meeting_url || m.meeting_link || '').trim();
+    if ((meeting.meeting_channel === 'VIRTUAL' || meeting.meeting_channel === 'HYBRID') && url) {
+      setWebexMeetingDetails((prev) =>
+        prev?.join_link === url ? prev : { join_link: url, meeting_number: '', password: '', sip_address: '', host_key: '' }
+      );
+    }
+  }, [meeting?.id, (meeting as any)?.meeting_url, (meeting as any)?.meeting_link, meeting?.meeting_channel]);
 
   // Auto-create Webex meeting when VIRTUAL or HYBRID channel is selected and date/time is set
   useEffect(() => {
@@ -1965,6 +2007,15 @@ const MeetingDetail: React.FC = () => {
     const slot = meeting.selected_time_slot;
     const notesList = getGeneralNotesList(meeting.general_notes);
     const notesText = notesList.length > 0 ? notesList.map((n) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') : undefined;
+    const apiChannel =
+      meeting.meeting_channel &&
+      ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(
+        meeting.meeting_channel
+      )
+        ? meeting.meeting_channel
+        : scheduleForm.meeting_channel;
+    const m = meeting as any;
+    const joinUrl = String(m.meeting_url || m.meeting_link || '').trim() || undefined;
     return {
       is_on_behalf_of: formData.is_on_behalf_of,
       meeting_manager_label: formData.meeting_owner || undefined,
@@ -1976,8 +2027,9 @@ const MeetingDetail: React.FC = () => {
       urgent_reason: formData.meeting_justification || undefined,
       meeting_start_date: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? slot?.slot_start ?? undefined,
       meeting_end_date: (meeting as any).scheduled_end ?? slot?.slot_end ?? undefined,
-      meetingChannel: scheduleForm.meeting_channel || undefined,
-      meeting_location: scheduleForm.location || undefined,
+      meetingChannel: apiChannel || undefined,
+      meeting_location: m.location || scheduleForm.location || undefined,
+      meeting_link: joinUrl,
       meetingCategory: formData.meeting_classification_type || undefined,
       meetingReason: formData.meeting_justification || undefined,
       relatedTopic: formData.related_topic || undefined,
@@ -2010,7 +2062,19 @@ const MeetingDetail: React.FC = () => {
       directive_text: formData.related_guidance || undefined,
       notes: notesText,
     };
-  }, [meeting, formData, scheduleForm.meeting_channel, scheduleForm.location, contentForm.agendaItems, previousMeetingMinutesOption, previousMeeting?.sequential_number]);
+  }, [
+    meeting,
+    formData,
+    scheduleForm.meeting_channel,
+    scheduleForm.location,
+    contentForm.agendaItems,
+    previousMeetingMinutesOption,
+    previousMeeting?.sequential_number,
+    (meeting as any)?.meeting_url,
+    (meeting as any)?.meeting_link,
+    (meeting as any)?.location,
+    meeting?.meeting_channel,
+  ]);
   /** When canEdit: render each MeetingInfo field with optional قابل للتعديل checkbox + editable input. Dynamic from MeetingInfo field config. */
   const meetingInfoRenderField = useCallback<MeetingInfoRenderField>(
     (key, label, value, spec) => {
