@@ -1,21 +1,17 @@
 import { useMemo } from "react";
-import { MeetingClassification, BOOL } from "../../enums";
+import { MeetingClassification, BOOL } from "../types/enums";
 
 export interface Step1Context {
   meeting_classification: string;
   meeting_confidentiality: string;
   is_urgent: string;
 }
-
 export interface Step2Visibility {
   showPresentation: boolean;
   presentationRequired: boolean;
   showTiming: boolean;
 }
 
-/**
- * Computes Step 2 field visibility & validation rules from Step 1 data.
- */
 export function useStep2Visibility(step1Data: Step1Context): Step2Visibility {
   return useMemo(() => {
     const hidePresentation =

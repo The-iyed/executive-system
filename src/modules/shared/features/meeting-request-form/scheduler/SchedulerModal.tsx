@@ -7,7 +7,7 @@ import InviteesTableForm from "@/modules/shared/features/invitees-table-form/Inv
 import type { DynamicTableFormHandle, TableRow } from "@/lib/dynamic-table-form";
 import type { SchedulerStep1Values } from "./schema";
 import { useCreateSchedulerStep1, useSaveSchedulerStep2Content, useSaveSchedulerStep3Invitees } from "../hooks/useDraftMutations";
-import { buildSchedulerStep1FormData } from "./utils/buildSchedulerStep1FormData";
+import { buildStep1FormData } from "../shared/utils";
 
 interface SchedulerModalProps {
   open: boolean;
@@ -37,8 +37,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
 
   const handleStep1Submit = useCallback((data: SchedulerStep1Values) => {
     setStep1Data(data);
-
-    const formData = buildSchedulerStep1FormData(data);
+    const formData = buildStep1FormData(data);
 
     createStep1.mutate(formData, {
       onSuccess: (id) => {
@@ -47,7 +46,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
       },
       onError: (error) => {
         console.error("Scheduler step 1 API error:", error);
-        toast({title:"حدث خطأ أثناء حفظ بيانات الخطوة الأولى", variant:'destructive'});
+        toast({title:"حدث خطأ أثناء حفظ بيانات الخطوة الأولى", variant: 'destructive'});
       },
     });
   }, [createStep1]);
@@ -59,7 +58,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
     }
 
     if (!meetingId) {
-      toast({title: "لم يتم العثور على معرّف الاجتماع", variant:'destructive'});
+      toast({title:"لم يتم العثور على معرّف الاجتماع", variant: 'destructive'});
       return;
     }
 
@@ -71,7 +70,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
         },
         onError: (error) => {
           console.error("Scheduler step 2 API error:", error);
-          toast({title: "حدث خطأ أثناء حفظ المحتوى", variant:'destructive'});
+          toast({title:"حدث خطأ أثناء حفظ المحتوى", variant: 'destructive'});
         },
       },
     );
@@ -85,29 +84,32 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
     setInvitees([]);
   }, [onOpenChange]);
 
-  const handleFinalSubmit = useCallback(() => {
+  const handleStep3 = useCallback((schedule: boolean) => {
     const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
 
     if (!meetingId) {
-      toast({title: "لم يتم العثور على معرّف الاجتماع", variant:'destructive'});
+      toast({title:"لم يتم العثور على معرّف الاجتماع", variant: 'destructive'});
       return;
     }
 
     saveStep3.mutate(
-      { meetingId, invitees: inviteesPayload },
+      { meetingId, invitees: inviteesPayload, schedule },
       {
         onSuccess: () => {
-          toast({title:"تم إرسال طلب جدولة الاجتماع بنجاح"});
+          toast({title:schedule ? "تم إرسال طلب جدولة الاجتماع بنجاح" : "تم حفظ المسودة بنجاح"});
           resetModal();
         },
         onError: (error) => {
           console.error("Scheduler step 3 API error:", error);
-          toast({title: "حدث خطأ أثناء حفظ المدعوين", variant:'destructive'});
+          toast({title:schedule ? "حدث خطأ أثناء حفظ المدعوين" : "حدث خطأ أثناء حفظ المسودة", variant: 'destructive'});
         },
       },
     );
   }, [meetingId, saveStep3, resetModal]);
+
+  const handleFinalSubmit = useCallback(() => handleStep3(true), [handleStep3]);
+  const handleSaveAsDraft = useCallback(() => handleStep3(false), [handleStep3]);
 
   const triggerFormSubmit = useCallback(() => {
     if (currentStep === 3) {
@@ -131,9 +133,11 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
       currentStep={currentStep}
       onStepClick={setCurrentStep}
       saving={isSaving}
+      showSaveAsDraft={currentStep === 3}
       onNext={triggerFormSubmit}
       onPrev={() => setCurrentStep((s) => s - 1)}
       onSubmit={handleFinalSubmit}
+      onSaveAsDraft={handleSaveAsDraft}
     >
       <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
         <SchedulerStep1Form

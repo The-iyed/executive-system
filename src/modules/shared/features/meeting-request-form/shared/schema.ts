@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MINISTER_SUPPORT_OTHER_VALUE } from "../enums";
+import { MINISTER_SUPPORT_OTHER_VALUE } from "./types/enums";
 
 /* ─── Shared Validators ─── */
 
