@@ -37,6 +37,7 @@ import {
   formatTimeAgoArabic,
   isValidPhone,
   toISOStringWithTimezone,
+  MeetingOwnerType,
 } from '@/modules/shared'; 
 import {
   getMeetingById,
@@ -4252,9 +4253,7 @@ const MeetingDetail: React.FC = () => {
         )}
       </div>
 
-      {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
-      {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
-      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
+      <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
 
       {/* Delete draft confirmation (Draft status only) */}
       <Dialog open={isDeleteDraftModalOpen} onOpenChange={(open) => !deleteDraftMutation.isPending && setIsDeleteDraftModalOpen(open)}>

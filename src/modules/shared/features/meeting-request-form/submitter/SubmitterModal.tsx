@@ -1,19 +1,21 @@
-import { cn } from "@/lib/ui";
-import { MeetingModalShell } from "../shared/components";
-import { SubmitterStep1Form } from "./Step1Form";
-import { Step2Form } from "../shared/steps/Step2Form";
 import InviteesTableForm from "@/modules/shared/features/invitees-table-form/InviteesTableForm";
-import { useSubmitterModal } from "./hooks/useSubmitterModal";
+import { MeetingOwnerType } from "@/modules/shared/types";
 import { EditableFieldsProvider } from "../shared/hooks/EditableFieldsContext";
+import { useSubmitterModal } from "./hooks/useSubmitterModal";
+import { MeetingModalShell } from "../shared/components";
+import { Step2Form } from "../shared/steps/Step2Form";
+import { SubmitterStep1Form } from "./Step1Form";
+import { cn } from "@/lib/ui";
 
 interface SubmitterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editMeetingId?: string | null;
-  showAiSuggest?: boolean
+  callerRole?: MeetingOwnerType;
+  showAiSuggest?:boolean;
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSuggest = false }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest= false }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
@@ -21,8 +23,8 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSugges
     activeDraftId,
     inviteesRef,
     isEditMode,
-    resolvedStep1Values,
-    step2InitialContentData,
+    initialStep1Values,
+    initialStep2Values,
     initialStep3Values,
     editableFields,
     meetingStatus,
@@ -37,7 +39,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSugges
     goToPrevStep,
     triggerActiveFormSubmit,
     setCurrentStep,
-  } = useSubmitterModal({ editMeetingId, onClose: () => onOpenChange(false) });
+  } = useSubmitterModal({ editMeetingId, onClose: () => onOpenChange(false), callerRole });
 
   return (
     <MeetingModalShell
@@ -57,10 +59,10 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSugges
       <EditableFieldsProvider editableFields={isEditMode ? editableFields : null}>
         {/* Step 1: Basic Info */}
         <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
-          {(!isEditMode || resolvedStep1Values) && (
+          {(!isEditMode || initialStep1Values) && (
             <SubmitterStep1Form
               key={activeDraftId || "new"}
-              initialValues={resolvedStep1Values}
+              initialValues={initialStep1Values}
               onSubmit={handleStep1Submit}
             />
           )}
@@ -77,7 +79,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSugges
                 is_urgent: step1Data.is_urgent,
               }}
               onSubmit={handleStep2Submit}
-              initialContentData={step2InitialContentData}
+              initialContentData={initialStep2Values}
               isEditMode={!!draftId}
               meetingStatus={meetingStatus}
             />
@@ -89,8 +91,17 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, showAiSugges
           <InviteesTableForm
             tableRef={inviteesRef}
             initialInvitees={initialStep3Values}
-            excludeColumns={["access_permission", "is_consultant"]}
+            mode="create"
             showAiSuggest={showAiSuggest}
+            excludeColumns={["access_permission", "is_consultant"]}
+            meetingParams={step1Data ? {
+              meeting_subject: step1Data.meeting_title,
+              meeting_type: step1Data.meeting_type,
+              meeting_classification: step1Data.meeting_classification,
+              meeting_justification: step1Data.meeting_justification,
+              related_topic: step1Data.related_topic,
+              agenda_items: step1Data.agenda_items?.map((a) => ({ agenda_item: a.agenda_item })),
+            } : undefined}
           />
         </div>
       </EditableFieldsProvider>

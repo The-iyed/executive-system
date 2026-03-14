@@ -1,6 +1,6 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Switch } from "@/lib/ui";
-import { MeetingConfidentiality } from "../../enums";
+import { MeetingConfidentiality } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 import { FormField } from "./FieldGroup";
 
