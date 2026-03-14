@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, User, Calendar, Clock, MapPin, Paperclip, X } from 'lucide-react';
+import { ChevronDown, User, Calendar, Clock, MapPin, X, Pencil } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader, MeetingCard } from '@/modules/shared';
 import {
   WeeklyCalendarNavigation,
-  WeeklyCalendarGrid,
-  MonthlyCalendarGrid,
   type CalendarEventData,
   type CalendarViewMode,
 } from '@/modules/shared';
+import { MinisterFullCalendar } from './MinisterFullCalendar';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle, toISOStringWithTimezone } from '@/lib/ui';
 import {
   getOutlookTimelineEvents,
@@ -18,6 +17,7 @@ import {
   prefetchOutlookTimelineWeeksAround,
   OUTLOOK_TIMELINE_STALE_MS,
   createScheduledMeeting,
+  updateScheduledMeeting,
   type OutlookTimelineEvent,
 } from '../data/calendarApi';
 
@@ -56,12 +56,6 @@ function formatDetailDate(date: Date): string {
   return `${dayName} ${day} ${month}`;
 }
 
-function formatAttachmentSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} بايت`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ك.ب`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} م.ب`;
-}
-
 /** Monday of the given week at local midnight */
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
@@ -78,6 +72,14 @@ const getWeekEnd = (weekStart: Date): Date => {
   return weekEnd;
 };
 
+/** First moment of calendar month */
+const getMonthStart = (date: Date): Date =>
+  new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+
+/** Last moment of calendar month */
+const getMonthEnd = (date: Date): Date =>
+  new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+
 const getRandomVariant = (id: string): string => {
   const variants = ['variant1', 'variant2', 'variant3', 'variant4', 'variant5', 'variant6'];
   let hash = 0;
@@ -88,18 +90,18 @@ const getRandomVariant = (id: string): string => {
   return variants[index];
 };
 
-/** Map a datetime to a grid slot string (HH:00) using UTC so timeline slots match API times */
+/** Local wall time → hour slot (HH:00). Grid + FullCalendar use browser local TZ. */
 const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
-  const hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
   slotHour = Math.max(0, Math.min(23, slotHour));
   return `${slotHour.toString().padStart(2, '0')}:00`;
 };
 
 const formatExactTime = (date: Date): string => {
-  const hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
@@ -121,21 +123,30 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
   const variantByInternal = getRandomVariant(id);
+  const baseFields = {
+    id,
+    type: 'reserved' as const,
+    variant: variantByInternal,
+    label: title,
+    title,
+    is_available: false,
+    is_internal: event.is_internal,
+    location: event.location ?? undefined,
+    organizer: event.organizer,
+    attachments: mapAttachments(event.attachments),
+    attendees: event.attendees ?? null,
+    meeting_id: event.meeting_id ?? undefined,
+    meeting_title: event.meeting_title ?? undefined,
+    meeting_channel: event.meeting_channel ?? undefined,
+    meeting_location: event.meeting_location ?? undefined,
+    meeting_link: event.meeting_link ?? undefined,
+  };
   if (isNaN(startDate.getTime())) {
     return {
-      id,
-      type: 'reserved',
-      variant: variantByInternal,
-      label: title,
+      ...baseFields,
       startTime: '08:00',
       endTime: '09:00',
       date: new Date(),
-      title,
-      is_available: false,
-      is_internal: event.is_internal,
-      location: event.location ?? undefined,
-      organizer: event.organizer,
-      attachments: mapAttachments(event.attachments),
     };
   }
   const startTime = formatTimeToSlot(startDate, false);
@@ -145,21 +156,12 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
     endTime = `${Math.min(23, startHour + 1).toString().padStart(2, '0')}:00`;
   }
   return {
-    id,
-    type: 'reserved',
-    variant: variantByInternal,
-    label: title,
+    ...baseFields,
     startTime,
     endTime,
     date: startDate,
-    title,
-    is_available: false,
     exactStartTime: formatExactTime(startDate),
     exactEndTime: formatExactTime(endDate),
-    is_internal: event.is_internal,
-    location: event.location ?? undefined,
-    organizer: event.organizer,
-    attachments: mapAttachments(event.attachments),
   };
 };
 
@@ -177,11 +179,23 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [previousEvents, setPreviousEvents] = useState<CalendarEventData[]>([]);
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<CalendarEventData | null>(null);
-  const [slotForNewMeeting, setSlotForNewMeeting] = useState<{ date: Date; time: string } | null>(null);
+  const [slotForNewMeeting, setSlotForNewMeeting] = useState<{
+    date: Date;
+    time: string;
+    /** End time from calendar selection (HH:mm). If missing, form uses start + 1h. */
+    endTime?: string;
+    title?: string;
+    meetingLocation?: string | null;
+    meetingChannel?: string;
+    meetingLink?: string | null;
+    meetingId?: string;
+    mode?: 'create' | 'edit';
+    /** Pre-fill invitees table when editing (from event.attendees) */
+    initialInvitees?: Array<Record<string, unknown>>;
+  } | null>(null);
   const [slotFormSubmitting, setSlotFormSubmitting] = useState(false);
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
-  const [dayEventsModal, setDayEventsModal] = useState<{ date: Date; events: CalendarEventData[] } | null>(null);
 
   // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
   React.useEffect(() => {
@@ -220,27 +234,39 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     }
   }, [initialDate]);
 
-  const weekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
-  const weekEnd = useMemo(() => getWeekEnd(weekStart), [weekStart]);
+  /**
+   * API range must cover whatever FullCalendar shows, and stay stable when switching
+   * daily ↔ weekly (same week → same query key → no empty flash).
+   */
+  const apiRangeStart = useMemo(() => {
+    if (viewMode === 'monthly') return getMonthStart(currentDate);
+    return getWeekStart(currentDate);
+  }, [currentDate, viewMode]);
 
-  // Format dates as ISO strings with timezone for API
+  const apiRangeEnd = useMemo(() => {
+    if (viewMode === 'monthly') return getMonthEnd(currentDate);
+    return getWeekEnd(apiRangeStart);
+  }, [currentDate, viewMode, apiRangeStart]);
+
   const startDateISO = useMemo(() => {
-    const date = new Date(weekStart);
+    const date = new Date(apiRangeStart);
     date.setHours(0, 0, 0, 0);
     return toISOStringWithTimezone(date);
-  }, [weekStart]);
+  }, [apiRangeStart]);
 
   const endDateISO = useMemo(() => {
-    const date = new Date(weekEnd);
+    const date = new Date(apiRangeEnd);
     date.setHours(23, 59, 59, 999);
     return toISOStringWithTimezone(date);
-  }, [weekEnd]);
+  }, [apiRangeEnd]);
 
   const { data: timelineEvents, isLoading, isFetching, error } = useQuery({
     queryKey: ['outlook-timeline', 'uc02', startDateISO, endDateISO],
     queryFn: () => getOutlookTimelineEvents(startDateISO, endDateISO),
     enabled: true,
     staleTime: OUTLOOK_TIMELINE_STALE_MS,
+    /** Avoid empty calendar while range key changes (e.g. month ↔ week). */
+    placeholderData: (prev) => prev,
   });
 
   // Process Outlook timeline events and merge with extraEvents
@@ -276,6 +302,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       const newDate = new Date(prev);
       if (viewMode === 'monthly') {
         newDate.setMonth(prev.getMonth() - 1);
+      } else if (viewMode === 'daily') {
+        newDate.setDate(prev.getDate() - 1);
       } else {
         newDate.setDate(prev.getDate() - 7);
       }
@@ -288,6 +316,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       const newDate = new Date(prev);
       if (viewMode === 'monthly') {
         newDate.setMonth(prev.getMonth() + 1);
+      } else if (viewMode === 'daily') {
+        newDate.setDate(prev.getDate() + 1);
       } else {
         newDate.setDate(prev.getDate() + 7);
       }
@@ -325,15 +355,16 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
   // Calendar skeleton component for loading state
   const CalendarSkeleton = () => {
+    const skeletonWeekStart = getWeekStart(currentDate);
     const weekDates = useMemo(() => {
       const dates: Date[] = [];
       for (let i = 0; i < 7; i++) {
-        const date = new Date(weekStart);
-        date.setDate(weekStart.getDate() + i);
+        const date = new Date(skeletonWeekStart);
+        date.setDate(skeletonWeekStart.getDate() + i);
         dates.push(date);
       }
       return dates;
-    }, [weekStart]);
+    }, [skeletonWeekStart.getTime()]);
 
     const timeSlots = useMemo(() => {
       const slots = [];
@@ -440,33 +471,39 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           <CalendarSkeleton />
         ) : (
           <>
-            {viewMode === 'weekly' ? (
-              <WeeklyCalendarGrid
-                weekStart={weekStart}
-                events={events}
-                startHour={0}
-                endHour={24}
-                onEventClick={(event) => setSelectedEventForDetails(event)}
-                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
-              />
-            ) : (
-              <MonthlyCalendarGrid
+            <div className="relative min-h-[580px] h-[min(78vh,820px)] w-full p-3 bg-white">
+              <MinisterFullCalendar
+                viewMode={viewMode === 'monthly' ? 'monthly' : viewMode === 'daily' ? 'daily' : 'weekly'}
                 currentDate={currentDate}
-                events={events}
-                onEventClick={(event) => setSelectedEventForDetails(event)}
-                onEventShowDetails={(event) => setSelectedEventForDetails(event)}
-                onTimeSlotClick={(date, time) => setSlotForNewMeeting({ date, time })}
-                onDayOverflowClick={(date, dayEvents) => setDayEventsModal({ date, events: dayEvents })}
+                onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
+                outlookEvents={timelineEvents ?? []}
+                extraEvents={extraEvents}
+                onEventClick={setSelectedEventForDetails}
+                onTimeSlotSelect={(date, time, endTime) =>
+                  setSlotForNewMeeting({ date, time, endTime, mode: 'create' })
+                }
               />
-            )}
-            {isLoading && (
-              <div className="absolute top-3 right-3 z-10">
-                <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-lg border border-gray-100 flex items-center gap-2.5">
-                  <div className="w-4 h-4 border-2 border-gray-200 border-t-[#048F86] rounded-full animate-spin" />
-                  <span className="text-[11px] text-gray-600 font-semibold" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    جاري التحديث...
-                  </span>
+            </div>
+            {/* Syncing: thin teal bar + dots — no blocking copy */}
+            {isFetching && (
+              <div
+                className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col items-center gap-2"
+                aria-busy
+                aria-label="مزامنة التقويم"
+              >
+                <div className="h-[3px] w-full max-w-md overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="minister-cal-shimmer-bar h-full w-1/3 rounded-full bg-[#048F86]"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 shadow-sm border border-gray-100">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="minister-cal-dot h-2 w-2 rounded-full bg-[#048F86]"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -485,7 +522,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
 
       {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
-        <DialogContent className="max-w-[460px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
+        <DialogContent className="max-w-[860px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
           {selectedEventForDetails && (
             <>
               {isLoadingMeeting && (
@@ -522,6 +559,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
                         </span>
                       )}
+                    
                     </div>
                     <button
                       onClick={() => setSelectedEventForDetails(null)}
@@ -591,72 +629,93 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       </div>
                     )}
 
-                    {/* Attachments */}
-                    {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-                      <div className="flex items-start gap-3 py-3.5">
-                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Paperclip className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                    {/* Invitees – قائمة المدعوين (from timeline attendees) */}
+                    {selectedEventForDetails.attendees && selectedEventForDetails.attendees.length > 0 && (
+                      <div className="flex flex-col gap-2 py-3.5 border-b border-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                            </div>
+                            <span className="text-[13px] font-semibold text-gray-800">
+                              قائمة المدعوين
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-gray-500 bg-gray-50 rounded-full px-2 py-0.5">
+                            {selectedEventForDetails.attendees.length} مدعو
+                          </span>
                         </div>
-                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                          {selectedEventForDetails.attachments.map((att) => (
-                            <div key={att.attachment_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                              <span className="text-[12px] text-gray-600 truncate flex-1" title={att.name}>{att.name}</span>
-                              <span className="text-[10px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
+                        <div className="flex flex-col gap-1.5 mt-1">
+                          {selectedEventForDetails.attendees.map((attendee, idx) => (
+                            <div
+                              key={`${attendee.name}-${attendee.email}-${idx}`}
+                              className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50"
+                            >
+                              <span className="text-[13px] font-medium text-gray-800 truncate">
+                                {attendee.name || '—'}
+                              </span>
+                              {attendee.email && (
+                                <span className="text-[11px] text-gray-500 truncate max-w-[180px]">
+                                  {attendee.email}
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
+                  <div className="flex w-full justify-end ">
+                  {selectedEventForDetails.meeting_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEventForDetails(null);
+                          const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
+                          const location = selectedEventForDetails.location ?? null;
+                          const inferredChannel =
+                            location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
+                          const attendees = selectedEventForDetails.attendees ?? [];
+                          const initialInvitees = attendees.length > 0
+                            ? attendees.map((a, i) => ({
+                                _id: `inv-edit-${i}-${Date.now()}`,
+                                email: a.email ?? '',
+                                position: a.name ?? '',
+                                name: a.name ?? '',
+                                mobile: '',
+                                sector: '',
+                                attendance_mechanism: 'PHYSICAL',
+                                access_permission: false,
+                                is_consultant: false,
+                                meeting_owner: false,
+                              }))
+                            : undefined;
+                          setSlotForNewMeeting({
+                            date: selectedEventForDetails.date,
+                            time: startTime,
+                            endTime:
+                              selectedEventForDetails.exactEndTime ||
+                              selectedEventForDetails.endTime ||
+                              undefined,
+                            title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
+                            meetingLocation: selectedEventForDetails.meeting_location ?? location,
+                            meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
+                            meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
+                            meetingId: selectedEventForDetails.meeting_id,
+                            mode: 'edit',
+                            initialInvitees,
+                          });
+                        }}
+                        className="inline-flex max-w-[130px] items-center gap-1.5 px-3 m-4 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        تعديل
+                      </button>
+                    )}
+                    </div>
                 </div>
               )}
             </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Day events modal (monthly view overflow) */}
-      <Dialog open={!!dayEventsModal} onOpenChange={(open) => !open && setDayEventsModal(null)}>
-        <DialogContent className="max-w-[420px] w-[95vw] max-h-[80vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
-          {dayEventsModal && (
-            <div className="flex flex-col" style={fontStyle}>
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
-                <h3 className="text-gray-900 font-bold text-[15px]">
-                  {formatDetailDate(dayEventsModal.date)}
-                </h3>
-                <button
-                  onClick={() => setDayEventsModal(null)}
-                  className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 p-4">
-                {dayEventsModal.events.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    onClick={() => {
-                      setDayEventsModal(null);
-                      setSelectedEventForDetails(event);
-                    }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-right w-full"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-gray-200/60 flex items-center justify-center shrink-0">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                    </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="text-[13px] font-semibold text-gray-800 truncate">{event.label}</span>
-                      {event.exactStartTime && event.exactEndTime && (
-                        <span className="text-[11px] text-gray-400">
-                          {event.exactStartTime} – {event.exactEndTime}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -668,8 +727,18 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       >
         {slotForNewMeeting && (
           <CalendarSlotMeetingForm
+            key={
+              slotForNewMeeting.meetingId ??
+              `create-${slotForNewMeeting.date.getTime()}-${slotForNewMeeting.time}-${slotForNewMeeting.endTime ?? ''}`
+            }
             slotDate={slotForNewMeeting.date}
             slotTime={slotForNewMeeting.time}
+            slotEndTime={slotForNewMeeting.endTime}
+            initialTitle={slotForNewMeeting.title ?? ''}
+            initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
+            initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
+            initialMeetingLink={slotForNewMeeting.meetingLink ?? undefined}
+            initialInvitees={slotForNewMeeting.initialInvitees}
             isSubmitting={slotFormSubmitting}
             submitError={slotFormError}
             onSubmit={async (values) => {
@@ -677,55 +746,75 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               setSlotFormSubmitting(true);
               const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
               const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
-              const optimisticId = `optimistic-${Date.now()}`;
-              const optimisticEvent = buildOptimisticOutlookEvent(
-                values.title,
-                scheduled_start,
-                scheduled_end,
-                optimisticId
-              );
-
-              // Optimistic update: add the new meeting to the calendar cache immediately
-              queryClient.setQueryData<OutlookTimelineEvent[]>(
-                ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                (old) => [...(old ?? []), optimisticEvent]
-              );
-              setSlotForNewMeeting(null);
+              const isEdit = slotForNewMeeting?.mode === 'edit' && slotForNewMeeting.meetingId;
 
               try {
-                const invitees = values.invitees.map((m) => ({
-                  name: m.full_name ?? '',
-                  position: m.position_title ?? '',
-                  mobile: m.mobile_number ?? '',
-                  email: m.email ?? '',
+                const invitees = values.invitees.map((m: Record<string, unknown>) => ({
+                  name: (m.name ?? m.full_name ?? m.position ?? '') as string,
+                  position: (m.position ?? m.position_title ?? '') as string,
+                  mobile: (m.mobile ?? m.mobile_number ?? '') as string,
+                  email: (m.email ?? '') as string,
                 }));
-                const result = await createScheduledMeeting({
-                  meeting_title: values.title,
-                  scheduled_start,
-                  scheduled_end,
-                  meeting_channel: values.meeting_channel,
-                  meeting_location: values.meeting_location,
-                  meeting_link: values.meeting_link,
-                  proposer_user_ids: values.proposer_user_ids,
-                  invitees,
-                });
-                const meetingId = (result as { id?: string })?.id;
-                trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
-                  meeting_id: meetingId,
-                  meeting_title: values.title,
-                });
+
+                if (isEdit) {
+                  await updateScheduledMeeting(slotForNewMeeting!.meetingId!, {
+                    meeting_title: values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    meeting_channel: values.meeting_channel,
+                    meeting_location: values.meeting_location,
+                    meeting_link: values.meeting_link,
+                    proposers: values.proposers,
+                    invitees,
+                  });
+                  trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
+                    meeting_id: slotForNewMeeting!.meetingId,
+                    meeting_title: values.title,
+                  });
+                } else {
+                  const optimisticId = `optimistic-${Date.now()}`;
+                  const optimisticEvent = buildOptimisticOutlookEvent(
+                    values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    optimisticId
+                  );
+
+                  // Optimistic update: add the new meeting to the calendar cache immediately
+                  queryClient.setQueryData<OutlookTimelineEvent[]>(
+                    ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                    (old) => [...(old ?? []), optimisticEvent]
+                  );
+
+                  const result = await createScheduledMeeting({
+                    meeting_title: values.title,
+                    scheduled_start,
+                    scheduled_end,
+                    meeting_channel: values.meeting_channel,
+                    meeting_location: values.meeting_location,
+                    meeting_link: values.meeting_link,
+                    proposers: values.proposers,
+                    invitees,
+                  });
+                  const meetingId = (result as { id?: string })?.id;
+                  trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
+                    meeting_id: meetingId,
+                    meeting_title: values.title,
+                  });
+                }
+
+                setSlotForNewMeeting(null);
                 // Invalidate in background so next time we get server truth (no need to block UI)
                 queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
               } catch (err: unknown) {
-                // Rollback: remove the optimistic event from the cache
-                queryClient.setQueryData<OutlookTimelineEvent[]>(
-                  ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                  (old) => (old ?? []).filter((e) => e.item_id !== optimisticId)
-                );
+                if (!isEdit) {
+                  // For create we may have added an optimistic event – roll it back
+                  queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+                }
                 const message =
                   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                   (err as Error)?.message ||
-                  'حدث خطأ أثناء إنشاء الاجتماع';
+                  (isEdit ? 'حدث خطأ أثناء تحديث الاجتماع' : 'حدث خطأ أثناء إنشاء الاجتماع');
                 setSlotFormError(message);
               } finally {
                 setSlotFormSubmitting(false);

@@ -10,6 +10,7 @@ import { Step3Invitees } from '../../components/steps/Step3Invitees';
 import { DeleteDraftConfirmationModal } from '../../components/DeleteDraftConfirmationModal';
 import { FormMeetingModal } from '../../components/FormMeetingModal/FormMeetingModal';
 import { useAuth } from '@/modules/auth';
+import { SUBMITTER_EDIT_BLOCKED_MESSAGE } from '@/modules/shared/types';
 
 export type { MeetingForEdit };
 
@@ -46,6 +47,7 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
     isLoading,
     error,
     draftData,
+    underReviewBlocked,
   } = useEditMeeting(
     meetingId != null || initialMeetingData != null
       ? { meetingIdOverride: meetingId ?? initialMeetingData?.id, initialMeetingData: initialMeetingData ?? undefined }
@@ -158,6 +160,12 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
 
   const content = isLoading ? (
     <Loader message="جاري تحميل البيانات..." />
+  ) : underReviewBlocked ? (
+    <div className="flex flex-col items-center justify-center min-h-[200px] gap-4 px-6">
+      <div className="text-lg text-center text-red-600">
+        {SUBMITTER_EDIT_BLOCKED_MESSAGE}
+      </div>
+    </div>
   ) : error || !draftData ? (
     <div className="flex items-center justify-center min-h-[200px]">
       <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>

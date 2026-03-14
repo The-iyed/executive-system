@@ -12,13 +12,17 @@ import {
   isPresetLocation,
 } from '../features/MeetingForm/utils/constants';
 import { createWebexMeeting } from '../data/meetingsApi';
-import { searchByEmail } from '../data/adIntegrationApi';
+import { searchByEmail, type ADUserByEmail } from '../data/adIntegrationApi';
+import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import { X } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
-/** Display in UTC so scheduled_start/scheduled_end match what the user sees (timeline uses UTC). */
+/**
+ * Show the same local date/time the user chose on the calendar.
+ * startISO/endISO are UTC instants (e.g. from toISOString); local getters match wall clock in the browser.
+ */
 function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
   if (!startISO || !endISO) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
@@ -28,12 +32,13 @@ function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeV
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
   }
-  const toHHmmUTC = (d: Date) =>
-    `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  const toHHmmLocal = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const dateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
   return {
-    date: start,
-    startTime: toHHmmUTC(start),
-    endTime: toHHmmUTC(end),
+    date: dateOnly,
+    startTime: toHHmmLocal(start),
+    endTime: toHHmmLocal(end),
     isFullDay: false,
   };
 }
@@ -64,14 +69,24 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_channel: string;
   meeting_location?: string;
   meeting_link?: string;
-  proposer_user_ids?: string[];
+  /** Full proposer payloads for API */
+  proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
 }
 
 export interface CalendarSlotMeetingFormProps {
-  /** Initial slot: date and time string "HH:00" */
+  /** Initial slot start (HH:mm) */
   slotDate: Date;
   slotTime: string;
+  /** Initial slot end (HH:mm). If set, form shows exact range (e.g. 7:00–7:30). */
+  slotEndTime?: string;
+  /** Optional initial values when editing an existing scheduled meeting from the calendar */
+  initialTitle?: string;
+  initialMeetingChannel?: string;
+  initialMeetingLocation?: string;
+  initialMeetingLink?: string;
+  /** Pre-fill invitees table when editing (e.g. from event.attendees) */
+  initialInvitees?: Array<Record<string, unknown>>;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
@@ -83,30 +98,42 @@ export interface CalendarSlotMeetingFormProps {
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   slotDate,
   slotTime,
+  slotEndTime,
+  initialTitle,
+  initialMeetingChannel,
+  initialMeetingLocation,
+  initialMeetingLink,
+  initialInvitees,
   onSubmit,
   onCancel,
   isSubmitting = false,
   submitError = null,
 }) => {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle ?? '');
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
+    if (slotEndTime) return toISOStart(slotDate, slotEndTime);
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
     const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
     return toISOStringWithTimezone(d);
-  }, [slotDate, slotTime]);
+  }, [slotDate, slotTime, slotEndTime]);
   const [startDate, setStartDate] = useState(startDefault);
   const [endDate, setEndDate] = useState(endDefault);
-  const [meetingChannel, setMeetingChannel] = useState('');
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [meetingLocationOption, setMeetingLocationOption] = useState('');
+  const [meetingChannel, setMeetingChannel] = useState(initialMeetingChannel ?? '');
+  const [meetingLocation, setMeetingLocation] = useState(initialMeetingLocation ?? '');
+  const [meetingLocationOption, setMeetingLocationOption] = useState(
+    initialMeetingLocation && isPresetLocation(initialMeetingLocation) ? initialMeetingLocation : ''
+  );
   const minStartDate = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
-  const [proposerSelections, setProposerSelections] = useState<{ id: string; label: string; email?: string }[]>([]);
+  /** Each selected proposer keeps full AD row for API */
+  const [proposerSelections, setProposerSelections] = useState<
+    (ADUserByEmail & { id: string; label: string })[]
+  >([]);
 
   const loadProposerAdOptions = useCallback(
     async (search: string, _skip: number, limit: number) => {
@@ -116,6 +143,10 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       }
       try {
         const users = await searchByEmail(trimmed, limit);
+        users.forEach((u) => {
+          const k = u.objectGUID ?? u.mail ?? '';
+          if (k) proposerAdByIdRef.current[k] = u;
+        });
         const selectedIds = new Set(proposerSelections.map((p) => p.id));
         const items = users
           .filter((u) => !selectedIds.has(u.objectGUID ?? u.mail ?? ''))
@@ -144,10 +175,19 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     [proposerSelections]
   );
 
+  const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
+
   const addProposer = useCallback((opt: { value: string; label: string; email?: string }) => {
+    const fromMap = proposerAdByIdRef.current[opt.value];
+    const base: ADUserByEmail = fromMap ?? {
+      objectGUID: opt.value.startsWith('ad-') ? undefined : opt.value,
+      mail: opt.email ?? (opt.value.startsWith('ad-') ? opt.value.slice(3) : opt.value),
+      displayName: opt.label.split(/\s+\(/)[0]?.trim(),
+    };
+    const id = base.objectGUID ?? base.mail ?? opt.value;
     setProposerSelections((prev) => {
-      if (prev.some((p) => p.id === opt.value)) return prev;
-      return [...prev, { id: opt.value, label: opt.label, email: opt.email }];
+      if (prev.some((p) => p.id === id)) return prev;
+      return [...prev, { ...base, id, label: opt.label }];
     });
   }, []);
 
@@ -169,8 +209,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(null);
+  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
   const [webexError, setWebexError] = useState<string | null>(null);
+  const webexCreatedForSlotRef = React.useRef<string | null>(
+    initialMeetingLink && startDefault && endDefault ? `${startDefault}-${endDefault}` : null
+  );
 
   const isRemote = meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID';
 
@@ -183,6 +226,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     if (value === 'PHYSICAL') {
       setWebexMeetingLink(null);
       setWebexError(null);
+      webexCreatedForSlotRef.current = null;
     }
   }, []);
 
@@ -230,6 +274,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         if (webexSlotRef.current === slotKey) {
           setWebexMeetingLink(response.data.webex_meeting_join_link);
+          webexCreatedForSlotRef.current = slotKey;
         }
       } catch (err) {
         console.error('Failed to create Webex meeting:', err);
@@ -245,13 +290,18 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     return () => clearTimeout(timeoutId);
   }, [isRemote, startDate, endDate, title, webexMeetingLink, isCreatingWebex]);
 
-  // Clear Webex link when date/time change so we recreate with new slot
+  // Clear Webex only when the time slot actually changes (avoids wiping link when MeetingRangePicker re-emits same instant)
   useEffect(() => {
-    if (isRemote && (webexMeetingLink || webexError)) {
+    if (!isRemote) return;
+    const slotKey = startDate && endDate ? `${startDate}-${endDate}` : '';
+    const prev = webexCreatedForSlotRef.current;
+    if (!slotKey || !prev || slotKey === prev) return;
+    if (webexMeetingLink || webexError) {
       setWebexMeetingLink(null);
       setWebexError(null);
+      webexCreatedForSlotRef.current = null;
     }
-  }, [isRemote, startDate, endDate]);
+  }, [isRemote, startDate, endDate, webexMeetingLink, webexError]);
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
     if (!isPhysical) return undefined;
@@ -282,6 +332,24 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
     const meeting_location = getMeetingLocationForSubmit();
 
+    const proposers: CreateScheduledMeetingProposer[] | undefined =
+      proposerSelections.length > 0
+        ? proposerSelections.map((p) => ({
+            object_guid: p.objectGUID ?? p.mail ?? p.id,
+            email: p.mail ?? '',
+            name: p.displayNameAR ?? p.displayNameEN ?? p.displayName ?? p.label ?? p.mail ?? '',
+            name_ar: p.displayNameAR,
+            name_en: p.displayNameEN,
+            mobile: p.mobile,
+            title: p.title,
+            department: p.department,
+            company: p.company,
+            given_name: p.givenName,
+            sn: p.sn,
+            cn: p.cn,
+          }))
+        : undefined;
+
     onSubmit({
       title: titleTrimmed,
       start_date: startDate,
@@ -289,7 +357,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_channel: meetingChannel,
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
-      proposer_user_ids: proposerSelections.length > 0 ? proposerSelections.map((p) => p.id) : undefined,
+      proposers,
       invitees: inviteesPayload,
     });
   };
@@ -446,7 +514,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
                   >
                     <span className="text-[14px] text-[#344054]">
                       {p.label}
-                      {p.email ? ` (${p.email})` : ''}
+                      {p.mail ? ` (${p.mail})` : ''}
                     </span>
                     <button
                       type="button"
@@ -479,6 +547,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         <InviteesTableForm
           tableRef={inviteesRef}
+          initialInvitees={initialInvitees ?? []}
           showAiSuggest={false}
         />
 
