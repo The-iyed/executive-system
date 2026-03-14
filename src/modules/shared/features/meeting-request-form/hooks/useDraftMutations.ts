@@ -70,12 +70,13 @@ export function useSaveDraftInvitees() {
 interface SaveSchedulerInviteesParams {
   meetingId: string;
   invitees: Record<string, unknown>[];
+  schedule?: boolean;
 }
 
 export function useSaveSchedulerStep3Invitees() {
   return useMutation({
-    mutationFn: ({ meetingId, invitees }: SaveSchedulerInviteesParams) =>
-      saveSchedulerStep3Invitees(meetingId, invitees),
+    mutationFn: ({ meetingId, invitees,  schedule }: SaveSchedulerInviteesParams) =>
+      saveSchedulerStep3Invitees(meetingId, invitees, schedule),
   });
 }
 

@@ -1,13 +1,7 @@
-import { MeetingStatus, MeetingStatusUnCommitted } from "../../types";
+import { MeetingStatus, MeetingStatusUnCommitted } from "../../../../types";
 import { MeetingConfidentiality } from "./enums";
 
 export { MeetingStatus }
-// export enum MeetingStatus {
-//   DRAFT_UNCOMMITTED = "DRAFT_UNCOMMITTED",
-//   DRAFT = "DRAFT",
-//   RETURNED_FROM_SCHEDULING = "RETURNED_FROM_SCHEDULING",
-//   RETURNED_FROM_CONTENT = "RETURNED_FROM_CONTENT",
-// }
 
 export const SAVEABLE_DRAFT_STATUSES: ReadonlySet<string> = new Set([
   MeetingStatusUnCommitted.DRAFT_UNCOMMITTED,
