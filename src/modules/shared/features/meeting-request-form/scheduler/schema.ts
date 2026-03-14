@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocation, BOOL, MeetingNature, MeetingConfidentiality } from "../enums";
+import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocation, BOOL, MeetingNature, MeetingConfidentiality } from "../shared/types/enums";
 import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from "../shared/schema";
 
 export const schedulerStep1Schema = z.object({

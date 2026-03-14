@@ -1,7 +1,7 @@
-import { FormProvider } from "react-hook-form";
 import { useMemo } from "react";
-import { useSchedulerStep1Form } from "./useStep1Form";
+import { FormProvider } from "react-hook-form";
 import { addDays, startOfDay } from "date-fns";
+import { useSchedulerStep1Form } from "./useStep1Form";
 import {
   MeetingTitleField, DescriptionField, SectorField, MeetingTypeField,
   IsUrgentField, UrgentReasonField, MeetingDateField, MeetingChannelField,
@@ -11,7 +11,7 @@ import {
   MeetingNatureField, PreviousMeetingField, RequiresProtocolField,
   RelatedDirectiveField, AgendaSection,
 } from "../shared";
-import { BOOL } from "../enums";
+import { BOOL } from "../shared/types/enums";
 import type { SchedulerStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
