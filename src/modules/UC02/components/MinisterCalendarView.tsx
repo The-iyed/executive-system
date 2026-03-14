@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, User, Calendar, Clock, MapPin, Paperclip, X, Pencil } from 'lucide-react';
+import { ChevronDown, User, Calendar, Clock, MapPin, X, Pencil } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader, MeetingCard } from '@/modules/shared';
 import {
@@ -54,12 +54,6 @@ function formatDetailDate(date: Date): string {
   const day = date.getDate();
   const month = monthNames[date.getMonth()];
   return `${dayName} ${day} ${month}`;
-}
-
-function formatAttachmentSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} بايت`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ك.ب`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} م.ب`;
 }
 
 /** Monday of the given week at local midnight */
@@ -665,23 +659,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                                   {attendee.email}
                                 </span>
                               )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Attachments */}
-                    {selectedEventForDetails.attachments && selectedEventForDetails.attachments.length > 0 && (
-                      <div className="flex items-start gap-3 py-3.5">
-                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Paperclip className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
-                        </div>
-                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                          {selectedEventForDetails.attachments.map((att) => (
-                            <div key={att.attachment_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                              <span className="text-[12px] text-gray-600 truncate flex-1" title={att.name}>{att.name}</span>
-                              <span className="text-[10px] text-gray-400 shrink-0">{formatAttachmentSize(att.size)}</span>
                             </div>
                           ))}
                         </div>

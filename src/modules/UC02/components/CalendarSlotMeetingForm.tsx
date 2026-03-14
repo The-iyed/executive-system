@@ -211,6 +211,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
   const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
   const [webexError, setWebexError] = useState<string | null>(null);
+  const webexCreatedForSlotRef = React.useRef<string | null>(
+    initialMeetingLink && startDefault && endDefault ? `${startDefault}-${endDefault}` : null
+  );
 
   const isRemote = meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID';
 
@@ -223,6 +226,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     if (value === 'PHYSICAL') {
       setWebexMeetingLink(null);
       setWebexError(null);
+      webexCreatedForSlotRef.current = null;
     }
   }, []);
 
@@ -270,6 +274,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         if (webexSlotRef.current === slotKey) {
           setWebexMeetingLink(response.data.webex_meeting_join_link);
+          webexCreatedForSlotRef.current = slotKey;
         }
       } catch (err) {
         console.error('Failed to create Webex meeting:', err);
@@ -285,13 +290,18 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     return () => clearTimeout(timeoutId);
   }, [isRemote, startDate, endDate, title, webexMeetingLink, isCreatingWebex]);
 
-  // Clear Webex link when date/time change so we recreate with new slot
+  // Clear Webex only when the time slot actually changes (avoids wiping link when MeetingRangePicker re-emits same instant)
   useEffect(() => {
-    if (isRemote && (webexMeetingLink || webexError)) {
+    if (!isRemote) return;
+    const slotKey = startDate && endDate ? `${startDate}-${endDate}` : '';
+    const prev = webexCreatedForSlotRef.current;
+    if (!slotKey || !prev || slotKey === prev) return;
+    if (webexMeetingLink || webexError) {
       setWebexMeetingLink(null);
       setWebexError(null);
+      webexCreatedForSlotRef.current = null;
     }
-  }, [isRemote, startDate, endDate]);
+  }, [isRemote, startDate, endDate, webexMeetingLink, webexError]);
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
     if (!isPhysical) return undefined;
