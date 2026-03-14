@@ -89,6 +89,18 @@ export interface OutlookTimelineEvent {
   attachments?: OutlookAttachment[] | null;
   /** true = internal, false = external */
   is_internal: boolean;
+  /** Optional attendees list from timeline API (قائمة المدعوين) */
+  attendees?: Array<{
+    name: string;
+    email?: string | null;
+  }> | null;
+  /** When present, this Outlook event is a scheduled meeting from our system; use for edit and PATCH */
+  meeting_id?: string | null;
+  /** Scheduled meeting fields from API (for edit drawer defaults) */
+  meeting_title?: string | null;
+  meeting_channel?: string | null;
+  meeting_location?: string | null;
+  meeting_link?: string | null;
 }
 
 export interface OutlookTimelineResponse {
@@ -125,6 +137,25 @@ export interface CreateScheduledMeetingInvitee {
   email: string;
 }
 
+/**
+ * Proposer (المقترحون) — full AD profile sent to backend; ids alone are not enough.
+ */
+export interface CreateScheduledMeetingProposer {
+  object_guid: string;
+  email: string;
+  /** Primary display name */
+  name: string;
+  name_ar?: string;
+  name_en?: string;
+  mobile?: string;
+  title?: string;
+  department?: string;
+  company?: string;
+  given_name?: string;
+  sn?: string;
+  cn?: string;
+}
+
 /** Payload for POST /api/scheduling/create-scheduled-meeting */
 export interface CreateScheduledMeetingPayload {
   meeting_title: string;
@@ -133,9 +164,15 @@ export interface CreateScheduledMeetingPayload {
   meeting_channel: string; // PHYSICAL | VIRTUAL | HYBRID
   meeting_location?: string; // required when meeting_channel === PHYSICAL
   meeting_link?: string; // Webex join link when meeting_channel is VIRTUAL/HYBRID
-  proposer_user_ids?: string[]; // users who receive notification without being invitees
+  /** @deprecated Prefer proposers — kept for backends that only store ids */
+  proposer_user_ids?: string[];
+  /** Full proposer rows (AD) — preferred */
+  proposers?: CreateScheduledMeetingProposer[];
   invitees?: CreateScheduledMeetingInvitee[];
 }
+
+/** Payload for PATCH /api/scheduling/scheduled-meeting/{meeting_id} (same shape as create). */
+export type UpdateScheduledMeetingPayload = CreateScheduledMeetingPayload;
 
 /**
  * Create a scheduled meeting from the calendar slot form.
@@ -158,11 +195,48 @@ export const createScheduledMeeting = async (
   if (payload.meeting_link) {
     body.meeting_link = payload.meeting_link;
   }
-  if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
+  if (payload.proposers && payload.proposers.length > 0) {
+    body.proposers = payload.proposers;
+    body.proposer_user_ids = payload.proposers.map((p) => p.object_guid).filter(Boolean);
+  } else if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
     body.proposer_user_ids = payload.proposer_user_ids;
   }
   const { data } = await axiosInstance.post<{ id?: string }>(
     '/api/scheduling/create-scheduled-meeting',
+    body
+  );
+  return data;
+};
+
+/**
+ * Update an existing scheduled meeting from the calendar.
+ * PATCH /api/scheduling/scheduled-meeting/{meeting_id}
+ */
+export const updateScheduledMeeting = async (
+  meetingId: string,
+  payload: UpdateScheduledMeetingPayload
+): Promise<unknown> => {
+  const body: Record<string, unknown> = {
+    meeting_title: payload.meeting_title,
+    scheduled_start: payload.scheduled_start,
+    scheduled_end: payload.scheduled_end,
+    meeting_channel: payload.meeting_channel,
+    invitees: payload.invitees ?? [],
+  };
+  if (payload.meeting_location) {
+    body.meeting_location = payload.meeting_location;
+  }
+  if (payload.meeting_link) {
+    body.meeting_link = payload.meeting_link;
+  }
+  if (payload.proposers && payload.proposers.length > 0) {
+    body.proposers = payload.proposers;
+    body.proposer_user_ids = payload.proposers.map((p) => p.object_guid).filter(Boolean);
+  } else if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
+    body.proposer_user_ids = payload.proposer_user_ids;
+  }
+  const { data } = await axiosInstance.patch(
+    `/api/scheduling/scheduled-meeting/${meetingId}`,
     body
   );
   return data;
