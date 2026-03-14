@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { MeetingStatus } from "../../types";
+import { MeetingStatus } from "../types/types";
 import { MeetingStatusUnCommitted } from "@/modules/shared/types";
 
 /* ─── Types ─── */

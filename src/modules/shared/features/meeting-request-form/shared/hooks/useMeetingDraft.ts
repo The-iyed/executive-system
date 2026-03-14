@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchMeetingDraft, fetchMeetingDraftWithEditableFields, MeetingDraftWithEditableFields } from "../../api";
-
-
 export interface MeetingDraftResult<T = Record<string, unknown>> {
   data: T | undefined;
   editableFields: string[] | null;
@@ -10,15 +8,6 @@ export interface MeetingDraftResult<T = Record<string, unknown>> {
   error: Error | null;
 }
 
-/**
- * Generic draft loader that fetches both draft data and editable fields
- * in a single parallel call. If either request fails, the whole query fails.
- *
- * @param meetingId - Draft/meeting ID to fetch
- * @param enabled - Whether the query is enabled
- * @param mapper - Optional mapper to convert raw draft data into typed form values
- * @param withEditableFields - When true, also fetches editable fields (edit mode). Default: false.
- */
 export function useMeetingDraft<T = Record<string, unknown>>(
   meetingId: string | null | undefined,
   enabled: boolean,

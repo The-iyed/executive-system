@@ -12,7 +12,7 @@ import {
   MeetingNatureField,
   PreviousMeetingField,
 } from "../shared";
-import { BOOL } from "../enums";
+import { BOOL } from "../shared/types/enums";
 import type { SubmitterStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
