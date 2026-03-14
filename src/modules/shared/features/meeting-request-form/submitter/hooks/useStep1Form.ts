@@ -10,7 +10,7 @@ import {
   BOOL,
   MeetingConfidentiality,
   MeetingNature,
-} from "../../enums";
+} from "../../shared/types/enums";
 import { useVisibilityCleanup } from "../../shared";
 
 export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>) {

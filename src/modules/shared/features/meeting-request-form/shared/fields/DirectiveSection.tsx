@@ -3,7 +3,7 @@ import { useRef, useState, useCallback } from "react";
 import { Input, Switch, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, cn } from "@/lib/ui";
 import { Upload, FileText, X } from "lucide-react";
 import { FormField, inputClass } from "./FieldGroup";
-import { DIRECTIVE_METHOD_OPTIONS } from "../../enums";
+import { DIRECTIVE_METHOD_OPTIONS } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
 interface Props {
