@@ -32,13 +32,9 @@ const Meeting: React.FC = () => {
     setCurrentPage(PAGINATION.DEFAULT_PAGE);
   }, [searchValue, statusFilters]);
 
-  // Use first selected status for API call (API supports single status); when none selected, show all
-  const activeStatus: MeetingStatus | 'all' =
-    statusFilters.length > 0 ? (statusFilters[0] as MeetingStatus) : 'all';
-
   const { meetings, isLoading, error, totalPages } = useMeetings({
     searchValue,
-    statusFilter: activeStatus,
+    statusFilter: statusFilters.length > 0 ? statusFilters : 'all',
     currentPage,
   });
 
