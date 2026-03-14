@@ -63,6 +63,26 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
     { key: 'selected_time_slot_id', label: 'موعد الاجتماع المقترح', getValue: (d) => formatIsoRange(d.meeting_start_date, d.meeting_end_date) },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', getValue: (d) => MeetingChannelLabels[d.meetingChannel ?? ''] ?? d.meetingChannel ?? '—' },
     { key: 'meeting_location', label: 'الموقع', getValue: (d) => d.meeting_location ?? '—' },
+    {
+      key: 'meeting_link',
+      label: 'رابط الاجتماع (Webex)',
+      className: 'sm:col-span-2',
+      getValue: (d) => {
+        const url = d.meeting_link?.trim();
+        if (!url) return '—';
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#048F86] underline break-all text-left inline-block max-w-full"
+            dir="ltr"
+          >
+            {url}
+          </a>
+        );
+      },
+    },
     { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingCategory) ?? '—' },
     { key: 'meeting_justification', label: 'مبرر اللقاء', getValue: (d) => d.meetingReason ?? '—' },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', getValue: (d) => d.relatedTopic ?? '—' },
@@ -169,6 +189,8 @@ export interface MeetingInfoData {
   previous_meeting_minutes_file?: File | { name?: string } | null;
   directive_text?: string;
   notes?: string;
+  /** Join URL for VIRTUAL/HYBRID (Webex); from API meeting_url / meeting_link */
+  meeting_link?: string | null;
 }
 
 /** When provided, each field is rendered by this function (e.g. checkbox + label + editable input). Key = editable field id. */

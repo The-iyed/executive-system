@@ -147,6 +147,9 @@ export interface MeetingApiResponse {
   requires_protocol: boolean;
   protocol_type: string | null;
   meeting_channel: string;
+  /** Join link when VIRTUAL/HYBRID (calendar create + schedule API). */
+  meeting_url?: string | null;
+  meeting_link?: string | null;
   is_sequential: boolean;
   sequential_number: number | null;
   previous_meeting_id: string | null;
