@@ -1,9 +1,5 @@
-import type { SubmitterStep1Values } from "../schema";
+import type { SubmitterStep1Values } from "../../submitter/schema";
 
-/**
- * Converts Step 1 form values into a FormData instance
- * suitable for multipart/form-data submission.
- */
 export function buildStep1FormData(data: SubmitterStep1Values): FormData {
   const fd = new FormData();
 

@@ -3,7 +3,7 @@ import { type UseFormReturn, useFieldArray, Controller } from "react-hook-form";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, cn } from "@/lib/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { inputClass } from "./FieldGroup";
-import { MINISTER_SUPPORT_TYPE_OPTIONS, MINISTER_SUPPORT_OTHER_VALUE, MeetingClassification } from "../../enums";
+import { MINISTER_SUPPORT_TYPE_OPTIONS, MINISTER_SUPPORT_OTHER_VALUE, MeetingClassification } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
 interface Props {
