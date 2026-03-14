@@ -5,9 +5,13 @@ import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
 import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
 import { PAGINATION, MeetingOwnerType } from '../utils/constants';
 
+/** Single status, 'all', or array of statuses for multi-select filter. */
+export type StatusFilterInput = MeetingStatus | 'all' | (MeetingStatus | string)[];
+
 interface UseMeetingsOptions {
   searchValue: string;
-  statusFilter: MeetingStatus;
+  /** Single status, 'all', or array of statuses. When array, API is called with multiple status params. */
+  statusFilter: StatusFilterInput;
   currentPage: number;
   itemsPerPage?: number;
   ownerType?: MeetingOwnerType;
@@ -37,7 +41,10 @@ export const useMeetings = ({
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  const mapStatusToApi = (status: MeetingStatus | string): string => {
+  const mapStatusToApi = (status: MeetingStatus | 'all' | string): string => {
+    if (status === 'all') {
+      return '';
+    }
     if (status === MeetingStatus.RETURNED_FROM_CONTENT) {
       return 'RETURNED_FROM_CONTENT';
     }
@@ -47,25 +54,35 @@ export const useMeetings = ({
     return status as string;
   };
 
+  const statusArrayForApi = useMemo((): string[] => {
+    if (Array.isArray(statusFilter)) {
+      return statusFilter.map(mapStatusToApi).filter(Boolean);
+    }
+    const single = mapStatusToApi(statusFilter);
+    return single ? [single] : [];
+  }, [statusFilter]);
+
   const apiFilters = useMemo(
     () => ({
-      status: mapStatusToApi(statusFilter),
+      statusArray: statusArrayForApi,
       owner_type: ownerType as string,
     }),
-    [statusFilter, ownerType]
+    [statusArrayForApi, ownerType]
   );
 
   const skip = (currentPage - 1) * itemsPerPage;
 
   const { data: meetingsResponse, isLoading, error } = useQuery({
-    queryKey: ['meetings', 'uc01', apiFilters.status, apiFilters.owner_type, debouncedSearch.trim(), currentPage],
+    queryKey: ['meetings', 'uc01', apiFilters.statusArray, apiFilters.owner_type, debouncedSearch.trim(), currentPage],
     queryFn: () => {
       const params: GetMeetingsParams = {
-        status: apiFilters.status,
         owner_type: apiFilters.owner_type,
         skip: skip,
         limit: itemsPerPage,
       };
+      if (apiFilters.statusArray.length > 0) {
+        params.status = apiFilters.statusArray;
+      }
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }

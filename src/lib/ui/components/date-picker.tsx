@@ -35,6 +35,10 @@ const formatDate = (date: Date | undefined): string => {
   return `${day}/${month}/${year}`;
 };
 
+function localDayStartMs(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 export function DatePicker({
   date,
   onDateChange,
@@ -69,6 +73,12 @@ export function DatePicker({
   }, [date, value]);
 
   const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate && fromDate != null && !Number.isNaN(fromDate.getTime())) {
+      if (localDayStartMs(newDate) < localDayStartMs(fromDate)) return;
+    }
+    if (newDate && toDate != null && !Number.isNaN(toDate.getTime())) {
+      if (localDayStartMs(newDate) > localDayStartMs(toDate)) return;
+    }
     setSelectedDate(newDate);
     onDateChange?.(newDate);
     if (onChange) {
@@ -82,6 +92,20 @@ export function DatePicker({
     // Close the popover when a date is selected
     setOpen(false);
   };
+
+  const calendarDisabled = React.useMemo(() => {
+    const matchers: Array<(date: Date) => boolean> = [];
+    if (fromDate != null && !Number.isNaN(fromDate.getTime())) {
+      const minMs = localDayStartMs(fromDate);
+      matchers.push((date) => localDayStartMs(date) < minMs);
+    }
+    if (toDate != null && !Number.isNaN(toDate.getTime())) {
+      const maxMs = localDayStartMs(toDate);
+      matchers.push((date) => localDayStartMs(date) > maxMs);
+    }
+    if (matchers.length === 0) return undefined;
+    return matchers.length === 1 ? matchers[0]! : matchers;
+  }, [fromDate, toDate]);
 
   const displayValue = selectedDate ? formatDate(selectedDate) : '';
 
@@ -119,15 +143,7 @@ export function DatePicker({
           selected={selectedDate}
           onSelect={handleDateSelect}
           initialFocus
-          disabled={
-            fromDate != null && toDate != null
-              ? [{ before: fromDate }, { after: toDate }]
-              : fromDate != null
-                ? { before: fromDate }
-                : toDate != null
-                  ? { after: toDate }
-                  : undefined
-          }
+          disabled={calendarDisabled}
         />
       </PopoverContent>
     </Popover>

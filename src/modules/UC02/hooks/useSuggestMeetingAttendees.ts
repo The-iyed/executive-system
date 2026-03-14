@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiTimezoneHeaders } from '@/lib/api/apiTimezone';
 import { INVITEE_SUGGESTIONS_URL } from '@/lib/env';
 
 export interface SuggestMeetingAttendeesPayload {
@@ -103,6 +104,7 @@ export const useSuggestMeetingAttendees = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getApiTimezoneHeaders(),
         },
         body: JSON.stringify(payload),
       });

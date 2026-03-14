@@ -52,6 +52,8 @@ function FileCard({
   onCompare,
   compareDisabled,
   compareDisabledReason,
+  onAiNotes,
+  aiNotesDisabled,
   readOnly,
 }: {
   file: ContentTabFileItem;
@@ -62,6 +64,9 @@ function FileCard({
   onCompare?: () => void;
   compareDisabled?: boolean;
   compareDisabledReason?: string;
+  /** ملاحظات بالذكاء الاصطناعي (presentation only) */
+  onAiNotes?: () => void;
+  aiNotesDisabled?: boolean;
   readOnly?: boolean;
 }) {
   const borderClass = variant === 'presentation' ? 'border-[#009883]/40' : 'border-[#E4E7EC]';
@@ -81,7 +86,7 @@ function FileCard({
         <p className="text-sm font-medium text-[#344054] truncate">{file.file_name}</p>
         <p className="text-xs text-[#667085]">{Math.round((file.file_size || 0) / 1024)} KB</p>
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 flex-shrink-0 max-w-full">
         {onCompare !== undefined && (
           compareDisabled && compareDisabledReason ? (
             <Tooltip>
@@ -109,6 +114,16 @@ function FileCard({
               مقارنة بالذكاء الاصطناعي
             </button>
           )
+        )}
+        {variant === 'presentation' && onAiNotes && (
+          <button
+            type="button"
+            onClick={onAiNotes}
+            disabled={aiNotesDisabled}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-l from-[#048F86] to-[#34C3BA] shadow-sm hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            ملاحظات بالذكاء الاصطناعي
+          </button>
         )}
         {onDownload && file.blob_url && (
           <a
@@ -193,6 +208,9 @@ export interface Mou7tawaContentTabProps {
   /** Reason shown on hover when compare button is disabled. */
   compareDisabledReason?: (file: ContentTabFileItem, index: number, total: number) => string;
   onComparePresentation?: (file: ContentTabFileItem) => void;
+  /** فتح ملاحظات الذكاء الاصطناعي على العرض (مسؤول المحتوى وغيره) */
+  onAiNotesPresentation?: (file: ContentTabFileItem) => void;
+  aiNotesPending?: boolean;
 }
 
 export function Mou7tawaContentTab({
@@ -213,6 +231,8 @@ export function Mou7tawaContentTab({
   compareEnabledForPresentation,
   compareDisabledReason,
   onComparePresentation,
+  onAiNotesPresentation,
+  aiNotesPending = false,
 }: Mou7tawaContentTabProps) {
   const displayDate = readOnly && formatDate && attachmentTimingValue ? formatDate(attachmentTimingValue) : attachmentTimingValue;
 
@@ -239,6 +259,10 @@ export function Mou7tawaContentTab({
                   onCompare={onComparePresentation ? () => onComparePresentation(file) : undefined}
                   compareDisabled={onComparePresentation ? !enabled : undefined}
                   compareDisabledReason={disabledReason}
+                  onAiNotes={
+                    onAiNotesPresentation ? () => onAiNotesPresentation(file) : undefined
+                  }
+                  aiNotesDisabled={aiNotesPending}
                   readOnly={readOnly}
                 />
               );

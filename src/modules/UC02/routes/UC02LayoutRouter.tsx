@@ -22,7 +22,7 @@ const ContentAreaFallback = () => (
  */
 export const UC02LayoutRouter: React.FC = () => {
   const { user, isInitialised } = useAuth();
-  const filtered = filterRoutesByUseCase(uc02Routes, user?.use_cases);
+  const filtered = filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles);
   const defaultRoute = getDefaultRouteForUser(user?.use_cases);
 
   if (!isInitialised) {
