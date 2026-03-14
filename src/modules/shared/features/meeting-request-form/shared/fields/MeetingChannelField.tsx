@@ -1,7 +1,7 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/lib/ui";
 import { FormField, inputClass } from "./FieldGroup";
-import { MEETING_CHANNEL_OPTIONS } from "../../enums";
+import { MEETING_CHANNEL_OPTIONS } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
 interface Props { disabled?: boolean }
