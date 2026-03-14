@@ -73,6 +73,8 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: 'solar:calendar-outline',
         label: 'التقويم',
         path: UC02_PATH.CALENDAR,
+        // Minister / scheduling calendar — not for executive office manager
+        excludeRoleCodes: ['EXECUTIVE_OFFICE_MANAGER'],
       },
     ],
   },
@@ -109,6 +111,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: 'solar:hand-stars-outline',
         label: 'تقويم',
         path: UC04_PATH.EVALUATION,
+        excludeRoleCodes: ['EXECUTIVE_OFFICE_MANAGER'],
       },
     ],
   },
@@ -199,10 +202,15 @@ export const getDefaultRouteForUser = (useCases?: string[]): string => {
  * Merges navigation items from all allowed use cases
  * Filters items that require specific use case access
  */
-export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
+export const getNavigationItemsForUser = (
+  useCases?: string[],
+  userRoles?: Array<{ code: string }>
+): NavItem[] => {
   if (!useCases || useCases.length === 0) {
     return USE_CASE_CONFIGS['UC-01'].navigationItems;
   }
+
+  const roleCodes = new Set(userRoles?.map((r) => r.code) ?? []);
 
   const navItems: NavItem[] = [];
   const seenIds = new Set<string>();
@@ -214,6 +222,9 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
     const config = USE_CASE_CONFIGS[normalized];
     if (config) {
       for (const item of config.navigationItems) {
+        if (item.excludeRoleCodes?.some((c) => roleCodes.has(c))) {
+          continue;
+        }
         // Check if item requires a specific use case
         if (item.requiresUseCase) {
           const requiredUseCase = item.requiresUseCase;
@@ -221,11 +232,10 @@ export const getNavigationItemsForUser = (useCases?: string[]): NavItem[] => {
             continue; // Skip this item if user doesn't have required use case
           }
         }
-        
+
         // Avoid duplicates by checking id
         if (!seenIds.has(item.id)) {
-          // Remove the requiresUseCase property before adding to navItems
-          const { requiresUseCase, ...cleanItem } = item;
+          const { requiresUseCase, excludeRoleCodes, ...cleanItem } = item;
           navItems.push(cleanItem);
           seenIds.add(item.id);
         }

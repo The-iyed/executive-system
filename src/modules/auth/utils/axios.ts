@@ -2,6 +2,7 @@ import axios from 'axios'
 import { clearAllBrowserStorage, clearTokens } from './token'
 import { getAuthToken } from './tokenGetter'
 import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env'
+import { getBrowserTimezone } from '@/lib/api/apiTimezone'
 
 const baseURL = EXECUTION_SYSTEM_BASE_URL
 const headers = {
@@ -17,6 +18,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   async (config) => {
+    config.headers['X-Timezone'] = getBrowserTimezone()
     const token = await getAuthToken()
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`

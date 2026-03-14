@@ -39,6 +39,10 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
+function localDayStartMs(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+}
+
 function toTimeHHmm(d: Date): string {
   return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`
 }
@@ -228,6 +232,12 @@ export function DateTimePicker({
   )
 
   const handleDateSelect = (date: Date | undefined) => {
+    if (date && minDate != null && !Number.isNaN(minDate.getTime())) {
+      if (localDayStartMs(date) < localDayStartMs(minDate)) return
+    }
+    if (date && maxDate != null && !Number.isNaN(maxDate.getTime())) {
+      if (localDayStartMs(date) > localDayStartMs(maxDate)) return
+    }
     setSelectedDate(date)
     if (date && timeValue) {
       commitDateTime(date, timeValue)
@@ -249,14 +259,19 @@ export function DateTimePicker({
     onBlur?.()
   }
 
-  const calendarDisabled =
-    minDate != null && maxDate != null
-      ? [{ before: minDate }, { after: maxDate }]
-      : minDate != null
-        ? { before: minDate }
-        : maxDate != null
-          ? { after: maxDate }
-          : undefined
+  const calendarDisabled = React.useMemo(() => {
+    const matchers: Array<(date: Date) => boolean> = []
+    if (minDate != null && !Number.isNaN(minDate.getTime())) {
+      const minMs = localDayStartMs(minDate)
+      matchers.push((date) => localDayStartMs(date) < minMs)
+    }
+    if (maxDate != null && !Number.isNaN(maxDate.getTime())) {
+      const maxMs = localDayStartMs(maxDate)
+      matchers.push((date) => localDayStartMs(date) > maxMs)
+    }
+    if (matchers.length === 0) return undefined
+    return matchers.length === 1 ? matchers[0]! : matchers
+  }, [minDate, maxDate])
 
   const timeMin =
     minDate != null && selectedDate != null && isSameDay(selectedDate, minDate) ? toTimeHHmm(minDate) : undefined

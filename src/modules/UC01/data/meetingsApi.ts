@@ -3,7 +3,8 @@ import axiosInstance from '../../auth/utils/axios';
 import { MeetingStatus } from '@/modules/shared/types';
 
 export interface GetMeetingsParams {
-  status?: MeetingStatus | string;
+  /** Single status or array of statuses for multi-select filter. Sent as `status_in` (comma-separated when array). */
+  status?: MeetingStatus | string | (MeetingStatus | string)[];
   owner_type?: string;
   skip?: number;
   limit?: number;
@@ -40,9 +41,14 @@ export interface MeetingsListResponse {
 
 export const getMeetings = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();
-  
-  if (params.status) {
-    queryParams.append('status', params.status);
+
+  const statuses = params.status === undefined || params.status === ''
+    ? []
+    : Array.isArray(params.status)
+      ? params.status.filter(Boolean)
+      : [params.status];
+  if (statuses.length > 0) {
+    queryParams.set('status_in', statuses.map((s) => String(s)).join(','));
   }
   // if (params.owner_type) {
   //   queryParams.append('owner_type', params.owner_type);
@@ -79,9 +85,14 @@ export const getSubmitterMeeting = async (meetingId: string): Promise<SubmitterM
 // Fetch assigned scheduling requests (for "سلة العمل" view)
 export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = {}): Promise<MeetingsListResponse> => {
   const queryParams = new URLSearchParams();
-  
-  if (params.status) {
-    queryParams.append('status', params.status);
+
+  const statuses = params.status === undefined || params.status === ''
+    ? []
+    : Array.isArray(params.status)
+      ? params.status.filter(Boolean)
+      : [params.status];
+  if (statuses.length > 0) {
+    queryParams.set('status_in', statuses.map((s) => String(s)).join(','));
   }
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
