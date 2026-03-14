@@ -1,8 +1,8 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
 import { schedulerStep1Schema, type SchedulerStep1Values } from "./schema";
-import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocation, MeetingNature, BOOL, MeetingConfidentiality } from "../enums";
+import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocation, MeetingNature, BOOL, MeetingConfidentiality } from "../shared/types/enums";
 import { useVisibilityCleanup } from "../shared";
 
 /** Fields that stay editable when following up a previous meeting */
