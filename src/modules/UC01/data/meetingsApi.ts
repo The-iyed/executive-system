@@ -3,7 +3,7 @@ import axiosInstance from '../../auth/utils/axios';
 import { MeetingStatus } from '@/modules/shared/types';
 
 export interface GetMeetingsParams {
-  /** Single status or array of statuses for multi-select filter. API receives one `status` param (comma-separated when array). */
+  /** Single status or array of statuses for multi-select filter. Sent as `status_in` (comma-separated when array). */
   status?: MeetingStatus | string | (MeetingStatus | string)[];
   owner_type?: string;
   skip?: number;
@@ -48,7 +48,7 @@ export const getMeetings = async (params: GetMeetingsParams = {}): Promise<Meeti
       ? params.status.filter(Boolean)
       : [params.status];
   if (statuses.length > 0) {
-    queryParams.set('status', statuses.map((s) => String(s)).join(','));
+    queryParams.set('status_in', statuses.map((s) => String(s)).join(','));
   }
   // if (params.owner_type) {
   //   queryParams.append('owner_type', params.owner_type);
@@ -92,7 +92,7 @@ export const getAssignedSchedulingRequests = async (params: GetMeetingsParams = 
       ? params.status.filter(Boolean)
       : [params.status];
   if (statuses.length > 0) {
-    queryParams.set('status', statuses.map((s) => String(s)).join(','));
+    queryParams.set('status_in', statuses.map((s) => String(s)).join(','));
   }
   if (params.skip !== undefined) {
     queryParams.append('skip', params.skip.toString());
