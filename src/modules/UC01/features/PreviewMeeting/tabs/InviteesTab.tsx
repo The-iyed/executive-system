@@ -7,6 +7,6 @@ interface InviteesTabProps {
 
 export const InviteesTab: React.FC<InviteesTabProps> = ({ invitees }) => {
   return (
-    <InviteesTableForm initialInvitees={invitees} excludeColumns={["access_permission", "is_consultant"]} mode='view' viewLayout='cards'  />
+    <InviteesTableForm initialInvitees={invitees} excludeColumns={["access_permission", "is_consultant"]} mode='view' viewLayout="cards"  />
   );
 };

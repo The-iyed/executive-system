@@ -1,11 +1,6 @@
 import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import type {
-  EventClickArg,
-  DateSelectArg,
-  DatesSetArg,
-  DateClickArg,
-} from '@fullcalendar/core';
+import type { EventClickArg, DateSelectArg, DatesSetArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -251,7 +246,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
   );
 
   /** Single click — default 30 min block (matches slot duration). */
-  const handleDateClick = (arg: DateClickArg) => {
+  const handleDateClick = (arg: any) => {
     const slot = openSlotFromDate(arg.date, arg.allDay);
     if (!slot) return;
     const [h, m] = slot.time.split(':').map(Number);
@@ -290,7 +285,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         initialDate={currentDate}
         locale={arLocale}
         direction="rtl"
-        firstDay={1}
+        firstDay={0}
         headerToolbar={false}
         height="auto"
         contentHeight="auto"
