@@ -142,7 +142,7 @@ const PreviewMeeting: React.FC = () => {
 
   return (
   <>
-    <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} editMeetingId={meeting.id} />
+    <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} editMeetingId={meeting.id} excludeColumns={["access_permission", "is_consultant"]} />
    
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 px-1">
