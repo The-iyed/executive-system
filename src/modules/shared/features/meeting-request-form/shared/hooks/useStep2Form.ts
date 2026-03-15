@@ -9,7 +9,6 @@ export interface Step1Context {
 export interface Step2Visibility {
   showPresentation: boolean;
   presentationRequired: boolean;
-  showTiming: boolean;
 }
 
 export function useStep2Visibility(step1Data: Step1Context): Step2Visibility {
@@ -30,9 +29,6 @@ export function useStep2Visibility(step1Data: Step1Context): Step2Visibility {
         step1Data.meeting_confidentiality !== "CONFIDENTIAL" ||
         step1Data.is_urgent !== BOOL.TRUE
       );
-
-    const showTiming = step1Data.is_urgent === BOOL.TRUE;
-
-    return { showPresentation: !hidePresentation, presentationRequired, showTiming };
+    return { showPresentation: !hidePresentation, presentationRequired };
   }, [step1Data.meeting_classification, step1Data.meeting_confidentiality, step1Data.is_urgent]);
 }
