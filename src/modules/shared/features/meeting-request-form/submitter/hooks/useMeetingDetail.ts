@@ -51,11 +51,19 @@ export function useMeetingDetail({
   const meetingStatus = draftData?.status as MeetingStatus || MeetingStatus.DRAFT ;
   const canSaveAsDraft = SAVEABLE_DRAFT_STATUSES.has(meetingStatus);
 
-  // Only expose editable fields for returned statuses
-  const resolvedEditableFields =
+  // Expose editable fields when submitter may edit: returned-for-info statuses, or scheduled / scheduled-additional-info.
+  // For SCHEDULED and SCHEDULED_ADDITIONAL_INFO(*) use API editable_fields when present; otherwise allow all fields (null).
+  const isReturnedStatus =
     meetingStatus === MeetingStatus.RETURNED_FROM_SCHEDULING ||
-    meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT
-      ? editableFields
+    meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT;
+  const isScheduledEditableStatus =
+    meetingStatus === MeetingStatus.SCHEDULED ||
+    meetingStatus === MeetingStatus.SCHEDULED_ADDITIONAL_INFO ||
+    meetingStatus === MeetingStatus.SCHEDULED_ADDITIONAL_INFO_CONTENT;
+  const resolvedEditableFields = isReturnedStatus
+    ? editableFields
+    : isScheduledEditableStatus
+      ? (editableFields && editableFields.length > 0 ? editableFields : null)
       : null;
 
   const loading = draftLoading && !initialStep1Values && !!meetingId;
