@@ -288,11 +288,16 @@ export const MeetingChannelLabels: Record<string, string> = {
   HYBRID: 'حضوري - عن بعد',
 };
 
+export enum Channel {
+  PHYSICAL = 'PHYSICAL',
+  VIRTUAL = 'VIRTUAL',
+  HYBRID = 'HYBRID',
+}
 /** Shared meeting channel options for forms (UC01 & UC02). Same options and labels everywhere. */
 export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
-  { value: 'PHYSICAL', label: MeetingChannelLabels.PHYSICAL },
-  { value: 'VIRTUAL', label: MeetingChannelLabels.VIRTUAL },
-  { value: 'HYBRID', label: MeetingChannelLabels.HYBRID },
+  { value: Channel.PHYSICAL, label: MeetingChannelLabels.PHYSICAL },
+  { value: Channel.VIRTUAL, label: MeetingChannelLabels.VIRTUAL },
+  { value: Channel.HYBRID, label: MeetingChannelLabels.HYBRID },
 ];
 
 /**

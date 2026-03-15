@@ -16,7 +16,6 @@ export interface ExistingAttachment {
 export interface Step2ContentInitialData {
   existingPresentations?: ExistingAttachment[];
   existingAdditionalFiles?: ExistingAttachment[];
-  presentation_attachment_timing?: string;
 }
 
 /* ─── State ─── */
@@ -32,8 +31,6 @@ interface Step2ContentState {
   existingAdditionalFiles: ExistingAttachment[];
   /** IDs of server attachments marked for deletion */
   deleted_attachment_ids: string[];
-  /** Presentation timing date */
-  presentation_attachment_timing: string;
 }
 
 /* ─── Helpers ─── */
@@ -45,7 +42,6 @@ function buildInitialState(initial?: Step2ContentInitialData): Step2ContentState
     additional_files: [],
     existingAdditionalFiles: initial?.existingAdditionalFiles ?? [],
     deleted_attachment_ids: [],
-    presentation_attachment_timing: initial?.presentation_attachment_timing ?? "",
   };
 }
 
@@ -77,8 +73,6 @@ export function useStep2Content({
         ...prev,
         existingPresentations: initialData.existingPresentations ?? prev.existingPresentations,
         existingAdditionalFiles: initialData.existingAdditionalFiles ?? prev.existingAdditionalFiles,
-        presentation_attachment_timing:
-          initialData.presentation_attachment_timing ?? prev.presentation_attachment_timing,
       }));
     }
   }
@@ -100,9 +94,7 @@ export function useStep2Content({
   const hasContent =
     state.newPresentationFile !== null ||
     state.additional_files.length > 0 ||
-    state.deleted_attachment_ids.length > 0 ||
-    (state.presentation_attachment_timing !== "" &&
-      state.presentation_attachment_timing !== (initialData?.presentation_attachment_timing ?? ""));
+    state.deleted_attachment_ids.length > 0;
 
   /** Draft → free edit; Returned → can add one new version (no removing existing) */
   const canUploadNewPresentation = !state.newPresentationFile && (isDraftStatus ? !hasPresentationFile : isReturnedStatus);
@@ -189,20 +181,10 @@ export function useStep2Content({
     });
   }, []);
 
-  /* ── Timing ── */
-
-  const setTiming = useCallback((value: string) => {
-    setState((prev) => ({ ...prev, presentation_attachment_timing: value }));
-  }, []);
-
   /* ── Build FormData for API ── */
 
   const prepareFormData = useCallback((): FormData => {
     const fd = new FormData();
-
-    if (state.presentation_attachment_timing) {
-      fd.append("presentation_attachment_timing", state.presentation_attachment_timing);
-    }
 
     if (state.newPresentationFile) {
       fd.append("presentation_files", state.newPresentationFile);
@@ -237,7 +219,6 @@ export function useStep2Content({
     deleteExistingAdditional,
 
     commitNewFiles,
-    setTiming,
     prepareFormData,
   };
 }

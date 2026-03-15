@@ -41,7 +41,6 @@ interface DraftAttachment {
 
 interface DraftApiResponse {
   attachments?: DraftAttachment[];
-  presentation_attachment_timing?: string;
   [key: string]: unknown;
 }
 
@@ -73,14 +72,9 @@ export function transformDraftToStep2ContentData(
       file_type: att.file_type,
     }));
 
-  const presentationTiming = draft.presentation_attachment_timing
-    ? formatDateStringToISO(draft.presentation_attachment_timing)
-    : undefined;
-
   return {
     existingPresentations,
     existingAdditionalFiles,
-    presentation_attachment_timing: presentationTiming || "",
   };
 }
 
@@ -163,8 +157,14 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     urgent_reason: (meeting.urgent_reason as string) || "",
     is_on_behalf_of: meeting.is_on_behalf_of === true ? BOOL.TRUE : BOOL.FALSE,
     meeting_owner_id: meetingOwner?.id || (meeting.meeting_owner_id as string) || "",
-    meeting_start_date: selectedSlot?.slot_start ? (selectedSlot.slot_start as string) : (meeting.meeting_start_date as string) || "",
-    meeting_end_date: selectedSlot?.slot_end ? (selectedSlot.slot_end as string) : (meeting.meeting_end_date as string) || "",
+    meeting_start_date:
+      (selectedSlot?.slot_start as string) ||
+      (meeting.meeting_start_date as string) ||
+      ((meeting.scheduled_start as string) || ""),
+    meeting_end_date:
+      (selectedSlot?.slot_end as string) ||
+      (meeting.meeting_end_date as string) ||
+      ((meeting.scheduled_end as string) || ""),
     agenda_items: agendaItems,
     note: (meeting.note as string) || "",
     is_based_on_directive: meeting.is_based_on_directive === true ? BOOL.TRUE : BOOL.FALSE,
