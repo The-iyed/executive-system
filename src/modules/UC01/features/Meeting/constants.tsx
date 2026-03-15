@@ -18,8 +18,11 @@ export interface CreateTableColumnsOptions {
   deletingDraftId?: string | null;
 }
 
-const ACTION_BTN_CLASS =
-  'flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0';
+/** Card-style compact actions (matches meeting-card.tsx) */
+const CARD_ACTION_SEND =
+  'flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-[#048F86] hover:bg-[#037a72] text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0 transition-colors';
+const CARD_ACTION_DELETE =
+  'flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0 transition-colors';
 
 export const MEETING_ACTION_CONFIRM_MESSAGE = 'هل أنت متأكد من الإرسال؟';
 export const MEETING_ACTION_CONFIRM_TITLE = 'تأكيد الإرسال';
@@ -165,12 +168,12 @@ export const createTableColumns = (
           {
             id: 'actions',
             header: '',
-            width: 'min-w-[200px] w-[200px]',
+            width: 'min-w-[220px] w-[220px]',
             align: 'center' as const,
             render: (row: MeetingDisplayData) => {
               if (row.status === MeetingStatus.DRAFT) {
                 return (
-                  <div className="flex justify-center items-center gap-2 w-full min-w-0 flex-wrap">
+                  <div className="flex flex-nowrap justify-center items-center gap-2 w-full min-w-0">
                     {onSubmitDraft && (
                       <button
                         type="button"
@@ -179,10 +182,11 @@ export const createTableColumns = (
                           handleActionClick(onSubmitDraft, row.id);
                         }}
                         disabled={submittingDraftId === row.id}
-                        className={ACTION_BTN_CLASS}
+                        className={CARD_ACTION_SEND}
+                        title={submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}
                       >
-                        <span>{submittingDraftId === row.id ? 'جاري الإرسال...' : 'إرسال المسودة'}</span>
-                        <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                        <span>{submittingDraftId === row.id ? 'جاري...' : 'إرسال'}</span>
+                        <Send className="w-3.5 h-3.5 rotate-[-90deg] flex-shrink-0" />
                       </button>
                     )}
                     {onDeleteDraft && (
@@ -193,10 +197,11 @@ export const createTableColumns = (
                           onDeleteDraft(row.id);
                         }}
                         disabled={deletingDraftId === row.id}
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                        className={CARD_ACTION_DELETE}
+                        title={deletingDraftId === row.id ? 'جاري الحذف...' : 'حذف المسودة'}
                       >
-                        <span>{deletingDraftId === row.id ? 'جاري الحذف...' : 'حذف المسودة'}</span>
-                        <Trash2 className="w-4 h-4 flex-shrink-0" />
+                        <span>{deletingDraftId === row.id ? 'جاري...' : 'حذف'}</span>
+                        <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
                       </button>
                     )}
                   </div>
@@ -208,7 +213,7 @@ export const createTableColumns = (
               ) {
                 const submitting = submittingResubmitToSchedulingId === row.id;
                 return (
-                  <div className="flex justify-center w-full min-w-0">
+                  <div className="flex flex-nowrap justify-center items-center gap-2 w-full min-w-0">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -216,10 +221,11 @@ export const createTableColumns = (
                         handleActionClick(onResubmitToScheduling, row.id);
                       }}
                       disabled={submitting}
-                      className={ACTION_BTN_CLASS}
+                      className={CARD_ACTION_SEND}
+                      title={submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}
                     >
-                      <span>{submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}</span>
-                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                      <span>{submitting ? 'جاري...' : 'إحالة للمسؤول'}</span>
+                      <Send className="w-3.5 h-3.5 rotate-[-90deg] flex-shrink-0" />
                     </button>
                   </div>
                 );
@@ -230,7 +236,7 @@ export const createTableColumns = (
               ) {
                 const submitting = submittingResubmitToContentId === row.id;
                 return (
-                  <div className="flex justify-center w-full min-w-0">
+                  <div className="flex flex-nowrap justify-center items-center gap-2 w-full min-w-0">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -238,10 +244,11 @@ export const createTableColumns = (
                         handleActionClick(onResubmitToContent, row.id);
                       }}
                       disabled={submitting}
-                      className={ACTION_BTN_CLASS}
+                      className={CARD_ACTION_SEND}
+                      title={submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}
                     >
-                      <span>{submitting ? 'جاري الإرسال...' : 'إحالة للمسؤول'}</span>
-                      <Send className="w-4 h-4 rotate-[-90deg] flex-shrink-0" />
+                      <span>{submitting ? 'جاري...' : 'إحالة للمسؤول'}</span>
+                      <Send className="w-3.5 h-3.5 rotate-[-90deg] flex-shrink-0" />
                     </button>
                   </div>
                 );
