@@ -1,5 +1,5 @@
 import { ColumnConfig } from "@/lib/dynamic-table-form";
-import { MEETING_CHANNEL_OPTIONS } from "../../types";
+import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
 
   export const INVITEE_COLUMNS: ColumnConfig[] = [
     {
@@ -42,7 +42,9 @@ import { MEETING_CHANNEL_OPTIONS } from "../../types";
       placeholder: "آلية الحضور",
       required: true,
       minWidth: "min-w-[120px]",
-      options: MEETING_CHANNEL_OPTIONS,
+      options: MEETING_CHANNEL_OPTIONS.filter(
+        (option) => option.value !== Channel.HYBRID
+      ),
     },
     {
       key: "access_permission",
