@@ -169,28 +169,6 @@ const WaitingList: React.FC = () => {
                 className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
               />
             </div>
-
-            {/* View switcher */}
-            <div className="flex items-center bg-white rounded-xl border border-[var(--color-base-gray-200)] p-1 gap-0.5">
-              <button
-                onClick={() => setView('cards')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
-                  view === 'cards' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
-                )}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setView('table')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-lg transition-all',
-                  view === 'table' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--color-text-gray-500)] hover:bg-[var(--color-base-gray-50)]'
-                )}
-              >
-                <LayoutList className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
