@@ -69,6 +69,8 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_channel: string;
   meeting_location?: string;
   meeting_link?: string;
+  /** From Webex create meeting API; send whenever meeting_link is sent */
+  webex_meeting_unique_identifier?: string;
   /** Full proposer payloads for API */
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
@@ -85,6 +87,8 @@ export interface CalendarSlotMeetingFormProps {
   initialMeetingChannel?: string;
   initialMeetingLocation?: string;
   initialMeetingLink?: string;
+  /** From API when editing; send with meeting_link when updating */
+  initialWebexMeetingUniqueId?: string;
   /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
@@ -103,6 +107,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   initialMeetingChannel,
   initialMeetingLocation,
   initialMeetingLink,
+  initialWebexMeetingUniqueId,
   initialInvitees,
   onSubmit,
   onCancel,
@@ -210,6 +215,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
   const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
+  const [webexMeetingUniqueId, setWebexMeetingUniqueId] = useState<string | null>(initialWebexMeetingUniqueId ?? null);
   const [webexError, setWebexError] = useState<string | null>(null);
   const webexCreatedForSlotRef = React.useRef<string | null>(
     initialMeetingLink && startDefault && endDefault ? `${startDefault}-${endDefault}` : null
@@ -225,6 +231,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     }
     if (value === 'PHYSICAL') {
       setWebexMeetingLink(null);
+      setWebexMeetingUniqueId(null);
       setWebexError(null);
       webexCreatedForSlotRef.current = null;
     }
@@ -274,6 +281,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         if (webexSlotRef.current === slotKey) {
           setWebexMeetingLink(response.data.webex_meeting_join_link);
+          setWebexMeetingUniqueId(response.data.webex_meeting_unique_identifier);
           webexCreatedForSlotRef.current = slotKey;
         }
       } catch (err) {
@@ -298,6 +306,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     if (!slotKey || !prev || slotKey === prev) return;
     if (webexMeetingLink || webexError) {
       setWebexMeetingLink(null);
+      setWebexMeetingUniqueId(null);
       setWebexError(null);
       webexCreatedForSlotRef.current = null;
     }
@@ -357,6 +366,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_channel: meetingChannel,
       meeting_location,
       meeting_link: webexMeetingLink ?? undefined,
+      webex_meeting_unique_identifier: webexMeetingUniqueId ?? undefined,
       proposers,
       invitees: inviteesPayload,
     });
