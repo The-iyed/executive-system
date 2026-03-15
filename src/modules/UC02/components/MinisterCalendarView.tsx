@@ -853,10 +853,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   // Seed meeting cache so the details modal shows the same MeetingCard as work basket (no extra fetch, same data)
                   const meetingForCache = normalizedMeetingFromCreateResponse(result);
                   queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
-                  // Defer invalidation so the replaced event (with meeting_id) stays in cache when user clicks it; refetch after a short delay
-                  setTimeout(() => {
-                    queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
-                  }, 2000);
+                  // Do not invalidate timeline after create: keep the replaced event (with meeting_id) so clicking it always shows the same MeetingCard as API. Timeline will refresh on week change or refocus.
                 }
 
                 setSlotForNewMeeting(null);
