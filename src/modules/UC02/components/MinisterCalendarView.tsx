@@ -746,30 +746,23 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                       )}
                     </div>
 
-                  {/* Actions – عرض التفاصيل + تعديل always shown; disabled when no meeting_id */}
+                  {/* Actions – عرض التفاصيل + تعديل always enabled; use meeting_id when present, else event id */}
                   <div className="flex w-full justify-end gap-2 flex-wrap px-6 pb-5 pt-2">
                     <button
                       type="button"
                       onClick={() => {
-                        if (!eventDisplay.meeting_id) return;
+                        const id = eventDisplay.meeting_id ?? selectedEventForDetails.id;
                         setSelectedEventForDetails(null);
-                        navigate(`/meeting/${eventDisplay.meeting_id}`);
+                        navigate(`/meeting/${id}`);
                       }}
-                      disabled={!eventDisplay.meeting_id}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-3.5 rounded-lg text-xs font-semibold transition-colors',
-                        eventDisplay.meeting_id
-                          ? 'text-white'
-                          : 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                      )}
-                      style={eventDisplay.meeting_id ? { background: 'var(--color-primary-500)' } : undefined}
+                      className="inline-flex items-center gap-1.5 px-3 py-3.5 rounded-lg text-white text-xs font-semibold transition-colors"
+                      style={{ background: 'var(--color-primary-500)' }}
                     >
                       عرض التفاصيل
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (!eventDisplay.meeting_id) return;
                         setSelectedEventForDetails(null);
                         const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
                         const location = selectedEventForDetails.location ?? null;
@@ -802,18 +795,12 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
                           meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
                           webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
-                          meetingId: selectedEventForDetails.meeting_id,
-                          mode: 'edit',
+                          meetingId: selectedEventForDetails.meeting_id ?? undefined,
+                          mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
                           initialInvitees,
                         });
                       }}
-                      disabled={!eventDisplay.meeting_id}
-                      className={cn(
-                        'inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border text-xs font-semibold transition-colors',
-                        eventDisplay.meeting_id
-                          ? 'border-[#048F86]/30 text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50'
-                          : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
-                      )}
+                      className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       تعديل
