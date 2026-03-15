@@ -79,6 +79,8 @@ export interface GuidanceRequestApiResponse {
   scheduled_at: string | null;
   /** Actual meeting start datetime (prefer over scheduled_at for "time remaining" validation). */
   scheduled_start?: string | null;
+  /** Alternative field some endpoints return for meeting start. */
+  meeting_start_date?: string | null;
   closed_at: string | null;
   version: number;
   meeting_title: string;
