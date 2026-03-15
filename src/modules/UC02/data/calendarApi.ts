@@ -164,6 +164,8 @@ export interface CreateScheduledMeetingPayload {
   meeting_channel: string; // PHYSICAL | VIRTUAL | HYBRID
   meeting_location?: string; // required when meeting_channel === PHYSICAL
   meeting_link?: string; // Webex join link when meeting_channel is VIRTUAL/HYBRID
+  /** From Webex create meeting API; send whenever meeting_link is sent */
+  webex_meeting_unique_identifier?: string;
   /** @deprecated Prefer proposers — kept for backends that only store ids */
   proposer_user_ids?: string[];
   /** Full proposer rows (AD) — preferred */
@@ -252,6 +254,9 @@ export const createScheduledMeeting = async (
   if (payload.meeting_link) {
     body.meeting_link = payload.meeting_link;
   }
+  if (payload.webex_meeting_unique_identifier) {
+    body.webex_meeting_unique_identifier = payload.webex_meeting_unique_identifier;
+  }
   if (payload.proposers && payload.proposers.length > 0) {
     body.proposers = payload.proposers;
     body.proposer_user_ids = payload.proposers.map((p) => p.object_guid).filter(Boolean);
@@ -285,6 +290,9 @@ export const updateScheduledMeeting = async (
   }
   if (payload.meeting_link) {
     body.meeting_link = payload.meeting_link;
+  }
+  if (payload.webex_meeting_unique_identifier) {
+    body.webex_meeting_unique_identifier = payload.webex_meeting_unique_identifier;
   }
   if (payload.proposers && payload.proposers.length > 0) {
     body.proposers = payload.proposers;
