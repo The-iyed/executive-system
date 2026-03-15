@@ -1,4 +1,5 @@
 // Import axios instance
+import { TableRow } from '@/lib/dynamic-table-form';
 import axiosInstance from '../../auth/utils/axios';
 
 export interface Attachment {
@@ -101,17 +102,7 @@ export interface ContentConsultationRequestDetailResponse {
       id: string;
       support_description: string;
     }>;
-    invitees?: Array<{
-      id: string;
-      user_id: string | null;
-      external_email: string | null;
-      external_name: string | null;
-      is_required: boolean;
-      response_status: string;
-      attendee_source: string;
-      justification: string | null;
-      access_permission: string | null;
-    }>;
+    invitees?:TableRow[];
     selected_time_slot_id?: string | null;
     alternative_time_slot_id_1?: string | null;
     alternative_time_slot_id_2?: string | null;
