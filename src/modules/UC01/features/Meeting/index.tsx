@@ -24,6 +24,7 @@ const Meeting: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [draftIdToDelete, setDraftIdToDelete] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState<string>('');
+  /** No status filter on initial load — show all meetings; filtering only when user selects criteria. */
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE);
   const [view, setView] = useState<ViewType>('cards');

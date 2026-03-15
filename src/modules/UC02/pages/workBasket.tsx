@@ -46,6 +46,7 @@ const WorkBasket: React.FC = () => {
   const [view, setView] = useState<ViewType>('cards');
   const [searchValue, setSearchValue] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  /** No status filter on initial load — show all meetings; filtering only when user selects criteria. */
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
