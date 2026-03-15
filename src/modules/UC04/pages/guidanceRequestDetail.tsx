@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, ClipboardCheck, Clock, Phone, Mail, User, Trash2, Hash, Building2 } from 'lucide-react';
@@ -339,40 +339,52 @@ const GuidanceRequestDetail: React.FC = () => {
     },
   });
 
-  /** Scheduled meeting start (backend uses this for "الوقت المتبقي حتى الاجتماع") – prefer scheduled_start, else scheduled_at */
-  const scheduledAt = meetingRequest?.scheduled_start
-    ? new Date(meetingRequest.scheduled_start)
-    : meetingRequest?.scheduled_at
-      ? new Date(meetingRequest.scheduled_at)
-      : null;
+  /** Scheduled meeting start (backend uses this for "الوقت المتبقي حتى الاجتماع") – prefer scheduled_start, then scheduled_at, then meeting_start_date */
+  const scheduledAtRaw =
+    meetingRequest?.scheduled_start ?? meetingRequest?.scheduled_at ?? (meetingRequest as { meeting_start_date?: string | null })?.meeting_start_date;
+  const scheduledAtParsed = scheduledAtRaw ? new Date(scheduledAtRaw) : null;
+  const scheduledAt = scheduledAtParsed && !Number.isNaN(scheduledAtParsed.getTime()) ? scheduledAtParsed : null;
   const hoursUntilScheduled =
     scheduledAt && scheduledAt.getTime() > Date.now()
       ? (scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60)
       : 0;
   /** Max granted hours = min(72, time remaining) – backend expects granted_duration_hours <= this (decimal). */
   const maxGrantedHoursBySchedule = Math.max(0, Math.min(72, hoursUntilScheduled));
+  /** Effective cap: when we have a scheduled date, use time remaining (0 if meeting is in the past); else 72. */
+  const effectiveCap =
+    scheduledAt != null
+      ? (scheduledAt.getTime() > Date.now() ? maxGrantedHoursBySchedule : 0)
+      : 72;
   const grantedDurationExceedsScheduled =
     contentException &&
     !!scheduledAt &&
     scheduledAt.getTime() > Date.now() &&
     grantedDurationHours > maxGrantedHoursBySchedule;
 
-  /** When modal is open and schedule cap applies, keep value within allowed range (e.g. 0.7 ساعة). */
+  /** Clamp to [0, effectiveCap] and 2 decimal places – single source of truth. */
+  const clampGrantedHours = useCallback(
+    (value: number): number => {
+      const rounded = Math.round(value * 100) / 100;
+      return Math.min(72, Math.max(0, Math.min(rounded, effectiveCap)));
+    },
+    [effectiveCap]
+  );
+
+  /** When modal is open and content exception is on, keep value within cap and 2 decimals. */
   useEffect(() => {
     if (!isExceptionModalOpen || !contentException) return;
-    if (scheduledAt && scheduledAt.getTime() > Date.now() && grantedDurationHours > maxGrantedHoursBySchedule) {
-      setGrantedDurationHours(maxGrantedHoursBySchedule);
-    }
-  }, [isExceptionModalOpen, contentException, scheduledAt, maxGrantedHoursBySchedule, grantedDurationHours]);
+    const clamped = clampGrantedHours(grantedDurationHours);
+    if (clamped !== grantedDurationHours) setGrantedDurationHours(clamped);
+  }, [isExceptionModalOpen, contentException, grantedDurationHours, clampGrantedHours]);
 
   const handleSubmitException = () => {
     if (!meetingRequest?.id) return;
-    if (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72)) return;
-    if (grantedDurationExceedsScheduled) return;
+    const finalHours = contentException ? clampGrantedHours(grantedDurationHours) : 0;
+    if (contentException && (finalHours < 0 || finalHours > effectiveCap)) return;
 
     exceptionMutation.mutate({
       content_exception: contentException,
-      granted_duration_hours: contentException ? Math.round(grantedDurationHours * 10) / 10 : 0,
+      granted_duration_hours: finalHours,
     });
   };
 
@@ -1781,14 +1793,17 @@ const GuidanceRequestDetail: React.FC = () => {
                 <input
                   type="number"
                   min={0}
-                  max={scheduledAt && scheduledAt.getTime() > Date.now() ? maxGrantedHoursBySchedule : 72}
-                  step={0.1}
-                  value={grantedDurationHours}
+                  max={effectiveCap}
+                  step={0.01}
+                  value={clampGrantedHours(grantedDurationHours)}
                   onChange={(e) => {
                     const val = Number(e.target.value);
-                    if (Number.isNaN(val) || val < 0) return;
-                    const cap = scheduledAt && scheduledAt.getTime() > Date.now() ? maxGrantedHoursBySchedule : 72;
-                    setGrantedDurationHours(val <= cap ? val : cap);
+                    if (Number.isNaN(val)) return;
+                    setGrantedDurationHours(clampGrantedHours(val));
+                  }}
+                  onBlur={() => {
+                    const clamped = clampGrantedHours(grantedDurationHours);
+                    if (clamped !== grantedDurationHours) setGrantedDurationHours(clamped);
                   }}
                   className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm text-right ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
                     grantedDurationExceedsScheduled
@@ -1796,7 +1811,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       : 'border-gray-300 bg-white focus-visible:ring-[#048F86]'
                   }`}
                   dir="rtl"
-                  placeholder={scheduledAt && scheduledAt.getTime() > Date.now() ? `0 - ${maxGrantedHoursBySchedule} ساعة` : '0 - 72 ساعة'}
+                  placeholder={`0 - ${effectiveCap} ساعة`}
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 />
                 {(() => {
@@ -1809,17 +1824,17 @@ const GuidanceRequestDetail: React.FC = () => {
                 })()}
                 {grantedDurationExceedsScheduled && !(exceptionMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ? (
                   <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    المدة الممنوحة يجب ألا تتجاوز الوقت المتبقي حتى الاجتماع ({maxGrantedHoursBySchedule.toFixed(1)} ساعة)
+                    المدة الممنوحة يجب ألا تتجاوز الوقت المتبقي حتى الاجتماع ({maxGrantedHoursBySchedule.toFixed(2)} ساعة)
                   </span>
-                ) : scheduledAt && scheduledAt.getTime() > Date.now() && !grantedDurationExceedsScheduled ? (
+                ) : scheduledAt ? (
                   <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                    الحد الأقصى {maxGrantedHoursBySchedule.toFixed(1)} ساعة (الوقت المتبقي حتى موعد الاجتماع)
+                    الحد الأقصى {maxGrantedHoursBySchedule.toFixed(2)} ساعة (الوقت المتبقي حتى موعد الاجتماع)
                   </span>
-                ) : !scheduledAt || scheduledAt.getTime() <= Date.now() ? (
+                ) : (
                   <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
                     الحد الأقصى 72 ساعة
                   </span>
-                ) : null}
+                )}
               </div>
             )}
 
@@ -1840,7 +1855,9 @@ const GuidanceRequestDetail: React.FC = () => {
                 exceptionMutation.isPending ||
                 !meetingRequest?.id ||
                 (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72)) ||
-                grantedDurationExceedsScheduled
+                grantedDurationExceedsScheduled ||
+                (contentException && grantedDurationHours > effectiveCap) ||
+                (contentException && effectiveCap <= 0 && grantedDurationHours > 0)
               }
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}
