@@ -146,7 +146,7 @@ export function DateTimePickerField({
             <div className="flex items-center justify-center gap-6">
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[11px] font-semibold text-muted-foreground tracking-wide">وقت البداية</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" dir="ltr">
                   <Select value={startHour} onValueChange={setStartHour}>
                     <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
                       <SelectValue />
@@ -172,7 +172,7 @@ export function DateTimePickerField({
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[11px] font-semibold text-muted-foreground tracking-wide">وقت النهاية</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" dir="ltr">
                   <Select value={endHour} onValueChange={setEndHour}>
                     <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
                       <SelectValue />
