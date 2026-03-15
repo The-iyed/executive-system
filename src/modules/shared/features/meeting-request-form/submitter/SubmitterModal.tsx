@@ -101,7 +101,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
               meeting_classification: step1Data.meeting_classification,
               meeting_justification: step1Data.meeting_justification,
               related_topic: step1Data.related_topic,
-              agenda_items: step1Data.agenda_items?.map((a) => ({ agenda_item: a.agenda_item })),
+              agenda_items: step1Data.agenda_items,
             } : undefined}
           />
         </div>
