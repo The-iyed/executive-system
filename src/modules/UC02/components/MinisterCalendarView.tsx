@@ -77,12 +77,12 @@ function formatDetailDate(date: Date): string {
   return `${dayName} ${day} ${month}`;
 }
 
-/** Monday of the given week at local midnight */
+/** Sunday of the given week at local midnight */
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  // Make Sunday (0) the first day of the week
+  d.setDate(d.getDate() - day);
   return d;
 };
 
