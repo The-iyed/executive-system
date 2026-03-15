@@ -339,13 +339,40 @@ const GuidanceRequestDetail: React.FC = () => {
     },
   });
 
+  /** Scheduled meeting start (backend uses this for "الوقت المتبقي حتى الاجتماع") – prefer scheduled_start, else scheduled_at */
+  const scheduledAt = meetingRequest?.scheduled_start
+    ? new Date(meetingRequest.scheduled_start)
+    : meetingRequest?.scheduled_at
+      ? new Date(meetingRequest.scheduled_at)
+      : null;
+  const hoursUntilScheduled =
+    scheduledAt && scheduledAt.getTime() > Date.now()
+      ? (scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60)
+      : 0;
+  /** Max granted hours = min(72, time remaining) – backend expects granted_duration_hours <= this (decimal). */
+  const maxGrantedHoursBySchedule = Math.max(0, Math.min(72, hoursUntilScheduled));
+  const grantedDurationExceedsScheduled =
+    contentException &&
+    !!scheduledAt &&
+    scheduledAt.getTime() > Date.now() &&
+    grantedDurationHours > maxGrantedHoursBySchedule;
+
+  /** When modal is open and schedule cap applies, keep value within allowed range (e.g. 0.7 ساعة). */
+  useEffect(() => {
+    if (!isExceptionModalOpen || !contentException) return;
+    if (scheduledAt && scheduledAt.getTime() > Date.now() && grantedDurationHours > maxGrantedHoursBySchedule) {
+      setGrantedDurationHours(maxGrantedHoursBySchedule);
+    }
+  }, [isExceptionModalOpen, contentException, scheduledAt, maxGrantedHoursBySchedule, grantedDurationHours]);
+
   const handleSubmitException = () => {
     if (!meetingRequest?.id) return;
     if (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72)) return;
+    if (grantedDurationExceedsScheduled) return;
 
     exceptionMutation.mutate({
       content_exception: contentException,
-      granted_duration_hours: contentException ? grantedDurationHours : 0,
+      granted_duration_hours: contentException ? Math.round(grantedDurationHours * 10) / 10 : 0,
     });
   };
 
@@ -1754,20 +1781,45 @@ const GuidanceRequestDetail: React.FC = () => {
                 <input
                   type="number"
                   min={0}
-                  max={72}
+                  max={scheduledAt && scheduledAt.getTime() > Date.now() ? maxGrantedHoursBySchedule : 72}
+                  step={0.1}
                   value={grantedDurationHours}
                   onChange={(e) => {
                     const val = Number(e.target.value);
-                    if (val >= 0 && val <= 72) setGrantedDurationHours(val);
+                    if (Number.isNaN(val) || val < 0) return;
+                    const cap = scheduledAt && scheduledAt.getTime() > Date.now() ? maxGrantedHoursBySchedule : 72;
+                    setGrantedDurationHours(val <= cap ? val : cap);
                   }}
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-right ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#048F86] focus-visible:ring-offset-2"
+                  className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm text-right ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    grantedDurationExceedsScheduled
+                      ? 'border-red-500 focus-visible:ring-red-500 bg-red-50'
+                      : 'border-gray-300 bg-white focus-visible:ring-[#048F86]'
+                  }`}
                   dir="rtl"
-                  placeholder="0 - 72 ساعة"
+                  placeholder={scheduledAt && scheduledAt.getTime() > Date.now() ? `0 - ${maxGrantedHoursBySchedule} ساعة` : '0 - 72 ساعة'}
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 />
-                <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  الحد الأقصى 72 ساعة
-                </span>
+                {(() => {
+                  const detail = (exceptionMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+                  return detail ? (
+                    <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      {detail}
+                    </span>
+                  ) : null;
+                })()}
+                {grantedDurationExceedsScheduled && !(exceptionMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ? (
+                  <span className="text-xs text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    المدة الممنوحة يجب ألا تتجاوز الوقت المتبقي حتى الاجتماع ({maxGrantedHoursBySchedule.toFixed(1)} ساعة)
+                  </span>
+                ) : scheduledAt && scheduledAt.getTime() > Date.now() && !grantedDurationExceedsScheduled ? (
+                  <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    الحد الأقصى {maxGrantedHoursBySchedule.toFixed(1)} ساعة (الوقت المتبقي حتى موعد الاجتماع)
+                  </span>
+                ) : !scheduledAt || scheduledAt.getTime() <= Date.now() ? (
+                  <span className="text-xs text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                    الحد الأقصى 72 ساعة
+                  </span>
+                ) : null}
               </div>
             )}
 
@@ -1787,7 +1839,8 @@ const GuidanceRequestDetail: React.FC = () => {
               disabled={
                 exceptionMutation.isPending ||
                 !meetingRequest?.id ||
-                (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72))
+                (contentException && (grantedDurationHours < 0 || grantedDurationHours > 72)) ||
+                grantedDurationExceedsScheduled
               }
               className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Almarai', sans-serif", fontWeight: 700, fontSize: '16px', lineHeight: '24px' }}
