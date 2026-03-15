@@ -435,6 +435,7 @@ const MeetingDetail: React.FC = () => {
   const [isCreatingWebex, setIsCreatingWebex] = useState(false);
   const [webexMeetingDetails, setWebexMeetingDetails] = useState<{
     join_link: string;
+    webex_meeting_unique_identifier: string;
     meeting_number: string;
     password: string;
     sip_address: string;
@@ -1297,6 +1298,7 @@ const MeetingDetail: React.FC = () => {
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
       location: scheduleForm.location || undefined,
       meeting_url: meetingLink,
+      ...(webexMeetingDetails?.webex_meeting_unique_identifier && { webex_meeting_unique_identifier: webexMeetingDetails.webex_meeting_unique_identifier }),
       minister_attendees: normalizeMinisterAttendees(scheduleForm.minister_attendees),
     };
 
@@ -1466,9 +1468,11 @@ const MeetingDetail: React.FC = () => {
         location: (meeting as any).location ?? prev.location,
       }));
       const joinUrl = ((meeting as any).meeting_url || (meeting as any).meeting_link || '').trim();
+      const webexId = (meeting as any).webex_meeting_unique_identifier ?? '';
       if ((ch === 'VIRTUAL' || ch === 'HYBRID') && joinUrl) {
         setWebexMeetingDetails({
           join_link: joinUrl,
+          webex_meeting_unique_identifier: webexId,
           meeting_number: '',
           password: '',
           sip_address: '',
@@ -1483,9 +1487,10 @@ const MeetingDetail: React.FC = () => {
     if (!meeting?.id) return;
     const m = meeting as any;
     const url = String(m.meeting_url || m.meeting_link || '').trim();
+    const webexId = m.webex_meeting_unique_identifier ?? '';
     if ((meeting.meeting_channel === 'VIRTUAL' || meeting.meeting_channel === 'HYBRID') && url) {
       setWebexMeetingDetails((prev) =>
-        prev?.join_link === url ? prev : { join_link: url, meeting_number: '', password: '', sip_address: '', host_key: '' }
+        prev?.join_link === url ? prev : { join_link: url, webex_meeting_unique_identifier: webexId, meeting_number: '', password: '', sip_address: '', host_key: '' }
       );
     }
   }, [meeting?.id, (meeting as any)?.meeting_url, (meeting as any)?.meeting_link, meeting?.meeting_channel]);
@@ -1536,6 +1541,7 @@ const MeetingDetail: React.FC = () => {
         // Store Webex meeting details for display in the modal
         setWebexMeetingDetails({
           join_link: webexResponse.data.webex_meeting_join_link,
+          webex_meeting_unique_identifier: webexResponse.data.webex_meeting_unique_identifier,
           meeting_number: webexResponse.data.meeting_access_details.meeting_number,
           password: webexResponse.data.meeting_access_details.password,
           sip_address: webexResponse.data.meeting_access_details.sip_address,
@@ -1585,6 +1591,7 @@ const MeetingDetail: React.FC = () => {
       });
       setWebexMeetingDetails({
         join_link: webexResponse.data.webex_meeting_join_link,
+        webex_meeting_unique_identifier: webexResponse.data.webex_meeting_unique_identifier,
         meeting_number: webexResponse.data.meeting_access_details.meeting_number,
         password: webexResponse.data.meeting_access_details.password,
         sip_address: webexResponse.data.meeting_access_details.sip_address,
