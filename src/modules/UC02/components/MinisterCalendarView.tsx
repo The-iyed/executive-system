@@ -18,6 +18,7 @@ import {
   OUTLOOK_TIMELINE_STALE_MS,
   createScheduledMeeting,
   updateScheduledMeeting,
+  mapCreatedMeetingToOutlookEvent,
   type OutlookTimelineEvent,
 } from '../data/calendarApi';
 
@@ -38,9 +39,29 @@ function buildOptimisticOutlookEvent(
     is_internal: true,
   };
 }
-import { getMeetingById } from '../data/meetingsApi';
+import { getMeetingById, type MeetingApiResponse } from '../data/meetingsApi';
 import { mapMeetingToCardData } from '../utils/meetingMapper';
+import type { CreateScheduledMeetingResponse } from '../data/calendarApi';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
+
+/** Normalize create-scheduled-meeting response so it can be used for MeetingCard (same modal as work basket). */
+function normalizedMeetingFromCreateResponse(
+  created: CreateScheduledMeetingResponse
+): MeetingApiResponse {
+  const r = created as Record<string, unknown>;
+  return {
+    ...created,
+    request_number: (r.request_number as string) ?? '',
+    status: (r.status as string) ?? 'SCHEDULED',
+    meeting_subject: created.meeting_title ?? '',
+    submitted_at: (r.submitted_at as string) ?? (r.created_at as string) ?? '',
+    created_at: (r.created_at as string) ?? new Date().toISOString(),
+    submitter_name: (r.submitter_name as string) ?? '',
+    meeting_start_date: created.scheduled_start ?? null,
+    meeting_classification: (r.meeting_classification as string) ?? 'BUSINESS',
+    is_data_complete: (r.is_data_complete as boolean) ?? true,
+  } as unknown as MeetingApiResponse;
+}
 import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import { trackEvent } from '@/lib/analytics';
 
@@ -216,16 +237,23 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   }, [queryClient, currentDate]);
 
   const isOptimisticEvent = !!selectedEventForDetails?.id?.startsWith('optimistic-');
-  const isOutlookEvent = !!selectedEventForDetails?.id?.startsWith('AAMk');
+  const isOutlookId = !!selectedEventForDetails?.id?.startsWith('AAMk');
+  /** Use meeting_id when present (our system); else use id if it's our uuid (not optimistic, not Outlook AAMk). */
+  const meetingIdToFetch =
+    selectedEventForDetails?.meeting_id ??
+    (selectedEventForDetails?.id && !isOptimisticEvent && !isOutlookId ? selectedEventForDetails.id : undefined);
+  const isOurMeeting = !!meetingIdToFetch;
   const { data: meetingDetail, isLoading: isLoadingMeeting, isError: isMeetingError } = useQuery({
-    queryKey: ['meeting', selectedEventForDetails?.id],
-    queryFn: () => getMeetingById(selectedEventForDetails!.id),
-    enabled: !!selectedEventForDetails?.id && !isOptimisticEvent && !isOutlookEvent,
+    queryKey: ['meeting', meetingIdToFetch],
+    queryFn: () => getMeetingById(meetingIdToFetch!),
+    enabled: !!meetingIdToFetch,
   });
   const meetingCardData = useMemo(
     () => (meetingDetail ? mapMeetingToCardData(meetingDetail) : null),
     [meetingDetail]
   );
+  /** Show custom event UI only when we have no meeting to load (optimistic or Outlook-only). */
+  const showFallbackEventUI = (isOptimisticEvent || (isOutlookId && !selectedEventForDetails?.meeting_id)) && !isLoadingMeeting;
 
   // Sync currentDate if initialDate changes (e.g. when opening modal with a new selection)
   React.useEffect(() => {
@@ -530,18 +558,30 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   <Loader />
                 </div>
               )}
-              {!isOptimisticEvent && !isOutlookEvent && !isLoadingMeeting && meetingCardData && (
+              {isOurMeeting && !isLoadingMeeting && meetingCardData && (
                 <div className="p-5">
                   <MeetingCard
                     meeting={meetingCardData}
                     onDetails={() => {
                       setSelectedEventForDetails(null);
-                      navigate(`/meeting/${selectedEventForDetails.id}`);
+                      navigate(`/meeting/${meetingIdToFetch ?? selectedEventForDetails.id}`);
                     }}
                   />
                 </div>
               )}
-              {!isLoadingMeeting && (isMeetingError || !meetingCardData) && (
+              {isOurMeeting && !isLoadingMeeting && (isMeetingError || !meetingCardData) && (
+                <div className="p-6 text-center" style={fontStyle}>
+                  <p className="text-gray-600 mb-4">تعذر تحميل بيانات الاجتماع.</p>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEventForDetails(null)}
+                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              )}
+              {showFallbackEventUI && (
                 <div className="flex flex-col" style={fontStyle}>
                   {/* Header */}
                   <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100">
@@ -796,16 +836,33 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     proposers: values.proposers,
                     invitees,
                   });
-                  const meetingId = (result as { id?: string })?.id;
+                  const meetingId = result?.id;
                   trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
                     meeting_id: meetingId,
                     meeting_title: values.title,
                   });
+                  // Replace optimistic event with real meeting so opening it shows full details (title, date, location, invitees)
+                  const eventFromApi = mapCreatedMeetingToOutlookEvent(result);
+                  queryClient.setQueryData<OutlookTimelineEvent[]>(
+                    ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                    (old) =>
+                      (old ?? []).map((e) =>
+                        e.item_id === optimisticId ? eventFromApi : e
+                      )
+                  );
+                  // Seed meeting cache so the details modal shows the same MeetingCard as work basket (no extra fetch, same data)
+                  const meetingForCache = normalizedMeetingFromCreateResponse(result);
+                  queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
+                  // Defer invalidation so the replaced event (with meeting_id) stays in cache when user clicks it; refetch after a short delay
+                  setTimeout(() => {
+                    queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+                  }, 2000);
                 }
 
                 setSlotForNewMeeting(null);
-                // Invalidate in background so next time we get server truth (no need to block UI)
-                queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+                if (isEdit) {
+                  queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+                }
               } catch (err: unknown) {
                 if (!isEdit) {
                   // For create we may have added an optimistic event – roll it back
