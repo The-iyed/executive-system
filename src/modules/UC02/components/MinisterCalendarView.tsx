@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, User, Calendar, Clock, MapPin, X, Pencil } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader, MeetingCard } from '@/modules/shared';
+import { Loader } from '@/modules/shared';
 import {
   WeeklyCalendarNavigation,
   type CalendarEventData,
@@ -254,8 +254,56 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     () => (meetingDetail ? mapMeetingToCardData(meetingDetail) : null),
     [meetingDetail]
   );
-  /** Show custom event UI only when we have no meeting to load (optimistic or Outlook-only). */
-  const showFallbackEventUI = (isOptimisticEvent || (isOutlookId && !selectedEventForDetails?.meeting_id)) && !isLoadingMeeting;
+  /** Unified display for modal: same sectioned layout (virtual style) for all events; data from API when available, else from calendar event. */
+  const eventDisplay = useMemo(() => {
+    if (!selectedEventForDetails) return null;
+    const ev = selectedEventForDetails;
+    const meeting = meetingDetail as (MeetingApiResponse & { meeting_link?: string | null; meeting_url?: string; meeting_location?: string | null }) | undefined;
+    const fromApi = meeting && !isLoadingMeeting;
+    const scheduledStart = fromApi && meeting.scheduled_start ? new Date(meeting.scheduled_start) : ev.date;
+    const scheduledEnd = fromApi && meeting.scheduled_end ? new Date(meeting.scheduled_end) : ev.date;
+    const startTime =
+      fromApi && meeting.scheduled_start
+        ? formatExactTime(scheduledStart)
+        : (ev.exactStartTime || ev.startTime);
+    const endTime =
+      fromApi && meeting.scheduled_end
+        ? formatExactTime(scheduledEnd)
+        : (ev.exactEndTime || ev.endTime);
+    const locationText =
+      (fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
+      ev.meeting_link ||
+      ev.meeting_location ||
+      ev.location ||
+      '';
+    const inviteesList =
+      fromApi && Array.isArray(meeting.invitees) && meeting.invitees.length > 0
+        ? meeting.invitees.map((inv) => {
+            const row = inv as Record<string, unknown>;
+            return {
+              name: String(row.external_name ?? row.name ?? row.position ?? '—'),
+              email: row.external_email != null || row.email != null ? String(row.external_email ?? row.email) : undefined,
+            };
+          })
+        : (ev.attendees ?? []);
+    return {
+      title: (fromApi ? meeting.meeting_title : ev.title) || ev.meeting_title || 'اجتماع',
+      is_internal: ev.is_internal,
+      organizerName: fromApi ? meeting.submitter_name : ev.organizer?.name ?? '',
+      organizerEmail: fromApi ? (meeting.current_owner_user?.email ?? '') : (ev.organizer?.email ?? ''),
+      date: scheduledStart,
+      startTime,
+      endTime,
+      locationOrLink: locationText,
+      invitees: inviteesList,
+      meeting_id: ev.meeting_id,
+      meeting_channel: ev.meeting_channel ?? meeting?.meeting_channel,
+      meeting_title: ev.meeting_title ?? ev.title,
+      exactStartTime: ev.exactStartTime || startTime,
+      exactEndTime: ev.exactEndTime || endTime,
+      attendees: ev.attendees,
+    };
+  }, [selectedEventForDetails, meetingDetail, isLoadingMeeting]);
 
   // Sync currentDate if initialDate changes (e.g. when opening modal with a new selection)
   React.useEffect(() => {
@@ -550,7 +598,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
         </div>
       )}
 
-      {/* Event details modal – full meeting card with all details (same as work basket / lists) */}
+      {/* Event details modal – unified sectioned layout (same as virtual) for all events */}
       <Dialog open={!!selectedEventForDetails} onOpenChange={(open) => !open && setSelectedEventForDetails(null)}>
         <DialogContent className="max-w-[860px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-gray-200 shadow-xl [&>button]:hidden" dir="rtl">
           {selectedEventForDetails && (
@@ -560,48 +608,24 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   <Loader />
                 </div>
               )}
-              {isOurMeeting && !isLoadingMeeting && meetingCardData && (
-                <div className="p-5">
-                  <MeetingCard
-                    meeting={meetingCardData}
-                    onDetails={() => {
-                      setSelectedEventForDetails(null);
-                      navigate(`/meeting/${meetingIdToFetch ?? selectedEventForDetails.id}`);
-                    }}
-                  />
-                </div>
-              )}
-              {isOurMeeting && !isLoadingMeeting && (isMeetingError || !meetingCardData) && (
-                <div className="p-6 text-center" style={fontStyle}>
-                  <p className="text-gray-600 mb-4">تعذر تحميل بيانات الاجتماع.</p>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedEventForDetails(null)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
-                  >
-                    إغلاق
-                  </button>
-                </div>
-              )}
-              {showFallbackEventUI && (
+              {!isLoadingMeeting && eventDisplay && (
                 <div className="flex flex-col" style={fontStyle}>
                   {/* Header */}
                   <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100">
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                       <h3 className="text-gray-900 font-bold text-[16px] leading-6">
-                        {selectedEventForDetails.title}
+                        {eventDisplay.title}
                       </h3>
-                      {selectedEventForDetails.is_internal !== undefined && (
+                      {eventDisplay.is_internal !== undefined && (
                         <span className={cn(
                           'text-[11px] font-semibold px-2 py-0.5 rounded w-fit',
-                          selectedEventForDetails.is_internal
+                          eventDisplay.is_internal
                             ? 'bg-[#048F86]/10 text-[#048F86]'
                             : 'bg-gray-100 text-gray-500'
                         )}>
-                          {selectedEventForDetails.is_internal ? 'داخلي' : 'خارجي'}
+                          {eventDisplay.is_internal ? 'داخلي' : 'خارجي'}
                         </span>
                       )}
-                    
                     </div>
                     <button
                       onClick={() => setSelectedEventForDetails(null)}
@@ -611,68 +635,73 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     </button>
                   </div>
 
-                  {/* Body */}
-                  <div className="flex flex-col px-6 py-2">
-                    {/* Organizer */}
-                    {selectedEventForDetails.organizer && (
+                  {/* Body – exact same sectioned layout for all event types */}
+                    <div className="flex flex-col px-6 py-2">
+                      {/* Organizer – always show */}
                       <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
                         <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                           <User className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col items-start flex-1 min-w-0">
-                          <span className="text-[13px] font-semibold text-gray-800 truncate w-full">{selectedEventForDetails.organizer.name}</span>
-                          <span className="text-[11px] text-gray-400 truncate w-full">{selectedEventForDetails.organizer.email}</span>
+                          <span className="text-[13px] font-semibold text-gray-800 truncate w-full">
+                            {eventDisplay.organizerName || '—'}
+                          </span>
+                          {eventDisplay.organizerEmail ? (
+                            <span className="text-[11px] text-gray-400 truncate w-full">{eventDisplay.organizerEmail}</span>
+                          ) : (
+                            <span className="text-[11px] text-gray-400 truncate w-full">—</span>
+                          )}
                         </div>
                       </div>
-                    )}
 
-                    {/* Date */}
-                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                        <Calendar className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                      {/* Date – always show */}
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <Calendar className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-[13px] font-medium text-gray-700">
+                          {formatDetailDate(eventDisplay.date)}
+                        </span>
                       </div>
-                      <span className="text-[13px] font-medium text-gray-700">
-                        {formatDetailDate(selectedEventForDetails.date)}
-                      </span>
-                    </div>
 
-                    {/* Time */}
-                    <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                        <Clock className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                      {/* Time – always show */}
+                      <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <Clock className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-[13px] font-medium text-gray-700">
+                          {eventDisplay.startTime} – {eventDisplay.endTime}
+                        </span>
                       </div>
-                      <span className="text-[13px] font-medium text-gray-700">
-                        {selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime} – {selectedEventForDetails.exactEndTime || selectedEventForDetails.endTime}
-                      </span>
-                    </div>
 
-                    {/* Location */}
-                    {selectedEventForDetails.location && (
+                      {/* Location / meeting link – always show; link when URL, text otherwise */}
                       <div className="flex items-center gap-3 py-3.5 border-b border-gray-50">
                         <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                           <MapPin className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          {selectedEventForDetails.location.startsWith('http') ? (
-                            <a
-                              href={selectedEventForDetails.location}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[13px] font-medium text-[#048F86] underline underline-offset-2 truncate block"
-                            >
-                              {selectedEventForDetails.location}
-                            </a>
+                          {eventDisplay.locationOrLink ? (
+                            eventDisplay.locationOrLink.startsWith('http') ? (
+                              <a
+                                href={eventDisplay.locationOrLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[13px] font-medium text-[#048F86] underline underline-offset-2 truncate block"
+                              >
+                                {eventDisplay.locationOrLink}
+                              </a>
+                            ) : (
+                              <span className="text-[13px] font-medium text-gray-700 truncate block">
+                                {eventDisplay.locationOrLink}
+                              </span>
+                            )
                           ) : (
-                            <span className="text-[13px] font-medium text-gray-700 truncate block">
-                              {selectedEventForDetails.location}
-                            </span>
+                            <span className="text-[13px] font-medium text-gray-500 truncate block">—</span>
                           )}
                         </div>
                       </div>
-                    )}
 
-                    {/* Invitees – قائمة المدعوين (from timeline attendees) */}
-                    {selectedEventForDetails.attendees && selectedEventForDetails.attendees.length > 0 && (
+                      {/* Invitees – قائمة المدعوين – always show same block */}
                       <div className="flex flex-col gap-2 py-3.5 border-b border-gray-50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -684,78 +713,99 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                             </span>
                           </div>
                           <span className="text-[11px] text-gray-500 bg-gray-50 rounded-full px-2 py-0.5">
-                            {selectedEventForDetails.attendees.length} مدعو
+                            {eventDisplay.invitees.length} مدعو
                           </span>
                         </div>
                         <div className="flex flex-col gap-1.5 mt-1">
-                          {selectedEventForDetails.attendees.map((attendee, idx) => (
-                            <div
-                              key={`${attendee.name}-${attendee.email}-${idx}`}
-                              className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50"
-                            >
-                              <span className="text-[13px] font-medium text-gray-800 truncate">
-                                {attendee.name || '—'}
-                              </span>
-                              {attendee.email && (
-                                <span className="text-[11px] text-gray-500 truncate max-w-[180px]">
-                                  {attendee.email}
+                          {eventDisplay.invitees.length > 0 ? (
+                            eventDisplay.invitees.map((attendee, idx) => (
+                              <div
+                                key={`${attendee.name}-${attendee.email ?? ''}-${idx}`}
+                                className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50"
+                              >
+                                <span className="text-[13px] font-medium text-gray-800 truncate">
+                                  {attendee.name || '—'}
                                 </span>
-                              )}
-                            </div>
-                          ))}
+                                {attendee.email ? (
+                                  <span className="text-[11px] text-gray-500 truncate max-w-[180px]">
+                                    {attendee.email}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-gray-400">—</span>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-[12px] text-gray-500 py-1">لا يوجد مدعوون</span>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex w-full justify-end ">
-                  {selectedEventForDetails.meeting_id && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedEventForDetails(null);
-                          const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
-                          const location = selectedEventForDetails.location ?? null;
-                          const inferredChannel =
-                            location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-                          const attendees = selectedEventForDetails.attendees ?? [];
-                          const initialInvitees = attendees.length > 0
-                            ? attendees.map((a, i) => ({
-                                _id: `inv-edit-${i}-${Date.now()}`,
-                                email: a.email ?? '',
-                                position: a.name ?? '',
-                                name: a.name ?? '',
-                                mobile: '',
-                                sector: '',
-                                attendance_mechanism: 'PHYSICAL',
-                                access_permission: false,
-                                is_consultant: false,
-                                meeting_owner: false,
-                              }))
-                            : undefined;
-                          setSlotForNewMeeting({
-                            date: selectedEventForDetails.date,
-                            time: startTime,
-                            endTime:
-                              selectedEventForDetails.exactEndTime ||
-                              selectedEventForDetails.endTime ||
-                              undefined,
-                            title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
-                            meetingLocation: selectedEventForDetails.meeting_location ?? location,
-                            meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
-                            meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
-                            webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
-                            meetingId: selectedEventForDetails.meeting_id,
-                            mode: 'edit',
-                            initialInvitees,
-                          });
-                        }}
-                        className="inline-flex max-w-[130px] items-center gap-1.5 px-3 m-4 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        تعديل
-                      </button>
-                    )}
+
+                      {isOurMeeting && (isMeetingError || !meetingCardData) && (
+                        <p className="text-[11px] text-amber-600 py-2">تعذر تحميل بعض بيانات الاجتماع. يمكنك عرض التفاصيل الكاملة من الزر أدناه.</p>
+                      )}
                     </div>
+
+                  {/* Actions – عرض التفاصيل + تعديل always enabled; use meeting_id when present, else event id */}
+                  <div className="flex w-full justify-end gap-2 flex-wrap px-6 pb-5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const id = eventDisplay.meeting_id ?? selectedEventForDetails.id;
+                        setSelectedEventForDetails(null);
+                        navigate(`/meeting/${id}`);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-3.5 rounded-lg text-white text-xs font-semibold transition-colors"
+                      style={{ background: 'var(--color-primary-500)' }}
+                    >
+                      عرض التفاصيل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEventForDetails(null);
+                        const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
+                        const location = selectedEventForDetails.location ?? null;
+                        const inferredChannel =
+                          location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
+                        const attendees = selectedEventForDetails.attendees ?? [];
+                        const initialInvitees = attendees.length > 0
+                          ? attendees.map((a, i) => ({
+                              _id: `inv-edit-${i}-${Date.now()}`,
+                              email: a.email ?? '',
+                              position: a.name ?? '',
+                              name: a.name ?? '',
+                              mobile: '',
+                              sector: '',
+                              attendance_mechanism: 'PHYSICAL',
+                              access_permission: false,
+                              is_consultant: false,
+                              meeting_owner: false,
+                            }))
+                          : undefined;
+                        setSlotForNewMeeting({
+                          date: selectedEventForDetails.date,
+                          time: startTime,
+                          endTime:
+                            selectedEventForDetails.exactEndTime ||
+                            selectedEventForDetails.endTime ||
+                            undefined,
+                          title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
+                          meetingLocation: selectedEventForDetails.meeting_location ?? location,
+                          meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
+                          meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
+                          webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
+                          meetingId: selectedEventForDetails.meeting_id ?? undefined,
+                          mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
+                          initialInvitees,
+                        });
+                      }}
+                      className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      تعديل
+                    </button>
+                  </div>
                 </div>
               )}
             </>
