@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, X, FileCheck, ClipboardCheck, Calendar, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Hash, User, Users, Search, Sparkles, Mail, Phone, Building2, Check, Lightbulb, FileText, AlertCircle, Loader2 } from 'lucide-react';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@radix-ui/react-collapsible';
+import { X, FileCheck, ClipboardCheck, CalendarMinus, Plus, Pencil, Trash2, Download, Eye, GitCompare, HelpCircle, Clock, Users, Search, Sparkles, Lightbulb, FileText, AlertCircle, Loader2, Check } from 'lucide-react';
 import { 
   MeetingStatus, 
   MeetingStatusLabels, 
@@ -105,13 +104,13 @@ import {
   showMeetingLocationOtherInput,
   isPresetMeetingLocation,
 } from '../../UC01/features/MeetingForm/utils/constants';
-import MeetingFormDrawer from '../../UC01/features/MeetingForm/components/MeetingFormDrawer/MeetingFormDrawer';
-import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
+import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
+import { TableRow } from '@/lib/dynamic-table-form';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -509,7 +508,6 @@ const MeetingDetail: React.FC = () => {
   // Handle invitee deletion
   const handleDeleteInvitee = () => {
     if (deleteInviteeId) {
-      setLocalInvitees((prev) => prev.filter((inv) => inv.id !== deleteInviteeId));
       setDeleteInviteeId(null);
     }
   };
@@ -576,55 +574,6 @@ const MeetingDetail: React.FC = () => {
     setLocalInvitees((prev) => [...prev, newInvitee]);
   };
 
-  // Update local invitee (clear validation error for this field when user edits)
-  const updateLocalInvitee = (inviteeId: string, field: string, value: string | boolean | AttendanceChannel) => {
-    setLocalInvitees((prev) =>
-      prev.map((inv) => (inv.id === inviteeId ? { ...inv, [field]: value } : inv))
-    );
-    setInviteeValidationErrors((prev) => {
-      const row = prev[inviteeId];
-      if (!row || !(field in row)) return prev;
-      const nextRow = { ...row };
-      delete (nextRow as any)[field];
-      if (Object.keys(nextRow).length === 0) {
-        const { [inviteeId]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [inviteeId]: nextRow };
-    });
-  };
-
-  // Get combined invitees (API + local) with UI fields
-  const allInvitees = React.useMemo(() => {
-    const apiInvitees = (meeting?.invitees || []).map((inv) => ({
-      ...inv,
-      isLocal: false,
-      position: (inv as any).position ?? '',
-      phone: (inv as any).mobile ?? '',
-      attendance_channel: ((inv as any).attendance_channel as AttendanceChannel) || 'PHYSICAL',
-      access_permission: (inv as any).access_permission ?? false,
-    }));
-    const localInviteesMapped = localInvitees.map((inv :any) => ({
-      id: inv.id,
-      user_id: null,
-      external_email: inv.external_email || null,
-      external_name: inv.external_name || null,
-      is_required: inv.is_required,
-      response_status: '',
-      attendee_source: '',
-      justification: null,
-      access_permission: inv.access_permission ?? false,
-      isLocal: true,
-      isEditing: inv.isEditing ?? true,
-      position: inv.position ?? '',
-      sector: inv.sector ?? '',
-      mobile: inv.mobile ?? '',
-      phone: inv.mobile ?? '',
-      attendance_channel: inv.attendance_channel ?? 'PHYSICAL',
-    }));
-    return [...apiInvitees, ...localInviteesMapped];
-  }, [meeting?.invitees, localInvitees]);
-
   /** Effective start/end for schedule confirm modal and submit: from meeting (scheduled_*, meeting_*_date), selected slot, or scheduleForm. */
   const getEffectiveScheduleDates = useCallback(
     (m: typeof meeting, form: typeof scheduleForm): { start: string | undefined; end: string | undefined } => {
@@ -651,56 +600,6 @@ const MeetingDetail: React.FC = () => {
     },
     []
   );
-
-  // Create highlighted event for the calendar from selected time slot
-  const highlightedEvents = React.useMemo(() => {
-    if (!scheduleForm.selected_time_slot_id || !meeting) return [];
-    
-    // Find the slot object
-    let selectedSlot = null;
-    const allSlots = [
-      meeting.alternative_time_slot_1,
-      meeting.alternative_time_slot_2,
-      meeting.selected_time_slot
-    ];
-    
-    for (const s of allSlots) {
-      if (s?.id === scheduleForm.selected_time_slot_id) {
-        selectedSlot = s;
-        break;
-      }
-    }
-    
-    if (!selectedSlot || !selectedSlot.slot_start) return [];
-    
-    const startDate = new Date(selectedSlot.slot_start);
-    const endDate = selectedSlot.slot_end ? new Date(selectedSlot.slot_end) : new Date(startDate.getTime() + 60 * 60 * 1000);
-    
-    const formatTimeToSlot = (date: Date): string => {
-      return `${date.getHours().toString().padStart(2, '0')}:00`;
-    };
-    
-    const formatExactTime = (date: Date): string => {
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    };
-
-    return [{
-      id: 'highlighted-slot',
-      type: 'optional', // Uses the highlighted amber style
-      label: `الموعد المختار (${formatExactTime(startDate)})`,
-      startTime: formatTimeToSlot(startDate),
-      endTime: formatTimeToSlot(endDate),
-      date: startDate,
-      title: 'موعد هذا الاجتماع',
-      is_available: false,
-      is_selected: true,
-      exactStartTime: formatExactTime(startDate),
-      exactEndTime: formatExactTime(endDate),
-    }] as CalendarEventData[];
-  }, [scheduleForm.selected_time_slot_id, meeting]);
-
 
   const queryClient = useQueryClient();
   
@@ -814,41 +713,6 @@ const MeetingDetail: React.FC = () => {
     // minister attendees (قائمة المدعوين الوزير) – all fields required in payload
     if (JSON.stringify(scheduleForm.minister_attendees || []) !== JSON.stringify(originalSnapshot.scheduleForm.minister_attendees || [])) {
       payload.minister_attendees = normalizeMinisterAttendees(scheduleForm.minister_attendees);
-    }
-    // invitees (قائمة المدعوين مقدّم الطلب) – full list in API shape when changed
-    if (JSON.stringify(localInvitees || []) !== JSON.stringify(originalSnapshot.localInvitees || [])) {
-      const existingInvitees = (meeting?.invitees || []).map((inv: any) => ({
-        id: inv.id,
-        user_id: inv.user_id ?? null,
-        external_email: inv.external_email ?? null,
-        external_name: inv.external_name ?? null,
-        position: inv.position ?? null,
-        mobile: inv.mobile ?? inv.mobile ?? null,
-        item_number: inv.item_number,
-        attendance_mechanism: inv.attendance_mechanism ?? inv.attendance_channel ?? null,
-        is_required: inv.is_required ?? false,
-        response_status: inv.response_status ?? null,
-        attendee_source: inv.attendee_source ?? null,
-        justification: inv.justification ?? null,
-        access_permission: inv.access_permission ?? null,
-      }));
-      const newInvitees = localInvitees.map((i :any, idx) => ({
-        id: i.id,
-        user_id: null,
-        email: i.external_email || null,
-        name: i.external_name || null,
-        position: i.position || null,
-        sector: i.sector || null,
-        mobile: i.mobile || null,
-        item_number: idx + 1,
-        attendance_mechanism: i.attendance_channel ?? null,
-        is_required: i.is_required,
-        response_status: null,
-        attendee_source: null,
-        justification: null,
-        access_permission: i.access_permission != null ? String(i.access_permission) : null,
-      }));
-      payload.invitees = [...existingInvitees, ...newInvitees];
     }
 
     if ((contentTabForm.general_notes || '') !== (originalSnapshot.contentTabForm?.general_notes || '')) {
@@ -1303,31 +1167,6 @@ const MeetingDetail: React.FC = () => {
     scheduleMutation.mutate(schedulePayload);
   };
 
-  const addMinisterAttendee = () => {
-    setScheduleForm((prev) => {
-      const newIndex = prev.minister_attendees.length;
-      setEditingMinisterAttendees((s) => new Set(s).add(newIndex));
-      return {
-      ...prev,
-      minister_attendees: [
-        ...prev.minister_attendees,
-        {
-          username: '',
-          external_name: '',
-          external_email: '',
-          is_required: false,
-          justification: '',
-          access_permission: 'FULL',
-          position: '',
-          phone: '',
-          attendance_channel: 'PHYSICAL',
-            is_consultant: false,
-        },
-      ],
-      };
-    });
-  };
-
   const removeMinisterAttendee = (index: number) => {
     setScheduleForm((prev) => ({
       ...prev,
@@ -1683,8 +1522,6 @@ const MeetingDetail: React.FC = () => {
         minister_attendees: mapApiMinisterAttendeesToForm((meeting as any).minister_attendees) || prev.minister_attendees,
       };
     });
-
-    setLocalInvitees([]);
     
     // Reset attachment state when meeting loads
     setDeletedAttachmentIds([]);
@@ -3342,7 +3179,6 @@ const MeetingDetail: React.FC = () => {
           {/* Tab: قائمة المدعوين (non–schedule officer) OR الجدولة (schedule officer: إعدادات + مدعوون) */}
           {((activeTab === 'attendees' && !isScheduleOfficer) || (activeTab === 'schedule' && isScheduleOfficer)) && (
             <div className="flex flex-col gap-6 w-full" dir="rtl">
-
               {/* إعدادات الجدولة – only when schedule tab + schedule officer */}
               {activeTab === 'schedule' && isScheduleOfficer && (
                 <section className="rounded-2xl border border-[#E5E7EB] bg-white">
@@ -3388,467 +3224,9 @@ const MeetingDetail: React.FC = () => {
                       <FormTextArea label="ملاحظات" value={scheduleForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScheduleForm((prev) => ({ ...prev, notes: e.target.value }))} placeholder="Meeting scheduled successfully" containerClassName="!px-0 !mx-0" fullWidth={false} />
                     </div>
                   </div>
+                  <InviteesTableForm initialInvitees={meeting?.invitees} mode='view' />
                 </section>
               )}
-
-              {/* ─── قائمة المدعوين (مقدّم الطلب) ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                      <User className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      {renderFieldLabel('invitees', 'المدعوون (مقدم الطلب)', 'text-[15px] font-bold text-[#1F2937]')}
-                      {allInvitees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{allInvitees.length}</span>}
-                    </div>
-                  </div>
-                  {canEdit && (
-                    <button type="button" onClick={addInvitee} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm" disabled={!canEdit}>
-                      <Plus className="w-4 h-4" />
-                      إضافة مدعو
-                    </button>
-                  )}
-                </div>
-                <div className="p-0">
-                  {allInvitees && allInvitees.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
-                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجهة</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#F9FAFB]">
-                          {allInvitees.map((row: any, idx: number) => {
-                            const isLocal = row.isLocal;
-                            const isEditingRow = row.isEditing === true;
-                            const isConsultant = row.is_consultant === true;
-                            const name = row.external_name || row.user_id || '-';
-                            const position = row.position || '-';
-                            const sector = row.sector || '-';
-                            const email = row.external_email || '-';
-                            const mobile = row.mobile || '-';
-                            const attendVal = row.attendance_channel || 'PHYSICAL';
-                            const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
-                            const accessChecked = !!row.access_permission;
-                            return (
-                              <tr key={row.id || idx} className={`group transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
-                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{idx + 1}</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#F3F4F6]'}`}>
-                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#9CA3AF]'}`} strokeWidth={1.8} />
-                                    </div>
-                                    {isEditingRow ? (
-                                      <div className="flex flex-col gap-0.5 min-w-[120px]">
-                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_name', e.target.value); }} disabled={!canEdit} placeholder="الإسم *" className={`h-8 text-right text-xs rounded-lg ${inviteeValidationErrors[row.id]?.external_name ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                        {inviteeValidationErrors[row.id]?.external_name && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_name}</span>}
-                                      </div>
-                                    ) : (
-                                      <div className="flex flex-col min-w-0">
-                                        <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
-                                        {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'position', e.target.value); }} disabled={!canEdit} placeholder="المنصب *" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.position ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {inviteeValidationErrors[row.id]?.position && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].position}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151]">{position}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <Input type="text" value={row.sector || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'sector', e.target.value); }} disabled={!canEdit} placeholder="الجهة" className="h-8 text-right text-xs rounded-lg border-[#E5E7EB] min-w-[90px]" />
-                                  ) : (
-                                    <span className="text-sm text-[#374151]">{sector}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'external_email', e.target.value); }} disabled={!canEdit} placeholder="البريد *" className={`h-8 text-right text-xs rounded-lg min-w-[140px] ${inviteeValidationErrors[row.id]?.external_email ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {inviteeValidationErrors[row.id]?.external_email && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].external_email}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151] truncate max-w-[180px] block">{email}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateLocalInvitee(row.id, 'mobile', e.target.value); }} disabled={!canEdit} placeholder="الجوال" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${inviteeValidationErrors[row.id]?.mobile ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {inviteeValidationErrors[row.id]?.mobile && <span className="text-[10px] text-red-500">{inviteeValidationErrors[row.id].mobile}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151]" dir="ltr">{mobile}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <div onClick={(e) => e.stopPropagation()}>
-                                      <Select value={attendVal} onValueChange={(v) => updateLocalInvitee(row.id, 'attendance_channel', v as AttendanceChannel)} disabled={!canEdit}>
-                                        <SelectTrigger className="h-7 bg-[#EFF6FF] border-0 rounded-full px-2.5 text-xs text-[#3B82F6] flex-row-reverse gap-1 min-w-[80px]"><SelectValue /></SelectTrigger>
-                                        <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
-                                      </Select>
-                                    </div>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${attendVal === 'REMOTE' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>{attendanceLabel}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditingRow ? (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
-                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${accessChecked ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
-                                        {accessChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                                      </div>
-                                      <input type="checkbox" checked={accessChecked} disabled={!canEdit} onChange={(e) => updateLocalInvitee(row.id, 'access_permission', e.target.checked)} className="sr-only" />
-                                    </label>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${accessChecked ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
-                                      {accessChecked ? 'نعم' : 'لا'}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
-                                  <div className="flex items-center gap-0.5">
-                                    {isLocal && canEdit && isEditingRow && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const rowErrors: Record<string, string> = {};
-                                          const rName = (row.external_name ?? '').trim();
-                                          const rEmail = (row.external_email ?? '').trim();
-                                          const rPos = (row.position ?? '').trim();
-                                          const rPhone = (row.mobile ?? '').trim();
-                                          if (!rName) rowErrors.external_name = 'مطلوب';
-                                          if (!rEmail) rowErrors.external_email = 'مطلوب';
-                                          else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
-                                          if (!rPos) rowErrors.position = 'مطلوب';
-                                          if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'صيغة غير صحيحة';
-                                          if (Object.keys(rowErrors).length > 0) {
-                                            setInviteeValidationErrors((prev) => ({ ...prev, [row.id]: rowErrors }));
-                                            return;
-                                          }
-                                          setInviteeValidationErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
-                                          setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: false } : inv));
-                                        }}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
-                                        title="حفظ"
-                                      >
-                                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-                                      </button>
-                                    )}
-                                    {isLocal && canEdit && !isEditingRow && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setLocalInvitees((prev) => prev.map((inv) => inv.id === row.id ? { ...inv, isEditing: true } : inv))}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] text-[#3B82F6]/50 hover:text-[#3B82F6] transition-colors"
-                                        title="تعديل"
-                                      >
-                                        <Pencil className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    {canEdit && (
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteInviteeId(row.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors">
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-14 m-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
-                      <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
-                        <User className="w-7 h-7 text-[#9CA3AF]" strokeWidth={1.2} />
-                      </div>
-                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد قائمة مدعوين</p>
-                      <p className="text-sm text-[#9CA3AF] mb-5">أضف مدعوين للاجتماع</p>
-                      {canEdit && (
-                        <button type="button" onClick={addInvitee} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm">
-                          <Plus className="w-4 h-4" />
-                          إضافة مدعو جديد
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* ─── قائمة المدعوين (الوزير) ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#92400E]/10 flex items-center justify-center">
-                      <User className="w-[18px] h-[18px] text-[#92400E]" strokeWidth={1.8} />
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      {renderFieldLabel('minister_attendees', 'المدعوون (الوزير)', 'text-[15px] font-bold text-[#1F2937]')}
-                      {scheduleForm.minister_attendees && <span className="text-xs text-[#6B7280] bg-[#F3F4F6] rounded-full px-2.5 py-0.5 font-medium">{scheduleForm.minister_attendees.length}</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <AIGenerateButton 
-                      label="إضافة مدعوين آليًا"
-                      disabled={!canEdit}
-                      onClick={() => { setIsSuggestAttendeesModalOpen(true); }}
-                    />
-                    {canEdit && (
-                      <button type="button" onClick={addMinisterAttendee} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] transition-colors shadow-sm" disabled={!canEdit}>
-                        <Plus className="w-4 h-4" />
-                        إضافة مدعو
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="p-0">
-                  {scheduleForm.minister_attendees && scheduleForm.minister_attendees.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-[#F3F4F6] bg-[#FAFAFA]">
-                            <th className="px-5 py-3 text-right font-semibold text-[#6B7280] w-10">#</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الاسم</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المنصب</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">البريد</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الجوال</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">الحضور</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">صلاحية</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مطلوب</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">مستشار</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280]">المبرر</th>
-                            <th className="px-4 py-3 text-right font-semibold text-[#6B7280] w-20 sticky left-0 bg-[#FAFAFA] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#F9FAFB]">
-                          {scheduleForm.minister_attendees.map((row: any, index: number) => {
-                            const isConsultant = row.is_consultant === true;
-                            const isEditing = editingMinisterAttendees.has(index);
-                            const attendVal = row.attendance_channel || 'PHYSICAL';
-                            const attendanceLabel = attendVal === 'REMOTE' ? 'عن بعد' : 'حضوري';
-                            const accessChecked = row.access_permission === 'FULL';
-                            const name = row.external_name || row.username || '-';
-                            const position = row.position || '-';
-                            const email = row.external_email || '-';
-                            const mobile = row.mobile || '-';
-                            const errName = ministerAttendeeValidationErrors[index]?.external_name;
-                            const errPos = ministerAttendeeValidationErrors[index]?.position;
-                            const errPhone = ministerAttendeeValidationErrors[index]?.mobile;
-                            const errEmail = ministerAttendeeValidationErrors[index]?.external_email;
-                            const errJust = ministerAttendeeValidationErrors[index]?.justification;
-
-                            return (
-                              <tr key={row.id || index} className={`group transition-colors ${isConsultant ? 'bg-[#F0FDF9]' : 'hover:bg-[#F9FAFB]'}`}>
-                                <td className="px-5 py-3 text-[#9CA3AF] font-medium">{index + 1}</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isConsultant ? 'bg-[#ECFDF5] border border-[#048F86]/20' : 'bg-[#FEF3C7] border border-[#FDE68A]'}`}>
-                                      <User className={`h-3.5 w-3.5 ${isConsultant ? 'text-[#048F86]' : 'text-[#92400E]'}`} strokeWidth={1.8} />
-                                    </div>
-                                    {isEditing ? (
-                                      <div className="flex flex-col gap-0.5 min-w-[120px]">
-                                        <Input type="text" value={row.external_name || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_name', e.target.value); }} placeholder="الإسم *" className={`h-8 text-right text-xs rounded-lg ${errName ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                        {errName && <span className="text-[10px] text-red-500">{errName}</span>}
-                                      </div>
-                                    ) : (
-                                      <div className="flex flex-col min-w-0">
-                                        <span className="text-sm font-medium text-[#1F2937] truncate">{name}</span>
-                                        {isConsultant && <span className="text-[10px] text-[#048F86] font-medium">مستشار</span>}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.position || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'position', e.target.value); }} placeholder="المنصب *" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${errPos ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {errPos && <span className="text-[10px] text-red-500">{errPos}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151]">{position}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="email" value={row.external_email || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'external_email', e.target.value); }} placeholder="البريد *" className={`h-8 text-right text-xs rounded-lg min-w-[140px] ${errEmail ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {errEmail && <span className="text-[10px] text-red-500">{errEmail}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151] truncate max-w-[180px] block">{email}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.mobile || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'mobile', e.target.value); }} placeholder="الجوال" className={`h-8 text-right text-xs rounded-lg min-w-[100px] ${errPhone ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {errPhone && <span className="text-[10px] text-red-500">{errPhone}</span>}
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-[#374151]" dir="ltr">{mobile}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <div onClick={(e) => e.stopPropagation()}>
-                                      <Select value={attendVal} onValueChange={(v) => updateMinisterAttendee(index, 'attendance_channel', v as 'PHYSICAL' | 'REMOTE')}>
-                                        <SelectTrigger className="h-7 bg-[#EFF6FF] border-0 rounded-full px-2.5 text-xs text-[#3B82F6] flex-row-reverse gap-1 min-w-[80px]"><SelectValue /></SelectTrigger>
-                                        <SelectContent dir="rtl"><SelectItem value="PHYSICAL">حضوري</SelectItem><SelectItem value="REMOTE">عن بعد</SelectItem></SelectContent>
-                                      </Select>
-                                    </div>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${attendVal === 'REMOTE' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#EFF6FF] text-[#3B82F6]'}`}>{attendanceLabel}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
-                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${accessChecked ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
-                                        {accessChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                                      </div>
-                                      <input type="checkbox" checked={accessChecked} onChange={(e) => updateMinisterAttendee(index, 'access_permission', e.target.checked ? 'FULL' : 'READ_ONLY')} className="sr-only" />
-                                    </label>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${accessChecked ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
-                                      {accessChecked ? 'نعم' : 'لا'}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
-                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${row.is_required ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
-                                        {row.is_required && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                                      </div>
-                                      <input type="checkbox" checked={!!row.is_required} onChange={(e) => updateMinisterAttendee(index, 'is_required', e.target.checked)} className="sr-only" />
-                                    </label>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${row.is_required ? 'bg-[#F3F4F6] text-[#6B7280]' : 'bg-[#F3F4F6] text-[#9CA3AF]'}`}>
-                                      {row.is_required ? 'نعم' : 'لا'}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
-                                      <div className={`relative w-4 h-4 rounded flex items-center justify-center border-2 transition-colors ${row.is_consultant ? 'bg-[#048F86] border-[#048F86]' : 'bg-white border-[#D1D5DB]'}`}>
-                                        {row.is_consultant && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                                      </div>
-                                      <input type="checkbox" checked={!!row.is_consultant} onChange={(e) => updateMinisterAttendee(index, 'is_consultant', e.target.checked)} className="sr-only" />
-                                    </label>
-                                  ) : (
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isConsultant ? 'bg-[#ECFDF5] text-[#048F86]' : 'bg-[#F3F4F6] text-[#9CA3AF]'}`}>
-                                      {isConsultant ? 'نعم' : 'لا'}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isEditing ? (
-                                    <div className="flex flex-col gap-0.5">
-                                      <Input type="text" value={row.justification || ''} onChange={(e) => { e.stopPropagation(); updateMinisterAttendee(index, 'justification', e.target.value); }} placeholder="المبرر *" className={`h-8 text-right text-xs rounded-lg min-w-[120px] ${errJust ? 'border-red-400' : 'border-[#E5E7EB]'}`} />
-                                      {errJust && <span className="text-[10px] text-red-500">{errJust}</span>}
-                                    </div>
-                                  ) : (
-                                    row.justification ? (
-                                      <Collapsible>
-                                        <CollapsibleTrigger asChild>
-                                          <button type="button" className="flex items-center gap-1 text-xs text-[#6B7280] hover:text-[#374151] transition-colors" title="المبرر">
-                                            <FileText className="w-3.5 h-3.5 text-[#9CA3AF]" strokeWidth={2} />
-                                            <span className="truncate max-w-[80px]">{row.justification}</span>
-                                            <ChevronDown className="w-3 h-3" />
-                                          </button>
-                                        </CollapsibleTrigger>
-                                        <CollapsibleContent className="mt-1">
-                                          <p className="text-xs text-[#6B7280] bg-[#F9FAFB] rounded-lg p-2 max-w-[200px] whitespace-pre-wrap leading-relaxed">{row.justification}</p>
-                                        </CollapsibleContent>
-                                      </Collapsible>
-                                    ) : (
-                                      <span className="text-xs text-[#9CA3AF]">—</span>
-                                    )
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]" style={{ backgroundColor: isConsultant ? '#F0FDF9' : 'white' }}>
-                                  <div className="flex items-center gap-0.5">
-                                    {isEditing ? (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const rowErrors: Partial<Record<'external_name' | 'external_email' | 'position' | 'mobile' | 'justification', string>> = {};
-                                          const rName = (row.external_name ?? '').trim();
-                                          const rEmail = (row.external_email ?? '').trim();
-                                          const rPos = (row.position ?? '').trim();
-                                          const rPhone = (row.mobile ?? '').trim();
-                                          const rJust = (row.justification ?? '').trim();
-                                          if (!rName) rowErrors.external_name = 'مطلوب';
-                                          if (!rEmail) rowErrors.external_email = 'مطلوب';
-                                          else if (!isValidEmail(rEmail)) rowErrors.external_email = 'صيغة بريد إلكتروني غير صحيحة';
-                                          if (!rPos) rowErrors.position = 'مطلوب';
-                                          if (rPhone && !isValidPhone(rPhone)) rowErrors.mobile = 'صيغة غير صحيحة';
-                                          if (!rJust) rowErrors.justification = 'مطلوب';
-                                          if (Object.keys(rowErrors).length > 0) {
-                                            setMinisterAttendeeValidationErrors((prev) => ({ ...prev, [index]: rowErrors }));
-                                            return;
-                                          }
-                                          setMinisterAttendeeValidationErrors((prev) => { const next = { ...prev }; delete next[index]; return next; });
-                                          setEditingMinisterAttendees((s) => { const n = new Set(s); n.delete(index); return n; });
-                                        }}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-green-50 text-[#059669]/50 hover:text-[#059669] transition-colors"
-                                        title="حفظ"
-                                      >
-                                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-                                      </button>
-                                    ) : (
-                                      canEdit && (
-                                        <button type="button" onClick={() => setEditingMinisterAttendees((s) => new Set(s).add(index))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EFF6FF] text-[#3B82F6]/50 hover:text-[#3B82F6] transition-colors">
-                                          <Pencil className="w-3.5 h-3.5" />
-                                        </button>
-                                      )
-                                    )}
-                                    {canEdit && (
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); setDeleteAttendeeIndex(index); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#DC2626]/50 hover:text-[#DC2626] transition-colors">
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-14 m-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
-                      <div className="w-14 h-14 rounded-2xl bg-[#FEF3C7] flex items-center justify-center mb-4">
-                        <User className="w-7 h-7 text-[#92400E]" strokeWidth={1.2} />
-                      </div>
-                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد قائمة مدعوين</p>
-                      <p className="text-sm text-[#9CA3AF]">لم تتم إضافة مدعوين من قبل الوزير</p>
-                    </div>
-                  )}
-                </div>
-              </section>
             </div>
           )}
 
@@ -4294,68 +3672,6 @@ const MeetingDetail: React.FC = () => {
        onOpenChange={setIsQualityModalOpen} 
        meetingId={id || ''}
      />
-
-      {/* Suggest Attendees Modal */}
-      {meeting && (
-        <SuggestAttendeesModal
-          isOpen={isSuggestAttendeesModalOpen}
-          onOpenChange={setIsSuggestAttendeesModalOpen}
-          meetingParams={{
-            meeting: {
-              meeting_subject: formData.meeting_subject || meeting.meeting_subject || '',
-              meeting_type: formData.meeting_type || meeting.meeting_type || '',
-              meeting_classification: formData.meeting_classification || meeting.meeting_classification || '',
-              meeting_justification: meeting.meeting_justification || '',
-              related_topic: meeting.related_topic || null,
-              objectives: contentForm.objectives.map((obj) => ({ objective: obj.objective })),
-              agenda_items: contentForm.agendaItems.map((item) => {
-                const otherTypeValue = MINISTER_SUPPORT_TYPE_OPTIONS[MINISTER_SUPPORT_TYPE_OPTIONS.length - 1]?.value ?? 'أخرى';
-                const supportType = (item.minister_support_type ?? '').trim();
-                const isOther = supportType === otherTypeValue;
-                const rawOther = item.minister_support_other;
-                const customText =
-                  typeof rawOther === 'string' ? rawOther.trim() : rawOther != null ? String(rawOther).trim() : '';
-                return {
-                  agenda_item: item.agenda_item,
-                  presentation_duration_minutes: item.presentation_duration_minutes,
-                  minister_support_type: item.minister_support_type ?? '',
-                  minister_support_other: isOther ? (customText || null) : null,
-                };
-              }),
-            },
-          }}
-          onSuccess={(data) => {
-            if (data?.suggestions && Array.isArray(data.suggestions)) {
-              const mappedAttendees: MinisterAttendee[] = data.suggestions.map((suggestion: any) => ({
-                username: `${suggestion.first_name} ${suggestion.last_name}`,
-                external_email: suggestion.email,
-                external_name: `${suggestion.first_name} ${suggestion.last_name}`,
-                is_required: suggestion.importance_level === 'مناسب جدا',
-                justification: suggestion.suggestion_reason,
-                access_permission: 'FULL',
-                position: suggestion.position_name || suggestion.job_description || '',
-                phone: suggestion.mobile || '',
-                is_consultant: false,
-                attendance_channel: 'PHYSICAL',
-              }));
-              // work
-
-              setScheduleForm((prev) => {
-                const startIdx = prev.minister_attendees.length;
-                setEditingMinisterAttendees((s) => {
-                  const next = new Set(s);
-                  mappedAttendees.forEach((_, i) => next.add(startIdx + i));
-                  return next;
-                });
-                return {
-                ...prev,
-                minister_attendees: [...prev.minister_attendees, ...mappedAttendees],
-                };
-              });
-            }
-          }}
-        />
-      )}
 
       {/* Reject Meeting Modal */}
       <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
