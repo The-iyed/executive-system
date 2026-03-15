@@ -132,6 +132,53 @@ function TimeSelect({ label, value, onChange, disabled }: TimeSelectProps) {
     <div className="flex flex-col gap-1.5" dir="rtl">
       <span className="text-sm font-medium text-[#344054]">{label}</span>
       <div className="flex items-center gap-2">
+          {minuteEditMode ? (
+            <input
+              ref={minuteInputRef}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={minuteInputValue}
+              onChange={handleMinuteInputChange}
+              onBlur={handleMinuteInputBlur}
+              onKeyDown={handleMinuteInputKeyDown}
+              className={cn(
+                timeSelectTriggerClass,
+                'flex-1 basis-0 min-w-0 text-center',
+                'focus:outline-none focus:ring-2 focus:ring-[#008774]/20 focus:border-[#008774]'
+              )}
+              aria-label="دقيقة (أدخل 00–59)"
+            />
+          ) : (
+            <Select value={String(minute)} onValueChange={handleMinuteSelectChange} disabled={disabled}>
+              <SelectTrigger
+                className={cn(timeSelectTriggerClass, 'flex-1 basis-0')}
+                aria-label="دقيقة"
+                title="انقر مرتين للإدخال اليدوي (00–59)"
+                onDoubleClick={handleMinuteDoubleClick}
+              >
+                <SelectValue placeholder="00" />
+              </SelectTrigger>
+              <SelectContent
+                className="max-h-[220px] rounded-lg border-[#E4E7EC] bg-white shadow-lg"
+                position="popper"
+                sideOffset={4}
+              >
+                {MINUTES_60.map((minVal) => (
+                  <SelectItem
+                    key={minVal}
+                    value={String(minVal)}
+                    className="cursor-pointer rounded-md py-2 pr-8 pl-2 text-right focus:bg-[#F0FDF9] focus:text-[#008774] data-[highlighted]:bg-[#F0FDF9] data-[highlighted]:text-[#008774]"
+                  >
+                    {String(minVal).padStart(2, '0')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        <span className="text-[#667085] font-semibold tabular-nums" aria-hidden>
+          :
+        </span>
         <Select value={String(hour)} onValueChange={handleHourChange} disabled={disabled}>
           <SelectTrigger className={cn(timeSelectTriggerClass, 'flex-1 basis-0')} aria-label="ساعة">
             <SelectValue placeholder="00" />
@@ -152,53 +199,6 @@ function TimeSelect({ label, value, onChange, disabled }: TimeSelectProps) {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-[#667085] font-semibold tabular-nums" aria-hidden>
-          :
-        </span>
-        {minuteEditMode ? (
-          <input
-            ref={minuteInputRef}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={minuteInputValue}
-            onChange={handleMinuteInputChange}
-            onBlur={handleMinuteInputBlur}
-            onKeyDown={handleMinuteInputKeyDown}
-            className={cn(
-              timeSelectTriggerClass,
-              'flex-1 basis-0 min-w-0 text-center',
-              'focus:outline-none focus:ring-2 focus:ring-[#008774]/20 focus:border-[#008774]'
-            )}
-            aria-label="دقيقة (أدخل 00–59)"
-          />
-        ) : (
-          <Select value={String(minute)} onValueChange={handleMinuteSelectChange} disabled={disabled}>
-            <SelectTrigger
-              className={cn(timeSelectTriggerClass, 'flex-1 basis-0')}
-              aria-label="دقيقة"
-              title="انقر مرتين للإدخال اليدوي (00–59)"
-              onDoubleClick={handleMinuteDoubleClick}
-            >
-              <SelectValue placeholder="00" />
-            </SelectTrigger>
-            <SelectContent
-              className="max-h-[220px] rounded-lg border-[#E4E7EC] bg-white shadow-lg"
-              position="popper"
-              sideOffset={4}
-            >
-              {MINUTES_60.map((minVal) => (
-                <SelectItem
-                  key={minVal}
-                  value={String(minVal)}
-                  className="cursor-pointer rounded-md py-2 pr-8 pl-2 text-right focus:bg-[#F0FDF9] focus:text-[#008774] data-[highlighted]:bg-[#F0FDF9] data-[highlighted]:text-[#008774]"
-                >
-                  {String(minVal).padStart(2, '0')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
     </div>
   );
