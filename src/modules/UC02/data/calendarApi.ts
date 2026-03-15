@@ -174,14 +174,71 @@ export interface CreateScheduledMeetingPayload {
 /** Payload for PATCH /api/scheduling/scheduled-meeting/{meeting_id} (same shape as create). */
 export type UpdateScheduledMeetingPayload = CreateScheduledMeetingPayload;
 
+/** Invitee as returned by create-scheduled-meeting API (may include id, etc.) */
+export interface CreateScheduledMeetingResponseInvitee {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  position?: string | null;
+  mobile?: string | null;
+  [key: string]: unknown;
+}
+
+/** Response from POST /api/scheduling/create-scheduled-meeting (full meeting object). */
+export interface CreateScheduledMeetingResponse {
+  id: string;
+  meeting_title?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  meeting_channel?: string | null;
+  meeting_location?: string | null;
+  meeting_link?: string | null;
+  invitees?: CreateScheduledMeetingResponseInvitee[] | null;
+  [key: string]: unknown;
+}
+
+/**
+ * Map create-scheduled-meeting API response to OutlookTimelineEvent so the calendar
+ * cache can replace the optimistic event with one that has the real id and details.
+ * Opening the event then triggers getMeetingById(id) and shows full meeting card.
+ */
+export function mapCreatedMeetingToOutlookEvent(
+  created: CreateScheduledMeetingResponse
+): OutlookTimelineEvent {
+  const start = created.scheduled_start ?? '';
+  const end = created.scheduled_end ?? '';
+  const attendees = Array.isArray(created.invitees)
+    ? created.invitees.map((inv) => ({
+        name: inv.name ?? inv.position ?? '—',
+        email: inv.email ?? null,
+      }))
+    : null;
+  return {
+    subject: created.meeting_title ?? 'اجتماع',
+    start_datetime: start,
+    end_datetime: end,
+    location: created.meeting_location ?? null,
+    item_id: created.id,
+    change_key: 'created',
+    organizer: { name: '', email: '' },
+    is_internal: true,
+    attendees: attendees ?? undefined,
+    meeting_id: created.id,
+    meeting_title: created.meeting_title ?? null,
+    meeting_channel: created.meeting_channel ?? null,
+    meeting_location: created.meeting_location ?? null,
+    meeting_link: created.meeting_link ?? null,
+  };
+}
+
 /**
  * Create a scheduled meeting from the calendar slot form.
  * POST /api/scheduling/create-scheduled-meeting
- * Payload: { meeting_title, scheduled_start, scheduled_end, invitees }
+ * Returns full meeting object so the calendar can replace the optimistic event with real details.
  */
 export const createScheduledMeeting = async (
   payload: CreateScheduledMeetingPayload
-): Promise<unknown> => {
+): Promise<CreateScheduledMeetingResponse> => {
   const body: Record<string, unknown> = {
     meeting_title: payload.meeting_title,
     scheduled_start: payload.scheduled_start,
@@ -201,7 +258,7 @@ export const createScheduledMeeting = async (
   } else if (payload.proposer_user_ids && payload.proposer_user_ids.length > 0) {
     body.proposer_user_ids = payload.proposer_user_ids;
   }
-  const { data } = await axiosInstance.post<{ id?: string }>(
+  const { data } = await axiosInstance.post<CreateScheduledMeetingResponse>(
     '/api/scheduling/create-scheduled-meeting',
     body
   );
