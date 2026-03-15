@@ -685,6 +685,8 @@ export interface ScheduleMeetingRequest {
   notes: string;
   location?: string;
   meeting_url?: string;
+  /** From Webex create meeting API response; send whenever meeting_url (Webex link) is sent */
+  webex_meeting_unique_identifier?: string;
   minister_attendees: MinisterAttendee[];
 }
 

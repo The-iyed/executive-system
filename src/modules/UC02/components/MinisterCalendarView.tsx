@@ -209,6 +209,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     meetingLocation?: string | null;
     meetingChannel?: string;
     meetingLink?: string | null;
+    /** From API when editing; send with meeting_link when updating */
+    webexMeetingUniqueId?: string | null;
     meetingId?: string;
     mode?: 'create' | 'edit';
     /** Pre-fill invitees table when editing (from event.attendees) */
@@ -741,6 +743,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                             meetingLocation: selectedEventForDetails.meeting_location ?? location,
                             meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
                             meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
+                            webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
                             meetingId: selectedEventForDetails.meeting_id,
                             mode: 'edit',
                             initialInvitees,
@@ -778,6 +781,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
             initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
             initialMeetingLink={slotForNewMeeting.meetingLink ?? undefined}
+            initialWebexMeetingUniqueId={slotForNewMeeting.webexMeetingUniqueId ?? undefined}
             initialInvitees={slotForNewMeeting.initialInvitees}
             isSubmitting={slotFormSubmitting}
             submitError={slotFormError}
@@ -804,6 +808,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
                     meeting_link: values.meeting_link,
+                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
@@ -833,6 +838,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
                     meeting_link: values.meeting_link,
+                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
@@ -853,6 +859,10 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                   // Seed meeting cache so the details modal shows the same MeetingCard as work basket (no extra fetch, same data)
                   const meetingForCache = normalizedMeetingFromCreateResponse(result);
                   queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
+                  // If the user had the optimistic event details open, switch to the API event so the modal shows the full MeetingCard (fetch by meeting_id)
+                  if (selectedEventForDetails?.id === optimisticId) {
+                    setSelectedEventForDetails(mapOutlookEventToCalendarEvent(eventFromApi));
+                  }
                   // Do not invalidate timeline after create: keep the replaced event (with meeting_id) so clicking it always shows the same MeetingCard as API. Timeline will refresh on week change or refocus.
                 }
 
