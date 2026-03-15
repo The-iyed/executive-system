@@ -1,4 +1,5 @@
 // Import axios instance - using relative path since @auth doesn't export it
+import { TableRow } from '@/lib/dynamic-table-form';
 import axiosInstance from '../../auth/utils/axios';
 import { EXECUTION_SYSTEM_BASE_URL, BUSINESS_CARDS_BASE_URL } from '@/lib/env';
 import { toISOStringWithTimezoneFromString } from '@/lib/ui';
@@ -175,7 +176,7 @@ export interface MeetingApiResponse {
   minister_support: MinisterSupport[];
   minister_attendees?: MinisterAttendee[];
   attachments: Attachment[];
-  invitees: Invitee[];
+  invitees: TableRow[];
   related_directive_ids: string[];
   /** Full directive objects returned by get meeting details (when available). */
   related_directives?: RelatedDirective[];
