@@ -12,7 +12,7 @@ import {
   ContentBar,
 } from '@/modules/shared';
 import '@/modules/shared/styles'; // Import shared styles including scrollbar
-import { Eye, Calendar } from 'lucide-react';
+import { Eye, Calendar, Search } from 'lucide-react';
 import {
   getContentExceptions,
   GetGuidanceRequestsParams,
@@ -279,13 +279,19 @@ const ExceptionRequest: React.FC = () => {
 
   return (
     <div>
-      <ContentBar
-        showViewSwitcher={true}
-        onViewChange={setView}
-        view={view}
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-      />
+      <div className="flex items-center justify-between gap-2 px-6 pt-6 pb-4">
+        <div></div>
+        <div className="relative">
+           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-gray-500)]" />
+           <input
+             type="text"
+             value={searchValue}
+             onChange={(e) => setSearchValue(e.target.value)}
+             placeholder="بحث في الطلبات..."
+             className="h-10 pr-10 pl-4 rounded-xl bg-white border border-[var(--color-base-gray-200)] text-sm text-[var(--color-text-gray-700)] placeholder:text-[var(--color-text-gray-500)] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-1 focus:ring-[var(--color-primary-500)]/20 transition-all w-[220px]"
+             />
+        </div>
+      </div>
       {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-600">جاري التحميل...</div>
