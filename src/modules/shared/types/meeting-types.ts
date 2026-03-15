@@ -26,8 +26,8 @@ export enum MeetingStatus {
 
 /**
  * UC01 (request submitter) cannot edit while the request is in any of these statuses:
- * under review, closed, cancelled, rejected, or scheduled variants other than SCHEDULED and SCHEDULED_ADDITIONAL_INFO.
- * Submitter may edit when status is SCHEDULED (مجدول) or SCHEDULED_ADDITIONAL_INFO (مجدول - معلومات إضافية).
+ * under review, closed, cancelled, rejected, or scheduled variants other than SCHEDULED and SCHEDULED_ADDITIONAL_INFO(*).
+ * Submitter may edit when status is SCHEDULED (مجدول) or SCHEDULED_ADDITIONAL_INFO / SCHEDULED_ADDITIONAL_INFO_CONTENT (مجدول - معلومات إضافية).
  */
 const SUBMITTER_NON_EDITABLE_STATUSES = new Set<string>([
   MeetingStatus.UNDER_REVIEW,
