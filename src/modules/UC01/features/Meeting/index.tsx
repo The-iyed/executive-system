@@ -132,7 +132,7 @@ const Meeting: React.FC = () => {
 
   return (
      <>
-      <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} />
+      <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} excludeColumns={["access_permission", "is_consultant"]} />
       {/* Confirm Dialog */}
       <Dialog open={confirmOpen} onOpenChange={handleConfirmClose}>
         <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">

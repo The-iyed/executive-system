@@ -13,9 +13,10 @@ interface SubmitterModalProps {
   editMeetingId?: string | null;
   callerRole?: MeetingOwnerType;
   showAiSuggest?:boolean;
+  excludeColumns?: string[];
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest= false }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest= false, excludeColumns }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
@@ -93,7 +94,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
             initialInvitees={initialStep3Values}
             mode="create"
             showAiSuggest={showAiSuggest}
-            excludeColumns={["access_permission", "is_consultant"]}
+            excludeColumns={excludeColumns}
             meetingParams={step1Data ? {
               meeting_subject: step1Data.meeting_title,
               meeting_type: step1Data.meeting_type,
