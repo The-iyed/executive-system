@@ -8,9 +8,7 @@ export interface SuggestMeetingAttendeesPayload {
   meeting_justification: string;
   related_topic: string;
   meeting_classification: string;
-  meeting_objective: string;
   meeting_agenda: string;
-  minister_support_required: string;
 }
 
 /** Scores returned by the suggest API; when all zeros, the backend is not populating them yet. */
@@ -48,9 +46,12 @@ export interface UseSuggestMeetingAttendeesParams {
     meeting_classification?: string;
     meeting_justification?: string;
     related_topic?: string | null;
-    objectives?: Array<{ objective: string }>;
-    agenda_items?: Array<{ agenda_item: string }>;
-    minister_support?: Array<{ support_description: string }>;
+    agenda_items?: {
+      agenda_item?: string;
+      presentation_duration_minutes?: number;
+      minister_support_type?: string;
+      minister_support_other?: string;
+  }[];
   };
 }
 
@@ -67,9 +68,7 @@ export function buildSuggestionPayload(
     meeting_justification: meeting.meeting_justification || "",
     related_topic: meeting.related_topic || "",
     meeting_classification: meeting.meeting_classification || "",
-    meeting_objective: (meeting.objectives || []).map((o) => o.objective).join("; "),
     meeting_agenda: (meeting.agenda_items || []).map((i) => i.agenda_item).join("; "),
-    minister_support_required: (meeting.minister_support || []).map((s) => s.support_description).join("; "),
   };
 }
 

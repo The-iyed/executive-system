@@ -1,4 +1,5 @@
 // Import axios instance
+import { TableRow } from '@/lib/dynamic-table-form';
 import axiosInstance from '../../auth/utils/axios';
 
 export interface Objective {
@@ -99,7 +100,7 @@ export interface ConsultationRequestApiResponse {
   agenda_items?: AgendaItem[];
   minister_support?: MinisterSupport[];
   attachments?: Attachment[];
-  invitees?: Invitee[];
+  invitees?: TableRow[];
   minister_attendees?: Invitee[];
   related_directive_ids?: string[];
   related_guidance?: string | null;
