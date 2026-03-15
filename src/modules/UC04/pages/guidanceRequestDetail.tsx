@@ -1000,7 +1000,7 @@ const GuidanceRequestDetail: React.FC = () => {
 
           {/* Invitees Tab - قائمة المدعوين */}
           {activeTab === 'invitees' && (
-            <InviteesTableForm initialInvitees={meetingRequest.invitees} mode='view' />
+            <InviteesTableForm initialInvitees={meetingRequest.invitees} mode='view' viewLayout="cards" />
           )}
       </div>
 
