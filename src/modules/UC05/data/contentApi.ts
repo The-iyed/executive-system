@@ -1,4 +1,5 @@
 // Import axios instance
+import { TableRow } from '@/lib/dynamic-table-form';
 import axiosInstance from '../../auth/utils/axios';
 import { EXECUTION_SYSTEM_BASE_URL, TEXT_CONTRADICTION_DETECTOR_URL } from '@/lib/env';
 
@@ -171,7 +172,7 @@ export interface ContentRequestDetailResponse {
   agenda_items: AgendaItem[];
   minister_support: MinisterSupport[];
   attachments: Attachment[];
-  invitees: Invitee[];
+  invitees: TableRow[];
   minister_attendees: Invitee[] | null;
   related_directive_ids: string[];
   /** When present, full directive objects for table display (like meeting detail). */

@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { MINISTER_SUPPORT_OTHER_VALUE } from "./types/enums";
 
-/* ─── Shared Validators ─── */
-
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 const fileValidator = (acceptLabel: string, acceptExts: string[]) =>
@@ -30,7 +28,6 @@ export const agendaItemSchema = z.object({
 
 export const step2Schema = z.object({
   presentation_files: z.array(pdfFile).default([]),
-  presentation_attachment_timing: z.string().optional(),
   additional_files: z.array(docFile).default([]),
 });
 

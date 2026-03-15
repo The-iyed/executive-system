@@ -1,9 +1,7 @@
-import { Upload, X, FileText, CalendarIcon } from "lucide-react";
-import { Badge, Button, Calendar, Popover, PopoverContent, PopoverTrigger, cn } from "@/lib/ui";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { Upload, X, FileText } from "lucide-react";
+import { Badge, cn } from "@/lib/ui";
 import { useCallback, useRef, useState } from "react";
-import { FormField, inputClass } from "../fields/FieldGroup";
+import { FormField } from "../fields/FieldGroup";
 import { useStep2Visibility, type Step1Context } from "../hooks/useStep2Form";
 import {
   useStep2Content,
@@ -227,7 +225,7 @@ export function Step2Form({
   isEditMode = false,
   meetingStatus,
 }: Step2FormProps) {
-  const { showPresentation, presentationRequired, showTiming } = useStep2Visibility(step1Data);
+  const { showPresentation, presentationRequired } = useStep2Visibility(step1Data);
 
   const {
     state,
@@ -242,7 +240,6 @@ export function Step2Form({
     removeAdditionalFile,
     deleteExistingAdditional,
     commitNewFiles,
-    setTiming,
     prepareFormData,
   } = useStep2Content({ initialData: initialContentData, isEditMode, meetingStatus });
 
@@ -257,22 +254,9 @@ export function Step2Form({
       errs.presentation_files = "يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)";
     }
 
-    if (showTiming) {
-      if (!state.presentation_attachment_timing) {
-        errs.presentation_attachment_timing = "يرجى تحديد متى سيتم إرفاق العرض";
-      } else {
-        const d = new Date(state.presentation_attachment_timing);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (d < today) {
-          errs.presentation_attachment_timing = "لا يمكن اختيار تاريخ في الماضي";
-        }
-      }
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [presentationRequired, hasPresentationFile, showTiming, state.presentation_attachment_timing]);
+  }, [presentationRequired, hasPresentationFile]);
 
   /* ── Submit ── */
 
@@ -296,10 +280,6 @@ export function Step2Form({
     },
     [validate, onSubmit, prepareFormData, commitNewFiles, hasContent],
   );
-
-  const dateValue = state.presentation_attachment_timing
-    ? new Date(state.presentation_attachment_timing)
-    : undefined;
 
   return (
     <form onSubmit={handleSubmit} dir="rtl">
@@ -353,23 +333,6 @@ export function Step2Form({
           </FormField>
         )}
 
-        {/* ── Attachment Timing ── */}
-        {showTiming && (
-          <FormField
-            label="متى سيتم إرفاق العرض؟"
-            name="presentation_attachment_timing"
-            required
-            errors={buildFieldError("presentation_attachment_timing", errors.presentation_attachment_timing)}
-            colSpan={12}
-          >
-            <TimingDatePicker
-              value={dateValue}
-              onChange={(d) => setTiming(format(d, "yyyy-MM-dd"))}
-              hasError={!!errors.presentation_attachment_timing}
-            />
-          </FormField>
-        )}
-
         {/* ── Additional Files ── */}
         <FormField
           label="مرفقات إضافية (PDF, Word, Excel)"
@@ -400,51 +363,6 @@ export function Step2Form({
         </FormField>
       </div>
     </form>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Sub-components
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-function TimingDatePicker({
-  value,
-  onChange,
-  hasError,
-}: {
-  value?: Date;
-  onChange: (date: Date) => void;
-  hasError?: boolean;
-}) {
-  const isValid = value && !isNaN(value.getTime());
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          type="button"
-          className={cn(
-            inputClass(!!hasError),
-            "w-full max-w-xs justify-start text-right font-normal",
-            !isValid && "text-muted-foreground",
-          )}
-        >
-          <CalendarIcon className="ml-2 h-4 w-4 text-muted-foreground" />
-          {isValid ? format(value, "yyyy/MM/dd", { locale: ar }) : "اختر التاريخ"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={isValid ? value : undefined}
-          onSelect={(d) => { if (d) onChange(d); }}
-          disabled={(d) => { const t = new Date(); t.setHours(0, 0, 0, 0); return d < t; }}
-          initialFocus
-          className="p-3 pointer-events-auto"
-        />
-      </PopoverContent>
-    </Popover>
   );
 }
 
