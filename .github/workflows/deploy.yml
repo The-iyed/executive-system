@@ -106,6 +106,7 @@ jobs:
                   {"name": "🌍 Environment", "value": "production",                                                                     "inline": True},
                   {"name": "📊 Status",      "value": result,                                                                           "inline": True},
                   {"name": "👤 Author",      "value": author,                                                                           "inline": True},
+                  {"name": "🌿 Branch",      "value": branch or "unknown",                                                              "inline": True},  # ← add this
                   {"name": "🔗 Commit",      "value": f"[`{commit_sha}`]({repo_url}/commit/{os.environ['COMMIT_SHA']}) — {commit_msg}", "inline": False},
                   {"name": "🚀 Run",         "value": f"[View run]({run_url})",                                                        "inline": False},
               ],
