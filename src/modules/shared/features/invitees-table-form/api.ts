@@ -1,4 +1,4 @@
-import { getApiTimezoneHeaders } from "@/lib/api/apiTimezone";
+import { axiosInstance, toError } from "@/modules/shared/features/meeting-request-form/api/config";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,8 +57,6 @@ export interface UseSuggestMeetingAttendeesParams {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const API_URL = "https://invitee.builtop.com/meeting-suggestions/suggest";
-
 export function buildSuggestionPayload(
   meeting: UseSuggestMeetingAttendeesParams["meeting"],
 ): SuggestMeetingAttendeesPayload {
@@ -88,31 +86,27 @@ export async function suggestMeetingAttendees(
   count: number,
   meeting: UseSuggestMeetingAttendeesParams["meeting"],
 ): Promise<SuggestMeetingAttendeesResponse> {
-  const url = new URL(API_URL);
-  url.searchParams.append("max_suggestions", count.toString());
+  try {
+    const { data } = await axiosInstance.post(
+      "/api/v1/meeting-suggestions/suggest",
+      buildSuggestionPayload(meeting),
+      {
+        params: {
+          max_suggestions: count,
+        },
+      },
+    );
 
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getApiTimezoneHeaders(),
-    },
-    body: JSON.stringify(buildSuggestionPayload(meeting)),
-  });
+    const rawSuggestions: Record<string, unknown>[] =
+      data?.suggestions ?? (Array.isArray(data) ? data : []);
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as Record<string, string>).message || `HTTP ${res.status}`);
+    const suggestions: SuggestedAttendee[] = rawSuggestions.map((s) => ({
+      ...(s as unknown as SuggestedAttendee),
+      scores: normalizeScores((s.scores ?? s) as Record<string, unknown>),
+    }));
+
+    return { suggestions };
+  } catch (err) {
+    throw toError("Failed to fetch meeting attendee suggestions", err);
   }
-
-  const data = await res.json();
-  const rawSuggestions: Record<string, unknown>[] =
-    data?.suggestions ?? (Array.isArray(data) ? data : []);
-
-  const suggestions: SuggestedAttendee[] = rawSuggestions.map((s) => ({
-    ...(s as unknown as SuggestedAttendee),
-    scores: normalizeScores((s.scores ?? s) as Record<string, unknown>),
-  }));
-
-  return { suggestions };
 }
