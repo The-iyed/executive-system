@@ -88,49 +88,50 @@ jobs:
         run: |
           RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
 
-          # Choose color and emoji based on status
-          if [ "$DEPLOY_STATUS" = "success" ]; then
-            COLOR=3066993
-            EMOJI="✅"
-            TITLE="Deployment Succeeded"
-          elif [ "$DEPLOY_STATUS" = "failure" ]; then
-            COLOR=15158332
-            EMOJI="❌"
-            TITLE="Deployment Failed"
-          else
-            COLOR=10181046
-            EMOJI="⚠️"
-            TITLE="Deployment Status: ${DEPLOY_STATUS}"
-          fi
+          # Use Python3 to safely build and send the JSON payload
+          # json.dumps() handles ALL escaping: quotes, newlines, backslashes, emoji, etc.
+          python3 - <<PYEOF
+          import json, os, urllib.request
 
-          # Use jq to safely build JSON - it handles all escaping automatically
-          # (quotes, newlines, backslashes in the log won't break JSON)
-          PAYLOAD=$(jq -n \
-            --arg title "${EMOJI} ${TITLE}" \
-            --argjson color "$COLOR" \
-            --arg branch "$BRANCH" \
-            --arg log "$DEPLOY_LOG" \
-            --arg run_url "$RUN_URL" \
-            --arg footer "GitHub Actions • ${WORKFLOW}" \
-            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{
-              embeds: [{
-                title: $title,
-                color: $color,
-                fields: [
-                  { name: "📦 Project",        value: "Minister Mind Frontend", inline: true },
-                  { name: "🌿 Branch / Tag",   value: $branch,                 inline: true },
-                  { name: "📋 Pipeline Logs",  value: ("```\n" + $log + "\n```"), inline: false },
-                  { name: "🔗 Full Run Details", value: ("[Click here to view full logs](" + $run_url + ")"), inline: false }
-                ],
-                footer: { text: $footer },
-                timestamp: $ts
+          status   = os.environ["DEPLOY_STATUS"]
+          branch   = os.environ["BRANCH"]
+          log      = os.environ.get("DEPLOY_LOG", "(no logs captured)")
+          run_url  = os.environ["RUN_URL"]
+          workflow = os.environ["WORKFLOW"]
+          webhook  = os.environ["DISCORD_WEBHOOK"]
+
+          if status == "success":
+              color = 3066993
+              title = "Deployment Succeeded"
+          elif status == "failure":
+              color = 15158332
+              title = "Deployment Failed"
+          else:
+              color = 10181046
+              title = f"Deployment Status: {status}"
+
+          payload = {
+              "embeds": [{
+                  "title": title,
+                  "color": color,
+                  "fields": [
+                      {"name": "Project",         "value": "Minister Mind Frontend", "inline": True},
+                      {"name": "Branch / Tag",    "value": branch,                   "inline": True},
+                      {"name": "Pipeline Logs",   "value": f"```\n{log}\n```",        "inline": False},
+                      {"name": "Full Run Details","value": f"[Click here to view full logs]({run_url})", "inline": False},
+                  ],
+                  "footer": {"text": f"GitHub Actions - {workflow}"}
               }]
-            }')
+          }
 
-          curl -s -X POST "$DISCORD_WEBHOOK" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
+          data = json.dumps(payload).encode("utf-8")
+          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+          try:
+              resp = urllib.request.urlopen(req)
+              print(f"Discord response: {resp.status}")
+          except Exception as e:
+              print(f"Discord error: {e}")
+          PYEOF
 
 
 
