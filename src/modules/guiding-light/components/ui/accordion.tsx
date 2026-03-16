@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ChevronDownIcon } from "lucide-react"
-import * as AccordionPrimitive from "@radix-ui/react-collapsible"
+import * as AccordionPrimitive from "@radix-ui/react-accordion"
 
 import { cn } from "@gl/lib/utils"
 
