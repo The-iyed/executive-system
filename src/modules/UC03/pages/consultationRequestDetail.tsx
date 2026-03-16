@@ -363,7 +363,7 @@ const ConsultationRequestDetail: React.FC = () => {
 
         {/* ═══ استشارة المكتب التنفيذي — Chat-style (same as UC02 tab) ═══ */}
         {activeTab === 'consultations-log' && (
-          <div className="flex flex-col w-full bg-white" dir="rtl">
+          <div className="flex flex-col w-full bg-white h-full" dir="rtl">
             <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
               <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
               <p className="text-[13px] text-[#667085] mt-0.5">سجل الاستشارات والردود — واجهة محادثة</p>
