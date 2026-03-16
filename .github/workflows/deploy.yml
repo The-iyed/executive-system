@@ -7,57 +7,47 @@ on:
       - dev
     tags:
       - '*.dev'
-      
+
 jobs:
   deploy:
     runs-on: [self-hosted, azure-runner]
     outputs:
       deploy_log: ${{ steps.deploy_step.outputs.deploy_log }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Deploy and validate
         id: deploy_step
         env:
           VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
         run: |
-          # -e  → exit immediately on any error
-          # -o pipefail → a pipe fails if ANY command in it fails (not just the last)
           set -eo pipefail
-
           LOG_FILE=$(mktemp)
 
-          # Save logs to GITHUB_OUTPUT even if the script exits early due to an error
           save_log() {
-            TRUNCATED_LOG=$(tail -c 1800 "$LOG_FILE" 2>/dev/null || true)
+            TRUNCATED_LOG=$(tail -c 3500 "$LOG_FILE" 2>/dev/null || true)
             printf 'deploy_log<<EOF\n%s\nEOF\n' "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
             rm -f "$LOG_FILE"
           }
           trap save_log EXIT
 
-          # 1. Ensure target directory exists and copy the project files to it
           echo ">>> [1/6] Creating target directory and copying files..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
 
-          # 2. Navigate to the project directory
           cd /var/www/minister-mind-fe
 
-          # 3. Pull the latest base images and rebuild the containers
-          echo ">>> [3/6] Pulling latest images..." | tee -a "$LOG_FILE"
+          echo ">>> [2/6] Pulling latest images..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker compose pull 2>&1 | tee -a "$LOG_FILE"
 
           echo ">>> [3/6] Rebuilding and restarting containers..." | tee -a "$LOG_FILE"
-          # pipefail means this will FAIL the step if docker compose build/up fails
           echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate 2>&1 | tee -a "$LOG_FILE"
 
-          # 4. Wait a few seconds for containers to initialize
           echo ">>> [4/6] Waiting for services to start..." | tee -a "$LOG_FILE"
           sleep 10
 
-          # 5. Verify the service is healthy (Port 4404 is the frontend)
           echo ">>> [5/6] Running health check..." | tee -a "$LOG_FILE"
           if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
             echo "Deployment successful: Service is healthy!" | tee -a "$LOG_FILE"
@@ -66,9 +56,9 @@ jobs:
             exit 1
           fi
 
-          # 6. Clean up dangling images
           echo ">>> [6/6] Cleaning up dangling images..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
+
   notify:
     name: Discord Notification
     needs: deploy
@@ -127,10 +117,7 @@ jobs:
               data = json.dumps(payload).encode("utf-8")
               req  = urllib.request.Request(
                   webhook, data=data,
-                  headers={
-                      "Content-Type": "application/json",
-                      "User-Agent":   "curl/8.5.0"
-                  },
+                  headers={"Content-Type": "application/json", "User-Agent": "curl/8.5.0"},
                   method="POST"
               )
               try:
@@ -151,9 +138,8 @@ jobs:
                   log = raw_log
               log = (log or "").strip()
 
-              failure_log = log[-1800:] if log else "No logs captured — check the run link below."
-
-              log_value = f"```\n{failure_log}\n```"
+              failure_log = log[-3500:] if log else "No logs captured — check the run link below."
+              log_value   = f"```\n{failure_log}\n```"
               if len(log_value) > 1024:
                   log_value = f"```\n{failure_log[:980]}\n...(truncated)\n```"
               if not log_value.strip().replace("```", "").strip():
@@ -163,13 +149,11 @@ jobs:
                   "title": "📋 Failure Logs",
                   "color": 14431557,
                   "fields": [
-                      {"name": "🌿 Branch",        "value": branch or "unknown",      "inline": True},
-                      {"name": "🔗 Full Run Logs",  "value": f"[View run]({run_url})", "inline": True},
-                      {"name": "📄 Error Logs",     "value": log_value,               "inline": False},
+                      {"name": "🌿 Branch",        "value": branch or "unknown",       "inline": True},
+                      {"name": "🔗 Full Run Logs",  "value": f"[View run]({run_url})",  "inline": True},
+                      {"name": "📄 Error Logs",     "value": log_value,                "inline": False},
                   ],
                   "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
               }
               send({"embeds": [log_embed]})
           PYEOF
-
-  
