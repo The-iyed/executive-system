@@ -243,7 +243,7 @@ export function useChatMessages(
       isThinking?: boolean;
       thinkingText?: string;
       isThinkingCompleted?: boolean;
-      response?: import("@/api/types").MessageResponse;
+      response?: import("@gl/api/types").MessageResponse;
     } => {
       const checkRef = (ref: ChatMessage[]) => {
         const msg = ref.find((m) => m.id === messageId);
