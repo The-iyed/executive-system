@@ -1,0 +1,2 @@
+export const CONVERSATIONS_PAGE_LIMIT = 50;
+export const MESSAGES_PAGE_LIMIT = 50;

@@ -22,7 +22,9 @@
       "@/modules/shared": ["./src/modules/shared/index.ts"],
       "@/modules/shared/*": ["./src/modules/shared/*"],
       "@/modules/auth": ["./src/modules/auth/index.ts"],
-      "@/modules/auth/*": ["./src/modules/auth/*"]
+      "@/modules/auth/*": ["./src/modules/auth/*"],
+      "@gl": ["./src/modules/guiding-light"],
+      "@gl/*": ["./src/modules/guiding-light/*"]
     },
     "resolveJsonModule": true,
     "rootDir": ".",

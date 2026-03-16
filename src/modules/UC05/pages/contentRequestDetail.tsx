@@ -83,6 +83,21 @@ const ACTION_STATUS_OPTIONS = [
   { value: "LATE", label: "متأخر" },
 ] as const;
 
+/** Get display name for assignee/consultant from API response (handles name, assignee_name, first_name+last_name). */
+function getAssigneeDisplayName(a: {
+  name?: string;
+  assignee_name?: string;
+  first_name?: string;
+  last_name?: string;
+}): string {
+  if (a.name?.trim()) return a.name.trim();
+  if (a.assignee_name?.trim()) return a.assignee_name.trim();
+  const first = a.first_name?.trim() ?? "";
+  const last = a.last_name?.trim() ?? "";
+  if (first || last) return `${first} ${last}`.trim();
+  return "-";
+}
+
 /** Safely format related_guidance which may be a string or a directive object/array from the API */
 function formatRelatedGuidance(value: unknown): string {
   if (typeof value === "string") return value.trim() || "-";
@@ -670,28 +685,113 @@ const ContentRequestDetail: React.FC = () => {
     },
   });
 
-  // Submit consultation mutation (طلب استشارة)
+  // Submit consultation mutation (طلب استشارة) with optimistic update
   const submitConsultationMutation = useMutation({
-    mutationFn: (data: { consultant_user_id: string; consultation_question: string; is_draft?: boolean }) => {
+    mutationFn: (data: {
+      consultant_user_id: string;
+      consultation_question: string;
+      is_draft?: boolean;
+      consultant_display_name?: string;
+    }) => {
       if (!id) throw new Error("Meeting request ID is required");
-      return submitContentConsultation(id, data);
+      return submitContentConsultation(id, {
+        consultant_user_id: data.consultant_user_id,
+        consultation_question: data.consultation_question,
+        is_draft: data.is_draft,
+      });
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["consultation-records", id] });
+      await queryClient.cancelQueries({ queryKey: ["consultation-records-with-drafts", id] });
+
+      const prevRecords = queryClient.getQueryData<{
+        items: ConsultationRecord[];
+        total: number;
+        skip: number;
+        limit: number;
+        has_next: boolean;
+        has_previous: boolean;
+      }>(["consultation-records", id]);
+      const prevRecordsWithDrafts = queryClient.getQueryData<{
+        items: ConsultationRecord[];
+        total: number;
+        skip: number;
+        limit: number;
+        has_next: boolean;
+        has_previous: boolean;
+      }>(["consultation-records-with-drafts", id]);
+
+      const consultantName =
+        variables.consultant_display_name?.trim() ||
+        contentRequest?.submitter_name ||
+        "مستشار";
+      const optimisticRecord: ConsultationRecord = {
+        id: `optimistic-${Date.now()}`,
+        type: "CONTENT",
+        question: variables.consultation_question,
+        round_number: 1,
+        requested_at: new Date().toISOString(),
+        status: variables.is_draft ? "DRAFT" : "PENDING",
+        is_draft: variables.is_draft ?? false,
+        assignees: [
+          {
+            user_id: variables.consultant_user_id,
+            name: consultantName,
+            role: null,
+            status: variables.is_draft ? "DRAFT" : "PENDING",
+            responded_at: null,
+            request_number: null,
+            answers: [],
+          },
+        ],
+      };
+
+      const appendToCache = (
+        key: readonly unknown[],
+        prev: typeof prevRecords
+      ) => {
+        const prevItems = prev?.items ?? [];
+        queryClient.setQueryData(key, {
+          items: [...prevItems, optimisticRecord],
+          total: (prev?.total ?? 0) + 1,
+          skip: prev?.skip ?? 0,
+          limit: prev?.limit ?? 100,
+          has_next: prev?.has_next ?? false,
+          has_previous: prev?.has_previous ?? false,
+        });
+      };
+
+      appendToCache(["consultation-records-with-drafts", id], prevRecordsWithDrafts);
+      if (!variables.is_draft) {
+        appendToCache(["consultation-records", id], prevRecords);
+      }
+
+      setConsultationNotes("");
+      setSelectedConsultantId("");
+      setConsultantSearch("");
+      setIsConsultationModalOpen(false);
+
+      return { prevRecords, prevRecordsWithDrafts };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.prevRecords != null) {
+        queryClient.setQueryData(["consultation-records", id], context.prevRecords);
+      }
+      if (context?.prevRecordsWithDrafts != null) {
+        queryClient.setQueryData(
+          ["consultation-records-with-drafts", id],
+          context.prevRecordsWithDrafts
+        );
+      }
+      console.error("Error submitting consultation:", _error);
+    },
+    onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({ queryKey: ["content-request", id] });
       queryClient.invalidateQueries({ queryKey: ["content-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["consultation-records-with-drafts", id] });
-      if (!variables.is_draft) {
-        setConsultationNotes("");
-        setSelectedConsultantId("");
-        setConsultantSearch("");
-        setIsConsultationModalOpen(false);
-        // navigate(PATH.CONTENT_REQUESTS);
-      } else {
-        setIsConsultationModalOpen(false);
-      }
-    },
-    onError: (error) => {
-      console.error("Error submitting consultation:", error);
+      queryClient.invalidateQueries({ queryKey: ["consultation-records", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["consultation-records-with-drafts", id],
+      });
     },
   });
 
@@ -890,10 +990,15 @@ const ContentRequestDetail: React.FC = () => {
       // TODO: Show validation error
       return;
     }
+    const selectedConsultant = consultants.find((c) => c.id === selectedConsultantId);
+    const consultantDisplayName = selectedConsultant
+      ? `${selectedConsultant.first_name ?? ""} ${selectedConsultant.last_name ?? ""}`.trim()
+      : undefined;
     submitConsultationMutation.mutate({
       consultant_user_id: selectedConsultantId,
       consultation_question: consultationNotes.trim(),
       is_draft: type === "draft",
+      consultant_display_name: consultantDisplayName,
     });
   };
 
@@ -1006,7 +1111,7 @@ const ContentRequestDetail: React.FC = () => {
 
       <div className="flex flex-col flex-1 min-h-0">
         {/* Tab Content Container - like UC04 */}
-        <div className="overflow-y-auto p-6 h-full bg-white border border-[#E6E6E6] rounded-2xl m-6 mt-0">
+        <div className="overflow-y-auto h-full bg-white border border-[#E6E6E6] rounded-2xl  mt-0">
           {/* Tab Content */}
           {activeTab === "request-info" && (
             <div className="flex flex-col gap-4 w-full">
@@ -1159,9 +1264,9 @@ const ContentRequestDetail: React.FC = () => {
           )}
 
           {activeTab === "directives-log" && (
-            <div className="flex flex-col h-full w-full bg-white" dir="rtl">
-              {/* Chat messages area */}
-              <div className="flex-1 min-h-0">
+            <div className="flex flex-col h-full w-full bg-white min-h-0" dir="rtl">
+              {/* Chat messages area – scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {isLoadingConsultationRecords ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-gray-600">جاري التحميل...</div>
@@ -1169,11 +1274,14 @@ const ContentRequestDetail: React.FC = () => {
                 ) : consultationRecords && consultationRecords.items.length > 0 ? (
                   (() => {
                     const filteredConsultationItems = consultationRecords.items.filter((row: ConsultationRecord) => {
-                      // Do not show the scheduling officer note for content in الاستشارات;
-                      // it is shown only in الملاحظات → ملاحظات مسؤول الجدولة على المحتوى.
+                      // Content consultations (type CONTENT) are never filtered.
+                      const recordType = row.type || row.consultation_type || "";
+                      if (recordType === "CONTENT") return true;
+                      // Only filter SCHEDULING records whose question matches the scheduling officer note
+                      // (shown in الملاحظات → ملاحظات مسؤول الجدولة على المحتوى).
                       const question = (row.question || row.consultation_question || "").toString().trim().replace(/\s+/g, " ");
                       const schedulingNote = schedulingContentNote.trim().replace(/\s+/g, " ");
-                      if (schedulingNote && question === schedulingNote) return false;
+                      if (recordType === "SCHEDULING" && schedulingNote && question === schedulingNote) return false;
                       return true;
                     });
                     if (filteredConsultationItems.length === 0) {
@@ -1195,7 +1303,16 @@ const ContentRequestDetail: React.FC = () => {
                       const recordQuestion = row.question || row.consultation_question || "";
                       const requestDate = row.requested_at ? formatTimeAgoArabic(row.requested_at) : "-";
                       const typeLabel =  recordType === "SCHEDULING" ? "السؤال" : recordType === "CONTENT" ? "محتوى" : recordType;
-                      const requesterName = row.consultant_name || user?.username || user?.name || "-";
+                      const rawRequester =
+                        row.consultant_name ||
+                        contentRequest?.submitter_name ||
+                        user?.username ||
+                        user?.name ||
+                        "-";
+                      const requesterName =
+                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(rawRequester))
+                          ? (contentRequest?.submitter_name || "مقدم الطلب")
+                          : rawRequester;
                       const consultationStatusLabels: Record<string, string> = {
                         PENDING: "قيد الانتظار",
                         RESPONDED: "تم الرد",
@@ -1216,35 +1333,44 @@ const ContentRequestDetail: React.FC = () => {
                       if (row.assignees?.length) {
                         row.assignees.forEach((a) => {
                           if (a.answers?.length) {
-                            a.answers.forEach((ans) =>
+                            a.answers.forEach((ans, ai) => {
+                              const ansId =
+                                (ans as { answer_id?: string }).answer_id ??
+                                (ans as { id?: string }).id ??
+                                `ans-${recordId}-${index}-${flatItems.length}`;
+                              const ansText =
+                                (ans as { text?: string }).text ?? (ans as { answer?: string }).answer ?? "";
                               flatItems.push({
-                                id: ans.answer_id,
-                                text: ans.text,
+                                id: ansId,
+                                text: ansText,
                                 status: a.status,
-                                name: a.name,
-                                respondedAt: ans.responded_at,
+                                name: getAssigneeDisplayName(a),
+                                respondedAt: (ans as { responded_at?: string | null }).responded_at ?? null,
                                 requestNumber: a.request_number,
-                              }),
-                            );
+                              });
+                            });
                           } else {
                             flatItems.push({
                               id: a.user_id,
                               text: "",
                               status: a.status,
-                              name: a.name,
+                              name: getAssigneeDisplayName(a),
                               respondedAt: a.responded_at,
                               requestNumber: a.request_number,
                             });
                           }
                         });
                       } else if (row.consultation_answers?.length) {
-                        row.consultation_answers.forEach((a) =>
+                        row.consultation_answers.forEach((a, ai) =>
                           flatItems.push({
-                            id: a.consultation_id || a.external_id || `ans-${index}`,
-                            text: a.consultation_answer,
+                            id:
+                              (a as { consultation_id?: string }).consultation_id ||
+                              (a as { external_id?: string }).external_id ||
+                              `ans-${index}-${ai}`,
+                            text: (a as { consultation_answer?: string }).consultation_answer ?? "",
                             status: a.status,
                             name: row.consultant_name || "",
-                            respondedAt: a.responded_at,
+                            respondedAt: (a as { responded_at?: string }).responded_at ?? null,
                             requestNumber: row.consultation_request_number || null,
                           }),
                         );
@@ -1254,7 +1380,7 @@ const ContentRequestDetail: React.FC = () => {
                             id: a.user_id,
                             text: a.answers?.join(" | ") || "",
                             status: a.status,
-                            name: a.assignee_name,
+                            name: getAssigneeDisplayName({ assignee_name: a.assignee_name }),
                             respondedAt: a.responded_at,
                             requestNumber: a.consultation_record_number || null,
                           }),
@@ -1385,10 +1511,10 @@ const ContentRequestDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Inline chat input – consultant picker + question (like UC02) */}
+              {/* Inline chat input – consultant picker + question (fixed at bottom) */}
               {meetingStatus !== MeetingStatus.RETURNED_FROM_CONTENT &&
                 meetingStatus !== MeetingStatus.SCHEDULED_ADDITIONAL_INFO && (
-                  <div className="sticky bottom-[-132px] z-10 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl -mx-6 -mb-[4rem] mt-2">
+                  <div className="flex-shrink-0 border-t border-[#F3F4F6] bg-[#FAFAFA] rounded-b-2xl px-6 pb-6 pt-4">
                     {/* Consultant picker (expandable) */}
                     {showConsultantPicker && (
                       <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">

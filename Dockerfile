@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.4
 # Build stage for Minister Mind standalone
 FROM node:18-alpine AS build-minister-mind
 WORKDIR /app
