@@ -10,7 +10,7 @@ export const useUserNavigation = () => {
   }, [user?.use_cases, user?.roles]);
 
   const defaultRoute = useMemo(() => {
-    return getDefaultRouteForUser(user?.use_cases);
+    return getDefaultRouteForUser(user?.use_cases, user?.roles);
   }, [user?.use_cases]);
 
   const useCaseCodes = useMemo(() => {

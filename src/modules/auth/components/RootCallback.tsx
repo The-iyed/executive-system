@@ -66,7 +66,7 @@ export default function RootCallback() {
               appUser = null;
             }
           }
-          const targetPath = getDefaultRouteForUser(appUser?.use_cases);
+          const targetPath = getDefaultRouteForUser(appUser?.use_cases, appUser?.roles);
           pendingRedirectRef.current = targetPath;
           setUserFromCallback(oidcUser, appUser);
         } else {
