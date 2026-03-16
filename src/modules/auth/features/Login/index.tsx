@@ -81,7 +81,7 @@ const Login = () => {
     try {
       const userData = await login(result.data);
       if (userData) {
-        navigate(getDefaultRouteForUser(userData.use_cases), { replace: true });
+        navigate(getDefaultRouteForUser(userData.use_cases, userData.roles), { replace: true });
       }
     } catch (error: any) {
       setSubmitError(
