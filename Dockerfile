@@ -5,6 +5,7 @@ RUN npm install -g pnpm
 COPY package*.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 COPY . .
+COPY source dest
 RUN pnpm run build
 
 # Production stage - Minister Mind standalone
