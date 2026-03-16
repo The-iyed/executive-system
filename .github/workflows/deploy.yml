@@ -70,68 +70,76 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
           rm -f "$LOG_FILE"
-
   notify:
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Send Discord Notification with Logs
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
-          DEPLOY_STATUS: ${{ needs.deploy.result }}
-          BRANCH: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          WORKFLOW: ${{ github.workflow }}
-        run: |
-          RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
+      - uses: lacherogwu/failed-jobs-discord-notification-action@v1
+        with:
+          discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+          needs_json: ${{ toJSON(needs) }}
+  # notify:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     - name: Send Discord Notification with Logs
+  #       env:
+  #         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+  #         DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+  #         DEPLOY_STATUS: ${{ needs.deploy.result }}
+  #         BRANCH: ${{ github.ref_name }}
+  #         REPO: ${{ github.repository }}
+  #         RUN_ID: ${{ github.run_id }}
+  #         WORKFLOW: ${{ github.workflow }}
+  #       run: |
+  #         RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
 
-          # Use Python3 to safely build and send the JSON payload
-          # json.dumps() handles ALL escaping: quotes, newlines, backslashes, emoji, etc.
-          python3 - <<PYEOF
-          import json, os, urllib.request
+  #         # Use Python3 to safely build and send the JSON payload
+  #         # json.dumps() handles ALL escaping: quotes, newlines, backslashes, emoji, etc.
+  #         python3 - <<PYEOF
+  #         import json, os, urllib.request
 
-          status   = os.environ["DEPLOY_STATUS"]
-          branch   = os.environ["BRANCH"]
-          log      = os.environ.get("DEPLOY_LOG", "(no logs captured)")
-          run_url  = os.environ["RUN_URL"]
-          workflow = os.environ["WORKFLOW"]
-          webhook  = os.environ["DISCORD_WEBHOOK"]
+  #         status   = os.environ["DEPLOY_STATUS"]
+  #         branch   = os.environ["BRANCH"]
+  #         log      = os.environ.get("DEPLOY_LOG", "(no logs captured)")
+  #         run_url  = os.environ["RUN_URL"]
+  #         workflow = os.environ["WORKFLOW"]
+  #         webhook  = os.environ["DISCORD_WEBHOOK"]
 
-          if status == "success":
-              color = 3066993
-              title = "Deployment Succeeded"
-          elif status == "failure":
-              color = 15158332
-              title = "Deployment Failed"
-          else:
-              color = 10181046
-              title = f"Deployment Status: {status}"
+  #         if status == "success":
+  #             color = 3066993
+  #             title = "Deployment Succeeded"
+  #         elif status == "failure":
+  #             color = 15158332
+  #             title = "Deployment Failed"
+  #         else:
+  #             color = 10181046
+  #             title = f"Deployment Status: {status}"
 
-          payload = {
-              "embeds": [{
-                  "title": title,
-                  "color": color,
-                  "fields": [
-                      {"name": "Project",         "value": "Minister Mind Frontend", "inline": True},
-                      {"name": "Branch / Tag",    "value": branch,                   "inline": True},
-                      {"name": "Pipeline Logs",   "value": f"```\n{log}\n```",        "inline": False},
-                      {"name": "Full Run Details","value": f"[Click here to view full logs]({run_url})", "inline": False},
-                  ],
-                  "footer": {"text": f"GitHub Actions - {workflow}"}
-              }]
-          }
+  #         payload = {
+  #             "embeds": [{
+  #                 "title": title,
+  #                 "color": color,
+  #                 "fields": [
+  #                     {"name": "Project",         "value": "Minister Mind Frontend", "inline": True},
+  #                     {"name": "Branch / Tag",    "value": branch,                   "inline": True},
+  #                     {"name": "Pipeline Logs",   "value": f"```\n{log}\n```",        "inline": False},
+  #                     {"name": "Full Run Details","value": f"[Click here to view full logs]({run_url})", "inline": False},
+  #                 ],
+  #                 "footer": {"text": f"GitHub Actions - {workflow}"}
+  #             }]
+  #         }
 
-          data = json.dumps(payload).encode("utf-8")
-          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
-          try:
-              resp = urllib.request.urlopen(req)
-              print(f"Discord response: {resp.status}")
-          except Exception as e:
-              print(f"Discord error: {e}")
-          PYEOF
+  #         data = json.dumps(payload).encode("utf-8")
+  #         req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+  #         try:
+  #             resp = urllib.request.urlopen(req)
+  #             print(f"Discord response: {resp.status}")
+  #         except Exception as e:
+  #             print(f"Discord error: {e}")
+  #         PYEOF
 
 
 
