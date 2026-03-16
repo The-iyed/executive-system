@@ -8,6 +8,9 @@ import pages from './routes';
 import uc02Routes from '../../UC02/routes/routes';
 import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
+import { PATH_GUIDING_LIGHT, isMinisterUser } from '../utils/useCaseConfig';
+import { GuidingLightLayout } from '../../guiding-light/GuidingLightLayout';
+import { MinisterGuard } from '../../guiding-light/MinisterGuard';
 import RootCallback from '@/modules/auth/components/RootCallback';
 import { PATH } from '@/modules/auth/routes/paths';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
@@ -45,6 +48,7 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
 
   const isExecutiveOfficeManager =
     user?.roles?.some((r) => r.code === 'EXECUTIVE_OFFICE_MANAGER') ?? false;
+  const isMinister = isMinisterUser(user?.roles);
 
   // Filter routes based on user's use cases (and role exclusions, e.g. /evaluation)
   let filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases, user?.roles);
@@ -55,8 +59,9 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
   // Exclude UC-02 routes so they are rendered inside UC02LayoutRouter (persistent layout)
   const routesWithoutUC02 = filteredRoutes.filter((route) => !UC02_PATHS.has(route.path));
   const hasUC02Access =
+    !isMinister &&
     filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles).length > 0;
-  const defaultRoute = getDefaultRouteForUser(user?.use_cases);
+  const defaultRoute = getDefaultRouteForUser(user?.use_cases, user?.roles);
 
   // Show loader while auth is initializing to prevent redirect issues
   if (!isInitialised) {
@@ -82,6 +87,19 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
         <Route
           path={UC04_PATH.EVALUATION}
           element={<Navigate to={UC04_PATH.GUIDANCE_REQUESTS} replace />}
+        />
+      )}
+      {/* Guiding-light: MINISTER role only */}
+      {isMinister && (
+        <Route
+          path={`${PATH_GUIDING_LIGHT}/*`}
+          element={
+            <MinisterGuard>
+              <Suspense fallback={<ScreenLoader />}>
+                <GuidingLightLayout />
+              </Suspense>
+            </MinisterGuard>
+          }
         />
       )}
       {routesWithoutUC02.map((route, index) => {

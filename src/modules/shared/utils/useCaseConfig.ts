@@ -1,5 +1,13 @@
 import { NavItem } from '../components/navigation-actions';
 import { PATH as UC01_PATH } from '../../UC01/routes/paths';
+
+/** Path for guiding-light (minister role). */
+export const PATH_GUIDING_LIGHT = '/guiding-light';
+
+/** Check if user has MINISTER role. */
+export function isMinisterUser(roles?: Array<{ code: string }>): boolean {
+  return roles?.some((r) => r.code === 'MINISTER') ?? false;
+}
 import { PATH as UC02_PATH } from '../../UC02/routes/paths';
 import { PATH as UC03_PATH } from '../../UC03/routes/paths';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
@@ -177,10 +185,18 @@ export function normalizeUseCaseCode(raw: string): string {
 }
 
 /**
- * Get the default route for a user based on their use cases
- * Returns the first use case's default route, or falls back to UC-01 meetings
+ * Get the default route for a user based on their use cases and roles.
+ * When user has MINISTER role, returns /guiding-light.
+ * Otherwise returns the first use case's default route, or falls back to UC-01 meetings.
  */
-export const getDefaultRouteForUser = (useCases?: string[]): string => {
+export const getDefaultRouteForUser = (
+  useCases?: string[],
+  roles?: Array<{ code: string }>
+): string => {
+  if (isMinisterUser(roles)) {
+    return PATH_GUIDING_LIGHT;
+  }
+
   if (!useCases || useCases.length === 0) {
     return UC01_PATH.MEETINGS;
   }

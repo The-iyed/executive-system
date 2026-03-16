@@ -55,6 +55,7 @@ export default defineConfig({
       { find: /^@\/lib\/ui$/, replacement: resolve(__dirname, './src/lib/ui/index.ts') },
       { find: /^@\/modules\/shared$/, replacement: resolve(__dirname, './src/modules/shared/index.ts') },
       { find: /^@\/modules\/auth$/, replacement: resolve(__dirname, './src/modules/auth/index.ts') },
+      { find: '@gl', replacement: resolve(__dirname, './src/modules/guiding-light') },
       { find: '@', replacement: resolve(__dirname, './src') },
     ],
   },
