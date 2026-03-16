@@ -23,53 +23,52 @@ jobs:
         env:
           VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
         run: |
-          # Capture all output to both console and a log variable
+          # -e  → exit immediately on any error
+          # -o pipefail → a pipe fails if ANY command in it fails (not just the last)
+          set -eo pipefail
+
           LOG_FILE=$(mktemp)
 
-          run_logged() {
-            eval "$@" 2>&1 | tee -a "$LOG_FILE"
+          # Save logs to GITHUB_OUTPUT even if the script exits early due to an error
+          save_log() {
+            TRUNCATED_LOG=$(tail -c 1800 "$LOG_FILE" 2>/dev/null || true)
+            printf 'deploy_log<<EOF\n%s\nEOF\n' "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
+            rm -f "$LOG_FILE"
           }
+          trap save_log EXIT
 
           # 1. Ensure target directory exists and copy the project files to it
           echo ">>> [1/6] Creating target directory and copying files..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
-
           echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
-          
+
           # 2. Navigate to the project directory
           cd /var/www/minister-mind-fe
 
-          # 3. Pull the latest base images and rebuild the containers securely
+          # 3. Pull the latest base images and rebuild the containers
           echo ">>> [3/6] Pulling latest images..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker compose pull 2>&1 | tee -a "$LOG_FILE"
+
           echo ">>> [3/6] Rebuilding and restarting containers..." | tee -a "$LOG_FILE"
+          # pipefail means this will FAIL the step if docker compose build/up fails
           echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate 2>&1 | tee -a "$LOG_FILE"
-          
+
           # 4. Wait a few seconds for containers to initialize
           echo ">>> [4/6] Waiting for services to start..." | tee -a "$LOG_FILE"
           sleep 10
-          
+
           # 5. Verify the service is healthy (Port 4404 is the frontend)
           echo ">>> [5/6] Running health check..." | tee -a "$LOG_FILE"
           if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
-            echo "✅ Deployment successful: Service is healthy!" | tee -a "$LOG_FILE"
+            echo "Deployment successful: Service is healthy!" | tee -a "$LOG_FILE"
           else
-            echo "⚠️ Deployment warning: Health check failed or endpoint not ready yet." | tee -a "$LOG_FILE"
+            echo "HEALTH CHECK FAILED: Service on port 4404 is not responding!" | tee -a "$LOG_FILE"
+            exit 1
           fi
-          
+
           # 6. Clean up dangling images
           echo ">>> [6/6] Cleaning up dangling images..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
-
-          # Save the log as a step output (truncated to last 1800 chars to stay within limits)
-          FULL_LOG=$(cat "$LOG_FILE")
-          TRUNCATED_LOG=$(echo "$FULL_LOG" | tail -c 1800)
-          # Escape newlines for GitHub Actions output
-          echo "deploy_log<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-          rm -f "$LOG_FILE"
   notify:
     name: Discord Notification
     needs: deploy
