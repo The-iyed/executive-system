@@ -75,6 +75,16 @@ jobs:
     runs-on: [self-hosted, azure-runner]
     if: always()
     steps:
+
+      - name: Test webhook connectivity
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          echo "Testing webhook..."
+          curl -v -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{"content": "test"}' 2>&1
+      
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
