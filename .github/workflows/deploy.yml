@@ -87,8 +87,12 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
+          PAYLOAD_FILE=$(mktemp /tmp/discord_payload_XXXXXX.json)
+
+          # Step 1: Python builds the JSON safely (handles all escaping)
+          # Step 2: curl sends it (proven to work on this runner)
           python3 - <<'PYEOF'
-          import json, os, urllib.request
+          import json, os, sys
 
           status     = os.environ.get("DEPLOY_STATUS", "unknown")
           log        = os.environ.get("DEPLOY_LOG", "").strip()
@@ -98,46 +102,45 @@ jobs:
           actor      = os.environ.get("ACTOR", "unknown")
           commit_msg = os.environ.get("COMMIT_MSG", "N/A")
           commit_sha = os.environ.get("COMMIT_SHA", "")
-          webhook    = os.environ.get("DISCORD_WEBHOOK", "")
+          payload_file = os.environ.get("PAYLOAD_FILE", "/tmp/discord_payload.json")
 
           run_url    = f"https://github.com/{repo}/actions/runs/{run_id}"
           commit_url = f"https://github.com/{repo}/commit/{commit_sha}"
-          short_sha  = commit_sha[:7]
+          short_sha  = commit_sha[:7] if commit_sha else "unknown"
 
           if status == "success":
-              color  = 3066993   # green
+              color  = 3066993
               title  = "Deployment Succeeded"
               desc   = "The deployment completed successfully."
               fields = [
-                  {"name": "Project",    "value": "Minister Mind Frontend",           "inline": True},
-                  {"name": "Branch",     "value": branch,                             "inline": True},
-                  {"name": "Author",     "value": actor,                              "inline": True},
-                  {"name": "Commit",     "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}", "inline": False},
-                  {"name": "Run Link",   "value": f"[View run details]({run_url})",   "inline": False},
+                  {"name": "Project",  "value": "Minister Mind Frontend",                          "inline": True},
+                  {"name": "Branch",   "value": branch,                                            "inline": True},
+                  {"name": "Author",   "value": actor,                                             "inline": True},
+                  {"name": "Commit",   "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}","inline": False},
+                  {"name": "Run Link", "value": f"[View run details]({run_url})",                  "inline": False},
               ]
           elif status == "failure":
-              color  = 15158332  # red
+              color  = 15158332
               title  = "Deployment Failed"
               desc   = "The deployment encountered an error. See logs below."
-              # Trim log to last 1800 chars to stay within Discord field limit
-              failure_log = log[-1800:] if log else "No logs captured. Click the run link below."
+              failure_log = log[-1800:] if log else "No logs captured. See run link below."
               fields = [
-                  {"name": "Project",    "value": "Minister Mind Frontend",           "inline": True},
-                  {"name": "Branch",     "value": branch,                             "inline": True},
-                  {"name": "Author",     "value": actor,                              "inline": True},
-                  {"name": "Commit",     "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}", "inline": False},
-                  {"name": "Error Logs", "value": f"```\n{failure_log}\n```",         "inline": False},
-                  {"name": "Full Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": False},
+                  {"name": "Project",    "value": "Minister Mind Frontend",                          "inline": True},
+                  {"name": "Branch",     "value": branch,                                            "inline": True},
+                  {"name": "Author",     "value": actor,                                             "inline": True},
+                  {"name": "Commit",     "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}","inline": False},
+                  {"name": "Error Logs", "value": f"```\n{failure_log}\n```",                        "inline": False},
+                  {"name": "Full Logs",  "value": f"[Click here to view full logs]({run_url})",      "inline": False},
               ]
           else:
-              color  = 10181046  # grey
+              color  = 10181046
               title  = f"Deployment {status.capitalize()}"
               desc   = f"Pipeline ended with status: {status}"
               fields = [
-                  {"name": "Project", "value": "Minister Mind Frontend", "inline": True},
-                  {"name": "Branch",  "value": branch,                   "inline": True},
-                  {"name": "Status",  "value": status,                   "inline": True},
-                  {"name": "Run Link","value": f"[View run details]({run_url})", "inline": False},
+                  {"name": "Project",  "value": "Minister Mind Frontend",           "inline": True},
+                  {"name": "Branch",   "value": branch,                             "inline": True},
+                  {"name": "Status",   "value": status,                             "inline": True},
+                  {"name": "Run Link", "value": f"[View run details]({run_url})",   "inline": False},
               ]
 
           payload = {
@@ -150,20 +153,31 @@ jobs:
               }]
           }
 
-          data = json.dumps(payload).encode("utf-8")
-          req  = urllib.request.Request(
-              webhook, data=data,
-              headers={"Content-Type": "application/json"}
-          )
-          try:
-              resp = urllib.request.urlopen(req)
-              print(f"Discord notified successfully: HTTP {resp.status}")
-          except urllib.error.HTTPError as e:
-              body = e.read().decode()
-              print(f"Discord HTTP error {e.code}: {body}")
-          except Exception as e:
-              print(f"Discord error: {e}")
+          with open(payload_file, "w") as f:
+              json.dump(payload, f)
+
+          print(f"Payload written to {payload_file}")
           PYEOF
+
+          # Step 2: curl sends the payload file — proven to work on this runner
+          echo "Sending Discord notification..."
+          RESPONSE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
+            -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "@$PAYLOAD_FILE")
+
+          echo "Discord response code: $RESPONSE"
+          cat /tmp/discord_response.txt || true
+
+          rm -f "$PAYLOAD_FILE" /tmp/discord_response.txt
+
+          # Fail the step if curl got an error response (not 2xx)
+          if [[ "$RESPONSE" != 2* ]]; then
+            echo "Discord webhook failed with HTTP $RESPONSE"
+            exit 1
+          fi
+          echo "Discord notification sent successfully!"
+
   # notify2:
   #   needs: deploy
   #   runs-on: ubuntu-latest
