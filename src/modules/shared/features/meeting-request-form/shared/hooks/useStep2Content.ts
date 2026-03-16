@@ -86,7 +86,8 @@ export function useStep2Content({
 
   const isReturnedStatus =
     meetingStatus === MeetingStatus.RETURNED_FROM_SCHEDULING ||
-    meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT;
+    meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT || 
+    meetingStatus === MeetingStatus.SCHEDULED;
 
   const hasPresentationFile =
     state.newPresentationFile !== null || state.existingPresentations.length > 0;
