@@ -84,7 +84,7 @@ jobs:
           description: ${{ needs.deploy.result == 'success' && 'Deployment completed successfully.' || 'Deployment FAILED. See logs below.' }}
           avatar_url: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
           username: 'GitHub'
-          color: ${{ needs.deploy.result == 'success' && '#28a745' || '#dc3545' }}
+          color: ${{ needs.deploy.result == 'success' && '2664261' || '14431557' }}
           status: ${{ needs.deploy.result }}
           environment: 'production'
           include_image: 'true'
@@ -100,7 +100,7 @@ jobs:
         if: needs.deploy.result == 'failure'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+          DEPLOY_LOG: ${{ toJSON(needs.deploy.outputs.deploy_log) }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           BRANCH: ${{ github.ref_name }}
@@ -108,34 +108,47 @@ jobs:
           python3 - <<'PYEOF'
           import json, os, urllib.request
 
-          log     = os.environ.get("DEPLOY_LOG", "").strip()
+          raw_log = os.environ.get("DEPLOY_LOG", "")
+          # toJSON wraps it in quotes, strip them
+          try:
+              log = json.loads(raw_log)
+          except Exception:
+              log = raw_log
+          log = log.strip() if log else ""
+
           repo    = os.environ["REPO"]
           run_id  = os.environ["RUN_ID"]
           branch  = os.environ["BRANCH"]
           webhook = os.environ["DISCORD_WEBHOOK"]
           run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
 
-          # Trim to last 1800 chars to stay within Discord's field limit
           failure_log = log[-1800:] if log else "No logs captured — check the run link below."
 
           payload = {
               "embeds": [{
-                  "title":  "Failure Logs",
-                  "color":  15158332,
+                  "title":  "❌ Failure Logs",
+                  "color":  14431557,
                   "fields": [
-                      {"name": "Branch / Tag",   "value": branch,                              "inline": True},
-                      {"name": "Error Logs",     "value": f"```\n{failure_log}\n```",          "inline": False},
-                      {"name": "Full Run Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": False},
+                      {"name": "🌿 Branch / Tag",  "value": branch,                                        "inline": True},
+                      {"name": "📋 Error Logs",    "value": f"```\n{failure_log}\n```",                    "inline": False},
+                      {"name": "🔗 Full Run Logs", "value": f"[Click here to view full logs]({run_url})",  "inline": False},
                   ],
                   "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
               }]
           }
 
           data = json.dumps(payload).encode("utf-8")
-          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+          req  = urllib.request.Request(
+              webhook, data=data,
+              headers={"Content-Type": "application/json"},
+              method="POST"
+          )
           try:
               resp = urllib.request.urlopen(req)
               print(f"Discord notified: {resp.status}")
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"Discord HTTP error {e.code}: {body}")
           except Exception as e:
               print(f"Discord webhook error: {e}")
           PYEOF
