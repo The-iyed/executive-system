@@ -11,49 +11,141 @@ on:
 jobs:
   deploy:
     runs-on: [self-hosted, azure-runner]
+    outputs:
+      deploy_log: ${{ steps.deploy_step.outputs.deploy_log }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Deploy and validate
+        id: deploy_step
         env:
           VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
         run: |
+          # Capture all output to both console and a log variable
+          LOG_FILE=$(mktemp)
+
+          run_logged() {
+            eval "$@" 2>&1 | tee -a "$LOG_FILE"
+          }
+
           # 1. Ensure target directory exists and copy the project files to it
-          echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 
-          pwd
-          echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe
+          echo ">>> [1/6] Creating target directory and copying files..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
+
+          echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
           
           # 2. Navigate to the project directory
           cd /var/www/minister-mind-fe
-          
+
           # 3. Pull the latest base images and rebuild the containers securely
-          echo "$VM_PASSWORD" | sudo -S docker compose pull
-          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate
+          echo ">>> [3/6] Pulling latest images..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker compose pull 2>&1 | tee -a "$LOG_FILE"
+          echo ">>> [3/6] Rebuilding and restarting containers..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate 2>&1 | tee -a "$LOG_FILE"
           
-          # 4. Best Practice: Wait a few seconds for containers to initialize
-          echo "Waiting for services to start..."
+          # 4. Wait a few seconds for containers to initialize
+          echo ">>> [4/6] Waiting for services to start..." | tee -a "$LOG_FILE"
           sleep 10
           
-          # 5. Best Practice: Verify the service is healthy (Port 4404 is the frontend)
+          # 5. Verify the service is healthy (Port 4404 is the frontend)
+          echo ">>> [5/6] Running health check..." | tee -a "$LOG_FILE"
           if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
-            echo "Deployment successful: Service is healthy!"
+            echo "✅ Deployment successful: Service is healthy!" | tee -a "$LOG_FILE"
           else
-            echo "Deployment warning: Health check failed or endpoint not ready yet."
+            echo "⚠️ Deployment warning: Health check failed or endpoint not ready yet." | tee -a "$LOG_FILE"
           fi
           
-          # 6. Clean up dangling images to prevent filling the VM's disk space over time
-          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h"
+          # 6. Clean up dangling images
+          echo ">>> [6/6] Cleaning up dangling images..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
+
+          # Save the log as a step output (truncated to last 1800 chars to stay within limits)
+          FULL_LOG=$(cat "$LOG_FILE")
+          TRUNCATED_LOG=$(echo "$FULL_LOG" | tail -c 1800)
+          # Escape newlines for GitHub Actions output
+          echo "deploy_log<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          rm -f "$LOG_FILE"
 
   notify:
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Discord Notification
+      - name: Send Discord Notification with Logs
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        uses: Ilshidur/action-discord@master
-        with:
-          args: 'Deployment of **Minister Mind Frontend** on branch `${{ github.ref_name }}` finished with status: **${{ needs.deploy.result }}**'
+        run: |
+          STATUS="${{ needs.deploy.result }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          DEPLOY_LOG="${{ needs.deploy.outputs.deploy_log }}"
+
+          # Choose color and emoji based on status
+          if [ "$STATUS" = "success" ]; then
+            COLOR=3066993   # Green
+            EMOJI="✅"
+            TITLE="Deployment Succeeded"
+          elif [ "$STATUS" = "failure" ]; then
+            COLOR=15158332  # Red
+            EMOJI="❌"
+            TITLE="Deployment Failed"
+          else
+            COLOR=10181046  # Grey
+            EMOJI="⚠️"
+            TITLE="Deployment Status: $STATUS"
+          fi
+
+          # Escape backticks and backslashes in log for JSON
+          SAFE_LOG=$(echo "$DEPLOY_LOG" | sed 's/\\/\\\\/g' | sed 's/`/\`/g' | sed 's/"/\\"/g')
+
+          # Build the JSON payload
+          PAYLOAD=$(cat <<JSON
+          {
+            "embeds": [
+              {
+                "title": "$EMOJI $TITLE",
+                "color": $COLOR,
+                "fields": [
+                  {
+                    "name": "📦 Project",
+                    "value": "Minister Mind Frontend",
+                    "inline": true
+                  },
+                  {
+                    "name": "🌿 Branch / Tag",
+                    "value": "\`$BRANCH\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "📋 Pipeline Logs",
+                    "value": "\`\`\`\n$SAFE_LOG\n\`\`\`",
+                    "inline": false
+                  },
+                  {
+                    "name": "🔗 Full Run Details",
+                    "value": "[Click here to view full logs]($RUN_URL)",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "GitHub Actions • ${{ github.workflow }}"
+                },
+                "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              }
+            ]
+          }
+          JSON
+          )
+
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+
+
+            
