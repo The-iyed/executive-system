@@ -138,20 +138,29 @@ jobs:
                   log = raw_log
               log = (log or "").strip()
 
-              failure_log = log[-3500:] if log else "No logs captured — check the run link below."
-              log_value   = f"```\n{failure_log}\n```"
+              # Extract only ERROR/FAILED lines for a clean summary
+              error_lines = []
+              for line in log.splitlines():
+                  line_lower = line.lower()
+                  if any(kw in line_lower for kw in ["error", "failed", "exit code", "health check"]):
+                      error_lines.append(line.strip())
+
+              if error_lines:
+                  summary = "\n".join(error_lines[-15:])   # last 15 error lines max
+              else:
+                  summary = log[-800:] if log else "No logs captured."
+
+              log_value = f"```\n{summary}\n```"
               if len(log_value) > 1024:
-                  log_value = f"```\n{failure_log[:980]}\n...(truncated)\n```"
-              if not log_value.strip().replace("```", "").strip():
-                  log_value = "No logs captured — check the run link below."
+                  log_value = f"```\n{summary[:980]}\n...\n```"
 
               log_embed = {
                   "title": "📋 Failure Logs",
                   "color": 14431557,
                   "fields": [
-                      {"name": "🌿 Branch",        "value": branch or "unknown",       "inline": True},
-                      {"name": "🔗 Full Run Logs",  "value": f"[View run]({run_url})",  "inline": True},
-                      {"name": "📄 Error Logs",     "value": log_value,                "inline": False},
+                      {"name": "🌿 Branch",       "value": branch or "unknown",       "inline": True},
+                      {"name": "🔗 Full Run Logs","value": f"[View run]({run_url})",   "inline": True},
+                      {"name": "📄 Error Summary","value": log_value,                 "inline": False},
                   ],
                   "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
               }
