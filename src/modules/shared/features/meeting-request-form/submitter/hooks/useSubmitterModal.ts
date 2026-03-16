@@ -11,6 +11,7 @@ import { MeetingStatus } from "../../shared/types/types";
 import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
+import { useToast } from "@/lib/ui";
 
 interface UseSubmitterModalOptions {
   editMeetingId?: string | null;
@@ -25,6 +26,7 @@ export function useSubmitterModal({
   onClose,
   callerRole,
 }: UseSubmitterModalOptions) {
+  const { toast }= useToast()
   const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
@@ -73,12 +75,12 @@ export function useSubmitterModal({
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
   
-    await inviteesMutation.mutateAsync({
+    const response = await inviteesMutation.mutateAsync({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
   
-    return true;
+    return response;
   };
   // ── Final submit (step 3) ─────────────────────────────────────────────────
   const handleFinalSubmit = useCallback(async () => {
@@ -86,26 +88,28 @@ export function useSubmitterModal({
     if (!meetingId) return;
   
     try {
-      const saved = await saveInvitees(meetingId);
-      if (!saved) return;
+      const result = await saveInvitees(meetingId);
+      if (!result) return;
+
+      const meetingStatus = result.status;
   
       if (isSchedulerEdit) {
-        toast.success("تم التحديث بنجاح");
+        toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
         return;
       }
-  
-      const submitAction = resolveSubmitAction(detail.meetingStatus);
+      console.log(meetingStatus)
+      const submitAction = resolveSubmitAction(meetingStatus);
       if (submitAction) {
         await submitAction(meetingId);
-        toast.success("تم إرسال الطلب بنجاح");
+        toast({title: "تم إرسال الطلب بنجاح"});
       } else {
-        toast.success("تم التحديث بنجاح");
+        toast({title: "تم التحديث بنجاح"});
       }
   
       steps.resetModal();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل إرسال الطلب");
+      toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
   }, [steps, isSchedulerEdit, detail.meetingStatus, inviteesMutation]);
 
@@ -118,10 +122,10 @@ export function useSubmitterModal({
       const saved = await saveInvitees(meetingId);
       if (!saved) return;
   
-      toast.success("تم حفظ المسودة بنجاح");
+      toast({title: "تم حفظ المسودة بنجاح"});
       steps.resetModal();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل حفظ المسودة");
+      toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
   }, [steps, inviteesMutation]);
 
