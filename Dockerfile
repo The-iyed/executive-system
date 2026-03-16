@@ -5,7 +5,6 @@ RUN npm install -g pnpm
 COPY package*.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 COPY . .
-COPY nginx.conf1 /etc/nginx/nginx.conf
 RUN pnpm run build
 
 # Production stage - Minister Mind standalone
