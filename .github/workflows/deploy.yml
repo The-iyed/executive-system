@@ -75,69 +75,94 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      # Step 1: Always send the standard notification card with the REAL status
-      - name: Discord Status Notification
-        uses: cabrera-evil/discord-notify-action@v1.0.1
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-          title: 'GitHub Action'
-          description: ${{ needs.deploy.result == 'success' && 'Deployment completed successfully.' || 'Deployment FAILED. See logs below.' }}
-          avatar_url: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
-          username: 'GitHub'
-          color: ${{ needs.deploy.result == 'success' && '#28a745' || '#dc3545' }}
-          status: ${{ needs.deploy.result }}
-          environment: 'production'
-          include_image: 'true'
-          custom_image_url: ''
-          repo_name: ${{ github.repository }}
-          repo_url: ${{ github.event.repository.html_url }}
-          commit_message: ${{ github.event.head_commit.message }}
-          commit_sha: ${{ github.sha }}
-          author: ${{ github.actor }}
-
-      # Step 2: Only on FAILURE — send a second message with the actual error logs
-      - name: Send Failure Logs to Discord
-        if: needs.deploy.result == 'failure'
+      - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DEPLOY_STATUS: ${{ needs.deploy.result }}
           DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+          BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PYEOF'
           import json, os, urllib.request
 
-          log     = os.environ.get("DEPLOY_LOG", "").strip()
-          repo    = os.environ["REPO"]
-          run_id  = os.environ["RUN_ID"]
-          branch  = os.environ["BRANCH"]
-          webhook = os.environ["DISCORD_WEBHOOK"]
-          run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+          status     = os.environ.get("DEPLOY_STATUS", "unknown")
+          log        = os.environ.get("DEPLOY_LOG", "").strip()
+          branch     = os.environ.get("BRANCH", "unknown")
+          repo       = os.environ.get("REPO", "")
+          run_id     = os.environ.get("RUN_ID", "")
+          actor      = os.environ.get("ACTOR", "unknown")
+          commit_msg = os.environ.get("COMMIT_MSG", "N/A")
+          commit_sha = os.environ.get("COMMIT_SHA", "")
+          webhook    = os.environ.get("DISCORD_WEBHOOK", "")
 
-          # Trim to last 1800 chars to stay within Discord's field limit
-          failure_log = log[-1800:] if log else "No logs captured — check the run link below."
+          run_url    = f"https://github.com/{repo}/actions/runs/{run_id}"
+          commit_url = f"https://github.com/{repo}/commit/{commit_sha}"
+          short_sha  = commit_sha[:7]
+
+          if status == "success":
+              color  = 3066993   # green
+              title  = "Deployment Succeeded"
+              desc   = "The deployment completed successfully."
+              fields = [
+                  {"name": "Project",    "value": "Minister Mind Frontend",           "inline": True},
+                  {"name": "Branch",     "value": branch,                             "inline": True},
+                  {"name": "Author",     "value": actor,                              "inline": True},
+                  {"name": "Commit",     "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}", "inline": False},
+                  {"name": "Run Link",   "value": f"[View run details]({run_url})",   "inline": False},
+              ]
+          elif status == "failure":
+              color  = 15158332  # red
+              title  = "Deployment Failed"
+              desc   = "The deployment encountered an error. See logs below."
+              # Trim log to last 1800 chars to stay within Discord field limit
+              failure_log = log[-1800:] if log else "No logs captured. Click the run link below."
+              fields = [
+                  {"name": "Project",    "value": "Minister Mind Frontend",           "inline": True},
+                  {"name": "Branch",     "value": branch,                             "inline": True},
+                  {"name": "Author",     "value": actor,                              "inline": True},
+                  {"name": "Commit",     "value": f"[{short_sha}]({commit_url}): {commit_msg[:100]}", "inline": False},
+                  {"name": "Error Logs", "value": f"```\n{failure_log}\n```",         "inline": False},
+                  {"name": "Full Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": False},
+              ]
+          else:
+              color  = 10181046  # grey
+              title  = f"Deployment {status.capitalize()}"
+              desc   = f"Pipeline ended with status: {status}"
+              fields = [
+                  {"name": "Project", "value": "Minister Mind Frontend", "inline": True},
+                  {"name": "Branch",  "value": branch,                   "inline": True},
+                  {"name": "Status",  "value": status,                   "inline": True},
+                  {"name": "Run Link","value": f"[View run details]({run_url})", "inline": False},
+              ]
 
           payload = {
               "embeds": [{
-                  "title":  "Failure Logs",
-                  "color":  15158332,
-                  "fields": [
-                      {"name": "Branch / Tag",   "value": branch,                              "inline": True},
-                      {"name": "Error Logs",     "value": f"```\n{failure_log}\n```",          "inline": False},
-                      {"name": "Full Run Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": False},
-                  ],
-                  "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
+                  "title":       title,
+                  "description": desc,
+                  "color":       color,
+                  "fields":      fields,
+                  "footer":      {"text": "GitHub Actions - Deploy to Azure VM"}
               }]
           }
 
           data = json.dumps(payload).encode("utf-8")
-          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+          req  = urllib.request.Request(
+              webhook, data=data,
+              headers={"Content-Type": "application/json"}
+          )
           try:
               resp = urllib.request.urlopen(req)
-              print(f"Discord notified: {resp.status}")
+              print(f"Discord notified successfully: HTTP {resp.status}")
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"Discord HTTP error {e.code}: {body}")
           except Exception as e:
-              print(f"Discord webhook error: {e}")
+              print(f"Discord error: {e}")
           PYEOF
   # notify2:
   #   needs: deploy
