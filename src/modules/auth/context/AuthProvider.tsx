@@ -104,10 +104,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         setIsInitialised(true);
         return;
       }
-      if (currentPath === PATH.LOGIN) {
-        setIsInitialised(true);
-        return;
-      }
+      // When SSO is enabled, /login is not a route; run same auth flow as / so we redirect to IdP (avoids freeze/redirect loop)
+      // Previously we bailed out here, then router redirected /login → / but the effect never re-ran, so auth never ran on /
 
       const initializeAuth = async () => {
         try {
