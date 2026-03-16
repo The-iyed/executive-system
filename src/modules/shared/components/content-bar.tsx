@@ -43,7 +43,10 @@ export const ContentBar: React.FC<ContentBarProps> = ({
   onViewChange,
   className = '',
 }) => {
-  const [activeFilter, setActiveFilter] = useState(activeFilterId ?? filterTabs[0]?.id ?? 'draft');
+  /** Default to 'all' when present in tabs so no filter is applied on load; otherwise first tab. */
+  const defaultFilterId =
+    activeFilterId ?? filterTabs.find((t) => t.id === 'all')?.id ?? filterTabs[0]?.id ?? 'draft';
+  const [activeFilter, setActiveFilter] = useState(defaultFilterId);
   const [internalView, setInternalView] = useState<ViewType>('table');
   const [internalSearchValue, setInternalSearchValue] = useState('');
 

@@ -27,7 +27,7 @@ export const UseCaseGuard: React.FC<UseCaseGuardProps> = ({
   const hasAccess = hasUseCaseAccess(user?.use_cases, requiredUseCase);
 
   if (!hasAccess) {
-    const redirectTo = fallbackRoute || getDefaultRouteForUser(user?.use_cases);
+    const redirectTo = fallbackRoute || getDefaultRouteForUser(user?.use_cases, user?.roles);
     return <Navigate to={redirectTo} replace />;
   }
 
