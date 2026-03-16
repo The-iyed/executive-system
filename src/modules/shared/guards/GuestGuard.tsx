@@ -13,7 +13,7 @@ const GuestGuard: React.FC<GuestGuardProps> = ({ children }) => {
   // Loading/initialization is handled centrally in AuthProvider
   // Redirect to user's default route if already authenticated
   if (isAuthenticated) {
-    const defaultRoute = getDefaultRouteForUser(user?.use_cases);
+    const defaultRoute = getDefaultRouteForUser(user?.use_cases, user?.roles);
     return <Navigate to={defaultRoute} replace />;
   }
 

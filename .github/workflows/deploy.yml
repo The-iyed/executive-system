@@ -11,49 +11,221 @@ on:
 jobs:
   deploy:
     runs-on: [self-hosted, azure-runner]
+    outputs:
+      deploy_log: ${{ steps.deploy_step.outputs.deploy_log }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Deploy and validate
+        id: deploy_step
         env:
           VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
         run: |
+          # -e  → exit immediately on any error
+          # -o pipefail → a pipe fails if ANY command in it fails (not just the last)
+          set -eo pipefail
+
+          LOG_FILE=$(mktemp)
+
+          # Save logs to GITHUB_OUTPUT even if the script exits early due to an error
+          save_log() {
+            TRUNCATED_LOG=$(tail -c 1800 "$LOG_FILE" 2>/dev/null || true)
+            printf 'deploy_log<<EOF\n%s\nEOF\n' "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
+            rm -f "$LOG_FILE"
+          }
+          trap save_log EXIT
+
           # 1. Ensure target directory exists and copy the project files to it
-          echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 
-          pwd
-          echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe
-          
+          echo ">>> [1/6] Creating target directory and copying files..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S mkdir -p /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R . /var/www/minister-mind-fe 2>&1 | tee -a "$LOG_FILE"
+
           # 2. Navigate to the project directory
           cd /var/www/minister-mind-fe
-          
-          # 3. Pull the latest base images and rebuild the containers securely
-          echo "$VM_PASSWORD" | sudo -S docker compose pull
-          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate
-          
-          # 4. Best Practice: Wait a few seconds for containers to initialize
-          echo "Waiting for services to start..."
-          sleep 10
-          
-          # 5. Best Practice: Verify the service is healthy (Port 4404 is the frontend)
-          if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
-            echo "Deployment successful: Service is healthy!"
-          else
-            echo "Deployment warning: Health check failed or endpoint not ready yet."
-          fi
-          
-          # 6. Clean up dangling images to prevent filling the VM's disk space over time
-          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h"
 
+          # 3. Pull the latest base images and rebuild the containers
+          echo ">>> [3/6] Pulling latest images..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker compose pull 2>&1 | tee -a "$LOG_FILE"
+
+          echo ">>> [3/6] Rebuilding and restarting containers..." | tee -a "$LOG_FILE"
+          # pipefail means this will FAIL the step if docker compose build/up fails
+          echo "$VM_PASSWORD" | sudo -S docker compose up -d --build --force-recreate 2>&1 | tee -a "$LOG_FILE"
+
+          # 4. Wait a few seconds for containers to initialize
+          echo ">>> [4/6] Waiting for services to start..." | tee -a "$LOG_FILE"
+          sleep 10
+
+          # 5. Verify the service is healthy (Port 4404 is the frontend)
+          echo ">>> [5/6] Running health check..." | tee -a "$LOG_FILE"
+          if echo "$VM_PASSWORD" | sudo -S curl -f http://localhost:4404 > /dev/null 2>&1; then
+            echo "Deployment successful: Service is healthy!" | tee -a "$LOG_FILE"
+          else
+            echo "HEALTH CHECK FAILED: Service on port 4404 is not responding!" | tee -a "$LOG_FILE"
+            exit 1
+          fi
+
+          # 6. Clean up dangling images
+          echo ">>> [6/6] Cleaning up dangling images..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
   notify:
+    name: Discord Notification
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Discord Notification
+      # Step 1: Always send the standard notification card with the REAL status
+      - name: Discord Status Notification
+        uses: cabrera-evil/discord-notify-action@v1.0.1
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+          title: 'GitHub Action'
+          description: ${{ needs.deploy.result == 'success' && 'Deployment completed successfully.' || 'Deployment FAILED. See logs below.' }}
+          avatar_url: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+          username: 'GitHub'
+          color: ${{ needs.deploy.result == 'success' && '#28a745' || '#dc3545' }}
+          status: ${{ needs.deploy.result }}
+          environment: 'production'
+          include_image: 'true'
+          custom_image_url: ''
+          repo_name: ${{ github.repository }}
+          repo_url: ${{ github.event.repository.html_url }}
+          commit_message: ${{ github.event.head_commit.message }}
+          commit_sha: ${{ github.sha }}
+          author: ${{ github.actor }}
+
+      # Step 2: Only on FAILURE — send a second message with the actual error logs
+      - name: Send Failure Logs to Discord
+        if: needs.deploy.result == 'failure'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        uses: Ilshidur/action-discord@master
-        with:
-          args: 'Deployment of **Minister Mind Frontend** on branch `${{ github.ref_name }}` finished with status: **${{ needs.deploy.result }}**'
+          DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+
+          log     = os.environ.get("DEPLOY_LOG", "").strip()
+          repo    = os.environ["REPO"]
+          run_id  = os.environ["RUN_ID"]
+          branch  = os.environ["BRANCH"]
+          webhook = os.environ["DISCORD_WEBHOOK"]
+          run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+
+          # Trim to last 1800 chars to stay within Discord's field limit
+          failure_log = log[-1800:] if log else "No logs captured — check the run link below."
+
+          payload = {
+              "embeds": [{
+                  "title":  "Failure Logs",
+                  "color":  15158332,
+                  "fields": [
+                      {"name": "Branch / Tag",   "value": branch,                              "inline": True},
+                      {"name": "Error Logs",     "value": f"```\n{failure_log}\n```",          "inline": False},
+                      {"name": "Full Run Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": False},
+                  ],
+                  "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
+              }]
+          }
+
+          data = json.dumps(payload).encode("utf-8")
+          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+          try:
+              resp = urllib.request.urlopen(req)
+              print(f"Discord notified: {resp.status}")
+          except Exception as e:
+              print(f"Discord webhook error: {e}")
+          PYEOF
+
+  # notify2:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     - name: Send Discord Notification with Logs
+  #       env:
+  #         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+  #         DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+  #         DEPLOY_STATUS: ${{ needs.deploy.result }}
+  #         BRANCH: ${{ github.ref_name }}
+  #         REPO: ${{ github.repository }}
+  #         RUN_ID: ${{ github.run_id }}
+  #         WORKFLOW: ${{ github.workflow }}
+  #         COMMIT_MSG: ${{ github.event.head_commit.message }}
+  #         ACTOR: ${{ github.actor }}
+  #       run: |
+  #         python3 - <<'PYEOF'
+  #         import json, os, urllib.request
+
+  #         status     = os.environ["DEPLOY_STATUS"]
+  #         branch     = os.environ["BRANCH"]
+  #         log        = os.environ.get("DEPLOY_LOG", "").strip()
+  #         repo       = os.environ["REPO"]
+  #         run_id     = os.environ["RUN_ID"]
+  #         run_url    = f"https://github.com/{repo}/actions/runs/{run_id}"
+  #         workflow   = os.environ["WORKFLOW"]
+  #         webhook    = os.environ["DISCORD_WEBHOOK"]
+  #         commit_msg = os.environ.get("COMMIT_MSG", "N/A")
+  #         actor      = os.environ.get("ACTOR", "N/A")
+
+  #         if status == "success":
+  #             color  = 3066993        # green
+  #             title  = "✅ Deployment Succeeded"
+  #             # On success, keep logs short or omit them
+  #             fields = [
+  #                 {"name": "Project",      "value": "Minister Mind Frontend", "inline": True},
+  #                 {"name": "Branch / Tag", "value": branch,                   "inline": True},
+  #                 {"name": "Triggered by", "value": actor,                    "inline": True},
+  #                 {"name": "Commit",       "value": commit_msg[:200],         "inline": False},
+  #                 {"name": "Run Details",  "value": f"[View run]({run_url})", "inline": False},
+  #             ]
+
+  #         elif status == "failure":
+  #             color  = 15158332       # red
+  #             title  = "❌ Deployment Failed"
+
+  #             # Trim log to last 1800 chars to stay within Discord's 2000-char field limit
+  #             failure_log = log[-1800:] if log else "No logs captured — check the run link below."
+
+  #             fields = [
+  #                 {"name": "Project",        "value": "Minister Mind Frontend",       "inline": True},
+  #                 {"name": "Branch / Tag",   "value": branch,                         "inline": True},
+  #                 {"name": "Triggered by",   "value": actor,                          "inline": True},
+  #                 {"name": "Commit",         "value": commit_msg[:200],               "inline": False},
+  #                 {"name": "❗ Failure Logs", "value": f"```\n{failure_log}\n```",     "inline": False},
+  #                 {"name": "Full Run",       "value": f"[View full logs]({run_url})", "inline": False},
+  #             ]
+
+  #         else:
+  #             color  = 10181046       # grey (cancelled / skipped)
+  #             title  = f"⚠️ Deployment {status.capitalize()}"
+  #             fields = [
+  #                 {"name": "Project",      "value": "Minister Mind Frontend", "inline": True},
+  #                 {"name": "Branch / Tag", "value": branch,                   "inline": True},
+  #                 {"name": "Status",       "value": status,                   "inline": True},
+  #                 {"name": "Run Details",  "value": f"[View run]({run_url})", "inline": False},
+  #             ]
+
+  #         payload = {
+  #             "embeds": [{
+  #                 "title":  title,
+  #                 "color":  color,
+  #                 "fields": fields,
+  #                 "footer": {"text": f"GitHub Actions — {workflow}"}
+  #             }]
+  #         }
+
+  #         data = json.dumps(payload).encode("utf-8")
+  #         req  = urllib.request.Request(
+  #             webhook, data=data,
+  #             headers={"Content-Type": "application/json"}
+  #         )
+  #         try:
+  #             resp = urllib.request.urlopen(req)
+  #             print(f"Discord response: {resp.status}")
+  #         except Exception as e:
+  #             print(f"Discord webhook error: {e}")
+  #         PYEOF

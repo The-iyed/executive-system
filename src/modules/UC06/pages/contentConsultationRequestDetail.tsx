@@ -600,7 +600,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
 
         {/* Consultations Log Tab – chat-bubble style like UC05 */}
         {activeTab === "consultations-log" && (
-          <div className="flex flex-col w-full bg-white" dir="rtl">
+          <div className="flex flex-col w-full bg-white h-full" dir="rtl">
             <div className="flex-1 min-h-0">
               {isLoadingConsultationRecords ? (
                 <div className="flex items-center justify-center py-16">
