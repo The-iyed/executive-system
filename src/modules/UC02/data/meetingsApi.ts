@@ -1402,7 +1402,7 @@ export interface AttachmentInsightsResponse {
 export const getAttachmentInsights = async (
   attachmentId: string
 ): Promise<AttachmentInsightsResponse> => {
-  const url = `${INSIGHTS_API_BASE}/api/presentations/by-attachment/${attachmentId}/insights`;
+  const url = `${INSIGHTS_API_BASE}api/presentations/by-attachment/${attachmentId}/insights`;
   const response = await axiosInstance.get<AttachmentInsightsResponse>(url);
   return response.data;
 };
