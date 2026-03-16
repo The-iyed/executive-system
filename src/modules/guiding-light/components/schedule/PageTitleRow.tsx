@@ -41,19 +41,7 @@ function PageTitleRow({
         </SelectContent>
       </Select>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onExportPdf}
-        className="gap-2 rounded-xl border-border/50 bg-background hover:bg-muted/60"
-      >
-        <Download className="size-4 text-muted-foreground" />
-        <span className="hidden sm:inline text-sm">تصدير ملف</span>
-        <span className="flex items-center gap-1 rounded-lg bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-          <FileText className="size-3" />
-          PDF
-        </span>
-      </Button>
+{/* PDF export hidden — not ready yet */}
     </div>
   );
 }
