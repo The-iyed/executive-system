@@ -6,12 +6,12 @@ import {
   transformDraftToStep2ContentData,
   transformDraftToInvitees,
 } from "../../shared/utils/mappers";
-import type { ModalCallerRole } from "./useSubmitterModal";
+import { MeetingOwnerType } from "@/modules/shared/types";
 
 interface UseMeetingDetailOptions {
   meetingId: string | null;
   isEditMode: boolean;
-  callerRole: ModalCallerRole;
+  callerRole: MeetingOwnerType;
 }
 
 export function useMeetingDetail({
@@ -19,7 +19,7 @@ export function useMeetingDetail({
   isEditMode,
   callerRole,
 }: UseMeetingDetailOptions) {
-  const isSchedulerEdit = callerRole === "scheduler";
+  const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
 
   // Only fetch editable fields for submitter edits (scheduler always has full access)
   const needsEditableFields = isEditMode && !isSchedulerEdit;
