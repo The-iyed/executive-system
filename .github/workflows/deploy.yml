@@ -79,68 +79,54 @@ jobs:
       - name: Send Discord Notification with Logs
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DEPLOY_LOG: ${{ needs.deploy.outputs.deploy_log }}
+          DEPLOY_STATUS: ${{ needs.deploy.result }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
         run: |
-          STATUS="${{ needs.deploy.result }}"
-          BRANCH="${{ github.ref_name }}"
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          DEPLOY_LOG="${{ needs.deploy.outputs.deploy_log }}"
+          RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
 
           # Choose color and emoji based on status
-          if [ "$STATUS" = "success" ]; then
-            COLOR=3066993   # Green
+          if [ "$DEPLOY_STATUS" = "success" ]; then
+            COLOR=3066993
             EMOJI="✅"
             TITLE="Deployment Succeeded"
-          elif [ "$STATUS" = "failure" ]; then
-            COLOR=15158332  # Red
+          elif [ "$DEPLOY_STATUS" = "failure" ]; then
+            COLOR=15158332
             EMOJI="❌"
             TITLE="Deployment Failed"
           else
-            COLOR=10181046  # Grey
+            COLOR=10181046
             EMOJI="⚠️"
-            TITLE="Deployment Status: $STATUS"
+            TITLE="Deployment Status: ${DEPLOY_STATUS}"
           fi
 
-          # Escape backticks and backslashes in log for JSON
-          SAFE_LOG=$(echo "$DEPLOY_LOG" | sed 's/\\/\\\\/g' | sed 's/`/\`/g' | sed 's/"/\\"/g')
-
-          # Build the JSON payload
-          PAYLOAD=$(cat <<JSON
-          {
-            "embeds": [
-              {
-                "title": "$EMOJI $TITLE",
-                "color": $COLOR,
-                "fields": [
-                  {
-                    "name": "📦 Project",
-                    "value": "Minister Mind Frontend",
-                    "inline": true
-                  },
-                  {
-                    "name": "🌿 Branch / Tag",
-                    "value": "\`$BRANCH\`",
-                    "inline": true
-                  },
-                  {
-                    "name": "📋 Pipeline Logs",
-                    "value": "\`\`\`\n$SAFE_LOG\n\`\`\`",
-                    "inline": false
-                  },
-                  {
-                    "name": "🔗 Full Run Details",
-                    "value": "[Click here to view full logs]($RUN_URL)",
-                    "inline": false
-                  }
+          # Use jq to safely build JSON - it handles all escaping automatically
+          # (quotes, newlines, backslashes in the log won't break JSON)
+          PAYLOAD=$(jq -n \
+            --arg title "${EMOJI} ${TITLE}" \
+            --argjson color "$COLOR" \
+            --arg branch "$BRANCH" \
+            --arg log "$DEPLOY_LOG" \
+            --arg run_url "$RUN_URL" \
+            --arg footer "GitHub Actions • ${WORKFLOW}" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              embeds: [{
+                title: $title,
+                color: $color,
+                fields: [
+                  { name: "📦 Project",        value: "Minister Mind Frontend", inline: true },
+                  { name: "🌿 Branch / Tag",   value: $branch,                 inline: true },
+                  { name: "📋 Pipeline Logs",  value: ("```\n" + $log + "\n```"), inline: false },
+                  { name: "🔗 Full Run Details", value: ("[Click here to view full logs](" + $run_url + ")"), inline: false }
                 ],
-                "footer": {
-                  "text": "GitHub Actions • ${{ github.workflow }}"
-                },
-                "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              }
-            ]
-          }
-          JSON
-          )
+                footer: { text: $footer },
+                timestamp: $ts
+              }]
+            }')
 
           curl -s -X POST "$DISCORD_WEBHOOK" \
             -H "Content-Type: application/json" \
