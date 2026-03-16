@@ -72,7 +72,7 @@ jobs:
   notify:
     name: Discord Notification
     needs: deploy
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, azure-runner]
     if: always()
     steps:
       - name: Send Discord Notification
