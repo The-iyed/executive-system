@@ -76,15 +76,6 @@ jobs:
     if: always()
     steps:
 
-      - name: Test webhook connectivity
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          echo "Testing webhook..."
-          curl -v -X POST "$DISCORD_WEBHOOK" \
-            -H "Content-Type: application/json" \
-            -d '{"content": "test"}' 2>&1
-      
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -117,18 +108,17 @@ jobs:
           icon       = "✅" if is_success else "❌"
           desc       = "Deployment completed successfully." if is_success else "Deployment **FAILED**. See logs below."
 
-          # ── Message 1: Status card ────────────────────────────────────────────
           status_embed = {
               "title":       f"{icon} GitHub Action",
               "description": desc,
               "color":       color,
               "fields": [
-                  {"name": "📁 Project",     "value": f"[{repo}]({repo_url})",                                              "inline": True},
-                  {"name": "🌍 Environment", "value": "production",                                                          "inline": True},
-                  {"name": "📊 Status",      "value": result,                                                                "inline": True},
-                  {"name": "👤 Author",      "value": author,                                                                "inline": True},
+                  {"name": "📁 Project",     "value": f"[{repo}]({repo_url})",                                                    "inline": True},
+                  {"name": "🌍 Environment", "value": "production",                                                                "inline": True},
+                  {"name": "📊 Status",      "value": result,                                                                      "inline": True},
+                  {"name": "👤 Author",      "value": author,                                                                      "inline": True},
                   {"name": "🔗 Commit",      "value": f"[`{commit_sha}`]({repo_url}/commit/{os.environ['COMMIT_SHA']}) — {commit_msg}", "inline": False},
-                  {"name": "🚀 Run",         "value": f"[View run]({run_url})",                                             "inline": False},
+                  {"name": "🚀 Run",         "value": f"[View run]({run_url})",                                                   "inline": False},
               ],
               "footer":    {"text": "Deployment Service | Powered by GitHub"},
               "thumbnail": {"url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"}
@@ -138,7 +128,10 @@ jobs:
               data = json.dumps(payload).encode("utf-8")
               req  = urllib.request.Request(
                   webhook, data=data,
-                  headers={"Content-Type": "application/json"},
+                  headers={
+                      "Content-Type": "application/json",
+                      "User-Agent":   "curl/8.5.0"        # ← fixes Cloudflare 1010 block
+                  },
                   method="POST"
               )
               try:
@@ -151,7 +144,6 @@ jobs:
 
           send({"embeds": [status_embed]})
 
-          # ── Message 2: Failure logs (only on failure) ─────────────────────────
           if not is_success:
               raw_log = os.environ.get("DEPLOY_LOG", "")
               try:
@@ -165,9 +157,9 @@ jobs:
                   "title": "📋 Failure Logs",
                   "color": 14431557,
                   "fields": [
-                      {"name": "🌿 Branch",        "value": branch,                                        "inline": True},
-                      {"name": "🔗 Full Run Logs",  "value": f"[Click here to view full logs]({run_url})", "inline": True},
-                      {"name": "📄 Error Logs",     "value": f"```\n{failure_log}\n```",                   "inline": False},
+                      {"name": "🌿 Branch",       "value": branch,                                        "inline": True},
+                      {"name": "🔗 Full Run Logs","value": f"[View run]({run_url})",                      "inline": True},
+                      {"name": "📄 Error Logs",   "value": f"```\n{failure_log}\n```",                    "inline": False},
                   ],
                   "footer": {"text": "GitHub Actions - Deploy to Azure VM"}
               }
