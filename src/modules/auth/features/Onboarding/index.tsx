@@ -42,10 +42,10 @@ interface OnboardingProps {
 
 export default function Onboarding({ user, onSuccess }: OnboardingProps) {
   const [form, setForm] = useState<OnboardingFormData>({
-    full_name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '',
-    email: user.email || '',
-    id_number: user.national_id ?? '',
-    mobile: user.phone_number ?? '',
+    full_name: user?.ar_name?.trim() || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.username || '',
+    email: user?.email || '',
+    id_number: user?.national_id ?? '',
+    mobile: user?.phone_number ?? '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof OnboardingFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,6 +145,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   className={inputClass}
                   dir="rtl"
                   placeholder={LABELS.email}
+                  disabled
                 />
                 {errors.email && (
                   <span className="text-xs text-red-500 text-left">{errors.email}</span>
@@ -176,6 +177,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   className={inputClassIdMobile}
                   dir="rtl"
                   placeholder={LABELS.mobile}
+                  disabled
                 />
                 {errors.mobile && (
                   <span className="text-xs text-red-500 text-left">{errors.mobile}</span>

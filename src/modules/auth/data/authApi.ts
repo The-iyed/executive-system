@@ -18,6 +18,8 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  /** Arabic full name from API (e.g. GET /me). Used for onboarding display. */
+  ar_name?: string;
   roles: Array<{
     code: string;
     name: string;
