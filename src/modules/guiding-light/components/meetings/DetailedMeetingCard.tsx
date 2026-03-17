@@ -127,7 +127,7 @@ const consultantLabelStyle: CSSProperties = {
 };
 
 function AttendeeLabel({ attendee }: { attendee: Attendee }) {
-  const nameStr = `${attendee.name}${attendee.role ? ` (${attendee.role})` : ""}`;
+  const nameStr = `${attendee.name}${attendee.email ? ` (${attendee.email})` : ""}`;
   if (attendee.consultant) {
     return <span className="shrink-0 text-right text-[11px]" style={consultantLabelStyle}>{nameStr}</span>;
   }
@@ -245,8 +245,30 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
 
   return (
     <div dir="rtl" className="group rounded-2xl bg-card border-2 border-border text-right overflow-hidden shadow-md transition-all duration-200 hover:shadow-lg hover:border-primary/40">
-      {/* ── Header: attachments + pills ── */}
+      {/* ── Header: tags (right) + attachments (left) ── */}
       <div className="flex items-center justify-between gap-2 px-5 py-3 bg-muted/30 border-b border-border/30">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {classificationLabel && (
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+              {classificationLabel}
+            </span>
+          )}
+          {categoryLabel && (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
+              {categoryLabel}
+            </span>
+          )}
+          {showTypePill && (
+            <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-bold text-violet-700">
+              {typePillLabel}
+            </span>
+          )}
+          {tagLabels.map((label, i) => (
+            <span key={i} className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
+              {label}
+            </span>
+          ))}
+        </div>
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
@@ -277,28 +299,6 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
             العرض التقديمي
           </button>
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {classificationLabel && (
-            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
-              {classificationLabel}
-            </span>
-          )}
-          {categoryLabel && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
-              {categoryLabel}
-            </span>
-          )}
-          {showTypePill && (
-            <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-bold text-violet-700">
-              {typePillLabel}
-            </span>
-          )}
-          {tagLabels.map((label, i) => (
-            <span key={i} className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
-              {label}
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* ── Title + time row ── */}
@@ -310,7 +310,7 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
           <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground/80">
             <Clock className="size-3.5 text-primary" />
             <span>{meeting.time}</span>
-            <span className="text-muted-foreground font-normal">• {meeting.duration}</span>
+            {meeting.duration && <span className="text-muted-foreground font-normal">({meeting.duration})</span>}
           </div>
           {meeting.communication_mode === "PHYSICAL" && meeting.location && (
             <>
@@ -352,7 +352,6 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
           )}
         >
           <span className="flex items-center gap-2 text-[12px] font-semibold text-foreground/80">
-            <Sparkles className="size-3.5 text-primary" />
             الأجندة والدعم المطلوب
             {meeting.agenda?.length ? (
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold text-primary">{meeting.agenda.length}</span>
@@ -505,8 +504,12 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
 
           {/* AI Recommendation — hidden for past meetings */}
           {!isPast && aiDelegateeRecommendation && (
-            <div className="relative z-10 flex-1 min-w-0 flex items-center gap-2.5 px-2 py-2">
-              <svg className="w-5 h-3 shrink-0" viewBox="0 0 72 32" fill="none">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); /* TODO: show MM response details */ }}
+              className="relative z-10 flex-1 min-w-0 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <svg className="w-7 h-4 shrink-0" viewBox="0 0 72 32" fill="none">
                 <path d="M37.8174 0C42.1018 0 45.5752 3.47342 45.5752 7.75781L36.7773 32H25.5352L33.8447 7.75781H20.04L11.2422 32H0L8.30957 7.75781H20.04L22.7871 0H37.8174ZM63.3535 0C67.6377 0.000224723 71.1113 3.47356 71.1113 7.75781L62.3135 32H51.0713L59.3809 7.75781H45.5762L48.3232 0H63.3535Z" fill="url(#paint0_smartbar)" />
                 <defs>
                   <linearGradient id="paint0_smartbar" x1="56.5658" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
@@ -515,11 +518,11 @@ function DetailedMeetingCard({ meeting }: DetailedMeetingCardProps) {
                   </linearGradient>
                 </defs>
               </svg>
-              <p className="text-[10px] text-white/70 truncate leading-relaxed">
+              <p className="text-[11px] text-white/70 truncate leading-relaxed">
                 ينصحكم بالنظام بإنابة هذا الاجتماع إلى{" "}
                 <span className="font-semibold text-emerald-400">{aiDelegateeRecommendation}</span>
               </p>
-            </div>
+            </button>
           )}
 
           {/* Delegation Button — hidden for past meetings */}

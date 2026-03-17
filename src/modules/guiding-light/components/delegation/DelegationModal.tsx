@@ -3,7 +3,6 @@ import { Check, X, Sparkles } from "lucide-react";
 import { useModalStore } from "@gl/stores/modal-store";
 import type { ModalDataMap } from "@gl/stores/modal-store";
 import { delegateMeeting } from "@gl/api/unified/client";
-import { SlideToDelegate } from "./SlideToDelegate";
 import { DelegateeSelect } from "./DelegateeSelect";
 import { cn } from "@gl/lib/utils";
 
@@ -111,12 +110,8 @@ function DelegationModal() {
               </div>
             )}
 
-            {/* Slide to delegate */}
-            <SlideToDelegate onComplete={handleDelegationComplete} />
-
-            {/* Manual selection */}
             <p className="text-sm text-muted-foreground text-right">
-              أو اختر يدوياً لمن تريد إنابة الاجتماع:
+              اختر من تريد إنابته للاجتماع:
             </p>
 
             {/* Delegatee Select */}
@@ -149,6 +144,29 @@ function DelegationModal() {
             {delegationError && (
               <p className="text-sm text-destructive text-right">{delegationError}</p>
             )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                تراجع
+              </button>
+              <button
+                type="button"
+                onClick={handleDelegationComplete}
+                disabled={delegationLoading || !selectedDelegatee}
+                className={cn(
+                  "flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all",
+                  "bg-primary hover:bg-primary/90 active:scale-[0.98]",
+                  (delegationLoading || !selectedDelegatee) && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {delegationLoading ? "جاري التفويض..." : "تأكيد الإنابة"}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="px-5 pb-5">
