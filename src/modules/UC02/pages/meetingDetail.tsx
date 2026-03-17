@@ -2749,16 +2749,20 @@ const MeetingDetail: React.FC = () => {
                         </div>
                       ))}
 
-                      {/* Empty state */}
+                      {/* Empty state - compact like Notes section */}
                       {(meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
-                          <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
-                            <FileCheck className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
+                        <div className="flex flex-col rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] py-6 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                              <FileCheck className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.2} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-[15px] text-[#374151]">لا يوجد عرض تقديمي</p>
+                              <p className="text-sm text-[#9CA3AF] mt-0.5">أضف عرضاً تقديمياً للاجتماع</p>
+                            </div>
                           </div>
-                          <p className="font-semibold text-[15px] text-[#374151] mb-1">لا يوجد عرض تقديمي</p>
-                          <p className="text-sm text-[#9CA3AF] mb-6">أضف عرضاً تقديمياً للاجتماع</p>
                           {canEdit && (
-                            <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] cursor-pointer transition-colors shadow-sm">
+                            <label className="mt-3 flex items-center gap-2 w-fit px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#048F86] text-white hover:bg-[#037A72] cursor-pointer transition-colors shadow-sm">
                               <Plus className="w-4 h-4" />
                               إضافة عرض تقديمي
                               <input type="file" multiple onChange={(e) => { handleAddPresentationAttachments(e.target.files); e.target.value = ''; }} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
@@ -2842,14 +2846,18 @@ const MeetingDetail: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-14 px-6 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB]">
-                      <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
-                        <FileText className="w-8 h-8 text-[#9CA3AF]" strokeWidth={1.2} />
+                    <div className="flex flex-col rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] py-6 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.2} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-[15px] text-[#374151]">لا توجد مرفقات اختيارية</p>
+                          <p className="text-sm text-[#9CA3AF] mt-0.5">يمكنك إرفاق مستندات إضافية إن رغبت</p>
+                        </div>
                       </div>
-                      <p className="font-semibold text-[15px] text-[#374151] mb-1">لا توجد مرفقات اختيارية</p>
-                      <p className="text-sm text-[#9CA3AF] mb-6">يمكنك إرفاق مستندات إضافية إن رغبت</p>
                       {canEdit && (
-                        <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-[#048F86]/40 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
+                        <label className="mt-3 flex items-center gap-2 w-fit px-5 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-[#048F86]/40 text-[#048F86] bg-[#048F86]/5 hover:bg-[#048F86]/10 cursor-pointer transition-colors">
                           <Plus className="w-4 h-4" />
                           إضافة مرفق
                           <input type="file" multiple onChange={(e) => handleAddAttachments(e.target.files)} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
