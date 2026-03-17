@@ -1,10 +1,24 @@
-import type { SubmitterStep1Values } from "../../submitter/schema";
+type Step1Values = Record<string, unknown>;
 
-export function buildStep1FormData(data: SubmitterStep1Values): FormData {
+export function buildStep1FormData(data: Step1Values): FormData {
   const fd = new FormData();
+
+  const submitterUser = data["submitter_user"];
+  const meetingOwnerUser = data["meeting_owner_user"];
 
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined || value === null) continue;
+
+    if (key === "submitter_user" || key === "meeting_owner_user") continue;
+
+    if (key === "submitter" && submitterUser) {
+      fd.append(key, JSON.stringify(submitterUser));
+      continue;
+    }
+    if (key === "meeting_owner" && meetingOwnerUser) {
+      fd.append(key, JSON.stringify(meetingOwnerUser));
+      continue;
+    }
 
     if (value instanceof File) {
       fd.append(key, value);
