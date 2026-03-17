@@ -1,0 +1,1 @@
+import{r,Y as t,j as e}from"./index-gbvMouBi.js";import{M as a}from"./MinisterCalendarView-B8IMTUji.js";import"./meetingsApi-8mRXMw2a.js";import"./meetingMapper-DsbZnIJl.js";import"./format-DYaqlxhH.js";import"./InviteesTableForm-C4bQy3dv.js";const c=()=>(r.useEffect(()=>{t("UC-02","uc02_calendar_viewed")},[]),e.jsx(a,{}));export{c as default};
