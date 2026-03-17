@@ -235,7 +235,7 @@ export function useVoiceAssistant() {
         processorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
-          if (ws.readyState !== WebSocket.OPEN || isMuted || isSpeakingRef.current) return;
+          if (ws.readyState !== WebSocket.OPEN || isMuted) return;
           const inputData = e.inputBuffer.getChannelData(0);
           const int16 = new Int16Array(inputData.length);
           for (let i = 0; i < inputData.length; i++) {
@@ -287,15 +287,34 @@ export function useVoiceAssistant() {
                 const args = msg.arguments || toolCallArgsRef.current.get(msg.call_id) || "{}";
                 toolCallArgsRef.current.delete(msg.call_id);
                 addTranscript("assistant", `🔍 جارٍ البحث...`);
+
+                // Ask the model to speak a brief filler while the tool executes
+                try {
+                  ws.send(JSON.stringify({
+                    type: "response.create",
+                    response: {
+                      modalities: ["audio", "text"],
+                      instructions: "أنت تتحدث مع معالي الوزير. قل عبارة مهذبة وقصيرة جداً تدل أنك تبحث عن المعلومات، مثل 'حاضر يا معالي الوزير، لحظة وأجيب لك' أو 'أبشر معاليك، دقيقة وأرجع لك بالمعلومات'. لا تزد عن جملة واحدة. كن لبقاً ومحترماً.",
+                    },
+                  }));
+                } catch { /* non-critical */ }
+
+                // Execute tool in parallel — its result will trigger another response
                 executeToolCall(msg.call_id, msg.name, args);
               }
               break;
 
             case "input_audio_buffer.speech_started":
+              // Immediately stop agent audio playback
               playbackQueueRef.current = [];
+              isPlayingRef.current = false;
+              isSpeakingRef.current = false;
               if (sourceNodeRef.current) {
                 try { sourceNodeRef.current.stop(); } catch { /* ok */ }
+                sourceNodeRef.current = null;
               }
+              // Cancel any in-progress response from the model
+              ws.send(JSON.stringify({ type: "response.cancel" }));
               setStatus("listening");
               break;
 
