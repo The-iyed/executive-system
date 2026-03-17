@@ -1,4 +1,3 @@
-import type { UsersListResponse } from '../shared/hooks/useManagerSearch';
 import { axiosInstance, toError } from './config';
 
 export interface GetUsersParams {
@@ -7,6 +6,29 @@ export interface GetUsersParams {
   user_type?: string;
   skip?: number;
   limit?: number;
+}
+
+export interface UserApiResponse {
+  id: string;
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  position?: string | null;
+  phone_number?: string | null;
+  role_ids?: string[];
+  permission_ids?: string[];
+  is_active?: boolean;
+  [key: string]: unknown;
+}
+
+export interface UsersListResponse {
+  items: UserApiResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next?: boolean;
+  has_previous?: boolean;
 }
 
 export async function getUsers(params: GetUsersParams = {}): Promise<UsersListResponse> {
