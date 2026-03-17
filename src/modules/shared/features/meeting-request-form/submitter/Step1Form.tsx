@@ -38,7 +38,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) 
           <MeetingNatureField />
           {visibility.previous_meeting_id && <PreviousMeetingField />}
           <OnBehalfField />
-          {visibility.meeting_owner_id && <MeetingOwnerField name="meeting_owner_id" initialLabel={initialValues?.meeting_manager_name} />}
+          {visibility.meeting_owner && <MeetingOwnerField name="meeting_owner" initialLabel={initialValues?.meeting_manager_name} />}
           <MeetingTitleField />
 
           <DescriptionField />

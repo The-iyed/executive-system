@@ -5,6 +5,7 @@ export interface ManagerOption {
   value: string;
   label: string;
   subtitle: string;
+  user: UserSearchResult;
 }
 
 function toOption(user: UserSearchResult): ManagerOption {
@@ -12,6 +13,7 @@ function toOption(user: UserSearchResult): ManagerOption {
     value: user.objectGUID,
     label: user.displayName || user.mail,
     subtitle: user.mail,
+    user,
   };
 }
 
