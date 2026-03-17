@@ -2513,7 +2513,7 @@ const MeetingDetail: React.FC = () => {
             />
           )}
 
-          {/* Tab: المحتوى – العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، ملاحظات */}
+          {/* Tab: المحتوى – العرض التقديمي، متى سيتم إرفاق العرض؟، مرفقات اختيارية، الملخّص التنفيذي، ملاحظات (chronological order) */}
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6 w-full min-w-0 max-w-full self-stretch" dir="rtl" style={{ width: '100%', minWidth: 0, flex: '1 1 0%' }}>
 
@@ -2578,59 +2578,6 @@ const MeetingDetail: React.FC = () => {
                   </div>
                 </section>
               )}
-
-              {/* ─── الملخّص التنفيذي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
-                </div>
-                <div className="p-6">
-                  {(() => {
-                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
-                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
-                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
-                    if (!hasExec) {
-                      return (
-                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
-                          </div>
-                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-col gap-4">
-                        {execSummaryText && (
-                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
-                            {execSummaryText}
-                          </div>
-                        )}
-                        {execSummaryAttachments.length > 0 && (
-                          <div className="grid grid-cols-1 gap-3">
-                            {execSummaryAttachments.map((att) => (
-                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
-                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                                <div className="flex flex-col items-end min-w-0 flex-1">
-                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
-                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                                </div>
-                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
-                                  <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </section>
 
               {/* ─── العرض التقديمي ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
@@ -2775,29 +2722,6 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </section>
 
-              {/* ─── متى سيتم إرفاق العرض؟ ─── */}
-              {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
-                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                      <Clock className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                    </div>
-                    <h3 className="text-[15px] font-bold text-[#1F2937]">متى سيتم إرفاق العرض؟</h3>
-                  </div>
-                  <div className="p-6">
-                    <Input type="text" value={contentTabForm.when_presentation_attached} onChange={(e) => setContentTabForm((p) => ({ ...p, when_presentation_attached: e.target.value }))} disabled={!canEdit} className="w-full h-11 bg-white border border-[#D1D5DB] rounded-xl text-right placeholder:text-[#9CA3AF] focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]/20" placeholder="متى سيتم إرفاق العرض؟" />
-                    {!contentTabForm.when_presentation_attached?.trim() && (
-                      <div className="flex items-center gap-3 mt-4 py-4 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                          <Clock className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
-                        </div>
-                        <p className="text-sm text-[#6B7280]">لم يتم تحديد موعد إرفاق العرض بعد</p>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
-
               {/* ─── مرفقات اختيارية ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
@@ -2868,6 +2792,82 @@ const MeetingDetail: React.FC = () => {
                   })()}
                 </div>
               </section>
+
+              {/* ─── الملخّص التنفيذي ─── */}
+              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
+                </div>
+                <div className="p-6">
+                  {(() => {
+                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
+                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
+                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
+                    if (!hasExec) {
+                      return (
+                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                          </div>
+                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex flex-col gap-4">
+                        {execSummaryText && (
+                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
+                            {execSummaryText}
+                          </div>
+                        )}
+                        {execSummaryAttachments.length > 0 && (
+                          <div className="grid grid-cols-1 gap-3">
+                            {execSummaryAttachments.map((att) => (
+                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
+                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
+                                <div className="flex flex-col items-end min-w-0 flex-1">
+                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
+                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
+                                  <button type="button" onClick={() => setPreviewAttachment({ blob_url: att.blob_url, file_name: att.file_name, file_type: att.file_type })} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </section>
+
+              {/* ─── متى سيتم إرفاق العرض؟ (only when there is no presentation) ─── */}
+              {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
+                <section className="rounded-2xl border border-[#E5E7EB] bg-white">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
+                    <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
+                      <Clock className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-[15px] font-bold text-[#1F2937]">متى سيتم إرفاق العرض؟</h3>
+                  </div>
+                  <div className="p-6">
+                    <Input type="text" value={contentTabForm.when_presentation_attached} onChange={(e) => setContentTabForm((p) => ({ ...p, when_presentation_attached: e.target.value }))} disabled={!canEdit} className="w-full h-11 bg-white border border-[#D1D5DD] rounded-xl text-right placeholder:text-[#9CA3AF] focus:border-[#048F86] focus:ring-1 focus:ring-[#048F86]/20" placeholder="متى سيتم إرفاق العرض؟" />
+                    {!contentTabForm.when_presentation_attached?.trim() && (
+                      <div className="flex items-center gap-3 mt-4 py-4 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                        <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-sm text-[#6B7280]">لم يتم تحديد موعد إرفاق العرض بعد</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* ─── ملاحظات ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
