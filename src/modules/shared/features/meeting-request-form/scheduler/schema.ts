@@ -5,8 +5,10 @@ import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from ".
 export const schedulerStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
-  submitter_id: z.string().min(1, "مقدّم الطلب مطلوب"),
-  meeting_owner_id: z.string().min(1, "مالك الاجتماع مطلوب"),
+  submitter: z.string().min(1, "مقدّم الطلب مطلوب"),
+  submitter_user: z.any().optional(),
+  meeting_owner: z.string().min(1, "مالك الاجتماع مطلوب"),
+  meeting_owner_user: z.any().optional(),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
