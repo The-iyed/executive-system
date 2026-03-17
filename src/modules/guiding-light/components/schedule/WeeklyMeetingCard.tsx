@@ -1,4 +1,4 @@
-import { Clock, MapPin, Users } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import { cn } from "@gl/lib/utils";
 import type { DetailedMeeting, MeetingCategory } from "@gl/types/meeting-detail";
 
@@ -41,11 +41,8 @@ function WeeklyMeetingCard({ meeting, onClick }: WeeklyMeetingCardProps) {
         "ring-1 ring-black/[0.06]"
       )}
     >
-      {/* Top row: category badge + attendee count */}
-      <div className="flex items-center justify-between">
-        <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", cat.bg, cat.text)}>
-          {cat.label}
-        </span>
+      {/* Top row: attendee count */}
+      <div className="flex items-center justify-end">
         {attendeeCount > 0 && (
           <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Users className="size-3" aria-hidden />
@@ -61,14 +58,6 @@ function WeeklyMeetingCard({ meeting, onClick }: WeeklyMeetingCardProps) {
       >
         {meeting.title}
       </h3>
-
-      {/* Location */}
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <MapPin className="size-3.5 shrink-0" aria-hidden />
-        <span className="truncate text-xs">
-          {meeting.location ?? "—"}
-        </span>
-      </div>
 
       {/* Time pill */}
       <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
