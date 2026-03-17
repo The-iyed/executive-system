@@ -118,7 +118,7 @@ export function transformDraftToInvitees(
 
 /** Mapped step-1 values enriched with display-only metadata */
 export type MappedSubmitterStep1Values = SubmitterStep1Values & {
-  /** Display name for meeting_owner_id (used as fallback before options load) */
+  /** Display name for meeting_owner (used as fallback before options load) */
   meeting_manager_name?: string;
 };
 
@@ -156,7 +156,7 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     is_urgent: meeting.is_urgent === true ? BOOL.TRUE : BOOL.FALSE,
     urgent_reason: (meeting.urgent_reason as string) || "",
     is_on_behalf_of: meeting.is_on_behalf_of === true ? BOOL.TRUE : BOOL.FALSE,
-    meeting_owner_id: meetingOwner?.id || (meeting.meeting_owner_id as string) || "",
+    meeting_owner: meetingOwner?.id || (meeting.meeting_owner_id as string) || "",
     meeting_start_date:
       (selectedSlot?.slot_start as string) ||
       (meeting.meeting_start_date as string) ||
