@@ -1,7 +1,7 @@
-import { FormProvider } from "react-hook-form";
 import { useMemo } from "react";
-import { useSubmitterStep1Form } from "./hooks/useStep1Form";
+import { FormProvider } from "react-hook-form";
 import { addDays, startOfDay } from "date-fns";
+import { useSubmitterStep1Form } from "./hooks/useStep1Form";
 import {
   MeetingTitleField, DescriptionField, SectorField, MeetingTypeField,
   IsUrgentField, UrgentReasonField, MeetingDateField, MeetingChannelField,
@@ -38,7 +38,12 @@ export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) 
           <MeetingNatureField />
           {visibility.previous_meeting_id && <PreviousMeetingField />}
           <OnBehalfField />
-          {visibility.meeting_owner && <MeetingOwnerField name="meeting_owner" initialLabel={initialValues?.meeting_manager_name} />}
+          {visibility.meeting_owner && (
+            <MeetingOwnerField
+              name="meeting_owner"
+              initialLabel={initialValues?.meeting_owner?.name || initialValues?.meeting_owner?.username || initialValues?.meeting_owner?.displayName || initialValues?.meeting_owner?.mail }
+            />
+          )}
           <MeetingTitleField />
 
           <DescriptionField />
