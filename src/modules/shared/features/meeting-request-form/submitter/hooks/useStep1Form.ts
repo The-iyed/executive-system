@@ -1,6 +1,6 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
 import { submitterStep1Schema, type SubmitterStep1Values } from "../schema";
 import {
   MeetingType,
@@ -35,7 +35,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     is_urgent: BOOL.FALSE,
     urgent_reason: "",
     is_on_behalf_of: BOOL.FALSE,
-    meeting_owner_id: "",
+    meeting_owner: "",
     meeting_start_date: "",
     meeting_end_date: "",
     agenda_items: [],
@@ -61,7 +61,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     meeting_location: [AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(watched.meeting_channel),
     meeting_location_custom: watched.meeting_location === MeetingLocation.OTHER,
     urgent_reason: watched.is_urgent === BOOL.TRUE,
-    meeting_owner_id: watched.is_on_behalf_of === BOOL.TRUE,
+    meeting_owner: watched.is_on_behalf_of === BOOL.TRUE,
     meeting_justification: [
       MeetingClassification.PRIVATE_MEETING,
       MeetingClassification.BILATERAL_MEETING,
@@ -95,7 +95,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     meeting_location: ["meeting_location", "meeting_location_custom"],
     meeting_location_custom: ["meeting_location_custom"],
     urgent_reason: ["urgent_reason"],
-    meeting_owner_id: ["meeting_owner_id"],
+    meeting_owner: ["meeting_owner"],
     meeting_justification: ["meeting_justification"],
     related_topic: ["related_topic"],
     deadline: ["deadline"],

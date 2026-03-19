@@ -2,17 +2,25 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/ui";
 import { ChevronDown, Search, Loader2, X } from "lucide-react";
 import { useManagerSearch, type ManagerOption } from "../hooks/useManagerSearch";
+import type { UserSearchResult } from "../../api";
 
 interface ManagerSelectProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: UserSearchResult | null | undefined;
+  onChange: (user: UserSearchResult | null) => void;
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
   initialLabel?: string;
 }
 
-export function ManagerSelect({ value, onChange, placeholder, disabled, hasError, initialLabel }: ManagerSelectProps) {
+export function ManagerSelect({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  hasError,
+  initialLabel,
+}: ManagerSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -28,7 +36,8 @@ export function ManagerSelect({ value, onChange, placeholder, disabled, hasError
     useManagerSearch(debouncedSearch, open);
 
   const options = data?.options ?? [];
-  const selectedLabel = options.find((o) => o.value === value)?.label || initialLabel || "";
+  const selectedId = value?.objectGUID ?? "";
+  const selectedLabel = options.find((o) => o.value === selectedId)?.label || initialLabel || "";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -65,10 +74,13 @@ export function ManagerSelect({ value, onChange, placeholder, disabled, hasError
           {value ? selectedLabel : placeholder || "ابحث بالبريد الإلكتروني..."}
         </span>
         <div className="flex items-center gap-1">
-          {value && (
+          {selectedId && (
             <X
               className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer"
-              onClick={(e) => { e.stopPropagation(); onChange(""); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(null);
+              }}
             />
           )}
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -94,9 +106,12 @@ export function ManagerSelect({ value, onChange, placeholder, disabled, hasError
                 type="button"
                 className={cn(
                   "w-full rounded-md px-3 py-2 text-right text-sm transition-colors hover:bg-accent",
-                  opt.value === value && "bg-accent font-medium",
+                  opt.value === selectedId && "bg-accent font-medium",
                 )}
-                onClick={() => { onChange(opt.value); setOpen(false); }}
+                onClick={() => {
+                  onChange(opt.user);
+                  setOpen(false);
+                }}
               >
                 <div className="font-medium">{opt.label}</div>
                 <div className="text-xs text-muted-foreground">{opt.subtitle}</div>

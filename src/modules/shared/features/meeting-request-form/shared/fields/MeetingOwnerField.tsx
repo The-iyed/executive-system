@@ -7,7 +7,7 @@ interface Props {
   initialLabel?: string;
 }
 
-export function MeetingOwnerField({ name = "meeting_owner_id", disabled, initialLabel }: Props) {
+export function MeetingOwnerField({ name = "meeting_owner", disabled, initialLabel }: Props) {
   const editable = useIsFieldEditable(name);
   const isDisabled = disabled || !editable;
   return (
