@@ -325,7 +325,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full p-[20px]">
               <ReadOnlyField label="رقم الطلب" value={meetingRequest.request_number ?? "-"} />
               <ReadOnlyField
                 label="تاريخ الطلب"
