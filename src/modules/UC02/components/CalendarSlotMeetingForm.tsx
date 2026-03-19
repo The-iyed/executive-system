@@ -140,47 +140,65 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     (ADUserByEmail & { id: string; label: string })[]
   >([]);
 
+  const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
+  /** Cache from initial load on open; filtering when user types is client-side only (no API). */
+  const proposerOptionsCacheRef = useRef<Array<{ value: string; label: string; email?: string }>>([]);
+
   const loadProposerAdOptions = useCallback(
     async (search: string, _skip: number, limit: number) => {
       const trimmed = search?.trim() ?? '';
+      const selectedIds = new Set(proposerSelections.map((p) => p.id));
+      const excludeSelected = <T extends { value: string }>(opts: T[]) =>
+        opts.filter((o) => !selectedIds.has(o.value));
+
       if (trimmed.length < 1) {
-        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
-      }
-      try {
-        const users = await searchByEmail(trimmed, limit);
-        users.forEach((u) => {
-          const k = u.objectGUID ?? u.mail ?? '';
-          if (k) proposerAdByIdRef.current[k] = u;
-        });
-        const selectedIds = new Set(proposerSelections.map((p) => p.id));
-        const items = users
-          .filter((u) => !selectedIds.has(u.objectGUID ?? u.mail ?? ''))
-          .map((u) => {
+        try {
+          const initialLimit = 200;
+          const users = await searchByEmail('', initialLimit);
+          users.forEach((u) => {
+            const k = u.objectGUID ?? u.mail ?? '';
+            if (k) proposerAdByIdRef.current[k] = u;
+          });
+          const items = users.map((u) => {
             const fullName = u.displayNameAR ?? u.displayNameEN ?? u.displayName ?? '';
             const email = u.mail ?? '';
             const id = u.objectGUID ?? email ?? `ad-${email}`;
-            return {
-              value: id,
-              label: fullName ? `${fullName} (${email})` : email,
-              email,
-            };
+            return { value: id, label: fullName ? `${fullName} (${email})` : email, email };
           });
-        return {
-          items,
-          total: items.length,
-          skip: 0,
-          limit,
-          has_next: false,
-          has_previous: false,
-        };
-      } catch {
-        return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+          proposerOptionsCacheRef.current = items;
+          const out = excludeSelected(items).slice(0, limit);
+          return {
+            items: out,
+            total: out.length,
+            skip: 0,
+            limit,
+            has_next: false,
+            has_previous: false,
+          };
+        } catch {
+          return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+        }
       }
+
+      const cache = proposerOptionsCacheRef.current;
+      const term = trimmed.toLowerCase();
+      const filtered = excludeSelected(cache).filter(
+        (o) =>
+          (o.label && o.label.toLowerCase().includes(term)) ||
+          (o.email && o.email.toLowerCase().includes(term))
+      );
+      const items = filtered.slice(0, limit);
+      return {
+        items,
+        total: filtered.length,
+        skip: 0,
+        limit,
+        has_next: false,
+        has_previous: false,
+      };
     },
     [proposerSelections]
   );
-
-  const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
 
   const addProposer = useCallback((opt: { value: string; label: string; email?: string }) => {
     const fromMap = proposerAdByIdRef.current[opt.value];
@@ -505,7 +523,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             fullWidth
             isSearchable
             limit={10}
-            defaultOptions={false}
+            defaultOptions={true}
             searchPlaceholder="اكتب البريد للبحث..."
             emptyMessage="لم يتم العثور على مستخدمين"
           />
