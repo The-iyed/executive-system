@@ -236,7 +236,7 @@ export function MeetingInfo({ data, className = '', dir = 'rtl', renderField, ex
 
   return (
     <div className={`w-full flex flex-col gap-8 ${className}`} dir={dir} data-meeting-info>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-[20px]  sm:gap-6 w-full max-w-[1200px] mx-auto px-4 [&>div]:min-w-0 [&>div]:w-full">
         {gridSpecs.map((spec) => (
           <div key={spec.key || spec.label} className={spec.className}>
             {renderCell(spec)}
@@ -261,7 +261,7 @@ export function MeetingInfo({ data, className = '', dir = 'rtl', renderField, ex
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-[20px]  sm:gap-6 w-full max-w-[1200px] mx-auto px-4 sm:px-0 [&>div]:min-w-0 [&>div]:w-full">
         {directiveSpecs.map((spec) => (
           <div key={spec.key || spec.label} className={spec.className}>
             {renderCell(spec)}
