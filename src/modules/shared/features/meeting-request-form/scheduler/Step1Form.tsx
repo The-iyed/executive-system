@@ -48,7 +48,7 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           {/* Row 1 */}
           <MeetingNatureField />
           {visibility.previous_meeting_id && <PreviousMeetingField />}
-          <MeetingManagerField name="submitter_id" label="مقدّم الطلب" placeholder="ابحث عن مقدّم الطلب..." />
+          <MeetingManagerField name="submitter" label="مقدّم الطلب" placeholder="ابحث عن مقدّم الطلب..." />
 
           {/* Row 2 */}
           <MeetingOwnerField />
