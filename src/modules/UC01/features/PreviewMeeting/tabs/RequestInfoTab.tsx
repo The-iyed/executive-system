@@ -16,7 +16,7 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
 
   return (
     <div className="flex flex-col gap-4 w-full" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full p-[20px]">
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>رقم الطلب</label>
           <div className={valueClass} style={fontStyle}>
