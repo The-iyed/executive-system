@@ -90,7 +90,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
       {sectionTitle != null && (
         <span className="text-sm font-medium text-foreground">{sectionTitle}</span>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-[20px] ">
         <FormField
           className="w-full min-w-0"
           label={startLabel}
