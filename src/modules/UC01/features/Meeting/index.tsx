@@ -239,7 +239,7 @@ const Meeting: React.FC = () => {
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-56 p-2" dir="rtl">
                   <div className="flex flex-col gap-0.5">
-                    {filterTabs.filter(t => t.id !== 'all').map((tab) => {
+                    {filterTabs?.map((tab) => {
                       const isChecked = statusFilters.includes(tab.id);
                       return (
                         <button
@@ -271,9 +271,6 @@ const Meeting: React.FC = () => {
                             </div>
                             <span>{tab.label}</span>
                           </div>
-                          {tab.count !== undefined && (
-                            <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
-                          )}
                         </button>
                       );
                     })}

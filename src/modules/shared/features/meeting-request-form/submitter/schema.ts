@@ -12,6 +12,17 @@ import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from ".
 
 /* ─── Submitter Step 1 Schema ─── */
 
+const meetingUserSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  username: z.string().optional(),
+  email: z.string().optional(),
+  displayName: z.string().optional(),
+  givenName: z.string().optional(),
+  mail: z.string().optional(),
+  objectGUID: z.string().optional(),
+}).passthrough();
+
 export const submitterStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
@@ -33,7 +44,7 @@ export const submitterStep1Schema = z.object({
   is_urgent: z.enum([BOOL.TRUE, BOOL.FALSE]),
   urgent_reason: z.string().optional(),
   is_on_behalf_of: z.enum([BOOL.TRUE, BOOL.FALSE]),
-  meeting_owner_id: z.string().optional(),
+  meeting_owner: meetingUserSchema.nullable().optional(),
   meeting_start_date: z.string().optional(),
   meeting_end_date: z.string().optional(),
   agenda_items: z.array(agendaItemSchema).default([]),
@@ -56,8 +67,8 @@ export const submitterStep1Schema = z.object({
   if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
     ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });
   }
-  if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner_id) {
-    ctx.addIssue({ code: "custom", path: ["meeting_owner_id"], message: "يرجى تحديد مالك الاجتماع" });
+  if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
+    ctx.addIssue({ code: "custom", path: ["meeting_owner"], message: "يرجى تحديد مالك الاجتماع" });
   }
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
