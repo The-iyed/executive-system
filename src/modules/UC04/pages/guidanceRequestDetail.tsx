@@ -593,7 +593,7 @@ const GuidanceRequestDetail: React.FC = () => {
                       className="text-base text-gray-900 text-right"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                     >
-                       {meetingRequest.submitter_name ?? '-'}
+                       {meetingRequest?.meeting_owner?.username ?? '-'}
                     </p>
                   </div>
                 </div>
