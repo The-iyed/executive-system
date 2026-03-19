@@ -134,8 +134,11 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
 
   const selectedSlot = meeting.selected_time_slot as Record<string, unknown> | null;
 
-  // Extract meeting_owner object for display label
-  const meetingOwner = meeting.meeting_owner as Record<string, string> | null;
+  const rawMeetingOwner = meeting.meeting_owner;
+  const meetingOwner =
+    rawMeetingOwner && typeof rawMeetingOwner === "object"
+      ? (rawMeetingOwner as SubmitterStep1Values["meeting_owner"])
+      : null;
 
   const values: SubmitterStep1Values = {
     meeting_title: (meeting.meeting_title as string) || "",
@@ -156,7 +159,7 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     is_urgent: meeting.is_urgent === true ? BOOL.TRUE : BOOL.FALSE,
     urgent_reason: (meeting.urgent_reason as string) || "",
     is_on_behalf_of: meeting.is_on_behalf_of === true ? BOOL.TRUE : BOOL.FALSE,
-    meeting_owner: meetingOwner?.id || (meeting.meeting_owner_id as string) || "",
+    meeting_owner: meetingOwner,
     meeting_start_date:
       (selectedSlot?.slot_start as string) ||
       (meeting.meeting_start_date as string) ||
@@ -177,6 +180,5 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
 
   return {
     ...values,
-    meeting_manager_name: meetingOwner?.name || undefined,
   };
 }
