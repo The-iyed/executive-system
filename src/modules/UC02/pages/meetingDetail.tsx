@@ -2847,7 +2847,7 @@ const MeetingDetail: React.FC = () => {
               </section>
 
               {/* ─── متى سيتم إرفاق العرض؟ (only when there is no presentation) ─── */}
-              {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
+              {/* {((meeting?.attachments || []).filter((a) => a.is_presentation && !deletedAttachmentIds.includes(a.id)).length === 0 && newPresentationAttachments.length === 0) && (
                 <section className="rounded-2xl border border-[#E5E7EB] bg-white">
                   <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
                     <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
@@ -2867,7 +2867,7 @@ const MeetingDetail: React.FC = () => {
                     )}
                   </div>
                 </section>
-              )}
+              )} */}
 
               {/* ─── ملاحظات ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">

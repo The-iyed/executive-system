@@ -67,8 +67,9 @@ import {
   type ComparePresentationsResponse,
   type ContentRequestDetailResponse,
 } from "../data/contentApi";
-import { getConsultationRecords, getSuggestedActions, type ConsultationRecord } from "../../UC02/data/meetingsApi";
+import { getConsultationRecordsWithParams, getSuggestedActions, type ConsultationRecord } from "../../UC02/data/meetingsApi";
 import { postMeetingsMatch } from "../../shared/api/meetings";
+import { toast } from "sonner";
 
 /** Start of local calendar day (for date pickers: no past due dates). */
 function startOfLocalDay(d: Date): number {
@@ -376,17 +377,27 @@ const ContentRequestDetail: React.FC = () => {
     (Array.isArray(suggestedActionsData?.items) && (suggestedActionsData?.items?.length ?? 0) > 0) ||
     ((suggestedActionsData as { total?: number } | undefined)?.total ?? 0) > 0;
 
-  // Fetch consultation records (سجلات التوجيهات)
+  // Fetch consultation records (سجلات الاستشارات)
   const { data: consultationRecords, isLoading: isLoadingConsultationRecords } = useQuery({
     queryKey: ["consultation-records", id],
-    queryFn: () => getConsultationRecords(id!, false),
+    queryFn: () =>
+      getConsultationRecordsWithParams(id!, {
+        include_drafts: false,
+        skip: 0,
+        limit: 100,
+      }),
     enabled: !!id && activeTab === "directives-log",
   });
 
   // Fetch consultation records with drafts for drafts modal
   const { data: consultationRecordsWithDrafts, isLoading: isLoadingConsultationRecordsWithDrafts } = useQuery({
     queryKey: ["consultation-records-with-drafts", id],
-    queryFn: () => getConsultationRecords(id!, true),
+    queryFn: () =>
+      getConsultationRecordsWithParams(id!, {
+        include_drafts: true,
+        skip: 0,
+        limit: 100,
+      }),
     enabled: !!id,
   });
 
@@ -773,7 +784,14 @@ const ContentRequestDetail: React.FC = () => {
 
       return { prevRecords, prevRecordsWithDrafts };
     },
-    onError: (_error, _variables, context) => {
+    onSuccess: (_data, variables) => {
+      if (variables.is_draft) {
+        toast.success("تم حفظ المسودة بنجاح");
+      } else {
+        toast.success("تم إرسال الاستشارة بنجاح");
+      }
+    },
+    onError: (error, _variables, context) => {
       if (context?.prevRecords != null) {
         queryClient.setQueryData(["consultation-records", id], context.prevRecords);
       }
@@ -783,7 +801,13 @@ const ContentRequestDetail: React.FC = () => {
           context.prevRecordsWithDrafts
         );
       }
-      console.error("Error submitting consultation:", _error);
+      const err = error as { response?: { data?: { message?: string; detail?: string } }; message?: string };
+      const message =
+        err?.response?.data?.message ??
+        err?.response?.data?.detail ??
+        (err instanceof Error ? err.message : String(error));
+      toast.error(`فشل إرسال الاستشارة: ${message}`);
+      console.error("Error submitting consultation:", error);
     },
     onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({ queryKey: ["content-request", id] });
@@ -982,12 +1006,12 @@ const ContentRequestDetail: React.FC = () => {
   };
 
   const handleSubmitConsultation = (type: "draft" | "submit") => {
-    if (!consultationNotes.trim()) {
-      // TODO: Show validation error
+    if (!selectedConsultantId) {
+      toast.error("الرجاء اختيار المستشار أولاً");
       return;
     }
-    if (!selectedConsultantId) {
-      // TODO: Show validation error
+    if (!consultationNotes.trim()) {
+      toast.error("الرجاء إدخال سؤال الاستشارة");
       return;
     }
     const selectedConsultant = consultants.find((c) => c.id === selectedConsultantId);
@@ -1111,11 +1135,11 @@ const ContentRequestDetail: React.FC = () => {
 
       <div className="flex flex-col flex-1 min-h-0">
         {/* Tab Content Container - like UC04 */}
-        <div className="overflow-y-auto h-full bg-white border border-[#E6E6E6] rounded-2xl  mt-0">
+        <div className="overflow-y-auto p-[20px] h-full bg-white border border-[#E6E6E6] rounded-2xl  mt-0">
           {/* Tab Content */}
           {activeTab === "request-info" && (
             <div className="flex flex-col gap-4 w-full">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full p-[20px]">
                 <ReadOnlyField label="رقم الطلب" value={contentRequest?.request_number ?? "-"} />
                 <ReadOnlyField
                   label="تاريخ الطلب"
