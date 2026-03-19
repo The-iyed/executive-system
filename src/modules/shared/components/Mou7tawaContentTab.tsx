@@ -273,7 +273,7 @@ export function Mou7tawaContentTab({
         {!readOnly && <AddFileButton label="إضافة عرض تقديمي" onClick={onAddPresentation} />}
 
         {/* متى سيتم إرفاق العرض؟ */}
-        <div className="space-y-1.5">
+        {/* <div className="space-y-1.5">
           <label className="text-sm font-medium text-[#344054] text-right block">متى سيتم إرفاق العرض؟</label>
           <div className="relative">
             {readOnly ? (
@@ -293,7 +293,7 @@ export function Mou7tawaContentTab({
               </>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* مرفقات اختيارية */}
