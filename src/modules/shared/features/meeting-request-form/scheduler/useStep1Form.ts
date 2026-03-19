@@ -17,8 +17,8 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
   const defaults: SchedulerStep1Values = {
     meeting_nature: MeetingNature.NORMAL,
     previous_meeting_id: "",
-    submitter: "",
-    meeting_owner: "",
+    submitter: null,
+    meeting_owner: null,
     meeting_title: "",
     meeting_subject: "",
     description: "",
