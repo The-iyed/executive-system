@@ -12,6 +12,17 @@ import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from ".
 
 /* ─── Submitter Step 1 Schema ─── */
 
+const meetingUserSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  username: z.string().optional(),
+  email: z.string().optional(),
+  displayName: z.string().optional(),
+  givenName: z.string().optional(),
+  mail: z.string().optional(),
+  objectGUID: z.string().optional(),
+}).passthrough();
+
 export const submitterStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
@@ -33,8 +44,7 @@ export const submitterStep1Schema = z.object({
   is_urgent: z.enum([BOOL.TRUE, BOOL.FALSE]),
   urgent_reason: z.string().optional(),
   is_on_behalf_of: z.enum([BOOL.TRUE, BOOL.FALSE]),
-  meeting_owner: z.string().optional(),
-  meeting_owner_user: z.any().optional(),
+  meeting_owner: meetingUserSchema.nullable().optional(),
   meeting_start_date: z.string().optional(),
   meeting_end_date: z.string().optional(),
   agenda_items: z.array(agendaItemSchema).default([]),

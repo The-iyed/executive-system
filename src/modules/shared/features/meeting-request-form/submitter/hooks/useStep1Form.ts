@@ -1,6 +1,6 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
 import { submitterStep1Schema, type SubmitterStep1Values } from "../schema";
 import {
   MeetingType,
