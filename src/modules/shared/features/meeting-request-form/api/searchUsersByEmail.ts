@@ -1,4 +1,3 @@
-import type { UsersListResponse } from '../shared/hooks/useManagerSearch';
 import { PAGE_SIZE, axiosInstance, toError } from './config';
 
 /** Generic user result from the email search API — used by manager select, invitees table, etc. */

@@ -1,6 +1,6 @@
-import type { SubmitterStep1Values } from "../../submitter/schema";
+type Step1Values = Record<string, unknown>;
 
-export function buildStep1FormData(data: SubmitterStep1Values): FormData {
+export function buildStep1FormData(data: Step1Values): FormData {
   const fd = new FormData();
 
   for (const [key, value] of Object.entries(data)) {
