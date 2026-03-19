@@ -20,18 +20,17 @@ export interface ADUserByEmail {
  * Search AD users by email.
  * GET /api/v1/local/search/byemail?email=xxx&limit=10
  * Response: array of AD users (displayNameAR, displayNameEN, title, department, mail, mobile, objectGUID, etc.)
+ * When email is empty, sends "a" so the API returns an initial list on open (e.g. users matching "a").
  */
 export const searchByEmail = async (
   email: string,
   limit: number = 10
 ): Promise<ADUserByEmail[]> => {
   const trimmed = email?.trim() ?? '';
-  if (!trimmed || trimmed.length < 1) {
-    return [];
-  }
+  const query = trimmed.length > 0 ? trimmed : 'a';
   const response = await axiosInstance.get<ADUserByEmail[] | { items?: ADUserByEmail[]; data?: ADUserByEmail[] }>(
     '/api/v1/local/search/byemail',
-    { params: { email: trimmed, limit: Math.min(Math.max(limit, 1), 1000) } }
+    { params: { email: query, limit: Math.min(Math.max(limit, 1), 1000) } }
   );
   const data = response.data;
   if (Array.isArray(data)) return data;
