@@ -42,10 +42,10 @@ interface OnboardingProps {
 
 export default function Onboarding({ user, onSuccess }: OnboardingProps) {
   const [form, setForm] = useState<OnboardingFormData>({
-    full_name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '',
-    email: user.email || '',
-    id_number: user.national_id ?? '',
-    mobile: user.phone_number ?? '',
+    full_name: user?.ar_name?.trim() || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.username || '',
+    email: user?.email || '',
+    id_number: user?.national_id ?? '',
+    mobile: user?.phone_number ?? '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof OnboardingFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,7 +63,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     if (!form.full_name?.trim()) newErrors.full_name = 'الاسم الكامل مطلوب';
     if (!form.email?.trim()) newErrors.email = 'البريد الإلكتروني مطلوب';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'البريد الإلكتروني غير صحيح';
-    if (!form.id_number?.trim()) newErrors.id_number = 'رقم الهوية مطلوب';
+    // National ID field is disabled — no validation required
     if (!form.mobile?.trim()) newErrors.mobile = 'رقم الجوال مطلوب';
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
@@ -145,6 +145,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   className={inputClass}
                   dir="rtl"
                   placeholder={LABELS.email}
+                  disabled
                 />
                 {errors.email && (
                   <span className="text-xs text-red-500 text-left">{errors.email}</span>
@@ -162,6 +163,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   className={inputClassIdMobile}
                   dir="rtl"
                   placeholder={LABELS.id_number}
+                  disabled
                 />
                 {errors.id_number && (
                   <span className="text-xs text-red-500 text-left">{errors.id_number}</span>
@@ -175,6 +177,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
                   className={inputClassIdMobile}
                   dir="rtl"
                   placeholder={LABELS.mobile}
+                  disabled
                 />
                 {errors.mobile && (
                   <span className="text-xs text-red-500 text-left">{errors.mobile}</span>
