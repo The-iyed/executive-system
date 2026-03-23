@@ -35,7 +35,6 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     is_urgent: BOOL.FALSE,
     urgent_reason: "",
     is_on_behalf_of: BOOL.FALSE,
-    meeting_owner: "",
     meeting_start_date: "",
     meeting_end_date: "",
     agenda_items: [],
