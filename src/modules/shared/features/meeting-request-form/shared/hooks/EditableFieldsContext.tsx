@@ -9,7 +9,7 @@ const FIELD_DEPENDENCIES: Record<string, string[]> = {
   meeting_channel: ["meeting_location", "meeting_location_custom"],
   meeting_location: ["meeting_location_custom"],
   is_urgent: ["urgent_reason"],
-  is_on_behalf_of: ["meeting_owner_id"],
+  is_on_behalf_of: ["meeting_owner"],
   meeting_classification: [
     "meeting_justification",
     "meeting_classification_type",

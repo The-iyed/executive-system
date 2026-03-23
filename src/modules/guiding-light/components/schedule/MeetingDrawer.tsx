@@ -98,7 +98,7 @@ const consultantLabelStyle: CSSProperties = {
 };
 
 function AttendeeLabel({ attendee }: { attendee: Attendee }) {
-  const nameStr = `${attendee.name}${attendee.role ? ` (${attendee.role})` : ""}`;
+  const nameStr = `${attendee.name}${attendee.email ? ` (${attendee.email})` : ""}`;
   if (attendee.consultant) {
     return <span className="shrink-0 text-right text-[11px]" style={consultantLabelStyle}>{nameStr}</span>;
   }
@@ -258,6 +258,11 @@ function DrawerContent({
 
           {/* Attachments + time row */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground/80 shrink-0">
+              <Clock className="size-3.5 text-primary" />
+              <span>{meeting.time}</span>
+              {meeting.duration && <span className="text-muted-foreground font-normal">({meeting.duration})</span>}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -287,11 +292,6 @@ function DrawerContent({
                 <Paperclip className="size-3.5" />
                 العرض التقديمي
               </button>
-            </div>
-            <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground/80 shrink-0">
-              <Clock className="size-3.5 text-primary" />
-              <span>{meeting.time}</span>
-              <span className="text-muted-foreground font-normal">• {meeting.duration}</span>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -332,7 +332,6 @@ function DrawerContent({
             "bg-primary/5 border-primary/15"
           )}>
             <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground/80 mb-3">
-              <Sparkles className="size-3.5 text-primary" />
               الأجندة والدعم المطلوب
               {meeting.agenda?.length ? (
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold text-primary">{meeting.agenda.length}</span>
@@ -469,13 +468,25 @@ function DrawerContent({
 
           {/* AI Recommendation — hidden for past meetings */}
           {!isPast && meeting.aiDelegateeRecommendation && (
-            <div className="relative z-10 flex-1 min-w-0 flex items-center gap-2.5 px-2 py-2">
-              <img src={aounLogo} alt="" className="size-4 shrink-0 brightness-0 invert opacity-60" />
-              <p className="text-[10px] text-white/70 truncate leading-relaxed">
+            <button
+              type="button"
+              onClick={() => { /* TODO: show MM response details */ }}
+              className="relative z-10 flex-1 min-w-0 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <svg className="w-7 h-4 shrink-0" viewBox="0 0 72 32" fill="none">
+                <path d="M37.8174 0C42.1018 0 45.5752 3.47342 45.5752 7.75781L36.7773 32H25.5352L33.8447 7.75781H20.04L11.2422 32H0L8.30957 7.75781H20.04L22.7871 0H37.8174ZM63.3535 0C67.6377 0.000224723 71.1113 3.47356 71.1113 7.75781L62.3135 32H51.0713L59.3809 7.75781H45.5762L48.3232 0H63.3535Z" fill="url(#paint0_drawer)" />
+                <defs>
+                  <linearGradient id="paint0_drawer" x1="56.5658" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#5BAB87" />
+                    <stop offset="1" stopColor="#3B6064" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <p className="text-[11px] text-white/70 truncate leading-relaxed">
                 ينصحكم بالنظام بإنابة هذا الاجتماع إلى{" "}
                 <span className="font-semibold text-emerald-400">{meeting.aiDelegateeRecommendation}</span>
               </p>
-            </div>
+            </button>
           )}
 
           {/* Delegation Button — hidden for past meetings */}

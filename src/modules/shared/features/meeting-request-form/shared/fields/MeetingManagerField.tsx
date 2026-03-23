@@ -1,6 +1,7 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { FormField } from "./FieldGroup";
 import { ManagerSelect } from "./ManagerSelect";
+import type { UserSearchResult } from "../../api";
 
 interface Props {
   name: string;
@@ -11,15 +12,22 @@ interface Props {
   initialLabel?: string;
 }
 
-export function MeetingManagerField({ name, label, placeholder, disabled, required = true, initialLabel }: Props) {
+export function MeetingManagerField({
+  name,
+  label,
+  placeholder,
+  disabled,
+  required = true,
+  initialLabel,
+}: Props) {
   const { control, formState: { errors } } = useFormContext();
   return (
     <FormField label={label} name={name} required={required} errors={errors} colSpan={4}>
       <Controller name={name} control={control}
         render={({ field }) => (
           <ManagerSelect
-            value={field.value ?? ""}
-            onChange={field.onChange}
+            value={field.value as UserSearchResult | null | undefined}
+            onChange={(user) => field.onChange(user)}
             placeholder={placeholder}
             hasError={!!errors[name]}
             disabled={disabled}
