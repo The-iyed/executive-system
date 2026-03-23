@@ -10,6 +10,7 @@ import { MeetingPreviewTab, InviteesTab, ContentTab, NotesTab, RequestInfoTab } 
 import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { trackEvent } from '@/lib/analytics';
 import { getMeetingById } from '@/modules/shared/api';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 
 function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_officer_notes?: string | null; note?: string | null }): string {
@@ -28,7 +29,8 @@ function getNotesTextFromMeeting(meeting: { general_notes?: unknown; content_off
 const PreviewMeeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(MeetingPreviewTabs.REQUEST_INFO);
   const [previewAttachment, setPreviewAttachment] = useState<{ blob_url: string; file_name: string; file_type?: string } | null>(null);
-  const { openEditDrawer } = useMeetingFormDrawer();
+  const [submitterOpen, setSubmitterOpen] = useState(false);
+  const openEditSubmitter = () => { setSubmitterOpen(true); };
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -122,7 +124,7 @@ const PreviewMeeting: React.FC = () => {
       case MeetingPreviewTabs.REQUEST_INFO:
         return <RequestInfoTab meeting={meeting} />;
       case MeetingPreviewTabs.INVITEES:
-        return <InviteesTab meeting={meeting} />;
+        return <InviteesTab invitees={meeting?.invitees} />;
       case MeetingPreviewTabs.CONTENT:
         return <ContentTab meeting={meeting} onPreviewAttachment={(att) => setPreviewAttachment(att)} />;
       case MeetingPreviewTabs.NOTES:
@@ -133,6 +135,9 @@ const PreviewMeeting: React.FC = () => {
   };
 
   return (
+  <>
+    <SubmitterModal open={submitterOpen} onOpenChange={setSubmitterOpen} editMeetingId={meeting.id} />
+   
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-6 px-1">
         <DetailPageHeader
@@ -142,7 +147,7 @@ const PreviewMeeting: React.FC = () => {
           editAction={{
             visible: true,
             hasChanges: true,
-            onClick: () => openEditDrawer(meeting.id),
+            onClick: () => openEditSubmitter(),
             label: 'تعديل',
             tooltip: 'تعديل طلب الاجتماع',
           }}
@@ -171,6 +176,7 @@ const PreviewMeeting: React.FC = () => {
         attachment={previewAttachment}
       />
     </div>
+  </>
   );
 };
 

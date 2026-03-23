@@ -1,0 +1,42 @@
+import { useMemo } from "react";
+import { MeetingClassification, BOOL } from "../../enums";
+
+export interface Step1Context {
+  meeting_classification: string;
+  meeting_confidentiality: string;
+  is_urgent: string;
+}
+
+export interface Step2Visibility {
+  showPresentation: boolean;
+  presentationRequired: boolean;
+  showTiming: boolean;
+}
+
+/**
+ * Computes Step 2 field visibility & validation rules from Step 1 data.
+ */
+export function useStep2Visibility(step1Data: Step1Context): Step2Visibility {
+  return useMemo(() => {
+    const hidePresentation =
+      step1Data.meeting_classification === MeetingClassification.DISCUSSION_WITHOUT_PRESENTATION;
+
+    const exemptCategories: string[] = [
+      MeetingClassification.BILATERAL_MEETING,
+      MeetingClassification.PRIVATE_MEETING,
+      MeetingClassification.WORKSHOP,
+    ];
+
+    const presentationRequired =
+      !hidePresentation &&
+      (
+        !exemptCategories.includes(step1Data.meeting_classification) ||
+        step1Data.meeting_confidentiality !== "CONFIDENTIAL" ||
+        step1Data.is_urgent !== BOOL.TRUE
+      );
+
+    const showTiming = step1Data.is_urgent === BOOL.TRUE;
+
+    return { showPresentation: !hidePresentation, presentationRequired, showTiming };
+  }, [step1Data.meeting_classification, step1Data.meeting_confidentiality, step1Data.is_urgent]);
+}
