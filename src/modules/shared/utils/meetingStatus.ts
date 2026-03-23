@@ -1,6 +1,7 @@
 import { MeetingOwnerType, MeetingStatus, MeetingStatusLabels } from "@/modules/shared";
 
   const SubmitterStatusMap: Partial<Record<MeetingStatus, MeetingStatus>> = {
+    [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
     [MeetingStatus.UNDER_REVIEW]: MeetingStatus.UNDER_REVIEW,
     [MeetingStatus.UNDER_GUIDANCE]: MeetingStatus.UNDER_REVIEW,
     [MeetingStatus.UNDER_CONTENT_REVIEW]: MeetingStatus.UNDER_REVIEW,
