@@ -2,56 +2,198 @@ name: Deploy to Azure VM
 
 on:
   push:
-    branches:
-      - '*.prod'
-      - prod
     tags:
-      - '*.prod'
-      
+      - "v*.dev"
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
 jobs:
-  deploy:
-    runs-on: [self-hosted, azure-runner]
-    
+  # --- DEVELOPMENT DEPLOYMENT ---
+  deploy_dev:
+    name: Deploy to Development
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.env == 'dev')
+    runs-on: [self-hosted, azure-runner] # !!! UPDATE THIS IF YOUR DEV RUNNER LABEL IS DIFFERENT !!!
+    outputs:
+      deploy_log: ${{ steps.deploy_step.outputs.deploy_log }}
+      deploy_env: development
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Deploy and validate
-        run: |
-          # 1. Ensure target directory exists and copy the project files to it
-          sudo mkdir -p /var/www/minister-mind-fe 
-          pwd
-          sudo cp -R . /var/www/minister-mind-fe
-          
-          # 2. Navigate to the project directory
-          cd /var/www/minister-mind-fe
-          
-          # 3. Pull the latest base images and rebuild the containers securely
-          sudo docker compose pull
-          sudo docker compose up -d --build
-          
-          # 4. Best Practice: Wait a few seconds for containers to initialize
-          echo "Waiting for services to start..."
-          sleep 10
-          
-          # 5. Best Practice: Verify the service is healthy (Port 4404 is the frontend)
-          if curl -f http://localhost:4404 > /dev/null 2>&1; then
-            echo "Deployment successful: Service is healthy!"
-          else
-            echo "Deployment warning: Health check failed or endpoint not ready yet."
-          fi
-          
-          # 6. Best Practice: Clean up dangling images to prevent filling the VM's disk space over time
-          # sudo docker image prune -af --filter "until=24h"
+        with:
+          fetch-depth: 0
 
-  # notify:
-  #   needs: deploy
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   steps:
-  #     - name: Discord Notification
-  #       env:
-  #         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-  #       uses: Ilshidur/action-discord@master
-  #       with:
-  #         args: 'Deployment of **Minister Mind Frontend** has finished with status: **${{ needs.deploy.result }}**'
+      - name: Create .env file from secret
+        shell: bash
+        env:
+          ENV_SECRET: ${{ secrets.DEV_ENV_FILE }}
+        run: |
+          echo -e "$ENV_SECRET" >> $GITHUB_WORKSPACE/env.tmp
+          awk '{for(i=1;i<=NF;i++) if($i~/=/) print $i;}' $GITHUB_WORKSPACE/env.tmp >> $GITHUB_WORKSPACE/.env
+          echo "=== .env file created ==="
+
+      - name: Upload .env as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-file-development
+          path: ${{ github.workspace }}/env.tmp
+          retention-days: 1
+
+      - name: Deploy and validate
+        id: deploy_step
+        env:
+          VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
+          COMPOSE_FILE: docker-compose.yml
+          DEST_DIR: /var/www/minister-mind-fe
+        run: |
+          set -eo pipefail
+          LOG_FILE=$(mktemp)
+          save_log() {
+            TRUNCATED_LOG=$(tail -c 3500 "$LOG_FILE" 2>/dev/null || true)
+            printf 'deploy_log<<EOF\n%s\nEOF\n' "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
+            rm -f "$LOG_FILE"
+          }
+          trap save_log EXIT
+          echo ">>> [Dev] Deploying to $DEST_DIR using $COMPOSE_FILE..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+          cd "$DEST_DIR"
+          echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" up -d --force-recreate 2>&1 | tee -a "$LOG_FILE"
+          sleep 20
+          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
+
+  # --- PRODUCTION DEPLOYMENT ---
+  deploy_prod:
+    name: Deploy to Production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.env == 'prod'
+    runs-on: [self-hosted, momah-vm]
+    outputs:
+      deploy_log: ${{ steps.deploy_step.outputs.deploy_log }}
+      deploy_env: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create .env file from secret
+        shell: bash
+        env:
+          ENV_SECRET: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          echo -e "$ENV_SECRET" >> $GITHUB_WORKSPACE/env.tmp
+          awk '{for(i=1;i<=NF;i++) if($i~/=/) print $i;}' $GITHUB_WORKSPACE/env.tmp >> $GITHUB_WORKSPACE/.env
+          echo "=== .env file created ==="
+
+      - name: Upload .env as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-file-production
+          path: ${{ github.workspace }}/env.tmp
+          retention-days: 1
+
+      - name: Deploy and validate
+        id: deploy_step
+        env:
+          VM_PASSWORD: ${{ secrets.VM_PROD_PASSWORD }}
+          COMPOSE_FILE: docker-prod-compose.yml
+          DEST_DIR: /var/www/stats-v2
+        run: |
+          set -eo pipefail
+          LOG_FILE=$(mktemp)
+          save_log() {
+            TRUNCATED_LOG=$(tail -c 3500 "$LOG_FILE" 2>/dev/null || true)
+            printf 'deploy_log<<EOF\n%s\nEOF\n' "$TRUNCATED_LOG" >> "$GITHUB_OUTPUT"
+            rm -f "$LOG_FILE"
+          }
+          trap save_log EXIT
+          echo ">>> [Prod] Deploying to $DEST_DIR using $COMPOSE_FILE..." | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+          cd "$DEST_DIR"
+          echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" up -d --force-recreate 2>&1 | tee -a "$LOG_FILE"
+          sleep 20
+          echo "$VM_PASSWORD" | sudo -S docker image prune -af --filter "until=24h" 2>&1 | tee -a "$LOG_FILE"
+
+  # --- NOTIFICATION ---
+  notify:
+    name: Discord Notification
+    needs: [deploy_dev, deploy_prod]
+    runs-on: [self-hosted, momah-vm] # Use any reliable runner for notifications
+    if: always()
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DEPLOY_RESULT: ${{ (needs.deploy_dev.result == 'skipped' || needs.deploy_dev.result == 'success') && needs.deploy_prod.result != 'skipped' && needs.deploy_prod.result || needs.deploy_dev.result }}
+          DEPLOY_LOG: ${{ needs.deploy_dev.result == 'skipped' && toJSON(needs.deploy_prod.outputs.deploy_log) || toJSON(needs.deploy_dev.outputs.deploy_log) }}
+          ENV_TITLE: ${{ needs.deploy_dev.result == 'skipped' && 'production' || 'development' }}
+          REPO: ${{ github.repository }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+          RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          AUTHOR: ${{ github.actor }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, urllib.error
+          webhook, result, repo, repo_url, run_id, branch, env_title = os.environ["DISCORD_WEBHOOK"], os.environ["DEPLOY_RESULT"], os.environ["REPO"], os.environ["REPO_URL"], os.environ["RUN_ID"], os.environ["BRANCH"], os.environ["ENV_TITLE"]
+          author, commit_sha, commit_msg = os.environ["AUTHOR"], os.environ["COMMIT_SHA"][:7], os.environ["COMMIT_MSG"]
+          run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+          is_success = result == "success"
+          color = 2664261 if is_success else 14431557
+          icon = "✅" if is_success else "❌"
+          desc = f"Deployment ({env_title}) completed successfully." if is_success else f"Deployment ({env_title}) **FAILED**."
+          status_embed = {
+              "title": f"{icon} GitHub Action", "description": desc, "color": color,
+              "fields": [
+                  {"name": "📁 Project", "value": f"[{repo}]({repo_url})", "inline": True},
+                  {"name": "🌍 Environment", "value": env_title, "inline": True},
+                  {"name": "📊 Status", "value": result, "inline": True},
+                  {"name": "👤 Author", "value": author, "inline": True},
+                  {"name": "🌿 Tag/Branch", "value": branch or "unknown", "inline": True},
+                  {"name": "🔗 Commit", "value": f"[`{commit_sha}`]({repo_url}/commit/{os.environ['COMMIT_SHA']}) — {commit_msg}", "inline": False},
+                  {"name": "🚀 Run", "value": f"[View run]({run_url})", "inline": False},
+              ],
+              "footer": {"text": "Deployment Service | Powered by GitHub"}
+          }
+          payload = {"embeds": [status_embed]}
+          data = json.dumps(payload).encode("utf-8")
+          req = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json", "User-Agent": "curl/8.5.0"}, method="POST")
+          try:
+              urllib.request.urlopen(req)
+          except Exception as e:
+              print(f"Error sending Discord embed: {e}")
+
+          if not is_success:
+              raw_log = os.environ.get("DEPLOY_LOG", "")
+              try: log = json.loads(raw_log)
+              except Exception: log = raw_log
+              log = (log or "").strip()
+              error_lines = [line.strip() for line in log.splitlines() if any(kw in line.lower() for kw in ["error", "failed", "exit code", "health check"])]
+              summary = "\n".join(error_lines[-15:]) if error_lines else log[-800:]
+              log_value = f"```\n{summary[:980]}\n```"
+              log_embed = {
+                  "title": "📋 Failure Logs", "color": 14431557,
+                  "fields": [
+                      {"name": "🌿 Target", "value": branch or "unknown", "inline": True},
+                      {"name": "📄 Error Summary", "value": log_value, "inline": False},
+                  ]
+              }
+              data = json.dumps({"embeds": [log_embed]}).encode("utf-8")
+              req = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json", "User-Agent": "curl/8.5.0"}, method="POST")
+              try: urllib.request.urlopen(req)
+              except Exception as e: print(f"Error sending log embed: {e}")
+          PYEOF
