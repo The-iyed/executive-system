@@ -103,6 +103,7 @@ import { useMeetingFormDrawer } from '../../UC01/features/MeetingForm/hooks/useM
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/modules/auth';
 import { PdfIcon } from '@/lib/ui/assets/icons/PdfIcon';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 /** Extra meeting info field specs for UC02 meeting detail: sequential meeting, previous meeting select (when sequential), الرقم التسلسلي */
 const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
@@ -195,8 +196,8 @@ const MeetingDetail: React.FC = () => {
   const [isSuggestAttendeesModalOpen, setIsSuggestAttendeesModalOpen] = useState(false);
   const [expandedConsultationId, setExpandedConsultationId] = useState<string | null>(null);
   const [expandedGuidanceId, setExpandedGuidanceId] = useState<string | null>(null);
-
-  const { openEditDrawer } = useMeetingFormDrawer();
+  const [ meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const openEditForm = () => { setMeetingFormOpen(true); };
 
   // Fetch meeting data from API
   const { data: meeting, isLoading, error } = useQuery({
@@ -1230,16 +1231,16 @@ const MeetingDetail: React.FC = () => {
       ? meeting.meeting_channel
       : scheduleForm.meeting_channel;
 
-    // If meeting channel is VIRTUAL (عن بُعد), use the already-created Webex meeting link
+    // If meeting channel is VIRTUAL or HYBRID, use the already-created Webex meeting link
     let meetingLink: string | undefined = undefined;
-    if (meetingChannel === 'VIRTUAL') {
+    if (meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') {
       if (!webexMeetingDetails) {
         setValidationError('يرجى الانتظار حتى يتم إنشاء اجتماع Webex');
         return;
       }
       meetingLink = webexMeetingDetails.join_link;
     } else {
-      // Clear Webex details if channel is not VIRTUAL
+      // Clear Webex details if channel is not VIRTUAL or HYBRID
       setWebexMeetingDetails(null);
     }
 
@@ -1348,6 +1349,7 @@ const MeetingDetail: React.FC = () => {
         (hasPreviousMeetingContext && basedOnDirective ? 'PREVIOUS_MEETING' : '');
       const guidance = meeting.related_guidance ?? '';
       setFormData({
+        description: meeting.description ?? '',
         meeting_type: meeting.meeting_type || '',
         meeting_title: meeting.meeting_title || '',
         meeting_classification: meeting.meeting_classification || '',
@@ -1404,12 +1406,13 @@ const MeetingDetail: React.FC = () => {
  
  
 
-  // Auto-create Webex meeting when ONLINE channel is selected and date/time is set
+  // Auto-create Webex meeting when VIRTUAL or HYBRID channel is selected and date/time is set
   useEffect(() => {
-      // Only create if modal is open, channel is VIRTUAL, start date is set, and we don't already have details
+      // Only create if modal is open, channel is VIRTUAL or HYBRID, start date is set, and we don't already have details
+    const needsWebex = scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID';
     if (
       !isScheduleModalOpen ||
-      scheduleForm.meeting_channel !== 'VIRTUAL' ||
+      !needsWebex ||
       !scheduleForm.scheduled_at ||
       webexMeetingDetails ||
       isCreatingWebex
@@ -1470,7 +1473,7 @@ const MeetingDetail: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
 
-  /** Create Webex meeting (for confirm modal or when VIRTUAL and no link yet). Uses meeting or scheduleForm for start/end. */
+  /** Create Webex meeting (for confirm modal or when VIRTUAL/HYBRID and no link yet). Uses meeting or scheduleForm for start/end. */
   const createWebexLink = useCallback(async () => {
     const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
     if (!startSource || !endSource) {
@@ -2486,7 +2489,7 @@ const MeetingDetail: React.FC = () => {
               hasChanges,
               opensForm: true,
               tooltip: 'فتح نموذج التعديل',
-              onClick: () => openEditDrawer(meeting.id),
+              onClick: () => openEditForm(),
             }}
             primaryAction={
               <AIGenerateButton
@@ -2912,59 +2915,6 @@ const MeetingDetail: React.FC = () => {
                 </div>
               </section>
 
-              {/* ─── الملخّص التنفيذي ─── */}
-              <section className="rounded-2xl border border-[#E5E7EB] bg-white">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
-                  <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
-                    <FileText className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-[#1F2937]">الملخّص التنفيذي</h3>
-                </div>
-                <div className="p-6">
-                  {(() => {
-                    const execSummaryText = meeting?.executive_summary != null && String(meeting.executive_summary).trim() !== '' ? String(meeting.executive_summary) : null;
-                    const execSummaryAttachments = (meeting?.attachments ?? []).filter((a) => a.is_executive_summary === true && !deletedAttachmentIds.includes(a.id));
-                    const hasExec = execSummaryText || execSummaryAttachments.length > 0;
-                    if (!hasExec) {
-                      return (
-                        <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
-                          <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.5} />
-                          </div>
-                          <p className="text-sm text-[#6B7280]">لا يوجد ملخّص تنفيذي</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-col gap-4">
-                        {execSummaryText && (
-                          <div className="w-full px-5 py-4 bg-[#FFFBEB]/50 border border-[#FDE68A]/40 rounded-xl text-right text-[#78350F] leading-relaxed text-sm whitespace-pre-wrap">
-                            {execSummaryText}
-                          </div>
-                        )}
-                        {execSummaryAttachments.length > 0 && (
-                          <div className="grid grid-cols-1 gap-3">
-                            {execSummaryAttachments.map((att) => (
-                              <div key={att.id} className="group flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#92400E]/30 hover:shadow-sm transition-all duration-200">
-                                {att.file_type?.toLowerCase() === 'pdf' ? <PdfIcon /> : <div className="w-10 h-10 bg-[#F3F4F6] rounded-lg flex items-center justify-center text-xs font-bold text-[#DC2626] flex-shrink-0">{att.file_type?.toUpperCase() || ''}</div>}
-                                <div className="flex flex-col items-end min-w-0 flex-1">
-                                  <span className="text-sm font-medium text-[#1F2937] truncate w-full text-right">{att.file_name}</span>
-                                  <span className="text-xs text-[#9CA3AF]">{Math.round((att.file_size || 0) / 1024)} KB</span>
-                                </div>
-                                <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                  <a href={att.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-[#92400E]/8 text-[#92400E] transition-colors"><Download className="w-4 h-4" /></a>
-                                  <button type="button" onClick={() => window.open(att.blob_url, '_blank')} className="p-2 rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"><Eye className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </section>
-
               {/* ─── ملاحظات ─── */}
               <section className="rounded-2xl border border-[#E5E7EB] bg-white">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-[#F3F4F6] bg-[#FAFAFA] rounded-t-2xl">
@@ -3311,13 +3261,13 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-right text-sm text-green-600">تم جدولة الاجتماع بنجاح</p>
                       </div>
                     )}
-                    {scheduleForm.meeting_channel === 'VIRTUAL' && isCreatingWebex && (
+                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
                       <div className="flex items-center gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
                         <div className="w-5 h-5 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
                         <span className="text-sm text-[#374151]">جاري إنشاء اجتماع Webex...</span>
                       </div>
                     )}
-                    {scheduleForm.meeting_channel === 'VIRTUAL' && webexMeetingDetails && !isCreatingWebex && (
+                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
                       <div className="flex flex-col gap-2 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
                         <label className="text-sm font-semibold text-[#1F2937] text-right">تفاصيل اجتماع Webex</label>
                         <div className="flex gap-2">
@@ -4200,7 +4150,8 @@ const MeetingDetail: React.FC = () => {
       </div>
 
       {/* UC01 Edit Meeting form: all edits happen here; drawer state managed by useMeetingFormDrawer hook */}
-      <MeetingFormDrawer initialMeetingData={meeting ?? undefined} />
+      {/* <MeetingFormDrawer initialMeetingData={meeting ?? undefined} /> */}
+      <SubmitterModal open={meetingFormOpen} onOpenChange={setMeetingFormOpen} editMeetingId={meeting.id} />
 
       {/* Meeting Quality Modal */}
      <QualityModal 
@@ -4409,13 +4360,13 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-[#1F2937] text-sm leading-relaxed whitespace-pre-wrap">{scheduleForm.notes}</p>
                       </div>
                     )}
-                    {meetingChannel === 'VIRTUAL' && webexMeetingDetails?.join_link && (
+                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && webexMeetingDetails?.join_link && (
                       <div className="flex flex-col gap-1 py-2 border-b border-[#F3F4F6]">
                         <span className="text-[#6B7280] font-medium">رابط Webex</span>
                         <p className="text-[#048F86] text-sm truncate" dir="ltr">{webexMeetingDetails.join_link}</p>
                       </div>
                     )}
-                    {meetingChannel === 'VIRTUAL' && !webexMeetingDetails && (
+                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && !webexMeetingDetails && (
                       <div className="flex flex-col gap-3 py-3 px-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl">
                         <span className="text-[#6B7280] font-medium text-right">رابط Webex</span>
                         {isCreatingWebex ? (
@@ -4450,7 +4401,7 @@ const MeetingDetail: React.FC = () => {
             {(() => {
               const { start: effStart, end: effEnd } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
               const meetingCh = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
-              const canConfirm = !!(effStart && effEnd && (meetingCh !== 'VIRTUAL' || webexMeetingDetails));
+              const canConfirm = !!(effStart && effEnd && ((meetingCh !== 'VIRTUAL' && meetingCh !== 'HYBRID') || webexMeetingDetails));
               return (
                 <button
                   type="button"
@@ -5015,7 +4966,7 @@ const MeetingDetail: React.FC = () => {
                     !scheduleForm.scheduled_end_at ||
                     scheduleMutation.isPending ||
                     isCreatingWebex ||
-                    (scheduleForm.meeting_channel === 'VIRTUAL' && !webexMeetingDetails)
+                    ((scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && !webexMeetingDetails)
                   }
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -5117,10 +5068,10 @@ const MeetingDetail: React.FC = () => {
             </label>
             <Select
                   value={scheduleForm.meeting_channel}
-                  onValueChange={(value) => {
+                    onValueChange={(value) => {
                     setScheduleForm((prev) => ({ ...prev, meeting_channel: value as typeof prev.meeting_channel }));
-                    // Clear Webex details when channel changes
-                    if (value !== 'VIRTUAL') {
+                    // Clear Webex details when channel changes to non-remote
+                    if (value !== 'VIRTUAL' && value !== 'HYBRID') {
                       setWebexMeetingDetails(null);
                     }
                   }}
@@ -5139,8 +5090,8 @@ const MeetingDetail: React.FC = () => {
                 </Select>
           </div>
 
-          {/* Webex Meeting Loading - Show when creating */}
-              {scheduleForm.meeting_channel === 'VIRTUAL' && isCreatingWebex && (
+          {/* Webex Meeting Loading - Show when creating (VIRTUAL or HYBRID) */}
+              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
                 <div className="flex flex-col gap-2 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
@@ -5151,8 +5102,8 @@ const MeetingDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Webex Meeting Details - Show when VIRTUAL channel and details are available */}
-              {scheduleForm.meeting_channel === 'VIRTUAL' && webexMeetingDetails && !isCreatingWebex && (
+              {/* Webex Meeting Details - Show when VIRTUAL or HYBRID channel and details are available */}
+              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
                 <div className="flex flex-col gap-4 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD]"></div>
