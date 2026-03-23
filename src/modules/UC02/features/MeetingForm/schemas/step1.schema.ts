@@ -210,11 +210,8 @@ export const step1ValidationSchema = step1BaseSchema
     meetingClassification1: strOptional('تصنيف الاجتماع يجب أن يكون نصاً'),
     meeting_channel: str('آلية انعقاد الاجتماع مطلوبة'),
     meetingGoals: z.array(meetingGoalItemStrict).optional().default([]),
-    meetingAgenda: z
-      .array(agendaItem(true))
-      .min(1, 'أجندة الاجتماع مطلوبة - يرجى إضافة عنصر واحد على الأقل')
-      .optional()
-      .default([]),
+    /** UC02: أجندة الاجتماع is always optional (no minimum length). */
+    meetingAgenda: z.array(agendaItem(false)).optional().default([]),
     ministerSupport: z.array(ministerSupportItemStrict).optional().default([]),
     previousMeetings: z.array(previousMeetingItemStrict).optional().default([]),
   })
