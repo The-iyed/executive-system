@@ -34,7 +34,7 @@ export interface MeetingRequestPayload {
   is_urgent: "true" | "false";
   urgent_reason?: string;
   is_on_behalf_of: "true" | "false";
-  meeting_owner_id?: string;
+  meeting_owner?: string;
   meeting_start_date?: string;
   meeting_end_date?: string;
   is_based_on_directive: "true" | "false";

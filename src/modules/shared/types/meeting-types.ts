@@ -57,14 +57,14 @@ export const SUBMITTER_EDIT_BLOCKED_MESSAGE =
 export const MeetingStatusLabels: Record<MeetingStatus, string> = {
   [MeetingStatus.DRAFT]: 'جديد',
   [MeetingStatus.UNDER_REVIEW]: 'قيد المراجعة',
-  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معلومات إضافية (محتوى)',
+  [MeetingStatus.RETURNED_FROM_CONTENT]: 'معلومات إضافية',
+  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معلومات إضافية',
   [MeetingStatus.UNDER_GUIDANCE]: 'قيد المراجعة -  استشارة',
   [MeetingStatus.UNDER_CONTENT_REVIEW]: 'قيد المراجعة - محتوى',
   [MeetingStatus.REJECTED]: 'مرفوض',
   [MeetingStatus.WAITING]: 'قيد الانتظار',
   [MeetingStatus.SCHEDULED]: 'مجدول',
   [MeetingStatus.SCHEDULED_DELAYED]: 'مجدول - متأخر',
-  [MeetingStatus.RETURNED_FROM_SCHEDULING]: 'معلومات إضافية (جدولة)',
   [MeetingStatus.CANCELLED]: 'ملغي',
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: 'مجدول - معلومات إضافية',
   [MeetingStatus.SCHEDULED_ADDITIONAL_INFO_CONTENT]: 'مجدول - معلومات إضافية',
@@ -286,18 +286,21 @@ export const MeetingChannelLabels: Record<string, string> = {
   PHYSICAL: 'حضوري',
   VIRTUAL: 'عن بعد',
   HYBRID: 'حضوري - عن بعد',
+  TBD: 'يحدد لاحقًا',
 };
 
 export enum Channel {
   PHYSICAL = 'PHYSICAL',
   VIRTUAL = 'VIRTUAL',
   HYBRID = 'HYBRID',
+  TBD = 'TBD',
 }
 /** Shared meeting channel options for forms (UC01 & UC02). Same options and labels everywhere. */
 export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
   { value: Channel.PHYSICAL, label: MeetingChannelLabels.PHYSICAL },
   { value: Channel.VIRTUAL, label: MeetingChannelLabels.VIRTUAL },
   { value: Channel.HYBRID, label: MeetingChannelLabels.HYBRID },
+  { value: Channel.TBD, label: MeetingChannelLabels.TBD },
 ];
 
 /**

@@ -293,7 +293,7 @@ function MeetingCardActions({ meetingId, meetingRequestId }: MeetingCardActionsP
 
   /** Optimistically remove this meeting from all cached ministerSchedule queries */
   const removeMeetingFromCache = useCallback(() => {
-    queryClient.setQueriesData<import("@/api/unified/types").MinisterScheduleResponse>(
+    queryClient.setQueriesData<import("@gl/api/unified/types").MinisterScheduleResponse>(
       { queryKey: ["ministerSchedule"] },
       (old) => {
         if (!old) return old;
@@ -351,12 +351,15 @@ function MeetingCardActions({ meetingId, meetingRequestId }: MeetingCardActionsP
   const handleConfirmForward = async () => {
     setActionError(null);
     setActionLoading(true);
+    // Optimistic: remove card immediately
+    removeMeetingFromCache();
+    setConfirmAction(null);
     try {
       await passMeeting(meetingId, { notes: forwardNotes.trim() || undefined });
-      removeMeetingFromCache();
-      setConfirmAction(null);
       setForwardNotes("");
     } catch (err) {
+      // Rollback: refetch to restore the card
+      queryClient.invalidateQueries({ queryKey: ["ministerSchedule"] });
       setActionError(err instanceof Error ? err.message : "فشل تمرير الاجتماع");
     } finally {
       setActionLoading(false);

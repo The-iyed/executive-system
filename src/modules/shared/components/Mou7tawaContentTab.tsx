@@ -273,7 +273,7 @@ export function Mou7tawaContentTab({
         {!readOnly && <AddFileButton label="إضافة عرض تقديمي" onClick={onAddPresentation} />}
 
         {/* متى سيتم إرفاق العرض؟ */}
-        <div className="space-y-1.5">
+        {/* <div className="space-y-1.5">
           <label className="text-sm font-medium text-[#344054] text-right block">متى سيتم إرفاق العرض؟</label>
           <div className="relative">
             {readOnly ? (
@@ -293,25 +293,37 @@ export function Mou7tawaContentTab({
               </>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* مرفقات اختيارية */}
       <div className="border border-[#EAECF0] rounded-xl p-5 space-y-4">
         <h3 className="text-base font-bold text-[#101828] text-center">مرفقات اختيارية</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {optionalFiles.map((file) => (
-            <FileCard
-              key={file.id}
-              file={file}
-              onView={onView ? () => onView(file) : undefined}
-              onDownload={onDownload ? () => onDownload(file) : undefined}
-              onDelete={onDelete ? () => onDelete(file) : undefined}
-              readOnly={readOnly}
-            />
-          ))}
-        </div>
+        {optionalFiles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {optionalFiles.map((file) => (
+              <FileCard
+                key={file.id}
+                file={file}
+                onView={onView ? () => onView(file) : undefined}
+                onDownload={onDownload ? () => onDownload(file) : undefined}
+                onDelete={onDelete ? () => onDelete(file) : undefined}
+                readOnly={readOnly}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+            <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 text-[#9CA3AF]" strokeWidth={1.2} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#374151]">لا توجد مرفقات اختيارية</p>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">لم تتم إضافة مرفقات</p>
+            </div>
+          </div>
+        )}
 
         {!readOnly && <AddFileButton label="إضافة مرفق" onClick={onAddOptional} />}
       </div>

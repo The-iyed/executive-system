@@ -7,7 +7,6 @@ import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, getMeetingTa
 import { Icon } from '@iconify/react';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
-import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 import { deleteDraft } from '../../data/draftApi';
@@ -17,7 +16,6 @@ const Meeting: React.FC = () => {
   const [submitterOpen, setSubmitterOpen] = useState(false);
   const openNewSubmitter = () => { setSubmitterOpen(true); };
   const navigate = useNavigate();
-  const { openCreateDrawer } = useMeetingFormDrawer();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
@@ -239,7 +237,7 @@ const Meeting: React.FC = () => {
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-56 p-2" dir="rtl">
                   <div className="flex flex-col gap-0.5">
-                    {filterTabs.filter(t => t.id !== 'all').map((tab) => {
+                    {filterTabs?.map((tab) => {
                       const isChecked = statusFilters.includes(tab.id);
                       return (
                         <button
@@ -271,9 +269,6 @@ const Meeting: React.FC = () => {
                             </div>
                             <span>{tab.label}</span>
                           </div>
-                          {tab.count !== undefined && (
-                            <span className="text-xs text-[var(--color-text-gray-400)] tabular-nums">{tab.count}</span>
-                          )}
                         </button>
                       );
                     })}
