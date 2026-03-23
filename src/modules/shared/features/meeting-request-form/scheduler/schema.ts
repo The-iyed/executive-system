@@ -2,11 +2,25 @@ import { z } from "zod";
 import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocation, BOOL, MeetingNature, MeetingConfidentiality } from "../shared/types/enums";
 import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from "../shared/schema";
 
+const meetingUserSchema = z.object({
+  id: z.string().optional(),
+  username: z.string().optional(),
+  email: z.string().optional(),
+  displayName: z.string().optional(),
+  givenName: z.string().optional(),
+  mail: z.string().optional(),
+  objectGUID: z.string().optional(),
+}).passthrough();
+
 export const schedulerStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
-  submitter_id: z.string().min(1, "مقدّم الطلب مطلوب"),
-  meeting_owner_id: z.string().min(1, "مالك الاجتماع مطلوب"),
+  submitter: meetingUserSchema.nullable().superRefine((v, ctx) => {
+    if (!v) ctx.addIssue({ code: "custom", message: "مقدّم الطلب مطلوب" });
+  }),
+  meeting_owner: meetingUserSchema.nullable().superRefine((v, ctx) => {
+    if (!v) ctx.addIssue({ code: "custom", message: "مالك الاجتماع مطلوب" });
+  }),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),

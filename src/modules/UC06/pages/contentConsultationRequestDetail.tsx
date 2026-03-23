@@ -214,7 +214,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
     },
     {
       id: "consultations-log",
-      label: "سجل الإستشارات",
+      label: "الاستشارات",
     },
   ];
 
@@ -325,7 +325,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full p-[20px]">
               <ReadOnlyField label="رقم الطلب" value={meetingRequest.request_number ?? "-"} />
               <ReadOnlyField
                 label="تاريخ الطلب"
@@ -603,7 +603,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
           <div className="flex flex-col w-full bg-white h-full" dir="rtl">
             <div className="flex-1 min-h-0">
               {isLoadingConsultationRecords ? (
-                <div className="flex items-center justify-center py-16">
+                <div className="flex items-center justify-center py-8">
                   <div className="text-gray-600">جاري التحميل...</div>
                 </div>
               ) : consultationRecords && consultationRecords.items.length > 0 ? (
@@ -768,12 +768,14 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-[#98A2B3]" />
+                <div className="flex items-center gap-3 py-6 px-6 rounded-xl bg-[#F9FAFB] border border-dashed border-[#D1D5DB]">
+                  <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5 text-[#98A2B3]" />
                   </div>
-                  <p className="text-[15px] font-semibold text-[#344054]">سجل الإستشارات</p>
-                  <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#344054]">الاستشارات</p>
+                    <p className="text-[13px] text-[#667085] mt-0.5">لا توجد استشارات مسجلة</p>
+                  </div>
                 </div>
               )}
             </div>
