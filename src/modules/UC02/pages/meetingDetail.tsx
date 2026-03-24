@@ -1875,11 +1875,11 @@ const MeetingDetail: React.FC = () => {
       meetingChannel: apiChannel || undefined,
       meeting_location: m.location || scheduleForm.location || undefined,
       meeting_link: joinUrl,
-      meetingCategory: formData.meeting_classification_type || undefined,
+      meetingCategory: formData.meeting_classification || undefined,
       meetingReason: formData.meeting_justification || undefined,
       relatedTopic: formData.related_topic || undefined,
       dueDate: formData.deadline || undefined,
-      meetingClassification1: formData.meeting_classification || undefined,
+      meetingClassification1: formData.meeting_classification_type || undefined,
       meetingConfidentiality: formData.meeting_confidentiality || undefined,
       meetingAgenda: (contentForm.agendaItems ?? meeting.agenda_items ?? []).map((item) => ({
         id: (item as any).id,

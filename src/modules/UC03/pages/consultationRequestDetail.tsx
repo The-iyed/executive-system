@@ -131,11 +131,11 @@ const ConsultationRequestDetail: React.FC = () => {
       meeting_end_date: undefined,
       meetingChannel: meetingRequest.meeting_channel ?? undefined,
       meeting_location: meetingRequest.location ?? (meetingRequest as { selected_time_slot?: { location?: string } }).selected_time_slot?.location ?? undefined,
-      meetingCategory: (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ?? meetingRequest.meeting_classification ?? undefined,
+      meetingCategory: meetingRequest.meeting_classification ?? undefined,
       meetingReason: meetingRequest.meeting_justification ?? undefined,
       relatedTopic: meetingRequest.related_topic ?? undefined,
       dueDate: meetingRequest.deadline ?? undefined,
-      meetingClassification1: meetingRequest.meeting_classification ?? undefined,
+      meetingClassification1: (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ?? undefined,
       meetingConfidentiality: (meetingRequest as { meeting_confidentiality?: string }).meeting_confidentiality ?? undefined,
       meetingAgenda: meetingRequest.agenda_items ?? undefined,
       is_based_on_directive: !!(meetingRequest.related_directive_ids && meetingRequest.related_directive_ids.length > 0),
@@ -169,7 +169,7 @@ const ConsultationRequestDetail: React.FC = () => {
     { id: 'meeting-info', label: 'معلومات الاجتماع' },
     { id: 'content', label: 'المحتوى' },
     { id: 'invitees', label: 'قائمة المدعوين' },
-    { id: 'consultations-log', label: 'استشارة المكتب التنفيذي' },
+    { id: 'consultations-log', label: 'الاستشارات' },
   ];
 
   const queryClient = useQueryClient();
@@ -361,11 +361,11 @@ const ConsultationRequestDetail: React.FC = () => {
             <InviteesTableForm initialInvitees={meetingRequest.invitees} mode='view' />
         )}
 
-        {/* ═══ استشارة المكتب التنفيذي — Chat-style (same as UC02 tab) ═══ */}
+        {/* ═══ الاستشارات — Chat-style (same as UC02 tab) ═══ */}
         {activeTab === 'consultations-log' && (
           <div className="flex flex-col w-full bg-white h-full" dir="rtl">
             <div className="px-5 pt-4 pb-2 border-b border-[#F3F4F6]">
-              <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+              <p className="text-[15px] font-semibold text-[#344054]">الاستشارات</p>
               <p className="text-[13px] text-[#667085] mt-0.5">سجل الاستشارات والردود — واجهة محادثة</p>
             </div>
             <div className="flex-1 min-h-0">
@@ -529,7 +529,7 @@ const ConsultationRequestDetail: React.FC = () => {
                   <div className="w-14 h-14 rounded-2xl bg-[#F2F4F7] flex items-center justify-center">
                     <Clock className="w-6 h-6 text-[#98A2B3]" />
                   </div>
-                  <p className="text-[15px] font-semibold text-[#344054]">استشارة المكتب التنفيذي</p>
+                  <p className="text-[15px] font-semibold text-[#344054]">الاستشارات</p>
                   <p className="text-[13px] text-[#667085]">لا توجد استشارات مسجلة</p>
                 </div>
               )}
