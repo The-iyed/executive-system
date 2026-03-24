@@ -25,8 +25,12 @@ function getSubmitErrorMessage(error: unknown, fallback: string): string {
 
 const STATUS_TO_API: Record<string, (draftId: string) => Promise<unknown>> = {
   [MeetingStatus.DRAFT]: submitDraft,
+  
   [MeetingStatus.RETURNED_FROM_SCHEDULING]: resubmitToScheduling,
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO]: resubmitToScheduling,
+
   [MeetingStatus.RETURNED_FROM_CONTENT]: resubmitToContent,
+  [MeetingStatus.SCHEDULED_ADDITIONAL_INFO_CONTENT]: resubmitToContent,
 };
 
 export interface SubmitMeetingParams {
