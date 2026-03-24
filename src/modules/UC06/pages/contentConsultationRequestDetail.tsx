@@ -155,14 +155,12 @@ const ContentConsultationRequestDetail: React.FC = () => {
       meeting_end_date: undefined,
       meetingChannel: meetingRequest.meeting_channel ?? undefined,
       meeting_location: undefined,
-      meetingCategory:
-        (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ??
-        meetingRequest.meeting_classification ??
-        undefined,
+      meetingCategory: meetingRequest.meeting_classification ?? undefined,
       meetingReason: meetingRequest.meeting_justification ?? undefined,
       relatedTopic: meetingRequest.related_topic ?? undefined,
       dueDate: meetingRequest.deadline ?? undefined,
-      meetingClassification1: meetingRequest.meeting_classification ?? undefined,
+      meetingClassification1:
+        (meetingRequest as { meeting_classification_type?: string }).meeting_classification_type ?? undefined,
       meetingConfidentiality:
         (meetingRequest as { meeting_confidentiality?: string }).meeting_confidentiality ?? undefined,
       meetingAgenda: meetingRequest.agenda_items ?? undefined,

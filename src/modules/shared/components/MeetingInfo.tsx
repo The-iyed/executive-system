@@ -83,11 +83,11 @@ export function getMeetingInfoGridSpecs(): MeetingInfoFieldSpec[] {
         );
       },
     },
-    { key: 'meeting_classification_type', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingCategory) ?? '—' },
+    { key: 'meeting_classification', label: 'فئة الاجتماع', getValue: (d) => getMeetingClassificationLabel(d.meetingCategory) ?? '—' },
     { key: 'meeting_justification', label: 'مبرر اللقاء', getValue: (d) => d.meetingReason ?? '—' },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', getValue: (d) => d.relatedTopic ?? '—' },
     { key: 'deadline', label: 'تاريخ الاستحقاق', getValue: (d) => formatDateOnly(d.dueDate) },
-    { key: 'meeting_classification', label: 'تصنيف الاجتماع', getValue: (d) => getMeetingClassificationLabel(d.meetingClassification1) ?? '—' },
+    { key: 'meeting_classification_type', label: 'تصنيف الاجتماع', getValue: (d) => getMeetingClassificationTypeLabel(d.meetingClassification1) ?? '—' },
     { key: 'meeting_confidentiality', label: 'سرية الاجتماع', getValue: (d) => getMeetingConfidentialityLabel(d.meetingConfidentiality) ?? '—' },
   ];
 }
