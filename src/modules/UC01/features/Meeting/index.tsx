@@ -7,7 +7,6 @@ import { DataTable, Pagination, MeetingStatus, CardsGrid, ViewType, getMeetingTa
 import { Icon } from '@iconify/react';
 import { PAGINATION, createTableColumns, MEETING_ACTION_CONFIRM_MESSAGE, MEETING_ACTION_CONFIRM_TITLE } from '../../utils';
 import { useMeetings, useSubmitMeeting } from '../../hooks';
-import { useMeetingFormDrawer } from '../MeetingForm/hooks/useMeetingFormDrawer';
 import { PATH } from '../../routes/paths';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 import { deleteDraft } from '../../data/draftApi';
@@ -17,7 +16,6 @@ const Meeting: React.FC = () => {
   const [submitterOpen, setSubmitterOpen] = useState(false);
   const openNewSubmitter = () => { setSubmitterOpen(true); };
   const navigate = useNavigate();
-  const { openCreateDrawer } = useMeetingFormDrawer();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
