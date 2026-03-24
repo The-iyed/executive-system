@@ -371,7 +371,9 @@ const Meeting: React.FC = () => {
                     if (
                       meeting.status === MeetingStatus.DRAFT ||
                       meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING ||
-                      meeting.status === MeetingStatus.RETURNED_FROM_CONTENT
+                      meeting.status === MeetingStatus.RETURNED_FROM_CONTENT ||
+                      meeting.status === MeetingStatus.SCHEDULED_ADDITIONAL_INFO ||
+                      meeting.status === MeetingStatus.SCHEDULED_ADDITIONAL_INFO_CONTENT
                     ) {
                       openConfirmModal(MEETING_ACTION_CONFIRM_MESSAGE, () =>
                         submitMeeting({ meetingId: meeting.id, status: meeting.status })
@@ -382,10 +384,10 @@ const Meeting: React.FC = () => {
                     if (meeting.status === MeetingStatus.DRAFT) {
                       return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إرسال المسودة';
                     }
-                    if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING) {
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_SCHEDULING || meeting.status === MeetingStatus.SCHEDULED_ADDITIONAL_INFO ) {
                       return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إحالة للمسؤول';
                     }
-                    if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT) {
+                    if (meeting.status === MeetingStatus.RETURNED_FROM_CONTENT || meeting.status === MeetingStatus.SCHEDULED_ADDITIONAL_INFO_CONTENT ) {
                       return isSubmitting && submittingMeetingId === meeting.id ? 'جاري الإرسال...' : 'إحالة للمحتوى';
                     }
                     return undefined;
