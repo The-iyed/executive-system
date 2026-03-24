@@ -1046,11 +1046,11 @@ const ContentRequestDetail: React.FC = () => {
       meeting_end_date: undefined,
       meetingChannel: contentRequest.meeting_channel ?? undefined,
       meeting_location: (cr.meeting_location as string) ?? undefined,
-      meetingCategory: (cr.meeting_classification_type as string) ?? contentRequest.meeting_classification ?? undefined,
+      meetingCategory: contentRequest.meeting_classification ?? undefined,
       meetingReason: contentRequest.meeting_justification ?? undefined,
       relatedTopic: contentRequest.related_topic ?? undefined,
       dueDate: contentRequest.deadline ?? undefined,
-      meetingClassification1: contentRequest.meeting_classification ?? undefined,
+      meetingClassification1: (cr.meeting_classification_type as string) ?? undefined,
       meetingConfidentiality: (cr.meeting_confidentiality as string) ?? undefined,
       meetingAgenda: contentRequest.agenda_items ?? undefined,
       is_based_on_directive: !!(

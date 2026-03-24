@@ -60,7 +60,7 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>فئة الاجتماع</label>
-          <div className={valueClass} style={fontStyle}>{classificationTypeLabel}</div>
+          <div className={valueClass} style={fontStyle}>{classificationLabel}</div>
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>موضوع التكليف المرتبط</label>
@@ -74,7 +74,7 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>تصنيف الاجتماع</label>
-          <div className={valueClass} style={fontStyle}>{classificationLabel}</div>
+          <div className={valueClass} style={fontStyle}>{classificationTypeLabel}</div>
         </div>
         <div className="flex flex-col gap-[3.53px]">
           <label className={labelClass} style={fontStyle}>سريّة الاجتماع</label>

@@ -66,11 +66,11 @@ const PreviewMeeting: React.FC = () => {
       meeting_end_date: (meeting as { scheduled_end?: string | null }).scheduled_end ?? undefined,
       meetingChannel: meeting.meeting_channel ?? undefined,
       meeting_location: (m.meeting_location as string | undefined) ?? (m.location as string | undefined) ?? undefined,
-      meetingCategory: meeting.meeting_classification_type ?? undefined,
+      meetingCategory: meeting.meeting_classification ?? undefined,
       meetingReason: meeting.meeting_justification ?? undefined,
       relatedTopic: meeting.related_topic ?? undefined,
       dueDate: meeting.deadline ?? undefined,
-      meetingClassification1: meeting.meeting_classification ?? undefined,
+      meetingClassification1: meeting.meeting_classification_type ?? undefined,
       meetingConfidentiality: meeting.meeting_confidentiality ?? undefined,
       meetingAgenda: meeting.agenda_items?.map((item) => {
         const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_type?: string; support_description?: string };
