@@ -181,8 +181,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
+      // Snapshot for rollback
+      const previousEvents = queryClient.getQueryData<CalendarTimelineEvent[]>([...queryKey]);
+
       try {
-      const invitees = ((values.invitees ?? []) as Record<string, unknown>[]).map((m) => ({
+        const invitees = ((values.invitees ?? []) as Record<string, unknown>[]).map((m) => ({
           name: (m.name ?? m.full_name ?? '') as string,
           position: (m.position ?? m.position_title ?? '') as string,
           mobile: (m.mobile ?? m.mobile_number ?? '') as string,
@@ -208,21 +211,50 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         };
 
         if (isEdit) {
+          // Optimistically update the edited event in cache
+          queryClient.setQueryData<CalendarTimelineEvent[]>(
+            [...queryKey],
+            (old) => (old ?? []).map((e) =>
+              e.meetingId === slot!.meetingId
+                ? {
+                    ...e,
+                    title: (values.title as string) || e.title,
+                    start: scheduled_start,
+                    end: scheduled_end,
+                    meetingTitle: (values.title as string) || e.meetingTitle,
+                    meetingChannel: (values.meeting_channel as string) || e.meetingChannel,
+                    meetingLocation: (values.meeting_location as string) || e.meetingLocation,
+                    meetingLink: (values.meeting_link as string) || e.meetingLink,
+                    location: (values.meeting_location as string) || e.location,
+                  }
+                : e
+            ),
+          );
+
+          // Close modal immediately
+          setSlot(null);
+
           await updateScheduledMeeting(slot!.meetingId!, payload);
           trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
             meeting_id: slot!.meetingId,
             meeting_title: values.title,
           });
+
+          // Background sync
+          queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         } else {
           const optimisticId = `optimistic-${Date.now()}`;
 
-          // Optimistic update using correct query key from useCalendarEvents
+          // Optimistic insert
           queryClient.setQueryData<CalendarTimelineEvent[]>(
             [...queryKey],
             (old) => [...(old ?? []), buildOptimisticEvent(
               values.title as string, scheduled_start, scheduled_end, optimisticId,
             )],
           );
+
+          // Close modal immediately
+          setSlot(null);
 
           const result = await createScheduledMeeting(payload);
           trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
@@ -256,13 +288,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           const meetingForCache = normalizedMeetingFromCreateResponse(result as unknown as Record<string, unknown>);
           queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
         }
-
-        setSlot(null);
-        if (isEdit) {
-          queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
-        }
       } catch (err: unknown) {
-        if (!isEdit) {
+        // Rollback cache to previous state
+        if (previousEvents) {
+          queryClient.setQueryData<CalendarTimelineEvent[]>([...queryKey], previousEvents);
+        } else {
           queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         }
         const message =
