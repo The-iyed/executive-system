@@ -61,8 +61,8 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             disabled={
               !isSchedulerEdit &&
               meetingStatus === MeetingStatus.SCHEDULED &&
-              !initialValues?.meeting_start_date &&
-              !initialValues?.meeting_end_date
+            !!initialValues?.meeting_start_date &&
+            !!initialValues?.meeting_end_date
             }
           />
           <MeetingChannelField />
