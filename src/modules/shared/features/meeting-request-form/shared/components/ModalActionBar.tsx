@@ -6,6 +6,7 @@ interface ModalActionBarProps {
   totalSteps: number;
   saving?: boolean;
   showSaveAsDraft?: boolean;
+  submitLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onCancel: () => void;
