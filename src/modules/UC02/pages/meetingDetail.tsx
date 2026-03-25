@@ -2875,7 +2875,7 @@ const MeetingDetail: React.FC = () => {
                   <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                     <ClipboardCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
-                  {renderFieldLabel('general_notes', 'ملاحظات', 'text-[15px] font-bold text-[#1F2937]')}
+                  <h3 className="text-[15px] font-bold text-[#1F2937]">ملاحظات</h3>
                 </div>
                 <div className="p-6">
                   {(() => {
