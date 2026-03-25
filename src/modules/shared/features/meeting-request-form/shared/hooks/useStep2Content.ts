@@ -16,6 +16,7 @@ export interface ExistingAttachment {
 export interface Step2ContentInitialData {
   existingPresentations?: ExistingAttachment[];
   existingAdditionalFiles?: ExistingAttachment[];
+  can_upload_more_than_one: boolean
 }
 
 /* ─── State ─── */
@@ -98,7 +99,24 @@ export function useStep2Content({
     state.deleted_attachment_ids.length > 0;
 
   /** Draft → free edit; Returned → can add one new version (no removing existing) */
-  const canUploadNewPresentation = !state.newPresentationFile && (isDraftStatus ? !hasPresentationFile : isReturnedStatus);
+  // const canUploadNewPresentation = !state.newPresentationFile && (isDraftStatus ? !hasPresentationFile : isReturnedStatus);
+  // const canUploadNewPresentation = !state.newPresentationFile && (isDraftStatus ? !hasPresentationFile :  initialData?.can_upload_more_than_one);
+  // const canUploadNewPresentation =
+  // !state.newPresentationFile &&
+  // (
+  //   isDraftStatus ||
+  //   initialData?.can_upload_more_than_one
+  // );
+  const hasExistingPresentation = state.existingPresentations.length > 0;
+
+const canUploadNewPresentation =
+  !state.newPresentationFile &&
+  (
+    !hasExistingPresentation ||
+    meetingStatus === MeetingStatus.DRAFT ||
+    meetingStatus === MeetingStatusUnCommitted.DRAFT_UNCOMMITTED ||
+    initialData?.can_upload_more_than_one
+  );
 
   /** Only draft statuses allow deleting existing server presentations */
   const canDeleteExistingPresentation = isDraftStatus;
