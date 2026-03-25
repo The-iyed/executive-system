@@ -213,7 +213,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (event.id === 'highlighted-slot') return;
+    if (event.id === 'highlighted-slot' || isPast) return;
     e.stopPropagation();
     // Hide expanded hover card immediately so it doesn't sit on top of the modal
     setCardRect(null);
