@@ -3056,21 +3056,6 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-right text-sm text-green-600">تم جدولة الاجتماع بنجاح</p>
                       </div>
                     )}
-                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
-                      <div className="flex items-center gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
-                        <div className="w-5 h-5 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                        <span className="text-sm text-[#374151]">جاري إنشاء اجتماع Webex...</span>
-                      </div>
-                    )}
-                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
-                      <div className="flex flex-col gap-2 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
-                        <label className="text-sm font-semibold text-[#1F2937] text-right">تفاصيل اجتماع Webex</label>
-                        <div className="flex gap-2">
-                          <Input type="text" value={webexMeetingDetails.join_link} readOnly className="flex-1 h-9 bg-white border border-[#D0D5DD] rounded-lg text-right text-sm" />
-                          <button type="button" onClick={() => navigator.clipboard.writeText(webexMeetingDetails.join_link)} className="px-3 py-1.5 text-xs bg-[#048F86] text-white rounded-lg hover:bg-[#037A72] transition-colors">نسخ</button>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex flex-col gap-4">
                       <FormField label="مبدئي" className="w-full max-w-none h-auto">
                         <FormSwitch checked={!scheduleForm.requires_protocol} onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: !checked }))} />
