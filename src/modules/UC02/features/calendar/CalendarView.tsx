@@ -336,6 +336,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             initialMeetingLocation={slot.meetingLocation ?? undefined}
             initialMeetingChannel={slot.meetingChannel ?? ''}
             initialInvitees={slot.initialInvitees}
+            mode={slot.mode}
             isSubmitting={slotSubmitting}
             submitError={slotError}
             onSubmit={handleSlotSubmit as any}
