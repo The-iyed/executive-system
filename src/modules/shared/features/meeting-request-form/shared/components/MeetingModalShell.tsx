@@ -19,6 +19,7 @@ interface MeetingModalShellProps {
   error?: string | null;
   saving?: boolean;
   showSaveAsDraft?: boolean;
+  submitLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onSubmit: () => void;
