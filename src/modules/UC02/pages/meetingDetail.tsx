@@ -431,15 +431,6 @@ const MeetingDetail: React.FC = () => {
   // Schedule modal state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleConfirmModalOpen, setScheduleConfirmModalOpen] = useState(false);
-  const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingDetails, setWebexMeetingDetails] = useState<{
-    join_link: string;
-    webex_meeting_unique_identifier: string;
-    meeting_number: string;
-    password: string;
-    sip_address: string;
-    host_key: string;
-  } | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     scheduled_at: '',
     scheduled_end_at: '',
