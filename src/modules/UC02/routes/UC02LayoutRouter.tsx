@@ -1,5 +1,6 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { prefetchUC02Routes } from './prefetchRoutes';
 import { useAuth } from '@/modules/auth';
 import { AuthGuard } from '@/modules/shared/guards';
 import { ScreenLoader, Loader } from '@/modules/shared';
@@ -24,6 +25,10 @@ export const UC02LayoutRouter: React.FC = () => {
   const { user, isInitialised } = useAuth();
   const filtered = filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles);
   const defaultRoute = getDefaultRouteForUser(user?.use_cases, user?.roles);
+
+  useEffect(() => {
+    prefetchUC02Routes();
+  }, []);
 
   if (!isInitialised) {
     return <ScreenLoader />;
