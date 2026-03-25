@@ -28,7 +28,9 @@ export function useSubmitterModal({
   callerRole,
 }: UseSubmitterModalOptions) {
   const { toast }= useToast()
+  const queryClient = useQueryClient();
   const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
+  const isEditMode = !!editMeetingId;
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
   const steps = useModalSteps({ editMeetingId, onClose });
