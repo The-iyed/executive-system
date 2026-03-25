@@ -13,7 +13,7 @@ import {
 } from "../../shared/types/enums";
 import { useVisibilityCleanup } from "../../shared";
 
-export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>) {
+export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>, options?: { isSchedulerEdit?: boolean }) {
   const defaults: SubmitterStep1Values = {
     meeting_nature: MeetingNature.NORMAL,
     previous_meeting_id: "",
