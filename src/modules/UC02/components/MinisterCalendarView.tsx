@@ -204,9 +204,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     title?: string;
     meetingLocation?: string | null;
     meetingChannel?: string;
-    meetingLink?: string | null;
-    /** From API when editing; send with meeting_link when updating */
-    webexMeetingUniqueId?: string | null;
     meetingId?: string;
     mode?: 'create' | 'edit';
     /** Pre-fill invitees table when editing (from event.attendees) */
@@ -772,8 +769,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
                           meetingLocation: selectedEventForDetails.meeting_location ?? location,
                           meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
-                          meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
-                          webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
                           meetingId: selectedEventForDetails.meeting_id ?? undefined,
                           mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
                           initialInvitees,
@@ -809,8 +804,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             initialTitle={slotForNewMeeting.title ?? ''}
             initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
             initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
-            initialMeetingLink={slotForNewMeeting.meetingLink ?? undefined}
-            initialWebexMeetingUniqueId={slotForNewMeeting.webexMeetingUniqueId ?? undefined}
             initialInvitees={slotForNewMeeting.initialInvitees}
             isSubmitting={slotFormSubmitting}
             submitError={slotFormError}
@@ -836,8 +829,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     scheduled_end,
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
-                    meeting_link: values.meeting_link,
-                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
@@ -866,8 +857,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     scheduled_end,
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
-                    meeting_link: values.meeting_link,
-                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
