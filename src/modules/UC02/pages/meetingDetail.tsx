@@ -3658,31 +3658,6 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-[#1F2937] text-sm leading-relaxed whitespace-pre-wrap">{scheduleForm.notes}</p>
                       </div>
                     )}
-                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && webexMeetingDetails?.join_link && (
-                      <div className="flex flex-col gap-1 py-2 border-b border-[#F3F4F6]">
-                        <span className="text-[#6B7280] font-medium">رابط Webex</span>
-                        <p className="text-[#048F86] text-sm truncate" dir="ltr">{webexMeetingDetails.join_link}</p>
-                      </div>
-                    )}
-                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && !webexMeetingDetails && (
-                      <div className="flex flex-col gap-3 py-3 px-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl">
-                        <span className="text-[#6B7280] font-medium text-right">رابط Webex</span>
-                        {isCreatingWebex ? (
-                          <div className="flex items-center gap-2 text-[#374151] text-sm">
-                            <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                            جاري إنشاء اجتماع Webex...
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => createWebexLink()}
-                            className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors"
-                          >
-                            إنشاء رابط Webex
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               );
