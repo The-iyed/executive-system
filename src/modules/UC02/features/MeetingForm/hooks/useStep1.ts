@@ -188,7 +188,7 @@ export function useStep1({
       setTableErrors({});
       return true;
     }
-    const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(result, formData);
+    const { formErrors, tableErrors: extractedTableErrors } = extractValidationErrors(result as any, formData);
     setErrors(formErrors);
     setTableErrors(extractedTableErrors);
 
