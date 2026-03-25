@@ -43,6 +43,15 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-5">
           <MeetingNatureField />
           {visibility.previous_meeting_id && <PreviousMeetingField />}
+          {isSchedulerEdit && (
+            <MeetingManagerField
+              name="submitter"
+              label="مقدّم الطلب"
+              placeholder="ابحث عن مقدّم الطلب..."
+              disabled={false}
+              initialLabel={initialValues?.submitter?.name || initialValues?.submitter?.username || initialValues?.submitter?.displayName || initialValues?.submitter?.mail}
+            />
+          )}
           <OnBehalfField />
           {visibility.meeting_owner && <MeetingOwnerField
               name="meeting_owner"
