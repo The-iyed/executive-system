@@ -3674,7 +3674,7 @@ const MeetingDetail: React.FC = () => {
             {(() => {
               const { start: effStart, end: effEnd } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
               const meetingCh = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
-              const canConfirm = !!(effStart && effEnd && ((meetingCh !== 'VIRTUAL' && meetingCh !== 'HYBRID') || webexMeetingDetails));
+              const canConfirm = !!(effStart && effEnd);
               return (
                 <button
                   type="button"
