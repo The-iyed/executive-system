@@ -4175,13 +4175,11 @@ const MeetingDetail: React.FC = () => {
                   disabled={
                     !scheduleForm.scheduled_at ||
                     !scheduleForm.scheduled_end_at ||
-                    scheduleMutation.isPending ||
-                    isCreatingWebex ||
-                    ((scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && !webexMeetingDetails)
+                    scheduleMutation.isPending
                   }
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                  {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
+                  {scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
               </button>
               </>
             )}
