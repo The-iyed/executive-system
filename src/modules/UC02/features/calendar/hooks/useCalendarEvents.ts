@@ -17,7 +17,12 @@ export function useCalendarEvents(currentDate: Date, viewMode: CalendarViewMode)
   const queryClient = useQueryClient();
 
   const { startISO, endISO } = useMemo(() => {
-    const range = viewMode === 'monthly' ? getMonthRange(currentDate) : getWeekRange(currentDate);
+    const range =
+      viewMode === 'monthly'
+        ? getMonthRange(currentDate)
+        : viewMode === 'daily'
+          ? getDayRange(currentDate)
+          : getWeekRange(currentDate);
     return toISORange(range);
   }, [currentDate, viewMode]);
 
