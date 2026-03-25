@@ -256,7 +256,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           // Close modal immediately
           setSlot(null);
 
-          const result = await createScheduledMeeting(payload);
+          const result = await createScheduledMeeting(payload as any);
           trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
             meeting_id: result?.id,
             meeting_title: values.title,
