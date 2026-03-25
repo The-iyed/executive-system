@@ -47,8 +47,8 @@ const prepareFormData = (formData: Partial<Step1FormData>): FormData => {
   }
   if (formData.meetingReason) fd.append('meeting_justification', formData.meetingReason);
   // relatedDirective kept in form state only; not sent to API
-  if (formData.requester) fd.append('submitter_id', getOptionValue(formData.requester) ?? '');
-  if (formData.meetingOwner) fd.append('owner_id', getOptionValue(formData.meetingOwner) ?? '');
+  if (formData.requester) fd.append('submitter_id', getOptionValue(formData.requester as { value: string }) ?? '');
+  if (formData.meetingOwner) fd.append('owner_id', getOptionValue(formData.meetingOwner as { value: string }) ?? '');
   if (formData.meetingDescription) fd.append('description', formData.meetingDescription);
   fd.append('is_urgent', formData.isUrgent ? 'true' : 'false');
   if (formData.isUrgent && formData.urgentReason) fd.append('urgent_reason', formData.urgentReason);

@@ -43,6 +43,9 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     directive_method: undefined,
     previous_meeting_minutes_file_content: "",
     directive_text: "",
+    submitter: null,
+    requires_protocol: BOOL.FALSE,
+    related_directive: "",
     ...initialValues,
   };
 
