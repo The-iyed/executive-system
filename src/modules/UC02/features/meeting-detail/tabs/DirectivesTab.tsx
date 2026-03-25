@@ -4,7 +4,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { DataTable, formatDateArabic } from '@/modules/shared';
-import type { RelatedDirective } from '../../data/meetingsApi';
+import type { RelatedDirective } from '@/modules/shared/types';
 import { translateDirectiveStatus } from '../utils/meetingDetailHelpers';
 
 export interface DirectivesTabProps {
