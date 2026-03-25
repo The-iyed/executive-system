@@ -49,6 +49,11 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     ...initialValues,
   };
 
+  // When meeting_owner exists or scheduler is editing, force on-behalf to true
+  if (options?.isSchedulerEdit || (initialValues?.meeting_owner && typeof initialValues.meeting_owner === 'object')) {
+    defaults.is_on_behalf_of = BOOL.TRUE;
+  }
+
   const form = useForm<SubmitterStep1Values>({
     resolver: zodResolver(submitterStep1Schema),
     defaultValues: defaults,
