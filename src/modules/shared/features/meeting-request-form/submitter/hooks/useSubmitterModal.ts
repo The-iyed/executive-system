@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useSaveDraftInvitees,
@@ -12,6 +11,7 @@ import { MeetingStatus } from "../../shared/types/types";
 import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
+import { getMeetingById } from "@/modules/shared/api/meetings";
 import { useToast } from "@/lib/ui";
 
 interface UseSubmitterModalOptions {
@@ -85,15 +85,18 @@ export function useSubmitterModal({
   
     return response;
   };
-  /** Invalidate detail-page queries so both UC01 & UC02 views refresh */
-  const invalidateMeetingDetails = useCallback((meetingId: string) => {
-    // UC01 submitter preview: ['meeting', id, 'preview']
-    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
-    // UC02 scheduler detail: ['meeting', id]
-    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
-    // Meeting lists
-    queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-    queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+  const syncMeetingDetails = useCallback(async (meetingId: string) => {
+    const freshMeeting = await getMeetingById(meetingId);
+
+    queryClient.setQueryData(['meeting', meetingId], freshMeeting);
+    queryClient.setQueryData(['meeting', meetingId, 'preview'], freshMeeting);
+
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId], exact: true, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'], exact: true, type: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
+    ]);
   }, [queryClient]);
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
@@ -108,7 +111,7 @@ export function useSubmitterModal({
       const meetingStatus = result.status;
   
       if (isSchedulerEdit) {
-        if (isEditMode) invalidateMeetingDetails(meetingId);
+        if (isEditMode) await syncMeetingDetails(meetingId);
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
         return;
@@ -122,12 +125,12 @@ export function useSubmitterModal({
         toast({title: "تم التحديث بنجاح"});
       }
   
-      if (isEditMode) invalidateMeetingDetails(meetingId);
+      if (isEditMode) await syncMeetingDetails(meetingId);
       steps.resetModal();
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
-  }, [steps, isSchedulerEdit, isEditMode, detail.meetingStatus, inviteesMutation, invalidateMeetingDetails]);
+  }, [steps, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, toast]);
 
   // ── Save as draft ─────────────────────────────────────────────────────────
   const handleSaveAsDraft = useCallback(async () => {
@@ -138,13 +141,13 @@ export function useSubmitterModal({
       const saved = await saveInvitees(meetingId);
       if (!saved) return;
   
-      if (isEditMode) invalidateMeetingDetails(meetingId);
+      if (isEditMode) await syncMeetingDetails(meetingId);
       toast({title: "تم حفظ المسودة بنجاح"});
       steps.resetModal();
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
-  }, [steps, isEditMode, inviteesMutation, invalidateMeetingDetails]);
+  }, [steps, isEditMode, syncMeetingDetails, toast]);
 
   // ── Public API ────────────────────────────────────────────────────────────
   return {
