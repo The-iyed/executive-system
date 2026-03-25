@@ -39,7 +39,6 @@ export function useSubmitterModal({
   const detail = useMeetingDetail({
     meetingId: steps.activeDraftId,
     isEditMode: steps.isEditMode,
-    callerRole,
   });
 
   // ── Role-specific mutations (step 3 / final submit) ───────────────────────
