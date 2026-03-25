@@ -283,9 +283,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   href={display.locationOrLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-colors hover:bg-primary/90"
+                  className="group relative flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground text-[15px] font-bold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99]"
                 >
-                  <Video className="w-4.5 h-4.5" />
+                  <Video className="w-5 h-5" />
                   انضم للاجتماع
                 </a>
               )}
