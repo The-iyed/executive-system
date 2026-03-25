@@ -84,6 +84,7 @@ export function MeetingModalShell({
             totalSteps={MEETING_STEPS.length}
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
+            submitLabel={submitLabel}
             onNext={onNext}
             onPrev={() => onStepClick(currentStep - 1)}
             onCancel={() => onOpenChange(false)}
