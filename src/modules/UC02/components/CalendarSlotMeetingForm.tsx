@@ -213,7 +213,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     if (isPresetLocation(loc)) return loc;
     if (loc !== '') return loc;
     if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
-    if (locationDropdownValue === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
+    if ((locationDropdownValue as string) === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
     return undefined;
   }, [isPhysical, meetingLocation, locationDropdownValue]);
 
