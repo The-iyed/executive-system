@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/ui';
 import { Clock, MapPin, Plus } from 'lucide-react';
