@@ -2,7 +2,6 @@ import { useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getMeetingsTimeline,
-  getDayRange,
   getWeekRange,
   getMonthRange,
   toISORange,
@@ -17,12 +16,7 @@ export function useCalendarEvents(currentDate: Date, viewMode: CalendarViewMode)
   const queryClient = useQueryClient();
 
   const { startISO, endISO } = useMemo(() => {
-    const range =
-      viewMode === 'monthly'
-        ? getMonthRange(currentDate)
-        : viewMode === 'daily'
-          ? getDayRange(currentDate)
-          : getWeekRange(currentDate);
+    const range = viewMode === 'monthly' ? getMonthRange(currentDate) : getWeekRange(currentDate);
     return toISORange(range);
   }, [currentDate, viewMode]);
 
