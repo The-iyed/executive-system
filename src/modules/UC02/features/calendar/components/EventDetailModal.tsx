@@ -184,7 +184,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   className={cn(
                     'group relative flex items-center justify-center gap-3 w-full py-3 rounded-xl text-[14px] font-bold transition-all duration-200 active:scale-[0.98]',
                     display.status === 'live'
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700'
+                      ? 'bg-[hsl(var(--primary))] text-primary-foreground shadow-lg shadow-primary/25 hover:bg-[hsl(var(--primary)/0.9)] ring-2 ring-primary/30'
                       : display.status === 'soon'
                         ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30'
                         : 'bg-primary/90 text-primary-foreground shadow-sm hover:bg-primary hover:shadow-md',
