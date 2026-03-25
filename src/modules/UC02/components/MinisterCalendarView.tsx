@@ -12,7 +12,6 @@ import { MinisterFullCalendar } from './MinisterFullCalendar';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle, toISOStringWithTimezone } from '@/lib/ui';
 import {
   getOutlookTimelineEvents,
-  getCalendarWeekRange,
   createScheduledMeeting,
   updateScheduledMeeting,
   mapCreatedMeetingToOutlookEvent,
