@@ -69,6 +69,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             }
           />
           <MeetingChannelField />
+          {isSchedulerEdit && <RequiresProtocolField />}
 
           {visibility.meeting_location && (
             <>
