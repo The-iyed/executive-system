@@ -40,6 +40,8 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
     setCurrentStep,
   } = useSubmitterModal({ editMeetingId, onClose: () => onOpenChange(false), callerRole });
 
+  const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
+
   return (
     <MeetingModalShell
       open={open}
