@@ -27,41 +27,6 @@ export function getCalendarWeekRange(centerDate: Date): { startISO: string; endI
   return { startISO: toISOStringWithTimezone(startDate), endISO: toISOStringWithTimezone(endDate) };
 }
 
-/** Same staleTime as calendar useQuery so prefetched data is used when calendar mounts */
-export const OUTLOOK_TIMELINE_STALE_MS = 2 * 60 * 1000; // 2 minutes
-
-/** Prefetch a single week for the Outlook timeline (same query key as MinisterCalendarView). */
-export async function prefetchOutlookTimelineWeek(
-  queryClient: QueryClient,
-  startISO: string,
-  endISO: string
-): Promise<void> {
-  await queryClient.prefetchQuery({
-    queryKey: ['outlook-timeline', 'uc02', startISO, endISO],
-    queryFn: () => getOutlookTimelineEvents(startISO, endISO),
-    staleTime: OUTLOOK_TIMELINE_STALE_MS,
-  });
-}
-
-/** Prefetch multiple weeks around a center date. Fetches current week first so /calendar can show data ASAP, then prev/next one at a time. */
-export async function prefetchOutlookTimelineWeeksAround(
-  queryClient: QueryClient,
-  centerDate: Date,
-  options: { weeksBack?: number; weeksAhead?: number } = {}
-): Promise<void> {
-  const { weeksBack = 1, weeksAhead = 1 } = options;
-  const base = getWeekStart(centerDate);
-  // Current week first (offset 0), then previous weeks, then next weeks — so the visible week is ready soonest
-  const offsets: number[] = [0];
-  for (let i = 1; i <= weeksBack; i++) offsets.push(-i);
-  for (let i = 1; i <= weeksAhead; i++) offsets.push(i);
-  for (const offset of offsets) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + offset * 7);
-    const { startISO, endISO } = getCalendarWeekRange(d);
-    await prefetchOutlookTimelineWeek(queryClient, startISO, endISO);
-  }
-}
 
 /** Attachment shape from Outlook timeline API */
 export interface OutlookAttachment {
