@@ -9,7 +9,10 @@ import {
   getGuidanceRecords,
   getContentOfficerNotesRecords,
 } from '../../../data/meetingsApi';
-import type { MeetingApiResponse, ConsultationRecord, GuidanceRecord, ContentOfficerNoteRecord } from '@/modules/shared/types';
+import type { MeetingApiResponse } from '../../../data/meetingsApi';
+type ConsultationRecord = any;
+type GuidanceRecord = any;
+type ContentOfficerNoteRecord = any;
 import { getGeneralNotesList } from '../utils/meetingDetailHelpers';
 
 export interface UseMeetingDetailDataParams {

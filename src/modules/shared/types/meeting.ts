@@ -189,6 +189,9 @@ export interface MeetingApiResponse {
   note?: string | null;
   location?: string | null;
   meeting_description?: string | null;
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  meeting_location?: string | null;
   meeting_owner?: {
     id: string;
     name: string;
