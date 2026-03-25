@@ -1,14 +1,16 @@
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Calendar, Clock, MapPin, X, Pencil } from 'lucide-react';
+import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
+import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
 import { getMeetingById, type MeetingApiResponse } from '@/modules/UC02/data/meetingsApi';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const FONT = { fontFamily: "'Almarai', sans-serif" } as const;
+const MAX_VISIBLE_INVITEES = 5;
 
 function formatDetailDate(date: Date): string {
   return `${DAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
@@ -18,10 +20,25 @@ function formatExactTime(date: Date): string {
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
+function extractDomain(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return host.length > 30 ? host.slice(0, 27) + '...' : host;
+  } catch {
+    return url.length > 30 ? url.slice(0, 27) + '...' : url;
+  }
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return (name[0] || '?').toUpperCase();
+}
+
 interface EventDetailModalProps {
   event: CalendarEventData | null;
   onClose: () => void;
-  onEdit?: (event: CalendarEventData) => void;
+  onEdit?: (event: CalendarEventData, meetingDetail?: MeetingApiResponse) => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
@@ -42,6 +59,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     queryFn: () => getMeetingById(meetingIdToFetch!),
     enabled: !!meetingIdToFetch,
   });
+
+  const handleCopyLink = useCallback((link: string) => {
+    navigator.clipboard.writeText(link).then(() => {
+      toast({ title: 'تم النسخ', description: 'تم نسخ رابط الاجتماع' });
+    });
+  }, []);
 
   const display = useMemo(() => {
     if (!event) return null;
@@ -74,12 +97,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     return {
       title: (fromApi ? meeting.meeting_title : event.title) || event.meeting_title || 'اجتماع',
       is_internal: event.is_internal,
-      organizerName: fromApi ? meeting.submitter_name : event.organizer?.name ?? '',
-      organizerEmail: fromApi ? (meeting.current_owner_user?.email ?? '') : (event.organizer?.email ?? ''),
+      organizerName: fromApi
+        ? (meeting.submitter_name || (meeting as any).submitter?.name || (meeting as any).submitter?.full_name || '')
+        : (event.organizer?.name ?? ''),
+      organizerEmail: fromApi
+        ? ((meeting as any).submitter?.email || meeting.current_owner_user?.email || '')
+        : (event.organizer?.email ?? ''),
       date: scheduledStart,
       startTime,
       endTime,
       locationOrLink: locationText,
+      isLink: typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
       meetingId: event.meeting_id,
     };
@@ -90,8 +118,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   const InfoRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode; border?: boolean }> = ({
     icon, children, border = true,
   }) => (
-    <div className={cn('flex items-center gap-3 py-3.5', border && 'border-b border-border/30')}>
-      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+    <div className={cn('flex items-center gap-3 py-2.5', border && 'border-b border-border/20')}>
+      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
         {icon}
       </div>
       {children}
@@ -116,12 +144,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         {!isLoading && display && (
           <div className="flex flex-col" style={FONT}>
             {/* Header */}
-            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-border/30">
-              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                <h3 className="text-foreground font-bold text-[16px] leading-6">{display.title}</h3>
+            <div className="flex items-start justify-between px-6 pt-5 pb-3 border-b border-border/20">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <h3 className="text-foreground font-bold text-[18px] leading-7 truncate">{display.title}</h3>
                 {display.is_internal !== undefined && (
                   <span className={cn(
-                    'text-[11px] font-semibold px-2 py-0.5 rounded w-fit',
+                    'text-[10px] font-semibold px-2 py-0.5 rounded shrink-0',
                     display.is_internal
                       ? 'bg-primary/10 text-primary'
                       : 'bg-muted text-muted-foreground',
@@ -132,22 +160,24 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors shrink-0 mr-3"
+                className="w-7 h-7 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors shrink-0 mr-2"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex flex-col px-6 py-2">
+            <div className="flex flex-col px-6 py-1">
               <InfoRow icon={<User className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}>
                 <div className="flex flex-col items-start flex-1 min-w-0">
                   <span className="text-[13px] font-semibold text-foreground truncate w-full">
-                    {display.organizerName || '—'}
+                    {display.organizerName || display.organizerEmail || '—'}
                   </span>
-                  <span className="text-[11px] text-muted-foreground truncate w-full">
-                    {display.organizerEmail || '—'}
-                  </span>
+                  {display.organizerEmail && (
+                    <span className="text-[11px] text-muted-foreground truncate w-full">
+                      {display.organizerEmail}
+                    </span>
+                  )}
                 </div>
               </InfoRow>
 
@@ -163,18 +193,33 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                 </span>
               </InfoRow>
 
+              {/* Location / Link */}
               <InfoRow icon={<MapPin className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}>
                 <div className="flex-1 min-w-0">
                   {display.locationOrLink ? (
-                    display.locationOrLink.startsWith('http') ? (
-                      <a
-                        href={display.locationOrLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[13px] font-medium text-primary underline underline-offset-2 truncate block"
-                      >
-                        {display.locationOrLink}
-                      </a>
+                    display.isLink ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium text-foreground">رابط الاجتماع</span>
+                        <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                          ({extractDomain(display.locationOrLink)})
+                        </span>
+                        <button
+                          onClick={() => handleCopyLink(display.locationOrLink)}
+                          className="w-6 h-6 rounded bg-muted hover:bg-accent flex items-center justify-center transition-colors shrink-0"
+                          title="نسخ الرابط"
+                        >
+                          <Copy className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                        <a
+                          href={display.locationOrLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-6 h-6 rounded bg-muted hover:bg-accent flex items-center justify-center transition-colors shrink-0"
+                          title="فتح الرابط"
+                        >
+                          <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                        </a>
+                      </div>
                     ) : (
                       <span className="text-[13px] font-medium text-foreground truncate block">
                         {display.locationOrLink}
@@ -187,37 +232,62 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               </InfoRow>
 
               {/* Invitees */}
-              <div className="flex flex-col gap-2 py-3.5 border-b border-border/30">
+              <div className="flex flex-col gap-1.5 py-2.5 border-b border-border/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <User className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                     </div>
-                    <span className="text-[13px] font-semibold text-foreground">قائمة المدعوين</span>
+                    <span className="text-[13px] font-semibold text-foreground">المدعوون</span>
                   </div>
-                  <span className="text-[11px] text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                    {display.invitees.length} مدعو
+                  <span className="text-[10px] text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                    {display.invitees.length}
                   </span>
                 </div>
-                <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex flex-col gap-1 mt-0.5">
                   {display.invitees.length > 0 ? (
-                    display.invitees.map((a, idx) => (
-                      <div key={`${a.name}-${idx}`} className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-muted/60">
-                        <span className="text-[13px] font-medium text-foreground truncate">{a.name || '—'}</span>
-                        <span className="text-[11px] text-muted-foreground truncate max-w-[180px]">
-                          {a.email || '—'}
+                    <>
+                      {display.invitees.slice(0, MAX_VISIBLE_INVITEES).map((a, idx) => (
+                        <div key={`${a.name}-${idx}`} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-[12px] font-medium text-foreground truncate">
+                              {a.name || a.email || '—'}
+                            </span>
+                            {a.name && a.email && (
+                              <span className="text-[10px] text-muted-foreground truncate">{a.email}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {display.invitees.length > MAX_VISIBLE_INVITEES && (
+                        <span className="text-[11px] text-muted-foreground text-center py-1">
+                          +{display.invitees.length - MAX_VISIBLE_INVITEES} آخرين
                         </span>
-                      </div>
-                    ))
+                      )}
+                    </>
                   ) : (
-                    <span className="text-[12px] text-muted-foreground py-1">لا يوجد مدعوون</span>
+                    <span className="text-[11px] text-muted-foreground py-1">لا يوجد مدعوون</span>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex w-full justify-end gap-2 flex-wrap px-6 pb-5 pt-2">
+            <div className="flex w-full justify-end gap-2 px-6 pb-5 pt-3">
+              {display.isLink && (
+                <a
+                  href={display.locationOrLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  انضم للاجتماع
+                </a>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -225,15 +295,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   onClose();
                   navigate(`/meeting/${id}`);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-3.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold transition-colors hover:bg-primary/90"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
               >
                 عرض التفاصيل
               </button>
               {onEdit && (
                 <button
                   type="button"
-                  onClick={() => onEdit(event)}
-                  className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-primary/30 text-xs font-semibold text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                  onClick={() => onEdit(event, meetingDetail)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   تعديل

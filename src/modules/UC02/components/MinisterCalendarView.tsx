@@ -12,10 +12,6 @@ import { MinisterFullCalendar } from './MinisterFullCalendar';
 import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle, toISOStringWithTimezone } from '@/lib/ui';
 import {
   getOutlookTimelineEvents,
-  getCalendarWeekRange,
-  prefetchOutlookTimelineWeek,
-  prefetchOutlookTimelineWeeksAround,
-  OUTLOOK_TIMELINE_STALE_MS,
   createScheduledMeeting,
   updateScheduledMeeting,
   mapCreatedMeetingToOutlookEvent,
@@ -208,9 +204,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     title?: string;
     meetingLocation?: string | null;
     meetingChannel?: string;
-    meetingLink?: string | null;
-    /** From API when editing; send with meeting_link when updating */
-    webexMeetingUniqueId?: string | null;
     meetingId?: string;
     mode?: 'create' | 'edit';
     /** Pre-fill invitees table when editing (from event.attendees) */
@@ -220,23 +213,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
 
-  // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
-  React.useEffect(() => {
-    prefetchOutlookTimelineWeeksAround(queryClient, currentDate, { weeksBack: 2, weeksAhead: 2 }).catch(() => {});
-  }, [queryClient]);
-
-  // On each week change, prefetch the weeks 2 steps away (one at a time) so next/prev click is instant
-  React.useEffect(() => {
-    const twoWeeksBack = new Date(currentDate);
-    twoWeeksBack.setDate(currentDate.getDate() - 14);
-    const twoWeeksAhead = new Date(currentDate);
-    twoWeeksAhead.setDate(currentDate.getDate() + 14);
-    const { startISO: s1, endISO: e1 } = getCalendarWeekRange(twoWeeksBack);
-    const { startISO: s2, endISO: e2 } = getCalendarWeekRange(twoWeeksAhead);
-    void prefetchOutlookTimelineWeek(queryClient, s1, e1)
-      .then(() => prefetchOutlookTimelineWeek(queryClient, s2, e2))
-      .catch(() => {});
-  }, [queryClient, currentDate]);
 
   const isOptimisticEvent = !!selectedEventForDetails?.id?.startsWith('optimistic-');
   const isOutlookId = !!selectedEventForDetails?.id?.startsWith('AAMk');
@@ -342,7 +318,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     queryKey: ['outlook-timeline', 'uc02', startDateISO, endDateISO],
     queryFn: () => getOutlookTimelineEvents(startDateISO, endDateISO),
     enabled: true,
-    staleTime: OUTLOOK_TIMELINE_STALE_MS,
+    staleTime: 2 * 60 * 1000,
     /** Avoid empty calendar while range key changes (e.g. month ↔ week). */
     placeholderData: (prev) => prev,
   });
@@ -553,7 +529,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
               <MinisterFullCalendar
                 viewMode={viewMode === 'monthly' ? 'monthly' : viewMode === 'daily' ? 'daily' : 'weekly'}
                 currentDate={currentDate}
-                onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
+                onCurrentDateChange={undefined}
                 outlookEvents={timelineEvents ?? []}
                 extraEvents={extraEvents}
                 onEventClick={setSelectedEventForDetails}
@@ -793,8 +769,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
                           meetingLocation: selectedEventForDetails.meeting_location ?? location,
                           meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
-                          meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
-                          webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
                           meetingId: selectedEventForDetails.meeting_id ?? undefined,
                           mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
                           initialInvitees,
@@ -830,8 +804,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             initialTitle={slotForNewMeeting.title ?? ''}
             initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
             initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
-            initialMeetingLink={slotForNewMeeting.meetingLink ?? undefined}
-            initialWebexMeetingUniqueId={slotForNewMeeting.webexMeetingUniqueId ?? undefined}
             initialInvitees={slotForNewMeeting.initialInvitees}
             isSubmitting={slotFormSubmitting}
             submitError={slotFormError}
@@ -857,8 +829,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     scheduled_end,
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
-                    meeting_link: values.meeting_link,
-                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
@@ -887,8 +857,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     scheduled_end,
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
-                    meeting_link: values.meeting_link,
-                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
