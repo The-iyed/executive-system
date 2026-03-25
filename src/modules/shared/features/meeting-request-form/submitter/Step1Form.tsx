@@ -19,12 +19,9 @@ import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 interface Step1FormProps {
   onSubmit: (data: SubmitterStep1Values) => void;
   initialValues?: Partial<SubmitterStep1Values> & { meeting_manager_name?: string };
-  /** When true + status is SCHEDULED, show only a readonly MeetingDateField */
-  isSchedulerEdit?: boolean;
-  meetingStatus?: string;
 }
 
-export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, meetingStatus }: Step1FormProps) {
+export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) {
   const { form, visibility, watched } = useSubmitterStep1Form(initialValues);
 
   const minDate = useMemo(
@@ -33,20 +30,6 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
   );
 
   const handleSubmit = form.handleSubmit(onSubmit, (errors) => scrollToFirstError(form, errors));
-
-  const isScheduledReadonly = !!isSchedulerEdit && meetingStatus === "SCHEDULED";
-
-  if (isScheduledReadonly) {
-    return (
-      <FormProvider {...form}>
-        <form onSubmit={handleSubmit} dir="rtl">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-5">
-            <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} disabled />
-          </div>
-        </form>
-      </FormProvider>
-    );
-  }
 
   return (
     <FormProvider {...form}>
@@ -67,7 +50,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
 
           <IsUrgentField />
           {visibility.urgent_reason && <UrgentReasonField />}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} disabled={meetingStatus === "SCHEDULED" && !!initialValues?.meeting_start_date} />
+          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} />
           <MeetingChannelField />
 
           {visibility.meeting_location && (
