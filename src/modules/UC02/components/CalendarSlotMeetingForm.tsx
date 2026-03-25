@@ -103,6 +103,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   initialMeetingChannel,
   initialMeetingLocation,
   initialInvitees,
+  mode = 'create',
   onSubmit,
   onCancel,
   isSubmitting = false,
