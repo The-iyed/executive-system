@@ -36,6 +36,7 @@ export function MeetingModalShell({
   error = null,
   saving = false,
   showSaveAsDraft = false,
+  submitLabel,
   onNext,
   onPrev,
   onSubmit,
