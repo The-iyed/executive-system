@@ -3,7 +3,7 @@
  */
 import { ReadOnlyField, StatusBadge } from '@/modules/shared';
 import { formatDateArabic } from '@/modules/shared/utils';
-import type { MeetingApiResponse } from '@/modules/shared/types';
+import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { Hash, Calendar, User, Building2 } from 'lucide-react';
 
 export interface RequestInfoTabProps {
