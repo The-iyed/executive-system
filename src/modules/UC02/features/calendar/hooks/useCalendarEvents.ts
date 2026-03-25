@@ -33,7 +33,6 @@ export function useCalendarEvents(currentDate: Date, viewMode: CalendarViewMode)
     queryKey,
     queryFn: () => getMeetingsTimeline(startISO, endISO),
     staleTime: STALE_TIME,
-    placeholderData: (prev) => prev,
   });
 
   const events: CalendarTimelineEvent[] = data ?? [];
