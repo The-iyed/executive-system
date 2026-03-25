@@ -1,10 +1,11 @@
-import { Fragment, Suspense } from 'react';
+import { Fragment, Suspense, useEffect, useMemo } from 'react';
 import { Routes, Route, RouteProps, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/modules/auth';
 import { ScreenLoader } from '../components';
 import { filterRoutesByUseCase } from '../utils/routeFilter';
 import { getDefaultRouteForUser } from '../utils/useCaseConfig';
 import pages from './routes';
+import { prefetchSharedRoutes } from './prefetchRoutes';
 import uc02Routes from '../../UC02/routes/routes';
 import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
@@ -50,18 +51,36 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
     user?.roles?.some((r) => r.code === 'EXECUTIVE_OFFICE_MANAGER') ?? false;
   const isMinister = isMinisterUser(user?.roles);
 
-  // Filter routes based on user's use cases (and role exclusions, e.g. /evaluation)
-  let filteredRoutes = filterRoutesByUseCase(routes, user?.use_cases, user?.roles);
-  // When SSO enabled, remove /login route (unauthenticated → AuthProvider redirects to IdP from /)
-  if (ssoEnabled) {
-    filteredRoutes = filteredRoutes.filter((r) => r.path !== PATH.LOGIN);
-  }
-  // Exclude UC-02 routes so they are rendered inside UC02LayoutRouter (persistent layout)
-  const routesWithoutUC02 = filteredRoutes.filter((route) => !UC02_PATHS.has(route.path));
-  const hasUC02Access =
-    !isMinister &&
-    filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles).length > 0;
-  const defaultRoute = getDefaultRouteForUser(user?.use_cases, user?.roles);
+  // Memoize route filtering to avoid recalculating on every render
+  const filteredRoutes = useMemo(() => {
+    let result = filterRoutesByUseCase(routes, user?.use_cases, user?.roles);
+    if (ssoEnabled) {
+      result = result.filter((r) => r.path !== PATH.LOGIN);
+    }
+    return result;
+  }, [routes, user?.use_cases, user?.roles, ssoEnabled]);
+
+  const routesWithoutUC02 = useMemo(
+    () => filteredRoutes.filter((route) => !UC02_PATHS.has(route.path)),
+    [filteredRoutes]
+  );
+
+  const hasUC02Access = useMemo(
+    () => !isMinister && filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles).length > 0,
+    [isMinister, user?.use_cases, user?.roles]
+  );
+
+  const defaultRoute = useMemo(
+    () => getDefaultRouteForUser(user?.use_cases, user?.roles),
+    [user?.use_cases, user?.roles]
+  );
+
+  // Prefetch all route chunks once authenticated
+  useEffect(() => {
+    if (isInitialised && isAuthenticated) {
+      prefetchSharedRoutes();
+    }
+  }, [isInitialised, isAuthenticated]);
 
   // Show loader while auth is initializing to prevent redirect issues
   if (!isInitialised) {

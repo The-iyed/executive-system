@@ -143,10 +143,10 @@ export const EditMeeting: React.FC<EditMeetingProps> = ({
             handleCancelClick={handleCancel}
             step3EditableMap={step3InviteesHook.step3EditableMap}
             suggestAttendeesMeetingParams={suggestAttendeesMeetingParams}
-            onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions)}
-            onSuggestMinisterAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedMinisterAttendees(data.suggestions)}
+            onSuggestAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedAttendees(data.suggestions as any)}
+            onSuggestMinisterAttendeesSuccess={(data) => data?.suggestions && step3InviteesHook.handleAddSuggestedMinisterAttendees(data.suggestions as any)}
             showMinisterInvitees={showMinisterInvitees}
-            ministerAttendees={step3InviteesHook.formData.minister_attendees ?? []}
+            ministerAttendees={(step3InviteesHook.formData.minister_attendees ?? []).map(a => ({ ...a, id: a.id ?? crypto.randomUUID() }))}
             onAddMinisterAttendee={step3InviteesHook.handleAddMinisterAttendee}
             onDeleteMinisterAttendee={step3InviteesHook.handleDeleteMinisterAttendee}
             onUpdateMinisterAttendee={step3InviteesHook.handleUpdateMinisterAttendee}
