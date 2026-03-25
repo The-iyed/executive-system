@@ -349,29 +349,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           />
         </FormField>
 
-        {isRemote && (
-          <>
-            {isCreatingWebex && (
-              <div className="flex items-center gap-2 text-sm text-[#667085]">
-                <div className="w-4 h-4 border-2 border-[#008774] border-t-transparent rounded-full animate-spin" />
-                <span>جاري إنشاء اجتماع Webex...</span>
-              </div>
-            )}
-            {webexError && (
-              <p className="text-right text-sm text-red-600">{webexError}</p>
-            )}
-            {webexMeetingLink && !isCreatingWebex && (
-              <FormField className="w-full min-w-0" label="رابط الاجتماع">
-                <FormInput
-                  value={webexMeetingLink}
-                  readOnly
-                  fullWidth
-                  className="bg-gray-50"
-                />
-              </FormField>
-            )}
-          </>
-        )}
 
         {isPhysical && (
           <>
