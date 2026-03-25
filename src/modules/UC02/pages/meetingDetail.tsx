@@ -56,7 +56,7 @@ import {
   sendToContentScheduled,
   scheduleMeeting,
   rescheduleMeeting,
-  createWebexMeeting,
+  
   type MinisterAttendee,
   getConsultationRecordsWithParams,
   type ConsultationRecord,
@@ -431,15 +431,6 @@ const MeetingDetail: React.FC = () => {
   // Schedule modal state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleConfirmModalOpen, setScheduleConfirmModalOpen] = useState(false);
-  const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingDetails, setWebexMeetingDetails] = useState<{
-    join_link: string;
-    webex_meeting_unique_identifier: string;
-    meeting_number: string;
-    password: string;
-    sip_address: string;
-    host_key: string;
-  } | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     scheduled_at: '',
     scheduled_end_at: '',
@@ -1138,19 +1129,6 @@ const MeetingDetail: React.FC = () => {
       ? meeting.meeting_channel
       : scheduleForm.meeting_channel;
 
-    // If meeting channel is VIRTUAL or HYBRID, use the already-created Webex meeting link
-    let meetingLink: string | undefined = undefined;
-    if (meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') {
-      if (!webexMeetingDetails) {
-        setValidationError('يرجى الانتظار حتى يتم إنشاء اجتماع Webex');
-        return;
-      }
-      meetingLink = webexMeetingDetails.join_link;
-    } else {
-      // Clear Webex details if channel is not VIRTUAL or HYBRID
-      setWebexMeetingDetails(null);
-    }
-
     const schedulePayload = {
       scheduled_start,
       scheduled_end,
@@ -1161,8 +1139,6 @@ const MeetingDetail: React.FC = () => {
       is_data_complete: scheduleForm.is_data_complete,
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
       location: scheduleForm.location || undefined,
-      meeting_url: meetingLink,
-      ...(webexMeetingDetails?.webex_meeting_unique_identifier && { webex_meeting_unique_identifier: webexMeetingDetails.webex_meeting_unique_identifier }),
       minister_attendees: normalizeMinisterAttendees(scheduleForm.minister_attendees),
     };
 
@@ -1306,143 +1282,9 @@ const MeetingDetail: React.FC = () => {
         meeting_channel: validChannel,
         location: (meeting as any).location ?? prev.location,
       }));
-      const joinUrl = ((meeting as any).meeting_url || (meeting as any).meeting_link || '').trim();
-      const webexId = (meeting as any).webex_meeting_unique_identifier ?? '';
-      if ((ch === 'VIRTUAL' || ch === 'HYBRID') && joinUrl) {
-        setWebexMeetingDetails({
-          join_link: joinUrl,
-          webex_meeting_unique_identifier: webexId,
-          meeting_number: '',
-          password: '',
-          sip_address: '',
-          host_key: '',
-        });
-      }
     }
   }, [meeting]);
 
-  /** Refetch may add meeting_url after calendar create — keep Webex block in sync without re-running full init. */
-  useEffect(() => {
-    if (!meeting?.id) return;
-    const m = meeting as any;
-    const url = String(m.meeting_url || m.meeting_link || '').trim();
-    const webexId = m.webex_meeting_unique_identifier ?? '';
-    if ((meeting.meeting_channel === 'VIRTUAL' || meeting.meeting_channel === 'HYBRID') && url) {
-      setWebexMeetingDetails((prev) =>
-        prev?.join_link === url ? prev : { join_link: url, webex_meeting_unique_identifier: webexId, meeting_number: '', password: '', sip_address: '', host_key: '' }
-      );
-    }
-  }, [meeting?.id, (meeting as any)?.meeting_url, (meeting as any)?.meeting_link, meeting?.meeting_channel]);
-
-  // Auto-create Webex meeting when VIRTUAL or HYBRID channel is selected and date/time is set
-  useEffect(() => {
-      // Only create if modal is open, channel is VIRTUAL or HYBRID, start date is set, and we don't already have details
-    const needsWebex = scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID';
-    if (
-      !isScheduleModalOpen ||
-      !needsWebex ||
-      !scheduleForm.scheduled_at ||
-      webexMeetingDetails ||
-      isCreatingWebex
-    ) {
-      return;
-    }
-
-    const createWebexMeetingAsync = async () => {
-      setIsCreatingWebex(true);
-      try {
-        // Convert datetime-local to ISO string (UTC)
-        const scheduledAtISO = new Date(scheduleForm.scheduled_at).toISOString();
-        const scheduledDateUTC = new Date(scheduledAtISO);
-
-        // Format datetime for Webex API: "YYYY-MM-DD HH:mm:ss" in UTC
-        const year = scheduledDateUTC.getUTCFullYear();
-        const month = String(scheduledDateUTC.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(scheduledDateUTC.getUTCDate()).padStart(2, '0');
-        const hours = String(scheduledDateUTC.getUTCHours()).padStart(2, '0');
-        const minutes = String(scheduledDateUTC.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(scheduledDateUTC.getUTCSeconds()).padStart(2, '0');
-        const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-
-        const meetingTitle = meeting?.meeting_title || 'اجتماع';
-        const durationMinutes =
-          scheduleForm.scheduled_end_at && scheduleForm.scheduled_at
-            ? Math.max(1, Math.round((new Date(scheduleForm.scheduled_end_at).getTime() - new Date(scheduleForm.scheduled_at).getTime()) / (60 * 1000)))
-            : (meeting?.presentation_duration || 60);
-
-        const webexResponse = await createWebexMeeting({
-          meeting_title: meetingTitle,
-          start_datetime: webexDateTime,
-          time_zone: 'UTC',
-          duration_minutes: durationMinutes,
-        });
-
-        // Store Webex meeting details for display in the modal
-        setWebexMeetingDetails({
-          join_link: webexResponse.data.webex_meeting_join_link,
-          webex_meeting_unique_identifier: webexResponse.data.webex_meeting_unique_identifier,
-          meeting_number: webexResponse.data.meeting_access_details.meeting_number,
-          password: webexResponse.data.meeting_access_details.password,
-          sip_address: webexResponse.data.meeting_access_details.sip_address,
-          host_key: webexResponse.data.meeting_access_details.host_key,
-        });
-      } catch (error) {
-        console.error('Failed to create Webex meeting:', error);
-        setValidationError('فشل في إنشاء اجتماع Webex. يرجى المحاولة مرة أخرى.');
-      } finally {
-        setIsCreatingWebex(false);
-      }
-    };
-
-    // Debounce the creation to avoid creating multiple meetings
-    const timeoutId = setTimeout(() => {
-      createWebexMeetingAsync();
-    }, 500); // Wait 500ms after user stops typing/selecting
-
-    return () => clearTimeout(timeoutId);
-  }, [isScheduleModalOpen, scheduleForm.meeting_channel, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, webexMeetingDetails, isCreatingWebex, meeting]);
-
-  /** Create Webex meeting (for confirm modal or when VIRTUAL/HYBRID and no link yet). Uses meeting or scheduleForm for start/end. */
-  const createWebexLink = useCallback(async () => {
-    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
-    if (!startSource || !endSource) {
-      setValidationError('يجب تحديد تاريخ ووقت البداية والنهاية لإنشاء رابط Webex.');
-      return;
-    }
-    setIsCreatingWebex(true);
-    setValidationError(null);
-    try {
-      const scheduledAtISO = new Date(startSource).toISOString();
-      const scheduledDateUTC = new Date(scheduledAtISO);
-      const year = scheduledDateUTC.getUTCFullYear();
-      const month = String(scheduledDateUTC.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(scheduledDateUTC.getUTCDate()).padStart(2, '0');
-      const hours = String(scheduledDateUTC.getUTCHours()).padStart(2, '0');
-      const minutes = String(scheduledDateUTC.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(scheduledDateUTC.getUTCSeconds()).padStart(2, '0');
-      const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-      const durationMinutes = Math.max(1, Math.round((new Date(endSource).getTime() - new Date(startSource).getTime()) / (60 * 1000)));
-      const webexResponse = await createWebexMeeting({
-        meeting_title: meeting?.meeting_title || 'اجتماع',
-        start_datetime: webexDateTime,
-        time_zone: 'UTC',
-        duration_minutes: durationMinutes,
-      });
-      setWebexMeetingDetails({
-        join_link: webexResponse.data.webex_meeting_join_link,
-        webex_meeting_unique_identifier: webexResponse.data.webex_meeting_unique_identifier,
-        meeting_number: webexResponse.data.meeting_access_details.meeting_number,
-        password: webexResponse.data.meeting_access_details.password,
-        sip_address: webexResponse.data.meeting_access_details.sip_address,
-        host_key: webexResponse.data.meeting_access_details.host_key,
-      });
-    } catch (error) {
-      console.error('Failed to create Webex meeting:', error);
-      setValidationError('فشل في إنشاء اجتماع Webex. يرجى المحاولة مرة أخرى.');
-    } finally {
-      setIsCreatingWebex(false);
-    }
-  }, [meeting, scheduleForm.scheduled_at, scheduleForm.scheduled_end_at, getEffectiveScheduleDates]);
 
   // When schedule modal opens and موعد الاجتماع has a selected slot, set تاريخ ووقت البداية/النهاية from that slot by default
   useEffect(() => {
@@ -3214,21 +3056,6 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-right text-sm text-green-600">تم جدولة الاجتماع بنجاح</p>
                       </div>
                     )}
-                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
-                      <div className="flex items-center gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
-                        <div className="w-5 h-5 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                        <span className="text-sm text-[#374151]">جاري إنشاء اجتماع Webex...</span>
-                      </div>
-                    )}
-                    {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
-                      <div className="flex flex-col gap-2 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl mb-4">
-                        <label className="text-sm font-semibold text-[#1F2937] text-right">تفاصيل اجتماع Webex</label>
-                        <div className="flex gap-2">
-                          <Input type="text" value={webexMeetingDetails.join_link} readOnly className="flex-1 h-9 bg-white border border-[#D0D5DD] rounded-lg text-right text-sm" />
-                          <button type="button" onClick={() => navigator.clipboard.writeText(webexMeetingDetails.join_link)} className="px-3 py-1.5 text-xs bg-[#048F86] text-white rounded-lg hover:bg-[#037A72] transition-colors">نسخ</button>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex flex-col gap-4">
                       <FormField label="مبدئي" className="w-full max-w-none h-auto">
                         <FormSwitch checked={!scheduleForm.requires_protocol} onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, requires_protocol: !checked }))} />
@@ -3826,31 +3653,6 @@ const MeetingDetail: React.FC = () => {
                         <p className="text-[#1F2937] text-sm leading-relaxed whitespace-pre-wrap">{scheduleForm.notes}</p>
                       </div>
                     )}
-                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && webexMeetingDetails?.join_link && (
-                      <div className="flex flex-col gap-1 py-2 border-b border-[#F3F4F6]">
-                        <span className="text-[#6B7280] font-medium">رابط Webex</span>
-                        <p className="text-[#048F86] text-sm truncate" dir="ltr">{webexMeetingDetails.join_link}</p>
-                      </div>
-                    )}
-                    {(meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') && !webexMeetingDetails && (
-                      <div className="flex flex-col gap-3 py-3 px-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl">
-                        <span className="text-[#6B7280] font-medium text-right">رابط Webex</span>
-                        {isCreatingWebex ? (
-                          <div className="flex items-center gap-2 text-[#374151] text-sm">
-                            <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                            جاري إنشاء اجتماع Webex...
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => createWebexLink()}
-                            className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-[#048F86] rounded-lg hover:bg-[#037A72] transition-colors"
-                          >
-                            إنشاء رابط Webex
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -3867,7 +3669,7 @@ const MeetingDetail: React.FC = () => {
             {(() => {
               const { start: effStart, end: effEnd } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
               const meetingCh = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel as string)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
-              const canConfirm = !!(effStart && effEnd && ((meetingCh !== 'VIRTUAL' && meetingCh !== 'HYBRID') || webexMeetingDetails));
+              const canConfirm = !!(effStart && effEnd);
               return (
                 <button
                   type="button"
@@ -4309,7 +4111,6 @@ const MeetingDetail: React.FC = () => {
           setIsScheduleModalOpen(open);
           if (!open) {
             setValidationError(null);
-            setWebexMeetingDetails(null);
           }
         }}
         title={<span className="text-right">جدولة الاجتماع</span>}
@@ -4318,7 +4119,7 @@ const MeetingDetail: React.FC = () => {
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
-            {scheduleMutation.isSuccess && webexMeetingDetails ? (
+            {scheduleMutation.isSuccess ? (
               <button
                 type="button"
                 onClick={() => {
@@ -4337,7 +4138,6 @@ const MeetingDetail: React.FC = () => {
                     selected_time_slot_id: null,
                     minister_attendees: [],
                   });
-                  setWebexMeetingDetails(null);
                   navigate(-1);
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity"
@@ -4364,7 +4164,6 @@ const MeetingDetail: React.FC = () => {
                       selected_time_slot_id: null,
                       minister_attendees: [],
                     });
-                    setWebexMeetingDetails(null);
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
@@ -4376,13 +4175,11 @@ const MeetingDetail: React.FC = () => {
                   disabled={
                     !scheduleForm.scheduled_at ||
                     !scheduleForm.scheduled_end_at ||
-                    scheduleMutation.isPending ||
-                    isCreatingWebex ||
-                    ((scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && !webexMeetingDetails)
+                    scheduleMutation.isPending
                   }
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                  {isCreatingWebex ? 'جاري إنشاء اجتماع Webex...' : scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
+                  {scheduleMutation.isPending ? 'جاري التحميل...' : 'جدولة'}
               </button>
               </>
             )}
@@ -4482,10 +4279,6 @@ const MeetingDetail: React.FC = () => {
                   value={scheduleForm.meeting_channel}
                     onValueChange={(value) => {
                     setScheduleForm((prev) => ({ ...prev, meeting_channel: value as typeof prev.meeting_channel }));
-                    // Clear Webex details when channel changes to non-remote
-                    if (value !== 'VIRTUAL' && value !== 'HYBRID') {
-                      setWebexMeetingDetails(null);
-                    }
                   }}
                 >
                   <SelectTrigger className="w-full h-11 bg-white border border-[#D0D5DD] rounded-lg text-right flex-row-reverse">
@@ -4502,91 +4295,6 @@ const MeetingDetail: React.FC = () => {
                 </Select>
           </div>
 
-          {/* Webex Meeting Loading - Show when creating (VIRTUAL or HYBRID) */}
-              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
-                <div className="flex flex-col gap-2 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
-                    <label className="text-sm font-medium text-gray-700 text-right">
-                      جاري إنشاء اجتماع Webex...
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Webex Meeting Details - Show when VIRTUAL or HYBRID channel and details are available */}
-              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
-                <div className="flex flex-col gap-4 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD]"></div>
-                    <label className="text-sm font-semibold text-gray-700 text-right">
-                      تفاصيل اجتماع Webex
-                    </label>
-                  </div>
-                  
-                  {/* Join Link */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-gray-600 text-right">
-                      رابط الانضمام
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        value={webexMeetingDetails.join_link}
-                        readOnly
-                        className="flex-1 h-9 bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700"
-                      
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(webexMeetingDetails.join_link);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg hover:opacity-90 transition-opacity"
-                      
-                      >
-                        نسخ
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Meeting Details Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-gray-600 text-right">
-                        رقم الاجتماع
-                      </label>
-                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700">
-                        {webexMeetingDetails.meeting_number}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-gray-600 text-right">
-                        كلمة المرور
-                      </label>
-                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700">
-                        {webexMeetingDetails.password}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-gray-600 text-right">
-                        عنوان SIP
-                      </label>
-                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700">
-                        {webexMeetingDetails.sip_address}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-gray-600 text-right">
-                        مفتاح المضيف
-                      </label>
-                      <div className="h-9 px-3 flex items-center bg-white border border-gray-300 rounded-lg text-right text-sm text-gray-700">
-                        {webexMeetingDetails.host_key}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
           {/* مبدئي + Protocol Type + Data Complete */}
           <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 flex flex-col gap-4">
