@@ -1129,31 +1129,6 @@ const MeetingDetail: React.FC = () => {
       ? meeting.meeting_channel
       : scheduleForm.meeting_channel;
 
-    // If meeting channel is VIRTUAL or HYBRID, use the already-created Webex meeting link
-    let meetingLink: string | undefined = undefined;
-    if (meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID') {
-      if (!webexMeetingDetails) {
-        setValidationError('يرجى الانتظار حتى يتم إنشاء اجتماع Webex');
-        return;
-      }
-      meetingLink = webexMeetingDetails.join_link;
-    } else {
-      // Clear Webex details if channel is not VIRTUAL or HYBRID
-      setWebexMeetingDetails(null);
-    }
-
-    const schedulePayload = {
-      scheduled_start,
-      scheduled_end,
-      meeting_channel: meetingChannel,
-      requires_protocol: scheduleForm.requires_protocol,
-      is_preliminary_booking: !scheduleForm.requires_protocol,
-      protocol_type: scheduleForm.requires_protocol ? (scheduleForm.protocol_type || scheduleForm.protocol_type_text || null) : null,
-      is_data_complete: scheduleForm.is_data_complete,
-      notes: scheduleForm.notes || 'Meeting scheduled successfully',
-      location: scheduleForm.location || undefined,
-      meeting_url: meetingLink,
-      ...(webexMeetingDetails?.webex_meeting_unique_identifier && { webex_meeting_unique_identifier: webexMeetingDetails.webex_meeting_unique_identifier }),
       minister_attendees: normalizeMinisterAttendees(scheduleForm.minister_attendees),
     };
 
