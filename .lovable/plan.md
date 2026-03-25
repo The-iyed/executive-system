@@ -1,55 +1,67 @@
 
 
-## Improve EventDetailModal UI/UX
+## UI/UX Critique of EventDetailModal
 
-### Current Issues (from screenshot)
-1. **Organizer row** shows "—" for both name and email — no useful info
-2. **Meeting link** is a raw long URL that's hard to read and truncated poorly
-3. **Invitees** only show email addresses with no names — just "messenger@webex.com"
-4. **No quick "Join Meeting" action** — user must copy the link manually
-5. **Too much vertical whitespace** — rows are spaced far apart with little content
-6. **Actions at bottom are small** — "عرض التفاصيل" and "تعديل" buttons blend together
+### Join Button Problems
+1. **Lost in the footer** — The most important action (joining a meeting) is buried at the bottom, below all metadata. Users must scroll past organizer, date, time, location, and invitees before they can act. The primary CTA should be immediately visible.
+2. **Gradient is generic** — `bg-gradient-to-l from-primary to-primary/85` is barely perceptible. It doesn't convey urgency or differentiate from the secondary buttons enough.
+3. **No time context** — The button looks the same whether the meeting starts in 2 minutes or 3 days. A meeting starting soon should feel urgent.
+4. **Redundant link row** — The location/link row already shows copy + open icons for the same URL. Having both the link row AND the join button is redundant and dilutes focus.
 
-### Plan
+### General Modal Problems
+5. **Flat information hierarchy** — Every row looks identical (icon + text). Nothing stands out. The modal reads like a data dump, not a quick-glance card.
+6. **860px max-width is excessive** — This is a detail popover, not a form. Content doesn't fill the width, creating awkward whitespace.
+7. **No visual grouping** — Organizer, date, time, location, invitees are all in one flat list with identical `border-b` separators. No semantic grouping.
+8. **Double border-t on actions** — The body ends with a `border-b` on invitees, then actions start with `border-t`, creating a visual double-line.
+
+---
+
+## Plan
 
 **File: `src/modules/UC02/features/calendar/components/EventDetailModal.tsx`**
 
-#### 1. Add prominent "Join Meeting" button
-- When `locationOrLink` is a URL (starts with `http`), render a large green/primary "انضم للاجتماع" button with a `Video` or `ExternalLink` icon at the top of the actions area
-- Opens the link in a new tab
-- This is the most important action for users
+### 1. Move Join button to the top (hero position)
+- Place the join CTA immediately after the header, before any metadata
+- When meeting has a link: show a prominent card-like join area with the Video icon, meeting title context, and the button
+- When no link: skip this section entirely, body starts with metadata
 
-#### 2. Improve meeting link display
-- Instead of showing the raw URL, show a short label like "رابط الاجتماع" with a copy button and a small "open" icon
-- Truncate the URL visually but keep it clickable
+### 2. Add time-awareness to Join button
+- If meeting starts within 15 minutes or is currently happening: show a pulsing green dot and text like "الاجتماع يبدأ قريبا" or "جاري الآن"
+- If meeting is in the future (>15 min): show normal state
+- If meeting is past: hide the join button entirely or show it as disabled/muted
 
-#### 3. Better invitee display
-- Show invitee name prominently; if no name, show email as the primary text
-- Add avatar initials circle (first letter) for visual distinction
-- Cap visible invitees at 5, show "+N more" if exceeding
+### 3. Reduce modal width
+- Change `max-w-[860px]` to `max-w-[480px]` — this is a quick-glance card, not a dashboard
 
-#### 4. Reduce vertical spacing
-- Tighten `py-3.5` to `py-2.5` on info rows
-- Remove excessive gaps between sections
+### 4. Group metadata into a compact card
+- Wrap date + time into a single row: "الأربعاء 25 مارس · 14:00 – 15:00"
+- Wrap organizer into a smaller inline display
+- This reduces 3 separate rows into 1-2
 
-#### 5. Improve header
-- Make title larger (18px) and bolder
-- Move the internal/external badge inline with title instead of below it
+### 5. Simplify the link row
+- When there's a join button (hero), remove the redundant MapPin link row entirely — the join button already handles it
+- When there's a physical location (not a URL), keep the MapPin row
 
-#### 6. Improve action buttons
-- Make "Join Meeting" the primary CTA (full-width, prominent)
-- Keep "عرض التفاصيل" and "تعديل" as secondary actions in a row below
+### 6. Compact invitees
+- Show invitees as overlapping avatar circles (stack) with a count badge, not a vertical list
+- On hover or click of the stack, expand to show the full list
 
-#### 7. Add copy link button
-- Small icon button next to the meeting link to copy to clipboard with a toast/tooltip confirmation
+### 7. Clean up action footer
+- Remove the join button from the footer (moved to hero)
+- Keep only "عرض التفاصيل" and "تعديل" as equal secondary buttons
+- Both always use outline/border style since the primary CTA is now at the top
+
+---
 
 ### Technical Details
 
 **Single file edit:** `src/modules/UC02/features/calendar/components/EventDetailModal.tsx`
 
-- Add `ExternalLink`, `Copy`, `Video` icons from lucide-react
-- Add a `copyToClipboard` handler using `navigator.clipboard.writeText`
-- Restructure the actions section: join button on top (conditional), detail + edit below
-- Extract domain from URL for cleaner display (e.g., "meet...webex.com")
-- No new dependencies or files needed
+- Compute `meetingStatus`: compare `scheduledStart`/`scheduledEnd` against `new Date()` to determine `'upcoming-soon' | 'live' | 'future' | 'past'`
+- Restructure JSX: Header → Join Hero (conditional) → Compact metadata card → Avatar stack → Footer actions
+- Reduce `max-w` from 860px to 480px
+- Merge date + time into one `InfoRow`
+- Replace invitee vertical list with an avatar circle stack (`flex` with negative margins `-mr-2`) plus a count label
+- Add a `isPast` check to hide/disable the join button
+- No new files or dependencies
 
