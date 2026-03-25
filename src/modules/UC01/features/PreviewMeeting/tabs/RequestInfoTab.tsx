@@ -1,10 +1,19 @@
 import React from 'react';
-import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
+import type { MeetingApiResponse } from '@/modules/shared/types/meeting';
 import { MeetingStatus, MeetingStatusLabels } from '@/modules/shared/types';
 import { formatDateArabic } from '@/modules/shared/utils';
 const labelClass = 'text-sm font-medium text-gray-700';
 const valueClass = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right';
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+
+function getMeetingOwnerLabel(meeting: MeetingApiResponse): string {
+  const ownerName = meeting.meeting_owner_name;
+  if (ownerName) return ownerName;
+  const raw = meeting.meeting_owner;
+  if (!raw) return '-';
+  if (typeof raw === 'string') return raw;
+  return raw.name ?? raw.username ?? '-';
+}
 
 interface RequestInfoTabProps {
   meeting: MeetingApiResponse;
@@ -44,7 +53,7 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>مالك الاجتماع</label>
           <div className={valueClass} style={fontStyle}>
-            {(meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? (typeof (meeting as any)?.meeting_owner === 'object' ? ((meeting as any)?.meeting_owner?.name ?? (meeting as any)?.meeting_owner?.username ?? '-') : ((meeting as any)?.meeting_owner ?? '-'))}
+            {getMeetingOwnerLabel(meeting)}
           </div>
         </div>
       </div>
