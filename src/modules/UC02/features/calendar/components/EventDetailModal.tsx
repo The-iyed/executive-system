@@ -97,8 +97,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     return {
       title: (fromApi ? meeting.meeting_title : event.title) || event.meeting_title || 'اجتماع',
       is_internal: event.is_internal,
-      organizerName: fromApi ? meeting.submitter_name : event.organizer?.name ?? '',
-      organizerEmail: fromApi ? (meeting.current_owner_user?.email ?? '') : (event.organizer?.email ?? ''),
+      organizerName: fromApi
+        ? (meeting.submitter_name || (meeting as any).submitter?.name || (meeting as any).submitter?.full_name || '')
+        : (event.organizer?.name ?? ''),
+      organizerEmail: fromApi
+        ? ((meeting as any).submitter?.email || meeting.current_owner_user?.email || '')
+        : (event.organizer?.email ?? ''),
       date: scheduledStart,
       startTime,
       endTime,
@@ -164,21 +168,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
             {/* Body */}
             <div className="flex flex-col px-6 py-1">
-              {/* Organizer - only show if we have data */}
-              {(display.organizerName || display.organizerEmail) && (
-                <InfoRow icon={<User className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}>
-                  <div className="flex flex-col items-start flex-1 min-w-0">
-                    <span className="text-[13px] font-semibold text-foreground truncate w-full">
-                      {display.organizerName || display.organizerEmail}
+              <InfoRow icon={<User className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}>
+                <div className="flex flex-col items-start flex-1 min-w-0">
+                  <span className="text-[13px] font-semibold text-foreground truncate w-full">
+                    {display.organizerName || display.organizerEmail || '—'}
+                  </span>
+                  {display.organizerEmail && (
+                    <span className="text-[11px] text-muted-foreground truncate w-full">
+                      {display.organizerEmail}
                     </span>
-                    {display.organizerName && display.organizerEmail && (
-                      <span className="text-[11px] text-muted-foreground truncate w-full">
-                        {display.organizerEmail}
-                      </span>
-                    )}
-                  </div>
-                </InfoRow>
-              )}
+                  )}
+                </div>
+              </InfoRow>
 
               <InfoRow icon={<Calendar className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}>
                 <span className="text-[13px] font-medium text-foreground">
