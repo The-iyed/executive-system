@@ -53,6 +53,10 @@ export const submitterStep1Schema = z.object({
   directive_method: z.enum(["PREVIOUS_MEETING", "DIRECT_DIRECTIVE"]).optional(),
   previous_meeting_minutes_file_content: z.any().optional(),
   directive_text: z.string().optional(),
+  /* ── Scheduler-only fields (optional, used when isSchedulerEdit) ── */
+  submitter: meetingUserSchema.nullable().optional(),
+  requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]).optional(),
+  related_directive: z.string().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
   if (data.meeting_type === MeetingType.INTERNAL && !data.sector) {

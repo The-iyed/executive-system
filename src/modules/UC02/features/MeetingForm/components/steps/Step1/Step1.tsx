@@ -387,7 +387,7 @@ export function Step1({
 
           <div className='md:col-span-2 lg:col-span-3 w-full min-w-0'>
           <MeetingAgendaTable
-            rows={formData.meetingAgenda || []}
+            rows={(formData.meetingAgenda || []).map(a => ({ ...a, id: a.id ?? crypto.randomUUID() }))}
             required={false}
             onAddRow={handleAddAgendaWithScroll}
             onDeleteRow={handleDeleteAgenda}
