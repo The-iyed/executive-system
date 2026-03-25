@@ -28,7 +28,7 @@ interface Step1FormProps {
 }
 
 export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, meetingStatus }: Step1FormProps) {
-  const { form, visibility, watched } = useSubmitterStep1Form(initialValues);
+  const { form, visibility, watched } = useSubmitterStep1Form(initialValues, { isSchedulerEdit });
 
   const minDate = useMemo(
     () => (watched.is_urgent === BOOL.TRUE ? startOfDay(new Date()) : startOfDay(addDays(new Date(), 7))),
