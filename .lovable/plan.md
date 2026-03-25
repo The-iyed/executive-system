@@ -1,30 +1,68 @@
 
 
-## Remove Webex Creation from Schedule Confirmation Modal
+## Missing Fields When Scheduler Edits via SubmitterModal
 
 ### Problem
-In the "تأكيد الجدولة" (scheduling confirmation) modal on the meeting detail page, when the meeting channel is VIRTUAL or HYBRID, the system auto-creates a Webex meeting and shows an "إنشاء رابط Webex" button. This should be removed.
+When a scheduler officer clicks "تعديل" on the meeting detail page (`/meeting/:id`), it opens `SubmitterModal` with `callerRole={MeetingOwnerType.SCHEDULING}`. However, the `SubmitterStep1Form` used inside this modal is missing 3 fields that exist in the `SchedulerStep1Form`:
 
-### Changes in `src/modules/UC02/pages/meetingDetail.tsx`
+| # | Field | Arabic Label | In Scheduler Form? | In Submitter Form? |
+|---|-------|-------------|-------|----------|
+| 1 | `submitter` | مقدّم الطلب | Yes | No |
+| 2 | `requires_protocol` | يتطلب بروتوكول | Yes | No |
+| 3 | `related_directive` | التوجيه المرتبط | Yes | No |
 
-1. **Remove the auto-create Webex `useEffect`** (lines ~1338-1403) — the effect that fires when the schedule modal opens and auto-calls `createWebexMeeting` for VIRTUAL/HYBRID channels.
+The `isSchedulerEdit` prop is already passed to `SubmitterStep1Form` but is only used to control the date field's disabled state — it doesn't add the missing fields.
 
-2. **Remove the `createWebexLink` callback** (lines ~1405-1445) — the manual "إنشاء رابط Webex" button handler.
+### Plan
 
-3. **Remove the Webex section from the confirm modal UI** (lines ~3829-3853) — the block that shows either the Webex link, a spinner, or the "إنشاء رابط Webex" button.
+#### 1. Add missing fields to `SubmitterStep1Form` (conditionally for scheduler)
+**File:** `src/modules/shared/features/meeting-request-form/submitter/Step1Form.tsx`
 
-4. **Remove the Webex gate from the confirm button** (line ~3870) — change `canConfirm` to no longer require `webexMeetingDetails` for VIRTUAL/HYBRID:
-   ```typescript
-   // Before
-   const canConfirm = !!(effStart && effEnd && ((meetingCh !== 'VIRTUAL' && meetingCh !== 'HYBRID') || webexMeetingDetails));
-   // After
-   const canConfirm = !!(effStart && effEnd);
-   ```
+When `isSchedulerEdit` is true, render the 3 additional fields:
+- `MeetingManagerField` (as "مقدّم الطلب") — same component used in SchedulerStep1Form with `name="submitter"`
+- `RequiresProtocolField` — already exported from shared fields
+- `RelatedDirectiveField` — already exported from shared fields
 
-5. **Clean up state variables** — remove `webexMeetingDetails`, `isCreatingWebex` state declarations and any references to them in the `handleScheduleSubmit` payload (remove `meeting_link` and `webex_meeting_unique_identifier` fields from the submit body if they exist).
+Place them in the same grid positions as in the SchedulerStep1Form:
+- `submitter` field after `PreviousMeetingField` (before `OnBehalfField`)
+- `RequiresProtocolField` after the channel/location section
+- `RelatedDirectiveField` alongside `NoteField` at the bottom
 
-### Summary
-- Single file edit: `src/modules/UC02/pages/meetingDetail.tsx`
-- No API files or other components affected
-- The confirm button will work immediately without waiting for Webex creation
+#### 2. Add missing fields to the submitter schema (optional, for scheduler)
+**File:** `src/modules/shared/features/meeting-request-form/submitter/schema.ts`
+
+Add optional fields to `submitterStep1Schema`:
+```typescript
+submitter: meetingUserSchema.nullable().optional(),
+requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]).optional(),
+related_directive: z.string().optional(),
+```
+
+These are optional so submitter flow is unaffected, but they carry data when scheduler edits.
+
+#### 3. Add missing fields to `useSubmitterStep1Form` default values
+**File:** `src/modules/shared/features/meeting-request-form/submitter/hooks/useStep1Form.ts`
+
+Add default values for the 3 new fields so they initialize correctly from edit data.
+
+#### 4. Add mapper support for the 3 fields
+**File:** `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts`
+
+Ensure `mapMeetingToSubmitterStep1` maps `submitter`, `requires_protocol`, and `related_directive` from the API response so they populate on edit.
+
+#### 5. Ensure `buildStep1FormData` sends the new fields
+**File:** `src/modules/shared/features/meeting-request-form/shared/utils/buildStep1FormData.ts`
+
+Add the 3 fields to the FormData builder so they are included in the API payload when present.
+
+### Technical Details
+
+**Files to edit:**
+- `src/modules/shared/features/meeting-request-form/submitter/Step1Form.tsx` — conditionally render 3 fields when `isSchedulerEdit`
+- `src/modules/shared/features/meeting-request-form/submitter/schema.ts` — add 3 optional fields
+- `src/modules/shared/features/meeting-request-form/submitter/hooks/useStep1Form.ts` — add defaults
+- `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts` — map new fields from API
+- `src/modules/shared/features/meeting-request-form/shared/utils/buildStep1FormData.ts` — include in payload
+
+No new files or dependencies needed. All field components already exist in the shared exports.
 
