@@ -298,7 +298,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   };
 
   return (
-    <div className="flex flex-col gap-6 p-2" dir="rtl">
+    <div className="flex flex-col gap-6 p-2 pb-48" dir="rtl">
       <h2 className="text-xl font-bold text-foreground text-right">
         {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
       </h2>
