@@ -243,7 +243,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         className={cn(
           'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-colors duration-150 pointer-events-auto',
           isAvailable ? 'border border-dashed' : 'border border-transparent',
-          event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
+          isPast ? 'cursor-not-allowed opacity-50 grayscale' : event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
           className
         )}
         style={{
