@@ -1,6 +1,5 @@
 import InviteesTableForm from "@/modules/shared/features/invitees-table-form/InviteesTableForm";
 import { MeetingOwnerType } from "@/modules/shared/types";
-import { EditableFieldsProvider } from "../shared/hooks/EditableFieldsContext";
 import { useSubmitterModal } from "./hooks/useSubmitterModal";
 import { MeetingModalShell } from "../shared/components";
 import { Step2Form } from "../shared/steps/Step2Form";
@@ -12,11 +11,11 @@ interface SubmitterModalProps {
   onOpenChange: (open: boolean) => void;
   editMeetingId?: string | null;
   callerRole?: MeetingOwnerType;
-  showAiSuggest?:boolean;
+  showAiSuggest?: boolean;
   excludeColumns?: string[];
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest= false, excludeColumns }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
@@ -27,7 +26,6 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
     initialStep1Values,
     initialStep2Values,
     initialStep3Values,
-    editableFields,
     meetingStatus,
     loading,
     saving,
@@ -57,55 +55,55 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
       onSubmit={handleFinalSubmit}
       onSaveAsDraft={handleSaveAsDraft}
     >
-      <EditableFieldsProvider editableFields={isEditMode ? editableFields : null}>
-        {/* Step 1: Basic Info */}
-        <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
-          {(!isEditMode || initialStep1Values) && (
-            <SubmitterStep1Form
-              key={activeDraftId || "new"}
-              initialValues={initialStep1Values}
-              onSubmit={handleStep1Submit}
-            />
-          )}
-        </div>
-
-        {/* Step 2: Content */}
-        <div data-step={2} className={cn(currentStep !== 2 && "hidden")}>
-          {step1Data && (
-            <Step2Form
-              key={`step2-${draftId || "new"}`}
-              step1Data={{
-                meeting_classification: step1Data.meeting_classification,
-                meeting_confidentiality: step1Data.meeting_confidentiality,
-                is_urgent: step1Data.is_urgent,
-              }}
-              onSubmit={handleStep2Submit}
-              initialContentData={initialStep2Values}
-              isEditMode={!!draftId}
-              meetingStatus={meetingStatus}
-            />
-          )}
-        </div>
-
-        {/* Step 3: Invitees */}
-        <div className={cn(currentStep !== 3 && "hidden")}>
-          <InviteesTableForm
-            tableRef={inviteesRef}
-            initialInvitees={initialStep3Values}
-            mode="create"
-            showAiSuggest={showAiSuggest}
-            excludeColumns={excludeColumns}
-            meetingParams={step1Data ? {
-              meeting_subject: step1Data.meeting_title,
-              meeting_type: step1Data.meeting_type,
-              meeting_classification: step1Data.meeting_classification,
-              meeting_justification: step1Data.meeting_justification,
-              related_topic: step1Data.related_topic,
-              agenda_items: step1Data.agenda_items,
-            } : undefined}
+      {/* Step 1: Basic Info */}
+      <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
+        {(!isEditMode || initialStep1Values) && (
+          <SubmitterStep1Form
+            key={activeDraftId || "new"}
+            initialValues={initialStep1Values}
+            onSubmit={handleStep1Submit}
+            isSchedulerEdit={callerRole === MeetingOwnerType.SCHEDULING}
+            meetingStatus={meetingStatus}
           />
-        </div>
-      </EditableFieldsProvider>
+        )}
+      </div>
+
+      {/* Step 2: Content */}
+      <div data-step={2} className={cn(currentStep !== 2 && "hidden")}>
+        {step1Data && (
+          <Step2Form
+            key={`step2-${draftId || "new"}`}
+            step1Data={{
+              meeting_classification: step1Data.meeting_classification,
+              meeting_confidentiality: step1Data.meeting_confidentiality,
+              is_urgent: step1Data.is_urgent,
+            }}
+            onSubmit={handleStep2Submit}
+            initialContentData={initialStep2Values}
+            isEditMode={!!draftId}
+            meetingStatus={meetingStatus}
+          />
+        )}
+      </div>
+
+      {/* Step 3: Invitees */}
+      <div className={cn(currentStep !== 3 && "hidden")}>
+        <InviteesTableForm
+          tableRef={inviteesRef}
+          initialInvitees={initialStep3Values}
+          mode="create"
+          showAiSuggest={showAiSuggest}
+          excludeColumns={excludeColumns}
+          meetingParams={step1Data ? {
+            meeting_subject: step1Data.meeting_title,
+            meeting_type: step1Data.meeting_type,
+            meeting_classification: step1Data.meeting_classification,
+            meeting_justification: step1Data.meeting_justification,
+            related_topic: step1Data.related_topic,
+            agenda_items: step1Data.agenda_items,
+          } : undefined}
+        />
+      </div>
     </MeetingModalShell>
   );
 }

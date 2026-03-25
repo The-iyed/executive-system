@@ -189,7 +189,20 @@ export interface MeetingApiResponse {
   note?: string | null;
   location?: string | null;
   meeting_description?: string | null;
-  meeting_owner?: string | null;
+  meeting_owner?: {
+    id: string;
+    name: string;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    is_active: boolean;
+    position?: string | null;
+    phone_number?: string | null;
+    sub?: string | null;
+    ar_name?: string | null;
+    national_id?: string | null;
+  } | string | null;
   is_on_behalf_of?: boolean | null;
   is_based_on_directive?: boolean | null;
   directive_method?: string | null;
