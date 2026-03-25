@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { FormTable, FormInput, FormField, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { DateTimePickerField } from '@/modules/shared/features/meeting-request-form/shared/fields/DateTimePickerField';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
