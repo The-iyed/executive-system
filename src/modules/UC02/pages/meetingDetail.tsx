@@ -4295,20 +4295,6 @@ const MeetingDetail: React.FC = () => {
                 </Select>
           </div>
 
-          {/* Webex Meeting Loading - Show when creating (VIRTUAL or HYBRID) */}
-              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && isCreatingWebex && (
-                <div className="flex flex-col gap-2 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
-                    <label className="text-sm font-medium text-gray-700 text-right">
-                      جاري إنشاء اجتماع Webex...
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Webex Meeting Details - Show when VIRTUAL or HYBRID channel and details are available */}
-              {(scheduleForm.meeting_channel === 'VIRTUAL' || scheduleForm.meeting_channel === 'HYBRID') && webexMeetingDetails && !isCreatingWebex && (
                 <div className="flex flex-col gap-4 p-4 bg-white border border-[#EDEDED] rounded-lg shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD]"></div>
