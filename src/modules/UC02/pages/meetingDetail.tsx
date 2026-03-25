@@ -4119,7 +4119,7 @@ const MeetingDetail: React.FC = () => {
         bodyClassName="dir-rtl"
         footer={
           <div className="flex flex-row-reverse gap-2">
-            {scheduleMutation.isSuccess && webexMeetingDetails ? (
+            {scheduleMutation.isSuccess ? (
               <button
                 type="button"
                 onClick={() => {
@@ -4138,7 +4138,6 @@ const MeetingDetail: React.FC = () => {
                     selected_time_slot_id: null,
                     minister_attendees: [],
                   });
-                  setWebexMeetingDetails(null);
                   navigate(-1);
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] rounded-lg hover:opacity-90 transition-opacity"
