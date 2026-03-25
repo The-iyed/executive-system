@@ -25,6 +25,7 @@ function toISOOrDateString(val: string | null | undefined): string {
 /** Minimal shape from GET /api/meetings/:id (MeetingApiResponse) for edit form */
 export interface MeetingForEdit {
   id: string;
+  status?: string | null;
   /** API often returns meeting_title; meeting_subject may be null */
   meeting_title?: string | null;
   meeting_subject?: string | null;

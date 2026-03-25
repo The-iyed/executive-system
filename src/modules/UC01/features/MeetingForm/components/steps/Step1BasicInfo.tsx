@@ -364,7 +364,7 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
         </div>
 
           <MeetingAgendaTable
-            rows={formData.meetingAgenda || []}
+            rows={(formData.meetingAgenda || []).map(a => ({ ...a, id: a.id ?? crypto.randomUUID() }))}
             required={isStep1BasicInfoFieldRequired('meetingAgenda')}
             onAddRow={handleAddAgendaWithScroll}
             onDeleteRow={handleDeleteAgenda}

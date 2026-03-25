@@ -11,6 +11,9 @@ import {
   DirectiveSection, AgendaSection,
   MeetingNatureField,
   PreviousMeetingField,
+  RequiresProtocolField,
+  RelatedDirectiveField,
+  MeetingManagerField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
 import { MeetingStatus } from "../shared/types/types";
@@ -40,6 +43,15 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-5">
           <MeetingNatureField />
           {visibility.previous_meeting_id && <PreviousMeetingField />}
+          {isSchedulerEdit && (
+            <MeetingManagerField
+              name="submitter"
+              label="مقدّم الطلب"
+              placeholder="ابحث عن مقدّم الطلب..."
+              disabled={false}
+              initialLabel={initialValues?.submitter?.name || initialValues?.submitter?.username || initialValues?.submitter?.displayName || initialValues?.submitter?.mail}
+            />
+          )}
           <OnBehalfField />
           {visibility.meeting_owner && <MeetingOwnerField
               name="meeting_owner"
@@ -66,6 +78,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             }
           />
           <MeetingChannelField />
+          {isSchedulerEdit && <RequiresProtocolField />}
 
           {visibility.meeting_location && (
             <>
@@ -93,8 +106,9 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           showText={visibility.directive_text}
         />
 
-        <div className="mt-6">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
           <NoteField />
+          {isSchedulerEdit && <RelatedDirectiveField />}
         </div>
       </form>
     </FormProvider>

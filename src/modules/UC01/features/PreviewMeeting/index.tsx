@@ -127,11 +127,11 @@ const PreviewMeeting: React.FC = () => {
       case MeetingPreviewTabs.REQUEST_INFO:
         return <RequestInfoTab meeting={meeting} />;
       case MeetingPreviewTabs.INVITEES:
-        return <InviteesTab invitees={meeting?.invitees} />;
+        return <InviteesTab invitees={meeting?.invitees as any} />;
       case MeetingPreviewTabs.CONTENT:
-        return <ContentTab meeting={meeting} onPreviewAttachment={(att) => setPreviewAttachment(att)} />;
+        return <ContentTab meeting={meeting as any} onPreviewAttachment={(att) => setPreviewAttachment(att)} />;
       case MeetingPreviewTabs.NOTES:
-        return <NotesTab meeting={meeting} />;
+        return <NotesTab meeting={meeting as any} />;
       default:
         return <MeetingPreviewTab meeting={meeting} />;
     }

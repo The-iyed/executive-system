@@ -29,7 +29,7 @@ export function MeetingCategoryField({
       <FormSelect
         value={value}
         onValueChange={onChange}
-        options={MEETING_CATEGORY_OPTIONS}
+        options={[...MEETING_CATEGORY_OPTIONS]}
         placeholder="فئة الاجتماع"
         error={!!(touched && error)}
         disabled={disabled}
