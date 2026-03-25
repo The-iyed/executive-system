@@ -106,8 +106,9 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           showText={visibility.directive_text}
         />
 
-        <div className="mt-6">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
           <NoteField />
+          {isSchedulerEdit && <RelatedDirectiveField />}
         </div>
       </form>
     </FormProvider>
