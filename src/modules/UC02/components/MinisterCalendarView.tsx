@@ -204,9 +204,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     title?: string;
     meetingLocation?: string | null;
     meetingChannel?: string;
-    meetingLink?: string | null;
-    /** From API when editing; send with meeting_link when updating */
-    webexMeetingUniqueId?: string | null;
     meetingId?: string;
     mode?: 'create' | 'edit';
     /** Pre-fill invitees table when editing (from event.attendees) */
