@@ -5,6 +5,7 @@ import { ScreenLoader } from '../components';
 import { filterRoutesByUseCase } from '../utils/routeFilter';
 import { getDefaultRouteForUser } from '../utils/useCaseConfig';
 import pages from './routes';
+import { prefetchSharedRoutes } from './prefetchRoutes';
 import uc02Routes from '../../UC02/routes/routes';
 import { UC02LayoutRouter } from '../../UC02/routes/UC02LayoutRouter';
 import { PATH as UC04_PATH } from '../../UC04/routes/paths';
