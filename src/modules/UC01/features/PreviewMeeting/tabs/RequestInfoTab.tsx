@@ -44,7 +44,7 @@ export const RequestInfoTab: React.FC<RequestInfoTabProps> = ({ meeting }) => {
         <div className="flex flex-col gap-2 w-full">
           <label className={labelClass} style={fontStyle}>مالك الاجتماع</label>
           <div className={valueClass} style={fontStyle}>
-            {(meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? (typeof (meeting as any)?.meeting_owner === 'object' ? ((meeting as any)?.meeting_owner?.name ?? (meeting as any)?.meeting_owner?.username ?? '-') : ((meeting as any)?.meeting_owner ?? '-'))}
+            {(meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? (typeof meeting?.meeting_owner === 'object' && meeting?.meeting_owner ? (meeting.meeting_owner.name ?? meeting.meeting_owner.username ?? '-') : (meeting?.meeting_owner ?? '-'))}
           </div>
         </div>
       </div>
