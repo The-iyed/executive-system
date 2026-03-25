@@ -1,31 +1,76 @@
 
 
-## Fix: Prevent any visual interaction on past calendar time slots
+## Why Navigation Feels Slow on First Click
 
-### Problem
-Clicking on past time slots shows a visual highlight (select mirror) before the handler rejects it. The user sees a response but nothing happens — bad UX.
+The slowness is caused by **lazy loading** (`lazy(() => import(...))`) on every route. When you click a nav item for the first time, React must:
 
-### Solution
-Add the `selectAllow` prop to FullCalendar. This is a built-in callback that runs **before** any visual selection feedback. If it returns `false`, FullCalendar won't show the select mirror or highlight at all.
+1. Download the JS chunk for that page
+2. Parse and execute it
+3. Then render the component
 
-### Changes
+During this time, the user sees the `Suspense` fallback (a full-screen loader or content area spinner), which feels like a long redirect.
 
-**File: `src/modules/UC02/components/MinisterFullCalendar.tsx`**
+### Additional contributing factor
 
-1. Add a `selectAllow` callback that rejects any selection where `start` is in the past:
+Inside `renderRoutes()`, the functions `filterRoutesByUseCase()` and `getDefaultRouteForUser()` run on **every render** (no memoization), recalculating route filtering unnecessarily.
 
-```typescript
-selectAllow={(selectInfo) => {
-  return selectInfo.start.getTime() >= Date.now() - 60000;
-}}
-```
+## Plan
 
-2. Add this prop to the `<FullCalendar>` component alongside the existing `selectable` prop.
+### 1. Prefetch lazy route chunks on idle
 
-This is a single-line addition. The existing `openSlotFromDate` null-check remains as a safety net, but the user will no longer see any visual feedback when clicking/dragging on past slots.
+Add a utility that calls `import()` for each UC-02 route chunk after the app mounts and the browser is idle (using `requestIdleCallback`). This way, by the time the user clicks a nav item, the chunk is already downloaded.
+
+**File: `src/modules/UC02/routes/prefetchRoutes.ts`** (new)
+- Export a `prefetchUC02Routes()` function that eagerly imports all lazy page chunks
+- Use `requestIdleCallback` (with `setTimeout` fallback) so it doesn't block initial render
+
+**File: `src/modules/UC02/routes/UC02LayoutRouter.tsx`**
+- Call `prefetchUC02Routes()` once on mount via `useEffect`
+
+### 2. Apply the same prefetch pattern for other UC modules
+
+**File: `src/modules/shared/routes/prefetchRoutes.ts`** (new)
+- Prefetch UC-01, UC-03, UC-04, etc. route chunks on idle after auth completes
+
+**File: `src/modules/shared/routes/index.tsx`**
+- Call the shared prefetch in a `useEffect` after `isInitialised && isAuthenticated`
+
+### 3. Memoize route filtering in `renderRoutes`
+
+Wrap `filterRoutesByUseCase` results in `useMemo` to avoid recalculating on every render.
+
+---
 
 ### Technical Details
-- `selectAllow` is a FullCalendar API that prevents the selection mirror from rendering
-- The 60-second buffer matches the existing logic in `openSlotFromDate`
-- No new files or dependencies needed
+
+**Prefetch pattern:**
+```typescript
+// src/modules/UC02/routes/prefetchRoutes.ts
+const chunks = [
+  () => import('../pages/dashboard'),
+  () => import('../pages/directives'),
+  () => import('../pages/calendar'),
+  () => import('../pages/workBasket'),
+  () => import('../pages/meetingDetail'),
+  () => import('../pages/waitingList'),
+  () => import('../pages/scheduledMeetings'),
+];
+
+export function prefetchUC02Routes() {
+  const load = () => chunks.forEach(fn => fn().catch(() => {}));
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(load);
+  } else {
+    setTimeout(load, 2000);
+  }
+}
+```
+
+**Files to create:**
+- `src/modules/UC02/routes/prefetchRoutes.ts`
+- `src/modules/shared/routes/prefetchRoutes.ts`
+
+**Files to edit:**
+- `src/modules/UC02/routes/UC02LayoutRouter.tsx` — call prefetch on mount
+- `src/modules/shared/routes/index.tsx` — call shared prefetch + memoize filtering
 
