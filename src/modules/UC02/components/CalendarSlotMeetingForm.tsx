@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { FormTable, FormInput, FormField, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { DateTimePickerField } from '@/modules/shared/features/meeting-request-form/shared/fields/DateTimePickerField';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
@@ -11,7 +12,7 @@ import {
   showLocationOtherInput,
   isPresetLocation,
 } from '../features/MeetingForm/utils/constants';
-import { createWebexMeeting } from '../data/meetingsApi';
+
 import { searchByEmail, type ADUserByEmail } from '../data/adIntegrationApi';
 import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import { X } from 'lucide-react';
@@ -19,41 +20,7 @@ import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
-/**
- * Show the same local date/time the user chose on the calendar.
- * startISO/endISO are UTC instants (e.g. from toISOString); local getters match wall clock in the browser.
- */
-function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
-  if (!startISO || !endISO) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const toHHmmLocal = (d: Date) =>
-    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  const dateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
-  return {
-    date: dateOnly,
-    startTime: toHHmmLocal(start),
-    endTime: toHHmmLocal(end),
-    isFullDay: false,
-  };
-}
 
-/** Build ISO with timezone offset for API (e.g. 2026-03-31T09:00:00+03:00). */
-function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
-  if (!value.date) return null;
-  const [sh, sm] = value.startTime.split(':').map(Number);
-  const [eh, em] = value.endTime.split(':').map(Number);
-  const start = new Date(value.date);
-  start.setHours(sh, sm, 0, 0);
-  const end = new Date(value.date);
-  end.setHours(eh, em, 0, 0);
-  return { start: toISOStringWithTimezone(start), end: toISOStringWithTimezone(end) };
-}
 
 /** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
@@ -68,9 +35,6 @@ export interface CalendarSlotMeetingFormSubmitValues {
   end_date: string;
   meeting_channel: string;
   meeting_location?: string;
-  meeting_link?: string;
-  /** From Webex create meeting API; send whenever meeting_link is sent */
-  webex_meeting_unique_identifier?: string;
   /** Full proposer payloads for API */
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
@@ -86,11 +50,10 @@ export interface CalendarSlotMeetingFormProps {
   initialTitle?: string;
   initialMeetingChannel?: string;
   initialMeetingLocation?: string;
-  initialMeetingLink?: string;
-  /** From API when editing; send with meeting_link when updating */
-  initialWebexMeetingUniqueId?: string;
   /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
+  /** Form mode: 'create' for new meetings, 'edit' for existing ones */
+  mode?: 'create' | 'edit';
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
@@ -106,9 +69,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   initialTitle,
   initialMeetingChannel,
   initialMeetingLocation,
-  initialMeetingLink,
-  initialWebexMeetingUniqueId,
   initialInvitees,
+  mode = 'create',
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -231,27 +193,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const locationValid = !locationRequired || (locationDropdownValue === LOCATION_OPTIONS.OTHER ? meetingLocation.trim() !== '' : locationDropdownValue !== '');
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
-  const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
-  const [webexMeetingUniqueId, setWebexMeetingUniqueId] = useState<string | null>(initialWebexMeetingUniqueId ?? null);
-  const [webexError, setWebexError] = useState<string | null>(null);
-  const webexCreatedForSlotRef = React.useRef<string | null>(
-    initialMeetingLink && startDefault && endDefault ? `${startDefault}-${endDefault}` : null
-  );
-
-  const isRemote = meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID';
-
   const handleMeetingChannelChange = useCallback((value: string) => {
     setMeetingChannel(value);
     if (value !== 'PHYSICAL') {
       setMeetingLocation('');
       setMeetingLocationOption('');
-    }
-    if (value === 'PHYSICAL') {
-      setWebexMeetingLink(null);
-      setWebexMeetingUniqueId(null);
-      setWebexError(null);
-      webexCreatedForSlotRef.current = null;
     }
   }, []);
 
@@ -260,75 +206,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     setMeetingLocation(isPresetLocation(value) ? value : '');
   }, []);
 
-  const webexSlotRef = React.useRef<string | null>(null);
-
-  // Auto-create Webex meeting when channel is VIRTUAL/HYBRID and date/time are set
-  useEffect(() => {
-    if (!isRemote || !startDate || !endDate || webexMeetingLink || isCreatingWebex) return;
-
-    const start = new Date(startDate).getTime();
-    if (start <= Date.now()) return;
-
-    const slotKey = `${startDate}-${endDate}`;
-    webexSlotRef.current = slotKey;
-
-    const createWebexAsync = async () => {
-      setIsCreatingWebex(true);
-      setWebexError(null);
-      try {
-        const startDateUTC = new Date(startDate);
-        const year = startDateUTC.getUTCFullYear();
-        const month = String(startDateUTC.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(startDateUTC.getUTCDate()).padStart(2, '0');
-        const hours = String(startDateUTC.getUTCHours()).padStart(2, '0');
-        const minutes = String(startDateUTC.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(startDateUTC.getUTCSeconds()).padStart(2, '0');
-        const webexDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-
-        const durationMinutes = Math.max(
-          1,
-          Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (60 * 1000))
-        );
-
-        const response = await createWebexMeeting({
-          meeting_title: title.trim() || 'اجتماع',
-          start_datetime: webexDateTime,
-          time_zone: 'UTC',
-          duration_minutes: durationMinutes,
-        });
-
-        if (webexSlotRef.current === slotKey) {
-          setWebexMeetingLink(response.data.webex_meeting_join_link);
-          setWebexMeetingUniqueId(response.data.webex_meeting_unique_identifier);
-          webexCreatedForSlotRef.current = slotKey;
-        }
-      } catch (err) {
-        console.error('Failed to create Webex meeting:', err);
-        if (webexSlotRef.current === slotKey) {
-          setWebexError('فشل في إنشاء اجتماع Webex. يرجى المحاولة مرة أخرى.');
-        }
-      } finally {
-        setIsCreatingWebex(false);
-      }
-    };
-
-    const timeoutId = setTimeout(createWebexAsync, 500);
-    return () => clearTimeout(timeoutId);
-  }, [isRemote, startDate, endDate, title, webexMeetingLink, isCreatingWebex]);
-
-  // Clear Webex only when the time slot actually changes (avoids wiping link when MeetingRangePicker re-emits same instant)
-  useEffect(() => {
-    if (!isRemote) return;
-    const slotKey = startDate && endDate ? `${startDate}-${endDate}` : '';
-    const prev = webexCreatedForSlotRef.current;
-    if (!slotKey || !prev || slotKey === prev) return;
-    if (webexMeetingLink || webexError) {
-      setWebexMeetingLink(null);
-      setWebexMeetingUniqueId(null);
-      setWebexError(null);
-      webexCreatedForSlotRef.current = null;
-    }
-  }, [isRemote, startDate, endDate, webexMeetingLink, webexError]);
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
     if (!isPhysical) return undefined;
@@ -336,7 +213,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     if (isPresetLocation(loc)) return loc;
     if (loc !== '') return loc;
     if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
-    if (locationDropdownValue === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
+    if ((locationDropdownValue as string) === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
     return undefined;
   }, [isPhysical, meetingLocation, locationDropdownValue]);
 
@@ -353,7 +230,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       return;
     }
     if (locationRequired && !locationValid) return;
-    if (isRemote && !webexMeetingLink) return;
     const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
 
@@ -383,16 +259,16 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       end_date: endDate,
       meeting_channel: meetingChannel,
       meeting_location,
-      meeting_link: webexMeetingLink ?? undefined,
-      webex_meeting_unique_identifier: webexMeetingUniqueId ?? undefined,
       proposers,
       invitees: inviteesPayload,
     });
   };
 
   return (
-    <div className="flex flex-col gap-6 p-2" dir="rtl">
-      <h2 className="text-xl font-bold text-[#101828] text-right">إنشاء اجتماع من الموعد</h2>
+    <div className="flex flex-col gap-6 p-2 pb-48" dir="rtl">
+      <h2 className="text-xl font-bold text-foreground text-right">
+        {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
+      </h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
@@ -414,18 +290,15 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </div>
 
         <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
-          <MeetingRangePicker
-            value={isoRangeToMeetingRange(startDate, endDate)}
+          <DateTimePickerField
+            value={startDate}
+            endValue={endDate}
             onChange={(v) => {
               setPastDateError(null);
-              const iso = meetingRangeToIso(v);
-              if (iso) {
-                setStartDate(iso.start);
-                setEndDate(iso.end);
-              } else {
-                setStartDate('');
-                setEndDate('');
-              }
+              setStartDate(v);
+            }}
+            onChangeEnd={(v) => {
+              setEndDate(v);
             }}
             minDate={minStartDate}
             placeholder="اختر التاريخ والوقت"
@@ -445,29 +318,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           />
         </FormField>
 
-        {isRemote && (
-          <>
-            {isCreatingWebex && (
-              <div className="flex items-center gap-2 text-sm text-[#667085]">
-                <div className="w-4 h-4 border-2 border-[#008774] border-t-transparent rounded-full animate-spin" />
-                <span>جاري إنشاء اجتماع Webex...</span>
-              </div>
-            )}
-            {webexError && (
-              <p className="text-right text-sm text-red-600">{webexError}</p>
-            )}
-            {webexMeetingLink && !isCreatingWebex && (
-              <FormField className="w-full min-w-0" label="رابط الاجتماع">
-                <FormInput
-                  value={webexMeetingLink}
-                  readOnly
-                  fullWidth
-                  className="bg-gray-50"
-                />
-              </FormField>
-            )}
-          </>
-        )}
 
         {isPhysical && (
           <>
@@ -575,7 +425,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
         <InviteesTableForm
           tableRef={inviteesRef}
-          initialInvitees={initialInvitees ?? []}
+          initialInvitees={(initialInvitees ?? []) as any}
           showAiSuggest={false}
         />
 
@@ -600,12 +450,13 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
               isSubmitting ||
               !titleTrimmed ||
               !meetingChannel.trim() ||
-              (locationRequired && !locationValid) ||
-              (isRemote && (!webexMeetingLink || isCreatingWebex))
+              (locationRequired && !locationValid)
             }
             className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
+            {isSubmitting
+              ? (mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...')
+              : (mode === 'edit' ? 'تحديث' : 'حفظ')}
           </button>
         </div>
       </form>
