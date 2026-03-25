@@ -13,15 +13,18 @@ import {
   PreviousMeetingField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
+import { MeetingStatus } from "../shared/types/types";
 import type { SubmitterStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
 interface Step1FormProps {
   onSubmit: (data: SubmitterStep1Values) => void;
   initialValues?: Partial<SubmitterStep1Values> & { meeting_manager_name?: string };
+  isSchedulerEdit?: boolean;
+  meetingStatus?: MeetingStatus;
 }
 
-export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) {
+export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, meetingStatus }: Step1FormProps) {
   const { form, visibility, watched } = useSubmitterStep1Form(initialValues);
 
   const minDate = useMemo(
@@ -50,7 +53,18 @@ export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) 
 
           <IsUrgentField />
           {visibility.urgent_reason && <UrgentReasonField />}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} />
+          <MeetingDateField
+            startName="meeting_start_date"
+            endName="meeting_end_date"
+            required
+            minDate={minDate}
+            disabled={
+              !isSchedulerEdit &&
+              meetingStatus === MeetingStatus.SCHEDULED &&
+            !!initialValues?.meeting_start_date &&
+            !!initialValues?.meeting_end_date
+            }
+          />
           <MeetingChannelField />
 
           {visibility.meeting_location && (
