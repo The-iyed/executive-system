@@ -11,6 +11,9 @@ import {
   DirectiveSection, AgendaSection,
   MeetingNatureField,
   PreviousMeetingField,
+  RequiresProtocolField,
+  RelatedDirectiveField,
+  MeetingManagerField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
 import { MeetingStatus } from "../shared/types/types";
