@@ -167,11 +167,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
       try {
-        const invitees = ((values.invitees ?? []) as Record<string, unknown>[]).map((m) => ({
-          name: (m.name ?? m.full_name ?? m.position ?? '') as string,
+      const invitees = ((values.invitees ?? []) as Record<string, unknown>[]).map((m) => ({
+          name: (m.name ?? m.full_name ?? '') as string,
           position: (m.position ?? m.position_title ?? '') as string,
           mobile: (m.mobile ?? m.mobile_number ?? '') as string,
           email: (m.email ?? '') as string,
+          sector: (m.sector ?? '') as string,
+          attendance_mechanism: (m.attendance_mechanism ?? '') as string,
+          access_permission: Boolean(m.access_permission),
+          is_consultant: Boolean(m.is_consultant),
+          meeting_owner: Boolean(m.meeting_owner),
+          ...(m.object_guid ? { object_guid: m.object_guid as string } : {}),
         }));
 
         const payload = {
