@@ -1,5 +1,5 @@
 import React from 'react';
-import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
+import type { MeetingApiResponse } from '@/modules/shared/types/meeting';
 import { MeetingStatus, MeetingStatusLabels } from '@/modules/shared/types';
 import { formatDateArabic } from '@/modules/shared/utils';
 const labelClass = 'text-sm font-medium text-gray-700';
