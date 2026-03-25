@@ -276,22 +276,22 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col gap-2 px-6 pb-5 pt-3">
+            <div className="flex flex-col gap-3 px-6 pb-6 pt-4 border-t border-border/20">
               {/* Join Meeting CTA */}
               {display.isLink && (
                 <a
                   href={display.locationOrLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground text-[15px] font-bold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99]"
+                  className="group flex items-center justify-center gap-2.5 w-full py-3 rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground text-sm font-bold shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/25 active:scale-[0.99]"
                 >
                   <Video className="w-5 h-5" />
                   انضم للاجتماع
                 </a>
               )}
 
-              {/* Secondary actions */}
-              <div className="flex w-full justify-end gap-2">
+              {/* Secondary actions row */}
+              <div className="flex w-full gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -300,9 +300,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     navigate(`/meeting/${id}`);
                   }}
                   className={cn(
-                    'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors',
+                    'flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-colors',
                     display.isLink
-                      ? 'border border-border bg-background text-foreground hover:bg-muted'
+                      ? 'border border-border text-foreground hover:bg-muted'
                       : 'bg-primary text-primary-foreground hover:bg-primary/90',
                   )}
                 >
@@ -312,7 +312,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   <button
                     type="button"
                     onClick={() => onEdit(event, meetingDetail)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     تعديل
