@@ -113,12 +113,6 @@ export async function getMeetingsTimeline(
 
 // ── Range Helpers ──
 
-export function getDayRange(date: Date): { start: Date; end: Date } {
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-  return { start, end };
-}
-
 export function getWeekRange(date: Date): { start: Date; end: Date } {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   d.setDate(d.getDate() - d.getDay()); // Sunday
