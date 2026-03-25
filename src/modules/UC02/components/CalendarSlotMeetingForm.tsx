@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FormTable, FormInput, FormField, MeetingRangePicker, type MeetingRangeValue, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { FormTable, FormInput, FormField, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { DateTimePickerField } from '@/modules/shared/features/meeting-request-form/shared/fields/DateTimePickerField';
 import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
@@ -19,41 +20,7 @@ import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
 
-/**
- * Show the same local date/time the user chose on the calendar.
- * startISO/endISO are UTC instants (e.g. from toISOString); local getters match wall clock in the browser.
- */
-function isoRangeToMeetingRange(startISO: string, endISO: string): MeetingRangeValue {
-  if (!startISO || !endISO) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return { date: null, startTime: '09:00', endTime: '10:00', isFullDay: false };
-  }
-  const toHHmmLocal = (d: Date) =>
-    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  const dateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
-  return {
-    date: dateOnly,
-    startTime: toHHmmLocal(start),
-    endTime: toHHmmLocal(end),
-    isFullDay: false,
-  };
-}
 
-/** Build ISO with timezone offset for API (e.g. 2026-03-31T09:00:00+03:00). */
-function meetingRangeToIso(value: MeetingRangeValue): { start: string; end: string } | null {
-  if (!value.date) return null;
-  const [sh, sm] = value.startTime.split(':').map(Number);
-  const [eh, em] = value.endTime.split(':').map(Number);
-  const start = new Date(value.date);
-  start.setHours(sh, sm, 0, 0);
-  const end = new Date(value.date);
-  end.setHours(eh, em, 0, 0);
-  return { start: toISOStringWithTimezone(start), end: toISOStringWithTimezone(end) };
-}
 
 /** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
@@ -323,18 +290,15 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </div>
 
         <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
-          <MeetingRangePicker
-            value={isoRangeToMeetingRange(startDate, endDate)}
+          <DateTimePickerField
+            value={startDate}
+            endValue={endDate}
             onChange={(v) => {
               setPastDateError(null);
-              const iso = meetingRangeToIso(v);
-              if (iso) {
-                setStartDate(iso.start);
-                setEndDate(iso.end);
-              } else {
-                setStartDate('');
-                setEndDate('');
-              }
+              setStartDate(v);
+            }}
+            onChangeEnd={(v) => {
+              setEndDate(v);
             }}
             minDate={minStartDate}
             placeholder="اختر التاريخ والوقت"
