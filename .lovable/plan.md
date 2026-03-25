@@ -1,48 +1,68 @@
 
 
-## How Webex Auto-Creation Works
+## Issues Found in Calendar Edit Meeting Flow
 
-When the user selects **VIRTUAL** or **HYBRID** in the "آلية انعقاد الاجتماع" field, a `useEffect` (lines 266-317 in `CalendarSlotMeetingForm.tsx`) automatically calls `createWebexMeeting()` API (`POST /api/v1/webex/meetings`) after a 500ms debounce. It creates a Webex meeting room and stores the join link + unique ID. The form then:
-- Shows a spinner "جاري إنشاء اجتماع Webex..."
-- Displays the link in a read-only input
-- Blocks submit until the link is ready
-- Sends `meeting_link` and `webex_meeting_unique_identifier` with the form payload
+### 1. Modal title is always "إنشاء اجتماع من الموعد" even when editing
+Line 299 in `CalendarSlotMeetingForm.tsx` hardcodes the create title. No `mode` prop is passed to distinguish create vs edit.
 
-## Plan: Remove Webex Auto-Creation from Calendar Slot Form
+### 2. Invitees not properly mapped on edit
+In `handleEdit` (CalendarView.tsx lines 125-158), attendees from `CalendarEventData` only have `name` and `email`. The mapping sets `position: a.name` (wrong — copies name into position) and leaves `mobile`, `sector` empty. The real invitee data is in `meetingDetail` (fetched by EventDetailModal) but is not passed to `handleEdit`.
+
+### 3. Submit button says "حفظ" in both modes — should say "تحديث" for edit
+
+### 4. meetingId not passed to CalendarSlotMeetingForm — the form has no awareness of edit mode
+
+---
+
+## Plan
 
 ### File: `src/modules/UC02/components/CalendarSlotMeetingForm.tsx`
 
-1. **Remove Webex state** — delete `isCreatingWebex`, `webexMeetingLink`, `webexMeetingUniqueId`, `webexError`, `webexCreatedForSlotRef`, `webexSlotRef` (lines 234-240, 263)
-
-2. **Remove Webex useEffects** — delete the auto-create effect (lines 266-317) and the slot-change clear effect (lines 320-331)
-
-3. **Remove Webex from `handleMeetingChannelChange`** — remove the lines that clear Webex state when switching to PHYSICAL (lines 251-254)
-
-4. **Remove Webex UI block** — delete the spinner, error, and link display section (lines 448-469)
-
-5. **Remove Webex from submit** — remove `meeting_link` and `webex_meeting_unique_identifier` from `handleSubmit` payload (lines 386-387) and remove the `isRemote && !webexMeetingLink` submit guard (line 356)
-
-6. **Remove Webex from submit button disabled** — remove `(isRemote && (!webexMeetingLink || isCreatingWebex))` condition (line 604)
-
-7. **Remove import** — remove `import { createWebexMeeting } from '../data/meetingsApi'` (line 14)
-
-8. **Clean props/interface** — remove `initialMeetingLink`, `initialWebexMeetingUniqueId` from `CalendarSlotMeetingFormProps` and the component destructuring
+1. Add `mode` prop (`'create' | 'edit'`) to `CalendarSlotMeetingFormProps`
+2. Change title (line 299): show "تعديل الاجتماع" when `mode === 'edit'`, else "إنشاء اجتماع من الموعد"
+3. Change submit button text (line 488): show "تحديث" when `mode === 'edit'`, else "حفظ"
 
 ### File: `src/modules/UC02/features/calendar/CalendarView.tsx`
 
-9. **Remove Webex fields from slot submission** — remove `meeting_link`, `webex_meeting_unique_identifier` from the values passed to the API in the submit handler
+4. Pass `mode={slot.mode}` prop to `CalendarSlotMeetingForm`
+5. Fix `handleEdit` to use full invitee data from `meetingDetail` API instead of the sparse `CalendarEventData.attendees`:
+   - Accept the fetched `meetingDetail` as a parameter (from EventDetailModal)
+   - Map `meeting.invitees` with all fields: `name`, `position`, `email`, `mobile`, `sector`, `attendance_mechanism`, `access_permission`, `is_consultant`, `meeting_owner`, `object_guid`
 
-10. **Remove Webex props** — remove `initialMeetingLink`, `initialWebexMeetingUniqueId` props passed to `CalendarSlotMeetingForm`
+### File: `src/modules/UC02/features/calendar/components/EventDetailModal.tsx`
 
-### File: `src/modules/UC02/features/calendar/types.ts`
+6. Update `onEdit` callback to pass `meetingDetail` alongside the event, so `CalendarView.handleEdit` can use full invitee data from the API response:
+   - Change `onEdit?: (event: CalendarEventData) => void` to `onEdit?: (event: CalendarEventData, meetingDetail?: MeetingApiResponse) => void`
+   - Pass `meetingDetail` when calling `onEdit`
 
-11. **Remove from SlotSelection** — remove `meetingLink` and `webexMeetingUniqueId` fields
+### File: `src/modules/UC02/features/calendar/CalendarView.tsx` (handleEdit update)
 
-### Interface cleanup
+7. Update `handleEdit` signature to accept optional `meetingDetail` parameter
+8. When `meetingDetail?.invitees` exists, map them with full fields instead of sparse attendees:
+   ```typescript
+   const initialInvitees = meetingDetail?.invitees?.length > 0
+     ? meetingDetail.invitees.map((inv, i) => ({
+         _id: `inv-edit-${i}-${Date.now()}`,
+         name: inv.name ?? inv.external_name ?? '',
+         email: inv.email ?? inv.external_email ?? '',
+         position: inv.position ?? '',
+         mobile: inv.mobile ?? '',
+         sector: inv.sector ?? '',
+         attendance_mechanism: inv.attendance_mechanism ?? 'PHYSICAL',
+         access_permission: Boolean(inv.access_permission),
+         is_consultant: Boolean(inv.is_consultant),
+         meeting_owner: Boolean(inv.meeting_owner),
+         ...(inv.object_guid ? { object_guid: inv.object_guid } : {}),
+       }))
+     : // fallback to sparse attendees from event
+   ```
 
-12. **Remove from `CalendarSlotMeetingFormSubmitValues`** — remove `meeting_link` and `webex_meeting_unique_identifier` fields
+---
 
-### What stays untouched
-- The `createWebexMeeting` API function in `meetingsApi.ts` — it's still used in `meetingDetail.tsx` for the scheduling modal
-- The `calendarApi.ts` payload types — they still accept optional `meeting_link` / `webex_meeting_unique_identifier` for other flows
+### Technical Details
+
+**Files to edit:**
+- `src/modules/UC02/components/CalendarSlotMeetingForm.tsx` — add `mode` prop, conditional title + button text
+- `src/modules/UC02/features/calendar/CalendarView.tsx` — pass `mode`, fix invitee mapping in `handleEdit`
+- `src/modules/UC02/features/calendar/components/EventDetailModal.tsx` — pass `meetingDetail` to `onEdit` callback
 
