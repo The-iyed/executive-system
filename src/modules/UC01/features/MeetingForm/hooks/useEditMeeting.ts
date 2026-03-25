@@ -42,12 +42,12 @@ export const useEditMeeting = (options?: UseEditMeetingOptions) => {
   const submitterStatus = submitterMeeting?.status;
   const underReviewBlocked = useMemo(() => {
     if (fromMeetingDetail && options?.initialMeetingData?.status != null) {
-      return isSubmitterEditBlockedStatus(options.initialMeetingData.status);
+      return isSubmitterEditBlockedStatus(options.initialMeetingData.status as string);
     }
     if (fromMeetingDetail) return false;
     if (!id) return false;
     if (submitterMeeting === undefined) return false;
-    return isSubmitterEditBlockedStatus(submitterStatus);
+    return isSubmitterEditBlockedStatus(submitterStatus as string);
   }, [
     options?.initialMeetingData?.status,
     fromMeetingDetail,

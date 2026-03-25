@@ -21,7 +21,7 @@ interface UseMeetingStepsProps {
   onStep1Success?: (newDraftId: string) => void;
   onStep2Success?: (isDraft: boolean) => void;
   onStep2SuccessGoToStep3?: () => void;
-  onStep3Success?: () => void;
+  onStep3Success?: (isDraft?: boolean) => void;
   onClose?: () => void;
 }
 
