@@ -2875,7 +2875,7 @@ const MeetingDetail: React.FC = () => {
                   <div className="w-9 h-9 rounded-xl bg-[#048F86]/10 flex items-center justify-center">
                     <ClipboardCheck className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
                   </div>
-                  {renderFieldLabel('general_notes', 'ملاحظات', 'text-[15px] font-bold text-[#1F2937]')}
+                  <h3 className="text-[15px] font-bold text-[#1F2937]">ملاحظات</h3>
                 </div>
                 <div className="p-6">
                   {(() => {
@@ -4277,83 +4277,27 @@ const MeetingDetail: React.FC = () => {
         }
       >
         <form id="return-for-info-form" onSubmit={handleReturnForInfoSubmit} className="flex flex-col gap-4">
-          <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
-            <p className="text-sm text-gray-700 text-right leading-relaxed">
-              حدّد الحقول القابلة للتعديل بجانب كل حقل في النموذج عبر علامة <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#048F86]/10 text-[#048F86] text-xs font-medium">قابل للتعديل</span>. أدخل الملاحظات ثم اضغط إعادة للطلب.
-            </p>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700 text-right">
+              ملاحظات <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              value={returnForInfoForm.notes}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                setReturnForInfoForm((p) => ({ ...p, notes: e.target.value }));
+                if (returnForInfoNotesError) setReturnForInfoNotesError(null);
+              }}
+              placeholder="يرجى توفير معلومات إضافية حول الموضوع"
+              className={`w-full min-h-[100px] text-right ${returnForInfoNotesError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+              aria-invalid={!!returnForInfoNotesError}
+              aria-describedby={returnForInfoNotesError ? 'return-for-info-notes-error' : undefined}
+            />
+            {returnForInfoNotesError && (
+              <p id="return-for-info-notes-error" className="text-sm text-red-500 text-right">
+                {returnForInfoNotesError}
+              </p>
+            )}
           </div>
-          
-          {/* Selected Editable Fields */}
-          {(() => {
-            const selectedFields = EDITABLE_FIELD_IDS.filter((fieldId) => returnForInfoForm.editable_fields[fieldId]);
-            if (selectedFields.length === 0) {
-              return (
-                <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
-                  <p className="text-sm text-gray-500 text-right">
-                    لم يتم تحديد أي حقول قابلة للتعديل بعد
-                  </p>
-                </div>
-              );
-            }
-            return (
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                >
-                  الحقول المحددة للتعديل
-                </label>
-                <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-gray-200 bg-white min-h-[60px]">
-                  {selectedFields.map((fieldId) => (
-                    <div
-                      key={fieldId}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#048F86]/10 border border-[#048F86]/30 text-[#048F86] text-sm font-medium"
-                  style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
-                    >
-                      <span>{fieldLabels[fieldId] || fieldId}</span>
-              <button
-                type="button"
-                onClick={() => {
-                          setReturnForInfoForm((p) => ({
-                            ...p,
-                            editable_fields: { ...p.editable_fields, [fieldId]: false },
-                          }));
-                        }}
-                        className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[#048F86]/20 transition-colors"
-                        aria-label={`إزالة ${fieldLabels[fieldId] || fieldId}`}
-                      >
-                        <X className="w-3 h-3" strokeWidth={2.5} />
-              </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-          
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-gray-700 text-right"
-                >
-                  ملاحظات <span className="text-red-500">*</span>
-                </label>
-                <Textarea
-                  value={returnForInfoForm.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                    setReturnForInfoForm((p) => ({ ...p, notes: e.target.value }));
-                    if (returnForInfoNotesError) setReturnForInfoNotesError(null);
-                  }}
-                  placeholder="يرجى توفير معلومات إضافية حول الموضوع"
-                  className={`w-full min-h-[100px] text-right ${returnForInfoNotesError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                  aria-invalid={!!returnForInfoNotesError}
-                  aria-describedby={returnForInfoNotesError ? 'return-for-info-notes-error' : undefined}
-                />
-                {returnForInfoNotesError && (
-                  <p id="return-for-info-notes-error" className="text-sm text-red-500 text-right">
-                    {returnForInfoNotesError}
-                  </p>
-                )}
-              </div>
         </form>
       </Drawer>
 
