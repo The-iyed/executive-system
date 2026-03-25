@@ -2,47 +2,33 @@
 
 ## Problem
 
-Two issues in `useCalendarEvents` hook at `src/modules/UC02/features/calendar/hooks/useCalendarEvents.ts`:
+When switching from **month view** back to **week view**, the API fetches the wrong week (start of month instead of current week).
 
-1. **Missing daily range**: The range calculation only handles `monthly` vs everything else (falls back to `getWeekRange`). When `viewMode === 'daily'`, it still fetches an entire week instead of a single day.
+**Root cause**: `MinisterFullCalendar` fires `onDatesSet` during month view, which calls `setCurrentDate(arg.view.currentStart)` — this resets `currentDate` to the **1st of the month** (e.g., March 1). When you switch back to week view, `getWeekRange(March 1)` returns Feb 28 – March 7 instead of the week containing today.
 
-2. **`placeholderData` prevents skeleton**: `placeholderData: (prev) => prev` keeps stale data visible during fetches, which conflicts with `showSkeleton = isLoading || isFetching` — `isLoading` is only true on first load, and `isFetching` is true but the old data is still rendered, so the skeleton never appears on view/date switches.
+**Flow**:
+1. Week view → `currentDate = March 25` → fetches March 22–28 ✓
+2. Switch to month → FullCalendar fires `onDatesSet` → sets `currentDate = March 1` → fetches March 1–31 ✓
+3. Switch back to week → `getWeekRange(March 1)` → fetches Feb 28 – March 7 ✗
 
-## Plan
+## Fix
 
-### 1. Add `getDayRange` helper in `src/api/meetings/getMeetingsTimeline.ts`
+**File: `src/modules/UC02/features/calendar/CalendarView.tsx`** (and same in `MinisterCalendarView.tsx`)
 
-Add a new function alongside `getWeekRange` and `getMonthRange`:
+Stop passing `setCurrentDate` to `onCurrentDateChange` in month view. The navigation arrows already handle date changes correctly via `useCalendarNavigation`. FullCalendar's `onDatesSet` should not override `currentDate`.
 
+Change line 279:
 ```typescript
-export function getDayRange(date: Date): { start: Date; end: Date } {
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-  return { start, end };
-}
+// Before
+onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
+
+// After
+onCurrentDateChange={undefined}
 ```
 
-### 2. Update range logic in `useCalendarEvents.ts`
+This ensures `currentDate` stays on the actual date the user was viewing (e.g., March 25), so switching between view modes always computes the correct range around that date.
 
-- Import `getDayRange`
-- Update the `useMemo` to handle all three view modes:
-
-```typescript
-const range =
-  viewMode === 'monthly' ? getMonthRange(currentDate) :
-  viewMode === 'daily'   ? getDayRange(currentDate) :
-                           getWeekRange(currentDate);
-```
-
-### 3. Remove `placeholderData` from the query
-
-Remove `placeholderData: (prev) => prev` so that when the query key changes (date or view mode change), `isLoading` becomes `true` and the skeleton displays correctly.
-
----
-
-### Technical Details
-
-- **Files changed**: `src/api/meetings/getMeetingsTimeline.ts`, `src/modules/UC02/features/calendar/hooks/useCalendarEvents.ts`
-- No new APIs or dependencies — uses the existing `getOutlookTimelineEvents` endpoint with corrected `start`/`end` params
-- The existing `showSkeleton = isLoading || isFetching` in `CalendarView.tsx` will work correctly once `placeholderData` is removed
+**Files to edit:**
+- `src/modules/UC02/features/calendar/CalendarView.tsx` — remove `onCurrentDateChange` prop pass
+- `src/modules/UC02/components/MinisterCalendarView.tsx` — same fix
 
