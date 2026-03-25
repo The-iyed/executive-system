@@ -92,8 +92,8 @@ export function useSubmitterModal({
     queryClient.setQueryData(['meeting', meetingId, 'preview'], freshMeeting);
 
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] }),
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId], exact: true, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'], exact: true, type: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
     ]);
