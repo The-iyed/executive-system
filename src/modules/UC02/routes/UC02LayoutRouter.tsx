@@ -26,6 +26,10 @@ export const UC02LayoutRouter: React.FC = () => {
   const filtered = filterRoutesByUseCase(uc02Routes, user?.use_cases, user?.roles);
   const defaultRoute = getDefaultRouteForUser(user?.use_cases, user?.roles);
 
+  useEffect(() => {
+    prefetchUC02Routes();
+  }, []);
+
   if (!isInitialised) {
     return <ScreenLoader />;
   }
