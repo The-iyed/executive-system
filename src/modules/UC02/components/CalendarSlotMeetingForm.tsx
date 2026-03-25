@@ -85,6 +85,8 @@ export interface CalendarSlotMeetingFormProps {
   initialMeetingLocation?: string;
   /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
+  /** Form mode: 'create' for new meetings, 'edit' for existing ones */
+  mode?: 'create' | 'edit';
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
