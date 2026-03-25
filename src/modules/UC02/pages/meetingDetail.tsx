@@ -1272,18 +1272,6 @@ const MeetingDetail: React.FC = () => {
         meeting_channel: validChannel,
         location: (meeting as any).location ?? prev.location,
       }));
-      const joinUrl = ((meeting as any).meeting_url || (meeting as any).meeting_link || '').trim();
-      const webexId = (meeting as any).webex_meeting_unique_identifier ?? '';
-      if ((ch === 'VIRTUAL' || ch === 'HYBRID') && joinUrl) {
-        setWebexMeetingDetails({
-          join_link: joinUrl,
-          webex_meeting_unique_identifier: webexId,
-          meeting_number: '',
-          password: '',
-          sip_address: '',
-          host_key: '',
-        });
-      }
     }
   }, [meeting]);
 
