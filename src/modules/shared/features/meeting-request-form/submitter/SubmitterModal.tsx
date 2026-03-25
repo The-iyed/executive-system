@@ -62,6 +62,8 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
             key={activeDraftId || "new"}
             initialValues={initialStep1Values}
             onSubmit={handleStep1Submit}
+            isSchedulerEdit={callerRole === MeetingOwnerType.SCHEDULING}
+            meetingStatus={meetingStatus}
           />
         )}
       </div>
