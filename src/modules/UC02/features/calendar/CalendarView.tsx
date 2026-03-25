@@ -123,25 +123,40 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const handleEdit = useCallback(
-    (ev: CalendarEventData) => {
+    (ev: CalendarEventData, meetingDetail?: MeetingApiResponse) => {
       setSelectedEvent(null);
       const location = ev.location ?? null;
       const inferredChannel = location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-      const attendees = ev.attendees ?? [];
-      const initialInvitees = attendees.length > 0
-        ? attendees.map((a, i) => ({
+
+      const apiInvitees = meetingDetail?.invitees as Record<string, unknown>[] | undefined;
+      const initialInvitees = apiInvitees && apiInvitees.length > 0
+        ? apiInvitees.map((inv, i) => ({
             _id: `inv-edit-${i}-${Date.now()}`,
-            email: a.email ?? '',
-            position: a.name ?? '',
-            name: a.name ?? '',
-            mobile: '',
-            sector: '',
-            attendance_mechanism: 'PHYSICAL',
-            access_permission: false,
-            is_consultant: false,
-            meeting_owner: false,
+            name: String(inv.name ?? inv.external_name ?? ''),
+            email: String(inv.email ?? inv.external_email ?? ''),
+            position: String(inv.position ?? ''),
+            mobile: String(inv.mobile ?? ''),
+            sector: String(inv.sector ?? ''),
+            attendance_mechanism: String(inv.attendance_mechanism ?? 'PHYSICAL'),
+            access_permission: Boolean(inv.access_permission),
+            is_consultant: Boolean(inv.is_consultant),
+            meeting_owner: Boolean(inv.meeting_owner),
+            ...(inv.object_guid ? { object_guid: String(inv.object_guid) } : {}),
           }))
-        : undefined;
+        : ev.attendees?.length
+          ? ev.attendees.map((a, i) => ({
+              _id: `inv-edit-${i}-${Date.now()}`,
+              name: a.name ?? '',
+              email: a.email ?? '',
+              position: '',
+              mobile: '',
+              sector: '',
+              attendance_mechanism: 'PHYSICAL',
+              access_permission: false,
+              is_consultant: false,
+              meeting_owner: false,
+            }))
+          : undefined;
 
       setSlot({
         date: ev.date,
@@ -321,6 +336,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             initialMeetingLocation={slot.meetingLocation ?? undefined}
             initialMeetingChannel={slot.meetingChannel ?? ''}
             initialInvitees={slot.initialInvitees}
+            mode={slot.mode}
             isSubmitting={slotSubmitting}
             submitError={slotError}
             onSubmit={handleSlotSubmit as any}
