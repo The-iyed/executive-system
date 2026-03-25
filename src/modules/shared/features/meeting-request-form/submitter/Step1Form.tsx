@@ -28,7 +28,7 @@ interface Step1FormProps {
 }
 
 export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, meetingStatus }: Step1FormProps) {
-  const { form, visibility, watched } = useSubmitterStep1Form(initialValues);
+  const { form, visibility, watched } = useSubmitterStep1Form(initialValues, { isSchedulerEdit });
 
   const minDate = useMemo(
     () => (watched.is_urgent === BOOL.TRUE ? startOfDay(new Date()) : startOfDay(addDays(new Date(), 7))),
@@ -53,7 +53,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             />
           )}
           <OnBehalfField />
-          {visibility.meeting_owner && <MeetingOwnerField
+          {(visibility.meeting_owner || isSchedulerEdit) && <MeetingOwnerField
               name="meeting_owner"
               initialLabel={initialValues?.meeting_owner?.name || initialValues?.meeting_owner?.username || initialValues?.meeting_owner?.displayName || initialValues?.meeting_owner?.mail }
             />}
