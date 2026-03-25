@@ -93,7 +93,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
 
-  const showSkeleton = isLoading || isFetching;
+  const showSkeleton = isLoading;
 
   // Map to OutlookTimelineEvent for MinisterFullCalendar compatibility
   const outlookEvents = useMemo(
