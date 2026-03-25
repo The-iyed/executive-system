@@ -67,7 +67,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
 
           <IsUrgentField />
           {visibility.urgent_reason && <UrgentReasonField />}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} disabled={meetingStatus === "SCHEDULED"} />
+          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} disabled={meetingStatus === "SCHEDULED" && !!initialValues?.meeting_start_date} />
           <MeetingChannelField />
 
           {visibility.meeting_location && (
