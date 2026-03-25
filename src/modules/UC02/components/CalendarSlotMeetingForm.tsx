@@ -490,7 +490,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             }
             className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
+            {isSubmitting
+              ? (mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...')
+              : (mode === 'edit' ? 'تحديث' : 'حفظ')}
           </button>
         </div>
       </form>
