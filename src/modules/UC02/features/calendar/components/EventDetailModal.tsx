@@ -232,7 +232,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               {onEdit && (
                 <button
                   type="button"
-                  onClick={() => onEdit(event)}
+                  onClick={() => onEdit(event, meetingDetail)}
                   className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-primary/30 text-xs font-semibold text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
