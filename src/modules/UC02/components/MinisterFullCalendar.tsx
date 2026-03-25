@@ -293,6 +293,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         eventClick={handleEventClick}
         dateClick={handleDateClick}
         selectable
+        selectAllow={(selectInfo) => selectInfo.start.getTime() >= Date.now() - 60000}
         selectMirror
         selectMinDistance={0}
         longPressDelay={0}
