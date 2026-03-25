@@ -769,8 +769,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                           title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
                           meetingLocation: selectedEventForDetails.meeting_location ?? location,
                           meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
-                          meetingLink: selectedEventForDetails.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
-                          webexMeetingUniqueId: (meetingDetail as { webex_meeting_unique_identifier?: string } | undefined)?.webex_meeting_unique_identifier ?? undefined,
                           meetingId: selectedEventForDetails.meeting_id ?? undefined,
                           mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
                           initialInvitees,
