@@ -289,8 +289,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       end_date: endDate,
       meeting_channel: meetingChannel,
       meeting_location,
-      meeting_link: webexMeetingLink ?? undefined,
-      webex_meeting_unique_identifier: webexMeetingUniqueId ?? undefined,
       proposers,
       invitees: inviteesPayload,
     });
