@@ -260,7 +260,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       return;
     }
     if (locationRequired && !locationValid) return;
-    if (isRemote && !webexMeetingLink) return;
     const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
 
