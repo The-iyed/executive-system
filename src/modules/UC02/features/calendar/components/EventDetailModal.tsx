@@ -276,49 +276,39 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col gap-2 px-6 pb-5 pt-3">
-              {/* Join Meeting CTA */}
+            <div className="flex w-full justify-end gap-2 px-6 pb-5 pt-3">
               {display.isLink && (
                 <a
                   href={display.locationOrLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground text-[15px] font-bold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99]"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shadow-sm transition-colors hover:bg-primary/90"
                 >
-                  <Video className="w-5 h-5" />
+                  <Video className="w-3.5 h-3.5" />
                   انضم للاجتماع
                 </a>
               )}
-
-              {/* Secondary actions */}
-              <div className="flex w-full justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const id = display.meetingId ?? event.id;
+                  onClose();
+                  navigate(`/meeting/${id}`);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
+              >
+                عرض التفاصيل
+              </button>
+              {onEdit && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const id = display.meetingId ?? event.id;
-                    onClose();
-                    navigate(`/meeting/${id}`);
-                  }}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors',
-                    display.isLink
-                      ? 'border border-border bg-background text-foreground hover:bg-muted'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90',
-                  )}
+                  onClick={() => onEdit(event, meetingDetail)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
                 >
-                  عرض التفاصيل
+                  <Pencil className="w-3.5 h-3.5" />
+                  تعديل
                 </button>
-                {onEdit && (
-                  <button
-                    type="button"
-                    onClick={() => onEdit(event, meetingDetail)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    تعديل
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}
