@@ -322,7 +322,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     queryKey: ['outlook-timeline', 'uc02', startDateISO, endDateISO],
     queryFn: () => getOutlookTimelineEvents(startDateISO, endDateISO),
     enabled: true,
-    staleTime: OUTLOOK_TIMELINE_STALE_MS,
+    staleTime: 2 * 60 * 1000,
     /** Avoid empty calendar while range key changes (e.g. month ↔ week). */
     placeholderData: (prev) => prev,
   });
