@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "declaration": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "node",
     "noEmit": true,
@@ -15,16 +18,36 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "@/*": ["./src/*"],
-      "@/lib/api": ["./src/lib/api/index.ts"],
-      "@/lib/ui": ["./src/lib/ui/index.ts"],
-      "@/lib/ui/*": ["./src/lib/ui/*"],
-      "@/modules/shared": ["./src/modules/shared/index.ts"],
-      "@/modules/shared/*": ["./src/modules/shared/*"],
-      "@/modules/auth": ["./src/modules/auth/index.ts"],
-      "@/modules/auth/*": ["./src/modules/auth/*"],
-      "@gl": ["./src/modules/guiding-light"],
-      "@gl/*": ["./src/modules/guiding-light/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@/lib/api": [
+        "./src/lib/api/index.ts"
+      ],
+      "@/lib/ui": [
+        "./src/lib/ui/index.ts"
+      ],
+      "@/lib/ui/*": [
+        "./src/lib/ui/*"
+      ],
+      "@/modules/auth": [
+        "./src/modules/auth/index.ts"
+      ],
+      "@/modules/auth/*": [
+        "./src/modules/auth/*"
+      ],
+      "@/modules/shared": [
+        "./src/modules/shared/index.ts"
+      ],
+      "@/modules/shared/*": [
+        "./src/modules/shared/*"
+      ],
+      "@gl": [
+        "./src/modules/guiding-light"
+      ],
+      "@gl/*": [
+        "./src/modules/guiding-light/*"
+      ]
     },
     "resolveJsonModule": true,
     "rootDir": ".",
@@ -34,8 +57,17 @@
     "strict": false,
     "strictNullChecks": false,
     "target": "ES2022",
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ]
   },
-  "exclude": ["node_modules", "dist"],
-  "include": ["src", "vite.config.ts", "vite-env.d.ts"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "include": [
+    "src",
+    "vite.config.ts",
+    "vite-env.d.ts"
+  ]
 }
