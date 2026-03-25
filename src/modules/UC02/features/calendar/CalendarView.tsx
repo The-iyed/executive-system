@@ -276,7 +276,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <MinisterFullCalendar
                 viewMode={viewMode === 'monthly' ? 'monthly' : viewMode === 'daily' ? 'daily' : 'weekly'}
                 currentDate={currentDate}
-                onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
+                onCurrentDateChange={undefined}
                 outlookEvents={outlookEvents}
                 extraEvents={extraEvents}
                 onEventClick={handleEventClick}
