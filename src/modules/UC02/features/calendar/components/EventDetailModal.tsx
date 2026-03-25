@@ -97,8 +97,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     return {
       title: (fromApi ? meeting.meeting_title : event.title) || event.meeting_title || 'اجتماع',
       is_internal: event.is_internal,
-      organizerName: fromApi ? meeting.submitter_name : event.organizer?.name ?? '',
-      organizerEmail: fromApi ? (meeting.current_owner_user?.email ?? '') : (event.organizer?.email ?? ''),
+      organizerName: fromApi
+        ? (meeting.submitter_name || (meeting as any).submitter?.name || (meeting as any).submitter?.full_name || '')
+        : (event.organizer?.name ?? ''),
+      organizerEmail: fromApi
+        ? ((meeting as any).submitter?.email || meeting.current_owner_user?.email || '')
+        : (event.organizer?.email ?? ''),
       date: scheduledStart,
       startTime,
       endTime,
