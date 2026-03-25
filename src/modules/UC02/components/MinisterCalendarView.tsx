@@ -13,9 +13,6 @@ import { Skeleton, cn, Dialog, DialogContent, DialogHeader, DialogTitle, toISOSt
 import {
   getOutlookTimelineEvents,
   getCalendarWeekRange,
-  prefetchOutlookTimelineWeek,
-  prefetchOutlookTimelineWeeksAround,
-  OUTLOOK_TIMELINE_STALE_MS,
   createScheduledMeeting,
   updateScheduledMeeting,
   mapCreatedMeetingToOutlookEvent,
