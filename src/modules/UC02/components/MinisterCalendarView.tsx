@@ -862,8 +862,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     scheduled_end,
                     meeting_channel: values.meeting_channel,
                     meeting_location: values.meeting_location,
-                    meeting_link: values.meeting_link,
-                    webex_meeting_unique_identifier: values.webex_meeting_unique_identifier,
                     proposers: values.proposers,
                     invitees,
                   });
