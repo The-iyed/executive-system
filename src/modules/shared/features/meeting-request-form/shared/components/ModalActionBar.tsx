@@ -19,6 +19,7 @@ export function ModalActionBar({
   totalSteps,
   saving = false,
   showSaveAsDraft = false,
+  submitLabel = "إرسال الطلب",
   onNext,
   onPrev,
   onCancel,
