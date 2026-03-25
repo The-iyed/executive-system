@@ -24,7 +24,7 @@ interface Step1FormProps {
   meetingStatus?: MeetingStatus;
 }
 
-export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) {
+export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, meetingStatus }: Step1FormProps) {
   const { form, visibility, watched } = useSubmitterStep1Form(initialValues);
 
   const minDate = useMemo(
