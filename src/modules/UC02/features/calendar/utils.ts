@@ -30,7 +30,7 @@ function formatTimeSlot(date: Date, roundUp = false): string {
   return `${pad2(hour)}:00`;
 }
 
-function formatExactTime(date: Date): string {
+export function formatExactTime(date: Date): string {
   return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
@@ -40,7 +40,7 @@ export function isPastEvent(endDateStr: string): boolean {
   return new Date(endDateStr).getTime() < Date.now();
 }
 
-// ── Map clean CalendarTimelineEvent → CalendarEventData (for FullCalendar + grid) ──
+// ── Map CalendarTimelineEvent → CalendarEventData (for grid + detail modal) ──
 
 export function mapTimelineToCalendarEvent(event: CalendarTimelineEvent): CalendarEventData {
   const startDate = new Date(event.start);
@@ -93,7 +93,7 @@ export function mapTimelineToCalendarEvent(event: CalendarTimelineEvent): Calend
   };
 }
 
-// ── Map clean model → OutlookTimelineEvent (for FullCalendar compatibility) ──
+// ── Map CalendarTimelineEvent → OutlookTimelineEvent (MinisterFullCalendar compatibility) ──
 
 export function mapTimelineToOutlookEvent(event: CalendarTimelineEvent): OutlookTimelineEvent {
   return {
