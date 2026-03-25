@@ -100,8 +100,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   initialTitle,
   initialMeetingChannel,
   initialMeetingLocation,
-  initialMeetingLink,
-  initialWebexMeetingUniqueId,
   initialInvitees,
   onSubmit,
   onCancel,
