@@ -13,7 +13,7 @@ import {
 } from "../../shared/types/enums";
 import { useVisibilityCleanup } from "../../shared";
 
-export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>) {
+export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Values>, options?: { isSchedulerEdit?: boolean }) {
   const defaults: SubmitterStep1Values = {
     meeting_nature: MeetingNature.NORMAL,
     previous_meeting_id: "",
@@ -43,8 +43,16 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     directive_method: undefined,
     previous_meeting_minutes_file_content: "",
     directive_text: "",
+    submitter: null,
+    requires_protocol: BOOL.FALSE,
+    related_directive: "",
     ...initialValues,
   };
+
+  // When meeting_owner exists or scheduler is editing, force on-behalf to true
+  if (options?.isSchedulerEdit || (initialValues?.meeting_owner && typeof initialValues.meeting_owner === 'object')) {
+    defaults.is_on_behalf_of = BOOL.TRUE;
+  }
 
   const form = useForm<SubmitterStep1Values>({
     resolver: zodResolver(submitterStep1Schema),

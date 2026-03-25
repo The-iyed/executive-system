@@ -185,7 +185,7 @@ export const useStep1BasicInfo = ({
 
       if (!validationResult.success) {
         const { formErrors, tableErrors: extractedTableErrors } = extractStep1BasicInfoErrors(
-          validationResult,
+          validationResult as any,
           formData
         );
         setErrors(formErrors);

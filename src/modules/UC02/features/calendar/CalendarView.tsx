@@ -1,17 +1,16 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { cn, toISOStringWithTimezone } from '@/lib/ui';
-import type { CalendarEventData, CalendarViewMode } from '@/modules/shared';
+import { toISOStringWithTimezone } from '@/lib/ui';
+import type { CalendarEventData } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
 import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
 import FormMeetingModal from '@/modules/UC02/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import {
   createScheduledMeeting,
   updateScheduledMeeting,
-  mapCreatedMeetingToOutlookEvent,
-  type OutlookTimelineEvent,
 } from '@/modules/UC02/data/calendarApi';
-import { getMeetingById, type MeetingApiResponse } from '@/modules/UC02/data/meetingsApi';
+import { type MeetingApiResponse } from '@/modules/UC02/data/meetingsApi';
+import type { CalendarTimelineEvent } from '@/api/meetings/getMeetingsTimeline';
 import { trackEvent } from '@/lib/analytics';
 import { useCalendarEvents, useCalendarNavigation } from './hooks';
 import {
@@ -20,23 +19,31 @@ import {
   EventDetailModal,
   SyncIndicator,
 } from './components';
-import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent, isPastEvent } from './utils';
+import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent } from './utils';
 import type { SlotSelection } from './types';
 
-function buildOptimisticOutlookEvent(
+/** Build optimistic CalendarTimelineEvent for immediate cache update */
+function buildOptimisticEvent(
   title: string,
   start: string,
   end: string,
   id: string,
-): OutlookTimelineEvent {
+): CalendarTimelineEvent {
   return {
-    subject: title || 'اجتماع',
-    start_datetime: start,
-    end_datetime: end,
-    item_id: id,
-    change_key: 'optimistic',
-    organizer: { name: '', email: '' },
-    is_internal: true,
+    id,
+    title: title || 'اجتماع',
+    start,
+    end,
+    location: null,
+    organizer: '',
+    organizerEmail: '',
+    isInternal: true,
+    attendees: [],
+    meetingId: null,
+    meetingTitle: null,
+    meetingChannel: null,
+    meetingLocation: null,
+    meetingLink: null,
   };
 }
 
@@ -81,33 +88,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     viewMode,
   );
 
-  // Detail modal
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventData | null>(null);
-
-  // Slot form
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
 
-  // Track first load for skeleton
-  const hasLoaded = useRef(false);
-  if (timelineEvents.length > 0 && !isFetching) hasLoaded.current = true;
+  const showSkeleton = isLoading;
 
-  const showSkeleton = isLoading && !hasLoaded.current;
-
-  // Map to OutlookTimelineEvent for FullCalendar
+  // Map to OutlookTimelineEvent for MinisterFullCalendar compatibility
   const outlookEvents = useMemo(
     () => timelineEvents.map(mapTimelineToOutlookEvent),
     [timelineEvents],
   );
 
-  // Map to CalendarEventData for detail modal  
+  // Map to CalendarEventData for detail modal
   const calendarEvents = useMemo(
     () => [...timelineEvents.map(mapTimelineToCalendarEvent), ...extraEvents],
     [timelineEvents, extraEvents],
   );
 
-  // Sync initialDate
   React.useEffect(() => {
     if (initialDate) setCurrentDate(initialDate);
   }, [initialDate, setCurrentDate]);
@@ -124,25 +123,40 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const handleEdit = useCallback(
-    (ev: CalendarEventData) => {
+    (ev: CalendarEventData, meetingDetail?: MeetingApiResponse) => {
       setSelectedEvent(null);
       const location = ev.location ?? null;
       const inferredChannel = location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-      const attendees = ev.attendees ?? [];
-      const initialInvitees = attendees.length > 0
-        ? attendees.map((a, i) => ({
+
+      const apiInvitees = meetingDetail?.invitees as Record<string, unknown>[] | undefined;
+      const initialInvitees = apiInvitees && apiInvitees.length > 0
+        ? apiInvitees.map((inv, i) => ({
             _id: `inv-edit-${i}-${Date.now()}`,
-            email: a.email ?? '',
-            position: a.name ?? '',
-            name: a.name ?? '',
-            mobile: '',
-            sector: '',
-            attendance_mechanism: 'PHYSICAL',
-            access_permission: false,
-            is_consultant: false,
-            meeting_owner: false,
+            name: String(inv.name ?? inv.external_name ?? ''),
+            email: String(inv.email ?? inv.external_email ?? ''),
+            position: String(inv.position ?? ''),
+            mobile: String(inv.mobile ?? ''),
+            sector: String(inv.sector ?? ''),
+            attendance_mechanism: String(inv.attendance_mechanism ?? 'PHYSICAL'),
+            access_permission: Boolean(inv.access_permission),
+            is_consultant: Boolean(inv.is_consultant),
+            meeting_owner: Boolean(inv.meeting_owner),
+            ...(inv.object_guid ? { object_guid: String(inv.object_guid) } : {}),
           }))
-        : undefined;
+        : ev.attendees?.length
+          ? ev.attendees.map((a, i) => ({
+              _id: `inv-edit-${i}-${Date.now()}`,
+              name: a.name ?? '',
+              email: a.email ?? '',
+              position: '',
+              mobile: '',
+              sector: '',
+              attendance_mechanism: 'PHYSICAL',
+              access_permission: false,
+              is_consultant: false,
+              meeting_owner: false,
+            }))
+          : undefined;
 
       setSlot({
         date: ev.date,
@@ -151,7 +165,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         title: ev.meeting_title ?? ev.title ?? '',
         meetingLocation: ev.meeting_location ?? location,
         meetingChannel: ev.meeting_channel ?? inferredChannel,
-        meetingLink: ev.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
         meetingId: ev.meeting_id ?? undefined,
         mode: ev.meeting_id ? 'edit' : 'create',
         initialInvitees,
@@ -159,9 +172,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     },
     [],
   );
-
-  const startDateISO = useMemo(() => queryKey[1], [queryKey]);
-  const endDateISO = useMemo(() => queryKey[2], [queryKey]);
 
   const handleSlotSubmit = useCallback(
     async (values: Record<string, unknown>) => {
@@ -171,12 +181,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
+      // Snapshot for rollback
+      const previousEvents = queryClient.getQueryData<CalendarTimelineEvent[]>([...queryKey]);
+
       try {
         const invitees = ((values.invitees ?? []) as Record<string, unknown>[]).map((m) => ({
-          name: (m.name ?? m.full_name ?? m.position ?? '') as string,
+          name: (m.name ?? m.full_name ?? '') as string,
           position: (m.position ?? m.position_title ?? '') as string,
           mobile: (m.mobile ?? m.mobile_number ?? '') as string,
           email: (m.email ?? '') as string,
+          sector: (m.sector ?? '') as string,
+          attendance_mechanism: (m.attendance_mechanism ?? '') as string,
+          access_permission: Boolean(m.access_permission),
+          is_consultant: Boolean(m.is_consultant),
+          meeting_owner: Boolean(m.meeting_owner),
+          ...(m.object_guid ? { object_guid: m.object_guid as string } : {}),
         }));
 
         const payload = {
@@ -187,53 +206,94 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           meeting_location: values.meeting_location as string | undefined,
           meeting_link: values.meeting_link as string | undefined,
           webex_meeting_unique_identifier: values.webex_meeting_unique_identifier as string | undefined,
-          proposers: values.proposers as any,
+          proposers: values.proposers as unknown,
           invitees,
         };
 
         if (isEdit) {
-          await updateScheduledMeeting(slot!.meetingId!, payload);
+          // Optimistically update the edited event in cache
+          queryClient.setQueryData<CalendarTimelineEvent[]>(
+            [...queryKey],
+            (old) => (old ?? []).map((e) =>
+              e.meetingId === slot!.meetingId
+                ? {
+                    ...e,
+                    title: (values.title as string) || e.title,
+                    start: scheduled_start,
+                    end: scheduled_end,
+                    meetingTitle: (values.title as string) || e.meetingTitle,
+                    meetingChannel: (values.meeting_channel as string) || e.meetingChannel,
+                    meetingLocation: (values.meeting_location as string) || e.meetingLocation,
+                    meetingLink: (values.meeting_link as string) || e.meetingLink,
+                    location: (values.meeting_location as string) || e.location,
+                  }
+                : e
+            ),
+          );
+
+          // Close modal immediately
+          setSlot(null);
+
+          await updateScheduledMeeting(slot!.meetingId!, payload as any);
           trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
             meeting_id: slot!.meetingId,
             meeting_title: values.title,
           });
+
+          // Background sync
+          queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         } else {
           const optimisticId = `optimistic-${Date.now()}`;
-          const optimisticEvent = buildOptimisticOutlookEvent(
-            values.title as string,
-            scheduled_start,
-            scheduled_end,
-            optimisticId,
+
+          // Optimistic insert
+          queryClient.setQueryData<CalendarTimelineEvent[]>(
+            [...queryKey],
+            (old) => [...(old ?? []), buildOptimisticEvent(
+              values.title as string, scheduled_start, scheduled_end, optimisticId,
+            )],
           );
 
-          queryClient.setQueryData<OutlookTimelineEvent[]>(
-            ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-            (old) => [...(old ?? []), optimisticEvent],
-          );
+          // Close modal immediately
+          setSlot(null);
 
-          const result = await createScheduledMeeting(payload);
+          const result = await createScheduledMeeting(payload as any);
           trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
             meeting_id: result?.id,
             meeting_title: values.title,
           });
 
-          const eventFromApi = mapCreatedMeetingToOutlookEvent(result);
-          queryClient.setQueryData<OutlookTimelineEvent[]>(
-            ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-            (old) => (old ?? []).map((e) => (e.item_id === optimisticId ? eventFromApi : e)),
+          // Replace optimistic event with real one
+          const realEvent: CalendarTimelineEvent = {
+            id: result.id ?? optimisticId,
+            title: result.meeting_title ?? (values.title as string) ?? 'اجتماع',
+            start: result.scheduled_start ?? scheduled_start,
+            end: result.scheduled_end ?? scheduled_end,
+            location: result.meeting_location ?? null,
+            organizer: '',
+            organizerEmail: '',
+            isInternal: true,
+            attendees: [],
+            meetingId: result.id ?? null,
+            meetingTitle: result.meeting_title ?? null,
+            meetingChannel: result.meeting_channel ?? null,
+            meetingLocation: result.meeting_location ?? null,
+            meetingLink: result.meeting_link ?? null,
+          };
+
+          queryClient.setQueryData<CalendarTimelineEvent[]>(
+            [...queryKey],
+            (old) => (old ?? []).map((e) => (e.id === optimisticId ? realEvent : e)),
           );
 
           const meetingForCache = normalizedMeetingFromCreateResponse(result as unknown as Record<string, unknown>);
           queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
         }
-
-        setSlot(null);
-        if (isEdit) {
-          queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
-        }
       } catch (err: unknown) {
-        if (!isEdit) {
-          queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+        // Rollback cache to previous state
+        if (previousEvents) {
+          queryClient.setQueryData<CalendarTimelineEvent[]>([...queryKey], previousEvents);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         }
         const message =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -244,12 +304,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         setSlotSubmitting(false);
       }
     },
-    [slot, queryClient, startDateISO, endDateISO],
+    [slot, queryClient, queryKey],
   );
 
   return (
     <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
-      {/* Header */}
       <CalendarHeader
         currentDate={currentDate}
         viewMode={viewMode}
@@ -258,7 +317,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onViewModeChange={setViewMode}
       />
 
-      {/* Calendar body */}
       <div className="relative flex-1 min-h-0 bg-card overflow-auto rounded-2xl shadow-sm border border-border/40">
         {showSkeleton ? (
           <CalendarSkeleton />
@@ -268,7 +326,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <MinisterFullCalendar
                 viewMode={viewMode === 'monthly' ? 'monthly' : viewMode === 'daily' ? 'daily' : 'weekly'}
                 currentDate={currentDate}
-                onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
+                onCurrentDateChange={undefined}
                 outlookEvents={outlookEvents}
                 extraEvents={extraEvents}
                 onEventClick={handleEventClick}
@@ -280,7 +338,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         )}
       </div>
 
-      {/* Error overlay */}
       {error && !isLoading && (
         <div className="absolute top-4 left-4 right-4 bg-destructive/10 border border-destructive/20 rounded-lg p-3 z-20">
           <p className="text-sm text-destructive text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
@@ -289,14 +346,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       )}
 
-      {/* Event detail modal */}
       <EventDetailModal
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
         onEdit={handleEdit}
       />
 
-      {/* Create/edit meeting from slot */}
       <FormMeetingModal
         open={!!slot}
         onOpenChange={(open) => !open && setSlot(null)}
@@ -310,9 +365,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             initialTitle={slot.title ?? ''}
             initialMeetingLocation={slot.meetingLocation ?? undefined}
             initialMeetingChannel={slot.meetingChannel ?? ''}
-            initialMeetingLink={slot.meetingLink ?? undefined}
-            initialWebexMeetingUniqueId={slot.webexMeetingUniqueId ?? undefined}
             initialInvitees={slot.initialInvitees}
+            mode={slot.mode}
             isSubmitting={slotSubmitting}
             submitError={slotError}
             onSubmit={handleSlotSubmit as any}

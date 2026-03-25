@@ -180,7 +180,17 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     directive_text: (meeting?.directive_text as string) || "",
   };
 
+  // Scheduler-only fields
+  const rawSubmitter = meeting.submitter;
+  const submitter =
+    rawSubmitter && typeof rawSubmitter === "object"
+      ? (rawSubmitter as SubmitterStep1Values["submitter"])
+      : null;
+
   return {
     ...values,
+    submitter,
+    requires_protocol: meeting.requires_protocol === true ? BOOL.TRUE : BOOL.FALSE,
+    related_directive: (meeting.related_directive as string) || "",
   };
 }
