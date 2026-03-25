@@ -217,23 +217,6 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('weekly');
 
-  // Prefetch prev-prev and next-next weeks when calendar mounts (Layout already prefetched current ±1)
-  React.useEffect(() => {
-    prefetchOutlookTimelineWeeksAround(queryClient, currentDate, { weeksBack: 2, weeksAhead: 2 }).catch(() => {});
-  }, [queryClient]);
-
-  // On each week change, prefetch the weeks 2 steps away (one at a time) so next/prev click is instant
-  React.useEffect(() => {
-    const twoWeeksBack = new Date(currentDate);
-    twoWeeksBack.setDate(currentDate.getDate() - 14);
-    const twoWeeksAhead = new Date(currentDate);
-    twoWeeksAhead.setDate(currentDate.getDate() + 14);
-    const { startISO: s1, endISO: e1 } = getCalendarWeekRange(twoWeeksBack);
-    const { startISO: s2, endISO: e2 } = getCalendarWeekRange(twoWeeksAhead);
-    void prefetchOutlookTimelineWeek(queryClient, s1, e1)
-      .then(() => prefetchOutlookTimelineWeek(queryClient, s2, e2))
-      .catch(() => {});
-  }, [queryClient, currentDate]);
 
   const isOptimisticEvent = !!selectedEventForDetails?.id?.startsWith('optimistic-');
   const isOutlookId = !!selectedEventForDetails?.id?.startsWith('AAMk');
