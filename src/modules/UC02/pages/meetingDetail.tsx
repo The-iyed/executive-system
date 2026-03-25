@@ -1129,6 +1129,16 @@ const MeetingDetail: React.FC = () => {
       ? meeting.meeting_channel
       : scheduleForm.meeting_channel;
 
+    const schedulePayload = {
+      scheduled_start,
+      scheduled_end,
+      meeting_channel: meetingChannel,
+      requires_protocol: scheduleForm.requires_protocol,
+      is_preliminary_booking: !scheduleForm.requires_protocol,
+      protocol_type: scheduleForm.requires_protocol ? (scheduleForm.protocol_type || scheduleForm.protocol_type_text || null) : null,
+      is_data_complete: scheduleForm.is_data_complete,
+      notes: scheduleForm.notes || 'Meeting scheduled successfully',
+      location: scheduleForm.location || undefined,
       minister_attendees: normalizeMinisterAttendees(scheduleForm.minister_attendees),
     };
 
