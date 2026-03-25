@@ -1,5 +1,5 @@
 import React from 'react';
-import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
+import type { MeetingApiResponse } from '@/modules/shared/types/meeting';
 import { formatDateArabic } from '@/modules/shared/utils';
 import {
   MeetingType,
