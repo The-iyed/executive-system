@@ -41,6 +41,7 @@ interface DraftAttachment {
 
 interface DraftApiResponse {
   attachments?: DraftAttachment[];
+  can_upload_more_than_one?:boolean;
   [key: string]: unknown;
 }
 
@@ -75,6 +76,7 @@ export function transformDraftToStep2ContentData(
   return {
     existingPresentations,
     existingAdditionalFiles,
+    can_upload_more_than_one: draft?.can_upload_more_than_one
   };
 }
 
