@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
