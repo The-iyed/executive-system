@@ -83,9 +83,6 @@ export interface CalendarSlotMeetingFormProps {
   initialTitle?: string;
   initialMeetingChannel?: string;
   initialMeetingLocation?: string;
-  initialMeetingLink?: string;
-  /** From API when editing; send with meeting_link when updating */
-  initialWebexMeetingUniqueId?: string;
   /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
