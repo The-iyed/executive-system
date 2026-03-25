@@ -324,18 +324,15 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </div>
 
         <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
-          <MeetingRangePicker
-            value={isoRangeToMeetingRange(startDate, endDate)}
+          <DateTimePickerField
+            value={startDate}
+            endValue={endDate}
             onChange={(v) => {
               setPastDateError(null);
-              const iso = meetingRangeToIso(v);
-              if (iso) {
-                setStartDate(iso.start);
-                setEndDate(iso.end);
-              } else {
-                setStartDate('');
-                setEndDate('');
-              }
+              setStartDate(v);
+            }}
+            onChangeEnd={(v) => {
+              setEndDate(v);
             }}
             minDate={minStartDate}
             placeholder="اختر التاريخ والوقت"
