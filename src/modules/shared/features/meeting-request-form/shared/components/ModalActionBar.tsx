@@ -6,6 +6,7 @@ interface ModalActionBarProps {
   totalSteps: number;
   saving?: boolean;
   showSaveAsDraft?: boolean;
+  submitLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onCancel: () => void;
@@ -18,6 +19,7 @@ export function ModalActionBar({
   totalSteps,
   saving = false,
   showSaveAsDraft = false,
+  submitLabel = "إرسال الطلب",
   onNext,
   onPrev,
   onCancel,
@@ -54,7 +56,7 @@ export function ModalActionBar({
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <><Send className="h-4 w-4" /> إرسال الطلب</>
+              <><Send className="h-4 w-4" /> {submitLabel}</>
             )}
           </Button>
           {showSaveAsDraft && onSaveAsDraft && (
