@@ -27,7 +27,8 @@ export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting })
   const classificationTypeLabel = MeetingClassificationTypeLabels[meeting.meeting_classification_type as MeetingClassificationType] || meeting.meeting_classification_type;
   const classificationLabel = MeetingClassificationLabels[meeting.meeting_classification as MeetingClassification] || meeting.meeting_classification;
   const confidentialityLabel = MeetingConfidentialityLabels[meeting.meeting_confidentiality as MeetingConfidentiality] || meeting.meeting_confidentiality;
-  const meetingOwnerName = (meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? meeting.meeting_owner ?? '-';
+  const rawOwner = (meeting as any).meeting_owner;
+  const meetingOwnerName = (meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? (typeof rawOwner === 'object' && rawOwner ? (rawOwner.name ?? rawOwner.username ?? '-') : (rawOwner ?? '-'));
 
   return (
     <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
