@@ -9,8 +9,6 @@ export interface SlotSelection {
   title?: string;
   meetingLocation?: string | null;
   meetingChannel?: string;
-  meetingLink?: string | null;
-  webexMeetingUniqueId?: string | null;
   meetingId?: string;
   mode: 'create' | 'edit';
   initialInvitees?: Array<Record<string, unknown>>;
