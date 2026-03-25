@@ -1,34 +1,31 @@
 
 
-## Problem
+## Fix: Prevent any visual interaction on past calendar time slots
 
-When switching from **month view** back to **week view**, the API fetches the wrong week (start of month instead of current week).
+### Problem
+Clicking on past time slots shows a visual highlight (select mirror) before the handler rejects it. The user sees a response but nothing happens — bad UX.
 
-**Root cause**: `MinisterFullCalendar` fires `onDatesSet` during month view, which calls `setCurrentDate(arg.view.currentStart)` — this resets `currentDate` to the **1st of the month** (e.g., March 1). When you switch back to week view, `getWeekRange(March 1)` returns Feb 28 – March 7 instead of the week containing today.
+### Solution
+Add the `selectAllow` prop to FullCalendar. This is a built-in callback that runs **before** any visual selection feedback. If it returns `false`, FullCalendar won't show the select mirror or highlight at all.
 
-**Flow**:
-1. Week view → `currentDate = March 25` → fetches March 22–28 ✓
-2. Switch to month → FullCalendar fires `onDatesSet` → sets `currentDate = March 1` → fetches March 1–31 ✓
-3. Switch back to week → `getWeekRange(March 1)` → fetches Feb 28 – March 7 ✗
+### Changes
 
-## Fix
+**File: `src/modules/UC02/components/MinisterFullCalendar.tsx`**
 
-**File: `src/modules/UC02/features/calendar/CalendarView.tsx`** (and same in `MinisterCalendarView.tsx`)
+1. Add a `selectAllow` callback that rejects any selection where `start` is in the past:
 
-Stop passing `setCurrentDate` to `onCurrentDateChange` in month view. The navigation arrows already handle date changes correctly via `useCalendarNavigation`. FullCalendar's `onDatesSet` should not override `currentDate`.
-
-Change line 279:
 ```typescript
-// Before
-onCurrentDateChange={viewMode === 'monthly' ? setCurrentDate : undefined}
-
-// After
-onCurrentDateChange={undefined}
+selectAllow={(selectInfo) => {
+  return selectInfo.start.getTime() >= Date.now() - 60000;
+}}
 ```
 
-This ensures `currentDate` stays on the actual date the user was viewing (e.g., March 25), so switching between view modes always computes the correct range around that date.
+2. Add this prop to the `<FullCalendar>` component alongside the existing `selectable` prop.
 
-**Files to edit:**
-- `src/modules/UC02/features/calendar/CalendarView.tsx` — remove `onCurrentDateChange` prop pass
-- `src/modules/UC02/components/MinisterCalendarView.tsx` — same fix
+This is a single-line addition. The existing `openSlotFromDate` null-check remains as a safety net, but the user will no longer see any visual feedback when clicking/dragging on past slots.
+
+### Technical Details
+- `selectAllow` is a FullCalendar API that prevents the selection mirror from rendering
+- The 60-second buffer matches the existing logic in `openSlotFromDate`
+- No new files or dependencies needed
 
