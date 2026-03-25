@@ -34,7 +34,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     meeting_location_custom: "",
     is_urgent: BOOL.FALSE,
     urgent_reason: "",
-    is_on_behalf_of: BOOL.FALSE,
+    is_on_behalf_of: options?.isSchedulerEdit ? BOOL.TRUE : BOOL.FALSE,
     meeting_start_date: "",
     meeting_end_date: "",
     agenda_items: [],
