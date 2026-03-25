@@ -4279,10 +4279,6 @@ const MeetingDetail: React.FC = () => {
                   value={scheduleForm.meeting_channel}
                     onValueChange={(value) => {
                     setScheduleForm((prev) => ({ ...prev, meeting_channel: value as typeof prev.meeting_channel }));
-                    // Clear Webex details when channel changes to non-remote
-                    if (value !== 'VIRTUAL' && value !== 'HYBRID') {
-                      setWebexMeetingDetails(null);
-                    }
                   }}
                 >
                   <SelectTrigger className="w-full h-11 bg-white border border-[#D0D5DD] rounded-lg text-right flex-row-reverse">
