@@ -85,6 +85,8 @@ export interface CalendarSlotMeetingFormProps {
   initialMeetingLocation?: string;
   /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
+  /** Form mode: 'create' for new meetings, 'edit' for existing ones */
+  mode?: 'create' | 'edit';
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
   /** When true, submit button is disabled (e.g. API in progress). */
@@ -101,6 +103,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   initialMeetingChannel,
   initialMeetingLocation,
   initialInvitees,
+  mode = 'create',
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -296,7 +299,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
   return (
     <div className="flex flex-col gap-6 p-2" dir="rtl">
-      <h2 className="text-xl font-bold text-[#101828] text-right">إنشاء اجتماع من الموعد</h2>
+      <h2 className="text-xl font-bold text-foreground text-right">
+        {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
+      </h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
@@ -485,7 +490,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             }
             className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
+            {isSubmitting
+              ? (mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...')
+              : (mode === 'edit' ? 'تحديث' : 'حفظ')}
           </button>
         </div>
       </form>
