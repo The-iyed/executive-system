@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/ui';
 import { Clock, MapPin, Plus } from 'lucide-react';
@@ -167,6 +167,16 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   const isAvailable = event.is_available || event.type === 'available';
   const isSelected = event.is_selected;
 
+  // Determine if event is in the past based on its end time
+  const isPast = useMemo(() => {
+    const eventDate = new Date(event.date);
+    const endTimeStr = event.exactEndTime || event.endTime;
+    if (!endTimeStr) return false;
+    const [h, m] = endTimeStr.split(':').map(Number);
+    eventDate.setHours(h ?? 0, m ?? 0, 0, 0);
+    return eventDate.getTime() < Date.now();
+  }, [event.date, event.exactEndTime, event.endTime]);
+
   const exactStyle = slotTime ? getExactDurationStyle(event, slotTime) : undefined;
   const baseStyle: React.CSSProperties = exactStyle
     ? { ...exactStyle }
@@ -203,7 +213,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (event.id === 'highlighted-slot') return;
+    if (event.id === 'highlighted-slot' || isPast) return;
     e.stopPropagation();
     // Hide expanded hover card immediately so it doesn't sit on top of the modal
     setCardRect(null);
@@ -233,7 +243,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
         className={cn(
           'relative w-full h-full min-h-0 flex flex-col justify-start text-right rounded-lg overflow-hidden transition-colors duration-150 pointer-events-auto',
           isAvailable ? 'border border-dashed' : 'border border-transparent',
-          event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
+          isPast ? 'cursor-not-allowed opacity-50 grayscale' : event.id === 'highlighted-slot' ? 'cursor-default' : 'cursor-pointer hover:brightness-[0.97]',
           className
         )}
         style={{
