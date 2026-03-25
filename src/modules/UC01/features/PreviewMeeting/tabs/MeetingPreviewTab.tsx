@@ -1,5 +1,5 @@
 import React from 'react';
-import type { MeetingApiResponse } from '../../../../UC02/data/meetingsApi';
+import type { MeetingApiResponse } from '@/modules/shared/types/meeting';
 import { formatDateArabic } from '@/modules/shared/utils';
 import {
   MeetingType,
@@ -22,13 +22,21 @@ interface MeetingPreviewTabProps {
   meeting: MeetingApiResponse;
 }
 
+function getMeetingOwnerLabel(meeting: MeetingApiResponse): string {
+  const ownerName = meeting.meeting_owner_name;
+  if (ownerName) return ownerName;
+  const raw = meeting.meeting_owner;
+  if (!raw) return '-';
+  if (typeof raw === 'string') return raw;
+  return raw.name ?? raw.username ?? '-';
+}
+
 export const MeetingPreviewTab: React.FC<MeetingPreviewTabProps> = ({ meeting }) => {
   const meetingTypeLabel = MeetingTypeLabels[meeting.meeting_type as MeetingType] || meeting.meeting_type;
   const classificationTypeLabel = MeetingClassificationTypeLabels[meeting.meeting_classification_type as MeetingClassificationType] || meeting.meeting_classification_type;
   const classificationLabel = MeetingClassificationLabels[meeting.meeting_classification as MeetingClassification] || meeting.meeting_classification;
   const confidentialityLabel = MeetingConfidentialityLabels[meeting.meeting_confidentiality as MeetingConfidentiality] || meeting.meeting_confidentiality;
-  const rawOwner = (meeting as any).meeting_owner;
-  const meetingOwnerName = (meeting as { meeting_owner_name?: string })?.meeting_owner_name ?? (typeof rawOwner === 'object' && rawOwner ? (rawOwner.name ?? rawOwner.username ?? '-') : (rawOwner ?? '-'));
+  const meetingOwnerName = getMeetingOwnerLabel(meeting);
 
   return (
     <div className="flex flex-col gap-[14px] items-end w-full" dir="rtl">
