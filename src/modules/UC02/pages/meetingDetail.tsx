@@ -4111,7 +4111,6 @@ const MeetingDetail: React.FC = () => {
           setIsScheduleModalOpen(open);
           if (!open) {
             setValidationError(null);
-            setWebexMeetingDetails(null);
           }
         }}
         title={<span className="text-right">جدولة الاجتماع</span>}
