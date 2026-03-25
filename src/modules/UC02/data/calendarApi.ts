@@ -1,31 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query';
 import axiosInstance from '@/modules/auth/utils/axios';
-import { toISOStringWithTimezone } from '@/lib/ui';
-
-/** Monday of the given week at local midnight (must match MinisterCalendarView) */
-function getWeekStart(date: Date): Date {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return d;
-}
-
-function getWeekEnd(weekStart: Date): Date {
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  weekEnd.setHours(23, 59, 59, 999);
-  return weekEnd;
-}
-
-/** Get ISO start/end for the week containing the given date. Used for prefetch and query keys. */
-export function getCalendarWeekRange(centerDate: Date): { startISO: string; endISO: string } {
-  const start = getWeekStart(centerDate);
-  const end = getWeekEnd(start);
-  const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
-  const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
-  return { startISO: toISOStringWithTimezone(startDate), endISO: toISOStringWithTimezone(endDate) };
-}
 
 
 /** Attachment shape from Outlook timeline API */
