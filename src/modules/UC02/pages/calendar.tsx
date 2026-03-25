@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MinisterCalendarView } from '../components';
+import { CalendarView } from '../features/calendar';
 import { trackEvent } from '@/lib/analytics';
 
 const Calendar: React.FC = () => {
@@ -7,7 +7,7 @@ const Calendar: React.FC = () => {
     trackEvent('UC-02', 'uc02_calendar_viewed');
   }, []);
 
-  return <MinisterCalendarView />;
+  return <CalendarView />;
 };
 
 export default Calendar;
