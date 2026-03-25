@@ -56,7 +56,7 @@ export function ModalActionBar({
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <><Send className="h-4 w-4" /> إرسال الطلب</>
+              <><Send className="h-4 w-4" /> {submitLabel}</>
             )}
           </Button>
           {showSaveAsDraft && onSaveAsDraft && (
