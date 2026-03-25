@@ -68,9 +68,6 @@ export interface CalendarSlotMeetingFormSubmitValues {
   end_date: string;
   meeting_channel: string;
   meeting_location?: string;
-  meeting_link?: string;
-  /** From Webex create meeting API; send whenever meeting_link is sent */
-  webex_meeting_unique_identifier?: string;
   /** Full proposer payloads for API */
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
