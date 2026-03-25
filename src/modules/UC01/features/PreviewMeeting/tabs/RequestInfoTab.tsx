@@ -6,6 +6,15 @@ const labelClass = 'text-sm font-medium text-gray-700';
 const valueClass = 'w-full h-11 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-lg text-right';
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 
+function getMeetingOwnerLabel(meeting: MeetingApiResponse): string {
+  const ownerName = meeting.meeting_owner_name;
+  if (ownerName) return ownerName;
+  const raw = meeting.meeting_owner;
+  if (!raw) return '-';
+  if (typeof raw === 'string') return raw;
+  return raw.name ?? raw.username ?? '-';
+}
+
 interface RequestInfoTabProps {
   meeting: MeetingApiResponse;
 }
