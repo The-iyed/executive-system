@@ -62,7 +62,7 @@ export function PreviousMeetingField({
     return (
       <FormField className={className} label="الاجتماع السابق" required={required} error={touched ? error : undefined}>
         <FormInput
-          value={displayValue}
+          value={displayValue as string}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder="الاجتماع السابق"

@@ -3,7 +3,7 @@ import {RouteProps } from 'react-router-dom'
 import { Fragment, lazy } from 'react'
 import { PATH } from './paths'
 import { Layout } from '../Layout'
-import { AuthGuard } from '@/modules/shared'
+import { AuthGuard } from '@/modules/shared/guards'
 
 type RouteConfig = {
   exact: boolean | null

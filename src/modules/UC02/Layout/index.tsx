@@ -1,10 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { SharedLayout, WelcomeSectionProps } from '@/modules/shared';
 import { USE_CASE_CONFIGS } from '@/modules/shared';
 import { PATH } from '../routes/paths';
-import { prefetchOutlookTimelineWeeksAround } from '../data/calendarApi';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -14,14 +12,6 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
   const { pathname } = useLocation();
-  const queryClient = useQueryClient();
-
-  // Prefetch calendar timeline for first week + previous + next so /calendar loads fast
-  useEffect(() => {
-    prefetchOutlookTimelineWeeksAround(queryClient, new Date(), { weeksBack: 1, weeksAhead: 1 }).catch(() => {
-      // ignore prefetch errors
-    });
-  }, [queryClient]);
   const getWelcomeConfig = (): WelcomeSectionProps => {
     if (pathname === PATH.DASHBOARD) {
       return {
