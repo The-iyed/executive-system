@@ -150,7 +150,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         title: ev.meeting_title ?? ev.title ?? '',
         meetingLocation: ev.meeting_location ?? location,
         meetingChannel: ev.meeting_channel ?? inferredChannel,
-        meetingLink: ev.meeting_link ?? (location && /^https?:\/\//i.test(location) ? location : null),
         meetingId: ev.meeting_id ?? undefined,
         mode: ev.meeting_id ? 'edit' : 'create',
         initialInvitees,
