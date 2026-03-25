@@ -223,27 +223,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const locationValid = !locationRequired || (locationDropdownValue === LOCATION_OPTIONS.OTHER ? meetingLocation.trim() !== '' : locationDropdownValue !== '');
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
-  const [isCreatingWebex, setIsCreatingWebex] = useState(false);
-  const [webexMeetingLink, setWebexMeetingLink] = useState<string | null>(initialMeetingLink ?? null);
-  const [webexMeetingUniqueId, setWebexMeetingUniqueId] = useState<string | null>(initialWebexMeetingUniqueId ?? null);
-  const [webexError, setWebexError] = useState<string | null>(null);
-  const webexCreatedForSlotRef = React.useRef<string | null>(
-    initialMeetingLink && startDefault && endDefault ? `${startDefault}-${endDefault}` : null
-  );
-
-  const isRemote = meetingChannel === 'VIRTUAL' || meetingChannel === 'HYBRID';
-
   const handleMeetingChannelChange = useCallback((value: string) => {
     setMeetingChannel(value);
     if (value !== 'PHYSICAL') {
       setMeetingLocation('');
       setMeetingLocationOption('');
-    }
-    if (value === 'PHYSICAL') {
-      setWebexMeetingLink(null);
-      setWebexMeetingUniqueId(null);
-      setWebexError(null);
-      webexCreatedForSlotRef.current = null;
     }
   }, []);
 
