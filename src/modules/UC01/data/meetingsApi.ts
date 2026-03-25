@@ -27,6 +27,8 @@ export interface MeetingApiResponse {
   meeting_classification?: string | null;
   /** هل البيانات مكتملة؟ */
   is_data_complete?: boolean | null;
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
   /** Notes arrays (used for "ملاحظات الإعادة" when present) */
   general_notes?: unknown;
   content_officer_notes?: unknown;
