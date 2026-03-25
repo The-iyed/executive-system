@@ -13,12 +13,15 @@ import {
   PreviousMeetingField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
+import { MeetingStatus } from "../shared/types/types";
 import type { SubmitterStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
 interface Step1FormProps {
   onSubmit: (data: SubmitterStep1Values) => void;
   initialValues?: Partial<SubmitterStep1Values> & { meeting_manager_name?: string };
+  isSchedulerEdit?: boolean;
+  meetingStatus?: MeetingStatus;
 }
 
 export function SubmitterStep1Form({ onSubmit, initialValues }: Step1FormProps) {
