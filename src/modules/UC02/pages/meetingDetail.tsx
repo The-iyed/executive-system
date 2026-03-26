@@ -776,28 +776,6 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  const addDirectiveMutation = useMutation({
-    mutationFn: async (payload: {
-      directive_date: string;
-      directive_text: string;
-      related_meeting: string;
-      deadline: string;
-      responsible_persons: string[];
-    }) => {
-      await createSchedulingDirective(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-      setIsAddDirectiveOpen(false);
-      setAddDirectiveForm({
-        directive_date: '',
-        directive_text: '',
-        related_meeting: '',
-        deadline: '',
-        responsible_persons: '',
-      });
-    },
-  });
 
   // Move to waiting list mutation
   const moveToWaitingListMutation = useMutation({
