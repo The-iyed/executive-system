@@ -90,7 +90,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@/lib/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField, hasUseCaseAccess } from '@/modules/shared';
