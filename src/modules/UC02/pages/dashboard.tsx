@@ -174,7 +174,7 @@ const Dashboard: React.FC = () => {
 
   // Always merge mock data with API data so dashboard charts are rich
   const meetingItems = [...apiMeetingItems, ...MOCK_MEETINGS];
-  const directiveItems = [...apiDirectiveItems, ...MOCK_DIRECTIVES];
+  const directiveItems = [...MOCK_DIRECTIVES];
   const waitingItems = apiWaitingItems;
 
   const totalMeetings = meetingItems.length;
