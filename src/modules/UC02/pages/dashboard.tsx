@@ -414,7 +414,7 @@ const Dashboard: React.FC = () => {
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-4 ring-opacity-20"
                   style={{
                     background: STATUS_COLORS[m.status] || '#9CA3AF',
-                    ringColor: (STATUS_COLORS[m.status] || '#9CA3AF') + '33',
+                    boxShadow: `0 0 0 4px ${(STATUS_COLORS[m.status] || '#9CA3AF')}33`,
                   }}
                 />
                 <div className="flex-1 min-w-0">
