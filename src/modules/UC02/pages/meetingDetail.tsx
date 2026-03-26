@@ -90,7 +90,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@/lib/ui';
-import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, createSchedulingDirective, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
+import { updateMeetingRequest, updateMeetingRequestWithAttachments, runCompareByAttachment, getAttachmentInsightsWithPolling, type ComparePresentationsResponse, type RelatedDirective, type AttachmentInsightsResponse } from '../data/meetingsApi';
 import QualityModal from '../components/qualityModal';
 import { MinisterCalendarView, SuggestAttendeesModal } from '../components';
 import { MeetingActionsBar, type CalendarEventData, type MeetingInfoData, type MeetingInfoFieldSpec, type MeetingInfoRenderField, hasUseCaseAccess } from '@/modules/shared';
@@ -603,32 +603,6 @@ const MeetingDetail: React.FC = () => {
   }, [activeTab, id, queryClient]);
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
-  const [isAddDirectiveOpen, setIsAddDirectiveOpen] = useState(false);
-  const [addDirectiveForm, setAddDirectiveForm] = useState({
-    directive_date: '',
-    directive_text: '',
-    related_meeting: '',
-    deadline: '',
-    responsible_persons: '', // comma or newline separated, parsed to string[]
-  });
-  /** Deadline picker: no past calendar days; if directive_date is in the future, deadline cannot precede that day. */
-  const addDirectiveDeadlineMinDate = React.useMemo(() => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    if (!addDirectiveForm.directive_date) return startOfToday;
-    const dir = new Date(addDirectiveForm.directive_date);
-    if (Number.isNaN(dir.getTime())) return startOfToday;
-    const startOfDirectiveDay = new Date(dir);
-    startOfDirectiveDay.setHours(0, 0, 0, 0);
-    return startOfDirectiveDay > startOfToday ? startOfDirectiveDay : startOfToday;
-  }, [addDirectiveForm.directive_date]);
-  React.useEffect(() => {
-    if (!addDirectiveForm.deadline) return;
-    const deadlineMs = new Date(addDirectiveForm.deadline).getTime();
-    if (Number.isNaN(deadlineMs) || deadlineMs < addDirectiveDeadlineMinDate.getTime()) {
-      setAddDirectiveForm((p) => ({ ...p, deadline: '' }));
-    }
-  }, [addDirectiveDeadlineMinDate, addDirectiveForm.deadline]);
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
@@ -802,28 +776,6 @@ const MeetingDetail: React.FC = () => {
     },
   });
 
-  const addDirectiveMutation = useMutation({
-    mutationFn: async (payload: {
-      directive_date: string;
-      directive_text: string;
-      related_meeting: string;
-      deadline: string;
-      responsible_persons: string[];
-    }) => {
-      await createSchedulingDirective(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting', id] });
-      setIsAddDirectiveOpen(false);
-      setAddDirectiveForm({
-        directive_date: '',
-        directive_text: '',
-        related_meeting: '',
-        deadline: '',
-        responsible_persons: '',
-      });
-    },
-  });
 
   // Move to waiting list mutation
   const moveToWaitingListMutation = useMutation({
@@ -3439,7 +3391,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* التوجيهات tab – only when meeting is CLOSED */}
           {activeTab === 'directives' && meetingStatus === MeetingStatus.CLOSED && (
-            <DirectivesTab meeting={meeting} onAddDirective={() => setIsAddDirectiveOpen(true)} />
+            <DirectivesTab meeting={meeting} />
           )}
 
           {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) – uses GET /api/v1/adam-meetings/search/{title} */}
@@ -3885,104 +3837,6 @@ const MeetingDetail: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add related directive – POST /api/scheduling/directives */}
-      <Dialog
-        open={isAddDirectiveOpen}
-        onOpenChange={(open) => {
-          setIsAddDirectiveOpen(open);
-          if (open && id) setAddDirectiveForm((p) => ({ ...p, related_meeting: id }));
-          if (!open) setAddDirectiveForm({ directive_date: '', directive_text: '', related_meeting: '', deadline: '', responsible_persons: '' });
-        }}
-      >
-        <DialogContent className="sm:max-w-[480px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">
-              إضافة توجيه مرتبط
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700 text-right">تاريخ التوجيه</label>
-              <FormDateTimePicker
-                value={addDirectiveForm.directive_date || undefined}
-                onChange={(isoString) => setAddDirectiveForm((p) => ({ ...p, directive_date: isoString || '' }))}
-                placeholder="اختر تاريخ ووقت التوجيه"
-                className="w-full"
-                fullWidth
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700 text-right">نص التوجيه</label>
-              <Textarea
-                value={addDirectiveForm.directive_text}
-                onChange={(e) => setAddDirectiveForm((p) => ({ ...p, directive_text: e.target.value }))}
-                placeholder="أدخل نص التوجيه..."
-                className="w-full min-h-[80px] text-right"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700 text-right">الموعد النهائي</label>
-              <FormDateTimePicker
-                value={addDirectiveForm.deadline || undefined}
-                onChange={(isoString) => setAddDirectiveForm((p) => ({ ...p, deadline: isoString || '' }))}
-                placeholder="اختر الموعد النهائي"
-                className="w-full"
-                fullWidth
-                minDate={addDirectiveDeadlineMinDate}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700 text-right">المسؤولون (مفصولون بفاصلة أو سطر جديد)</label>
-              <Textarea
-                value={addDirectiveForm.responsible_persons}
-                onChange={(e) => setAddDirectiveForm((p) => ({ ...p, responsible_persons: e.target.value }))}
-                placeholder="أدخل أسماء المسؤولين..."
-                className="w-full min-h-[60px] text-right"
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex-row-reverse gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsAddDirectiveOpen(false);
-                setAddDirectiveForm({ directive_date: '', directive_text: '', related_meeting: '', deadline: '', responsible_persons: '' });
-              }}
-              className="px-4 py-2 rounded-lg border border-[#D0D5DD] text-[#344054] bg-white hover:bg-[#F9FAFB] transition-colors"
-            
-            >
-              إلغاء
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const meetingId = id || addDirectiveForm.related_meeting;
-                if (!meetingId || !addDirectiveForm.directive_text.trim()) return;
-                const directiveDate = addDirectiveForm.directive_date ? toISOStringWithTimezone(new Date(addDirectiveForm.directive_date)) : toISOStringWithTimezone(new Date());
-                const deadlineMs = addDirectiveForm.deadline ? new Date(addDirectiveForm.deadline).getTime() : NaN;
-                if (addDirectiveForm.deadline && (Number.isNaN(deadlineMs) || deadlineMs < addDirectiveDeadlineMinDate.getTime())) return;
-                const deadline = addDirectiveForm.deadline ? toISOStringWithTimezone(new Date(addDirectiveForm.deadline)) : toISOStringWithTimezone(new Date());
-                const persons = addDirectiveForm.responsible_persons
-                  .split(/[\n,،]+/)
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-                addDirectiveMutation.mutate({
-                  directive_date: directiveDate,
-                  directive_text: addDirectiveForm.directive_text.trim(),
-                  related_meeting: meetingId,
-                  deadline,
-                  responsible_persons: persons,
-                });
-              }}
-              disabled={!addDirectiveForm.directive_text.trim() || !addDirectiveForm.directive_date || !addDirectiveForm.deadline || addDirectiveMutation.isPending}
-              className="px-4 py-2 rounded-lg bg-[#048F86] text-white hover:bg-[#047a6f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            
-            >
-              {addDirectiveMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Send to Content – Drawer */}
       {/* مجدول - الجدولة (SCHEDULED_SCHEDULING): POST /api/meeting-requests/{id}/send-to-content-scheduled (no draft) */}
