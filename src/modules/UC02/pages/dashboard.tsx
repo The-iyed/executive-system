@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { Icon } from '@iconify/react';
 import { getAssignedSchedulingRequests } from '../data/meetingsApi';
-import { getDirectivesPaginated } from '../data/directivesApi';
+
 import { getWaitingList } from '../data/meetingsApi';
 import { MeetingStatus, getMeetingStatusLabel } from '@/modules/shared';
 import { PATH } from '../routes/paths';
@@ -132,11 +132,6 @@ const Dashboard: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const { data: directives, isLoading: directivesLoading } = useQuery({
-    queryKey: ['dashboard-directives'],
-    queryFn: () => getDirectivesPaginated({ limit: 200 }),
-    staleTime: 30_000,
-  });
 
   const { data: waitingList, isLoading: waitingLoading } = useQuery({
     queryKey: ['dashboard-waiting'],
@@ -144,9 +139,8 @@ const Dashboard: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const isLoading = meetingsLoading || directivesLoading || waitingLoading;
+  const isLoading = meetingsLoading || waitingLoading;
   const apiMeetingItems = meetings?.items ?? [];
-  const apiDirectiveItems = directives?.items ?? [];
   const apiWaitingItems = waitingList?.items ?? [];
 
   // ── Mock data to enrich dashboard when API data is sparse ──
@@ -180,7 +174,7 @@ const Dashboard: React.FC = () => {
 
   // Always merge mock data with API data so dashboard charts are rich
   const meetingItems = [...apiMeetingItems, ...MOCK_MEETINGS];
-  const directiveItems = [...apiDirectiveItems, ...MOCK_DIRECTIVES];
+  const directiveItems = [...MOCK_DIRECTIVES];
   const waitingItems = apiWaitingItems;
 
   const totalMeetings = meetingItems.length;
@@ -420,7 +414,7 @@ const Dashboard: React.FC = () => {
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-4 ring-opacity-20"
                   style={{
                     background: STATUS_COLORS[m.status] || '#9CA3AF',
-                    ringColor: (STATUS_COLORS[m.status] || '#9CA3AF') + '33',
+                    boxShadow: `0 0 0 4px ${(STATUS_COLORS[m.status] || '#9CA3AF')}33`,
                   }}
                 />
                 <div className="flex-1 min-w-0">
