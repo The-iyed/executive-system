@@ -132,11 +132,6 @@ const Dashboard: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const { data: directives, isLoading: directivesLoading } = useQuery({
-    queryKey: ['dashboard-directives'],
-    queryFn: () => getDirectivesPaginated({ limit: 200 }),
-    staleTime: 30_000,
-  });
 
   const { data: waitingList, isLoading: waitingLoading } = useQuery({
     queryKey: ['dashboard-waiting'],
@@ -144,9 +139,8 @@ const Dashboard: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const isLoading = meetingsLoading || directivesLoading || waitingLoading;
+  const isLoading = meetingsLoading || waitingLoading;
   const apiMeetingItems = meetings?.items ?? [];
-  const apiDirectiveItems = directives?.items ?? [];
   const apiWaitingItems = waitingList?.items ?? [];
 
   // ── Mock data to enrich dashboard when API data is sparse ──
