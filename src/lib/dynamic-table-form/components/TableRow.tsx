@@ -1,6 +1,6 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TableRow as TableRowType, RowErrors, SearchOption, ColumnConfig, SearchFn } from "../types";
 import {
   Select,
