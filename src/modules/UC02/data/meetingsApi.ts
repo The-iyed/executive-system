@@ -881,32 +881,6 @@ export const getPreviousDirectives = async (params: GetDirectivesParams = {}): P
   };
 };
 
-/** Request body for POST /api/scheduling/directives (Create Scheduling Directive – UC-07) */
-export interface CreateSchedulingDirectivePayload {
-  directive_date: string; // ISO date-time
-  directive_text: string;
-  related_meeting: string;
-  deadline: string; // ISO date-time
-  responsible_persons: string[];
-}
-
-/** Format ISO datetime for backend with explicit timezone offset (e.g. 2026-03-31T09:00:00+03:00). */
-function toTimezoneAwareISO(isoOrEmpty: string): string {
-  return toISOStringWithTimezoneFromString(isoOrEmpty);
-}
-
-/** POST /api/scheduling/directives – create a new scheduling directive (DRYYMMDDXXX format). */
-export const createSchedulingDirective = async (
-  payload: CreateSchedulingDirectivePayload
-): Promise<{ id?: string }> => {
-  const body = {
-    ...payload,
-    directive_date: toTimezoneAwareISO(payload.directive_date),
-    deadline: toTimezoneAwareISO(payload.deadline),
-  };
-  const response = await axiosInstance.post<{ id?: string }>('/api/scheduling/directives', body);
-  return response.data;
-};
 
 /** Request body for POST /api/external-directives (Create/Close/Cancel – same body).
  * Close: external_id required; optional full payload if directive does not exist (create then close).
