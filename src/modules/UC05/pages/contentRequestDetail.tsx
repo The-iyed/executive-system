@@ -1151,14 +1151,10 @@ const ContentRequestDetail: React.FC = () => {
                   }
                 />
                 <ReadOnlyField label="حالة الطلب" value={statusLabel} />
-                <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? "-"} />
+                <ReadOnlyField label="مقدم الطلب" value={resolveUserLabel((contentRequest as any)?.submitter, contentRequest?.submitter_name)} />
                 <ReadOnlyField
                   label="مالك الاجتماع"
-                  value={
-                    contentRequest?.current_owner_user
-                      ? `${contentRequest.current_owner_user.first_name ?? ""} ${contentRequest.current_owner_user.last_name ?? ""}`.trim()
-                      : (contentRequest?.current_owner_role?.name_ar ?? "-")
-                  }
+                  value={resolveUserLabel(contentRequest?.current_owner_user, contentRequest?.current_owner_role?.name_ar)}
                 />
               </div>
             </div>
