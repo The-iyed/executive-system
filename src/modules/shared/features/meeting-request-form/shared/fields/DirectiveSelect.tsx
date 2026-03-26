@@ -39,12 +39,9 @@ function OptionItem({ opt, isSelected, onSelect }: { opt: DirectiveOption; isSel
       )}
       onClick={onSelect}
     >
-      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className={cn("text-sm leading-relaxed", isSelected && "font-medium")}>{opt.label}</p>
-          {opt.actionNumber && (
-            <p className="mt-0.5 text-xs text-muted-foreground font-mono">{opt.actionNumber}</p>
-          )}
         </div>
         <StatusBadge status={opt.status} />
       </div>
