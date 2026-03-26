@@ -12,7 +12,7 @@ export interface DirectivesTabProps {
     related_directives?: RelatedDirective[];
     related_directive_ids?: string[];
   } | undefined;
-  onAddDirective: () => void;
+  onAddDirective?: () => void;
 }
 
 export function DirectivesTab({ meeting, onAddDirective }: DirectivesTabProps) {
