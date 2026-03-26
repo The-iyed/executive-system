@@ -1,50 +1,52 @@
-import { axiosInstance, toError } from './config';
+import { getAuthToken } from "@/modules/auth/utils/tokenGetter";
+
+const APP_BASE =
+  (import.meta.env.VITE_APP_BASE_URL_MINISTER as string) ||
+  "https://execution-system.momrahai.com";
+const BASE = `${APP_BASE.replace(/\/$/, "")}/api`;
 
 export interface DirectiveSearchResult {
   id: string;
-  action_number?: string;
-  title?: string;
-  due_date?: string;
+  title: string;
   status?: string;
-  is_completed?: boolean;
-  meeting_id?: number;
-  assignees?: string[];
-  directive_text?: string;
-  [key: string]: unknown;
+  scheduling_officer_status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-interface DirectivesApiResponse {
-  current_directives?: {
-    items: DirectiveSearchResult[];
-    total: number;
-    has_next: boolean;
-  };
-  previous_directives?: {
-    items: DirectiveSearchResult[];
-    total: number;
-    has_next: boolean;
-  };
+interface ListDirectivesApiResponse {
+  items?: DirectiveSearchResult[];
 }
 
 export async function searchDirectives(
   skip: number,
   limit: number,
 ): Promise<{ items: DirectiveSearchResult[]; hasMore: boolean; total: number }> {
-  try {
-    const { data } = await axiosInstance.get<DirectivesApiResponse>(
-      '/api/scheduling/directives',
-      { params: { skip, limit } },
-    );
+  const url = new URL(`${BASE}/minister-directives`);
+  url.searchParams.set("skip", String(skip));
+  url.searchParams.set("limit", String(limit));
 
-    const currentItems = data.current_directives?.items ?? [];
-    const previousItems = data.previous_directives?.items ?? [];
-    const items = [...currentItems, ...previousItems];
-    const hasMore = data.current_directives?.has_next || data.previous_directives?.has_next || false;
-    const total = (data.current_directives?.total ?? 0) + (data.previous_directives?.total ?? 0);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  const token = await getAuthToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    return { items, hasMore, total };
-  } catch (err) {
-    throw toError('Directives search failed', err);
+  const res = await fetch(url.toString(), { method: "GET", headers });
+
+  if (!res.ok) {
+    throw new Error(`Minister directives list error: ${res.status}`);
   }
-}
 
+  const data: ListDirectivesApiResponse | DirectiveSearchResult[] = await res.json();
+  const items: DirectiveSearchResult[] = Array.isArray(data)
+    ? data
+    : data.items ?? [];
+
+  return {
+    items,
+    hasMore: items.length >= limit,
+    total: items.length,
+  };
+}
