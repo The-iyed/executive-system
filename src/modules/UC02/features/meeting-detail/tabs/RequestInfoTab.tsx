@@ -21,7 +21,6 @@ function resolveUserLabel(obj: unknown, fallback?: string | null): string {
   if (fallback) return fallback;
   return '-';
 }
-}
 
 export interface RequestInfoTabProps {
   meeting: MeetingApiResponse | undefined;
