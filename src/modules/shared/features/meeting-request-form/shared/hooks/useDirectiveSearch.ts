@@ -4,25 +4,22 @@ import { searchDirectives, type DirectiveSearchResult } from "../../api";
 export interface DirectiveOption {
   value: string;
   label: string;
-  actionNumber?: string;
   status?: string;
 }
 
 const PAGE_SIZE = 10;
 
 function toOption(d: DirectiveSearchResult): DirectiveOption {
-  const label = d.title || d.directive_text || d.id;
   return {
     value: String(d.id),
-    label: typeof label === "string" ? label : String(label),
-    actionNumber: d.action_number,
+    label: d.title || String(d.id),
     status: d.status,
   };
 }
 
 export function useDirectiveSearch(search: string, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["directives", search],
+    queryKey: ["minister-directives", search],
     queryFn: ({ pageParam = 0 }) => searchDirectives(pageParam * PAGE_SIZE, PAGE_SIZE),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.hasMore ? allPages.length : undefined,
@@ -33,7 +30,7 @@ export function useDirectiveSearch(search: string, enabled: boolean) {
       const allOptions = data.pages.flatMap((p) => p.items.map(toOption));
       const filtered = search
         ? allOptions.filter((o) =>
-            o.label.includes(search) || (o.actionNumber?.includes(search) ?? false)
+            o.label.includes(search) || o.value.includes(search)
           )
         : allOptions;
       return {

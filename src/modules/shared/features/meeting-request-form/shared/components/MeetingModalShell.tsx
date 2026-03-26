@@ -19,6 +19,7 @@ interface MeetingModalShellProps {
   error?: string | null;
   saving?: boolean;
   showSaveAsDraft?: boolean;
+  submitLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onSubmit: () => void;
@@ -35,6 +36,7 @@ export function MeetingModalShell({
   error = null,
   saving = false,
   showSaveAsDraft = false,
+  submitLabel,
   onNext,
   onPrev,
   onSubmit,
@@ -82,6 +84,7 @@ export function MeetingModalShell({
             totalSteps={MEETING_STEPS.length}
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
+            submitLabel={submitLabel}
             onNext={onNext}
             onPrev={() => onStepClick(currentStep - 1)}
             onCancel={() => onOpenChange(false)}
