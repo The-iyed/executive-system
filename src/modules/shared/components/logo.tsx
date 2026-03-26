@@ -21,7 +21,7 @@ export const Logo: React.FC<LogoProps> = ({ variant = 'row' }) => {
          المنصة الموحدة
        </h1>
        <p className="text-sm text-gray-500 leading-tight">
-       للشؤون التنفيذية بمكتب معالي وزير
+       للشؤون التنفيذية بمكتب معالي الوزير
        </p>
      </div>
     </div>
