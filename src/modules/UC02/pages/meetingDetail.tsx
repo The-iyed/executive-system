@@ -3391,7 +3391,7 @@ const MeetingDetail: React.FC = () => {
 
           {/* التوجيهات tab – only when meeting is CLOSED */}
           {activeTab === 'directives' && meetingStatus === MeetingStatus.CLOSED && (
-            <DirectivesTab meeting={meeting} onAddDirective={() => setIsAddDirectiveOpen(true)} />
+            <DirectivesTab meeting={meeting} />
           )}
 
           {/* Tab: توثيق الاجتماع (only when status is SCHEDULED) – uses GET /api/v1/adam-meetings/search/{title} */}
