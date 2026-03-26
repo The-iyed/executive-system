@@ -71,6 +71,22 @@ import { getConsultationRecordsWithParams, getSuggestedActions, type Consultatio
 import { postMeetingsMatch } from "../../shared/api/meetings";
 import { toast } from "sonner";
 
+function resolveUserLabel(obj: unknown, fallback?: string | null): string {
+  if (obj && typeof obj === 'object') {
+    const u = obj as Record<string, unknown>;
+    if (u.name && typeof u.name === 'string') return u.name;
+    if (u.username && typeof u.username === 'string') return u.username;
+    if (u.email && typeof u.email === 'string') return u.email;
+    if (u.ar_name && typeof u.ar_name === 'string') return u.ar_name;
+    const first = u.first_name ?? '';
+    const last = u.last_name ?? '';
+    const full = `${first} ${last}`.trim();
+    if (full) return full;
+  }
+  if (fallback) return fallback;
+  return '-';
+}
+
 /** Start of local calendar day (for date pickers: no past due dates). */
 function startOfLocalDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -1151,14 +1167,10 @@ const ContentRequestDetail: React.FC = () => {
                   }
                 />
                 <ReadOnlyField label="حالة الطلب" value={statusLabel} />
-                <ReadOnlyField label="مقدم الطلب" value={contentRequest?.submitter_name ?? "-"} />
+                <ReadOnlyField label="مقدم الطلب" value={resolveUserLabel((contentRequest as any)?.submitter, contentRequest?.submitter_name)} />
                 <ReadOnlyField
                   label="مالك الاجتماع"
-                  value={
-                    contentRequest?.current_owner_user
-                      ? `${contentRequest.current_owner_user.first_name ?? ""} ${contentRequest.current_owner_user.last_name ?? ""}`.trim()
-                      : (contentRequest?.current_owner_role?.name_ar ?? "-")
-                  }
+                  value={resolveUserLabel(contentRequest?.current_owner_user, contentRequest?.current_owner_role?.name_ar)}
                 />
               </div>
             </div>
