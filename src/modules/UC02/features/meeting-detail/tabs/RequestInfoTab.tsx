@@ -17,6 +17,7 @@ function resolveUserLabel(obj: unknown, fallback?: string | null): string {
   if (full) return full;
   if (u.name && typeof u.name === 'string') return u.name;
   if (u.username && typeof u.username === 'string') return u.username;
+  if (u.email && typeof u.email === 'string') return u.email;
   return '-';
 }
 
