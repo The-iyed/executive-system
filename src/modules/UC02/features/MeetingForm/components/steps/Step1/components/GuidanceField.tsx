@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { FormAsyncSelectV2 } from '@/modules/shared';
 import type { OptionType } from '@/modules/shared';
 import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
-import { getDirectivesPaginated, getDirectiveById, type DirectiveApiResponse } from '@/modules/UC02/data/directivesApi';
+import { listMinisterDirectives, getMinisterDirective, type MinisterDirective } from '@/modules/guiding-light/api/minister-directives';
 
 export interface GuidanceFieldProps {
   value: OptionType | null;
