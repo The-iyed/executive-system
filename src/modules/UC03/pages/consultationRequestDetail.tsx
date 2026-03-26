@@ -308,14 +308,10 @@ const ConsultationRequestDetail: React.FC = () => {
                 }
               />
               <ReadOnlyField label="حالة الطلب" value={statusLabel} />
-              <ReadOnlyField label="مقدم الطلب" value={meetingRequest.submitter_name ?? '-'} />
+              <ReadOnlyField label="مقدم الطلب" value={resolveUserLabel((meetingRequest as any)?.submitter, meetingRequest.submitter_name)} />
               <ReadOnlyField
                 label="مالك الاجتماع"
-                value={
-                  meetingRequest.current_owner_user
-                    ? `${meetingRequest.current_owner_user.first_name} ${meetingRequest.current_owner_user.last_name}`
-                    : (meetingRequest.current_owner_role?.name_ar ?? meetingRequest.current_owner_user_id ?? '-')
-                }
+                value={resolveUserLabel(meetingRequest.current_owner_user, meetingRequest.current_owner_role?.name_ar)}
               />
             </div>
           </div>
