@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { Icon } from '@iconify/react';
 import { getAssignedSchedulingRequests } from '../data/meetingsApi';
-import { getDirectivesPaginated } from '../data/directivesApi';
+
 import { getWaitingList } from '../data/meetingsApi';
 import { MeetingStatus, getMeetingStatusLabel } from '@/modules/shared';
 import { PATH } from '../routes/paths';
