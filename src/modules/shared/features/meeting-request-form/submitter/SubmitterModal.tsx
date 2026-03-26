@@ -50,6 +50,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
       error={fetchError}
       saving={saving}
       showSaveAsDraft={canSaveAsDraft}
+      submitLabel={callerRole === MeetingOwnerType.SCHEDULING ? "تحديث الطلب" : undefined}
       onNext={triggerActiveFormSubmit}
       onPrev={goToPrevStep}
       onSubmit={handleFinalSubmit}
