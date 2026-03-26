@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { FormAsyncSelectV2 } from '@/modules/shared';
 import type { OptionType } from '@/modules/shared';
 import { STEP1_ASYNC_SELECT_PAGE_SIZE } from '../../../../utils';
-import { getDirectivesPaginated, getDirectiveById, type DirectiveApiResponse } from '@/modules/UC02/data/directivesApi';
+import { listMinisterDirectives, getMinisterDirective, type MinisterDirective } from '@/modules/guiding-light/api/minister-directives';
 
 export interface GuidanceFieldProps {
   value: OptionType | null;
@@ -28,38 +28,36 @@ export function GuidanceField({
   useEffect(() => {
     if (!value?.value || resolvingRef.current) return;
     const label = value.label?.trim();
-    if (label && label !== value.value) return; // already has real label
+    if (label && label !== value.value) return;
     resolvingRef.current = true;
-    getDirectiveById(value.value)
-      .then((d: DirectiveApiResponse) => {
-        const resolvedLabel = [d?.directive_text, d?.directive_number, d?.id].find(Boolean) ?? value.value;
-        onChange({ value: value.value, label: resolvedLabel, description: d?.related_meeting });
+    getMinisterDirective(value.value)
+      .then((d: MinisterDirective) => {
+        const resolvedLabel = d?.title || value.value;
+        onChange({ value: value.value, label: resolvedLabel });
       })
       .catch(() => {})
       .finally(() => {
         resolvingRef.current = false;
       });
-  }, [value?.value]); // only when id changes; avoid loop from onChange
+  }, [value?.value]);
 
   const loadOptions = useCallback(
     async (search: string, skip: number, limit: number) => {
-      const response = await getDirectivesPaginated({
-        search: search.trim() || undefined,
-        skip,
-        limit,
-      });
-      const items = (response?.items ?? []).map((d: DirectiveApiResponse) => ({
-        value: String(d?.id ?? ''),
-        label: String(d?.title || d?.directive_text || ''),
-        description: d?.related_meeting ?? '',
+      const directives = await listMinisterDirectives({ skip, limit });
+      const filtered = search.trim()
+        ? directives.filter((d) => d.title?.includes(search.trim()))
+        : directives;
+      const items = filtered.map((d: MinisterDirective) => ({
+        value: String(d.id),
+        label: String(d.title || d.id),
       })).filter((o) => o.value);
       return {
         items,
-        total: response?.total ?? 0,
-        skip: response?.skip ?? 0,
-        limit: response?.limit ?? limit,
-        has_next: response?.has_next ?? false,
-        has_previous: response?.has_previous ?? false,
+        total: items.length,
+        skip,
+        limit,
+        has_next: directives.length >= limit,
+        has_previous: skip > 0,
       };
     },
     []
