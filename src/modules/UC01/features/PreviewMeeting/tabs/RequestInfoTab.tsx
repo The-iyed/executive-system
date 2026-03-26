@@ -9,9 +9,9 @@ const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
 function resolveUserLabel(obj: unknown, fallback?: string | null): string {
   if (obj && typeof obj === 'object') {
     const u = obj as Record<string, unknown>;
-    if (u.email && typeof u.email === 'string') return u.email;
     if (u.username && typeof u.username === 'string') return u.username;
     if (u.name && typeof u.name === 'string') return u.name;
+    if (u.email && typeof u.email === 'string') return u.email;
     if (u.ar_name && typeof u.ar_name === 'string') return u.ar_name;
     const first = u.first_name ?? '';
     const last = u.last_name ?? '';
