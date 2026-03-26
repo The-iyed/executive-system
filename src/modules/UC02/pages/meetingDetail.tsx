@@ -603,32 +603,6 @@ const MeetingDetail: React.FC = () => {
   }, [activeTab, id, queryClient]);
   
   const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
-  const [isAddDirectiveOpen, setIsAddDirectiveOpen] = useState(false);
-  const [addDirectiveForm, setAddDirectiveForm] = useState({
-    directive_date: '',
-    directive_text: '',
-    related_meeting: '',
-    deadline: '',
-    responsible_persons: '', // comma or newline separated, parsed to string[]
-  });
-  /** Deadline picker: no past calendar days; if directive_date is in the future, deadline cannot precede that day. */
-  const addDirectiveDeadlineMinDate = React.useMemo(() => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    if (!addDirectiveForm.directive_date) return startOfToday;
-    const dir = new Date(addDirectiveForm.directive_date);
-    if (Number.isNaN(dir.getTime())) return startOfToday;
-    const startOfDirectiveDay = new Date(dir);
-    startOfDirectiveDay.setHours(0, 0, 0, 0);
-    return startOfDirectiveDay > startOfToday ? startOfDirectiveDay : startOfToday;
-  }, [addDirectiveForm.directive_date]);
-  React.useEffect(() => {
-    if (!addDirectiveForm.deadline) return;
-    const deadlineMs = new Date(addDirectiveForm.deadline).getTime();
-    if (Number.isNaN(deadlineMs) || deadlineMs < addDirectiveDeadlineMinDate.getTime()) {
-      setAddDirectiveForm((p) => ({ ...p, deadline: '' }));
-    }
-  }, [addDirectiveDeadlineMinDate, addDirectiveForm.deadline]);
   const [actionsBarOpen, setActionsBarOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
