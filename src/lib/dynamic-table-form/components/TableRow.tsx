@@ -247,6 +247,7 @@ const TableRowInner: React.FC<TableRowProps> = ({
   searchFn,
   hasError,
 }) => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const disabled = row._disabledFields || [];
   const isFieldDisabled = (name: string) => readOnly || disabled.includes(name);
   const showErr = (name: string) => isTouched(rowIndex, name);
