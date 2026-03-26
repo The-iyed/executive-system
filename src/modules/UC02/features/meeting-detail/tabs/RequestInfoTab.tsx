@@ -6,13 +6,30 @@ import { formatDateArabic } from '@/modules/shared/utils';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { Hash, Calendar, User, Building2 } from 'lucide-react';
 
+function resolveUserLabel(obj: unknown, fallback?: string | null): string {
+  if (fallback) return fallback;
+  if (!obj || typeof obj !== 'object') return '-';
+  const u = obj as Record<string, unknown>;
+  if (u.ar_name && typeof u.ar_name === 'string') return u.ar_name;
+  const first = u.first_name ?? '';
+  const last = u.last_name ?? '';
+  const full = `${first} ${last}`.trim();
+  if (full) return full;
+  if (u.name && typeof u.name === 'string') return u.name;
+  if (u.username && typeof u.username === 'string') return u.username;
+  return '-';
+}
+
 export interface RequestInfoTabProps {
   meeting: MeetingApiResponse | undefined;
   statusLabel: string;
 }
 
 export function RequestInfoTab({ meeting, statusLabel }: RequestInfoTabProps) {
+  const m = meeting as unknown as Record<string, unknown> | undefined;
   const requestDate = formatDateArabic(meeting?.submitted_at ?? meeting?.created_at) || '-';
+  const submitterLabel = resolveUserLabel(m?.submitter, meeting?.submitter_name);
+  const ownerLabel = resolveUserLabel(m?.meeting_owner, meeting?.meeting_owner_name);
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto" dir="rtl">
       {/* Section header */}
@@ -44,12 +61,12 @@ export function RequestInfoTab({ meeting, statusLabel }: RequestInfoTabProps) {
         />
         <ReadOnlyField
           label="مقدم الطلب"
-          value={meeting?.submitter_name ?? '-'}
+          value={submitterLabel}
           icon={<User className="w-4 h-4" />}
         />
         <ReadOnlyField
           label="مالك الاجتماع"
-          value={meeting?.meeting_owner_name ?? '-'}
+          value={ownerLabel}
           icon={<Building2 className="w-4 h-4" />}
         />
       </div>
