@@ -52,6 +52,7 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
           onSuccess: (newDraftId) => {
             setDraftId(newDraftId);
             setStep1Data(data);
+            onStepSaved?.(newDraftId);
             setCurrentStep(2);
           },
           onError: (err) =>
