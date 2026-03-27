@@ -342,7 +342,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {error && !isLoading && (
-        <div className="absolute top-4 left-4 right-4 bg-destructive/10 border border-destructive/20 rounded-lg p-3 z-20">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
           <p className="text-sm text-destructive text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
             حدث خطأ أثناء تحميل المواعيد. يرجى المحاولة مرة أخرى.
           </p>
