@@ -91,7 +91,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             style={{ fontFamily: "'Almarai', sans-serif" }}
           >
             {viewMode === 'daily'
-              ? `${DAY_NAMES[currentDate.getDay()]} ${currentDate.getDate()} ${month} ${year}`
+              ? `${ARABIC_DAY_NAMES[currentDate.getDay()]} ${formatDateArabic(currentDate)}`
               : `${month} ${year}`}
           </span>
         </div>
