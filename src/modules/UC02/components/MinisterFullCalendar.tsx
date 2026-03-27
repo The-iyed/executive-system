@@ -8,6 +8,8 @@ import arLocale from '@fullcalendar/core/locales/ar';
 import type { CalendarEventData } from '@/modules/shared';
 import type { OutlookTimelineEvent } from '../data/calendarApi';
 import { cn } from '@/lib/ui';
+import { ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
+import { formatDateArabic } from '@/modules/shared/utils/format';
 import './minister-fullcalendar.css';
 
 export type MinisterFcViewMode = 'daily' | 'weekly' | 'monthly';
@@ -314,11 +316,9 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         dayHeaderContent={(arg) => {
           if (viewMode === 'daily') {
             const d = arg.date;
-            const dayName = d.toLocaleDateString('ar', { weekday: 'long' });
-            const dayNum = d.getDate();
-            const monthName = d.toLocaleDateString('ar', { month: 'long' });
-            const year = d.getFullYear();
-            return { html: `<span>${dayName} ${dayNum} ${monthName} ${year}</span>` };
+            const dayName = ARABIC_DAY_NAMES[d.getDay()];
+            const formatted = formatDateArabic(d);
+            return { html: `<span>${dayName} ${formatted}</span>` };
           }
           return arg.text;
         }}

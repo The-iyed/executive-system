@@ -1,16 +1,9 @@
 import React, { memo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/ui';
+import { ARABIC_MONTHS, ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
+import { formatDateArabic } from '@/modules/shared/utils/format';
 import type { CalendarViewMode } from '../types';
-
-const MONTH_NAMES = [
-  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-];
-
-const DAY_NAMES = [
-  'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت',
-];
 
 const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'daily', label: 'يومي' },
@@ -33,7 +26,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   onNext,
   onViewModeChange,
 }) => {
-  const month = MONTH_NAMES[currentDate.getMonth()];
+  const month = ARABIC_MONTHS[currentDate.getMonth()];
   const year = currentDate.getFullYear();
 
   return (
@@ -98,7 +91,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             style={{ fontFamily: "'Almarai', sans-serif" }}
           >
             {viewMode === 'daily'
-              ? `${DAY_NAMES[currentDate.getDay()]} ${currentDate.getDate()} ${month} ${year}`
+              ? `${ARABIC_DAY_NAMES[currentDate.getDay()]} ${formatDateArabic(currentDate)}`
               : `${month} ${year}`}
           </span>
         </div>
