@@ -1,6 +1,6 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TableRow as TableRowType, RowErrors, SearchOption, ColumnConfig, SearchFn } from "../types";
 import {
   Select,
@@ -247,6 +247,7 @@ const TableRowInner: React.FC<TableRowProps> = ({
   searchFn,
   hasError,
 }) => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const disabled = row._disabledFields || [];
   const isFieldDisabled = (name: string) => readOnly || disabled.includes(name);
   const showErr = (name: string) => isTouched(rowIndex, name);
@@ -303,13 +304,13 @@ const TableRowInner: React.FC<TableRowProps> = ({
       )}
 
       {canRemove && (
-        <td className="px-2 py-2 w-12 align-top">
+        <td className="px-2 py-2 w-12 align-top relative">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center h-9 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onRemove(rowIndex)}
+                onClick={() => setConfirmingDelete(true)}
                 className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" />
@@ -317,6 +318,55 @@ const TableRowInner: React.FC<TableRowProps> = ({
             </div>
             <div className="h-4" />
           </div>
+          <AnimatePresence>
+            {confirmingDelete && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                <motion.div
+                  initial={{ y: 10 }}
+                  animate={{ y: 0 }}
+                  exit={{ y: 10 }}
+                  className="bg-card border rounded-xl shadow-lg p-5 w-80 text-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-center mb-3">
+                    <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <Trash2 className="h-5 w-5 text-destructive" />
+                    </div>
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-1">حذف المدعو</h3>
+                  <p className="text-sm text-muted-foreground mb-4">هل أنت متأكد من حذف هذا المدعو من القائمة؟</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmingDelete(false)}
+                      className="min-w-20"
+                    >
+                      إلغاء
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setConfirmingDelete(false);
+                        onRemove(rowIndex);
+                      }}
+                      className="min-w-20"
+                    >
+                      حذف
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </td>
       )}
     </motion.tr>
