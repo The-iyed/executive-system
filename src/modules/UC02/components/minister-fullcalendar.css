@@ -60,11 +60,17 @@
 }
 
 .minister-fc .fc-scroller {
-  overflow: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.minister-fc .fc-scroller::-webkit-scrollbar:horizontal {
+  height: 0 !important;
 }
 
 .minister-fc .fc-scroller-liquid-absolute {
   border-radius: 0 0 14px 14px;
+  overflow-x: hidden !important;
 }
 
 /* Headers — same as WeeklyCalendarGrid: white, gray-100 separators */
