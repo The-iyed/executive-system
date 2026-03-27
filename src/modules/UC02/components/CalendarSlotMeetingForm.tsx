@@ -208,14 +208,14 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
-    if (!isPhysical) return undefined;
+    if (!showLocation) return undefined;
     const loc = meetingLocation?.trim() ?? '';
     if (isPresetLocation(loc)) return loc;
     if (loc !== '') return loc;
     if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
     if ((locationDropdownValue as string) === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
     return undefined;
-  }, [isPhysical, meetingLocation, locationDropdownValue]);
+  }, [showLocation, meetingLocation, locationDropdownValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
