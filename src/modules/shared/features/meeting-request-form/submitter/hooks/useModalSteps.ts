@@ -8,11 +8,10 @@ import type { SubmitterStep1Values } from "../schema";
 interface UseModalStepsOptions {
   editMeetingId?: string | null;
   onClose: () => void;
-  onStep1Success?: (draftId: string) => void;
-  onStep2Success?: (draftId: string) => void;
+  onStepSaved?: (draftId: string) => void;
 }
 
-export function useModalSteps({ editMeetingId, onClose }: UseModalStepsOptions) {
+export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalStepsOptions) {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SubmitterStep1Values | null>(null);
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
