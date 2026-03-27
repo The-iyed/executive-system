@@ -4,7 +4,7 @@
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 
 export interface InviteesTabProps {
-  invitees: unknown[] | undefined;
+  invitees: any;
 }
 
 export function InviteesTab({ invitees }: InviteesTabProps) {
