@@ -437,8 +437,8 @@ export function useMeetingDetailPage() {
     previousMeeting,
     meetingStatus,
     statusLabel,
-    meetingInfoData,
-    extraGridSpecs,
+    meetingInfoExtraFields,
+    meetingInfoNotes,
 
     // Tab
     activeTab,
