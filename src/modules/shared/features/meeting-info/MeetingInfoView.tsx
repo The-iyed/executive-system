@@ -3,6 +3,7 @@
  * Modern, clean, minimal UI with proper RTL support.
  */
 import { cn } from '@/lib/ui';
+import { Info, ExternalLink } from 'lucide-react';
 import type { MeetingInfoViewProps, MeetingInfoField, AgendaItem } from './types';
 
 /* ─── Duration / Minister support labels ─── */
@@ -16,8 +17,36 @@ const MINISTER_SUPPORT_LABELS: Record<string, string> = {
   'توجيه': 'توجيه', 'اعتماد': 'اعتماد', 'أخرى': 'أخرى (يقوم بالإدخال)',
 };
 
+function isEmptyValue(value: React.ReactNode): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value === '—' || value.trim() === '';
+  return false;
+}
+
+function LinkField({ value }: { value: string }) {
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-1.5">
+      <p className="text-[13px] font-semibold text-muted-foreground">رابط الاجتماع (Webex)</p>
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
+        dir="ltr"
+      >
+        <ExternalLink className="w-4 h-4 text-primary flex-shrink-0" />
+        <span className="text-sm font-medium text-primary truncate flex-1 text-left">{value}</span>
+      </a>
+    </div>
+  );
+}
+
 function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?: boolean }) {
+  if (isEmptyValue(value)) return null;
+
   const isLink = typeof value === 'string' && value.startsWith('http');
+  if (isLink) return <LinkField value={value as string} />;
+
   return (
     <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')}>
       <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
@@ -25,32 +54,14 @@ function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?:
         'w-full px-4 flex items-center rounded-xl border border-border/50 bg-muted/30 transition-colors',
         fullWidth ? 'min-h-[72px] items-start py-3' : 'min-h-[44px] py-2',
       )}>
-        {isLink ? (
-          <a
-            href={value as string}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary underline break-all text-left"
-            dir="ltr"
-          >
-            {value}
-          </a>
-        ) : (
-          <span className="text-sm font-medium text-foreground whitespace-pre-wrap">{value ?? '—'}</span>
-        )}
+        <span className="text-sm font-medium text-foreground whitespace-pre-wrap">{value ?? '—'}</span>
       </div>
     </div>
   );
 }
 
 function AgendaTable({ items }: { items: AgendaItem[] }) {
-  if (!items.length) {
-    return (
-      <div className="w-full min-h-[44px] flex items-center px-4 py-2 border border-border/50 rounded-xl bg-muted/30 text-sm text-muted-foreground">
-        لا توجد بنود محددة
-      </div>
-    );
-  }
+  if (!items.length) return null;
 
   return (
     <div className="w-full overflow-x-auto border border-border/50 rounded-xl bg-muted/10">
@@ -84,27 +95,57 @@ function AgendaTable({ items }: { items: AgendaItem[] }) {
   );
 }
 
-export function MeetingInfoView({ data, className }: MeetingInfoViewProps) {
+export function MeetingInfoView({
+  data,
+  className,
+  title = 'معلومات الاجتماع',
+  description = 'تفاصيل ومعلومات الاجتماع الأساسية',
+}: MeetingInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-8 max-w-[1200px] mx-auto', className)} dir="rtl">
-      {data.sections.map((section, sIdx) => (
-        <div key={sIdx} className="flex flex-col gap-5">
-          {section.title && (
-            <h3 className="text-base font-semibold text-foreground">{section.title}</h3>
-          )}
+    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto', className)} dir="rtl">
+      {/* Header with icon + title + description */}
+      <div className="flex items-start justify-end gap-3" dir="ltr">
+        <div className="text-right">
+          <h2 className="text-base font-semibold text-foreground leading-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Info className="w-5 h-5 text-primary" />
+        </div>
+      </div>
+
+      {/* First section (basic info) */}
+      {data.sections[0] && (() => {
+        const visibleFields = data.sections[0].fields.filter(f => !isEmptyValue(f.value));
+        return visibleFields.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-            {section.fields.map(field => (
+            {visibleFields.map(field => (
               <FieldCell key={field.key} {...field} />
             ))}
           </div>
-        </div>
-      ))}
+        ) : null;
+      })()}
 
-      {/* Agenda */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
-        <AgendaTable items={data.agenda ?? []} />
-      </div>
+      {/* Agenda — between basic info and directive fields */}
+      {data.agenda && data.agenda.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
+          <AgendaTable items={data.agenda} />
+        </div>
+      )}
+
+      {/* Remaining sections (directive, etc.) — no titles */}
+      {data.sections.slice(1).map((section, sIdx) => {
+        const visibleFields = section.fields.filter(f => !isEmptyValue(f.value));
+        if (!visibleFields.length) return null;
+        return (
+          <div key={sIdx + 1} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+            {visibleFields.map(field => (
+              <FieldCell key={field.key} {...field} />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
