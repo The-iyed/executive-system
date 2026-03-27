@@ -8,6 +8,8 @@ import type { SubmitterStep1Values } from "../schema";
 interface UseModalStepsOptions {
   editMeetingId?: string | null;
   onClose: () => void;
+  onStep1Success?: (draftId: string) => void;
+  onStep2Success?: (draftId: string) => void;
 }
 
 export function useModalSteps({ editMeetingId, onClose }: UseModalStepsOptions) {
