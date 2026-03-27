@@ -15,7 +15,7 @@ export interface ScheduleFormData {
 export interface ScheduleTabProps {
   scheduleForm: ScheduleFormData;
   onScheduleFormChange: (updates: Partial<ScheduleFormData>) => void;
-  invitees: unknown[] | undefined;
+  invitees: any;
   validationError?: string | null;
   scheduleMutationSuccess?: boolean;
 }
