@@ -9,6 +9,8 @@ export interface MeetingInfoField {
   value: React.ReactNode;
   /** Span full width (2 columns) */
   fullWidth?: boolean;
+  /** Always show even when value is empty */
+  alwaysShow?: boolean;
 }
 
 export interface MeetingInfoSection {
