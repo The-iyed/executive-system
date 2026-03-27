@@ -114,26 +114,38 @@ export function MeetingInfoView({
         </div>
       </div>
 
-      {/* Sections (without titles — removed التوجيهات والملاحظات) */}
-      {data.sections.map((section, sIdx) => {
-        const visibleFields = section.fields.filter(f => !isEmptyValue(f.value));
-        if (!visibleFields.length) return null;
-        return (
-          <div key={sIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+      {/* First section (basic info) */}
+      {data.sections[0] && (() => {
+        const visibleFields = data.sections[0].fields.filter(f => !isEmptyValue(f.value));
+        return visibleFields.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             {visibleFields.map(field => (
               <FieldCell key={field.key} {...field} />
             ))}
           </div>
-        );
-      })}
+        ) : null;
+      })()}
 
-      {/* Agenda — rendered between basic and directive sections */}
+      {/* Agenda — between basic info and directive fields */}
       {data.agenda && data.agenda.length > 0 && (
         <div className="flex flex-col gap-3">
           <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
           <AgendaTable items={data.agenda} />
         </div>
       )}
+
+      {/* Remaining sections (directive, etc.) — no titles */}
+      {data.sections.slice(1).map((section, sIdx) => {
+        const visibleFields = section.fields.filter(f => !isEmptyValue(f.value));
+        if (!visibleFields.length) return null;
+        return (
+          <div key={sIdx + 1} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+            {visibleFields.map(field => (
+              <FieldCell key={field.key} {...field} />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
