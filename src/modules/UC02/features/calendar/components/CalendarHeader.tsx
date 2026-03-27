@@ -8,6 +8,10 @@ const MONTH_NAMES = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
+const DAY_NAMES = [
+  'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت',
+];
+
 const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'daily', label: 'يومي' },
   { key: 'weekly', label: 'أسبوعي' },
@@ -93,7 +97,9 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             className="text-[14px] font-bold text-foreground tabular-nums"
             style={{ fontFamily: "'Almarai', sans-serif" }}
           >
-            {month} {year}
+            {viewMode === 'daily'
+              ? `${DAY_NAMES[currentDate.getDay()]} ${currentDate.getDate()} ${month} ${year}`
+              : `${month} ${year}`}
           </span>
         </div>
 
