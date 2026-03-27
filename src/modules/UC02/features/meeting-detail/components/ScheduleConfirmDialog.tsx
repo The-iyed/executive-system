@@ -41,8 +41,8 @@ export function ScheduleConfirmDialog({
         </DialogHeader>
 
         <div className="py-2">
-          <InfoRow label="تاريخ ووقت البداية" value={startDate ? formatDateArabic(startDate) : null} />
-          <InfoRow label="تاريخ ووقت النهاية" value={endDate ? formatDateArabic(endDate) : null} />
+          <InfoRow label="تاريخ ووقت البداية" value={startDate ? formatDateTimeArabic(startDate) : null} />
+          <InfoRow label="تاريخ ووقت النهاية" value={endDate ? formatDateTimeArabic(endDate) : null} />
           <InfoRow label="قناة الاجتماع" value={channelLabel} />
           <InfoRow label="مبدئي" value={requiresProtocol ? 'لا' : 'نعم'} />
           <InfoRow label="البيانات مكتملة" value={isDataComplete ? 'نعم' : 'لا'} />
