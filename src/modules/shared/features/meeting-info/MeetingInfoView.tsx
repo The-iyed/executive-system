@@ -111,8 +111,8 @@ export function MeetingInfoView({
           <h2 className="text-base font-semibold text-foreground leading-tight">{title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Info className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600">
+          <Info className="w-4 h-4" />
         </div>
       </div>
 
