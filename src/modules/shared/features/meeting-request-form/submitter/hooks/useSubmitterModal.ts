@@ -31,16 +31,10 @@ export function useSubmitterModal({
   const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
   const isEditMode = !!editMeetingId;
 
-  // ── Sync helper (defined before steps so it can be referenced) ────────────
+  // ── Sync helper: invalidate queries so each page refetches with its own API
   const syncMeetingDetails = useCallback(async (meetingId: string) => {
-    const freshMeeting = await getMeetingById(meetingId);
-
-    queryClient.setQueryData(['meeting', meetingId], freshMeeting);
-    queryClient.setQueryData(['meeting', meetingId, 'preview'], freshMeeting);
-
     await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId], exact: true, type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'], exact: true, type: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
     ]);
