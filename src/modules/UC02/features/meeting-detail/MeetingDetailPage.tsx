@@ -243,8 +243,8 @@ const MeetingDetailPage: React.FC = () => {
       <ReturnForInfoDrawer
         open={h.isReturnForInfoModalOpen}
         onOpenChange={h.setIsReturnForInfoModalOpen}
-        form={h.returnForInfoForm}
-        onFormChange={h.setReturnForInfoForm}
+        notes={h.returnForInfoNotes}
+        onNotesChange={h.setReturnForInfoNotes}
         onSubmit={(data) => h.returnForInfoMutation.mutate(data)}
         isPending={h.returnForInfoMutation.isPending}
         notesError={h.returnForInfoNotesError}
