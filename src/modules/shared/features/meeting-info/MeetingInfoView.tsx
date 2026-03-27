@@ -141,7 +141,7 @@ export function MeetingInfoView({
         const visibleFields = section.fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
         if (!visibleFields.length) return null;
         return (
-          <div key={sIdx + 1} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+          <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             {visibleFields.map(field => (
               <FieldCell key={field.key} {...field} />
             ))}
