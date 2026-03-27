@@ -319,7 +319,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </FormField>
 
 
-        {isPhysical && (
+        {showLocation && (
           <>
             <FormField
               className="w-full min-w-0"
