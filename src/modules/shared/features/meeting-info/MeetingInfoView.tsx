@@ -104,7 +104,7 @@ export function MeetingInfoView({
   description = 'تفاصيل ومعلومات الاجتماع الأساسية',
 }: MeetingInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto', className)} dir="rtl">
+    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto pb-8', className)} dir="rtl">
       {/* Header with icon + title + description */}
       <div className="flex items-start justify-end gap-3" dir="ltr">
         <div className="text-right">
