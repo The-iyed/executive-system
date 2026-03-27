@@ -33,7 +33,13 @@ export function useSubmitterModal({
   const isEditMode = !!editMeetingId;
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
-  const steps = useModalSteps({ editMeetingId, onClose });
+  const steps = useModalSteps({
+    editMeetingId,
+    onClose,
+    onStepSaved: isEditMode
+      ? (draftId) => syncMeetingDetails(draftId)
+      : undefined,
+  });
 
   // ── Meeting data & derived values ─────────────────────────────────────────
   const detail = useMeetingDetail({
