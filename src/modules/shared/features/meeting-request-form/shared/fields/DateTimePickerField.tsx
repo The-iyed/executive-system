@@ -33,12 +33,12 @@ function TimeInput({ hour, minute, onHourChange, onMinuteChange, label }: {
       <span className="text-[10px] font-medium text-muted-foreground leading-none">{label}</span>
       <div className="flex items-center gap-px" dir="ltr">
         <select value={hour} onChange={(e) => onHourChange(e.target.value)}
-          className="appearance-none bg-background border border-border rounded-s px-1 py-0.5 text-xs font-medium text-center w-9 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+          className="appearance-none bg-background border border-border rounded-s px-1 py-0.5 text-xs font-medium text-center w-9 h-7 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
           {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
         </select>
         <span className="text-xs font-bold text-muted-foreground">:</span>
         <select value={minute} onChange={(e) => onMinuteChange(e.target.value)}
-          className="appearance-none bg-background border border-border rounded-e px-1 py-0.5 text-xs font-medium text-center w-9 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+          className="appearance-none bg-background border border-border rounded-e px-1 py-0.5 text-xs font-medium text-center w-9 h-7 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
           {MINUTES.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
@@ -144,13 +144,20 @@ export function DateTimePickerField({
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-0 shadow-lg border border-border rounded-xl overflow-hidden max-w-[calc(100vw-1rem)]"
-        align="start" dir="rtl" sideOffset={4}>
-        <div className="flex flex-col">
-          <div className="p-2 sm:p-3 pb-1">
+        align="start"
+        dir="rtl"
+        sideOffset={4}
+        side="bottom"
+        avoidCollisions={true}
+        collisionPadding={8}
+        sticky="always"
+      >
+        <div className="flex flex-col max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain">
+          <div className="p-2 pb-1">
             <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate}
               locale={ar} disabled={disabledDays} className="p-0 pointer-events-auto" />
           </div>
-          <div className="border-t border-border bg-muted/30 px-3 py-2 sm:py-3 space-y-2">
+          <div className="border-t border-border bg-muted/30 px-3 py-2 space-y-1.5 shrink-0">
             <div className="flex items-end justify-center gap-3">
               <TimeInput hour={startHour} minute={startMinute}
                 onHourChange={setStartHour} onMinuteChange={setStartMinute} label="وقت البداية" />
