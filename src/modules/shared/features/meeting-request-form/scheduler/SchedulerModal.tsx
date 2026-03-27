@@ -167,6 +167,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
           tableRef={inviteesRef}
           initialInvitees={invitees}
           mode="create"
+          meetingChannel={step1Data?.meeting_channel}
           meetingParams={step1Data ? {
             meeting_subject: step1Data.meeting_title,
             meeting_type: step1Data.meeting_type,

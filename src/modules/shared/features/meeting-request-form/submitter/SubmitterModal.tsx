@@ -95,6 +95,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
           mode="create"
           showAiSuggest={showAiSuggest}
           excludeColumns={excludeColumns}
+          meetingChannel={step1Data?.meeting_channel}
           meetingParams={step1Data ? {
             meeting_subject: step1Data.meeting_title,
             meeting_type: step1Data.meeting_type,
