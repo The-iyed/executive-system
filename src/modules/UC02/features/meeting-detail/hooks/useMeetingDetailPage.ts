@@ -359,15 +359,12 @@ export function useMeetingDetailPage() {
   });
 
   const returnForInfoMutation = useMutation({
-    mutationFn: (payload: { notes: string; editable_fields: string[] }) => returnMeetingForInfo(id!, payload),
+    mutationFn: (payload: { notes: string }) => returnMeetingForInfo(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsReturnForInfoModalOpen(false);
       setReturnForInfoNotesError(null);
-      setReturnForInfoForm({
-        notes: '',
-        editable_fields: EDITABLE_FIELD_IDS.reduce((acc, fid) => ({ ...acc, [fid]: false }), {} as Record<string, boolean>),
-      });
+      setReturnForInfoNotes('');
       navigate(-1);
     },
   });
