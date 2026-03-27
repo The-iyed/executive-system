@@ -168,67 +168,37 @@ export function useMeetingDetailPage() {
   const meetingStatus = (meeting?.status as MeetingStatus) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = MeetingStatusLabels[meetingStatus] || meeting?.status || 'قيد المراجعة';
 
-  const meetingInfoData = useMemo((): MeetingInfoData => {
-    if (!meeting) return {};
-    const m = meeting as any;
-    const slot = meeting.selected_time_slot;
+  const meetingInfoNotes = useMemo(() => {
+    if (!meeting) return undefined;
     const notesList = getGeneralNotesList(meeting.general_notes);
-    const notesText = notesList.length > 0 ? notesList.map((n) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') : undefined;
-    const apiChannel = meeting.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel)
-      ? meeting.meeting_channel
-      : scheduleForm.meeting_channel;
-    const joinUrl = String(m.meeting_url || m.meeting_link || '').trim() || undefined;
-    const basedOnDirective = !!(meeting.related_guidance || m.is_based_on_directive === true || (Array.isArray(meeting.related_directive_ids) && meeting.related_directive_ids.length > 0));
-    const hasPrevContext = !!(meeting.previous_meeting_attachment || m.prev_ext_id != null || m.previous_meeting_minutes_id);
-    const directiveMethod = (m.directive_method || '').trim() || (hasPrevContext && basedOnDirective ? 'PREVIOUS_MEETING' : undefined);
+    return notesList.length > 0 ? notesList.map((n) => (n?.text ?? '').trim()).filter(Boolean).join('\n\n') : undefined;
+  }, [meeting]);
 
-    return {
-      is_on_behalf_of: m.is_on_behalf_of ?? undefined,
-      meeting_manager_label: meeting.meeting_owner_name ?? undefined,
-      meetingSubject: meeting.meeting_title || undefined,
-      meetingDescription: meeting.description ?? meeting.meeting_subject ?? undefined,
-      sector: meeting.sector || undefined,
-      meetingType: meeting.meeting_type || undefined,
-      is_urgent: !!m.urgent_reason || !!m.is_urgent,
-      urgent_reason: m.urgent_reason ?? meeting.meeting_justification ?? undefined,
-      meeting_start_date: m.scheduled_start ?? meeting.meeting_start_date ?? slot?.slot_start ?? undefined,
-      meeting_end_date: m.scheduled_end ?? slot?.slot_end ?? undefined,
-      meetingChannel: apiChannel || undefined,
-      meeting_location: m.location || scheduleForm.location || undefined,
-      meeting_link: joinUrl,
-      meetingCategory: meeting.meeting_classification || undefined,
-      meetingReason: meeting.meeting_justification || undefined,
-      relatedTopic: meeting.related_topic || undefined,
-      dueDate: meeting.deadline || undefined,
-      meetingClassification1: meeting.meeting_classification_type || undefined,
-      meetingConfidentiality: meeting.meeting_confidentiality || undefined,
-      meetingAgenda: (meeting.agenda_items ?? []).map((item) => {
-        const ext = item as typeof item & { minister_support_type?: string; minister_support_other?: string; support_type?: string; support_description?: string };
-        return {
-          id: item.id,
-          agenda_item: item.agenda_item ?? '',
-          presentation_duration_minutes: item.presentation_duration_minutes ?? 0,
-          minister_support_type: ext.minister_support_type ?? ext.support_type,
-          minister_support_other: ext.minister_support_other ?? ext.support_description,
-        };
-      }),
-      is_sequential: meeting.is_sequential ?? false,
-      previous_meeting_meeting_title: m.prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? undefined,
-      sequential_number_display: meeting.sequential_number != null ? String(meeting.sequential_number) : (meeting.is_sequential && previousMeeting?.sequential_number != null ? String((previousMeeting.sequential_number ?? 0) + 1) : 'غير موجود'),
-      is_based_on_directive: basedOnDirective,
-      directive_method: directiveMethod,
-      previous_meeting_attachment: meeting.previous_meeting_attachment ?? undefined,
-      directive_text: meeting.related_guidance || undefined,
-      notes: notesText,
-    };
-  }, [meeting, scheduleForm.meeting_channel, scheduleForm.location, previousMeeting?.sequential_number]);
-
-  const extraGridSpecs = useMemo(() => {
+  const meetingInfoExtraFields = useMemo(() => {
     if (!meeting) return [];
-    return meeting.is_sequential
-      ? UC02_EXTRA_MEETING_INFO_SPECS
-      : [UC02_EXTRA_MEETING_INFO_SPECS[0], UC02_EXTRA_MEETING_INFO_SPECS[2]];
-  }, [meeting?.is_sequential]);
+    const yesNo = (v?: boolean) => v === true ? 'نعم' : v === false ? 'لا' : '—';
+    const fields = [
+      { key: 'is_sequential', label: 'اجتماع متسلسل؟', value: yesNo(meeting.is_sequential) },
+    ];
+    if (meeting.is_sequential) {
+      const m = meeting as any;
+      fields.push({
+        key: 'previous_meeting_id',
+        label: 'الاجتماع السابق',
+        value: m.prev_ext_meeting_title ?? meeting.previous_meeting?.meeting_title ?? '—',
+      });
+    }
+    fields.push({
+      key: 'sequential_number',
+      label: 'الرقم التسلسلي',
+      value: meeting.sequential_number != null
+        ? String(meeting.sequential_number)
+        : (meeting.is_sequential && previousMeeting?.sequential_number != null
+            ? String((previousMeeting.sequential_number ?? 0) + 1)
+            : 'غير موجود'),
+    });
+    return fields;
+  }, [meeting, previousMeeting?.sequential_number]);
 
   /* ── Changed payload (schedule form only) ── */
   const changedPayload = useMemo(() => {
