@@ -35,6 +35,7 @@ export function formatDateTimeArabic(date: Date | string | null | undefined): st
   const timePart = d.toLocaleTimeString('ar', {
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
     calendar: 'gregory',
     numberingSystem: 'latn',
   });
