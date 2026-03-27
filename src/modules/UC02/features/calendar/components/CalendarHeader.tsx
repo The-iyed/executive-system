@@ -1,16 +1,9 @@
 import React, { memo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/ui';
+import { ARABIC_MONTHS, ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
+import { formatDateArabic } from '@/modules/shared/utils/format';
 import type { CalendarViewMode } from '../types';
-
-const MONTH_NAMES = [
-  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-];
-
-const DAY_NAMES = [
-  'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت',
-];
 
 const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'daily', label: 'يومي' },
