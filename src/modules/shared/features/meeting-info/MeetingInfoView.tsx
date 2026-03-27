@@ -63,6 +63,8 @@ function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?:
 function AgendaTable({ items }: { items: AgendaItem[] }) {
   if (!items.length) return null;
 
+  const hasOtherText = items.some(i => i.minister_support_other && i.minister_support_other.trim() !== '');
+
   return (
     <div className="w-full overflow-x-auto border border-border/50 rounded-xl bg-muted/10">
       <table className="w-full text-sm text-right">
@@ -72,7 +74,7 @@ function AgendaTable({ items }: { items: AgendaItem[] }) {
             <th className="px-4 py-3 text-muted-foreground font-semibold">الأجندة</th>
             <th className="px-4 py-3 text-muted-foreground font-semibold whitespace-nowrap w-[180px] text-center">الدعم المطلوب من الوزير</th>
             <th className="px-4 py-3 text-muted-foreground font-semibold whitespace-nowrap w-[140px] text-center">مدة العرض</th>
-            <th className="px-4 py-3 text-muted-foreground font-semibold">نص الدعم (أخرى)</th>
+            {hasOtherText && <th className="px-4 py-3 text-muted-foreground font-semibold">نص الدعم (أخرى)</th>}
           </tr>
         </thead>
         <tbody>
@@ -86,7 +88,7 @@ function AgendaTable({ items }: { items: AgendaItem[] }) {
               <td className="px-4 py-3 text-muted-foreground text-center">
                 {DURATION_LABELS[String(item.presentation_duration_minutes ?? '')] ?? (item.presentation_duration_minutes ? `${item.presentation_duration_minutes} دقيقة` : '-')}
               </td>
-              <td className="px-4 py-3 text-foreground">{item.minister_support_other ?? '-'}</td>
+              {hasOtherText && <td className="px-4 py-3 text-foreground">{item.minister_support_other ?? '-'}</td>}
             </tr>
           ))}
         </tbody>
@@ -102,7 +104,7 @@ export function MeetingInfoView({
   description = 'تفاصيل ومعلومات الاجتماع الأساسية',
 }: MeetingInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto', className)} dir="rtl">
+    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto pb-8', className)} dir="rtl">
       {/* Header with icon + title + description */}
       <div className="flex items-start justify-end gap-3" dir="ltr">
         <div className="text-right">
