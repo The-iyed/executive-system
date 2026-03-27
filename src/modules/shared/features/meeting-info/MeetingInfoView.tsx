@@ -48,13 +48,13 @@ function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & {
   if (isLink) return <LinkField value={value as string} />;
 
   return (
-    <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')}>
-      <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+    <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')} dir="rtl">
+      <p className="text-sm text-muted-foreground text-right">{label}</p>
       <div className={cn(
-        'w-full px-4 flex items-center rounded-xl border border-border/50 bg-muted/30 transition-colors',
-        fullWidth ? 'min-h-[72px] items-start py-3' : 'min-h-[44px] py-2',
+        'flex items-center gap-2.5 px-4 py-3 rounded-2xl border bg-muted/40 border-border/40',
+        fullWidth && 'min-h-[72px] items-start',
       )}>
-        <span className="text-sm font-medium text-foreground whitespace-pre-wrap">{value ?? '—'}</span>
+        <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{value ?? '—'}</span>
       </div>
     </div>
   );
