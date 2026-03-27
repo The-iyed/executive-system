@@ -32,6 +32,21 @@ export function useSubmitterModal({
   const isSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING;
   const isEditMode = !!editMeetingId;
 
+  // ── Sync helper (defined before steps so it can be referenced) ────────────
+  const syncMeetingDetails = useCallback(async (meetingId: string) => {
+    const freshMeeting = await getMeetingById(meetingId);
+
+    queryClient.setQueryData(['meeting', meetingId], freshMeeting);
+    queryClient.setQueryData(['meeting', meetingId, 'preview'], freshMeeting);
+
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId], exact: true, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'], exact: true, type: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
+    ]);
+  }, [queryClient]);
+
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
   const steps = useModalSteps({
     editMeetingId,
@@ -90,19 +105,6 @@ export function useSubmitterModal({
   
     return response;
   };
-  const syncMeetingDetails = useCallback(async (meetingId: string) => {
-    const freshMeeting = await getMeetingById(meetingId);
-
-    queryClient.setQueryData(['meeting', meetingId], freshMeeting);
-    queryClient.setQueryData(['meeting', meetingId, 'preview'], freshMeeting);
-
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId], exact: true, type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'], exact: true, type: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
-      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
-    ]);
-  }, [queryClient]);
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
   const handleFinalSubmit = useCallback(async () => {
@@ -121,7 +123,7 @@ export function useSubmitterModal({
         steps.resetModal();
         return;
       }
-      console.log(meetingStatus)
+
       const submitAction = resolveSubmitAction(meetingStatus);
       if (submitAction) {
         await submitAction(meetingId);
@@ -130,12 +132,17 @@ export function useSubmitterModal({
         toast({title: "تم التحديث بنجاح"});
       }
   
-      if (isEditMode) await syncMeetingDetails(meetingId);
+      if (isEditMode) {
+        await syncMeetingDetails(meetingId);
+      } else {
+        // Create mode: invalidate meetings list so new meeting appears
+        await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      }
       steps.resetModal();
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
-  }, [steps, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, toast]);
+  }, [steps, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, queryClient, toast]);
 
   // ── Save as draft ─────────────────────────────────────────────────────────
   const handleSaveAsDraft = useCallback(async () => {
@@ -146,13 +153,18 @@ export function useSubmitterModal({
       const saved = await saveInvitees(meetingId);
       if (!saved) return;
   
-      if (isEditMode) await syncMeetingDetails(meetingId);
+      if (isEditMode) {
+        await syncMeetingDetails(meetingId);
+      } else {
+        // Create mode: invalidate meetings list so draft appears
+        await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      }
       toast({title: "تم حفظ المسودة بنجاح"});
       steps.resetModal();
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
-  }, [steps, isEditMode, syncMeetingDetails, toast]);
+  }, [steps, isEditMode, syncMeetingDetails, queryClient, toast]);
 
   // ── Public API ────────────────────────────────────────────────────────────
   return {
