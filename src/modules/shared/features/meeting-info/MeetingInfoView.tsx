@@ -41,8 +41,8 @@ function LinkField({ value }: { value: string }) {
   );
 }
 
-function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?: boolean }) {
-  if (isEmptyValue(value)) return null;
+function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & { fullWidth?: boolean; alwaysShow?: boolean }) {
+  if (!alwaysShow && isEmptyValue(value)) return null;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
   if (isLink) return <LinkField value={value as string} />;
