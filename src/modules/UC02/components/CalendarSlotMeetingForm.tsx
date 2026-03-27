@@ -186,16 +186,16 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const [pastDateError, setPastDateError] = useState<string | null>(null);
   const [locationTouched, setLocationTouched] = useState(false);
 
-  const isPhysical = meetingChannel === 'PHYSICAL';
+  const showLocation = meetingChannel === 'PHYSICAL' || meetingChannel === 'HYBRID';
   const locationDropdownValue = getLocationDropdownValue(meetingLocation, meetingLocationOption);
   const showLocationOtherInputField = showLocationOtherInput(meetingLocation, meetingLocationOption);
-  const locationRequired = isPhysical;
+  const locationRequired = showLocation;
   const locationValid = !locationRequired || (locationDropdownValue === LOCATION_OPTIONS.OTHER ? meetingLocation.trim() !== '' : locationDropdownValue !== '');
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
   const handleMeetingChannelChange = useCallback((value: string) => {
     setMeetingChannel(value);
-    if (value !== 'PHYSICAL') {
+    if (value !== 'PHYSICAL' && value !== 'HYBRID') {
       setMeetingLocation('');
       setMeetingLocationOption('');
     }
@@ -208,14 +208,14 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
-    if (!isPhysical) return undefined;
+    if (!showLocation) return undefined;
     const loc = meetingLocation?.trim() ?? '';
     if (isPresetLocation(loc)) return loc;
     if (loc !== '') return loc;
     if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
     if ((locationDropdownValue as string) === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
     return undefined;
-  }, [isPhysical, meetingLocation, locationDropdownValue]);
+  }, [showLocation, meetingLocation, locationDropdownValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,7 +319,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         </FormField>
 
 
-        {isPhysical && (
+        {showLocation && (
           <>
             <FormField
               className="w-full min-w-0"
