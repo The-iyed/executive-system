@@ -271,6 +271,9 @@ const MeetingDetailPage: React.FC = () => {
         endDate={(() => { const { end } = h.getEffectiveScheduleDates(meeting, h.scheduleForm); return end; })()}
         meetingChannel={meeting?.meeting_channel as string}
         scheduleFormChannel={h.scheduleForm.meeting_channel}
+        requiresProtocol={h.scheduleForm.requires_protocol}
+        isDataComplete={h.scheduleForm.is_data_complete}
+        location={h.scheduleForm.location || h.scheduleForm.location_option || ''}
         onConfirm={() => h.handleScheduleSubmit({ preventDefault: () => {} } as any)}
         isPending={h.scheduleMutation.isPending}
       />
