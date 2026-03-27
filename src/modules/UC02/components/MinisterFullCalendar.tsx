@@ -8,6 +8,8 @@ import arLocale from '@fullcalendar/core/locales/ar';
 import type { CalendarEventData } from '@/modules/shared';
 import type { OutlookTimelineEvent } from '../data/calendarApi';
 import { cn } from '@/lib/ui';
+import { ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
+import { formatDateArabic } from '@/modules/shared/utils/format';
 import './minister-fullcalendar.css';
 
 export type MinisterFcViewMode = 'daily' | 'weekly' | 'monthly';
