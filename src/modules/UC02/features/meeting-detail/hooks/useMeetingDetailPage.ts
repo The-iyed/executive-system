@@ -39,7 +39,7 @@ import {
   getMeetingLocationDropdownValue,
 } from '../../../../UC01/features/MeetingForm/utils/constants';
 import { getGeneralNotesList } from '../utils/meetingDetailHelpers';
-import { fieldLabels, EDITABLE_FIELD_IDS, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
+import { fieldLabels, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
 
 /* ─── Schedule form type ─── */
 export interface ScheduleFormState {
@@ -107,13 +107,7 @@ export function useMeetingDetailPage() {
   const [cancelForm, setCancelForm] = useState({ reason: '', notes: '' });
   const [sendToContentForm, setSendToContentForm] = useState({ notes: '' });
   const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
-  const [returnForInfoForm, setReturnForInfoForm] = useState<{
-    notes: string;
-    editable_fields: Record<string, boolean>;
-  }>({
-    notes: '',
-    editable_fields: EDITABLE_FIELD_IDS.reduce((acc, fid) => ({ ...acc, [fid]: false }), {} as Record<string, boolean>),
-  });
+  const [returnForInfoNotes, setReturnForInfoNotes] = useState('');
   const [returnForInfoNotesError, setReturnForInfoNotesError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
@@ -365,15 +359,12 @@ export function useMeetingDetailPage() {
   });
 
   const returnForInfoMutation = useMutation({
-    mutationFn: (payload: { notes: string; editable_fields: string[] }) => returnMeetingForInfo(id!, payload),
+    mutationFn: (payload: { notes: string }) => returnMeetingForInfo(id!, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsReturnForInfoModalOpen(false);
       setReturnForInfoNotesError(null);
-      setReturnForInfoForm({
-        notes: '',
-        editable_fields: EDITABLE_FIELD_IDS.reduce((acc, fid) => ({ ...acc, [fid]: false }), {} as Record<string, boolean>),
-      });
+      setReturnForInfoNotes('');
       navigate(-1);
     },
   });
@@ -513,7 +504,7 @@ export function useMeetingDetailPage() {
     cancelForm, setCancelForm,
     sendToContentForm, setSendToContentForm,
     approveUpdateForm, setApproveUpdateForm,
-    returnForInfoForm, setReturnForInfoForm,
+    returnForInfoNotes, setReturnForInfoNotes,
     returnForInfoNotesError, setReturnForInfoNotesError,
     validationError, setValidationError,
     updateErrorMessage, setUpdateErrorMessage,
