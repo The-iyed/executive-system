@@ -10,8 +10,6 @@ import {
   MeetingStatusLabels,
   MeetingOwnerType,
   MeetingChannelLabels,
-  type MeetingInfoData,
-  type MeetingInfoFieldSpec,
   hasUseCaseAccess,
   toISOStringWithTimezone,
   formatDateArabic,
