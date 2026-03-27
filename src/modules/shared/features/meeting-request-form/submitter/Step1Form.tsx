@@ -52,7 +52,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
               initialLabel={initialValues?.submitter?.name || initialValues?.submitter?.username || initialValues?.submitter?.displayName || initialValues?.submitter?.mail}
             />
           )}
-          <OnBehalfField />
+          {!isSchedulerEdit && <OnBehalfField />}
           {(visibility.meeting_owner || isSchedulerEdit) && <MeetingOwnerField
               name="meeting_owner"
               initialLabel={initialValues?.meeting_owner?.name || initialValues?.meeting_owner?.username || initialValues?.meeting_owner?.displayName || initialValues?.meeting_owner?.mail }
