@@ -8,6 +8,10 @@ const MONTH_NAMES = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
+const DAY_NAMES = [
+  'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت',
+];
+
 const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'daily', label: 'يومي' },
   { key: 'weekly', label: 'أسبوعي' },
