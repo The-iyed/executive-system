@@ -81,6 +81,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setViewMode,
     goNext,
     goPrevious,
+    goToday,
   } = useCalendarNavigation(initialDate);
 
   const { events: timelineEvents, isLoading, isFetching, error, queryKey } = useCalendarEvents(
@@ -314,6 +315,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         viewMode={viewMode}
         onPrevious={goPrevious}
         onNext={goNext}
+        onToday={goToday}
+        onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
       />
 
