@@ -1,62 +1,9 @@
 /**
  * Pure helpers for meeting detail (mapping, normalization, validation, format).
  */
-import type { GeneralNoteItem, MinisterAttendee } from '@/modules/shared/types';
+import type { GeneralNoteItem } from '@/modules/shared/types';
 
 export type AttendanceChannel = 'PHYSICAL' | 'REMOTE';
-
-/** Map API attendance_mechanism (Arabic) to attendance_channel enum */
-export function mapAttendanceMechanismToChannel(
-  v: string | null | undefined
-): AttendanceChannel {
-  if (!v || typeof v !== 'string') return 'PHYSICAL';
-  const s = v.trim().toLowerCase();
-  if (s === 'عن بعد' || s === 'remote' || s === 'remot') return 'REMOTE';
-  return 'PHYSICAL';
-}
-
-/** Map API minister_attendees (mobile, attendance_mechanism) to form format (phone, attendance_channel) */
-export function mapApiMinisterAttendeesToForm(
-  list: (MinisterAttendee & { mobile?: string; attendance_mechanism?: string })[] | undefined
-): MinisterAttendee[] {
-  return (list || []).map((a) => ({
-    ...a,
-    phone: a.mobile ?? (a as MinisterAttendee & { mobile?: string }).phone ?? '',
-    attendance_channel: (a.attendance_channel ??
-      mapAttendanceMechanismToChannel(a.attendance_mechanism)) as AttendanceChannel,
-  }));
-}
-
-export interface NormalizedMinisterAttendee {
-  username: string;
-  external_name: string;
-  external_email: string;
-  is_required: boolean;
-  justification: string;
-  access_permission: string;
-  position: string;
-  phone: string;
-  attendance_channel: AttendanceChannel;
-  is_consultant: boolean;
-}
-
-/** Normalize minister attendees so all API-required fields are present (no undefined). */
-export function normalizeMinisterAttendees(
-  list: MinisterAttendee[] | undefined
-): NormalizedMinisterAttendee[] {
-  return (list || []).map((a) => ({
-    username: a.username ?? '',
-    external_name: a.external_name ?? '',
-    external_email: a.external_email ?? '',
-    is_required: a.is_required ?? false,
-    justification: a.justification ?? '',
-    access_permission: a.access_permission ?? 'FULL',
-    position: a.position ?? '',
-    phone: a.mobile ?? (a as MinisterAttendee & { phone?: string }).phone ?? '',
-    attendance_channel: (a.attendance_channel ?? 'PHYSICAL') as AttendanceChannel,
-    is_consultant: a.is_consultant ?? false,
-  }));
-}
 
 /** Simple email format validation */
 export function isValidEmail(value: string): boolean {
