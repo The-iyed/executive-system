@@ -8,9 +8,10 @@ import type { SubmitterStep1Values } from "../schema";
 interface UseModalStepsOptions {
   editMeetingId?: string | null;
   onClose: () => void;
+  onStepSaved?: (draftId: string) => void;
 }
 
-export function useModalSteps({ editMeetingId, onClose }: UseModalStepsOptions) {
+export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalStepsOptions) {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SubmitterStep1Values | null>(null);
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
@@ -51,6 +52,7 @@ export function useModalSteps({ editMeetingId, onClose }: UseModalStepsOptions) 
           onSuccess: (newDraftId) => {
             setDraftId(newDraftId);
             setStep1Data(data);
+            onStepSaved?.(newDraftId);
             setCurrentStep(2);
           },
           onError: (err) =>
@@ -72,7 +74,10 @@ export function useModalSteps({ editMeetingId, onClose }: UseModalStepsOptions) 
       contentMutation.mutate(
         { draftId, payload: formData },
         {
-          onSuccess: () => setCurrentStep(3),
+          onSuccess: () => {
+            if (draftId) onStepSaved?.(draftId);
+            setCurrentStep(3);
+          },
           onError: (err) =>
             toast.error(err instanceof Error ? err.message : "فشل حفظ المحتوى"),
         },
