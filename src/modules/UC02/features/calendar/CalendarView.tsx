@@ -315,6 +315,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         viewMode={viewMode}
         onPrevious={goPrevious}
         onNext={goNext}
+        onToday={goToday}
+        onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
       />
 
