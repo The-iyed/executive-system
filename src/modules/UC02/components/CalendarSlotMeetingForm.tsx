@@ -189,13 +189,13 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const showLocation = meetingChannel === 'PHYSICAL' || meetingChannel === 'HYBRID';
   const locationDropdownValue = getLocationDropdownValue(meetingLocation, meetingLocationOption);
   const showLocationOtherInputField = showLocationOtherInput(meetingLocation, meetingLocationOption);
-  const locationRequired = isPhysical;
+  const locationRequired = showLocation;
   const locationValid = !locationRequired || (locationDropdownValue === LOCATION_OPTIONS.OTHER ? meetingLocation.trim() !== '' : locationDropdownValue !== '');
   const showLocationError = locationTouched && locationRequired && !locationValid;
 
   const handleMeetingChannelChange = useCallback((value: string) => {
     setMeetingChannel(value);
-    if (value !== 'PHYSICAL') {
+    if (value !== 'PHYSICAL' && value !== 'HYBRID') {
       setMeetingLocation('');
       setMeetingLocationOption('');
     }
