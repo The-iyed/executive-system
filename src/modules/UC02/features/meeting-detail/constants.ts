@@ -37,13 +37,6 @@ export const fieldLabels: Record<string, string> = {
   general_notes: 'ملاحظات',
 };
 
-/** Field keys sent as editable_fields to return-for-info API (same order as in form) */
-export const EDITABLE_FIELD_IDS = Object.keys(fieldLabels) as string[];
-
-export const DIRECTIVE_METHOD_OPTIONS = [
-  { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
-  { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
-] as const;
 
 /** Translate comparison API enum-like values to Arabic */
 export const COMPARE_STATUS: Record<string, string> = {
