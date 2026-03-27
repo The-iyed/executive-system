@@ -311,6 +311,17 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         snapDuration="00:15:00"
         slotLabelInterval="01:00:00"
         buttonText={{ today: 'اليوم' }}
+        dayHeaderContent={(arg) => {
+          if (viewMode === 'daily') {
+            const d = arg.date;
+            const dayName = d.toLocaleDateString('ar', { weekday: 'long' });
+            const dayNum = d.getDate();
+            const monthName = d.toLocaleDateString('ar', { month: 'long' });
+            const year = d.getFullYear();
+            return { html: `<span>${dayName} ${dayNum} ${monthName} ${year}</span>` };
+          }
+          return arg.text;
+        }}
       />
     </div>
   );
