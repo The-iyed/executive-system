@@ -74,7 +74,10 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
       contentMutation.mutate(
         { draftId, payload: formData },
         {
-          onSuccess: () => setCurrentStep(3),
+          onSuccess: () => {
+            if (draftId) onStepSaved?.(draftId);
+            setCurrentStep(3);
+          },
           onError: (err) =>
             toast.error(err instanceof Error ? err.message : "فشل حفظ المحتوى"),
         },
