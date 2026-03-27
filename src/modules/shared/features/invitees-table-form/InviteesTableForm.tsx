@@ -17,6 +17,7 @@ const InviteesTableForm = ({
   mode = "create",
   meetingParams,
   excludeColumns = [],
+  meetingChannel,
   viewLayout = "table",
   showAiSuggest = true,
 }: {
@@ -26,12 +27,22 @@ const InviteesTableForm = ({
   mode?: "create" | "edit" | "view";
   meetingParams?: UseSuggestMeetingAttendeesParams["meeting"];
   excludeColumns?: string[];
+  /** When PHYSICAL or VIRTUAL, the attendance_mechanism column is auto-hidden */
+  meetingChannel?: string;
   viewLayout?: InviteesViewLayout;
   showAiSuggest?: boolean;
 }) => {
   const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees);
-  const filteredColumns = excludeColumns.length > 0
-    ? INVITEE_COLUMNS.filter(col => !excludeColumns.includes(col.key))
+
+  // Hide attendance_mechanism when channel is fixed (PHYSICAL or VIRTUAL)
+  const isFixedChannel = meetingChannel === 'PHYSICAL' || meetingChannel === 'VIRTUAL'
+    || meetingChannel === 'حضوري' || meetingChannel === 'عن بعد';
+  const effectiveExclude = isFixedChannel
+    ? [...new Set([...excludeColumns, "attendance_mechanism"])]
+    : excludeColumns;
+
+  const filteredColumns = effectiveExclude.length > 0
+    ? INVITEE_COLUMNS.filter(col => !effectiveExclude.includes(col.key))
     : INVITEE_COLUMNS;
 
   const { mutateAsync: suggestAttendees } = useSuggestAttendees();
