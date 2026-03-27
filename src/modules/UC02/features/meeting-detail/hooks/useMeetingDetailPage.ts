@@ -39,7 +39,7 @@ import {
   getMeetingLocationDropdownValue,
 } from '../../../../UC01/features/MeetingForm/utils/constants';
 import { getGeneralNotesList } from '../utils/meetingDetailHelpers';
-import { fieldLabels, EDITABLE_FIELD_IDS, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
+import { fieldLabels, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
 
 /* ─── Schedule form type ─── */
 export interface ScheduleFormState {
