@@ -1,6 +1,5 @@
 /**
- * Meeting detail feature – page entry, constants, hooks, utils.
- * Route points to MeetingDetailPage which delegates to pages/meetingDetail.
+ * Meeting detail feature – page entry, constants, hooks, utils, tabs.
  */
 export { default as MeetingDetailPage } from './MeetingDetailPage';
 export * from './constants';
@@ -13,3 +12,4 @@ export { DirectivesTab } from './tabs/DirectivesTab';
 export { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 export { SchedulingConsultationTab } from './tabs/SchedulingConsultationTab';
 export { DirectiveTab } from './tabs/DirectiveTab';
+export { ContentTab } from './tabs/ContentTab';
