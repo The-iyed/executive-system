@@ -504,7 +504,7 @@ export function useMeetingDetailPage() {
     cancelForm, setCancelForm,
     sendToContentForm, setSendToContentForm,
     approveUpdateForm, setApproveUpdateForm,
-    returnForInfoForm, setReturnForInfoForm,
+    returnForInfoNotes, setReturnForInfoNotes,
     returnForInfoNotesError, setReturnForInfoNotesError,
     validationError, setValidationError,
     updateErrorMessage, setUpdateErrorMessage,
