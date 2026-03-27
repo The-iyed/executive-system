@@ -309,7 +309,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   return (
-    <div className="w-full flex flex-col relative flex-1 min-h-0 gap-4" dir="rtl">
+    <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
       <CalendarHeader
         currentDate={currentDate}
         viewMode={viewMode}
@@ -320,12 +320,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onViewModeChange={setViewMode}
       />
 
-      <div className="relative flex-1 min-h-0 bg-card overflow-hidden rounded-2xl shadow-sm border border-border/40">
+      <div className="relative flex-1 min-h-0 bg-card overflow-auto rounded-2xl shadow-sm border border-border/40">
         {showSkeleton ? (
           <CalendarSkeleton />
         ) : (
           <>
-            <div className="relative w-full p-3 bg-card">
+            <div className="relative min-h-[580px] h-[min(78vh,820px)] w-full p-3 bg-card">
               <MinisterFullCalendar
                 viewMode={viewMode === 'monthly' ? 'monthly' : viewMode === 'daily' ? 'daily' : 'weekly'}
                 currentDate={currentDate}
