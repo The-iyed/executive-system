@@ -32,4 +32,6 @@ export interface MeetingInfoViewData {
 export interface MeetingInfoViewProps {
   data: MeetingInfoViewData;
   className?: string;
+  title?: string;
+  description?: string;
 }
