@@ -11,7 +11,6 @@ import { MeetingStatus } from "../../shared/types/types";
 import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
-import { getMeetingById } from "@/modules/shared/api/meetings";
 import { useToast } from "@/lib/ui";
 
 interface UseSubmitterModalOptions {
