@@ -426,6 +426,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         <InviteesTableForm
           tableRef={inviteesRef}
           initialInvitees={(initialInvitees ?? []) as any}
+          meetingChannel={meetingChannel}
           showAiSuggest={false}
         />
 
