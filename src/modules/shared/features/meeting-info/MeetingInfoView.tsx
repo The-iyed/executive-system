@@ -41,8 +41,8 @@ function LinkField({ value }: { value: string }) {
   );
 }
 
-function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?: boolean }) {
-  if (isEmptyValue(value)) return null;
+function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & { fullWidth?: boolean; alwaysShow?: boolean }) {
+  if (!alwaysShow && isEmptyValue(value)) return null;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
   if (isLink) return <LinkField value={value as string} />;
@@ -118,7 +118,7 @@ export function MeetingInfoView({
 
       {/* First section (basic info) */}
       {data.sections[0] && (() => {
-        const visibleFields = data.sections[0].fields.filter(f => !isEmptyValue(f.value));
+        const visibleFields = data.sections[0].fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
         return visibleFields.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             {visibleFields.map(field => (
@@ -138,7 +138,7 @@ export function MeetingInfoView({
 
       {/* Remaining sections (directive, etc.) — no titles */}
       {data.sections.slice(1).map((section, sIdx) => {
-        const visibleFields = section.fields.filter(f => !isEmptyValue(f.value));
+        const visibleFields = section.fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
         if (!visibleFields.length) return null;
         return (
           <div key={sIdx + 1} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
