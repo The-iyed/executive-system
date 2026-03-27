@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -8,11 +8,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   cn,
 } from "@/lib/ui";
 
@@ -27,8 +22,49 @@ interface DateTimePickerFieldProps {
   minDate?: Date;
 }
 
-const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+function TimeScrollPicker({
+  hour,
+  minute,
+  onHourChange,
+  onMinuteChange,
+  label,
+}: {
+  hour: string;
+  minute: string;
+  onHourChange: (h: string) => void;
+  onMinuteChange: (m: string) => void;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5" dir="ltr">
+        <select
+          value={hour}
+          onChange={(e) => onHourChange(e.target.value)}
+          className="appearance-none bg-background border border-border rounded px-1.5 py-1 text-sm font-medium text-center w-[42px] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+        >
+          {HOURS.map((h) => (
+            <option key={h} value={h}>{h}</option>
+          ))}
+        </select>
+        <span className="text-sm font-bold text-muted-foreground px-0.5">:</span>
+        <select
+          value={minute}
+          onChange={(e) => onMinuteChange(e.target.value)}
+          className="appearance-none bg-background border border-border rounded px-1.5 py-1 text-sm font-medium text-center w-[42px] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+        >
+          {MINUTES.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
 
 export function DateTimePickerField({
   value,
@@ -69,21 +105,21 @@ export function DateTimePickerField({
     }
   }, []);
 
-  const toLocalISO = (date: Date, hour: string, minute: string) => {
+  const toLocalISO = useCallback((date: Date, hour: string, minute: string) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}T${hour}:${minute}:00`;
-  };
+  }, []);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (!selectedDate) return;
     onChange(toLocalISO(selectedDate, startHour, startMinute));
     if (onChangeEnd) {
       onChangeEnd(toLocalISO(selectedDate, endHour, endMinute));
     }
     setOpen(false);
-  };
+  }, [selectedDate, startHour, startMinute, endHour, endMinute, onChange, onChangeEnd, toLocalISO]);
 
   const durationMinutes = useMemo(() => {
     const s = parseInt(startHour) * 60 + parseInt(startMinute);
@@ -91,16 +127,26 @@ export function DateTimePickerField({
     return e > s ? e - s : 0;
   }, [startHour, startMinute, endHour, endMinute]);
 
+  const formatDuration = (mins: number) => {
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `${h} ساعة ${m} دقيقة` : `${h} ساعة`;
+    }
+    return `${mins} دقيقة`;
+  };
+
   const displayValue = value
     ? (() => {
         try {
           const d = new Date(value);
-          const startStr = `${format(d, "yyyy/MM/dd", { locale: ar })} - ${format(d, "HH:mm")}`;
+          const dateStr = format(d, "yyyy/MM/dd", { locale: ar });
+          const timeStr = format(d, "HH:mm");
           if (endValue) {
             const ed = new Date(endValue);
-            return `${startStr} → ${format(ed, "HH:mm")}`;
+            return `${dateStr}  ${timeStr} → ${format(ed, "HH:mm")}`;
           }
-          return startStr;
+          return `${dateStr} - ${timeStr}`;
         } catch {
           return value;
         }
@@ -116,22 +162,28 @@ export function DateTimePickerField({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-between font-normal h-10",
-            "border-input",
+            "w-full justify-between font-normal h-10 text-sm",
+            "border-input hover:bg-accent/50 transition-colors",
             !displayValue && "text-muted-foreground",
-            hasError && "border-destructive"
+            hasError && "border-destructive ring-1 ring-destructive/20"
           )}
         >
           <div className="flex items-center gap-2 truncate">
-            <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="truncate">{displayValue || placeholder}</span>
           </div>
-          <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" dir="rtl" sideOffset={8}>
-        <div className="flex flex-col items-center">
-          <div className="p-4 pb-2">
+      <PopoverContent
+        className="w-auto p-0 shadow-lg border border-border rounded-xl overflow-hidden"
+        align="start"
+        dir="rtl"
+        sideOffset={4}
+      >
+        <div className="flex flex-col">
+          {/* Calendar */}
+          <div className="p-3 pb-2">
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -141,73 +193,48 @@ export function DateTimePickerField({
               className="p-0 pointer-events-auto"
             />
           </div>
-          <div className="w-full border-t border-border" />
-          <div className="w-full px-5 py-4 space-y-4">
-            <div className="flex items-center justify-center gap-6">
-              <div className="flex flex-col items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground tracking-wide">وقت البداية</span>
-                <div className="flex items-center gap-1" dir="ltr">
-                  <Select value={startHour} onValueChange={setStartHour}>
-                    <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 min-w-[60px]">
-                      {hours.map((h) => <SelectItem key={h} value={h} className="text-center">{h}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-base font-bold text-muted-foreground">:</span>
-                  <Select value={startMinute} onValueChange={setStartMinute}>
-                    <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 min-w-[60px]">
-                      {minutes.map((m) => <SelectItem key={m} value={m} className="text-center">{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+
+          {/* Time Section */}
+          <div className="border-t border-border bg-muted/30">
+            <div className="px-4 py-3 space-y-3">
+              {/* Time Pickers Row */}
+              <div className="flex items-end justify-center gap-4">
+                <TimeScrollPicker
+                  hour={startHour}
+                  minute={startMinute}
+                  onHourChange={setStartHour}
+                  onMinuteChange={setStartMinute}
+                  label="وقت البداية"
+                />
+                <span className="text-muted-foreground text-base pb-1.5">←</span>
+                <TimeScrollPicker
+                  hour={endHour}
+                  minute={endMinute}
+                  onHourChange={setEndHour}
+                  onMinuteChange={setEndMinute}
+                  label="وقت النهاية"
+                />
+              </div>
+
+              {/* Duration Badge */}
+              {durationMinutes > 0 && (
+                <div className="flex justify-center">
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
+                    المدة: <span className="font-semibold text-foreground">{formatDuration(durationMinutes)}</span>
+                  </span>
                 </div>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <span className="text-[11px] text-transparent">—</span>
-                <span className="text-muted-foreground text-lg">←</span>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground tracking-wide">وقت النهاية</span>
-                <div className="flex items-center gap-1" dir="ltr">
-                  <Select value={endHour} onValueChange={setEndHour}>
-                    <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 min-w-[60px]">
-                      {hours.map((h) => <SelectItem key={h} value={h} className="text-center">{h}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-base font-bold text-muted-foreground">:</span>
-                  <Select value={endMinute} onValueChange={setEndMinute}>
-                    <SelectTrigger className="w-[52px] h-9 text-center text-sm font-medium border-input px-2 justify-center [&>svg]:hidden">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 min-w-[60px]">
-                      {minutes.map((m) => <SelectItem key={m} value={m} className="text-center">{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
+
+              {/* Confirm Button */}
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={!selectedDate || durationMinutes === 0}
+                className="w-full h-9 text-sm font-semibold rounded-lg"
+              >
+                تأكيد الموعد
+              </Button>
             </div>
-            {durationMinutes > 0 && (
-              <div className="flex justify-center">
-                <span className="text-[11px] text-muted-foreground px-3 py-1 rounded-full">
-                  المدة: <span className="font-bold text-foreground">{durationMinutes}</span> دقيقة
-                </span>
-              </div>
-            )}
-            <Button
-              type="button"
-              onClick={handleConfirm}
-              disabled={!selectedDate || durationMinutes === 0}
-              className="w-full h-10 text-sm font-semibold rounded-lg"
-            >
-              تأكيد الموعد
-            </Button>
           </div>
         </div>
       </PopoverContent>
