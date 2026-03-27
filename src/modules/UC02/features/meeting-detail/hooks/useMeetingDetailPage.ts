@@ -68,12 +68,8 @@ const INITIAL_SCHEDULE_FORM: ScheduleFormState = {
   selected_time_slot_id: null,
 };
 
-/* ─── Extra meeting info field specs for UC02 ─── */
-const UC02_EXTRA_MEETING_INFO_SPECS: MeetingInfoFieldSpec[] = [
-  { key: 'is_sequential', label: 'اجتماع متسلسل؟', getValue: (d) => (d.is_sequential === true ? 'نعم' : d.is_sequential === false ? 'لا' : '—') },
-  { key: 'previous_meeting_id', label: 'الاجتماع السابق', getValue: (d) => d.previous_meeting_meeting_title ?? '—' },
-  { key: 'sequential_number', label: 'الرقم التسلسلي', getValue: (d) => d.sequential_number_display ?? '—' },
-];
+
+
 
 export function useMeetingDetailPage() {
   const { id } = useParams<{ id: string }>();
