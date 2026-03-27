@@ -48,13 +48,13 @@ function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & {
   if (isLink) return <LinkField value={value as string} />;
 
   return (
-    <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')}>
-      <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+    <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')} dir="rtl">
+      <p className="text-sm text-muted-foreground text-right">{label}</p>
       <div className={cn(
-        'w-full px-4 flex items-center rounded-xl border border-border/50 bg-muted/30 transition-colors',
-        fullWidth ? 'min-h-[72px] items-start py-3' : 'min-h-[44px] py-2',
+        'flex items-center gap-2.5 px-4 py-3 rounded-2xl border bg-muted/40 border-border/40',
+        fullWidth && 'min-h-[72px] items-start',
       )}>
-        <span className="text-sm font-medium text-foreground whitespace-pre-wrap">{value ?? '—'}</span>
+        <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{value ?? '—'}</span>
       </div>
     </div>
   );
@@ -111,8 +111,8 @@ export function MeetingInfoView({
           <h2 className="text-base font-semibold text-foreground leading-tight">{title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Info className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600">
+          <Info className="w-4 h-4" />
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export function MeetingInfoView({
       {data.sections[0] && (() => {
         const visibleFields = data.sections[0].fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
         return visibleFields.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             {visibleFields.map(field => (
               <FieldCell key={field.key} {...field} />
             ))}
@@ -141,7 +141,7 @@ export function MeetingInfoView({
         const visibleFields = section.fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
         if (!visibleFields.length) return null;
         return (
-          <div key={sIdx + 1} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+          <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             {visibleFields.map(field => (
               <FieldCell key={field.key} {...field} />
             ))}
