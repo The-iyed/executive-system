@@ -26,7 +26,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   onNext,
   onViewModeChange,
 }) => {
-  const month = MONTH_NAMES[currentDate.getMonth()];
+  const month = ARABIC_MONTHS[currentDate.getMonth()];
   const year = currentDate.getFullYear();
 
   return (
