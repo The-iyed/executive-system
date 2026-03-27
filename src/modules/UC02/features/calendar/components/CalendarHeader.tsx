@@ -1,8 +1,8 @@
-import React, { memo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/ui';
+import { Calendar } from '@/lib/ui/components/calendar';
 import { ARABIC_MONTHS, ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
-import { formatDateArabic } from '@/modules/shared/utils/format';
 import type { CalendarViewMode } from '../types';
 
 const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
@@ -11,11 +11,43 @@ const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'monthly', label: 'شهري' },
 ];
 
+const FONT = { fontFamily: "'Almarai', sans-serif" } as const;
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function formatDisplayDate(date: Date, viewMode: CalendarViewMode): string {
+  const dayName = ARABIC_DAY_NAMES[date.getDay()];
+  const day = date.getDate();
+  const month = ARABIC_MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+
+  if (viewMode === 'daily') {
+    return `${dayName} ${day} ${month} ${year}`;
+  }
+  if (viewMode === 'monthly') {
+    return `${month} ${year}`;
+  }
+  // weekly — show week range
+  const start = new Date(date);
+  start.setDate(start.getDate() - start.getDay()); // Sunday
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.getDate()} - ${end.getDate()} ${ARABIC_MONTHS[start.getMonth()]} ${start.getFullYear()}`;
+  }
+  return `${start.getDate()} ${ARABIC_MONTHS[start.getMonth()]} - ${end.getDate()} ${ARABIC_MONTHS[end.getMonth()]} ${end.getFullYear()}`;
+}
+
 interface CalendarHeaderProps {
   currentDate: Date;
   viewMode: CalendarViewMode;
   onPrevious: () => void;
   onNext: () => void;
+  onToday: () => void;
+  onDateSelect: (date: Date) => void;
   onViewModeChange: (mode: CalendarViewMode) => void;
 }
 
@@ -24,29 +56,46 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   viewMode,
   onPrevious,
   onNext,
+  onToday,
+  onDateSelect,
   onViewModeChange,
 }) => {
-  const month = ARABIC_MONTHS[currentDate.getMonth()];
-  const year = currentDate.getFullYear();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  const isToday = isSameDay(currentDate, new Date());
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
+
+  const handleDatePick = useCallback((date: Date | undefined) => {
+    if (date) {
+      onDateSelect(date);
+      setPickerOpen(false);
+    }
+  }, [onDateSelect]);
 
   return (
     <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-card rounded-2xl shadow-sm border border-border/40">
       {/* Title */}
       <div className="flex flex-row items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Calendar className="w-4 h-4 text-primary" />
+          <CalendarIcon className="w-4 h-4 text-primary" />
         </div>
         <div className="flex flex-col items-end">
-          <h1
-            className="font-bold text-foreground text-[16px]"
-            style={{ fontFamily: "'Almarai', sans-serif" }}
-          >
+          <h1 className="font-bold text-foreground text-[16px]" style={FONT}>
             التقويم
           </h1>
-          <p
-            className="text-muted-foreground text-[11px]"
-            style={{ fontFamily: "'Almarai', sans-serif" }}
-          >
+          <p className="text-muted-foreground text-[11px]" style={FONT}>
             عرض الجدول الزمني للاجتماعات
           </p>
         </div>
@@ -67,14 +116,34 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',
               )}
-              style={{ fontFamily: "'Almarai', sans-serif" }}
+              style={FONT}
             >
               {label}
             </button>
           ))}
         </div>
 
-        {/* Prev / date / Next */}
+        {/* Separator */}
+        <div className="w-px h-6 bg-border/60" />
+
+        {/* Today button */}
+        <button
+          type="button"
+          onClick={onToday}
+          disabled={isToday}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all duration-200',
+            isToday
+              ? 'bg-muted/40 text-muted-foreground/50 cursor-not-allowed'
+              : 'bg-primary/10 text-primary hover:bg-primary/20',
+          )}
+          style={FONT}
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          اليوم
+        </button>
+
+        {/* Prev */}
         <button
           type="button"
           onClick={onPrevious}
@@ -84,18 +153,36 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
           <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
         </button>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/60">
-          <Calendar className="w-4 h-4 text-primary" />
-          <span
-            className="text-[14px] font-bold text-foreground tabular-nums"
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+        {/* Date display — clickable for picker */}
+        <div className="relative" ref={pickerRef}>
+          <button
+            type="button"
+            onClick={() => setPickerOpen((p) => !p)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer select-none',
+              pickerOpen ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-muted/60 hover:bg-muted',
+            )}
           >
-            {viewMode === 'daily'
-              ? `${ARABIC_DAY_NAMES[currentDate.getDay()]} ${formatDateArabic(currentDate)}`
-              : `${month} ${year}`}
-          </span>
+            <CalendarIcon className="w-4 h-4 text-primary" />
+            <span className="text-[14px] font-bold text-foreground tabular-nums" style={FONT}>
+              {formatDisplayDate(currentDate, viewMode)}
+            </span>
+          </button>
+
+          {/* Date picker dropdown */}
+          {pickerOpen && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-card rounded-2xl shadow-lg border border-border/60 p-1 animate-in fade-in-0 zoom-in-95 duration-200">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={handleDatePick}
+                defaultMonth={currentDate}
+              />
+            </div>
+          )}
         </div>
 
+        {/* Next */}
         <button
           type="button"
           onClick={onNext}
