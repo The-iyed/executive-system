@@ -309,7 +309,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   return (
-    <div className="w-full flex flex-col relative overflow-hidden flex-1 min-h-0 gap-4" dir="rtl">
+    <div className="w-full flex flex-col relative flex-1 min-h-0 gap-4" dir="rtl">
       <CalendarHeader
         currentDate={currentDate}
         viewMode={viewMode}
