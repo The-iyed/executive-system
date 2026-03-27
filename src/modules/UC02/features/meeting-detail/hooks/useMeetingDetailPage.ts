@@ -107,13 +107,7 @@ export function useMeetingDetailPage() {
   const [cancelForm, setCancelForm] = useState({ reason: '', notes: '' });
   const [sendToContentForm, setSendToContentForm] = useState({ notes: '' });
   const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
-  const [returnForInfoForm, setReturnForInfoForm] = useState<{
-    notes: string;
-    editable_fields: Record<string, boolean>;
-  }>({
-    notes: '',
-    editable_fields: EDITABLE_FIELD_IDS.reduce((acc, fid) => ({ ...acc, [fid]: false }), {} as Record<string, boolean>),
-  });
+  const [returnForInfoNotes, setReturnForInfoNotes] = useState('');
   const [returnForInfoNotesError, setReturnForInfoNotesError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
