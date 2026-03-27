@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/lib/ui';
-import { formatDateArabic, MeetingChannelLabels } from '@/modules/shared';
+import { formatDateTimeArabic, MeetingChannelLabels } from '@/modules/shared';
 
 interface ScheduleConfirmDialogProps {
   open: boolean;
