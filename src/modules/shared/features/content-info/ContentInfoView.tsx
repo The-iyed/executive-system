@@ -1,6 +1,6 @@
 /**
- * Shared ContentInfoView – minimal, label-based layout.
- * Each section is a simple label + content underneath. No heavy card wrappers.
+ * Shared ContentInfoView – card-based layout with compact width.
+ * Each section has a header + body card. Tight padding, narrower layout.
  */
 import React from 'react';
 import { cn } from '@/lib/ui';
@@ -8,12 +8,12 @@ import { FileCheck, FileText, ClipboardCheck, Zap, Download, Eye, File } from 'l
 import type { ContentInfoViewProps, ContentInfoSection, ContentFileItem } from './types';
 import pdfIcon from '../../assets/pdf.svg';
 
-/* ─── Section icon map ─── */
-const SECTION_ICONS: Record<string, React.ElementType> = {
-  presentation: FileCheck,
-  attachment: FileText,
-  summary: Zap,
-  notes: ClipboardCheck,
+/* ─── Section icon config ─── */
+const SECTION_CONFIG: Record<string, { icon: React.ElementType }> = {
+  presentation: { icon: FileCheck },
+  attachment: { icon: FileText },
+  summary: { icon: Zap },
+  notes: { icon: ClipboardCheck },
 };
 
 /* ─── File icon ─── */
@@ -23,18 +23,18 @@ function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain flex-shrink-0" />;
+    return <img src={pdfIcon} alt="pdf" className="h-10 w-10 object-contain flex-shrink-0" />;
   }
 
   return (
-    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted/60 flex-shrink-0">
-      <File className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted/60 flex-shrink-0">
+      <File className="h-4.5 w-4.5 text-muted-foreground" strokeWidth={1.5} />
     </div>
   );
 }
 
-/* ─── File row ─── */
-function FileRow({
+/* ─── File card ─── */
+function FileCard({
   file,
   onView,
   onDownload,
@@ -53,9 +53,11 @@ function FileRow({
 
   return (
     <div className={cn(
-      'group flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all duration-200',
-      'hover:bg-muted/40',
-      showAccent && 'border-r-[3px] border-r-primary',
+      'group flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all duration-200',
+      'bg-background hover:shadow-sm',
+      showAccent
+        ? 'border-primary/20 hover:border-primary/35'
+        : 'border-border/70 hover:border-primary/25',
     )}>
       <FileIcon fileType={file.file_type} fileName={file.file_name} />
 
@@ -74,12 +76,12 @@ function FileRow({
       <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {extraActions}
         {onDownload && file.blob_url && (
-          <a href={file.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="تحميل">
+          <a href={file.blob_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="تحميل">
             <Download className="w-4 h-4" />
           </a>
         )}
         {onView && file.blob_url && (
-          <button type="button" onClick={onView} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="معاينة">
+          <button type="button" onClick={onView} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="معاينة">
             <Eye className="w-4 h-4" />
           </button>
         )}
@@ -88,15 +90,18 @@ function FileRow({
   );
 }
 
-/* ─── Empty inline ─── */
-function EmptyInline({ text }: { text: string }) {
+/* ─── Empty state ─── */
+function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
-    <p className="text-sm text-muted-foreground py-3 px-1">{text}</p>
+    <div className="flex flex-col items-center justify-center py-6 rounded-xl bg-muted/15 border border-dashed border-border/50">
+      <p className="text-sm text-muted-foreground">{title}</p>
+      {description && <p className="text-xs text-muted-foreground/70 mt-0.5">{description}</p>}
+    </div>
   );
 }
 
-/* ─── Section ─── */
-function Section({
+/* ─── Section wrapper ─── */
+function SectionCard({
   section,
   onViewFile,
   onDownloadFile,
@@ -107,7 +112,8 @@ function Section({
   onDownloadFile?: (file: ContentFileItem) => void;
   renderFileActions?: (file: ContentFileItem, sectionKey: string) => React.ReactNode;
 }) {
-  const Icon = SECTION_ICONS[section.icon] ?? FileText;
+  const config = SECTION_CONFIG[section.icon] ?? SECTION_CONFIG.attachment;
+  const Icon = config.icon;
   const files = section.files ?? [];
   const hasFiles = files.length > 0;
   const hasText = section.text && section.text.trim();
@@ -116,63 +122,62 @@ function Section({
   const isPresentation = section.key === 'presentation';
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Label */}
-      <div className="flex items-center gap-2.5 px-1">
-        <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
-          <Icon className="w-4 h-4 text-primary" strokeWidth={1.8} />
+    <section className="rounded-xl border border-border/60 bg-background overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-muted/20 border-b border-border/40">
+        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-3.5 h-3.5 text-primary" strokeWidth={1.8} />
         </div>
-        <h3 className="text-sm font-bold text-foreground">{section.title}</h3>
+        <h3 className="text-[13px] font-bold text-foreground">{section.title}</h3>
       </div>
 
-      {/* Content */}
-      {isEmpty ? (
-        <EmptyInline text={section.emptyTitle ?? 'لا توجد بيانات'} />
-      ) : (
-        <div className="flex flex-col gap-1">
-          {/* Files */}
-          {hasFiles && (
-            <div className={cn(
-              'flex flex-col gap-1',
-              section.fileColumns === 2 && 'sm:grid sm:grid-cols-2',
-            )}>
-              {files.map((file) => (
-                <FileRow
-                  key={file.id}
-                  file={file}
-                  showAccent={isPresentation}
-                  onView={onViewFile ? () => onViewFile(file) : undefined}
-                  onDownload={onDownloadFile ? () => onDownloadFile(file) : undefined}
-                  extraActions={renderFileActions?.(file, section.key)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Text */}
-          {hasText && (
-            <div className={cn(
-              'px-4 py-3 rounded-lg text-right text-sm leading-relaxed whitespace-pre-wrap',
-              'bg-muted/30 text-foreground',
-            )}>
-              {section.text}
-            </div>
-          )}
-
-          {/* Secondary text */}
-          {hasSecondary && (
-            <div className="flex flex-col gap-1.5 mt-1">
-              {section.secondaryLabel && (
-                <p className="text-xs font-semibold text-muted-foreground px-1">{section.secondaryLabel}</p>
-              )}
-              <div className="px-4 py-3 rounded-lg bg-primary/5 text-right text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-                {section.secondaryText}
+      {/* Body */}
+      <div className="p-4">
+        {isEmpty ? (
+          <EmptyState
+            title={section.emptyTitle ?? 'لا توجد بيانات'}
+            description={section.emptyDescription}
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {hasFiles && (
+              <div className={cn(
+                'grid gap-2.5',
+                section.fileColumns === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1',
+              )}>
+                {files.map((file) => (
+                  <FileCard
+                    key={file.id}
+                    file={file}
+                    showAccent={isPresentation}
+                    onView={onViewFile ? () => onViewFile(file) : undefined}
+                    onDownload={onDownloadFile ? () => onDownloadFile(file) : undefined}
+                    extraActions={renderFileActions?.(file, section.key)}
+                  />
+                ))}
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            )}
+
+            {hasText && (
+              <div className="px-3.5 py-3 rounded-lg bg-muted/30 text-right text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                {section.text}
+              </div>
+            )}
+
+            {hasSecondary && (
+              <div className={hasText ? 'pt-3 border-t border-border/20' : ''}>
+                {section.secondaryLabel && (
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-0.5">{section.secondaryLabel}</p>
+                )}
+                <div className="px-3.5 py-3 rounded-lg bg-primary/5 text-right text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                  {section.secondaryText}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -185,16 +190,15 @@ export function ContentInfoView({
   renderFileActions,
 }: ContentInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto divide-y divide-border/40', className)} dir="rtl">
-      {data.sections.map((section, idx) => (
-        <div key={section.key} className={idx > 0 ? 'pt-6' : ''}>
-          <Section
-            section={section}
-            onViewFile={onViewFile}
-            onDownloadFile={onDownloadFile}
-            renderFileActions={renderFileActions}
-          />
-        </div>
+    <div className={cn('w-full flex flex-col gap-4 max-w-3xl mx-auto', className)} dir="rtl">
+      {data.sections.map((section) => (
+        <SectionCard
+          key={section.key}
+          section={section}
+          onViewFile={onViewFile}
+          onDownloadFile={onDownloadFile}
+          renderFileActions={renderFileActions}
+        />
       ))}
     </div>
   );
