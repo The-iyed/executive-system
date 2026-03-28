@@ -15,6 +15,10 @@ interface SchedulerModalProps {
   /** Pre-select a directive in Step 1. */
   directiveId?: string;
   directiveText?: string;
+  /** Pre-fill Step 1 fields (e.g. dates from calendar slot selection). */
+  initialStep1Values?: Partial<SchedulerStep1Values>;
+  /** Called after a successful submission (schedule or draft). */
+  onSuccess?: (result: { meetingId: string; scheduled: boolean }) => void;
 }
 
 export function SchedulerModal({ open, onOpenChange, directiveId, directiveText }: SchedulerModalProps) {
