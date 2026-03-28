@@ -92,6 +92,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventData | null>(null);
+  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
