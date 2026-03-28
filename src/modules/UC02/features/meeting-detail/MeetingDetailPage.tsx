@@ -117,7 +117,7 @@ const MeetingDetailPage: React.FC = () => {
 
   /* ─── Render ─── */
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
+    <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0 pb-4" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 pr-5 min-w-0">
         {/* Header */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
