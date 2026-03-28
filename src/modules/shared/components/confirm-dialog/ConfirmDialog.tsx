@@ -76,7 +76,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogPortal>
-        <AlertDialogOverlay className="z-[220] bg-black/70 backdrop-blur-sm" />
+        <AlertDialogOverlay className="z-[220] bg-black/40 backdrop-blur-sm" />
         <AlertDialogContent
           dir="rtl"
           className="z-[221] w-full max-w-sm rounded-2xl border border-border/50 bg-card p-8 text-center shadow-2xl"
