@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap, Copy, Check, ScrollText } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   listDirectives,
   type MinisterDirective,
@@ -85,11 +86,19 @@ interface Filters {
 }
 
 function DirectiveCard({ directive }: { directive: MinisterDirective }) {
+  const [copied, setCopied] = useState(false);
   const statusInfo = STATUS_CONFIG[directive.scheduling_officer_status] || STATUS_CONFIG['OPEN'];
   const isCompleted = directive.scheduling_officer_status === 'CLOSED';
   const hasVoice = !!directive.voice_play_url;
   const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
   const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(directive.title);
+    setCopied(true);
+    toast.success('تم النسخ');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
@@ -104,14 +113,23 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-3">
               <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2 flex-1">
                 {directive.title}
               </h3>
-              <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium ${statusInfo.color}`}>
-                <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
-                {statusInfo.label}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleCopy}
+                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors opacity-0 group-hover:opacity-100"
+                  title="نسخ المحتوى"
+                >
+                  {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                </button>
+                <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium ${statusInfo.color}`}>
+                  <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
+                  {statusInfo.label}
+                </span>
+              </div>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {format(new Date(directive.created_at), 'dd MMM yyyy')}
@@ -223,9 +241,14 @@ export default function DirectivesListPage() {
     <div className="space-y-5 px-4 sm:px-6 py-5" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{total} توجيه</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+            <ScrollText className="size-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5">إدارة ومتابعة التوجيهات الوزارية · {total} توجيه</p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}
