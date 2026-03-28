@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import {
   Clock, CheckCircle2, FileText, Volume2, AlertTriangle,
-  Zap, Copy, Check,
+  Zap, Copy, Check, Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { cn } from '@/lib/ui';
 import type { MinisterDirective } from '@/modules/shared/api/directives';
 import {
@@ -15,6 +14,7 @@ import {
   DIRECTIVE_STATUS_LABELS,
   SCHEDULING_OFFICER_STATUS_LABELS,
 } from '@/modules/shared/types/minister-directive-enums';
+import { formatDateArabic } from '@/modules/shared/utils/format';
 import { VoicePlayer } from './VoicePlayer';
 
 export interface DirectiveCardAction {
@@ -58,9 +58,9 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
 
   return (
     <div className="group px-5 py-4 transition-colors hover:bg-muted/20">
-      {/* Row 1: icon + title (right) — badge + copy (left) */}
+      {/* Row 1: icon + title + copy (right) — badge (left) */}
       <div className="flex items-start justify-between gap-4">
-        {/* Right: icon + title */}
+        {/* Right: icon + title + copy */}
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className={cn(
             'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
@@ -69,32 +69,33 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
             {isCompleted ? <CheckCircle2 className="size-5" /> : <Clock className="size-5" />}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-bold text-foreground leading-relaxed line-clamp-2">
-              {directive.title}
-            </h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {format(new Date(directive.created_at), 'MMM yyyy dd')}
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[14px] font-bold text-foreground leading-relaxed line-clamp-2">
+                {directive.title}
+              </h3>
+              <button
+                onClick={handleCopy}
+                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                title="نسخ المحتوى"
+              >
+                {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+              </button>
+            </div>
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+              <Calendar className="size-3" />
+              {formatDateArabic(directive.created_at)}
             </p>
           </div>
         </div>
 
-        {/* Left: badge + copy */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap',
-            badge.color,
-          )}>
-            <span className={cn('size-1.5 rounded-full', badge.dot)} />
-            {badge.label}
-          </span>
-          <button
-            onClick={handleCopy}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            title="نسخ المحتوى"
-          >
-            {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-          </button>
-        </div>
+        {/* Left: badge */}
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+          badge.color,
+        )}>
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+          {badge.label}
+        </span>
       </div>
 
       {/* Voice */}
@@ -142,13 +143,13 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
 
         {/* Actions (bottom left) */}
         {actions && actions.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {actions.map((action) => (
               <button
                 key={action.id}
                 onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
                 className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap shadow-sm hover:shadow',
+                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
                   action.className,
                 )}
               >
