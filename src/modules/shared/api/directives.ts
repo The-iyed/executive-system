@@ -48,7 +48,7 @@ export interface MinisterDirective {
   created_by?: string | null;
 }
 
-export interface DirectivesListResponse {
+export interface MinisterDirectivesListResponse {
   items: MinisterDirective[];
   total: number;
   skip: number;
