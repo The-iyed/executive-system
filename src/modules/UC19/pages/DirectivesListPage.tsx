@@ -112,7 +112,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
-              {TYPE_LABELS[directive.directive_type] || directive.directive_type}
+              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
             </span>
           )}
           {isUrgent && (
