@@ -23,15 +23,10 @@ function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain flex-shrink-0" />;
+    return <img src={pdfIcon} alt="pdf" className="h-5 w-5 object-contain" />;
   }
 
-  const label = (ext || nameExt || 'FILE').toUpperCase().slice(0, 4);
-  return (
-    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted/60 flex-shrink-0">
-      <span className="text-[10px] font-bold text-muted-foreground tracking-wide">{label}</span>
-    </div>
-  );
+  return <File className="h-4 w-4 text-muted-foreground" />;
 }
 
 /* ─── File card ─── */
