@@ -35,8 +35,8 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
   const overflowCount = allChips.length - MAX_VISIBLE_CHIPS;
 
   return (
-    <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
-      {/* Filter trigger buttons - rightmost in RTL */}
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      {/* Filter trigger buttons */}
       {filtersConfig.map((config) => {
         const selected = filters[config.key] ?? [];
 
@@ -45,7 +45,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
             <PopoverTrigger asChild>
               <button
                 className={cn(
-                  'h-9 px-3.5 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap',
+                  'h-9 px-3.5 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap shrink-0',
                   selected.length > 0
                     ? 'border-[var(--color-primary-200)] text-[var(--color-primary-700)]'
                     : 'bg-white border-[var(--color-base-gray-200)] text-[var(--color-text-gray-600)] hover:border-[var(--color-base-gray-300)]'
@@ -121,13 +121,13 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
         );
       })}
 
-      {/* Active chips - flow to the left */}
+      {/* Active chips */}
       {activeCount > 0 && (
         <>
           {visibleChips.map((chip) => (
             <span
               key={`${chip.key}-${chip.value}`}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold transition-all"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold shrink-0"
               style={{
                 background: 'var(--color-primary-50)',
                 color: 'var(--color-primary-700)',
@@ -149,7 +149,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
 
           {overflowCount > 0 && (
             <span
-              className="inline-flex items-center h-8 px-3 rounded-xl text-xs font-bold"
+              className="inline-flex items-center h-8 px-3 rounded-xl text-xs font-bold shrink-0"
               style={{
                 background: 'var(--color-primary-100)',
                 color: 'var(--color-primary-700)',
@@ -161,7 +161,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
 
           <button
             onClick={onReset}
-            className="text-xs px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--color-base-gray-50)]"
+            className="text-xs px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--color-base-gray-50)] whitespace-nowrap shrink-0"
             style={{ color: 'var(--color-text-gray-500)' }}
           >
             مسح الكل
