@@ -207,14 +207,16 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={dueDurationEnabled}
                   onClick={() => setDueDurationEnabled(!dueDurationEnabled)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                     dueDurationEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
                   }`}
                 >
                   <span
-                    className={`inline-block size-4 rounded-full bg-white transition-transform ${
-                      dueDurationEnabled ? 'translate-x-1' : 'translate-x-6'
+                    className={`pointer-events-none inline-block size-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      dueDurationEnabled ? '-translate-x-[1.375rem]' : '-translate-x-1'
                     }`}
                   />
                 </button>
