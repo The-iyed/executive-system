@@ -66,50 +66,50 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <>
+        <motion.div
+          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          dir="rtl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={handleClose}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <motion.div
-            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleClose}
-          />
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none" dir="rtl">
-            <motion.div
-              className="pointer-events-auto w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border/50 p-8 text-center"
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-            >
-              <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
-                <Icon className={`size-6 ${config.iconColor}`} />
-              </div>
+            className="w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border/50 p-8 text-center"
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
+              <Icon className={`size-6 ${config.iconColor}`} />
+            </div>
 
-              <h2 className="text-lg font-bold text-foreground mb-2">{title}</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">{description}</p>
+            <h2 className="text-lg font-bold text-foreground mb-2">{title}</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">{description}</p>
 
-              <div className="flex items-center gap-3 justify-center">
-                <Button
-                  onClick={onConfirm}
-                  className={`rounded-xl px-5 ${config.btnClass}`}
-                  disabled={isLoading}
-                >
-                  {isLoading && loadingLabel ? loadingLabel : confirmLabel}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleClose}
-                  className="rounded-xl px-5"
-                  disabled={isLoading}
-                >
-                  {cancelLabel}
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        </>
+            <div className="flex items-center gap-3 justify-center">
+              <Button
+                onClick={onConfirm}
+                className={`rounded-xl px-5 ${config.btnClass}`}
+                disabled={isLoading}
+              >
+                {isLoading && loadingLabel ? loadingLabel : confirmLabel}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="rounded-xl px-5"
+                disabled={isLoading}
+              >
+                {cancelLabel}
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>,
     document.body
