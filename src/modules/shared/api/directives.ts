@@ -71,7 +71,7 @@ export interface ListDirectivesParams {
 
 export async function listDirectives(
   params: ListDirectivesParams = {},
-): Promise<DirectivesListResponse> {
+): Promise<MinisterDirectivesListResponse> {
   const url = new URL(`${BASE}/minister-directives`);
   if (params.skip != null) url.searchParams.set('skip', String(params.skip));
   if (params.limit != null) url.searchParams.set('limit', String(params.limit));
