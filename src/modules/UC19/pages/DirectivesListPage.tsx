@@ -120,7 +120,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleCopy}
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors opacity-0 group-hover:opacity-100"
+                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                   title="نسخ المحتوى"
                 >
                   {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
