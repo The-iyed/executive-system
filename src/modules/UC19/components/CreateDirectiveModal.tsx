@@ -32,10 +32,8 @@ const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
 ];
 
 const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
-  { value: 'HOURS', label: 'ساعة' },
-  { value: 'DAYS', label: 'يوم' },
-  { value: 'WEEKS', label: 'أسبوع' },
-  { value: 'MONTHS', label: 'شهر' },
+  { value: 'HOUR', label: 'ساعة' },
+  { value: 'DAY', label: 'يوم' },
 ];
 
 export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProps) {
@@ -47,7 +45,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   const [priority, setPriority] = useState<PriorityLevel>('NORMAL');
   const [dueDurationEnabled, setDueDurationEnabled] = useState(false);
   const [dueDurationValue, setDueDurationValue] = useState(1);
-  const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOURS');
+  const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOUR');
 
   const resetForm = () => {
     setDirectiveType('GENERAL');
@@ -56,7 +54,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
     setPriority('NORMAL');
     setDueDurationEnabled(false);
     setDueDurationValue(1);
-    setDueDurationUnit('HOURS');
+    setDueDurationUnit('HOUR');
   };
 
   const mutation = useMutation({
