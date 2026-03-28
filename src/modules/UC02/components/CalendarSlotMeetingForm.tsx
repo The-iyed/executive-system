@@ -9,6 +9,7 @@ import {
   MeetingDateField,
   MeetingChannelField,
   LocationField,
+  LocationCustomField,
   ProposersField,
 } from '@/modules/shared/features/meeting-request-form/shared/fields';
 import { MeetingLocation } from '@/modules/shared/features/meeting-request-form/shared/types/enums';
@@ -73,40 +74,6 @@ const calendarMeetingSchema = z.object({
 });
 
 type FormValues = z.infer<typeof calendarMeetingSchema>;
-
-/**
- * LocationCustomField with inline error display for calendar form.
- * The shared LocationCustomField relies on FormField which reads errors[name],
- * but superRefine errors may not always propagate. This wrapper ensures the error is shown.
- */
-function CalendarLocationCustomField({ disabled }: { disabled?: boolean }) {
-  const { register, formState: { errors } } = useFormContext<FormValues>();
-  const err = errors.meeting_location_custom;
-  const hasError = !!err;
-  return (
-    <div className="space-y-1.5">
-      <label className={cn("text-sm font-medium", hasError && "text-destructive")}>
-        تحديد الموقع (موقع آخر)
-        <span className="mr-0.5 text-destructive">*</span>
-      </label>
-      <input
-        placeholder="أدخل الموقع"
-        disabled={disabled}
-        className={cn(
-          "flex w-full rounded-lg border bg-background px-3 py-2 text-sm ring-offset-background transition-all h-10",
-          "focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring",
-          hasError ? "border-destructive" : "border-input"
-        )}
-        {...register("meeting_location_custom")}
-      />
-      {err?.message && (
-        <p role="alert" className="text-xs text-destructive animate-in slide-in-from-top-1">
-          {err.message as string}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   open,
@@ -302,7 +269,7 @@ function CalendarFormInner({
         {showLocation && (
           <>
             <LocationField />
-            {isOther && <CalendarLocationCustomField />}
+            {isOther && <LocationCustomField />}
           </>
         )}
 
