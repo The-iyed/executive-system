@@ -67,7 +67,7 @@ export function MeetingModalShell({
       >
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-8 pb-8">
-          <div className="pt-8 pb-6 shrink-0">
+          <div className="sticky top-0 z-10 bg-background pt-8 pb-6 shrink-0">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-foreground">{title}</h2>
               <p className="text-base text-teal mt-2">{subtitle}</p>
