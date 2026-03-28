@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
 
 import {
@@ -53,15 +55,17 @@ export interface CalendarSlotMeetingFormProps {
   submitError?: string | null;
 }
 
-interface FormValues {
-  meeting_title: string;
-  meeting_start_date: string;
-  meeting_end_date: string;
-  meeting_channel: string;
-  meeting_location: string;
-  meeting_location_custom: string;
-  proposers: ProposerSelection[];
-}
+const calendarMeetingSchema = z.object({
+  meeting_title: z.string().trim().min(1, "عنوان الاجتماع مطلوب"),
+  meeting_start_date: z.string().min(1, "موعد البداية مطلوب"),
+  meeting_end_date: z.string().min(1, "موعد النهاية مطلوب"),
+  meeting_channel: z.string().min(1, "آلية انعقاد الاجتماع مطلوب"),
+  meeting_location: z.string().default(""),
+  meeting_location_custom: z.string().default(""),
+  proposers: z.array(z.any()).default([]),
+});
+
+type FormValues = z.infer<typeof calendarMeetingSchema>;
 
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   open,
@@ -88,6 +92,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   }, [slotDate, slotTime, slotEndTime]);
 
   const methods = useForm<FormValues>({
+    resolver: zodResolver(calendarMeetingSchema),
     defaultValues: {
       meeting_title: initialTitle ?? '',
       meeting_start_date: startDefault,
