@@ -142,7 +142,7 @@ const WorkBasketFeature: React.FC = () => {
             })),
           },
         ]}
-        onMount={() => trackEvent('UC-02', 'uc02_work_basket_viewed')}
+        
       />
     </>
   );
