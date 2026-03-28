@@ -232,7 +232,10 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
 
   if (!open) return null;
 
-  const canSubmit = title.trim().length > 0 && !mutation.isPending;
+  const hasVoice = !!voice.audioBlob;
+  const hasText = title.trim().length > 0;
+  const canSubmit = (hasText || hasVoice) && !mutation.isPending;
+  const inputMode: 'text' | 'voice' = hasVoice ? 'voice' : 'text';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
