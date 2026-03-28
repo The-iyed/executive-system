@@ -305,7 +305,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   type="button"
                   onClick={() => {
                     onClose();
-                    navigate(`/calendar?form=edit&id=${display.meetingId}`);
+                    setEditMeetingId(display.meetingId!);
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
                 >
@@ -318,6 +318,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         )}
       </DialogContent>
     </Dialog>
+
+    <SubmitterModal
+      callerRole={MeetingOwnerType.SCHEDULING}
+      open={!!editMeetingId}
+      onOpenChange={(open) => { if (!open) setEditMeetingId(null); }}
+      editMeetingId={editMeetingId ?? undefined}
+      showAiSuggest
+    />
   );
 });
 
