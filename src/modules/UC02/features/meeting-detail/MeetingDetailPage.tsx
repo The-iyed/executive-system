@@ -32,7 +32,6 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 
 // Components (modals / drawers)
 import {
-  DeleteDraftDialog,
   RejectDialog,
   CancelDialog,
   EditConfirmDialog,
@@ -42,6 +41,7 @@ import {
   ScheduleDrawer,
   ScheduleConfirmDialog,
 } from './components';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
