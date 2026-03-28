@@ -20,7 +20,6 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
 }) => {
   const activeCount = Object.values(filters).reduce((sum, v) => sum + v.length, 0);
 
-  // Flatten all active chips for overflow calculation
   const allChips = useMemo(() => {
     const chips: { key: string; value: string; label: string }[] = [];
     filtersConfig.forEach((config) => {
@@ -58,7 +57,13 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
                 <ChevronDown className="w-3.5 h-3.5 opacity-60" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" sideOffset={6} className="w-60 p-2 rounded-xl shadow-lg border" dir="rtl">
+            <PopoverContent
+              align="start"
+              side="bottom"
+              sideOffset={6}
+              className="w-60 p-2 rounded-xl shadow-lg border"
+              dir="rtl"
+            >
               <div className="flex flex-col gap-0.5 max-h-[280px] overflow-y-auto">
                 {config.options.map((opt) => {
                   const isChecked = selected.includes(opt.value);
@@ -116,7 +121,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
         );
       })}
 
-      {/* Active chips - show max MAX_VISIBLE_CHIPS then +N */}
+      {/* Active chips row */}
       {activeCount > 0 && (
         <>
           {visibleChips.map((chip) => (
