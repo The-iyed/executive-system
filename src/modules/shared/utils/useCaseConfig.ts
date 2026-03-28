@@ -172,6 +172,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       },
     ],
   },
+  'UC-19': {
+    code: 'UC-19',
+    defaultRoute: UC19_PATH.DIRECTIVES,
+    navigationItems: [
+      {
+        id: 'minister-directives',
+        icon: 'solar:document-text-outline',
+        label: 'توجيهات',
+        path: UC19_PATH.DIRECTIVES,
+      },
+    ],
+  },
 };
 
 /**
