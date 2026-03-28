@@ -93,7 +93,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
 
   return (
     <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
-      {isUrgent && <div className="h-[2px] bg-gradient-to-l from-red-500 to-red-400" />}
+      
 
       <div className="px-5 py-4">
         <div className="flex items-start gap-3">
