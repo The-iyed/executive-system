@@ -319,56 +319,18 @@ const TableRowInner: React.FC<TableRowProps> = ({
             </div>
             <div className="h-4" />
           </div>
-          <AnimatePresence>
-            {confirmingDelete && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-                onClick={() => setConfirmingDelete(false)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.92, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: 8 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                  className="bg-card border rounded-xl shadow-lg p-5 w-80 text-center"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-center mb-3">
-                    <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <Trash2 className="h-5 w-5 text-destructive" />
-                    </div>
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">حذف المدعو</h3>
-                  <p className="text-sm text-muted-foreground mb-4">هل أنت متأكد من حذف هذا المدعو من القائمة؟</p>
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setConfirmingDelete(false)}
-                      className="min-w-20"
-                    >
-                      إلغاء
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setConfirmingDelete(false);
-                        onRemove(rowIndex);
-                      }}
-                      className="min-w-20"
-                    >
-                      حذف
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+           <ConfirmDialog
+              open={confirmingDelete}
+              onOpenChange={setConfirmingDelete}
+              title="حذف المدعو"
+              description="هل أنت متأكد من حذف هذا المدعو من القائمة؟"
+              confirmLabel="حذف"
+              variant="danger"
+              onConfirm={() => {
+                setConfirmingDelete(false);
+                onRemove(rowIndex);
+              }}
+            />
         </td>
       )}
     </motion.tr>
