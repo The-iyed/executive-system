@@ -1,1 +1,0 @@
-export { DirectivesPage } from './DirectivesPage';
