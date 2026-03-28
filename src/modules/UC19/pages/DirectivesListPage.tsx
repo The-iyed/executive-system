@@ -241,9 +241,14 @@ export default function DirectivesListPage() {
     <div className="space-y-5 px-4 sm:px-6 py-5" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{total} توجيه</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+            <ScrollText className="size-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5">إدارة ومتابعة التوجيهات الوزارية · {total} توجيه</p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}
