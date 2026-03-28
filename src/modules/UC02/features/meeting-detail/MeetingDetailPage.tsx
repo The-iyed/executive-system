@@ -151,8 +151,8 @@ const MeetingDetailPage: React.FC = () => {
         </div>
 
         {/* Content card */}
-        <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 pt-8 pb-16 gap-6 rounded-2xl bg-background justify-center border border-border" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row justify-center">
+        <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-background justify-center border border-border" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div className="w-full min-w-0 flex flex-row justify-center pb-8">
             {renderTabContent()}
           </div>
         </div>
