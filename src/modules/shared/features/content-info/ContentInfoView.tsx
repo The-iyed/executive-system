@@ -167,7 +167,7 @@ function SectionCard({
               <div className={cn(
                 'w-full px-5 py-4 rounded-xl text-right text-sm leading-relaxed whitespace-pre-wrap',
                 section.key === 'executive-summary'
-                  ? 'bg-amber-50/50 border border-amber-200/40 text-amber-900'
+                  ? 'bg-[hsl(var(--warning-bg,48,96%,89%)/0.5)] border border-[hsl(var(--warning-border,48,96%,89%)/0.4)] text-foreground'
                   : 'bg-muted/40 border border-border/40 text-foreground',
               )}>
                 {section.text}
