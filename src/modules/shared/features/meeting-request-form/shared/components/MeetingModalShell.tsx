@@ -25,6 +25,14 @@ interface MeetingModalShellProps {
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
   children: ReactNode;
+  /** Hide the step indicator */
+  hideSteps?: boolean;
+  /** Custom title (defaults to "قم بإضافة معلومات الاجتماع") */
+  title?: string;
+  /** Custom subtitle */
+  subtitle?: string;
+  /** Custom steps array (defaults to MEETING_STEPS) */
+  steps?: StepDef[];
 }
 
 export function MeetingModalShell({
