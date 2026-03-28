@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { CardsGrid } from '@/modules/shared/components/cards-grid';
 import { Pagination } from '@/modules/shared/components/pagination';
 import { MeetingListHeader } from './MeetingListHeader';
@@ -26,7 +26,6 @@ function MeetingListLayoutInner<T extends { id: string }>({
   emptyMessage,
   errorMessage,
   onCardClick,
-  onMount,
   children,
 }: MeetingListLayoutProps<T>) {
   const {
@@ -44,9 +43,6 @@ function MeetingListLayoutInner<T extends { id: string }>({
     refetch,
   } = useMeetingList<T>({ queryKey, queryFn, fixedParams, pageSize });
 
-  useEffect(() => {
-    onMount?.();
-  }, []);
 
   // Map items to card data
   const meetings: MeetingCardData[] = useMemo(
