@@ -736,49 +736,20 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                     >
                       عرض التفاصيل
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedEventForDetails(null);
-                        const startTime = selectedEventForDetails.exactStartTime || selectedEventForDetails.startTime;
-                        const location = selectedEventForDetails.location ?? null;
-                        const inferredChannel =
-                          location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-                        const attendees = selectedEventForDetails.attendees ?? [];
-                        const initialInvitees = attendees.length > 0
-                          ? attendees.map((a, i) => ({
-                              _id: `inv-edit-${i}-${Date.now()}`,
-                              email: a.email ?? '',
-                              position: a.name ?? '',
-                              name: a.name ?? '',
-                              mobile: '',
-                              sector: '',
-                              attendance_mechanism: 'PHYSICAL',
-                              access_permission: false,
-                              is_consultant: false,
-                              meeting_owner: false,
-                            }))
-                          : undefined;
-                        setSlotForNewMeeting({
-                          date: selectedEventForDetails.date,
-                          time: startTime,
-                          endTime:
-                            selectedEventForDetails.exactEndTime ||
-                            selectedEventForDetails.endTime ||
-                            undefined,
-                          title: selectedEventForDetails.meeting_title ?? selectedEventForDetails.title ?? '',
-                          meetingLocation: selectedEventForDetails.meeting_location ?? location,
-                          meetingChannel: selectedEventForDetails.meeting_channel ?? inferredChannel,
-                          meetingId: selectedEventForDetails.meeting_id ?? undefined,
-                          mode: selectedEventForDetails.meeting_id ? 'edit' : 'create',
-                          initialInvitees,
-                        });
-                      }}
-                      className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      تعديل
-                    </button>
+                    {eventDisplay.meeting_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const meetingId = eventDisplay.meeting_id!;
+                          setSelectedEventForDetails(null);
+                          navigate(`/calendar?form=edit&id=${meetingId}`);
+                        }}
+                        className="inline-flex max-w-[130px] items-center gap-1.5 px-3 py-3.5 rounded-lg border border-[#048F86]/30 text-xs font-semibold text-[#048F86] bg-[#F0FDFA] hover:bg-[#E0F7F4] hover:border-[#048F86]/50 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        تعديل
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
