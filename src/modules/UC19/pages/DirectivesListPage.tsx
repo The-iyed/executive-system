@@ -214,13 +214,8 @@ export default function DirectivesListPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setFilters({});
+  const handleTypeChange = (type: DirectiveType | undefined) => {
+    setActiveType(type);
     setCurrentPage(1);
   };
 
