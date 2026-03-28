@@ -55,8 +55,8 @@ export const MeetingListEmpty: React.FC<MeetingListEmptyProps> = ({
   const subtitle = isSearch ? 'حاول تغيير كلمات البحث أو الفلاتر' : 'لم يتم إضافة أي اجتماعات بعد';
 
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm px-16 py-14 max-w-lg w-full text-center">
+    <div className="flex-1 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm py-20 w-full text-center">
         <div className="mb-4">
           {isSearch ? <SearchEmptyIllustration /> : <EmptyIllustration />}
         </div>
