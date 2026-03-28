@@ -5,36 +5,20 @@ import {
   createDirective,
   uploadVoiceNote,
   type CreateDirectivePayload,
-  type DirectiveType,
-  type ImportanceLevel,
-  type PriorityLevel,
-  type DurationUnit,
   type DirectivesListResponse,
   type MinisterDirective,
 } from '../api/directivesApi';
+import type { DirectiveType, ImportanceLevel, PriorityLevel, DurationUnit } from '@/modules/shared/types/minister-directive-enums';
+import {
+  DIRECTIVE_TYPE_CREATE_OPTIONS as DIRECTIVE_TYPES,
+  IMPORTANCE_OPTIONS,
+  PRIORITY_OPTIONS,
+} from '@/modules/shared/types/minister-directive-enums';
 
 interface CreateDirectiveModalProps {
   open: boolean;
   onClose: () => void;
 }
-
-const DIRECTIVE_TYPES: { value: DirectiveType; label: string }[] = [
-  { value: 'GENERAL', label: 'عام' },
-  { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
-  { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
-];
-
-const IMPORTANCE_OPTIONS: { value: ImportanceLevel; label: string }[] = [
-  { value: 'NORMAL', label: 'عادي' },
-  { value: 'IMPORTANT', label: 'مهم' },
-  { value: 'VERY_IMPORTANT', label: 'مهم جداً' },
-];
-
-const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
-  { value: 'NORMAL', label: 'عادي' },
-  { value: 'URGENT', label: 'عاجل' },
-  { value: 'VERY_URGENT', label: 'عاجل جداً' },
-];
 
 const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
   { value: 'HOUR', label: 'ساعة' },
