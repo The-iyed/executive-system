@@ -12,6 +12,7 @@ import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
 import { useToast } from "@/lib/ui";
+import { optimisticMergeMeeting, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 
 interface UseSubmitterModalOptions {
   editMeetingId?: string | null;
@@ -98,6 +99,12 @@ export function useSubmitterModal({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
+
+    // Optimistic cache update for invitees
+    if (isEditMode) {
+      const patch = buildStep3Patch(inviteesPayload);
+      optimisticMergeMeeting(queryClient, meetingId, patch);
+    }
   
     return response;
   };
