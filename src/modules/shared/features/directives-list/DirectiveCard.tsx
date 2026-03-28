@@ -127,13 +127,13 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
             </span>
           )}
           {directive.due_duration_enabled && directive.due_duration_value && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] text-slate-500">
               <Clock className="size-3" />
               {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
             </span>
           )}
           {hasVoice && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary font-medium">
+            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50/80 border border-sky-200/50 px-2 py-0.5 text-[10px] text-sky-500 font-medium">
               <Volume2 className="size-3" />
               صوتي
             </span>
