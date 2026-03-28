@@ -1,113 +1,123 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, ClipboardList, Clock, CheckCircle2, Mic, FileText } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap } from 'lucide-react';
 import { listDirectives, type MinisterDirective } from '../api/directivesApi';
 import { CreateDirectiveModal } from '../components/CreateDirectiveModal';
+import { VoicePlayer } from '../components/VoicePlayer';
+import { Pagination } from '@/modules/shared/components/pagination';
 import { format } from 'date-fns';
 
 type FilterTab = 'ALL' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
 
-const FILTER_TABS: { id: FilterTab; label: string }[] = [
+const FILTER_TABS: { id: FilterTab; label: string; icon?: string }[] = [
   { id: 'ALL', label: 'الكل' },
   { id: 'GENERAL', label: 'عام' },
   { id: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
   { id: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
 ];
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  OPEN: { label: 'قيد الانتظار', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  CLOSED: { label: 'مكتمل', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  TAKEN: { label: 'تم الاخذ بالتوجيه', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  ADOPTED: { label: 'تم اعتماد التوجيه', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
+  OPEN: { label: 'قيد الانتظار', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
+  CLOSED: { label: 'مكتمل', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  TAKEN: { label: 'تم الاخذ بالتوجيه', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  ADOPTED: { label: 'تم اعتماد التوجيه', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
 };
 
-const IMPORTANCE_LABELS: Record<string, { label: string; color: string }> = {
-  IMPORTANT: { label: 'مهم', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  NORMAL: { label: 'عادي', color: 'bg-muted text-muted-foreground border-border/50' },
+const TYPE_LABELS: Record<string, string> = {
+  GENERAL: 'عام',
+  GOVERNMENT_CENTER: 'مركز الحكومة',
+  EXECUTIVE_OFFICE: 'المكتب التنفيذي',
 };
 
-const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-  URGENT: { label: 'عاجل', color: 'bg-red-50 text-red-600 border-red-200' },
-  NORMAL: { label: 'عادي', color: 'bg-muted text-muted-foreground border-border/50' },
+const DURATION_LABELS: Record<string, string> = {
+  HOUR: 'ساعة', HOURS: 'ساعة',
+  DAY: 'يوم', DAYS: 'يوم',
+  WEEK: 'أسبوع', WEEKS: 'أسبوع',
+  MONTH: 'شهر', MONTHS: 'شهر',
 };
 
-const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
-  SCHEDULING: { label: 'جدولة', icon: '📅' },
-  GENERAL: { label: 'عام', icon: '📄' },
-  GOVERNMENT_CENTER: { label: 'مركز الحكومة', icon: '🏛️' },
-  EXECUTIVE_OFFICE: { label: 'المكتب التنفيذي', icon: '🏢' },
-};
+const PAGE_SIZE = 10;
 
 function DirectiveCard({ directive }: { directive: MinisterDirective }) {
-  const statusInfo = STATUS_LABELS[directive.scheduling_officer_status] || STATUS_LABELS['OPEN'];
-  const importanceInfo = directive.importance ? IMPORTANCE_LABELS[directive.importance] : null;
-  const priorityInfo = directive.priority ? PRIORITY_LABELS[directive.priority] : null;
-  const typeInfo = directive.directive_type ? TYPE_LABELS[directive.directive_type] : null;
-  const hasVoice = !!directive.voice_note_path;
+  const statusInfo = STATUS_CONFIG[directive.scheduling_officer_status] || STATUS_CONFIG['OPEN'];
   const isCompleted = directive.scheduling_officer_status === 'CLOSED';
+  const hasVoice = !!directive.voice_play_url;
+  const isUrgent = directive.priority === 'URGENT';
+  const isImportant = directive.importance === 'IMPORTANT';
 
   return (
-    <div className="group rounded-2xl border border-border/40 bg-card px-5 py-4 transition-all hover:shadow-md hover:border-border/60">
-      <div className="flex items-start justify-between gap-3">
-        {/* Right: Icon + Title */}
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl ${isCompleted ? 'bg-emerald-100 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-            {isCompleted ? <CheckCircle2 className="size-4" /> : <Clock className="size-4" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2">
-              {directive.title}
-            </h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Voice note indicator */}
-      {hasVoice && (
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
-          <button className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <svg className="size-3" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-          </button>
-          <div className="flex-1 h-1 rounded-full bg-border/60 overflow-hidden">
-            <div className="h-full w-0 rounded-full bg-primary" />
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Mic className="size-3" />
-            ملاحظة صوتية
-          </div>
-        </div>
+    <div className="group relative rounded-xl border border-border/30 bg-card transition-all duration-200 hover:border-border/60 hover:shadow-sm">
+      {/* Urgent indicator line */}
+      {isUrgent && (
+        <div className="absolute top-0 right-0 left-0 h-0.5 rounded-t-xl bg-gradient-to-l from-red-500 to-red-400" />
       )}
 
-      {/* Tags row */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {typeInfo && (
-          <span className="inline-flex items-center gap-1 rounded-lg border border-border/40 bg-muted/40 px-2 py-1 text-[10px] font-medium text-muted-foreground">
-            <FileText className="size-3" />
-            {typeInfo.label}
+      <div className="p-4 space-y-3">
+        {/* Top: status icon + title + status badge */}
+        <div className="flex items-start gap-3">
+          <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg ${
+            isCompleted
+              ? 'bg-emerald-100/80 text-emerald-600'
+              : 'bg-muted/60 text-muted-foreground'
+          }`}>
+            {isCompleted ? <CheckCircle2 className="size-4.5" /> : <Clock className="size-4.5" />}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[13.5px] font-semibold text-foreground leading-relaxed line-clamp-2">
+              {directive.title}
+            </h3>
+            <span className="text-[11px] text-muted-foreground mt-0.5 block">
+              {format(new Date(directive.created_at), 'dd MMM yyyy')}
+            </span>
+          </div>
+
+          <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium ${statusInfo.color}`}>
+            <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
+            {statusInfo.label}
           </span>
+        </div>
+
+        {/* Voice player */}
+        {hasVoice && (
+          <div className="rounded-lg bg-muted/40 px-3 py-2.5">
+            <VoicePlayer url={directive.voice_play_url!} compact />
+          </div>
         )}
-        {priorityInfo && priorityInfo.label !== 'عادي' && (
-          <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-bold ${priorityInfo.color}`}>
-            {priorityInfo.label}
-          </span>
-        )}
-        {importanceInfo && importanceInfo.label !== 'عادي' && (
-          <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold ${importanceInfo.color}`}>
-            ⚡ {importanceInfo.label}
-          </span>
-        )}
-        {directive.due_duration_enabled && directive.due_duration_value && (
-          <span className="inline-flex items-center gap-1 rounded-lg border border-border/40 bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
-            <Clock className="size-3" />
-            {directive.due_duration_value} {directive.due_duration_unit === 'HOURS' ? 'ساعة' : directive.due_duration_unit === 'DAYS' ? 'يوم' : directive.due_duration_unit === 'WEEKS' ? 'أسبوع' : 'شهر'}
-          </span>
-        )}
-        <span className="text-[10px] text-muted-foreground mr-auto">
-          {format(new Date(directive.created_at), 'dd MMM yyyy')}
-        </span>
-        <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-medium ${statusInfo.color}`}>
-          ● {statusInfo.label}
-        </span>
+
+        {/* Tags row */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {directive.directive_type && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <FileText className="size-3" />
+              {TYPE_LABELS[directive.directive_type] || directive.directive_type}
+            </span>
+          )}
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
+              <AlertTriangle className="size-3" />
+              عاجل
+            </span>
+          )}
+          {isImportant && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+              <Zap className="size-3" />
+              مهم
+            </span>
+          )}
+          {directive.due_duration_enabled && directive.due_duration_value && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Clock className="size-3" />
+              {directive.due_duration_value} {DURATION_LABELS[directive.due_duration_unit || 'HOURS'] || 'ساعة'}
+            </span>
+          )}
+          {hasVoice && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary">
+              <Volume2 className="size-3" />
+              صوتي
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -116,35 +126,42 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
 export default function DirectivesListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: directives = [], isLoading } = useQuery({
-    queryKey: ['uc19-directives'],
-    queryFn: () => listDirectives({ limit: 200 }),
+  const { data, isLoading } = useQuery({
+    queryKey: ['uc19-directives', currentPage],
+    queryFn: () => listDirectives({ limit: PAGE_SIZE, skip: (currentPage - 1) * PAGE_SIZE }),
   });
+
+  const directives = data?.items || [];
+  const total = data?.total || 0;
 
   const filteredDirectives = activeFilter === 'ALL'
     ? directives
     : directives.filter((d) => d.directive_type === activeFilter);
 
+  // For client-side filter we use the filtered count for display, but server total for pagination
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="mx-auto max-w-[1200px] space-y-5 px-2 py-4" dir="rtl">
+    <div className="mx-auto max-w-[800px] px-4 py-6" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-            <ClipboardList className="size-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
-            <p className="text-[11px] text-muted-foreground">
-              {directives.length} توجيه
-            </p>
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">التوجيهات</h1>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
+            {total} توجيه
+          </p>
         </div>
 
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98]"
+          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] shadow-sm"
         >
           <Plus className="size-4" />
           إنشاء توجيه
@@ -152,15 +169,15 @@ export default function DirectivesListPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveFilter(tab.id)}
-            className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold transition-all ${
+            className={`rounded-lg px-3.5 py-1.5 text-[12px] font-medium transition-all ${
               activeFilter === tab.id
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-card border border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -171,15 +188,21 @@ export default function DirectivesListPage() {
       {/* List */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="animate-pulse rounded-2xl border border-border/30 bg-card p-5 h-24" />
-            ))}
-          </div>
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-xl border border-border/20 bg-card p-4">
+              <div className="flex gap-3">
+                <div className="size-9 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-muted" />
+                  <div className="h-3 w-1/3 rounded bg-muted" />
+                </div>
+              </div>
+            </div>
+          ))
         ) : filteredDirectives.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-muted mb-4">
-              <ClipboardList className="size-7 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+              <FileText className="size-6 text-muted-foreground" />
             </div>
             <p className="text-[14px] font-medium text-foreground mb-1">لا توجد توجيهات</p>
             <p className="text-[12px] text-muted-foreground">ستظهر التوجيهات هنا عند إنشائها</p>
@@ -190,6 +213,17 @@ export default function DirectivesListPage() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       <CreateDirectiveModal open={showCreate} onClose={() => setShowCreate(false)} />
     </div>
