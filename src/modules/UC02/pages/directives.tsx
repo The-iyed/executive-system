@@ -37,6 +37,7 @@ const Directives: React.FC = () => {
       label: 'الأخذ بالتوجيه',
       icon: <CheckSquare className="w-3.5 h-3.5" />,
       className: 'border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 hover:shadow-sm',
+      hidden: (d: MinisterDirective) => d.status === 'ADOPTED',
       onClick: (d: MinisterDirective) => setConfirmDirective(d),
     },
     {
