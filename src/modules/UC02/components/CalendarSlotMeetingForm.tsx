@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
-import { Users } from 'lucide-react';
-import { cn, toISOStringWithTimezone, Button } from '@/lib/ui';
+import { cn, toISOStringWithTimezone } from '@/lib/ui';
 
 import {
   MeetingTitleField,
@@ -12,6 +11,7 @@ import {
   ProposersField,
 } from '@/modules/shared/features/meeting-request-form/shared/fields';
 import { MeetingLocation } from '@/modules/shared/features/meeting-request-form/shared/types/enums';
+import { MeetingModalShell } from '@/modules/shared/features/meeting-request-form/shared/components';
 
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
@@ -37,6 +37,8 @@ export interface CalendarSlotMeetingFormSubmitValues {
 }
 
 export interface CalendarSlotMeetingFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   slotDate: Date;
   slotTime: string;
   slotEndTime?: string;
@@ -62,6 +64,8 @@ interface FormValues {
 }
 
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
+  open,
+  onOpenChange,
   slotDate,
   slotTime,
   slotEndTime,
@@ -96,12 +100,16 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   });
 
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
+  const formSubmitRef = useRef<(() => void) | null>(null);
 
   return (
     <FormProvider {...methods}>
       <CalendarFormInner
+        open={open}
+        onOpenChange={onOpenChange}
         mode={mode}
         inviteesRef={inviteesRef}
+        formSubmitRef={formSubmitRef}
         initialInvitees={initialInvitees}
         isSubmitting={isSubmitting}
         submitError={submitError}
@@ -115,8 +123,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
 /* ─── Inner form (has access to FormProvider context) ─── */
 
 interface InnerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   inviteesRef: React.RefObject<DynamicTableFormHandle | null>;
+  formSubmitRef: React.MutableRefObject<(() => void) | null>;
   initialInvitees?: Array<Record<string, unknown>>;
   isSubmitting: boolean;
   submitError: string | null;
@@ -125,8 +136,11 @@ interface InnerProps {
 }
 
 function CalendarFormInner({
+  open,
+  onOpenChange,
   mode,
   inviteesRef,
+  formSubmitRef,
   initialInvitees,
   isSubmitting,
   submitError,
@@ -135,11 +149,9 @@ function CalendarFormInner({
 }: InnerProps) {
   const { handleSubmit, watch } = useFormContext<FormValues>();
   const meetingChannel = watch('meeting_channel');
-  const meetingTitle = watch('meeting_title');
 
   const showLocation = meetingChannel === 'PHYSICAL' || meetingChannel === 'HYBRID';
   const meetingLocation = watch('meeting_location');
-  const meetingLocationCustom = watch('meeting_location_custom');
   const isOther = meetingLocation === MeetingLocation.OTHER;
 
   const minStartDate = useMemo(() => {
@@ -150,15 +162,12 @@ function CalendarFormInner({
 
   const doSubmit = useCallback(
     (data: FormValues) => {
-      // Validate past date
       const start = data.meeting_start_date ? new Date(data.meeting_start_date).getTime() : 0;
       if (start <= Date.now()) return;
 
-      // Validate invitees
       const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
       if (!inviteesPayload) return;
 
-      // Build location
       let meeting_location: string | undefined;
       if (showLocation) {
         if (data.meeting_location === MeetingLocation.OTHER) {
@@ -168,7 +177,6 @@ function CalendarFormInner({
         }
       }
 
-      // Build proposers
       const proposerSelections = data.proposers ?? [];
       const proposers: CreateScheduledMeetingProposer[] | undefined =
         proposerSelections.length > 0
@@ -201,19 +209,30 @@ function CalendarFormInner({
     [onSubmit, showLocation, inviteesRef]
   );
 
-  const canSubmit = !isSubmitting && !!meetingTitle?.trim() && !!meetingChannel?.trim();
+  // Expose form submit trigger via ref
+  formSubmitRef.current = handleSubmit(doSubmit);
+
+  const handleModalSubmit = useCallback(() => {
+    formSubmitRef.current?.();
+  }, [formSubmitRef]);
 
   return (
-    <div className="flex flex-col gap-0 pb-32" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border/60 px-1 py-4 -mx-1">
-        <h2 className="text-lg font-bold text-foreground">
-          {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
-        </h2>
-      </div>
-
-      <form onSubmit={handleSubmit(doSubmit)} className="flex flex-col gap-5 pt-5">
-        {/* Shared fields */}
+    <MeetingModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      currentStep={1}
+      onStepClick={() => {}}
+      saving={isSubmitting}
+      submitLabel={mode === 'edit' ? 'تحديث' : 'حفظ'}
+      onNext={handleModalSubmit}
+      onPrev={() => {}}
+      onSubmit={handleModalSubmit}
+      onSaveAsDraft={() => {}}
+      hideSteps
+      title={mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
+      subtitle="يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع"
+    >
+      <div className="flex flex-col gap-5">
         <MeetingTitleField />
 
         <MeetingDateField
@@ -232,16 +251,12 @@ function CalendarFormInner({
           </>
         )}
 
-        {/* Divider */}
         <div className="border-t border-border/60 my-1" />
 
-        {/* Proposers — shared field */}
         <ProposersField />
 
-        {/* Divider */}
         <div className="border-t border-border/60 my-1" />
 
-        {/* Invitees */}
         <InviteesTableForm
           tableRef={inviteesRef}
           initialInvitees={(initialInvitees ?? []) as any}
@@ -249,26 +264,13 @@ function CalendarFormInner({
           showAiSuggest={false}
         />
 
-        {/* Error */}
         {submitError && (
           <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <p className="text-sm text-destructive">{submitError}</p>
           </div>
         )}
-
-        {/* Actions */}
-        <div className="flex flex-row gap-3 justify-end pt-6 mt-2 border-t border-border/60">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            إلغاء
-          </Button>
-          <Button type="submit" disabled={!canSubmit}>
-            {isSubmitting
-              ? mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...'
-              : mode === 'edit' ? 'تحديث' : 'حفظ'}
-          </Button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </MeetingModalShell>
   );
 }
 
