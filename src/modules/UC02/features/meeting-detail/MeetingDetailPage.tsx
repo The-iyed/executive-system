@@ -78,6 +78,15 @@ const MeetingDetailPage: React.FC = () => {
   }
 
   const { meeting } = h;
+  const hasFloatingActionsBar = !!(
+    meeting && (
+      meeting.status === MeetingStatus.UNDER_REVIEW ||
+      meeting.status === MeetingStatus.UNDER_GUIDANCE ||
+      meeting.status === MeetingStatus.WAITING ||
+      meeting.status === MeetingStatus.SCHEDULED ||
+      meeting.status === MeetingStatus.SCHEDULED_SCHEDULING
+    )
+  );
 
   /* ─── Tab content ─── */
   const renderTabContent = () => {
@@ -117,7 +126,7 @@ const MeetingDetailPage: React.FC = () => {
 
   /* ─── Render ─── */
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0 pb-4" dir="rtl">
+    <div className="w-full h-full flex flex-col overflow-hidden overflow-x-hidden min-w-0" dir="rtl">
       <div className="flex-1 min-h-0 flex flex-col gap-3 pr-5 min-w-0">
         {/* Header */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
@@ -151,14 +160,15 @@ const MeetingDetailPage: React.FC = () => {
         </div>
 
         {/* Content card */}
-        <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-background justify-center border border-border" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div className="w-full min-w-0 flex flex-row justify-center pb-8">
-            {renderTabContent()}
+        <div className="w-full flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-background px-8 pt-8" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div className="mx-auto flex w-full min-w-0 flex-col items-center">
+            <div className="w-full">{renderTabContent()}</div>
+            <div aria-hidden="true" className={hasFloatingActionsBar ? 'h-28 md:h-32 flex-shrink-0' : 'h-8 flex-shrink-0'} />
           </div>
         </div>
 
         {/* Actions bar */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
+        {hasFloatingActionsBar && (
           <MeetingActionsBar
             meetingStatus={h.meetingStatus}
             open={h.actionsBarOpen}
