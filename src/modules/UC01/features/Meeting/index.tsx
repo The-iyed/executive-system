@@ -10,7 +10,12 @@ import { useMeetings, useSubmitMeeting } from '../../hooks';
 import { PATH } from '../../routes/paths';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 import { deleteDraft } from '../../data/draftApi';
-import { clearDraftData } from '../MeetingForm/utils';
+/** Clear draft data from localStorage */
+const clearDraftData = () => {
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('draft')).forEach(k => localStorage.removeItem(k));
+  } catch { /* noop */ }
+};
 
 const Meeting: React.FC = () => {
   const [submitterOpen, setSubmitterOpen] = useState(false);

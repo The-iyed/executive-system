@@ -1,6 +1,25 @@
 import axiosInstance from '@/modules/auth/utils/axios';
 import { toISOStringWithTimezone } from '@/lib/ui';
-import type { Step1BasicInfoFormData } from '../features/MeetingForm/schemas/step1BasicInfo.schema';
+/** Inline type replacing deleted MeetingForm schema */
+interface Step1BasicInfoFormData {
+  meetingSubject?: string;
+  meetingCategory?: string;
+  meetingConfidentiality?: string;
+  meetingType?: string;
+  meetingChannel?: string;
+  meetingLocation?: string;
+  meetingLocationOther?: string;
+  directiveMethod?: string;
+  directiveId?: string;
+  directiveText?: string;
+  duration?: string;
+  expectedDuration?: string;
+  selectedTimeSlot?: { date?: Date; startTime?: string; endTime?: string };
+  alternativeTimeSlot1?: { date?: Date; startTime?: string; endTime?: string };
+  alternativeTimeSlot2?: { date?: Date; startTime?: string; endTime?: string };
+  voiceNote?: File | null;
+  [key: string]: unknown;
+}
 
 /** Payload for one time slot: create sends slot_start/slot_end; edit (from get-details) can include id. */
 export interface TimeSlotPayload {
