@@ -302,7 +302,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <EventDetailModal
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
-        onEdit={handleEdit}
       />
 
       {slot && (
