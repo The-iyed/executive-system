@@ -120,7 +120,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleCopy}
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors opacity-0 group-hover:opacity-100"
+                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                   title="نسخ المحتوى"
                 >
                   {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
@@ -250,19 +250,12 @@ export default function DirectivesListPage() {
             <p className="text-[11px] text-muted-foreground mt-0.5">إدارة ومتابعة التوجيهات الوزارية · {total} توجيه</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] shadow-sm"
-        >
-          <Plus className="size-4" />
-          إنشاء توجيه
-        </button>
+        {/* Create button hidden */}
       </div>
 
       {/* Type tabs */}
       <div className="flex items-center gap-1.5 border-b border-border/40 pb-0">
         {[
-          { value: undefined, label: 'الكل' },
           ...TYPE_FILTER_OPTIONS,
         ].map((tab) => (
           <button
