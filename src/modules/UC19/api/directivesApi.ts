@@ -1,6 +1,5 @@
 /**
  * UC19 Minister Directives API client.
- * Re-uses the same base URL and auth as guiding-light minister-directives.
  */
 import { getAuthToken } from '@/modules/auth/utils/tokenGetter';
 
@@ -23,7 +22,7 @@ async function getHeaders(): Promise<HeadersInit> {
 export type DirectiveType = 'SCHEDULING' | 'GENERAL' | 'EXECUTIVE_OFFICE' | 'GOVERNMENT_CENTER';
 export type ImportanceLevel = 'IMPORTANT' | 'NORMAL';
 export type PriorityLevel = 'URGENT' | 'NORMAL';
-export type DurationUnit = 'HOURS' | 'DAYS' | 'WEEKS' | 'MONTHS';
+export type DurationUnit = 'HOUR' | 'HOURS' | 'DAY' | 'DAYS' | 'WEEK' | 'WEEKS' | 'MONTH' | 'MONTHS';
 export type DirectiveStatus = 'TAKEN' | 'ADOPTED';
 export type SchedulingOfficerStatus = 'OPEN' | 'CLOSED';
 
@@ -33,15 +32,27 @@ export interface MinisterDirective {
   status: DirectiveStatus;
   scheduling_officer_status: SchedulingOfficerStatus;
   directive_type?: DirectiveType;
-  voice_note_path?: string;
-  responsible_user?: string;
+  voice_note_path?: string | null;
+  voice_play_url?: string | null;
+  voice_play_url_expires_in_minutes?: number | null;
+  responsible_user?: string | null;
   importance?: ImportanceLevel;
   priority?: PriorityLevel;
   due_duration_enabled?: boolean;
-  due_duration_value?: number;
-  due_duration_unit?: DurationUnit;
+  due_duration_value?: number | null;
+  due_duration_unit?: DurationUnit | null;
   created_at: string;
   updated_at: string;
+  created_by?: string | null;
+}
+
+export interface DirectivesListResponse {
+  items: MinisterDirective[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_next: boolean;
+  has_previous: boolean;
 }
 
 export interface CreateDirectivePayload {
@@ -65,7 +76,7 @@ export interface ListDirectivesParams {
 
 export async function listDirectives(
   params: ListDirectivesParams = {}
-): Promise<MinisterDirective[]> {
+): Promise<DirectivesListResponse> {
   const url = new URL(`${BASE}/minister-directives`);
   if (params.skip != null) url.searchParams.set('skip', String(params.skip));
   if (params.limit != null) url.searchParams.set('limit', String(params.limit));
@@ -81,9 +92,18 @@ export async function listDirectives(
   }
 
   const data = await res.json();
-  if (Array.isArray(data)) return data;
-  if (data?.items && Array.isArray(data.items)) return data.items;
-  return [];
+  // Handle both array and paginated response
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length, skip: 0, limit: data.length, has_next: false, has_previous: false };
+  }
+  return {
+    items: data.items || [],
+    total: data.total || 0,
+    skip: data.skip || 0,
+    limit: data.limit || 10,
+    has_next: data.has_next || false,
+    has_previous: data.has_previous || false,
+  };
 }
 
 export async function createDirective(
