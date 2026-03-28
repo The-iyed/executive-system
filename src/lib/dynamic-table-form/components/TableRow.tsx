@@ -325,7 +325,7 @@ const TableRowInner: React.FC<TableRowProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                className="fixed inset-0 z-50 flex items-center justify-center"
                 onClick={() => setConfirmingDelete(false)}
               >
                 <motion.div
