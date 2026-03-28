@@ -95,7 +95,7 @@ export function MeetingModalShell({
         {!loading && !error && (
           <ModalActionBar
             currentStep={currentStep}
-            totalSteps={MEETING_STEPS.length}
+            totalSteps={activeSteps.length}
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
             submitLabel={submitLabel}
