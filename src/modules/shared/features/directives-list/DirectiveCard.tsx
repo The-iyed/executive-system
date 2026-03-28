@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Clock, CheckCircle2, FileText, Volume2, AlertTriangle,
-  Zap, Copy, Check, CalendarDays, XCircle,
+  Zap, Copy, Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -27,15 +27,13 @@ export interface DirectiveCardAction {
 
 interface DirectiveCardProps {
   directive: MinisterDirective;
-  /** Which status field to display: 'status' or 'scheduling_officer_status' */
   statusField?: 'status' | 'scheduling_officer_status';
-  /** Action buttons to show at bottom */
   actions?: DirectiveCardAction[];
 }
 
 const STATUS_BADGE: Record<string, { color: string; dot: string; label: string }> = {
-  TAKEN: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: DIRECTIVE_STATUS_LABELS.TAKEN },
-  ADOPTED: { color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', label: DIRECTIVE_STATUS_LABELS.ADOPTED },
+  TAKEN: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', label: DIRECTIVE_STATUS_LABELS.TAKEN },
+  ADOPTED: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: DIRECTIVE_STATUS_LABELS.ADOPTED },
   OPEN: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', label: SCHEDULING_OFFICER_STATUS_LABELS.OPEN },
   CLOSED: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: SCHEDULING_OFFICER_STATUS_LABELS.CLOSED },
 };
@@ -59,100 +57,105 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   };
 
   return (
-    <div className="group transition-colors hover:bg-muted/30 px-5 py-4">
-      <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className={cn(
-          'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg',
-          isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-muted/60 text-muted-foreground',
+    <div className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/20">
+      {/* Left side: status badge + copy */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap',
+          badge.color,
         )}>
-          {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+          {badge.label}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          title="نسخ المحتوى"
+        >
+          {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+        </button>
+      </div>
+
+      {/* Actions in the middle area */}
+      {actions && actions.length > 0 && (
+        <div className="flex items-center gap-2 shrink-0">
+          {actions.map((action) => (
+            <button
+              key={action.id}
+              onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap',
+                action.className,
+              )}
+            >
+              {action.icon}
+              {action.label}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2 flex-1">
-              {directive.title}
-            </h3>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleCopy}
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                title="نسخ المحتوى"
-              >
-                {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-              </button>
-              <span className={cn('inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium', badge.color)}>
-                <span className={cn('size-1.5 rounded-full', badge.dot)} />
-                {badge.label}
-              </span>
-            </div>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            {format(new Date(directive.created_at), 'dd MMM yyyy')}
-          </p>
+      {/* Center: spacer */}
+      <div className="flex-1 min-w-0" />
 
-          {/* Voice */}
-          {hasVoice && (
-            <div className="mt-3 rounded-lg bg-muted/30 px-3 py-2">
-              <VoicePlayer url={directive.voice_play_url!} compact />
-            </div>
-          )}
-
-          {/* Tags */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {directive.directive_type && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                <FileText className="size-3" />
-                {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
-              </span>
-            )}
-            {isUrgent && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
-                <AlertTriangle className="size-3" />
-                {PRIORITY_LABELS[directive.priority!]}
-              </span>
-            )}
-            {isImportant && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                <Zap className="size-3" />
-                {IMPORTANCE_LABELS[directive.importance!]}
-              </span>
-            )}
-            {directive.due_duration_enabled && directive.due_duration_value && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
-                <Clock className="size-3" />
-                {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
-              </span>
-            )}
-            {hasVoice && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary font-medium">
-                <Volume2 className="size-3" />
-                صوتي
-              </span>
-            )}
+      {/* Right side: content */}
+      <div className="flex flex-col items-end gap-1 min-w-0">
+        <div className="flex items-center gap-3">
+          <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-1 text-end">
+            {directive.title}
+          </h3>
+          <div className={cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-full',
+            isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
+          )}>
+            {isCompleted ? <CheckCircle2 className="size-5" /> : <Clock className="size-5" />}
           </div>
         </div>
 
-        {/* Actions on the left side */}
-        {actions && actions.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0 mt-1">
-            {actions.map((action) => (
-              <button
-                key={action.id}
-                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  action.className,
-                )}
-              >
-                {action.icon}
-                {action.label}
-              </button>
-            ))}
+        <p className="text-[11px] text-muted-foreground">
+          {format(new Date(directive.created_at), 'MMM yyyy dd')}
+        </p>
+
+        {/* Voice */}
+        {hasVoice && (
+          <div className="mt-1 w-full max-w-xs rounded-lg bg-muted/30 px-3 py-2">
+            <VoicePlayer url={directive.voice_play_url!} compact />
           </div>
         )}
+
+        {/* Tags row */}
+        <div className="flex flex-wrap items-center justify-end gap-1.5 mt-0.5">
+          {directive.directive_type && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <FileText className="size-3" />
+              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
+            </span>
+          )}
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
+              <AlertTriangle className="size-3" />
+              {PRIORITY_LABELS[directive.priority!]}
+            </span>
+          )}
+          {isImportant && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+              <Zap className="size-3" />
+              {IMPORTANCE_LABELS[directive.importance!]}
+            </span>
+          )}
+          {directive.due_duration_enabled && directive.due_duration_value && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Clock className="size-3" />
+              {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
+            </span>
+          )}
+          {hasVoice && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary font-medium">
+              <Volume2 className="size-3" />
+              صوتي
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
