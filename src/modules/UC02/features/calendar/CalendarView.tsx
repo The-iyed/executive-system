@@ -123,56 +123,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [],
   );
 
-  const handleEdit = useCallback(
-    (ev: CalendarEventData, meetingDetail?: MeetingApiResponse) => {
-      setSelectedEvent(null);
-      const location = ev.location ?? null;
-      const inferredChannel = location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-
-      const apiInvitees = meetingDetail?.invitees as Record<string, unknown>[] | undefined;
-      const initialInvitees = apiInvitees && apiInvitees.length > 0
-        ? apiInvitees.map((inv, i) => ({
-            _id: `inv-edit-${i}-${Date.now()}`,
-            name: String(inv.name ?? inv.external_name ?? ''),
-            email: String(inv.email ?? inv.external_email ?? ''),
-            position: String(inv.position ?? ''),
-            mobile: String(inv.mobile ?? ''),
-            sector: String(inv.sector ?? ''),
-            attendance_mechanism: String(inv.attendance_mechanism ?? 'PHYSICAL'),
-            access_permission: Boolean(inv.access_permission),
-            is_consultant: Boolean(inv.is_consultant),
-            meeting_owner: Boolean(inv.meeting_owner),
-            ...(inv.object_guid ? { object_guid: String(inv.object_guid) } : {}),
-          }))
-        : ev.attendees?.length
-          ? ev.attendees.map((a, i) => ({
-              _id: `inv-edit-${i}-${Date.now()}`,
-              name: a.name ?? '',
-              email: a.email ?? '',
-              position: '',
-              mobile: '',
-              sector: '',
-              attendance_mechanism: 'PHYSICAL',
-              access_permission: false,
-              is_consultant: false,
-              meeting_owner: false,
-            }))
-          : undefined;
-
-      setSlot({
-        date: ev.date,
-        time: ev.exactStartTime || ev.startTime,
-        endTime: ev.exactEndTime || ev.endTime || undefined,
-        title: ev.meeting_title ?? ev.title ?? '',
-        meetingLocation: ev.meeting_location ?? location,
-        meetingChannel: ev.meeting_channel ?? inferredChannel,
-        meetingId: ev.meeting_id ?? undefined,
-        mode: ev.meeting_id ? 'edit' : 'create',
-        initialInvitees,
-      });
-    },
-    [],
-  );
 
   const handleSlotSubmit = useCallback(
     async (values: Record<string, unknown>) => {
@@ -352,7 +302,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <EventDetailModal
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
-        onEdit={handleEdit}
       />
 
       {slot && (
