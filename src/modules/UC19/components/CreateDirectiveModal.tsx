@@ -45,7 +45,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   const [priority, setPriority] = useState<PriorityLevel>('NORMAL');
   const [dueDurationEnabled, setDueDurationEnabled] = useState(false);
   const [dueDurationValue, setDueDurationValue] = useState(1);
-  const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOURS');
+  const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOUR');
 
   const resetForm = () => {
     setDirectiveType('GENERAL');
