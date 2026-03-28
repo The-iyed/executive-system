@@ -2,8 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
+import { MeetingOwnerType } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
 import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 import {
   createScheduledMeeting,
@@ -90,6 +92,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventData | null>(null);
+  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
@@ -302,6 +305,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <EventDetailModal
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
+        onEdit={(meetingId) => {
+          setSelectedEvent(null);
+          setEditMeetingId(meetingId);
+        }}
+      />
+
+      <SubmitterModal
+        callerRole={MeetingOwnerType.SCHEDULING}
+        open={!!editMeetingId}
+        onOpenChange={(open) => { if (!open) setEditMeetingId(null); }}
+        editMeetingId={editMeetingId ?? undefined}
+        showAiSuggest
       />
 
       {slot && (
