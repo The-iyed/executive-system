@@ -83,13 +83,48 @@ export function ProposersSelect({
     [value, onChange]
   );
 
-  const firstSelected = value[0];
-  const extraCount = value.length - 1;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(value.length);
+
+  // Measure how many chips fit in one line
+  useEffect(() => {
+    if (value.length === 0) { setVisibleCount(0); return; }
+    const container = chipsRef.current;
+    if (!container) { setVisibleCount(value.length); return; }
+
+    const measure = () => {
+      const children = Array.from(container.children) as HTMLElement[];
+      const containerRight = container.getBoundingClientRect().right;
+      // Reserve space for "+N" badge (~40px) and actions (~50px)
+      const maxRight = containerRight - 90;
+      let count = 0;
+      for (const child of children) {
+        if (child.dataset.chip !== "true") continue;
+        if (child.getBoundingClientRect().right <= maxRight) {
+          count++;
+        } else break;
+      }
+      setVisibleCount(Math.max(1, count));
+    };
+
+    // Temporarily show all to measure
+    container.style.flexWrap = "nowrap";
+    container.style.overflow = "hidden";
+    requestAnimationFrame(() => {
+      measure();
+      container.style.flexWrap = "";
+      container.style.overflow = "";
+    });
+  }, [value]);
+
+  const hiddenCount = value.length - visibleCount;
 
   return (
     <div ref={containerRef} className="relative">
       {/* Trigger */}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => {
@@ -106,21 +141,32 @@ export function ProposersSelect({
         {value.length === 0 ? (
           <span className="text-muted-foreground flex-1 text-right">{placeholder}</span>
         ) : (
-          <div className="flex-1 flex items-center gap-1.5 flex-wrap">
-            {/* First selected chip */}
-            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium max-w-[200px]">
-              <span className="truncate">{firstSelected?._label}</span>
-              <X
-                className="h-3 w-3 shrink-0 cursor-pointer hover:text-destructive transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (firstSelected) removeUser(firstSelected.objectGUID);
-                }}
-              />
-            </span>
-            {extraCount > 0 && (
-              <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-xs font-medium">
-                +{extraCount}
+          <div ref={chipsRef} className="flex-1 flex items-center gap-1.5 flex-wrap overflow-hidden" style={{ maxHeight: 28 }}>
+            {value.slice(0, visibleCount).map((v) => (
+              <span
+                key={v.objectGUID}
+                data-chip="true"
+                className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium max-w-[200px] shrink-0"
+              >
+                <span className="truncate">{v._label}</span>
+                <X
+                  className="h-3 w-3 shrink-0 cursor-pointer hover:text-destructive transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeUser(v.objectGUID);
+                  }}
+                />
+              </span>
+            ))}
+            {/* Hidden measurement chips */}
+            {value.slice(visibleCount).map((v) => (
+              <span key={v.objectGUID} data-chip="true" className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium max-w-[200px] shrink-0 invisible" aria-hidden>
+                <span className="truncate">{v._label}</span>
+              </span>
+            ))}
+            {hiddenCount > 0 && (
+              <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-xs font-medium shrink-0">
+                +{hiddenCount}
               </span>
             )}
           </div>
