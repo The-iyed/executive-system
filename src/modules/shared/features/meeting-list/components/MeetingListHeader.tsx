@@ -80,6 +80,7 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
           </div>
           {filtersSlot}
         </div>
+      </div>
     </div>
   );
 };
