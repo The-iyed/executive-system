@@ -25,6 +25,14 @@ interface MeetingModalShellProps {
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
   children: ReactNode;
+  /** Hide the step indicator */
+  hideSteps?: boolean;
+  /** Custom title (defaults to "قم بإضافة معلومات الاجتماع") */
+  title?: string;
+  /** Custom subtitle */
+  subtitle?: string;
+  /** Custom steps array (defaults to MEETING_STEPS) */
+  steps?: StepDef[];
 }
 
 export function MeetingModalShell({
@@ -42,7 +50,13 @@ export function MeetingModalShell({
   onSubmit,
   onSaveAsDraft,
   children,
+  hideSteps = false,
+  title = "قم بإضافة معلومات الاجتماع",
+  subtitle = "يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع",
+  steps: customSteps,
 }: MeetingModalShellProps) {
+  const activeSteps = customSteps ?? MEETING_STEPS;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -53,12 +67,12 @@ export function MeetingModalShell({
         <div className="flex-1 overflow-y-auto px-8 pb-8">
           <div className="pt-8 pb-6 shrink-0">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-foreground">قم بإضافة معلومات الاجتماع</h2>
-              <p className="text-base text-teal mt-2">
-                يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع
-              </p>
+              <h2 className="text-2xl font-bold text-foreground">{title}</h2>
+              <p className="text-base text-teal mt-2">{subtitle}</p>
             </div>
-            <StepIndicator steps={MEETING_STEPS} currentStep={currentStep} onStepClick={onStepClick} />
+            {!hideSteps && (
+              <StepIndicator steps={activeSteps} currentStep={currentStep} onStepClick={onStepClick} />
+            )}
           </div>
 
 
@@ -81,7 +95,7 @@ export function MeetingModalShell({
         {!loading && !error && (
           <ModalActionBar
             currentStep={currentStep}
-            totalSteps={MEETING_STEPS.length}
+            totalSteps={activeSteps.length}
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
             submitLabel={submitLabel}
