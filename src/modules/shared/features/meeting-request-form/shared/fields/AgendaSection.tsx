@@ -54,15 +54,19 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   }, [prepend]);
 
   const handleRemove = useCallback((index: number) => {
-    const confirmed = window.confirm("هل أنت متأكد من حذف هذا العنصر؟");
-    if (!confirmed) return;
-    setRemovingIndex(index);
+    setConfirmingDeleteIndex(index);
+  }, []);
+
+  const confirmRemove = useCallback(() => {
+    if (confirmingDeleteIndex === null) return;
+    setConfirmingDeleteIndex(null);
+    setRemovingIndex(confirmingDeleteIndex);
     clearTimeout(removeTimeoutRef.current);
     removeTimeoutRef.current = setTimeout(() => {
-      remove(index);
+      remove(confirmingDeleteIndex);
       setRemovingIndex(null);
     }, 250);
-  }, [remove]);
+  }, [confirmingDeleteIndex, remove]);
 
   return (
     <div className="space-y-3">
