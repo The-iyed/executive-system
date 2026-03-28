@@ -300,13 +300,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               >
                 عرض التفاصيل
               </button>
-              {display.meetingId && (
+              {display.meetingId && onEdit && (
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose();
-                    setEditMeetingId(display.meetingId!);
-                  }}
+                  onClick={() => onEdit(display.meetingId!)}
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
