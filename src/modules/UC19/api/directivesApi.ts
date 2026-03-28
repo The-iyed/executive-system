@@ -2,6 +2,16 @@
  * UC19 Minister Directives API client.
  */
 import { getAuthToken } from '@/modules/auth/utils/tokenGetter';
+import type {
+  DirectiveType,
+  ImportanceLevel,
+  PriorityLevel,
+  DurationUnit,
+  DirectiveStatus,
+  SchedulingOfficerStatus,
+} from '@/modules/shared/types/minister-directive-enums';
+
+export type { DirectiveType, ImportanceLevel, PriorityLevel, DurationUnit, DirectiveStatus, SchedulingOfficerStatus };
 
 const APP_BASE =
   (import.meta.env.VITE_APP_BASE_URL_MINISTER as string) ||
@@ -26,14 +36,6 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
-
-// Types
-export type DirectiveType = 'SCHEDULING' | 'GENERAL' | 'EXECUTIVE_OFFICE' | 'GOVERNMENT_CENTER';
-export type ImportanceLevel = 'VERY_IMPORTANT' | 'IMPORTANT' | 'NORMAL';
-export type PriorityLevel = 'VERY_URGENT' | 'URGENT' | 'NORMAL';
-export type DurationUnit = 'HOUR' | 'DAY';
-export type DirectiveStatus = 'TAKEN' | 'ADOPTED';
-export type SchedulingOfficerStatus = 'OPEN' | 'CLOSED';
 
 export interface MinisterDirective {
   id: string;
