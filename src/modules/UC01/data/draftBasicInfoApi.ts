@@ -13,7 +13,7 @@ interface Step1BasicInfoFormData {
   meeting_location?: string;
   sector?: string;
   relatedTopic?: string;
-  dueDate?: Date;
+  dueDate?: string;
   meetingReason?: string;
   meetingDescription?: string;
   meetingAgenda?: Array<{
