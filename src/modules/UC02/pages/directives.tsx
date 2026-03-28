@@ -91,7 +91,7 @@ function DirectiveAccordionCard({
         {/* Status dot */}
         <span className={cn(
           'size-2.5 rounded-full shrink-0',
-          directive.status === 'ADOPTED' ? 'bg-emerald-500' : 'bg-amber-500',
+          directive.status === 'ADOPTED' ? 'bg-primary' : 'bg-accent-foreground',
         )} />
       </button>
 
