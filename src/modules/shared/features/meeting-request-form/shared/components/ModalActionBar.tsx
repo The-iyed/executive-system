@@ -78,7 +78,7 @@ export function ModalActionBar({
       {/* Secondary action (left side in RTL) */}
       {isFirst ? (
         <Button type="button" variant="outline" className="px-8 h-11 rounded-xl" onClick={onCancel}>
-          إلغاء
+          {cancelLabel}
         </Button>
       ) : (
         <Button
