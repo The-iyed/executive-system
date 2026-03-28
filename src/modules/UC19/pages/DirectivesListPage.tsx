@@ -5,11 +5,10 @@ import { listDirectives, type MinisterDirective } from '../api/directivesApi';
 import { CreateDirectiveModal } from '../components/CreateDirectiveModal';
 import { format } from 'date-fns';
 
-type FilterTab = 'ALL' | 'SCHEDULING' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
+type FilterTab = 'ALL' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
 
-const FILTER_TABS: { id: FilterTab; label: string; icon?: string }[] = [
+const FILTER_TABS: { id: FilterTab; label: string }[] = [
   { id: 'ALL', label: 'الكل' },
-  { id: 'SCHEDULING', label: 'جدولة', icon: 'solar:calendar-outline' },
   { id: 'GENERAL', label: 'عام' },
   { id: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
   { id: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
@@ -136,7 +135,7 @@ export default function DirectivesListPage() {
             <ClipboardList className="size-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">التوجيهات الوزارية</h1>
+            <h1 className="text-lg font-bold text-foreground">التوجيهات</h1>
             <p className="text-[11px] text-muted-foreground">
               {directives.length} توجيه
             </p>

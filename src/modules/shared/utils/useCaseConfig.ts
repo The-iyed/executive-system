@@ -179,7 +179,7 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       {
         id: 'minister-directives',
         icon: 'solar:document-text-outline',
-        label: 'توجيهات',
+        label: 'التوجيهات',
         path: UC19_PATH.DIRECTIVES,
       },
     ],
