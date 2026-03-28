@@ -367,7 +367,11 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                   </div>
                   <button
                     type="button"
-                    onClick={voice.clearRecording}
+                    onClick={() => {
+                      if (window.confirm('هل أنت متأكد من حذف التسجيل الصوتي؟')) {
+                        voice.clearRecording();
+                      }
+                    }}
                     className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title="حذف التسجيل"
                   >
