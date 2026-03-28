@@ -128,6 +128,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   );
 
   return (
+    <>
     <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className="max-w-[860px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-border shadow-xl [&>button]:hidden"
