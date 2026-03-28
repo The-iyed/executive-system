@@ -354,31 +354,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onEdit={handleEdit}
       />
 
-      <FormMeetingModal
-        open={!!slot}
-        onOpenChange={(open) => !open && setSlot(null)}
-      >
-        {slot && (
-          <CalendarSlotMeetingForm
-            key={slot.meetingId ?? `create-${slot.date.getTime()}-${slot.time}-${slot.endTime ?? ''}`}
-            slotDate={slot.date}
-            slotTime={slot.time}
-            slotEndTime={slot.endTime}
-            initialTitle={slot.title ?? ''}
-            initialMeetingLocation={slot.meetingLocation ?? undefined}
-            initialMeetingChannel={slot.meetingChannel ?? ''}
-            initialInvitees={slot.initialInvitees}
-            mode={slot.mode}
-            isSubmitting={slotSubmitting}
-            submitError={slotError}
-            onSubmit={handleSlotSubmit as any}
-            onCancel={() => {
-              setSlotError(null);
-              setSlot(null);
-            }}
-          />
-        )}
-      </FormMeetingModal>
+      <CreateMeetingModal
+        key={slot?.meetingId ?? `create-${slot?.date?.getTime()}-${slot?.time}-${slot?.endTime ?? ''}`}
+        slot={slot}
+        onClose={() => {
+          setSlotError(null);
+          setSlot(null);
+        }}
+        onSubmit={handleSlotSubmit}
+        isSubmitting={slotSubmitting}
+        submitError={slotError}
+      />
     </div>
   );
 };
