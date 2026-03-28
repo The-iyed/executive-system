@@ -1,4 +1,4 @@
-export { DeleteDraftDialog } from './DeleteDraftDialog';
+export { RejectDialog } from './RejectDialog';
 export { RejectDialog } from './RejectDialog';
 export { CancelDialog } from './CancelDialog';
 export { EditConfirmDialog } from './EditConfirmDialog';
