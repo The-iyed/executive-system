@@ -212,7 +212,7 @@ function FilterSelect<T extends string>({
 export default function DirectivesListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeType, setActiveType] = useState<DirectiveType | undefined>(undefined);
+  const [activeType, setActiveType] = useState<DirectiveType | undefined>('GENERAL');
 
   const { data, isLoading } = useQuery({
     queryKey: ['uc19-directives', currentPage, activeType],
