@@ -161,7 +161,7 @@ const Meeting: React.FC = () => {
         variant={confirmVariant}
         isLoading={confirmLoading}
         onConfirm={handleConfirm}
-        icon={confirmVariant === 'danger' ? undefined : <Send className="h-6 w-6 text-teal-600" strokeWidth={1.5} />}
+        />
       />
 
       <MeetingListLayout<MeetingApiResponse>
