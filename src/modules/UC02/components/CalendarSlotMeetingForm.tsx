@@ -229,6 +229,7 @@ function CalendarFormInner({
       onStepClick={() => {}}
       saving={isSubmitting}
       submitLabel={mode === 'edit' ? 'تحديث' : 'حفظ'}
+      cancelLabel="إلغاء"
       onNext={handleModalSubmit}
       onPrev={() => {}}
       onSubmit={handleModalSubmit}
