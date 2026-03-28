@@ -1,20 +1,19 @@
 /**
- * Shared ContentInfoView – production-ready read-only content display.
- * Modern, polished UI with subtle depth, refined cards, and proper RTL support.
- * Uses design system tokens throughout.
+ * Shared ContentInfoView – minimal, label-based layout.
+ * Each section is a simple label + content underneath. No heavy card wrappers.
  */
 import React from 'react';
 import { cn } from '@/lib/ui';
-import { FileCheck, FileText, ClipboardCheck, Download, Eye, Zap } from 'lucide-react';
+import { FileCheck, FileText, ClipboardCheck, Zap, Download, Eye, File } from 'lucide-react';
 import type { ContentInfoViewProps, ContentInfoSection, ContentFileItem } from './types';
 import pdfIcon from '../../assets/pdf.svg';
 
-/* ─── Section icon config ─── */
-const SECTION_CONFIG: Record<string, { icon: React.ElementType; gradient: string }> = {
-  presentation: { icon: FileCheck, gradient: 'from-primary/20 to-primary/5' },
-  attachment: { icon: FileText, gradient: 'from-primary/15 to-primary/5' },
-  summary: { icon: Zap, gradient: 'from-primary/15 to-primary/5' },
-  notes: { icon: ClipboardCheck, gradient: 'from-primary/15 to-primary/5' },
+/* ─── Section icon map ─── */
+const SECTION_ICONS: Record<string, React.ElementType> = {
+  presentation: FileCheck,
+  attachment: FileText,
+  summary: Zap,
+  notes: ClipboardCheck,
 };
 
 /* ─── File icon ─── */
@@ -24,88 +23,63 @@ function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return (
-      <div className="relative flex-shrink-0">
-        <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain" />
-      </div>
-    );
+    return <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain flex-shrink-0" />;
   }
 
-  const label = (ext || nameExt || 'FILE').toUpperCase().slice(0, 4);
   return (
-    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted border border-border/50 flex-shrink-0">
-      <span className="text-[10px] font-bold text-muted-foreground tracking-wide">{label}</span>
+    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted/60 flex-shrink-0">
+      <File className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
     </div>
   );
 }
 
-/* ─── File card ─── */
-function FileCard({
+/* ─── File row ─── */
+function FileRow({
   file,
   onView,
   onDownload,
   extraActions,
-  variant = 'default',
+  showAccent,
 }: {
   file: ContentFileItem;
   onView?: () => void;
   onDownload?: () => void;
   extraActions?: React.ReactNode;
-  variant?: 'presentation' | 'default';
+  showAccent?: boolean;
 }) {
-  const isPresentation = variant === 'presentation';
+  const sizeLabel = file.file_size >= 1024 * 1024
+    ? `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.round((file.file_size || 0) / 1024)} KB`;
 
   return (
     <div className={cn(
-      'group relative flex items-center gap-4 px-5 py-4 rounded-xl border transition-all duration-300',
-      'bg-background hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]',
-      isPresentation
-        ? 'border-primary/20 hover:border-primary/40'
-        : 'border-border hover:border-primary/25',
+      'group flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all duration-200',
+      'hover:bg-muted/40',
+      showAccent && 'border-r-[3px] border-r-primary',
     )}>
-      {/* Subtle left accent for presentation */}
-      {isPresentation && (
-        <div className="absolute top-3 bottom-3 right-0 w-[3px] rounded-full bg-gradient-to-b from-primary to-primary/40" />
-      )}
-
       <FileIcon fileType={file.file_type} fileName={file.file_name} />
 
-      <div className="flex flex-col items-end min-w-0 flex-1">
+      <div className="flex flex-col items-end min-w-0 flex-1 gap-0.5">
         <div className="flex items-center gap-2 w-full justify-end flex-wrap">
           {file.badge && (
-            <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full flex-shrink-0 border border-primary/15">
+            <span className="text-[10px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-full flex-shrink-0">
               {file.badge}
             </span>
           )}
-          <span className="text-sm font-semibold text-foreground truncate">{file.file_name}</span>
+          <span className="text-sm font-medium text-foreground truncate">{file.file_name}</span>
         </div>
-        <span className="text-xs text-muted-foreground mt-1">
-          {file.file_size >= 1024 * 1024
-            ? `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`
-            : `${Math.round((file.file_size || 0) / 1024)} KB`}
-        </span>
+        <span className="text-xs text-muted-foreground">{sizeLabel}</span>
       </div>
 
-      <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {extraActions}
         {onDownload && file.blob_url && (
-          <a
-            href={file.blob_url}
-            target="_blank"
-            rel="noreferrer"
-            className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-            title="تحميل"
-          >
+          <a href={file.blob_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="تحميل">
             <Download className="w-4 h-4" />
           </a>
         )}
         {onView && file.blob_url && (
-          <button
-            type="button"
-            onClick={onView}
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title="معاينة"
-          >
+          <button type="button" onClick={onView} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="معاينة">
             <Eye className="w-4 h-4" />
           </button>
         )}
@@ -114,21 +88,15 @@ function FileCard({
   );
 }
 
-/* ─── Empty state ─── */
-function EmptyState({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description?: string }) {
+/* ─── Empty inline ─── */
+function EmptyInline({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-6 rounded-xl bg-muted/20 border-2 border-dashed border-border/60">
-      <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
-        <Icon className="w-5 h-5 text-muted-foreground/70" strokeWidth={1.5} />
-      </div>
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      {description && <p className="text-xs text-muted-foreground/70 mt-1">{description}</p>}
-    </div>
+    <p className="text-sm text-muted-foreground py-3 px-1">{text}</p>
   );
 }
 
-/* ─── Section wrapper ─── */
-function SectionCard({
+/* ─── Section ─── */
+function Section({
   section,
   onViewFile,
   onDownloadFile,
@@ -139,8 +107,7 @@ function SectionCard({
   onDownloadFile?: (file: ContentFileItem) => void;
   renderFileActions?: (file: ContentFileItem, sectionKey: string) => React.ReactNode;
 }) {
-  const config = SECTION_CONFIG[section.icon] ?? SECTION_CONFIG.attachment;
-  const Icon = config.icon;
+  const Icon = SECTION_ICONS[section.icon] ?? FileText;
   const files = section.files ?? [];
   const hasFiles = files.length > 0;
   const hasText = section.text && section.text.trim();
@@ -149,87 +116,63 @@ function SectionCard({
   const isPresentation = section.key === 'presentation';
 
   return (
-    <section className="rounded-2xl border border-border/70 bg-background overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      {/* Header */}
-      <div className={cn(
-        'flex items-center gap-3 px-6 py-4',
-        'bg-gradient-to-l',
-        config.gradient,
-      )}>
-        <div className="w-10 h-10 rounded-xl bg-background border border-primary/15 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <Icon className="w-[18px] h-[18px] text-primary" strokeWidth={1.8} />
+    <div className="flex flex-col gap-2">
+      {/* Label */}
+      <div className="flex items-center gap-2.5 px-1">
+        <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-primary" strokeWidth={1.8} />
         </div>
-        <div className="flex flex-col">
-          <h3 className="text-[15px] font-bold text-foreground leading-tight">{section.title}</h3>
+        <h3 className="text-sm font-bold text-foreground">{section.title}</h3>
+      </div>
+
+      {/* Content */}
+      {isEmpty ? (
+        <EmptyInline text={section.emptyTitle ?? 'لا توجد بيانات'} />
+      ) : (
+        <div className="flex flex-col gap-1">
+          {/* Files */}
           {hasFiles && (
-            <span className="text-[11px] text-muted-foreground mt-0.5">
-              {files.length} {files.length === 1 ? 'ملف' : 'ملفات'}
-            </span>
+            <div className={cn(
+              'flex flex-col gap-1',
+              section.fileColumns === 2 && 'sm:grid sm:grid-cols-2',
+            )}>
+              {files.map((file) => (
+                <FileRow
+                  key={file.id}
+                  file={file}
+                  showAccent={isPresentation}
+                  onView={onViewFile ? () => onViewFile(file) : undefined}
+                  onDownload={onDownloadFile ? () => onDownloadFile(file) : undefined}
+                  extraActions={renderFileActions?.(file, section.key)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Text */}
+          {hasText && (
+            <div className={cn(
+              'px-4 py-3 rounded-lg text-right text-sm leading-relaxed whitespace-pre-wrap',
+              'bg-muted/30 text-foreground',
+            )}>
+              {section.text}
+            </div>
+          )}
+
+          {/* Secondary text */}
+          {hasSecondary && (
+            <div className="flex flex-col gap-1.5 mt-1">
+              {section.secondaryLabel && (
+                <p className="text-xs font-semibold text-muted-foreground px-1">{section.secondaryLabel}</p>
+              )}
+              <div className="px-4 py-3 rounded-lg bg-primary/5 text-right text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                {section.secondaryText}
+              </div>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Body */}
-      <div className="p-6">
-        {isEmpty ? (
-          <EmptyState
-            icon={Icon}
-            title={section.emptyTitle ?? 'لا توجد بيانات'}
-            description={section.emptyDescription}
-          />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* Files */}
-            {hasFiles && (
-              <div className={cn(
-                'grid gap-3',
-                section.fileColumns === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1',
-              )}>
-                {files.map((file) => (
-                  <FileCard
-                    key={file.id}
-                    file={file}
-                    variant={isPresentation ? 'presentation' : 'default'}
-                    onView={onViewFile ? () => onViewFile(file) : undefined}
-                    onDownload={onDownloadFile ? () => onDownloadFile(file) : undefined}
-                    extraActions={renderFileActions?.(file, section.key)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Text content */}
-            {hasText && (
-              <div className={cn(
-                'w-full px-5 py-4 rounded-xl text-right text-sm leading-relaxed whitespace-pre-wrap',
-                section.key === 'executive-summary'
-                  ? 'bg-primary/5 border border-primary/15 text-foreground'
-                  : 'bg-muted/40 border border-border/40 text-foreground',
-              )}>
-                {section.text}
-              </div>
-            )}
-
-            {/* Secondary text (e.g. content officer notes) */}
-            {hasSecondary && (
-              <div className={hasText ? 'pt-4 border-t border-border/20' : ''}>
-                {section.secondaryLabel && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-primary" strokeWidth={2} />
-                    </div>
-                    <span className="text-sm font-semibold text-foreground">{section.secondaryLabel}</span>
-                  </div>
-                )}
-                <div className="w-full px-5 py-4 bg-primary/5 border border-primary/10 rounded-xl text-right text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-                  {section.secondaryText}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
+      )}
+    </div>
   );
 }
 
@@ -242,15 +185,16 @@ export function ContentInfoView({
   renderFileActions,
 }: ContentInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-5 max-w-4xl mx-auto', className)} dir="rtl">
-      {data.sections.map((section) => (
-        <SectionCard
-          key={section.key}
-          section={section}
-          onViewFile={onViewFile}
-          onDownloadFile={onDownloadFile}
-          renderFileActions={renderFileActions}
-        />
+    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto divide-y divide-border/40', className)} dir="rtl">
+      {data.sections.map((section, idx) => (
+        <div key={section.key} className={idx > 0 ? 'pt-6' : ''}>
+          <Section
+            section={section}
+            onViewFile={onViewFile}
+            onDownloadFile={onDownloadFile}
+            renderFileActions={renderFileActions}
+          />
+        </div>
       ))}
     </div>
   );
