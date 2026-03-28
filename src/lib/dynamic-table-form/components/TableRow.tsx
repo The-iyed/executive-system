@@ -321,17 +321,18 @@ const TableRowInner: React.FC<TableRowProps> = ({
           <AnimatePresence>
             {confirmingDelete && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
                 onClick={() => setConfirmingDelete(false)}
               >
                 <motion.div
-                  initial={{ y: 10 }}
-                  animate={{ y: 0 }}
-                  exit={{ y: 10 }}
+                  initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 8 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="bg-card border rounded-xl shadow-lg p-5 w-80 text-center"
                   onClick={(e) => e.stopPropagation()}
                 >
