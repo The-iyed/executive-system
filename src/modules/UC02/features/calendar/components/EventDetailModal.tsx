@@ -47,6 +47,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   onClose,
 }) => {
   const navigate = useNavigate();
+  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
 
   const isOptimistic = event?.id?.startsWith('optimistic-');
   const isOutlookId = event?.id?.startsWith('AAMk');
