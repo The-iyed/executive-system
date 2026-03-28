@@ -1,6 +1,19 @@
 import type { MeetingCardData } from '../components/meeting-card';
-import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '../types';
+import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel, getMeetingTypeLabel, getMeetingClassificationTypeLabel } from '../types';
 import { formatDateIslamic } from './format';
+
+/** Submitter object shape from API */
+export interface SubmitterObject {
+  id?: string;
+  name?: string;
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  ar_name?: string | null;
+  position?: string | null;
+  [key: string]: unknown;
+}
 
 /** Minimal shape the mapper needs — works with any module's MeetingApiResponse */
 export interface MeetingMapperInput {
@@ -11,9 +24,14 @@ export interface MeetingMapperInput {
   meeting_subject?: string | null;
   submitted_at?: string | null;
   created_at?: string | null;
+  /** Legacy flat submitter name field */
   submitter_name?: string | null;
+  /** New: submitter as nested object */
+  submitter?: SubmitterObject | string | null;
   meeting_channel?: string | null;
   meeting_classification?: string | null;
+  meeting_classification_type?: string | null;
+  meeting_type?: string | null;
   meeting_start_date?: string | null;
   is_data_complete?: boolean | null;
 }
@@ -44,9 +62,18 @@ function getStatusLabel(status: MeetingStatus | string): string {
   return String(status);
 }
 
+/** Extract display name from submitter (object or string) */
+function resolveSubmitterName(meeting: MeetingMapperInput): string {
+  const sub = meeting.submitter;
+  if (sub && typeof sub === 'object') {
+    return sub.ar_name || sub.name || [sub.first_name, sub.last_name].filter(Boolean).join(' ') || sub.email || sub.username || '';
+  }
+  if (typeof sub === 'string') return sub;
+  return meeting.submitter_name || '';
+}
+
 /**
  * Map any meeting API response to MeetingCardData for cards and lists.
- * Accepts any object matching MeetingMapperInput (loose coupling).
  */
 export function mapMeetingToCardData(meeting: MeetingMapperInput): MeetingCardData {
   const status = mapStatus(meeting.status);
@@ -57,12 +84,14 @@ export function mapMeetingToCardData(meeting: MeetingMapperInput): MeetingCardDa
     requestNumber: meeting.request_number,
     title: meeting.meeting_title || meeting.meeting_subject || '',
     date: formatDateIslamic(dateToUse) || '',
-    coordinator: meeting.submitter_name || '',
+    coordinator: resolveSubmitterName(meeting),
     coordinatorAvatar: undefined,
     status,
     statusLabel,
     location: meeting.meeting_channel || '',
     meetingCategory: getMeetingClassificationLabel(meeting.meeting_classification) ?? undefined,
+    meetingType: getMeetingTypeLabel(meeting.meeting_type) !== '-' ? getMeetingTypeLabel(meeting.meeting_type) : undefined,
+    meetingClassificationType: getMeetingClassificationTypeLabel(meeting.meeting_classification_type) !== '-' ? getMeetingClassificationTypeLabel(meeting.meeting_classification_type) : undefined,
     meetingDate: meeting.meeting_start_date ? formatDateIslamic(meeting.meeting_start_date) : undefined,
     isDataComplete:
       meeting.is_data_complete == null ? undefined : Boolean(meeting.is_data_complete),
