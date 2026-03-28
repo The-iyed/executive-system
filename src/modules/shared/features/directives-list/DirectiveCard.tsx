@@ -23,6 +23,7 @@ export interface DirectiveCardAction {
   icon: React.ReactNode;
   className?: string;
   onClick: (directive: MinisterDirective) => void;
+  hidden?: (directive: MinisterDirective) => boolean;
 }
 
 interface DirectiveCardProps {
