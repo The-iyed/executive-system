@@ -194,10 +194,7 @@ function FilterSelect<T extends string>({
 export default function DirectivesListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Filters>({});
-  const [showFilters, setShowFilters] = useState(false);
-
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const [activeType, setActiveType] = useState<DirectiveType | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
     queryKey: ['uc19-directives', currentPage, filters],
