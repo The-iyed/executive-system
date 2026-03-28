@@ -126,83 +126,94 @@ export function DirectivesList({
         {headerRight}
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1.5 border-b border-border/40 pb-0">
-        {tabMode === 'type' && typeTabs?.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onTypeChange?.(tab.value)}
-            className={cn(
-              'relative px-4 py-2 text-[13px] font-medium transition-colors rounded-t-lg',
-              activeType === tab.value ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {tab.label}
-            {activeType === tab.value && (
-              <span className="absolute bottom-0 inset-x-1 h-[2px] bg-primary rounded-full" />
-            )}
-          </button>
-        ))}
+      {/* White card wrapping tabs + list */}
+      <div className="rounded-2xl border border-border/30 bg-card shadow-sm overflow-hidden">
+        {/* Tabs bar */}
+        <div className="flex items-center gap-1 px-5 pt-4 pb-0">
+          {tabMode === 'type' && typeTabs?.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => onTypeChange?.(tab.value)}
+              className={cn(
+                'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-colors rounded-t-lg',
+                activeType === tab.value ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tab.label}
+              {activeType === tab.value && (
+                <span className="absolute bottom-0 inset-x-2 h-[2.5px] bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
 
-        {tabMode === 'status' && statusTabs?.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onStatusChange?.(tab.value)}
-            className={cn(
-              'relative px-4 py-2 text-[13px] font-medium transition-colors rounded-t-lg',
-              activeStatus === tab.value ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {tab.label}
-            {statusCounts && statusCounts[tab.value] > 0 && (
-              <span className={cn(
-                'mr-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-                activeStatus === tab.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
-              )}>
-                {statusCounts[tab.value]}
-              </span>
-            )}
-            {activeStatus === tab.value && (
-              <span className="absolute bottom-0 inset-x-1 h-[2px] bg-primary rounded-full" />
-            )}
-          </button>
-        ))}
-      </div>
+          {tabMode === 'status' && statusTabs?.map((tab) => {
+            const count = statusCounts?.[tab.value] ?? 0;
+            const isActive = activeStatus === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => onStatusChange?.(tab.value)}
+                className={cn(
+                  'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-colors rounded-t-lg',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={cn(
+                    'flex items-center justify-center size-6 rounded-full text-[11px] font-bold',
+                    isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                  )}>
+                    {count}
+                  </span>
+                )}
+                {isActive && (
+                  <span className="absolute bottom-0 inset-x-2 h-[2.5px] bg-primary rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* List */}
-      <div className="space-y-2.5">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm text-destructive font-medium">حدث خطأ أثناء تحميل البيانات</p>
-          </div>
-        ) : directives.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/60 mb-4">
-              <FileText className="size-6 text-muted-foreground" />
+        <div className="border-t border-border/30" />
+
+        {/* List */}
+        <div className="divide-y divide-border/20">
+          {isLoading ? (
+            <div className="p-4 space-y-2.5">
+              {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
-            <p className="text-[14px] font-medium text-foreground mb-1">لا توجد توجيهات</p>
-            <p className="text-[12px] text-muted-foreground">ستظهر التوجيهات هنا عند إنشائها</p>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-destructive font-medium">حدث خطأ أثناء تحميل البيانات</p>
+            </div>
+          ) : directives.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+                <FileText className="size-6 text-muted-foreground" />
+              </div>
+              <p className="text-[14px] font-medium text-foreground mb-1">لا توجد توجيهات</p>
+              <p className="text-[12px] text-muted-foreground">ستظهر التوجيهات هنا عند إنشائها</p>
+            </div>
+          ) : (
+            directives.map((d) => (
+              <DirectiveCard
+                key={d.id}
+                directive={d}
+                statusField={statusField}
+                actions={actions}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Pagination inside card */}
+        {totalPages > 1 && (
+          <div className="border-t border-border/20 px-5 py-3">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
           </div>
-        ) : (
-          directives.map((d) => (
-            <DirectiveCard
-              key={d.id}
-              directive={d}
-              statusField={statusField}
-              actions={actions}
-            />
-          ))
         )}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="pt-2 pb-4">
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
-        </div>
-      )}
     </div>
   );
 }
