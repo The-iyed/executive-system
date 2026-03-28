@@ -71,20 +71,24 @@ const Directives: React.FC = () => {
       />
 
       <AlertDialog open={!!confirmDirective} onOpenChange={(open) => !open && setConfirmDirective(null)}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الأخذ بالتوجيه</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent dir="rtl" className="max-w-sm rounded-2xl p-6">
+          <AlertDialogHeader className="gap-3">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10">
+              <CheckSquare className="size-5 text-primary" />
+            </div>
+            <AlertDialogTitle className="text-center text-base">تأكيد الأخذ بالتوجيه</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[13px] leading-relaxed">
               هل أنت متأكد من الأخذ بهذا التوجيه؟
-              <br />
-              <span className="font-medium text-foreground mt-1 block line-clamp-2">
-                {confirmDirective?.title}
-              </span>
+              {confirmDirective?.title && (
+                <span className="font-medium text-foreground mt-2 block line-clamp-2 text-[12px]">
+                  {confirmDirective.title}
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex gap-2 sm:flex-row-reverse">
-            <AlertDialogAction onClick={handleConfirmTake}>تأكيد</AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          <AlertDialogFooter className="flex gap-2 sm:flex-row mt-2">
+            <AlertDialogAction onClick={handleConfirmTake} className="flex-1 rounded-xl h-10">تأكيد</AlertDialogAction>
+            <AlertDialogCancel className="flex-1 rounded-xl h-10">إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
