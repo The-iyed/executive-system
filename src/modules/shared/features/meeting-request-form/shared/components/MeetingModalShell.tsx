@@ -46,6 +46,7 @@ export function MeetingModalShell({
   saving = false,
   showSaveAsDraft = false,
   submitLabel,
+  cancelLabel,
   onNext,
   onPrev,
   onSubmit,
