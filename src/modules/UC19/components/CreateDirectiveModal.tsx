@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Loader2, Save, ChevronDown, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
+import { X, Loader2, Save, ChevronDown, Mic, Square, Trash2, Play, Pause, FileText } from 'lucide-react';
 import {
   createDirective,
   uploadVoiceNote,
