@@ -2,9 +2,11 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
+import { MeetingOwnerType } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
 import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
-import FormMeetingModal from '@/modules/UC02/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
+
 import {
   createScheduledMeeting,
   updateScheduledMeeting,
@@ -81,6 +83,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setViewMode,
     goNext,
     goPrevious,
+    goToday,
   } = useCalendarNavigation(initialDate);
 
   const { events: timelineEvents, isLoading, isFetching, error, queryKey } = useCalendarEvents(
@@ -89,6 +92,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventData | null>(null);
+  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
@@ -122,56 +126,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [],
   );
 
-  const handleEdit = useCallback(
-    (ev: CalendarEventData, meetingDetail?: MeetingApiResponse) => {
-      setSelectedEvent(null);
-      const location = ev.location ?? null;
-      const inferredChannel = location && /^https?:\/\//i.test(location) ? 'VIRTUAL' : 'PHYSICAL';
-
-      const apiInvitees = meetingDetail?.invitees as Record<string, unknown>[] | undefined;
-      const initialInvitees = apiInvitees && apiInvitees.length > 0
-        ? apiInvitees.map((inv, i) => ({
-            _id: `inv-edit-${i}-${Date.now()}`,
-            name: String(inv.name ?? inv.external_name ?? ''),
-            email: String(inv.email ?? inv.external_email ?? ''),
-            position: String(inv.position ?? ''),
-            mobile: String(inv.mobile ?? ''),
-            sector: String(inv.sector ?? ''),
-            attendance_mechanism: String(inv.attendance_mechanism ?? 'PHYSICAL'),
-            access_permission: Boolean(inv.access_permission),
-            is_consultant: Boolean(inv.is_consultant),
-            meeting_owner: Boolean(inv.meeting_owner),
-            ...(inv.object_guid ? { object_guid: String(inv.object_guid) } : {}),
-          }))
-        : ev.attendees?.length
-          ? ev.attendees.map((a, i) => ({
-              _id: `inv-edit-${i}-${Date.now()}`,
-              name: a.name ?? '',
-              email: a.email ?? '',
-              position: '',
-              mobile: '',
-              sector: '',
-              attendance_mechanism: 'PHYSICAL',
-              access_permission: false,
-              is_consultant: false,
-              meeting_owner: false,
-            }))
-          : undefined;
-
-      setSlot({
-        date: ev.date,
-        time: ev.exactStartTime || ev.startTime,
-        endTime: ev.exactEndTime || ev.endTime || undefined,
-        title: ev.meeting_title ?? ev.title ?? '',
-        meetingLocation: ev.meeting_location ?? location,
-        meetingChannel: ev.meeting_channel ?? inferredChannel,
-        meetingId: ev.meeting_id ?? undefined,
-        mode: ev.meeting_id ? 'edit' : 'create',
-        initialInvitees,
-      });
-    },
-    [],
-  );
 
   const handleSlotSubmit = useCallback(
     async (values: Record<string, unknown>) => {
@@ -231,40 +185,30 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             ),
           );
 
-          // Close modal immediately
-          setSlot(null);
-
           await updateScheduledMeeting(slot!.meetingId!, payload as any);
           trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
             meeting_id: slot!.meetingId,
             meeting_title: values.title,
           });
 
+          // Close modal only after successful API response
+          setSlot(null);
+
           // Background sync
           queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         } else {
-          const optimisticId = `optimistic-${Date.now()}`;
-
-          // Optimistic insert
-          queryClient.setQueryData<CalendarTimelineEvent[]>(
-            [...queryKey],
-            (old) => [...(old ?? []), buildOptimisticEvent(
-              values.title as string, scheduled_start, scheduled_end, optimisticId,
-            )],
-          );
-
-          // Close modal immediately
-          setSlot(null);
-
           const result = await createScheduledMeeting(payload as any);
           trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
             meeting_id: result?.id,
             meeting_title: values.title,
           });
 
-          // Replace optimistic event with real one
+          // Close modal only after successful API response
+          setSlot(null);
+
+          // Insert real event into cache (optimistic update with real data)
           const realEvent: CalendarTimelineEvent = {
-            id: result.id ?? optimisticId,
+            id: result.id ?? `created-${Date.now()}`,
             title: result.meeting_title ?? (values.title as string) ?? 'اجتماع',
             start: result.scheduled_start ?? scheduled_start,
             end: result.scheduled_end ?? scheduled_end,
@@ -282,7 +226,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           queryClient.setQueryData<CalendarTimelineEvent[]>(
             [...queryKey],
-            (old) => (old ?? []).map((e) => (e.id === optimisticId ? realEvent : e)),
+            (old) => [...(old ?? []), realEvent],
           );
 
           const meetingForCache = normalizedMeetingFromCreateResponse(result as unknown as Record<string, unknown>);
@@ -314,6 +258,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         viewMode={viewMode}
         onPrevious={goPrevious}
         onNext={goNext}
+        onToday={goToday}
+        onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
       />
 
@@ -339,7 +285,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {error && !isLoading && (
-        <div className="absolute top-4 left-4 right-4 bg-destructive/10 border border-destructive/20 rounded-lg p-3 z-20">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
           <p className="text-sm text-destructive text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
             حدث خطأ أثناء تحميل المواعيد. يرجى المحاولة مرة أخرى.
           </p>
@@ -349,34 +295,42 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <EventDetailModal
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
-        onEdit={handleEdit}
+        onEdit={(meetingId) => {
+          setSelectedEvent(null);
+          setEditMeetingId(meetingId);
+        }}
       />
 
-      <FormMeetingModal
-        open={!!slot}
-        onOpenChange={(open) => !open && setSlot(null)}
-      >
-        {slot && (
-          <CalendarSlotMeetingForm
-            key={slot.meetingId ?? `create-${slot.date.getTime()}-${slot.time}-${slot.endTime ?? ''}`}
-            slotDate={slot.date}
-            slotTime={slot.time}
-            slotEndTime={slot.endTime}
-            initialTitle={slot.title ?? ''}
-            initialMeetingLocation={slot.meetingLocation ?? undefined}
-            initialMeetingChannel={slot.meetingChannel ?? ''}
-            initialInvitees={slot.initialInvitees}
-            mode={slot.mode}
-            isSubmitting={slotSubmitting}
-            submitError={slotError}
-            onSubmit={handleSlotSubmit as any}
-            onCancel={() => {
-              setSlotError(null);
-              setSlot(null);
-            }}
-          />
-        )}
-      </FormMeetingModal>
+      <SubmitterModal
+        callerRole={MeetingOwnerType.SCHEDULING}
+        open={!!editMeetingId}
+        onOpenChange={(open) => { if (!open) setEditMeetingId(null); }}
+        editMeetingId={editMeetingId ?? undefined}
+        showAiSuggest
+      />
+
+      {slot && (
+        <CalendarSlotMeetingForm
+          key={slot.meetingId ?? `create-${slot.date.getTime()}-${slot.time}-${slot.endTime ?? ''}`}
+          open={!!slot}
+          onOpenChange={(open) => !open && setSlot(null)}
+          slotDate={slot.date}
+          slotTime={slot.time}
+          slotEndTime={slot.endTime}
+          initialTitle={slot.title ?? ''}
+          initialMeetingLocation={slot.meetingLocation ?? undefined}
+          initialMeetingChannel={slot.meetingChannel ?? ''}
+          initialInvitees={slot.initialInvitees}
+          mode={slot.mode}
+          isSubmitting={slotSubmitting}
+          submitError={slotError}
+          onSubmit={handleSlotSubmit as any}
+          onCancel={() => {
+            setSlotError(null);
+            setSlot(null);
+          }}
+        />
+      )}
     </div>
   );
 };

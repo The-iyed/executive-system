@@ -41,6 +41,7 @@ export const schedulerStep1Schema = z.object({
   deadline: z.string().optional(),
   meeting_classification_type: z.string().optional(),
   meeting_confidentiality: z.nativeEnum(MeetingConfidentiality),
+  is_on_behalf_of: z.enum([BOOL.TRUE, BOOL.FALSE]).default(BOOL.TRUE),
   agenda_items: z.array(agendaItemSchema).default([]),
   note: z.string().max(1000, "الحد الأقصى 1000 حرف").optional(),
   related_directive: z.string().optional(),

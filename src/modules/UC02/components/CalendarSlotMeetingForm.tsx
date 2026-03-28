@@ -1,28 +1,27 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FormTable, FormInput, FormField, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
-import { DateTimePickerField } from '@/modules/shared/features/meeting-request-form/shared/fields/DateTimePickerField';
-import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
-import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
-import {
-  MEETING_CHANNEL_OPTIONS,
-  MEETING_LOCATION_OPTIONS,
-  LOCATION_OPTIONS,
-  INVITEES_TABLE_COLUMNS,
-  getLocationDropdownValue,
-  showLocationOtherInput,
-  isPresetLocation,
-} from '../features/MeetingForm/utils/constants';
-
-import { searchByEmail, type ADUserByEmail } from '../data/adIntegrationApi';
-import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
-import { X } from 'lucide-react';
+import React, { useMemo, useRef, useCallback } from 'react';
+import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
+
+import {
+  MeetingTitleField,
+  MeetingDateField,
+  MeetingChannelField,
+  LocationField,
+  LocationCustomField,
+  ProposersField,
+} from '@/modules/shared/features/meeting-request-form/shared/fields';
+import { MeetingLocation } from '@/modules/shared/features/meeting-request-form/shared/types/enums';
+import { MeetingModalShell } from '@/modules/shared/features/meeting-request-form/shared/components';
+
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
+import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
+import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
+import type { ProposerSelection } from '@/modules/shared/features/meeting-request-form/shared/fields/ProposersSelect';
 
-
-
-/** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
+/** Build ISO preserving timezone so slot time is sent correctly. */
 function toISOStart(date: Date, time: string): string {
   const [h = 0, m = 0] = time.split(':').map(Number);
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
@@ -35,34 +34,50 @@ export interface CalendarSlotMeetingFormSubmitValues {
   end_date: string;
   meeting_channel: string;
   meeting_location?: string;
-  /** Full proposer payloads for API */
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
 }
 
 export interface CalendarSlotMeetingFormProps {
-  /** Initial slot start (HH:mm) */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   slotDate: Date;
   slotTime: string;
-  /** Initial slot end (HH:mm). If set, form shows exact range (e.g. 7:00–7:30). */
   slotEndTime?: string;
-  /** Optional initial values when editing an existing scheduled meeting from the calendar */
   initialTitle?: string;
   initialMeetingChannel?: string;
   initialMeetingLocation?: string;
-  /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
-  /** Form mode: 'create' for new meetings, 'edit' for existing ones */
   mode?: 'create' | 'edit';
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
-  /** When true, submit button is disabled (e.g. API in progress). */
   isSubmitting?: boolean;
-  /** Error message to show above actions (e.g. API error). */
   submitError?: string | null;
 }
 
+const calendarMeetingSchema = z.object({
+  meeting_title: z.string().trim().min(1, "عنوان الاجتماع مطلوب"),
+  meeting_start_date: z.string().min(1, "موعد البداية مطلوب"),
+  meeting_end_date: z.string().min(1, "موعد النهاية مطلوب"),
+  meeting_channel: z.string().min(1, "آلية انعقاد الاجتماع مطلوب"),
+  meeting_location: z.string().default(""),
+  meeting_location_custom: z.string().default(""),
+  proposers: z.array(z.any()).default([]),
+}).superRefine((data, ctx) => {
+  const needsLocation = data.meeting_channel === 'PHYSICAL' || data.meeting_channel === 'HYBRID';
+  if (needsLocation && (!data.meeting_location || data.meeting_location.trim() === '')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['meeting_location'], message: 'الموقع مطلوب' });
+  }
+  if (needsLocation && data.meeting_location === 'OTHER' && (!data.meeting_location_custom || data.meeting_location_custom.trim() === '')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['meeting_location_custom'], message: 'يرجى تحديد الموقع' });
+  }
+});
+
+type FormValues = z.infer<typeof calendarMeetingSchema>;
+
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
+  open,
+  onOpenChange,
   slotDate,
   slotTime,
   slotEndTime,
@@ -76,7 +91,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   isSubmitting = false,
   submitError = null,
 }) => {
-  const [title, setTitle] = useState(initialTitle ?? '');
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
     if (slotEndTime) return toISOStart(slotDate, slotEndTime);
@@ -84,344 +98,186 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
     return toISOStringWithTimezone(d);
   }, [slotDate, slotTime, slotEndTime]);
-  const [startDate, setStartDate] = useState(startDefault);
-  const [endDate, setEndDate] = useState(endDefault);
-  const [meetingChannel, setMeetingChannel] = useState(initialMeetingChannel ?? '');
-  const [meetingLocation, setMeetingLocation] = useState(initialMeetingLocation ?? '');
-  const [meetingLocationOption, setMeetingLocationOption] = useState(
-    initialMeetingLocation && isPresetLocation(initialMeetingLocation) ? initialMeetingLocation : ''
+
+  const methods = useForm<FormValues>({
+    resolver: zodResolver(calendarMeetingSchema),
+    defaultValues: {
+      meeting_title: initialTitle ?? '',
+      meeting_start_date: startDefault,
+      meeting_end_date: endDefault,
+      meeting_channel: initialMeetingChannel ?? '',
+      meeting_location: initialMeetingLocation ?? '',
+      meeting_location_custom: '',
+      proposers: [],
+    },
+  });
+
+  const inviteesRef = useRef<DynamicTableFormHandle>(null);
+  const formSubmitRef = useRef<(() => void) | null>(null);
+
+  return (
+    <FormProvider {...methods}>
+      <CalendarFormInner
+        open={open}
+        onOpenChange={onOpenChange}
+        mode={mode}
+        inviteesRef={inviteesRef}
+        formSubmitRef={formSubmitRef}
+        initialInvitees={initialInvitees}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+      />
+    </FormProvider>
   );
+};
+
+/* ─── Inner form (has access to FormProvider context) ─── */
+
+interface InnerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: 'create' | 'edit';
+  inviteesRef: React.RefObject<DynamicTableFormHandle | null>;
+  formSubmitRef: React.MutableRefObject<(() => void) | null>;
+  initialInvitees?: Array<Record<string, unknown>>;
+  isSubmitting: boolean;
+  submitError: string | null;
+  onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
+  onCancel: () => void;
+}
+
+function CalendarFormInner({
+  open,
+  onOpenChange,
+  mode,
+  inviteesRef,
+  formSubmitRef,
+  initialInvitees,
+  isSubmitting,
+  submitError,
+  onSubmit,
+  onCancel,
+}: InnerProps) {
+  const { handleSubmit, watch, trigger, formState: { isSubmitted } } = useFormContext<FormValues>();
+  const meetingChannel = watch('meeting_channel');
+
+  const showLocation = meetingChannel === 'PHYSICAL' || meetingChannel === 'HYBRID';
+  const meetingLocation = watch('meeting_location');
+  const isOther = meetingLocation === MeetingLocation.OTHER;
+
+  // Re-validate location fields when their visibility/value changes after first submit
+  React.useEffect(() => {
+    if (isSubmitted) {
+      trigger(['meeting_location', 'meeting_location_custom']);
+    }
+  }, [meetingChannel, meetingLocation, isSubmitted, trigger]);
+
   const minStartDate = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const inviteesRef = useRef<DynamicTableFormHandle>(null);
-  /** Each selected proposer keeps full AD row for API */
-  const [proposerSelections, setProposerSelections] = useState<
-    (ADUserByEmail & { id: string; label: string })[]
-  >([]);
 
-  const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
-  /** Cache from initial load on open; filtering when user types is client-side only (no API). */
-  const proposerOptionsCacheRef = useRef<Array<{ value: string; label: string; email?: string }>>([]);
+  const doSubmit = useCallback(
+    (data: FormValues) => {
+      const start = data.meeting_start_date ? new Date(data.meeting_start_date).getTime() : 0;
+      if (start <= Date.now()) return;
 
-  const loadProposerAdOptions = useCallback(
-    async (search: string, _skip: number, limit: number) => {
-      const trimmed = search?.trim() ?? '';
-      const selectedIds = new Set(proposerSelections.map((p) => p.id));
-      const excludeSelected = <T extends { value: string }>(opts: T[]) =>
-        opts.filter((o) => !selectedIds.has(o.value));
+      const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
+      if (!inviteesPayload) return;
 
-      if (trimmed.length < 1) {
-        try {
-          const initialLimit = 200;
-          const users = await searchByEmail('', initialLimit);
-          users.forEach((u) => {
-            const k = u.objectGUID ?? u.mail ?? '';
-            if (k) proposerAdByIdRef.current[k] = u;
-          });
-          const items = users.map((u) => {
-            const fullName = u.displayNameAR ?? u.displayNameEN ?? u.displayName ?? '';
-            const email = u.mail ?? '';
-            const id = u.objectGUID ?? email ?? `ad-${email}`;
-            return { value: id, label: fullName ? `${fullName} (${email})` : email, email };
-          });
-          proposerOptionsCacheRef.current = items;
-          const out = excludeSelected(items).slice(0, limit);
-          return {
-            items: out,
-            total: out.length,
-            skip: 0,
-            limit,
-            has_next: false,
-            has_previous: false,
-          };
-        } catch {
-          return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
+      let meeting_location: string | undefined;
+      if (showLocation) {
+        if (data.meeting_location === MeetingLocation.OTHER) {
+          meeting_location = data.meeting_location_custom?.trim() || undefined;
+        } else {
+          meeting_location = data.meeting_location || undefined;
         }
       }
 
-      const cache = proposerOptionsCacheRef.current;
-      const term = trimmed.toLowerCase();
-      const filtered = excludeSelected(cache).filter(
-        (o) =>
-          (o.label && o.label.toLowerCase().includes(term)) ||
-          (o.email && o.email.toLowerCase().includes(term))
-      );
-      const items = filtered.slice(0, limit);
-      return {
-        items,
-        total: filtered.length,
-        skip: 0,
-        limit,
-        has_next: false,
-        has_previous: false,
-      };
+      const proposerSelections = data.proposers ?? [];
+      const proposers: CreateScheduledMeetingProposer[] | undefined =
+        proposerSelections.length > 0
+          ? proposerSelections.map((p) => ({
+              object_guid: p.objectGUID ?? p.mail ?? '',
+              email: p.mail ?? '',
+              name: p.displayNameAR ?? p.displayNameEN ?? p.displayName ?? p._label ?? p.mail ?? '',
+              name_ar: p.displayNameAR ?? undefined,
+              name_en: p.displayNameEN ?? undefined,
+              mobile: p.mobile ?? undefined,
+              title: p.title ?? undefined,
+              department: p.department ?? undefined,
+              company: p.company ?? undefined,
+              given_name: p.givenName,
+              sn: p.sn,
+              cn: p.cn,
+            }))
+          : undefined;
+
+      onSubmit({
+        title: data.meeting_title.trim(),
+        start_date: data.meeting_start_date,
+        end_date: data.meeting_end_date,
+        meeting_channel: data.meeting_channel,
+        meeting_location,
+        proposers,
+        invitees: inviteesPayload,
+      });
     },
-    [proposerSelections]
+    [onSubmit, showLocation, inviteesRef]
   );
 
-  const addProposer = useCallback((opt: { value: string; label: string; email?: string }) => {
-    const fromMap = proposerAdByIdRef.current[opt.value];
-    const base: ADUserByEmail = fromMap ?? {
-      objectGUID: opt.value.startsWith('ad-') ? undefined : opt.value,
-      mail: opt.email ?? (opt.value.startsWith('ad-') ? opt.value.slice(3) : opt.value),
-      displayName: opt.label.split(/\s+\(/)[0]?.trim(),
-    };
-    const id = base.objectGUID ?? base.mail ?? opt.value;
-    setProposerSelections((prev) => {
-      if (prev.some((p) => p.id === id)) return prev;
-      return [...prev, { ...base, id, label: opt.label }];
-    });
-  }, []);
+  // Expose form submit trigger via ref
+  formSubmitRef.current = handleSubmit(doSubmit);
 
-  const removeProposer = useCallback((id: string) => {
-    setProposerSelections((prev) => prev.filter((p) => p.id !== id));
-  }, []);
-
-  const [titleTouched, setTitleTouched] = useState(false);
-  const titleTrimmed = title.trim();
-  const showTitleError = titleTouched && !titleTrimmed;
-  const [pastDateError, setPastDateError] = useState<string | null>(null);
-  const [locationTouched, setLocationTouched] = useState(false);
-
-  const isPhysical = meetingChannel === 'PHYSICAL';
-  const locationDropdownValue = getLocationDropdownValue(meetingLocation, meetingLocationOption);
-  const showLocationOtherInputField = showLocationOtherInput(meetingLocation, meetingLocationOption);
-  const locationRequired = isPhysical;
-  const locationValid = !locationRequired || (locationDropdownValue === LOCATION_OPTIONS.OTHER ? meetingLocation.trim() !== '' : locationDropdownValue !== '');
-  const showLocationError = locationTouched && locationRequired && !locationValid;
-
-  const handleMeetingChannelChange = useCallback((value: string) => {
-    setMeetingChannel(value);
-    if (value !== 'PHYSICAL') {
-      setMeetingLocation('');
-      setMeetingLocationOption('');
-    }
-  }, []);
-
-  const handleLocationOptionChange = useCallback((value: string) => {
-    setMeetingLocationOption(value);
-    setMeetingLocation(isPresetLocation(value) ? value : '');
-  }, []);
-
-
-  const getMeetingLocationForSubmit = useCallback((): string | undefined => {
-    if (!isPhysical) return undefined;
-    const loc = meetingLocation?.trim() ?? '';
-    if (isPresetLocation(loc)) return loc;
-    if (loc !== '') return loc;
-    if (isPresetLocation(locationDropdownValue)) return locationDropdownValue;
-    if ((locationDropdownValue as string) === LOCATION_OPTIONS.OTHER && loc !== '') return loc;
-    return undefined;
-  }, [isPhysical, meetingLocation, locationDropdownValue]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setTitleTouched(true);
-    setPastDateError(null);
-    setLocationTouched(true);
-    if (!titleTrimmed) return;
-    if (!meetingChannel.trim()) return;
-    const start = startDate ? new Date(startDate).getTime() : 0;
-    if (start <= Date.now()) {
-      setPastDateError('لا يمكن إنشاء اجتماع في وقت مضى. يرجى اختيار تاريخ ووقت في المستقبل.');
-      return;
-    }
-    if (locationRequired && !locationValid) return;
-    const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
-    if (!inviteesPayload) return;
-
-    const meeting_location = getMeetingLocationForSubmit();
-
-    const proposers: CreateScheduledMeetingProposer[] | undefined =
-      proposerSelections.length > 0
-        ? proposerSelections.map((p) => ({
-            object_guid: p.objectGUID ?? p.mail ?? p.id,
-            email: p.mail ?? '',
-            name: p.displayNameAR ?? p.displayNameEN ?? p.displayName ?? p.label ?? p.mail ?? '',
-            name_ar: p.displayNameAR,
-            name_en: p.displayNameEN,
-            mobile: p.mobile,
-            title: p.title,
-            department: p.department,
-            company: p.company,
-            given_name: p.givenName,
-            sn: p.sn,
-            cn: p.cn,
-          }))
-        : undefined;
-
-    onSubmit({
-      title: titleTrimmed,
-      start_date: startDate,
-      end_date: endDate,
-      meeting_channel: meetingChannel,
-      meeting_location,
-      proposers,
-      invitees: inviteesPayload,
-    });
-  };
+  const handleModalSubmit = useCallback(() => {
+    formSubmitRef.current?.();
+  }, [formSubmitRef]);
 
   return (
-    <div className="flex flex-col gap-6 p-2 pb-48" dir="rtl">
-      <h2 className="text-xl font-bold text-foreground text-right">
-        {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
-      </h2>
+    <MeetingModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      currentStep={1}
+      onStepClick={() => {}}
+      saving={isSubmitting}
+      submitLabel={mode === 'edit' ? 'تحديث' : 'حفظ'}
+      cancelLabel="إلغاء"
+      onNext={handleModalSubmit}
+      onPrev={() => {}}
+      onSubmit={handleModalSubmit}
+      onSaveAsDraft={() => {}}
+      hideSteps
+      steps={[{ number: 1, label: "معلومات الاجتماع" }]}
+      title={mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
+      subtitle="يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع"
+    >
+      <div className="flex flex-col gap-5">
+        <MeetingTitleField />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="calendar-slot-title" className="text-sm font-medium text-gray-900 text-right">
-            عنوان الاجتماع <span className="text-red-500">*</span>
-          </label>
-          <FormInput
-            id="calendar-slot-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => setTitleTouched(true)}
-            placeholder="عنوان الاجتماع"
-            fullWidth
-            error={showTitleError}
-          />
-          {showTitleError && (
-            <p className="text-right text-sm text-red-600">عنوان الاجتماع مطلوب</p>
-          )}
-        </div>
+        <MeetingDateField
+          startName="meeting_start_date"
+          endName="meeting_end_date"
+          required
+          minDate={minStartDate}
+        />
 
-        <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
-          <DateTimePickerField
-            value={startDate}
-            endValue={endDate}
-            onChange={(v) => {
-              setPastDateError(null);
-              setStartDate(v);
-            }}
-            onChangeEnd={(v) => {
-              setEndDate(v);
-            }}
-            minDate={minStartDate}
-            placeholder="اختر التاريخ والوقت"
-          />
-        </FormField>
-        {pastDateError && (
-          <p className="text-right text-sm text-red-600">{pastDateError}</p>
-        )}
+        <MeetingChannelField />
 
-        <FormField className="w-full min-w-0" label="آلية انعقاد الاجتماع" required>
-          <FormSelect
-            value={meetingChannel}
-            onValueChange={handleMeetingChannelChange}
-            options={MEETING_CHANNEL_OPTIONS}
-            placeholder="حضوري / افتراضي / مختلط"
-            error={false}
-          />
-        </FormField>
-
-
-        {isPhysical && (
+        {showLocation && (
           <>
-            <FormField
-              className="w-full min-w-0"
-              label="الموقع"
-              required
-              error={showLocationError ? 'الموقع مطلوب' : undefined}
-            >
-              <FormSelect
-                value={locationDropdownValue || undefined}
-                onValueChange={(v) => handleLocationOptionChange(v ?? '')}
-                options={MEETING_LOCATION_OPTIONS}
-                placeholder="اختر الموقع"
-                error={showLocationError}
-              />
-            </FormField>
-            {showLocationOtherInputField && (
-              <FormField
-                className="w-full min-w-0"
-                label="تحديد الموقع (موقع آخر)"
-                required
-                error={showLocationError ? 'الموقع مطلوب' : undefined}
-              >
-                <FormInput
-                  value={meetingLocation}
-                  onChange={(e) => setMeetingLocation(e.target.value)}
-                  onBlur={() => setLocationTouched(true)}
-                  placeholder="أدخل الموقع"
-                  error={showLocationError}
-                  fullWidth
-                />
-              </FormField>
-            )}
+            <LocationField />
+            {isOther && <LocationCustomField />}
           </>
         )}
 
-        {/* المقترحون — search by email (AD), same as invitees */}
-        <div className="w-full flex flex-col gap-3">
-          <h3 className="text-right text-[22px] font-bold text-[#101828]">المقترحون</h3>
-          <p className="text-right text-[14px] text-[#667085]">
-            المستخدمون الذين يتلقون إشعاراً دون إضافتهم كمدعوين (اختياري).
-          </p>
-          <FormAsyncSelectV2
-            key={proposerSelections.length}
-            value={null}
-            onValueChange={(opt) => {
-              if (opt) addProposer(opt);
-            }}
-            loadOptions={loadProposerAdOptions}
-            placeholder="ابحث بالبريد أو اختر..."
-            isClearable
-            fullWidth
-            isSearchable
-            limit={10}
-            defaultOptions={true}
-            searchPlaceholder="اكتب البريد للبحث..."
-            emptyMessage="لم يتم العثور على مستخدمين"
-          />
-          {proposerSelections.length > 0 && (
-            <div
-              className={cn(
-                'w-full border border-[#D0D5DD] rounded-lg overflow-hidden p-4',
-                'bg-white max-h-[200px] overflow-y-auto'
-              )}
-            >
-              <ul className="flex flex-col gap-2">
-                {proposerSelections.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
-                  >
-                    <span className="text-[14px] text-[#344054]">
-                      {p.label}
-                      {p.mail ? ` (${p.mail})` : ''}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="إزالة"
-                      onClick={() => removeProposer(p.id)}
-                      className="flex items-center justify-center shrink-0 w-6 h-6 rounded border border-[#D0D5DD] hover:bg-red-50 hover:border-red-300 text-[#667085] hover:text-red-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-{/* 
-        <FormTable
-          title="المدعوون (مقدم الطلب)"
-          columns={INVITEES_TABLE_COLUMNS}
-          rows={inviteeRows}
-          onAddRow={handleAddInvitee}
-          onDeleteRow={handleDeleteInvitee}
-          onUpdateRow={handleUpdateInvitee}
-          addButtonLabel="إضافة مدعو"
-          emptyStateMessage="لا يوجد مدعوون"
-          customCellRender={{
-            email: inviteeEmailCellRender,
-          }}
-        /> */}
+        <div className="border-t border-border/60 my-1" />
+
+        <ProposersField />
+
+        <div className="border-t border-border/60 my-1" />
 
         <InviteesTableForm
           tableRef={inviteesRef}
@@ -431,38 +287,13 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         />
 
         {submitError && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-right text-sm text-red-600">{submitError}</p>
+          <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <p className="text-sm text-destructive">{submitError}</p>
           </div>
         )}
-
-        <div className="flex flex-row gap-3 justify-end pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            إلغاء
-          </button>
-          <button
-            type="submit"
-            disabled={
-              isSubmitting ||
-              !titleTrimmed ||
-              !meetingChannel.trim() ||
-              (locationRequired && !locationValid)
-            }
-            className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting
-              ? (mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...')
-              : (mode === 'edit' ? 'تحديث' : 'حفظ')}
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </MeetingModalShell>
   );
-};
+}
 
 export default CalendarSlotMeetingForm;

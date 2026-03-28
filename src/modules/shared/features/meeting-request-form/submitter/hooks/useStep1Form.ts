@@ -49,8 +49,8 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     ...initialValues,
   };
 
-  // When meeting_owner exists or scheduler is editing, force on-behalf to true
-  if (options?.isSchedulerEdit || (initialValues?.meeting_owner && typeof initialValues.meeting_owner === 'object')) {
+  // When meeting_owner exists, force on-behalf to true
+  if (initialValues?.meeting_owner && typeof initialValues.meeting_owner === 'object') {
     defaults.is_on_behalf_of = BOOL.TRUE;
   }
 

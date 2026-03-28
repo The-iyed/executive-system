@@ -25,6 +25,10 @@ export function useCalendarNavigation(initialDate?: Date) {
     });
   }, [viewMode]);
 
+  const goToday = useCallback(() => {
+    setCurrentDate(new Date());
+  }, []);
+
   return {
     currentDate,
     viewMode,
@@ -32,5 +36,6 @@ export function useCalendarNavigation(initialDate?: Date) {
     setViewMode,
     goNext,
     goPrevious,
+    goToday,
   };
 }
