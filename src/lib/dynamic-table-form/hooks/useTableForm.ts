@@ -110,6 +110,15 @@ export function useTableForm({
     );
     setRows(updated);
     setTouched((prev) => new Set(prev).add(`${rowIndex}_${fieldName}`));
+
+    // Clear error for this field when user provides a value
+    setErrors((prev) => {
+      if (!prev[rowIndex] || !prev[rowIndex][fieldName]) return prev;
+      const newErrors = [...prev];
+      newErrors[rowIndex] = { ...newErrors[rowIndex], [fieldName]: null };
+      return newErrors;
+    });
+
     onChange?.(updated);
   }, [rows, onChange]);
 
