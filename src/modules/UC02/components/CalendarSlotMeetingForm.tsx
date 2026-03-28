@@ -160,12 +160,19 @@ function CalendarFormInner({
   onSubmit,
   onCancel,
 }: InnerProps) {
-  const { handleSubmit, watch } = useFormContext<FormValues>();
+  const { handleSubmit, watch, trigger, formState: { isSubmitted } } = useFormContext<FormValues>();
   const meetingChannel = watch('meeting_channel');
 
   const showLocation = meetingChannel === 'PHYSICAL' || meetingChannel === 'HYBRID';
   const meetingLocation = watch('meeting_location');
   const isOther = meetingLocation === MeetingLocation.OTHER;
+
+  // Re-validate location fields when their visibility/value changes after first submit
+  React.useEffect(() => {
+    if (isSubmitted) {
+      trigger(['meeting_location', 'meeting_location_custom']);
+    }
+  }, [meetingChannel, meetingLocation, isSubmitted, trigger]);
 
   const minStartDate = useMemo(() => {
     const d = new Date();
