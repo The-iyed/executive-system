@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
+import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
+import FormMeetingModal from '@/modules/UC02/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import {
   createScheduledMeeting,
   updateScheduledMeeting,
@@ -16,7 +18,6 @@ import {
   CalendarSkeleton,
   EventDetailModal,
   SyncIndicator,
-  CreateMeetingModal,
 } from './components';
 import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent } from './utils';
 import type { SlotSelection } from './types';
@@ -354,17 +355,31 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onEdit={handleEdit}
       />
 
-      <CreateMeetingModal
-        key={slot?.meetingId ?? `create-${slot?.date?.getTime()}-${slot?.time}-${slot?.endTime ?? ''}`}
-        slot={slot}
-        onClose={() => {
-          setSlotError(null);
-          setSlot(null);
-        }}
-        onSubmit={handleSlotSubmit}
-        isSubmitting={slotSubmitting}
-        submitError={slotError}
-      />
+      <FormMeetingModal
+        open={!!slot}
+        onOpenChange={(open) => !open && setSlot(null)}
+      >
+        {slot && (
+          <CalendarSlotMeetingForm
+            key={slot.meetingId ?? `create-${slot.date.getTime()}-${slot.time}-${slot.endTime ?? ''}`}
+            slotDate={slot.date}
+            slotTime={slot.time}
+            slotEndTime={slot.endTime}
+            initialTitle={slot.title ?? ''}
+            initialMeetingLocation={slot.meetingLocation ?? undefined}
+            initialMeetingChannel={slot.meetingChannel ?? ''}
+            initialInvitees={slot.initialInvitees}
+            mode={slot.mode}
+            isSubmitting={slotSubmitting}
+            submitError={slotError}
+            onSubmit={handleSlotSubmit as any}
+            onCancel={() => {
+              setSlotError(null);
+              setSlot(null);
+            }}
+          />
+        )}
+      </FormMeetingModal>
     </div>
   );
 };
