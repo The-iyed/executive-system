@@ -58,7 +58,7 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
           </div>
         </div>
 
-        {/* Search + headerRight */}
+        {/* Search + Filters + headerRight */}
         <div className="flex items-center gap-2">
           {headerRight}
           <div className="relative">
@@ -78,13 +78,8 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
               }}
             />
           </div>
+          {filtersSlot}
         </div>
-      </div>
-
-      {/* Row 2: Filters inline */}
-      {filtersSlot && (
-        <div className="flex items-center">{filtersSlot}</div>
-      )}
     </div>
   );
 };
