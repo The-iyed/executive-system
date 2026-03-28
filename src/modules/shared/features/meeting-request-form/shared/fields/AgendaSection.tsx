@@ -170,19 +170,25 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         </div>
       </div>
 
-      {rootError && (
+      {durationMismatch && fields.length > 0 && hasMeetingDuration && (
+        <p role="alert" className="text-xs text-destructive">
+          مجموع مدة عناصر الأجندة ({totalDuration} دقيقة) يجب أن يساوي مدة الاجتماع ({meetingDurationMinutes} دقيقة)
+        </p>
+      )}
+
+      {rootError && !durationMismatch && (
         <p role="alert" className="text-xs text-destructive">{rootError}</p>
       )}
 
-      {agendaEditable && (
-        <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg" disabled={!hasMeetingDuration} onClick={handleAdd}>
-          <Plus className="h-3.5 w-3.5" />
-          إضافة عنصر
-        </Button>
-      )}
+      <div className="flex items-center justify-between">
+        {agendaEditable && (
+          <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg" disabled={!hasMeetingDuration} onClick={handleAdd}>
+            <Plus className="h-3.5 w-3.5" />
+            إضافة عنصر
+          </Button>
+        )}
 
-      {fields.length > 0 && hasMeetingDuration && (
-        <div className="flex justify-between items-center">
+        {fields.length > 0 && hasMeetingDuration && (
           <span className={cn(
             "text-xs font-medium px-3 py-1.5 rounded-md",
             durationMismatch ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
@@ -194,8 +200,8 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
               </span>
             )}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
