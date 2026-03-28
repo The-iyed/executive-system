@@ -43,7 +43,7 @@ const Directives: React.FC = () => {
       id: 'meeting',
       label: 'طلب إجتماع',
       icon: <CalendarDays className="w-3.5 h-3.5" />,
-      className: 'text-primary-foreground bg-primary hover:opacity-90',
+      className: 'text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm hover:shadow',
       onClick: async (d: MinisterDirective) => {
         setSchedulerDirective({ directiveId: d.id, directiveText: d.title });
         setMeetingFormOpen(true);
