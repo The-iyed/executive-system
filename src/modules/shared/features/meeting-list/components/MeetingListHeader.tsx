@@ -10,6 +10,7 @@ interface MeetingListHeaderProps {
   search: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
+  filtersSlot?: React.ReactNode;
 }
 
 export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
@@ -20,9 +21,11 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
   search,
   onSearchChange,
   searchPlaceholder = 'بحث...',
+  filtersSlot,
 }) => {
   return (
-    <div className="px-6 pt-6 pb-4">
+    <div className="px-6 pt-6 pb-4 flex flex-col gap-3">
+      {/* Row 1: Title + Search */}
       <div className="flex items-center justify-between gap-4">
         {/* Title */}
         <div className="flex items-center gap-3">
@@ -55,11 +58,9 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Search + headerRight */}
         <div className="flex items-center gap-2">
           {headerRight}
-
-          {/* Search */}
           <div className="relative">
             <Search
               className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -79,6 +80,11 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Row 2: Filters inline */}
+      {filtersSlot && (
+        <div className="flex items-center">{filtersSlot}</div>
+      )}
     </div>
   );
 };
