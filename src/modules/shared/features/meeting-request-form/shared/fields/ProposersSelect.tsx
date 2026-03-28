@@ -83,48 +83,58 @@ export function ProposersSelect({
     [value, onChange]
   );
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const chipsRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
   const [visibleCount, setVisibleCount] = useState(value.length);
 
-  // Measure how many chips fit in one line
+  // Measure how many chips fit in the available width
   useEffect(() => {
     if (value.length === 0) { setVisibleCount(0); return; }
-    const container = chipsRef.current;
+    const container = measureRef.current;
     if (!container) { setVisibleCount(value.length); return; }
 
-    const measure = () => {
-      const children = Array.from(container.children) as HTMLElement[];
-      const containerRight = container.getBoundingClientRect().right;
-      // Reserve space for "+N" badge (~40px) and actions (~50px)
-      const maxRight = containerRight - 90;
+    const doMeasure = () => {
+      const chips = Array.from(container.querySelectorAll('[data-measure-chip]')) as HTMLElement[];
+      if (chips.length === 0) { setVisibleCount(value.length); return; }
+      
+      const containerWidth = container.offsetWidth;
+      // Reserve ~80px for "+N" badge + clear/chevron actions
+      const reserved = 80;
+      let usedWidth = 0;
       let count = 0;
-      for (const child of children) {
-        if (child.dataset.chip !== "true") continue;
-        if (child.getBoundingClientRect().right <= maxRight) {
+      
+      for (const chip of chips) {
+        const chipWidth = chip.offsetWidth + 6; // 6px for gap
+        if (usedWidth + chipWidth <= containerWidth - reserved) {
+          usedWidth += chipWidth;
           count++;
         } else break;
       }
       setVisibleCount(Math.max(1, count));
     };
 
-    // Temporarily show all to measure
-    container.style.flexWrap = "nowrap";
-    container.style.overflow = "hidden";
-    requestAnimationFrame(() => {
-      measure();
-      container.style.flexWrap = "";
-      container.style.overflow = "";
-    });
+    requestAnimationFrame(doMeasure);
+
+    const observer = new ResizeObserver(doMeasure);
+    if (container) observer.observe(container);
+    return () => observer.disconnect();
   }, [value]);
 
   const hiddenCount = value.length - visibleCount;
 
   return (
     <div ref={containerRef} className="relative">
+      {/* Hidden measurement container */}
+      <div ref={measureRef} className="absolute inset-x-0 top-0 flex items-center gap-1.5 px-3 py-1.5 pointer-events-none opacity-0 overflow-hidden" style={{ height: 0 }}>
+        {value.map((v) => (
+          <span key={v.objectGUID} data-measure-chip className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium max-w-[200px] shrink-0 whitespace-nowrap">
+            {v._label}
+          </span>
+        ))}
+      </div>
+
       {/* Trigger */}
       <button
-        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => {
@@ -141,11 +151,10 @@ export function ProposersSelect({
         {value.length === 0 ? (
           <span className="text-muted-foreground flex-1 text-right">{placeholder}</span>
         ) : (
-          <div ref={chipsRef} className="flex-1 flex items-center gap-1.5 flex-wrap overflow-hidden" style={{ maxHeight: 28 }}>
+          <div ref={chipsRef} className="flex-1 flex items-center gap-1.5 overflow-hidden">
             {value.slice(0, visibleCount).map((v) => (
               <span
                 key={v.objectGUID}
-                data-chip="true"
                 className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium max-w-[200px] shrink-0"
               >
                 <span className="truncate">{v._label}</span>
@@ -158,14 +167,8 @@ export function ProposersSelect({
                 />
               </span>
             ))}
-            {/* Hidden measurement chips */}
-            {value.slice(visibleCount).map((v) => (
-              <span key={v.objectGUID} data-chip="true" className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium max-w-[200px] shrink-0 invisible" aria-hidden>
-                <span className="truncate">{v._label}</span>
-              </span>
-            ))}
             {hiddenCount > 0 && (
-              <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-xs font-medium shrink-0">
+              <span className="inline-flex items-center bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-xs font-medium shrink-0">
                 +{hiddenCount}
               </span>
             )}
