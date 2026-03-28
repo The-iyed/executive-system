@@ -197,7 +197,7 @@ export default function DirectivesListPage() {
   const [activeType, setActiveType] = useState<DirectiveType | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['uc19-directives', currentPage, filters],
+    queryKey: ['uc19-directives', currentPage, activeType],
     queryFn: () => listDirectives({
       limit: PAGE_SIZE,
       skip: (currentPage - 1) * PAGE_SIZE,
