@@ -35,12 +35,13 @@ function formatDateOnly(iso?: string | null): string {
   return formatDateArabic(iso) || '—';
 }
 
-function yesNo(val?: boolean): string {
-  return val === true ? 'نعم' : val === false ? 'لا' : '—';
+function yesNo(val?: boolean | null): string | null {
+  return val === true ? 'نعم' : val === false ? 'لا' : null;
 }
 
-function str(val?: string | null): string {
-  return val?.trim() || '—';
+function str(val?: string | null): string | null {
+  const trimmed = val?.trim();
+  return trimmed || null;
 }
 
 /** Raw meeting data shape expected by the mapper */
