@@ -37,6 +37,7 @@ export function useSubmitterModal({
       queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
+      queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
     ]);
   }, [queryClient]);
 
