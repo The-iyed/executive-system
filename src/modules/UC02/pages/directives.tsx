@@ -182,12 +182,11 @@ const Directives: React.FC = () => {
         id: 'status', header: 'الحالة', width: 'flex-none min-w-24 w-24', align: 'end',
         render: (row) => {
           const d = directives.find((x) => x.id === row.id);
+          const isClosed = d?.scheduling_officer_status === 'CLOSED';
           return (
             <span className={cn(
               'text-xs font-medium px-2 py-1 rounded-md',
-              d?.scheduling_officer_status === 'CLOSED'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-amber-50 text-amber-700'
+              isClosed ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
             )}>
               {d ? SCHEDULING_OFFICER_STATUS_LABELS[d.scheduling_officer_status] : '-'}
             </span>
