@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { type UseFormReturn, useFieldArray, Controller } from "react-hook-form";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, cn } from "@/lib/ui";
 import { Plus, Trash2 } from "lucide-react";
