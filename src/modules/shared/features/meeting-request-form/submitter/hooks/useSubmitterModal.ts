@@ -36,6 +36,7 @@ export function useSubmitterModal({
     // Use refetchQueries to wait for the refetch to complete before closing modal
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
+      queryClient.refetchQueries({ queryKey: ['meeting-draft', meetingId] }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
