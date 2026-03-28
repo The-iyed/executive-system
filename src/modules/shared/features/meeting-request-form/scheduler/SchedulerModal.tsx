@@ -21,14 +21,17 @@ interface SchedulerModalProps {
   onSuccess?: (result: { meetingId: string; scheduled: boolean }) => void;
 }
 
-export function SchedulerModal({ open, onOpenChange, directiveId, directiveText }: SchedulerModalProps) {
+export function SchedulerModal({ open, onOpenChange, directiveId, directiveText, initialStep1Values, onSuccess }: SchedulerModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SchedulerStep1Values | null>(null);
   const [meetingId, setMeetingId] = useState<string | null>(null);
 
-  const directiveInitialValues = useMemo(
-    () => (directiveId ? { related_directive: directiveId } : undefined),
-    [directiveId],
+  const mergedInitialValues = useMemo(
+    () => ({
+      ...(directiveId ? { related_directive: directiveId } : {}),
+      ...initialStep1Values,
+    }),
+    [directiveId, initialStep1Values],
   );
   const [invitees, setInvitees] = useState<TableRow[]>([]);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
