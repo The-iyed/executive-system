@@ -1,6 +1,7 @@
 import React, { memo, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { ConfirmDialog } from "@/modules/shared/components/confirm-dialog";
 import { TableRow as TableRowType, RowErrors, SearchOption, ColumnConfig, SearchFn } from "../types";
 import {
   Select,
