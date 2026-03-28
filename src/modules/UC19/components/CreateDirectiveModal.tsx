@@ -276,92 +276,100 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
             </div>
           </div>
 
-          {/* Directive: Text OR Voice */}
+          {/* Directive: Text + Voice (matching reference design) */}
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-2">
               التوجيه <span className="text-destructive">*</span>
             </label>
 
-            {/* Always show textarea unless voice is saved */}
+            {/* Default state: textarea with voice button below */}
             {!hasVoice && !voice.isRecording && (
-              <>
+              <div className="rounded-2xl bg-muted/20 border border-border/30 overflow-hidden">
                 <textarea
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="اكتب التوجيه هنا..."
-                  rows={4}
-                  className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none transition-colors focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+                  placeholder="اكتب التوجيه هنا، أو استخدم الإدخال الصوتي..."
+                  rows={5}
+                  className="w-full bg-transparent px-4 pt-4 pb-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
                 />
-                <div className="flex justify-end mt-2">
+                <div className="flex items-center justify-between px-4 pb-3">
                   <button
                     type="button"
                     onClick={voice.startRecording}
-                    className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+                    className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
                   >
-                    <Mic className="size-3.5" />
-                    أو سجّل توجيهك صوتياً
+                    <Mic className="size-4" />
+                    تسجيل صوتي
                   </button>
+                  <span className="text-[11px] text-muted-foreground">أو سجّل توجيهك صوتيًا</span>
                 </div>
-              </>
+              </div>
             )}
 
             {/* Recording in progress */}
             {voice.isRecording && (
-              <div className="rounded-xl border-2 border-dashed border-destructive/30 bg-destructive/5 p-6">
-                <div className="flex flex-col items-center gap-3">
+              <div className="rounded-2xl border-2 border-dashed border-destructive/30 bg-destructive/[0.03] p-8">
+                <div className="flex flex-col items-center gap-4">
                   <div className="relative">
                     <span className="absolute inset-0 animate-ping rounded-full bg-destructive/20" />
-                    <div className="relative flex size-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
-                      <Mic className="size-6" />
+                    <div className="relative flex size-16 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg">
+                      <Mic className="size-7" />
                     </div>
                   </div>
-                  <p className="text-[13px] font-medium text-foreground">جاري التسجيل...</p>
-                  <p className="text-[20px] font-bold text-destructive tabular-nums">
+                  <p className="text-[14px] font-medium text-foreground">جاري التسجيل...</p>
+                  <p className="text-[28px] font-bold text-destructive tabular-nums tracking-wide">
                     {voice.formatDuration(voice.duration)}
                   </p>
                   <button
                     type="button"
                     onClick={voice.stopRecording}
-                    className="flex items-center gap-2 rounded-xl bg-destructive px-6 py-2.5 text-[12px] font-medium text-destructive-foreground transition-all hover:opacity-90 active:scale-95"
+                    className="flex items-center gap-2.5 rounded-xl bg-destructive px-8 py-3 text-[13px] font-semibold text-destructive-foreground transition-all hover:opacity-90 active:scale-95 shadow-md"
                   >
-                    <Square className="size-3.5" fill="currentColor" />
+                    <Square className="size-4" fill="currentColor" />
                     إيقاف التسجيل
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Voice preview */}
+            {/* Voice preview (after recording saved) */}
             {!voice.isRecording && hasVoice && (
-              <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
-                <div className="flex items-center gap-2.5 w-full">
+              <div className="rounded-2xl bg-muted/20 border border-border/30 p-4">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={voice.togglePlayback}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95 shadow-sm"
                   >
                     {voice.isPlaying ? (
-                      <Pause className="size-3.5" fill="currentColor" />
+                      <Pause className="size-4" fill="currentColor" />
                     ) : (
-                      <Play className="size-3.5" fill="currentColor" style={{ marginInlineStart: '2px' }} />
+                      <Play className="size-4" fill="currentColor" style={{ marginInlineStart: '2px' }} />
                     )}
                   </button>
-                  <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden cursor-pointer">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-100"
-                      style={{ width: `${voice.playProgress}%`, float: 'right' }}
-                    />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-2 rounded-full bg-border/50 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-100"
+                        style={{ width: `${voice.playProgress}%`, float: 'right' }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {voice.isPlaying ? voice.formatTime(voice.playCurrentTime) : '0:00'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {voice.formatDuration(voice.duration)}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 w-8 text-center">
-                    {voice.isPlaying ? voice.formatTime(voice.playCurrentTime) : voice.formatDuration(voice.duration)}
-                  </span>
                   <button
                     type="button"
                     onClick={voice.clearRecording}
-                    className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title="حذف التسجيل"
                   >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </div>
@@ -456,27 +464,27 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                           <option key={u.value} value={u.value}>{u.label}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                      <ChevronDown className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-
-          {mutation.isError && (
-            <p className="text-[11px] text-destructive">
-              حدث خطأ أثناء الإنشاء، يرجى المحاولة مرة أخرى
-            </p>
-          )}
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-card border-t border-border/30 px-6 py-4 flex items-center justify-between">
+        <div className="sticky bottom-0 bg-card border-t border-border/30 px-6 py-4 flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-xl px-5 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/60 transition-colors"
+          >
+            إلغاء
+          </button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {mutation.isPending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -484,13 +492,6 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
               <Save className="size-4" />
             )}
             حفظ التوجيه
-          </button>
-          <button
-            onClick={onClose}
-            disabled={mutation.isPending}
-            className="rounded-xl border border-border/50 bg-card px-5 py-2.5 text-[13px] font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
-          >
-            إلغاء
           </button>
         </div>
       </div>
