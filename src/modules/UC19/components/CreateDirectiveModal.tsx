@@ -41,7 +41,7 @@ const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
 export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProps) {
   const qc = useQueryClient();
 
-  const [directiveType, setDirectiveType] = useState<DirectiveType>('SCHEDULING');
+  const [directiveType, setDirectiveType] = useState<DirectiveType>('GENERAL');
   const [title, setTitle] = useState('');
   const [importance, setImportance] = useState<ImportanceLevel>('NORMAL');
   const [priority, setPriority] = useState<PriorityLevel>('NORMAL');
