@@ -130,7 +130,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           {directive.due_duration_enabled && directive.due_duration_value && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
               <Clock className="size-3" />
-              {directive.due_duration_value} {DURATION_LABELS[directive.due_duration_unit || 'DAY'] || 'يوم'}
+              {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY'] || 'يوم'}
             </span>
           )}
           {hasVoice && (
