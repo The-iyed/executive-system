@@ -243,6 +243,7 @@ function CalendarFormInner({
       onSubmit={handleModalSubmit}
       onSaveAsDraft={() => {}}
       hideSteps
+      steps={[{ number: 1, label: "معلومات الاجتماع" }]}
       title={mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
       subtitle="يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع"
     >
