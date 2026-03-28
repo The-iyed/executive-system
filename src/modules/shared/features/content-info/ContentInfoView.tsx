@@ -1,35 +1,40 @@
 /**
  * Shared ContentInfoView – production-ready read-only content display.
- * Renders file sections (presentation, optional, executive summary) and text sections (notes).
- * Clean, modern RTL layout following the same design system as MeetingInfoView.
+ * Modern, polished UI with subtle depth, refined cards, and proper RTL support.
+ * Uses design system tokens throughout.
  */
 import React from 'react';
 import { cn } from '@/lib/ui';
-import { FileCheck, FileText, ClipboardCheck, Download, Eye } from 'lucide-react';
+import { FileCheck, FileText, ClipboardCheck, Download, Eye, Zap } from 'lucide-react';
 import type { ContentInfoViewProps, ContentInfoSection, ContentFileItem } from './types';
 import pdfIcon from '../../assets/pdf.svg';
 
-/* ─── Icon map ─── */
-const SECTION_ICONS = {
-  presentation: FileCheck,
-  attachment: FileText,
-  summary: FileText,
-  notes: ClipboardCheck,
-} as const;
+/* ─── Section icon config ─── */
+const SECTION_CONFIG: Record<string, { icon: React.ElementType; gradient: string }> = {
+  presentation: { icon: FileCheck, gradient: 'from-primary/20 to-primary/5' },
+  attachment: { icon: FileText, gradient: 'from-primary/15 to-primary/5' },
+  summary: { icon: Zap, gradient: 'from-primary/15 to-primary/5' },
+  notes: { icon: ClipboardCheck, gradient: 'from-primary/15 to-primary/5' },
+};
 
-/* ─── File icon component ─── */
+/* ─── File icon ─── */
 function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string }) {
   const ext = (fileType ?? '').toLowerCase().replace(/^\./, '').trim();
   const nameExt = (fileName ?? '').toLowerCase().split('.').pop() ?? '';
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return <img src={pdfIcon} alt="pdf" className="h-10 w-10 object-contain flex-shrink-0" />;
+    return (
+      <div className="relative flex-shrink-0">
+        <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain" />
+      </div>
+    );
   }
 
+  const label = (ext || nameExt || 'FILE').toUpperCase().slice(0, 4);
   return (
-    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted flex-shrink-0">
-      <FileText className="h-5 w-5 text-destructive" />
+    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted border border-border/50 flex-shrink-0">
+      <span className="text-[10px] font-bold text-muted-foreground tracking-wide">{label}</span>
     </div>
   );
 }
@@ -40,31 +45,48 @@ function FileCard({
   onView,
   onDownload,
   extraActions,
+  variant = 'default',
 }: {
   file: ContentFileItem;
   onView?: () => void;
   onDownload?: () => void;
   extraActions?: React.ReactNode;
+  variant?: 'presentation' | 'default';
 }) {
+  const isPresentation = variant === 'presentation';
+
   return (
-    <div className="group flex items-center gap-3 px-4 py-3.5 bg-background border border-border rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+    <div className={cn(
+      'group relative flex items-center gap-4 px-5 py-4 rounded-xl border transition-all duration-300',
+      'bg-background hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]',
+      isPresentation
+        ? 'border-primary/20 hover:border-primary/40'
+        : 'border-border hover:border-primary/25',
+    )}>
+      {/* Subtle left accent for presentation */}
+      {isPresentation && (
+        <div className="absolute top-3 bottom-3 right-0 w-[3px] rounded-full bg-gradient-to-b from-primary to-primary/40" />
+      )}
+
       <FileIcon fileType={file.file_type} fileName={file.file_name} />
 
       <div className="flex flex-col items-end min-w-0 flex-1">
         <div className="flex items-center gap-2 w-full justify-end flex-wrap">
           {file.badge && (
-            <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
+            <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full flex-shrink-0 border border-primary/15">
               {file.badge}
             </span>
           )}
           <span className="text-sm font-semibold text-foreground truncate">{file.file_name}</span>
         </div>
-        <span className="text-xs text-muted-foreground mt-0.5">
-          {Math.round((file.file_size || 0) / 1024)} KB
+        <span className="text-xs text-muted-foreground mt-1">
+          {file.file_size >= 1024 * 1024
+            ? `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`
+            : `${Math.round((file.file_size || 0) / 1024)} KB`}
         </span>
       </div>
 
-      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
         {extraActions}
         {onDownload && file.blob_url && (
           <a
@@ -72,6 +94,7 @@ function FileCard({
             target="_blank"
             rel="noreferrer"
             className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+            title="تحميل"
           >
             <Download className="w-4 h-4" />
           </a>
@@ -80,7 +103,8 @@ function FileCard({
           <button
             type="button"
             onClick={onView}
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title="معاينة"
           >
             <Eye className="w-4 h-4" />
           </button>
@@ -93,14 +117,12 @@ function FileCard({
 /* ─── Empty state ─── */
 function EmptyState({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description?: string }) {
   return (
-    <div className="flex items-center gap-3 py-5 px-5 rounded-xl bg-muted/30 border-2 border-dashed border-border">
-      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-        <Icon className="w-5 h-5 text-muted-foreground" strokeWidth={1.2} />
+    <div className="flex flex-col items-center justify-center py-8 px-6 rounded-xl bg-muted/20 border-2 border-dashed border-border/60">
+      <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+        <Icon className="w-5 h-5 text-muted-foreground/70" strokeWidth={1.5} />
       </div>
-      <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-      </div>
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
+      {description && <p className="text-xs text-muted-foreground/70 mt-1">{description}</p>}
     </div>
   );
 }
@@ -117,21 +139,34 @@ function SectionCard({
   onDownloadFile?: (file: ContentFileItem) => void;
   renderFileActions?: (file: ContentFileItem, sectionKey: string) => React.ReactNode;
 }) {
-  const Icon = SECTION_ICONS[section.icon];
+  const config = SECTION_CONFIG[section.icon] ?? SECTION_CONFIG.attachment;
+  const Icon = config.icon;
   const files = section.files ?? [];
   const hasFiles = files.length > 0;
   const hasText = section.text && section.text.trim();
   const hasSecondary = section.secondaryText && section.secondaryText.trim();
   const isEmpty = !hasFiles && !hasText && !hasSecondary;
+  const isPresentation = section.key === 'presentation';
 
   return (
-    <section className="rounded-2xl border border-border bg-background overflow-hidden">
+    <section className="rounded-2xl border border-border/70 bg-background overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-muted/30">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+      <div className={cn(
+        'flex items-center gap-3 px-6 py-4',
+        'bg-gradient-to-l',
+        config.gradient,
+      )}>
+        <div className="w-10 h-10 rounded-xl bg-background border border-primary/15 flex items-center justify-center flex-shrink-0 shadow-sm">
           <Icon className="w-[18px] h-[18px] text-primary" strokeWidth={1.8} />
         </div>
-        <h3 className="text-[15px] font-bold text-foreground">{section.title}</h3>
+        <div className="flex flex-col">
+          <h3 className="text-[15px] font-bold text-foreground leading-tight">{section.title}</h3>
+          {hasFiles && (
+            <span className="text-[11px] text-muted-foreground mt-0.5">
+              {files.length} {files.length === 1 ? 'ملف' : 'ملفات'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Body */}
@@ -154,6 +189,7 @@ function SectionCard({
                   <FileCard
                     key={file.id}
                     file={file}
+                    variant={isPresentation ? 'presentation' : 'default'}
                     onView={onViewFile ? () => onViewFile(file) : undefined}
                     onDownload={onDownloadFile ? () => onDownloadFile(file) : undefined}
                     extraActions={renderFileActions?.(file, section.key)}
@@ -167,7 +203,7 @@ function SectionCard({
               <div className={cn(
                 'w-full px-5 py-4 rounded-xl text-right text-sm leading-relaxed whitespace-pre-wrap',
                 section.key === 'executive-summary'
-                  ? 'bg-[hsl(var(--warning-bg,48,96%,89%)/0.5)] border border-[hsl(var(--warning-border,48,96%,89%)/0.4)] text-foreground'
+                  ? 'bg-primary/5 border border-primary/15 text-foreground'
                   : 'bg-muted/40 border border-border/40 text-foreground',
               )}>
                 {section.text}
@@ -176,16 +212,16 @@ function SectionCard({
 
             {/* Secondary text (e.g. content officer notes) */}
             {hasSecondary && (
-              <div className={hasText ? 'pt-4 border-t border-border/30' : ''}>
+              <div className={hasText ? 'pt-4 border-t border-border/20' : ''}>
                 {section.secondaryLabel && (
                   <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-accent-foreground" strokeWidth={2} />
+                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                      <ClipboardCheck className="w-3.5 h-3.5 text-primary" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-semibold text-accent-foreground">{section.secondaryLabel}</span>
+                    <span className="text-sm font-semibold text-foreground">{section.secondaryLabel}</span>
                   </div>
                 )}
-                <div className="w-full px-5 py-4 bg-accent/60 border border-accent/40 rounded-xl text-right text-accent-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                <div className="w-full px-5 py-4 bg-primary/5 border border-primary/10 rounded-xl text-right text-foreground whitespace-pre-wrap text-sm leading-relaxed">
                   {section.secondaryText}
                 </div>
               </div>
@@ -206,7 +242,7 @@ export function ContentInfoView({
   renderFileActions,
 }: ContentInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-6 max-w-4xl mx-auto', className)} dir="rtl">
+    <div className={cn('w-full flex flex-col gap-5 max-w-4xl mx-auto', className)} dir="rtl">
       {data.sections.map((section) => (
         <SectionCard
           key={section.key}
