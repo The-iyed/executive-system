@@ -38,6 +38,7 @@ function getInitials(name: string): string {
 interface EventDetailModalProps {
   event: CalendarEventData | null;
   onClose: () => void;
+  onEdit?: (meetingId: string) => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
