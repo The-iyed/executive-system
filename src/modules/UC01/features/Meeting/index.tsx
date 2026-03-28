@@ -161,7 +161,6 @@ const Meeting: React.FC = () => {
         variant={confirmVariant}
         isLoading={confirmLoading}
         onConfirm={handleConfirm}
-        />
       />
 
       <MeetingListLayout<MeetingApiResponse>
