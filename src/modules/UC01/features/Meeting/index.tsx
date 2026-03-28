@@ -37,7 +37,7 @@ const Meeting: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmVariant, setConfirmVariant] = useState<'danger' | 'default'>('default');
+  const [confirmVariant, setConfirmVariant] = useState<'danger' | 'info' | 'primary' | 'warning'>('primary');
   const [confirmLoading, setConfirmLoading] = useState(false);
   const pendingConfirmRef = useRef<(() => void) | null>(null);
 
