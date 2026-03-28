@@ -250,13 +250,7 @@ export default function DirectivesListPage() {
             <p className="text-[11px] text-muted-foreground mt-0.5">إدارة ومتابعة التوجيهات الوزارية · {total} توجيه</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] shadow-sm"
-        >
-          <Plus className="size-4" />
-          إنشاء توجيه
-        </button>
+        {/* Create button hidden */}
       </div>
 
       {/* Type tabs */}
