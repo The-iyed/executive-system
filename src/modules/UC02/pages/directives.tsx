@@ -139,7 +139,7 @@ function DirectiveAccordionCard({
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onTake(directive); }}
-              className="flex items-center gap-2 rounded-lg border-2 border-amber-400 px-5 py-2.5 text-[13px] font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
+              className="flex items-center gap-2 rounded-lg border-2 border-accent px-5 py-2.5 text-[13px] font-semibold text-accent-foreground hover:bg-accent/20 transition-colors"
             >
               <XCircle className="size-4" />
               الأخذ بالتوجيه
