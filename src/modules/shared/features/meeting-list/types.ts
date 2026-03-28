@@ -63,8 +63,6 @@ export interface MeetingListLayoutProps<T> {
   className?: string;
   /** Callback on card click */
   onCardClick?: (item: T) => void;
-  /** Analytics event on mount */
-  onMount?: () => void;
   /** Extra content rendered below the header */
   children?: ReactNode;
 }
