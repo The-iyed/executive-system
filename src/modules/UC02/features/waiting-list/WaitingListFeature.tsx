@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MeetingListLayout } from '@/modules/shared/features/meeting-list';
 import { getWaitingList, type MeetingApiResponse, type GetMeetingsParams } from '../../data/meetingsApi';
-import { mapMeetingToCardData } from '../../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { PATH } from '../../routes/paths';
 
 const WaitingListFeature: React.FC = () => {
