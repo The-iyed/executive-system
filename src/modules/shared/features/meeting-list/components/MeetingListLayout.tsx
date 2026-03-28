@@ -114,7 +114,7 @@ function MeetingListLayoutInner<T extends { id: string }>({
       }
     : undefined;
 
-  return (
+    return (
     <div className="flex flex-col w-full min-h-0" dir="rtl">
       <MeetingListHeader
         title={title}
@@ -124,19 +124,17 @@ function MeetingListLayoutInner<T extends { id: string }>({
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={searchPlaceholder}
+        filtersSlot={
+          filtersConfig && filtersConfig.length > 0 ? (
+            <MeetingListFilters
+              filtersConfig={filtersConfig}
+              filters={filters}
+              onFilterChange={setFilter}
+              onReset={resetFilters}
+            />
+          ) : undefined
+        }
       />
-
-      {/* Filters */}
-      {filtersConfig && filtersConfig.length > 0 && (
-        <div className="px-6 pb-3">
-          <MeetingListFilters
-            filtersConfig={filtersConfig}
-            filters={filters}
-            onFilterChange={setFilter}
-            onReset={resetFilters}
-          />
-        </div>
-      )}
 
       {/* Extra children */}
       {children}
