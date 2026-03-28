@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap, Filter, X } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap } from 'lucide-react';
 import {
   listDirectives,
   type MinisterDirective,
@@ -93,7 +93,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
 
   return (
     <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
-      {isUrgent && <div className="h-[2px] bg-gradient-to-l from-red-500 to-red-400" />}
+      
 
       <div className="px-5 py-4">
         <div className="flex items-start gap-3">
@@ -194,17 +194,14 @@ function FilterSelect<T extends string>({
 export default function DirectivesListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Filters>({});
-  const [showFilters, setShowFilters] = useState(false);
-
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const [activeType, setActiveType] = useState<DirectiveType | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['uc19-directives', currentPage, filters],
+    queryKey: ['uc19-directives', currentPage, activeType],
     queryFn: () => listDirectives({
       limit: PAGE_SIZE,
       skip: (currentPage - 1) * PAGE_SIZE,
-      ...filters,
+      directive_type: activeType,
     }),
   });
 
@@ -217,13 +214,8 @@ export default function DirectivesListPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setFilters({});
+  const handleTypeChange = (type: DirectiveType | undefined) => {
+    setActiveType(type);
     setCurrentPage(1);
   };
 
@@ -244,71 +236,28 @@ export default function DirectivesListPage() {
         </button>
       </div>
 
-      {/* Filters bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all ${
-            showFilters || activeFilterCount > 0
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-          }`}
-        >
-          <Filter className="size-3.5" />
-          تصفية
-          {activeFilterCount > 0 && (
-            <span className="flex size-4 items-center justify-center rounded-full bg-primary-foreground/20 text-[9px] font-bold">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-
-        {activeFilterCount > 0 && (
+      {/* Type tabs */}
+      <div className="flex items-center gap-1.5 border-b border-border/40 pb-0">
+        {[
+          { value: undefined, label: 'الكل' },
+          ...TYPE_FILTER_OPTIONS,
+        ].map((tab) => (
           <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/10 transition-colors"
+            key={tab.value || 'all'}
+            onClick={() => handleTypeChange(tab.value as DirectiveType | undefined)}
+            className={`relative px-4 py-2 text-[13px] font-medium transition-colors rounded-t-lg ${
+              activeType === tab.value
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
-            <X className="size-3" />
-            مسح الكل
+            {tab.label}
+            {activeType === tab.value && (
+              <span className="absolute bottom-0 inset-x-1 h-[2px] bg-primary rounded-full" />
+            )}
           </button>
-        )}
+        ))}
       </div>
-
-      {/* Filter dropdowns */}
-      {showFilters && (
-        <div className="flex items-center gap-2.5 flex-wrap rounded-xl bg-muted/20 border border-border/30 p-3">
-          <FilterSelect
-            label="نوع التوجيه"
-            value={filters.directive_type}
-            options={TYPE_FILTER_OPTIONS}
-            onChange={(v) => updateFilter('directive_type', v)}
-          />
-          <FilterSelect
-            label="الأهمية"
-            value={filters.importance}
-            options={IMPORTANCE_FILTER_OPTIONS}
-            onChange={(v) => updateFilter('importance', v)}
-          />
-          <FilterSelect
-            label="الأولوية"
-            value={filters.priority}
-            options={PRIORITY_FILTER_OPTIONS}
-            onChange={(v) => updateFilter('priority', v)}
-          />
-          <FilterSelect
-            label="الحالة"
-            value={filters.status}
-            options={STATUS_FILTER_OPTIONS}
-            onChange={(v) => updateFilter('status', v)}
-          />
-          <FilterSelect
-            label="حالة الجدولة"
-            value={filters.scheduling_officer_status}
-            options={OFFICER_STATUS_FILTER_OPTIONS}
-            onChange={(v) => updateFilter('scheduling_officer_status', v)}
-          />
-        </div>
-      )}
 
       {/* List */}
       <div className="space-y-2.5">
