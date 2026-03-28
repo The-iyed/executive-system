@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
@@ -44,6 +44,12 @@ const variantConfig = {
   },
 };
 
+/** Block every pointer / mouse / touch event from reaching layers beneath. */
+const stopAll = (e: React.SyntheticEvent) => {
+  e.stopPropagation();
+  e.preventDefault();
+};
+
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
   onOpenChange,
@@ -59,22 +65,32 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const config = variantConfig[variant];
   const Icon = config.icon;
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!isLoading) onOpenChange(false);
-  };
+  }, [isLoading, onOpenChange]);
+
+  // Lock body scroll while open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.pointerEvents;
+    // No need to lock pointer-events on body — the overlay covers everything
+    return () => { document.body.style.pointerEvents = prev; };
+  }, [open]);
 
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           dir="rtl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={handleClose}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={stopAll}
+          onMouseDown={stopAll}
+          onTouchStart={stopAll}
         >
           <motion.div
             className="w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border/50 p-8 text-center"
@@ -83,6 +99,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             exit={{ opacity: 0, scale: 0.95, y: 16 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
               <Icon className={`size-6 ${config.iconColor}`} />
@@ -93,15 +111,19 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
             <div className="flex items-center gap-3 justify-center">
               <Button
-                onClick={onConfirm}
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onConfirm(); }}
                 className={`rounded-xl px-5 ${config.btnClass}`}
                 disabled={isLoading}
               >
                 {isLoading && loadingLabel ? loadingLabel : confirmLabel}
               </Button>
               <Button
+                type="button"
                 variant="outline"
-                onClick={handleClose}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); handleClose(); }}
                 className="rounded-xl px-5"
                 disabled={isLoading}
               >
