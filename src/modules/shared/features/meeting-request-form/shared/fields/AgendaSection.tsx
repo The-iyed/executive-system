@@ -20,6 +20,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
 
   const [animatingNewId, setAnimatingNewId] = useState<string | null>(null);
   const [removingIndex, setRemovingIndex] = useState<number | null>(null);
+  const [confirmingDeleteIndex, setConfirmingDeleteIndex] = useState<number | null>(null);
   const removeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const agendaErrors = errors.agenda_items;
