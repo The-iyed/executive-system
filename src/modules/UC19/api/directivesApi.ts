@@ -18,6 +18,15 @@ async function getHeaders(): Promise<HeadersInit> {
   return headers;
 }
 
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  const token = await getAuthToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 // Types
 export type DirectiveType = 'SCHEDULING' | 'GENERAL' | 'EXECUTIVE_OFFICE' | 'GOVERNMENT_CENTER';
 export type ImportanceLevel = 'IMPORTANT' | 'NORMAL';
@@ -92,7 +101,6 @@ export async function listDirectives(
   }
 
   const data = await res.json();
-  // Handle both array and paginated response
   if (Array.isArray(data)) {
     return { items: data, total: data.length, skip: 0, limit: data.length, has_next: false, has_previous: false };
   }
@@ -118,6 +126,32 @@ export async function createDirective(
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Create directive error: ${res.status} ${text.slice(0, 200)}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Upload a voice note file for a directive.
+ * Tries POST /api/minister-directives/{id}/voice with FormData.
+ */
+export async function uploadVoiceNote(
+  directiveId: string,
+  audioBlob: Blob,
+  fileName = 'voice.webm'
+): Promise<MinisterDirective> {
+  const formData = new FormData();
+  formData.append('file', audioBlob, fileName);
+
+  const res = await fetch(`${BASE}/minister-directives/${directiveId}/voice`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upload voice error: ${res.status} ${text.slice(0, 200)}`);
   }
 
   return res.json();
