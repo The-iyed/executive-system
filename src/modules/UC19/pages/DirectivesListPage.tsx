@@ -201,7 +201,7 @@ export default function DirectivesListPage() {
     queryFn: () => listDirectives({
       limit: PAGE_SIZE,
       skip: (currentPage - 1) * PAGE_SIZE,
-      ...filters,
+      directive_type: activeType,
     }),
   });
 
