@@ -15,6 +15,7 @@ import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
 import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
+import { PATH as UC19_PATH } from '../../UC19/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
