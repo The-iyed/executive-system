@@ -105,6 +105,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
       {
         onSuccess: () => {
           toast({title:schedule ? "تم إرسال طلب جدولة الاجتماع بنجاح" : "تم حفظ المسودة بنجاح"});
+          onSuccess?.({ meetingId, scheduled: schedule });
           resetModal();
         },
         onError: (error) => {
@@ -113,7 +114,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
         },
       },
     );
-  }, [meetingId, saveStep3, resetModal]);
+  }, [meetingId, saveStep3, resetModal, onSuccess]);
 
   const handleFinalSubmit = useCallback(() => handleStep3(true), [handleStep3]);
   const handleSaveAsDraft = useCallback(() => handleStep3(false), [handleStep3]);
