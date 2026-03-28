@@ -16,7 +16,6 @@ interface CreateDirectiveModalProps {
 }
 
 const DIRECTIVE_TYPES: { value: DirectiveType; label: string }[] = [
-  { value: 'SCHEDULING', label: 'الجدولة' },
   { value: 'GENERAL', label: 'عام' },
   { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
   { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
