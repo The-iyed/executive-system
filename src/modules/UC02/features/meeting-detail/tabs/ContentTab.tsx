@@ -103,7 +103,7 @@ export function ContentTab({ meeting, onPreviewAttachment }: ContentTabProps) {
 
     return (
       <TooltipProvider>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* AI Compare */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -118,11 +118,11 @@ export function ContentTab({ meeting, onPreviewAttachment }: ContentTabProps) {
                     compareByAttachmentMutation.mutate({ attachmentId: file.id, signal: compareAbortRef.current.signal });
                   }}
                   disabled={compareByAttachmentMutation.isPending}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary/35 bg-primary/5 hover:bg-primary/12 text-primary text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-                  style={!showCompare ? { opacity: 0.65, cursor: 'not-allowed' } : undefined}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-primary bg-primary/5 border border-primary/20 hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                  style={!showCompare ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                 >
-                  <GitCompare className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
-                  <span>مقارنة بالذكاء الاصطناعي</span>
+                  <GitCompare className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
+                  <span>مقارنة</span>
                 </button>
               </span>
             </TooltipTrigger>
@@ -142,10 +142,10 @@ export function ContentTab({ meeting, onPreviewAttachment }: ContentTabProps) {
               insightsMutation.mutate({ attachmentId: file.id, signal: insightsAbortRef.current.signal });
             }}
             disabled={insightsMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-l from-primary to-primary/70 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex-shrink-0 disabled:opacity-50 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 flex-shrink-0 disabled:opacity-40 whitespace-nowrap"
           >
-            <span>ملاحظات بالذكاء الاصطناعي</span>
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>ملاحظات AI</span>
           </button>
         </div>
       </TooltipProvider>
