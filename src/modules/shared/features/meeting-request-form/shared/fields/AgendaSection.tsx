@@ -52,6 +52,8 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   }, [prepend]);
 
   const handleRemove = useCallback((index: number) => {
+    const confirmed = window.confirm("هل أنت متأكد من حذف هذا العنصر؟");
+    if (!confirmed) return;
     setRemovingIndex(index);
     clearTimeout(removeTimeoutRef.current);
     removeTimeoutRef.current = setTimeout(() => {
