@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DynamicTableFormHandle } from "@/lib/dynamic-table-form";
 import { useSaveDraftBasicInfo, useSaveDraftContent } from "../../hooks/useDraftMutations";
 import { buildStep1FormData } from "../../shared/utils/buildStep1FormData";
+import { optimisticMergeMeeting, buildStep1Patch, buildStep2Patch } from "../../shared/utils/optimisticCacheUpdate";
 import type { SubmitterStep1Values } from "../schema";
 
 interface UseModalStepsOptions {
@@ -12,6 +14,7 @@ interface UseModalStepsOptions {
 }
 
 export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalStepsOptions) {
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SubmitterStep1Values | null>(null);
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
@@ -52,6 +55,13 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
           onSuccess: async (newDraftId) => {
             setDraftId(newDraftId);
             setStep1Data(data);
+
+            // Optimistic cache update for step 1 fields
+            if (isEditMode && newDraftId) {
+              const patch = buildStep1Patch(data as unknown as Record<string, unknown>);
+              optimisticMergeMeeting(queryClient, newDraftId, patch);
+            }
+
             await onStepSaved?.(newDraftId);
             setCurrentStep(2);
           },
@@ -60,7 +70,7 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
         },
       );
     },
-    [draftId, basicInfoMutation],
+    [draftId, basicInfoMutation, isEditMode, queryClient],
   );
 
   // ── Step 2 ──────────────────────────────────────────────────────────────
@@ -75,6 +85,12 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
         { draftId, payload: formData },
         {
           onSuccess: async () => {
+            // Optimistic cache update for step 2 fields
+            if (isEditMode && draftId) {
+              const patch = buildStep2Patch(formData);
+              optimisticMergeMeeting(queryClient, draftId, patch);
+            }
+
             if (draftId) await onStepSaved?.(draftId);
             setCurrentStep(3);
           },
@@ -83,7 +99,7 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
         },
       );
     },
-    [draftId, contentMutation],
+    [draftId, contentMutation, isEditMode, queryClient],
   );
 
   return {
