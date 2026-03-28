@@ -50,7 +50,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOURS');
 
   const resetForm = () => {
-    setDirectiveType('SCHEDULING');
+    setDirectiveType('GENERAL');
     setTitle('');
     setImportance('NORMAL');
     setPriority('NORMAL');
