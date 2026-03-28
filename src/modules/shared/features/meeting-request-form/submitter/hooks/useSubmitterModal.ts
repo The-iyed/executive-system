@@ -33,8 +33,9 @@ export function useSubmitterModal({
 
   // ── Sync helper: invalidate queries so each page refetches with its own API
   const syncMeetingDetails = useCallback(async (meetingId: string) => {
+    // Use refetchQueries to wait for the refetch to complete before closing modal
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
