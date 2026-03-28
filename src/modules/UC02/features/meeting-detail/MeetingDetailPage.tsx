@@ -32,7 +32,6 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 
 // Components (modals / drawers)
 import {
-  DeleteDraftDialog,
   RejectDialog,
   CancelDialog,
   EditConfirmDialog,
@@ -42,6 +41,7 @@ import {
   ScheduleDrawer,
   ScheduleConfirmDialog,
 } from './components';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
@@ -192,11 +192,16 @@ const MeetingDetailPage: React.FC = () => {
       {/* ─── Modals / Drawers ─── */}
       <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={h.meetingFormOpen} onOpenChange={h.setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
 
-      <DeleteDraftDialog
+      <ConfirmDialog
         open={h.isDeleteDraftModalOpen}
         onOpenChange={h.setIsDeleteDraftModalOpen}
+        title="حذف المسودة"
+        description="هل أنت متأكد من حذف هذه المسودة؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmLabel="تأكيد الحذف"
+        loadingLabel="جاري الحذف..."
         onConfirm={() => h.id && h.deleteDraftMutation.mutate(h.id)}
-        isPending={h.deleteDraftMutation.isPending}
+        isLoading={h.deleteDraftMutation.isPending}
+        variant="danger"
       />
 
       <QualityModal isOpen={h.isQualityModalOpen} onOpenChange={h.setIsQualityModalOpen} meetingId={h.id || ''} />
