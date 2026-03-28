@@ -150,7 +150,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
       <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
         <SchedulerStep1Form
           key={step1Data ? "restore" : "fresh"}
-          initialValues={step1Data ?? directiveInitialValues}
+          initialValues={step1Data ?? mergedInitialValues}
           onSubmit={handleStep1Submit}
           defaultDirectiveLabel={directiveText}
         />
