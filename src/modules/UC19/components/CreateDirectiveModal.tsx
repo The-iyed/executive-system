@@ -54,7 +54,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
     setPriority('NORMAL');
     setDueDurationEnabled(false);
     setDueDurationValue(1);
-    setDueDurationUnit('HOURS');
+    setDueDurationUnit('HOUR');
   };
 
   const mutation = useMutation({
