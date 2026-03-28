@@ -23,15 +23,10 @@ function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain flex-shrink-0" />;
+    return <img src={pdfIcon} alt="pdf" className="h-5 w-5 object-contain" />;
   }
 
-  const label = (ext || nameExt || 'FILE').toUpperCase().slice(0, 4);
-  return (
-    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted/60 flex-shrink-0">
-      <span className="text-[10px] font-bold text-muted-foreground tracking-wide">{label}</span>
-    </div>
-  );
+  return <File className="h-4 w-4 text-muted-foreground" />;
 }
 
 /* ─── File card ─── */
@@ -49,44 +44,43 @@ function FileCard({
   showAccent?: boolean;
 }) {
   const sizeLabel = file.file_size >= 1024 * 1024
-    ? `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`
+    ? `${(file.file_size / (1024 * 1024)).toFixed(2)} MB`
     : `${Math.round((file.file_size || 0) / 1024)} KB`;
 
   const hasActions = onView || onDownload || extraActions;
 
   return (
     <div className={cn(
-      'group rounded-xl border transition-all duration-200 bg-background',
-      'hover:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]',
+      'group rounded-xl border transition-all duration-200 bg-card',
+      'shadow-sm hover:shadow-md',
       showAccent
         ? 'border-primary/20 hover:border-primary/35'
-        : 'border-border/70 hover:border-border',
+        : 'border-border hover:border-border',
     )}>
-      {/* Top: file info */}
+      {/* Top: file info — matches Step2 FileCard layout */}
       <div className="flex items-center gap-3 px-4 py-3">
-        <FileIcon fileType={file.file_type} fileName={file.file_name} />
-        <div className="flex flex-col items-end min-w-0 flex-1">
-          <div className="flex items-center gap-2 w-full justify-end flex-wrap">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+          <FileIcon fileType={file.file_type} fileName={file.file_name} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium truncate text-foreground">{file.file_name}</p>
             {file.badge && (
-              <span className="text-[10px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">
                 {file.badge}
               </span>
             )}
-            <span className="text-[13px] font-semibold text-foreground truncate">{file.file_name}</span>
           </div>
-          <span className="text-[11px] text-muted-foreground mt-0.5">{sizeLabel}</span>
+          <p className="text-xs text-muted-foreground mt-0.5">{sizeLabel}</p>
         </div>
       </div>
 
       {/* Bottom: actions bar */}
       {hasActions && (
         <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-border/30 bg-muted/15 rounded-b-xl">
-          {/* Extra actions (AI buttons) on the right */}
           <div className="flex items-center gap-2 flex-1 justify-end">
             {extraActions}
           </div>
-
-          {/* Standard actions on the left */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {onView && file.blob_url && (
               <button
