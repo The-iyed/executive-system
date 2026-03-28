@@ -7,6 +7,7 @@ interface ModalActionBarProps {
   saving?: boolean;
   showSaveAsDraft?: boolean;
   submitLabel?: string;
+  cancelLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onCancel: () => void;
@@ -20,6 +21,7 @@ export function ModalActionBar({
   saving = false,
   showSaveAsDraft = false,
   submitLabel = "إرسال الطلب",
+  cancelLabel = "إلغاء",
   onNext,
   onPrev,
   onCancel,
