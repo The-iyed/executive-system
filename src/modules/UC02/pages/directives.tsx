@@ -54,6 +54,13 @@ const Directives: React.FC = () => {
 
   const total = (list.statusCounts['TAKEN'] || 0) + (list.statusCounts['ADOPTED'] || 0);
 
+  const handleConfirmTake = async () => {
+    if (confirmDirective) {
+      await list.handleTakeDirective(confirmDirective);
+      setConfirmDirective(null);
+    }
+  };
+
   return (
     <>
       <SchedulerModal
@@ -62,6 +69,26 @@ const Directives: React.FC = () => {
         directiveId={schedulerDirective?.directiveId}
         directiveText={schedulerDirective?.directiveText}
       />
+
+      <AlertDialog open={!!confirmDirective} onOpenChange={(open) => !open && setConfirmDirective(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الأخذ بالتوجيه</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من الأخذ بهذا التوجيه؟
+              <br />
+              <span className="font-medium text-foreground mt-1 block line-clamp-2">
+                {confirmDirective?.title}
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2 sm:flex-row-reverse">
+            <AlertDialogAction onClick={handleConfirmTake}>تأكيد</AlertDialogAction>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <DirectivesList
         title="توجيهات الجدولة"
         subtitle="إدارة ومتابعة جميع التوجيهات"
