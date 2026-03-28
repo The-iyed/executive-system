@@ -58,7 +58,7 @@ function normalizedMeetingFromCreateResponse(
     is_data_complete: (r.is_data_complete as boolean) ?? true,
   } as unknown as MeetingApiResponse;
 }
-import FormMeetingModal from '../features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+
 import { trackEvent } from '@/lib/analytics';
 
 const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
