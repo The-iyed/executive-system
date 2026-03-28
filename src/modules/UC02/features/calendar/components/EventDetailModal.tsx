@@ -327,6 +327,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       editMeetingId={editMeetingId ?? undefined}
       showAiSuggest
     />
+    </>
   );
 });
 
