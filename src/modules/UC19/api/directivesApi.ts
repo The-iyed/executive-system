@@ -81,6 +81,11 @@ export interface CreateDirectivePayload {
 export interface ListDirectivesParams {
   skip?: number;
   limit?: number;
+  directive_type?: DirectiveType;
+  importance?: ImportanceLevel;
+  priority?: PriorityLevel;
+  status?: DirectiveStatus;
+  scheduling_officer_status?: SchedulingOfficerStatus;
 }
 
 export async function listDirectives(
@@ -89,6 +94,11 @@ export async function listDirectives(
   const url = new URL(`${BASE}/minister-directives`);
   if (params.skip != null) url.searchParams.set('skip', String(params.skip));
   if (params.limit != null) url.searchParams.set('limit', String(params.limit));
+  if (params.directive_type) url.searchParams.set('directive_type', params.directive_type);
+  if (params.importance) url.searchParams.set('importance', params.importance);
+  if (params.priority) url.searchParams.set('priority', params.priority);
+  if (params.status) url.searchParams.set('status', params.status);
+  if (params.scheduling_officer_status) url.searchParams.set('scheduling_officer_status', params.scheduling_officer_status);
 
   const res = await fetch(url.toString(), {
     method: 'GET',
@@ -133,7 +143,6 @@ export async function createDirective(
 
 /**
  * Upload a voice note file for a directive.
- * Tries POST /api/minister-directives/{id}/voice with FormData.
  */
 export async function uploadVoiceNote(
   directiveId: string,
