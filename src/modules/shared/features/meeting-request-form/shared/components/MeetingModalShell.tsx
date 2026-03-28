@@ -101,6 +101,7 @@ export function MeetingModalShell({
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
             submitLabel={submitLabel}
+            cancelLabel={cancelLabel}
             onNext={onNext}
             onPrev={() => onStepClick(currentStep - 1)}
             onCancel={() => onOpenChange(false)}
