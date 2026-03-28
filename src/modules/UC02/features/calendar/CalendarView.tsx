@@ -3,8 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
-import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
-import FormMeetingModal from '@/modules/UC02/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
 import {
   createScheduledMeeting,
   updateScheduledMeeting,
@@ -18,6 +16,7 @@ import {
   CalendarSkeleton,
   EventDetailModal,
   SyncIndicator,
+  CreateMeetingModal,
 } from './components';
 import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent } from './utils';
 import type { SlotSelection } from './types';
