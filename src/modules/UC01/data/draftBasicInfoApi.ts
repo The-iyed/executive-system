@@ -39,8 +39,8 @@ interface Step1BasicInfoFormData {
   meeting_manager_id?: string;
   is_based_on_directive?: boolean;
   previous_meeting_minutes_file?: File | null;
-  meeting_start_date?: Date;
-  meeting_end_date?: Date;
+  meeting_start_date?: string;
+  meeting_end_date?: string;
   notes?: string;
 }
 
