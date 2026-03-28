@@ -197,28 +197,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           // Background sync
           queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
         } else {
-          const optimisticId = `optimistic-${Date.now()}`;
-
-          // Optimistic insert
-          queryClient.setQueryData<CalendarTimelineEvent[]>(
-            [...queryKey],
-            (old) => [...(old ?? []), buildOptimisticEvent(
-              values.title as string, scheduled_start, scheduled_end, optimisticId,
-            )],
-          );
-
-          // Close modal immediately
-          setSlot(null);
-
           const result = await createScheduledMeeting(payload as any);
           trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
             meeting_id: result?.id,
             meeting_title: values.title,
           });
 
-          // Replace optimistic event with real one
+          // Close modal only after successful API response
+          setSlot(null);
+
+          // Insert real event into cache (optimistic update with real data)
           const realEvent: CalendarTimelineEvent = {
-            id: result.id ?? optimisticId,
+            id: result.id ?? `created-${Date.now()}`,
             title: result.meeting_title ?? (values.title as string) ?? 'اجتماع',
             start: result.scheduled_start ?? scheduled_start,
             end: result.scheduled_end ?? scheduled_end,
@@ -236,7 +226,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           queryClient.setQueryData<CalendarTimelineEvent[]>(
             [...queryKey],
-            (old) => (old ?? []).map((e) => (e.id === optimisticId ? realEvent : e)),
+            (old) => [...(old ?? []), realEvent],
           );
 
           const meetingForCache = normalizedMeetingFromCreateResponse(result as unknown as Record<string, unknown>);
