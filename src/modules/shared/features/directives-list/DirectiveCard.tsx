@@ -23,6 +23,7 @@ export interface DirectiveCardAction {
   icon: React.ReactNode;
   className?: string;
   onClick: (directive: MinisterDirective) => void;
+  hidden?: (directive: MinisterDirective) => boolean;
 }
 
 interface DirectiveCardProps {
@@ -144,7 +145,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
         {/* Actions (bottom left) */}
         {actions && actions.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
-            {actions.map((action) => (
+            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
               <button
                 key={action.id}
                 onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
