@@ -4,3 +4,4 @@ export { default as ErrorNetwork } from './error/ErrorNetwork';
 export { default as NotFound } from './error/NotFound';
 export * from './meeting-info';
 export * from './content-info';
+export * from './directives-list';
