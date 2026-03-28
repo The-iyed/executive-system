@@ -1,7 +1,22 @@
-import { MeetingApiResponse } from '@/modules/shared/types/meeting';
 import type { MeetingCardData } from '../components/meeting-card';
 import { MeetingStatus, MeetingStatusLabels, getMeetingClassificationLabel } from '../types';
 import { formatDateIslamic } from './format';
+
+/** Minimal shape the mapper needs — works with any module's MeetingApiResponse */
+export interface MeetingMapperInput {
+  id: string;
+  request_number: string;
+  status: string;
+  meeting_title?: string | null;
+  meeting_subject?: string | null;
+  submitted_at?: string | null;
+  created_at?: string | null;
+  submitter_name?: string | null;
+  meeting_channel?: string | null;
+  meeting_classification?: string | null;
+  meeting_start_date?: string | null;
+  is_data_complete?: boolean | null;
+}
 
 const STATUS_MAP: Record<string, MeetingStatus | string> = {
   [MeetingStatus.DRAFT]: MeetingStatus.DRAFT,
@@ -30,23 +45,24 @@ function getStatusLabel(status: MeetingStatus | string): string {
 }
 
 /**
- * Map API meeting response to MeetingCardData for cards and lists.
+ * Map any meeting API response to MeetingCardData for cards and lists.
+ * Accepts any object matching MeetingMapperInput (loose coupling).
  */
-export function mapMeetingToCardData(meeting: MeetingApiResponse): MeetingCardData {
+export function mapMeetingToCardData(meeting: MeetingMapperInput): MeetingCardData {
   const status = mapStatus(meeting.status);
   const statusLabel = getStatusLabel(status);
   const dateToUse = meeting.submitted_at || meeting.created_at;
   return {
     id: meeting.id,
     requestNumber: meeting.request_number,
-    title: meeting.meeting_title || meeting.meeting_subject,
+    title: meeting.meeting_title || meeting.meeting_subject || '',
     date: formatDateIslamic(dateToUse) || '',
-    coordinator: meeting.submitter_name,
+    coordinator: meeting.submitter_name || '',
     coordinatorAvatar: undefined,
     status,
     statusLabel,
-    location: meeting.meeting_channel,
-    meetingCategory: getMeetingClassificationLabel(meeting.meeting_classification),
+    location: meeting.meeting_channel || '',
+    meetingCategory: getMeetingClassificationLabel(meeting.meeting_classification) ?? undefined,
     meetingDate: meeting.meeting_start_date ? formatDateIslamic(meeting.meeting_start_date) : undefined,
     isDataComplete:
       meeting.is_data_complete == null ? undefined : Boolean(meeting.is_data_complete),
