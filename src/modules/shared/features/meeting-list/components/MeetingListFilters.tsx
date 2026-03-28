@@ -35,8 +35,8 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
   const overflowCount = allChips.length - MAX_VISIBLE_CHIPS;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Filter trigger buttons */}
+    <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
+      {/* Filter trigger buttons - rightmost in RTL */}
       {filtersConfig.map((config) => {
         const selected = filters[config.key] ?? [];
 
@@ -121,7 +121,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
         );
       })}
 
-      {/* Active chips row */}
+      {/* Active chips - flow to the left */}
       {activeCount > 0 && (
         <>
           {visibleChips.map((chip) => (
