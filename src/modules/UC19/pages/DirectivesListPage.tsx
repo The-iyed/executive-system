@@ -113,14 +113,23 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-3">
               <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2 flex-1">
                 {directive.title}
               </h3>
-              <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium ${statusInfo.color}`}>
-                <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
-                {statusInfo.label}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleCopy}
+                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors opacity-0 group-hover:opacity-100"
+                  title="نسخ المحتوى"
+                >
+                  {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                </button>
+                <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium ${statusInfo.color}`}>
+                  <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
+                  {statusInfo.label}
+                </span>
+              </div>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {format(new Date(directive.created_at), 'dd MMM yyyy')}
