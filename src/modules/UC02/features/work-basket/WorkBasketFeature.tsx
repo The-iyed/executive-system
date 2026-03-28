@@ -8,7 +8,7 @@ import { getAssignedSchedulingRequests, type MeetingApiResponse, type GetMeeting
 import { deleteDraft } from '../../data/draftApi';
 import { mapMeetingToCardData } from '../../utils/meetingMapper';
 import { PATH } from '../../routes/paths';
-import { trackEvent } from '@/lib/analytics';
+
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@/lib/ui';
 
 const WORK_BASKET_STATUS_OPTIONS: string[] = [
