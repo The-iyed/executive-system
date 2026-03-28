@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Loader2, Save, ChevronDown, Mic, Square, Trash2, Play, Pause, FileText } from 'lucide-react';
+import { X, Loader2, Save, ChevronDown, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import {
   createDirective,
   uploadVoiceNote,
@@ -46,6 +46,8 @@ function useVoiceRecorder() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playProgress, setPlayProgress] = useState(0);
+  const [playCurrentTime, setPlayCurrentTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,6 +64,8 @@ function useVoiceRecorder() {
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
       setDuration(0);
+      setPlayProgress(0);
+      setPlayCurrentTime(0);
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -83,7 +87,7 @@ function useVoiceRecorder() {
         setDuration((d) => d + 1);
       }, 1000);
     } catch {
-      // Permission denied or no mic
+      // Permission denied
     }
   }, []);
 
@@ -104,6 +108,8 @@ function useVoiceRecorder() {
     setAudioUrl(null);
     setDuration(0);
     setIsPlaying(false);
+    setPlayProgress(0);
+    setPlayCurrentTime(0);
   }, [audioUrl]);
 
   const togglePlayback = useCallback(() => {
@@ -114,13 +120,22 @@ function useVoiceRecorder() {
     } else {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
-      audio.onended = () => setIsPlaying(false);
+      audio.ontimeupdate = () => {
+        if (audio.duration > 0) {
+          setPlayProgress((audio.currentTime / audio.duration) * 100);
+          setPlayCurrentTime(audio.currentTime);
+        }
+      };
+      audio.onended = () => {
+        setIsPlaying(false);
+        setPlayProgress(0);
+        setPlayCurrentTime(0);
+      };
       audio.play();
       setIsPlaying(true);
     }
   }, [audioUrl, isPlaying]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -135,17 +150,18 @@ function useVoiceRecorder() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
+  const formatTime = (s: number) => {
+    if (!s || !isFinite(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
   return {
-    isRecording,
-    audioBlob,
-    audioUrl,
-    duration,
-    isPlaying,
-    startRecording,
-    stopRecording,
-    clearRecording,
-    togglePlayback,
-    formatDuration,
+    isRecording, audioBlob, audioUrl, duration,
+    isPlaying, playProgress, playCurrentTime,
+    startRecording, stopRecording, clearRecording, togglePlayback,
+    formatDuration, formatTime,
   };
 }
 
@@ -174,48 +190,38 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
 
   const mutation = useMutation({
     mutationFn: async (payload: CreateDirectivePayload) => {
-      // 1. Create the directive
       const created = await createDirective(payload);
-
-      // 2. If we have a voice recording, upload it
       if (voice.audioBlob) {
         try {
-          const updated = await uploadVoiceNote(created.id, voice.audioBlob);
-          return updated;
+          return await uploadVoiceNote(created.id, voice.audioBlob);
         } catch {
-          // Voice upload failed but directive was created, return the created directive
           return created;
         }
       }
-
       return created;
     },
     onSuccess: (newDirective: MinisterDirective) => {
-      // Optimistic update: prepend the new directive to cached list
       qc.setQueriesData<DirectivesListResponse>(
         { queryKey: ['uc19-directives'] },
         (old) => {
           if (!old) return old;
-          return {
-            ...old,
-            items: [newDirective, ...old.items],
-            total: old.total + 1,
-          };
+          return { ...old, items: [newDirective, ...old.items], total: old.total + 1 };
         }
       );
-
-      // Also refetch in background to ensure consistency
       qc.invalidateQueries({ queryKey: ['uc19-directives'] });
-
       resetForm();
       onClose();
     },
   });
 
+  const hasVoice = !!voice.audioBlob;
+  const hasText = title.trim().length > 0;
+  const canSubmit = (hasText || hasVoice) && !mutation.isPending;
+
   const handleSubmit = () => {
-    if (!title.trim()) return;
+    if (!canSubmit) return;
     const payload: CreateDirectivePayload = {
-      title: inputMode === 'text' ? title.trim() : 'توجيه صوتي',
+      title: hasText ? title.trim() : 'توجيه صوتي',
       status: 'TAKEN',
       scheduling_officer_status: 'OPEN',
       directive_type: directiveType,
@@ -232,17 +238,10 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
 
   if (!open) return null;
 
-  const hasVoice = !!voice.audioBlob;
-  const hasText = title.trim().length > 0;
-  const canSubmit = (hasText || hasVoice) && !mutation.isPending;
-  const inputMode: 'text' | 'voice' = hasVoice ? 'voice' : 'text';
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-lg rounded-2xl bg-card shadow-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-card flex items-center justify-between px-6 pt-6 pb-4 border-b border-border/30">
@@ -275,113 +274,99 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
             </div>
           </div>
 
-          {/* Directive Input: Text OR Voice */}
+          {/* Directive: Text OR Voice (exclusive) */}
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-2">
               التوجيه <span className="text-destructive">*</span>
             </label>
 
-            {/* Mode toggle tabs */}
-            {!voice.isRecording && !hasVoice && (
-              <div className="flex items-center gap-2 mb-3">
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors bg-primary/10 text-primary"
-                  disabled
-                >
-                  <FileText className="size-3" />
-                  نص
-                </button>
-                <span className="text-[11px] text-muted-foreground">أو</span>
-                <button
-                  type="button"
-                  onClick={voice.startRecording}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                >
-                  <Mic className="size-3" />
-                  تسجيل صوتي
-                </button>
-              </div>
-            )}
-
-            {/* Text input mode - shown when no voice */}
-            {inputMode === 'text' && !voice.isRecording && (
+            {/* Show textarea when: no voice recorded AND not currently recording */}
+            {!hasVoice && !voice.isRecording && (
               <textarea
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="اكتب التوجيه هنا..."
                 rows={4}
-                className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none transition-colors focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+                className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none transition-colors focus:border-primary/40 focus:ring-2 focus:ring-primary/10 mb-3"
               />
             )}
 
             {/* Recording in progress */}
             {voice.isRecording && (
-              <div className="rounded-xl border border-red-200 bg-red-50/50 p-5">
+              <div className="rounded-xl border-2 border-dashed border-red-300 bg-red-50/40 p-6 mb-3">
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-red-400/30" />
-                    <div className="relative flex size-12 items-center justify-center rounded-full bg-red-500 text-white">
-                      <Mic className="size-5" />
+                    <span className="absolute inset-0 animate-ping rounded-full bg-red-400/20" />
+                    <div className="relative flex size-14 items-center justify-center rounded-full bg-red-500 text-white">
+                      <Mic className="size-6" />
                     </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-[13px] font-medium text-foreground">جاري التسجيل...</p>
-                    <p className="text-[18px] font-bold text-red-600 tabular-nums mt-1">
-                      {voice.formatDuration(voice.duration)}
-                    </p>
-                  </div>
+                  <p className="text-[13px] font-medium text-foreground">جاري التسجيل...</p>
+                  <p className="text-[20px] font-bold text-red-600 tabular-nums">
+                    {voice.formatDuration(voice.duration)}
+                  </p>
                   <button
                     type="button"
                     onClick={voice.stopRecording}
-                    className="flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2 text-[12px] font-medium text-white transition-all hover:bg-red-600 active:scale-95"
+                    className="flex items-center gap-2 rounded-xl bg-red-500 px-6 py-2.5 text-[12px] font-medium text-white transition-all hover:bg-red-600 active:scale-95"
                   >
-                    <Square className="size-3" fill="currentColor" />
+                    <Square className="size-3.5" fill="currentColor" />
                     إيقاف التسجيل
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Voice preview - after recording */}
+            {/* Voice preview (same style as list VoicePlayer) */}
             {!voice.isRecording && hasVoice && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Mic className="size-3.5 text-primary" />
-                  <span className="text-[12px] font-medium text-primary">ملاحظة صوتية</span>
-                  <span className="text-[11px] text-muted-foreground mr-auto">
-                    {voice.formatDuration(voice.duration)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-muted/30 border border-border/40 p-3 mb-3">
+                <div className="flex items-center gap-2.5 w-full">
                   <button
                     type="button"
                     onClick={voice.togglePlayback}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95"
                   >
                     {voice.isPlaying ? (
-                      <Pause className="size-4" fill="currentColor" />
+                      <Pause className="size-3.5" fill="currentColor" />
                     ) : (
-                      <Play className="size-4" fill="currentColor" style={{ marginInlineStart: '2px' }} />
+                      <Play className="size-3.5" fill="currentColor" style={{ marginInlineStart: '2px' }} />
                     )}
                   </button>
-                  <div className="flex-1 h-2 rounded-full bg-primary/20 overflow-hidden">
-                    <div className="h-full rounded-full bg-primary w-full" />
+                  <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden cursor-pointer">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-100"
+                      style={{ width: `${voice.playProgress}%`, float: 'right' }}
+                    />
                   </div>
+                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 w-8 text-center">
+                    {voice.isPlaying ? voice.formatTime(voice.playCurrentTime) : voice.formatDuration(voice.duration)}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => { voice.clearRecording(); setTitle(''); }}
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    onClick={voice.clearRecording}
+                    className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title="حذف التسجيل"
                   >
-                    <Trash2 className="size-4" />
+                    <Trash2 className="size-3.5" />
                   </button>
                 </div>
               </div>
             )}
+
+            {/* Record button: show when no voice and not recording */}
+            {!hasVoice && !voice.isRecording && (
+              <button
+                type="button"
+                onClick={voice.startRecording}
+                className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <Mic className="size-3.5" />
+                أو سجّل توجيهك صوتياً
+              </button>
+            )}
           </div>
 
-          {/* Importance & Priority row */}
+          {/* Importance & Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-2">
@@ -400,7 +385,6 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               </div>
             </div>
-
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-2">
                 الأولوية <span className="text-destructive">*</span>
@@ -478,7 +462,6 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
             </div>
           </div>
 
-          {/* Error */}
           {mutation.isError && (
             <p className="text-[11px] text-destructive">
               حدث خطأ أثناء الإنشاء، يرجى المحاولة مرة أخرى
@@ -486,7 +469,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer */}
         <div className="sticky bottom-0 bg-card border-t border-border/30 px-6 py-4 flex items-center justify-between">
           <button
             onClick={handleSubmit}
