@@ -185,7 +185,7 @@ function SectionCard({
                     <span className="text-sm font-semibold text-accent-foreground">{section.secondaryLabel}</span>
                   </div>
                 )}
-                <div className="w-full px-5 py-4 bg-amber-50/60 border border-amber-200/40 rounded-xl text-right text-amber-900 whitespace-pre-wrap text-sm leading-relaxed">
+                <div className="w-full px-5 py-4 bg-accent/60 border border-accent/40 rounded-xl text-right text-accent-foreground whitespace-pre-wrap text-sm leading-relaxed">
                   {section.secondaryText}
                 </div>
               </div>
