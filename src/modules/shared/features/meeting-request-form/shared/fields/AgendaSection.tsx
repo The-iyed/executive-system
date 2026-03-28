@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { type UseFormReturn, useFieldArray, Controller } from "react-hook-form";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, cn } from "@/lib/ui";
@@ -7,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { inputClass } from "./FieldGroup";
 import { MINISTER_SUPPORT_TYPE_OPTIONS, MINISTER_SUPPORT_OTHER_VALUE, MeetingClassification } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
+import { ConfirmDialog } from "@/modules/shared/components/confirm-dialog";
 
 interface Props {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
