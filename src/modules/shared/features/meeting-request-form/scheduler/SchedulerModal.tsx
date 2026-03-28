@@ -39,7 +39,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
     setStep1Data(data);
     const formData = buildStep1FormData(data);
 
-    createStep1.mutate(formData, {
+    createStep1.mutate({ formData, meetingId }, {
       onSuccess: (id) => {
         setMeetingId(id);
         setCurrentStep(2);
@@ -49,7 +49,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
         toast({title:"حدث خطأ أثناء حفظ بيانات الخطوة الأولى", variant: 'destructive'});
       },
     });
-  }, [createStep1]);
+  }, [createStep1, meetingId]);
 
   const handleStep2Submit = useCallback((formData: FormData | null) => {
     if (!formData) {
