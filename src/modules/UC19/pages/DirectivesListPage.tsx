@@ -5,7 +5,7 @@ import { listDirectives, type MinisterDirective } from '../api/directivesApi';
 import { CreateDirectiveModal } from '../components/CreateDirectiveModal';
 import { format } from 'date-fns';
 
-type FilterTab = 'ALL' | 'SCHEDULING' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
+type FilterTab = 'ALL' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
 
 const FILTER_TABS: { id: FilterTab; label: string }[] = [
   { id: 'ALL', label: 'الكل' },
