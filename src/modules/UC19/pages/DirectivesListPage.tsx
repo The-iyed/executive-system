@@ -256,7 +256,6 @@ export default function DirectivesListPage() {
       {/* Type tabs */}
       <div className="flex items-center gap-1.5 border-b border-border/40 pb-0">
         {[
-          { value: undefined, label: 'الكل' },
           ...TYPE_FILTER_OPTIONS,
         ].map((tab) => (
           <button
