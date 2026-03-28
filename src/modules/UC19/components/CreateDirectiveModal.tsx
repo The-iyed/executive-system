@@ -276,41 +276,53 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
             </div>
           </div>
 
-          {/* Directive: Text OR Voice (exclusive) */}
+          {/* Directive: Text OR Voice */}
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-2">
               التوجيه <span className="text-destructive">*</span>
             </label>
 
-            {/* Show textarea when: no voice recorded AND not currently recording */}
+            {/* Always show textarea unless voice is saved */}
             {!hasVoice && !voice.isRecording && (
-              <textarea
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="اكتب التوجيه هنا..."
-                rows={4}
-                className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none transition-colors focus:border-primary/40 focus:ring-2 focus:ring-primary/10 mb-3"
-              />
+              <>
+                <textarea
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="اكتب التوجيه هنا..."
+                  rows={4}
+                  className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none transition-colors focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={voice.startRecording}
+                    className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <Mic className="size-3.5" />
+                    أو سجّل توجيهك صوتياً
+                  </button>
+                </div>
+              </>
             )}
 
             {/* Recording in progress */}
             {voice.isRecording && (
-              <div className="rounded-xl border-2 border-dashed border-red-300 bg-red-50/40 p-6 mb-3">
+              <div className="rounded-xl border-2 border-dashed border-destructive/30 bg-destructive/5 p-6">
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-red-400/20" />
-                    <div className="relative flex size-14 items-center justify-center rounded-full bg-red-500 text-white">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-destructive/20" />
+                    <div className="relative flex size-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
                       <Mic className="size-6" />
                     </div>
                   </div>
                   <p className="text-[13px] font-medium text-foreground">جاري التسجيل...</p>
-                  <p className="text-[20px] font-bold text-red-600 tabular-nums">
+                  <p className="text-[20px] font-bold text-destructive tabular-nums">
                     {voice.formatDuration(voice.duration)}
                   </p>
                   <button
                     type="button"
                     onClick={voice.stopRecording}
-                    className="flex items-center gap-2 rounded-xl bg-red-500 px-6 py-2.5 text-[12px] font-medium text-white transition-all hover:bg-red-600 active:scale-95"
+                    className="flex items-center gap-2 rounded-xl bg-destructive px-6 py-2.5 text-[12px] font-medium text-destructive-foreground transition-all hover:opacity-90 active:scale-95"
                   >
                     <Square className="size-3.5" fill="currentColor" />
                     إيقاف التسجيل
@@ -319,9 +331,9 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
               </div>
             )}
 
-            {/* Voice preview (same style as list VoicePlayer) */}
+            {/* Voice preview */}
             {!voice.isRecording && hasVoice && (
-              <div className="rounded-xl bg-muted/30 border border-border/40 p-3 mb-3">
+              <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
                 <div className="flex items-center gap-2.5 w-full">
                   <button
                     type="button"
@@ -353,18 +365,6 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                   </button>
                 </div>
               </div>
-            )}
-
-            {/* Record button: show when no voice and not recording */}
-            {!hasVoice && !voice.isRecording && (
-              <button
-                type="button"
-                onClick={voice.startRecording}
-                className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
-              >
-                <Mic className="size-3.5" />
-                أو سجّل توجيهك صوتياً
-              </button>
             )}
           </div>
 
