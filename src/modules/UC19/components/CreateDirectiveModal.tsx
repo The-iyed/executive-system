@@ -215,7 +215,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   const handleSubmit = () => {
     if (!title.trim()) return;
     const payload: CreateDirectivePayload = {
-      title: title.trim(),
+      title: inputMode === 'text' ? title.trim() : 'توجيه صوتي',
       status: 'TAKEN',
       scheduling_officer_status: 'OPEN',
       directive_type: directiveType,
