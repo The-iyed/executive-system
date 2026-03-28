@@ -4,7 +4,7 @@ import { toISOStringWithTimezone } from '@/lib/ui';
 import type { CalendarEventData } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
 import { CalendarSlotMeetingForm } from '@/modules/UC02/components/CalendarSlotMeetingForm';
-import FormMeetingModal from '@/modules/UC02/features/MeetingForm/components/FormMeetingModal/FormMeetingModal';
+
 import {
   createScheduledMeeting,
   updateScheduledMeeting,
