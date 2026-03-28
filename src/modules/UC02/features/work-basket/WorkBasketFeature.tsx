@@ -1,15 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MeetingListLayout } from '@/modules/shared/features/meeting-list';
 import type { MeetingCardAction } from '@/modules/shared/features/meeting-list';
 import { MeetingStatus, getMeetingStatusLabel } from '@/modules/shared';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 import { getAssignedSchedulingRequests, type MeetingApiResponse, type GetMeetingsParams } from '../../data/meetingsApi';
-import { deleteDraft } from '../../data/draftApi';
-import { mapMeetingToCardData } from '../../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { PATH } from '../../routes/paths';
-
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, Button } from '@/lib/ui';
+import { useDeleteDraft } from './useDeleteDraft';
 
 const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.DRAFT,
@@ -33,29 +31,7 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
 
 const WorkBasketFeature: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [draftIdToDelete, setDraftIdToDelete] = useState<string | null>(null);
-
-  const deleteDraftMutation = useMutation({
-    mutationFn: deleteDraft,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['work-basket'] });
-      setDraftIdToDelete(null);
-      setDeleteConfirmOpen(false);
-    },
-  });
-
-  const onDeleteDraft = useCallback((item: MeetingApiResponse) => {
-    setDraftIdToDelete(item.id);
-    setDeleteConfirmOpen(true);
-  }, []);
-
-  const handleDeleteConfirm = useCallback(() => {
-    if (draftIdToDelete) {
-      deleteDraftMutation.mutate(draftIdToDelete);
-    }
-  }, [draftIdToDelete, deleteDraftMutation]);
+  const { confirmOpen, targetId, isPending, requestDelete, confirmDelete, setConfirmOpen } = useDeleteDraft();
 
   const queryFn = useCallback((params: Record<string, any>) => {
     const apiParams: GetMeetingsParams = {
@@ -71,54 +47,27 @@ const WorkBasketFeature: React.FC = () => {
     {
       id: 'delete-draft',
       label: (item) =>
-        deleteDraftMutation.isPending && draftIdToDelete === item.id
-          ? 'جاري الحذف...'
-          : 'حذف',
+        isPending && targetId === item.id ? 'جاري الحذف...' : 'حذف',
       variant: 'danger',
-      onClick: onDeleteDraft,
+      onClick: (item) => requestDelete(item.id),
       hidden: (item) => item.status !== MeetingStatus.DRAFT,
-      loading: (item) => deleteDraftMutation.isPending && draftIdToDelete === item.id,
+      loading: (item) => isPending && targetId === item.id,
     },
   ];
 
   return (
     <>
-      {/* Delete confirmation */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteConfirmOpen(false);
-            setDraftIdToDelete(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px] rounded-xl border border-gray-200/80 bg-white shadow-xl" dir="rtl">
-          <DialogHeader className="text-right gap-2">
-            <DialogTitle className="text-xl font-semibold text-gray-900">حذف المسودة</DialogTitle>
-            <DialogDescription className="text-right text-base text-gray-600 pt-1">
-              هل أنت متأكد من حذف هذه المسودة؟
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-row gap-2 justify-start sm:justify-start mt-6">
-            <Button
-              variant="outline"
-              onClick={() => { setDeleteConfirmOpen(false); setDraftIdToDelete(null); }}
-              className="min-w-[100px]"
-              disabled={deleteDraftMutation.isPending}
-            >
-              إلغاء
-            </Button>
-            <Button
-              onClick={handleDeleteConfirm}
-              className="min-w-[100px] bg-red-600 hover:bg-red-700 text-white"
-              disabled={deleteDraftMutation.isPending}
-            >
-              {deleteDraftMutation.isPending ? 'جاري الحذف...' : 'تأكيد الحذف'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="حذف المسودة"
+        description="هل أنت متأكد من حذف هذه المسودة؟"
+        confirmLabel="تأكيد الحذف"
+        loadingLabel="جاري الحذف..."
+        onConfirm={confirmDelete}
+        isLoading={isPending}
+        variant="danger"
+      />
 
       <MeetingListLayout<MeetingApiResponse>
         title="سلة العمل"
@@ -142,7 +91,6 @@ const WorkBasketFeature: React.FC = () => {
             })),
           },
         ]}
-        
       />
     </>
   );

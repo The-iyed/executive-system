@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MeetingListLayout } from '@/modules/shared/features/meeting-list';
 import { MeetingStatus } from '@/modules/shared';
 import { getMeetings, type MeetingApiResponse, type GetMeetingsParams } from '../../data/meetingsApi';
-import { mapMeetingToCardData } from '../../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { PATH } from '../../routes/paths';
 
 const ScheduledMeetingsFeature: React.FC = () => {
