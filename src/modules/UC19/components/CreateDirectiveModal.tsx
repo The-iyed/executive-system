@@ -32,10 +32,8 @@ const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
 ];
 
 const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
-  { value: 'HOURS', label: 'ساعة' },
-  { value: 'DAYS', label: 'يوم' },
-  { value: 'WEEKS', label: 'أسبوع' },
-  { value: 'MONTHS', label: 'شهر' },
+  { value: 'HOUR', label: 'ساعة' },
+  { value: 'DAY', label: 'يوم' },
 ];
 
 export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProps) {
