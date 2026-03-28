@@ -7,9 +7,8 @@ import { format } from 'date-fns';
 
 type FilterTab = 'ALL' | 'SCHEDULING' | 'GENERAL' | 'GOVERNMENT_CENTER' | 'EXECUTIVE_OFFICE';
 
-const FILTER_TABS: { id: FilterTab; label: string; icon?: string }[] = [
+const FILTER_TABS: { id: FilterTab; label: string }[] = [
   { id: 'ALL', label: 'الكل' },
-  { id: 'SCHEDULING', label: 'جدولة', icon: 'solar:calendar-outline' },
   { id: 'GENERAL', label: 'عام' },
   { id: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
   { id: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
