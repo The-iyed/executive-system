@@ -185,14 +185,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             ),
           );
 
-          // Close modal immediately
-          setSlot(null);
-
           await updateScheduledMeeting(slot!.meetingId!, payload as any);
           trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
             meeting_id: slot!.meetingId,
             meeting_title: values.title,
           });
+
+          // Close modal only after successful API response
+          setSlot(null);
 
           // Background sync
           queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
