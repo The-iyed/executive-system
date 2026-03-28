@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, CheckSquare } from 'lucide-react';
+import { CalendarDays, CheckSquare, Plus } from 'lucide-react';
 import {
   DirectivesList,
   type DirectiveCardAction,
@@ -8,6 +8,7 @@ import { useDirectivesList } from '@/modules/shared/hooks/useDirectivesList';
 import type { DirectiveStatus } from '@/modules/shared/types/minister-directive-enums';
 import type { MinisterDirective } from '@/modules/shared/api/directives';
 import { SchedulerModal } from '@/modules/shared/features/meeting-request-form';
+import { Button } from '@/lib/ui';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -62,6 +63,11 @@ export const DirectivesFeature = () => {
     }
   };
 
+  const handleCreateMeeting = () => {
+    setSchedulerDirective({});
+    setMeetingFormOpen(true);
+  };
+
   return (
     <>
       <SchedulerModal
@@ -111,6 +117,15 @@ export const DirectivesFeature = () => {
         onPageChange={list.handlePageChange}
         statusField="status"
         actions={actions}
+        headerRight={
+          <Button
+            onClick={handleCreateMeeting}
+            className="rounded-xl gap-2 px-5 h-10 shadow-sm"
+          >
+            <Plus className="size-4" />
+            إنشاء اجتماع
+          </Button>
+        }
       />
     </>
   );
