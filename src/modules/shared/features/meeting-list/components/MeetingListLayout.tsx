@@ -43,9 +43,6 @@ function MeetingListLayoutInner<T extends { id: string }>({
     refetch,
   } = useMeetingList<T>({ queryKey, queryFn, fixedParams, pageSize });
 
-  useEffect(() => {
-    onMount?.();
-  }, []);
 
   // Map items to card data
   const meetings: MeetingCardData[] = useMemo(
