@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Loader2, Save, ChevronDown } from 'lucide-react';
+import { X, Loader2, Save, ChevronDown, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import {
   createDirective,
+  uploadVoiceNote,
   type CreateDirectivePayload,
   type DirectiveType,
   type ImportanceLevel,
   type PriorityLevel,
   type DurationUnit,
+  type DirectivesListResponse,
+  type MinisterDirective,
 } from '../api/directivesApi';
 
 interface CreateDirectiveModalProps {
@@ -36,8 +39,119 @@ const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
   { value: 'DAY', label: 'يوم' },
 ];
 
+// ── Voice Recorder Hook ──
+function useVoiceRecorder() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm',
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      setDuration(0);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setAudioBlob(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach((t) => t.stop());
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+
+      timerRef.current = setInterval(() => {
+        setDuration((d) => d + 1);
+      }, 1000);
+    } catch {
+      // Permission denied or no mic
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, []);
+
+  const clearRecording = useCallback(() => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setDuration(0);
+    setIsPlaying(false);
+  }, [audioUrl]);
+
+  const togglePlayback = useCallback(() => {
+    if (!audioUrl) return;
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsPlaying(false);
+      audio.play();
+      setIsPlaying(true);
+    }
+  }, [audioUrl, isPlaying]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (audioRef.current) audioRef.current.pause();
+    };
+  }, [audioUrl]);
+
+  const formatDuration = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  return {
+    isRecording,
+    audioBlob,
+    audioUrl,
+    duration,
+    isPlaying,
+    startRecording,
+    stopRecording,
+    clearRecording,
+    togglePlayback,
+    formatDuration,
+  };
+}
+
 export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProps) {
   const qc = useQueryClient();
+  const voice = useVoiceRecorder();
 
   const [directiveType, setDirectiveType] = useState<DirectiveType>('GENERAL');
   const [title, setTitle] = useState('');
@@ -55,12 +169,44 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
     setDueDurationEnabled(false);
     setDueDurationValue(1);
     setDueDurationUnit('HOUR');
+    voice.clearRecording();
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: CreateDirectivePayload) => createDirective(payload),
-    onSuccess: () => {
+    mutationFn: async (payload: CreateDirectivePayload) => {
+      // 1. Create the directive
+      const created = await createDirective(payload);
+
+      // 2. If we have a voice recording, upload it
+      if (voice.audioBlob) {
+        try {
+          const updated = await uploadVoiceNote(created.id, voice.audioBlob);
+          return updated;
+        } catch {
+          // Voice upload failed but directive was created, return the created directive
+          return created;
+        }
+      }
+
+      return created;
+    },
+    onSuccess: (newDirective: MinisterDirective) => {
+      // Optimistic update: prepend the new directive to cached list
+      qc.setQueriesData<DirectivesListResponse>(
+        { queryKey: ['uc19-directives'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: [newDirective, ...old.items],
+            total: old.total + 1,
+          };
+        }
+      );
+
+      // Also refetch in background to ensure consistency
       qc.invalidateQueries({ queryKey: ['uc19-directives'] });
+
       resetForm();
       onClose();
     },
@@ -85,6 +231,8 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   };
 
   if (!open) return null;
+
+  const canSubmit = title.trim().length > 0 && !mutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
@@ -137,19 +285,78 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
                 rows={4}
                 className="w-full bg-transparent px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
               />
-              <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/20">
-                <span className="text-[11px] text-muted-foreground">أو سجّل توجيهك صوتياً</span>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
-                >
-                  <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" x2="12" y1="19" y2="22" />
-                  </svg>
-                  تسجيل صوتي
-                </button>
+
+              {/* Voice Recording Section */}
+              <div className="border-t border-border/20 px-4 py-3">
+                {!voice.isRecording && !voice.audioBlob && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">أو سجّل توجيهك صوتياً</span>
+                    <button
+                      type="button"
+                      onClick={voice.startRecording}
+                      className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+                    >
+                      <Mic className="size-3.5" />
+                      تسجيل صوتي
+                    </button>
+                  </div>
+                )}
+
+                {voice.isRecording && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex size-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full size-2.5 bg-red-500" />
+                      </span>
+                      <span className="text-[12px] font-medium text-foreground">
+                        جاري التسجيل...
+                      </span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {voice.formatDuration(voice.duration)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={voice.stopRecording}
+                      className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-100"
+                    >
+                      <Square className="size-3" fill="currentColor" />
+                      إيقاف
+                    </button>
+                  </div>
+                )}
+
+                {!voice.isRecording && voice.audioBlob && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={voice.togglePlayback}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-95"
+                    >
+                      {voice.isPlaying ? (
+                        <Pause className="size-3.5" fill="currentColor" />
+                      ) : (
+                        <Play className="size-3.5" fill="currentColor" style={{ marginInlineStart: '2px' }} />
+                      )}
+                    </button>
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
+                        <div className="h-full rounded-full bg-primary w-full" />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                        {voice.formatDuration(voice.duration)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={voice.clearRecording}
+                      className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -263,7 +470,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
         <div className="sticky bottom-0 bg-card border-t border-border/30 px-6 py-4 flex items-center justify-between">
           <button
             onClick={handleSubmit}
-            disabled={!title.trim() || mutation.isPending}
+            disabled={!canSubmit}
             className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
           >
             {mutation.isPending ? (
