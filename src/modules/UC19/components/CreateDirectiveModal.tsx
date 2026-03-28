@@ -282,26 +282,28 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
               التوجيه <span className="text-destructive">*</span>
             </label>
 
-            {/* Default state: textarea with voice button below */}
+            {/* Default state: voice button on top, textarea below */}
             {!hasVoice && !voice.isRecording && (
-              <div className="rounded-2xl bg-muted/20 border border-border/30 overflow-hidden">
-                <textarea
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="اكتب التوجيه هنا، أو استخدم الإدخال الصوتي..."
-                  rows={5}
-                  className="w-full bg-transparent px-4 pt-4 pb-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
-                />
-                <div className="flex items-center justify-between px-4 pb-3">
+              <div className="space-y-3">
+                <div className="rounded-2xl bg-muted/20 border border-border/30 overflow-hidden">
+                  <textarea
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="اكتب التوجيه هنا، أو استخدم الإدخال الصوتي..."
+                    rows={5}
+                    className="w-full bg-transparent px-4 pt-4 pb-4 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">أو سجّل توجيهك صوتيًا</span>
                   <button
                     type="button"
                     onClick={voice.startRecording}
-                    className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
+                    className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
                   >
                     <Mic className="size-4" />
                     تسجيل صوتي
                   </button>
-                  <span className="text-[11px] text-muted-foreground">أو سجّل توجيهك صوتيًا</span>
                 </div>
               </div>
             )}
