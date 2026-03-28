@@ -99,6 +99,12 @@ export function useSubmitterModal({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
+
+    // Optimistic cache update for invitees
+    if (isEditMode) {
+      const patch = buildStep3Patch(inviteesPayload);
+      optimisticMergeMeeting(queryClient, meetingId, patch);
+    }
   
     return response;
   };
