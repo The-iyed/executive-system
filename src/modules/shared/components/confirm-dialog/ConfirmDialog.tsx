@@ -83,12 +83,6 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           onEscapeKeyDown={(event) => {
             if (isLoading) event.preventDefault();
           }}
-          onPointerDownOutside={(event) => {
-            if (isLoading) event.preventDefault();
-          }}
-          onInteractOutside={(event) => {
-            if (isLoading) event.preventDefault();
-          }}
         >
           <AlertDialogHeader className="items-center gap-0 text-center">
             <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
