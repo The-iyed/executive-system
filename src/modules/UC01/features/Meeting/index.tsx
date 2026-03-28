@@ -100,7 +100,7 @@ const Meeting: React.FC = () => {
       onClick: (item: MeetingApiResponse) => {
         setConfirmTitle('تأكيد الإرسال');
         setConfirmMessage('هل أنت متأكد من الإرسال؟');
-        setConfirmVariant('default');
+        setConfirmVariant('primary');
         pendingConfirmRef.current = () => {
           submitMeeting({ meetingId: item.id, status: item.status });
           setConfirmOpen(false);
