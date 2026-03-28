@@ -15,23 +15,16 @@ interface SchedulerModalProps {
   /** Pre-select a directive in Step 1. */
   directiveId?: string;
   directiveText?: string;
-  /** Pre-fill Step 1 fields (e.g. dates from calendar slot selection). */
-  initialStep1Values?: Partial<SchedulerStep1Values>;
-  /** Called after a successful submission (schedule or draft). */
-  onSuccess?: (result: { meetingId: string; scheduled: boolean }) => void;
 }
 
-export function SchedulerModal({ open, onOpenChange, directiveId, directiveText, initialStep1Values, onSuccess }: SchedulerModalProps) {
+export function SchedulerModal({ open, onOpenChange, directiveId, directiveText }: SchedulerModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SchedulerStep1Values | null>(null);
   const [meetingId, setMeetingId] = useState<string | null>(null);
 
-  const mergedInitialValues = useMemo(
-    () => ({
-      ...(directiveId ? { related_directive: directiveId } : {}),
-      ...initialStep1Values,
-    }),
-    [directiveId, initialStep1Values],
+  const directiveInitialValues = useMemo(
+    () => (directiveId ? { related_directive: directiveId } : undefined),
+    [directiveId],
   );
   const [invitees, setInvitees] = useState<TableRow[]>([]);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
@@ -105,7 +98,6 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
       {
         onSuccess: () => {
           toast({title:schedule ? "تم إرسال طلب جدولة الاجتماع بنجاح" : "تم حفظ المسودة بنجاح"});
-          onSuccess?.({ meetingId, scheduled: schedule });
           resetModal();
         },
         onError: (error) => {
@@ -114,7 +106,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
         },
       },
     );
-  }, [meetingId, saveStep3, resetModal, onSuccess]);
+  }, [meetingId, saveStep3, resetModal]);
 
   const handleFinalSubmit = useCallback(() => handleStep3(true), [handleStep3]);
   const handleSaveAsDraft = useCallback(() => handleStep3(false), [handleStep3]);
@@ -150,7 +142,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText,
       <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
         <SchedulerStep1Form
           key={step1Data ? "restore" : "fresh"}
-          initialValues={step1Data ?? mergedInitialValues}
+          initialValues={step1Data ?? directiveInitialValues}
           onSubmit={handleStep1Submit}
           defaultDirectiveLabel={directiveText}
         />
