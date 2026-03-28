@@ -315,15 +315,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         )}
       </DialogContent>
     </Dialog>
-
-    <SubmitterModal
-      callerRole={MeetingOwnerType.SCHEDULING}
-      open={!!editMeetingId}
-      onOpenChange={(open) => { if (!open) setEditMeetingId(null); }}
-      editMeetingId={editMeetingId ?? undefined}
-      showAiSuggest
-    />
-    </>
   );
 });
 
