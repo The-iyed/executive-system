@@ -26,7 +26,6 @@ function MeetingListLayoutInner<T extends { id: string }>({
   emptyMessage,
   errorMessage,
   onCardClick,
-  onMount,
   children,
 }: MeetingListLayoutProps<T>) {
   const {
