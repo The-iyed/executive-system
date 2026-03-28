@@ -95,6 +95,15 @@ export function useTableForm({
         _disabledFields: disabledFields,
       };
     });
+
+    // Clear errors for the filled row
+    setErrors((prev) => {
+      if (!prev[rowIndex]) return prev;
+      const newErrors = [...prev];
+      newErrors[rowIndex] = {};
+      return newErrors;
+    });
+
     updateRows(updated);
   }, [rows, updateRows, columns, mapSearchResultToRow]);
 
