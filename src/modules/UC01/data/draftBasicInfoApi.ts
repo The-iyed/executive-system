@@ -6,19 +6,42 @@ interface Step1BasicInfoFormData {
   meetingCategory?: string;
   meetingConfidentiality?: string;
   meetingType?: string;
+  meetingClassification1?: string;
   meetingChannel?: string;
   meetingLocation?: string;
   meetingLocationOther?: string;
+  meeting_location?: string;
+  sector?: string;
+  relatedTopic?: string;
+  dueDate?: Date;
+  meetingReason?: string;
+  meetingDescription?: string;
+  meetingAgenda?: Array<{
+    agenda_item?: string;
+    presentation_duration_minutes?: number;
+    minister_support_type?: string;
+    minister_support_other?: string;
+  }>;
   directiveMethod?: string;
   directiveId?: string;
   directiveText?: string;
+  directive_method?: string;
+  directive_text?: string;
   duration?: string;
   expectedDuration?: string;
   selectedTimeSlot?: { date?: Date; startTime?: string; endTime?: string };
   alternativeTimeSlot1?: { date?: Date; startTime?: string; endTime?: string };
   alternativeTimeSlot2?: { date?: Date; startTime?: string; endTime?: string };
   voiceNote?: File | null;
-  [key: string]: unknown;
+  is_urgent?: boolean;
+  urgent_reason?: string;
+  is_on_behalf_of?: boolean;
+  meeting_manager_id?: string;
+  is_based_on_directive?: boolean;
+  previous_meeting_minutes_file?: File | null;
+  meeting_start_date?: Date;
+  meeting_end_date?: Date;
+  notes?: string;
 }
 
 /** Payload for one time slot: create sends slot_start/slot_end; edit (from get-details) can include id. */
