@@ -43,16 +43,16 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
 
   // ── Step 1 ──────────────────────────────────────────────────────────────
   const handleStep1Submit = useCallback(
-    (data: SubmitterStep1Values) => {
+    async (data: SubmitterStep1Values) => {
       const formData = buildStep1FormData(data);
 
       basicInfoMutation.mutate(
         { formData, draftId },
         {
-          onSuccess: (newDraftId) => {
+          onSuccess: async (newDraftId) => {
             setDraftId(newDraftId);
             setStep1Data(data);
-            onStepSaved?.(newDraftId);
+            await onStepSaved?.(newDraftId);
             setCurrentStep(2);
           },
           onError: (err) =>
@@ -65,7 +65,7 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
 
   // ── Step 2 ──────────────────────────────────────────────────────────────
   const handleStep2Submit = useCallback(
-    (formData: FormData | null) => {
+    async (formData: FormData | null) => {
       if (!formData || !draftId) {
         setCurrentStep(3);
         return;
@@ -74,8 +74,8 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
       contentMutation.mutate(
         { draftId, payload: formData },
         {
-          onSuccess: () => {
-            if (draftId) onStepSaved?.(draftId);
+          onSuccess: async () => {
+            if (draftId) await onStepSaved?.(draftId);
             setCurrentStep(3);
           },
           onError: (err) =>
