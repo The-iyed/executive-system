@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { CardsGrid } from '@/modules/shared/components/cards-grid';
 import { Pagination } from '@/modules/shared/components/pagination';
 import { MeetingListHeader } from './MeetingListHeader';
