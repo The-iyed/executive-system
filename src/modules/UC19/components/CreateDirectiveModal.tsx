@@ -27,11 +27,13 @@ const DIRECTIVE_TYPES: { value: DirectiveType; label: string }[] = [
 const IMPORTANCE_OPTIONS: { value: ImportanceLevel; label: string }[] = [
   { value: 'NORMAL', label: 'عادي' },
   { value: 'IMPORTANT', label: 'مهم' },
+  { value: 'VERY_IMPORTANT', label: 'مهم جداً' },
 ];
 
 const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
   { value: 'NORMAL', label: 'عادي' },
   { value: 'URGENT', label: 'عاجل' },
+  { value: 'VERY_URGENT', label: 'عاجل جداً' },
 ];
 
 const DURATION_UNITS: { value: DurationUnit; label: string }[] = [

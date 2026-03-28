@@ -19,7 +19,7 @@ const FILTER_TABS: { id: FilterTab; label: string }[] = [
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   OPEN: { label: 'قيد الانتظار', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
   CLOSED: { label: 'مكتمل', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  TAKEN: { label: 'تم الاخذ بالتوجيه', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  TAKEN: { label: 'تم الأخذ بالتوجيه', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
   ADOPTED: { label: 'تم اعتماد التوجيه', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
 };
 
@@ -30,10 +30,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const DURATION_LABELS: Record<string, string> = {
-  HOUR: 'ساعة', HOURS: 'ساعة',
-  DAY: 'يوم', DAYS: 'يوم',
-  WEEK: 'أسبوع', WEEKS: 'أسبوع',
-  MONTH: 'شهر', MONTHS: 'شهر',
+  HOUR: 'ساعة',
+  DAY: 'يوم',
 };
 
 const PAGE_SIZE = 10;
@@ -42,8 +40,8 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
   const statusInfo = STATUS_CONFIG[directive.scheduling_officer_status] || STATUS_CONFIG['OPEN'];
   const isCompleted = directive.scheduling_officer_status === 'CLOSED';
   const hasVoice = !!directive.voice_play_url;
-  const isUrgent = directive.priority === 'URGENT';
-  const isImportant = directive.importance === 'IMPORTANT';
+  const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
+  const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
 
   return (
     <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
