@@ -59,86 +59,85 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   };
 
   return (
-    <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
-      <div className="px-5 py-4">
-        {/* Top row */}
-        <div className="flex items-start gap-3">
-          <div className={cn(
-            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg',
-            isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-muted/60 text-muted-foreground',
-          )}>
-            {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
-          </div>
+    <div className="group transition-colors hover:bg-muted/30 px-5 py-4">
+      <div className="flex items-start gap-3">
+        {/* Icon */}
+        <div className={cn(
+          'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg',
+          isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-muted/60 text-muted-foreground',
+        )}>
+          {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
+        </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2 flex-1">
-                {directive.title}
-              </h3>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={handleCopy}
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                  title="نسخ المحتوى"
-                >
-                  {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-                </button>
-                <span className={cn('inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium', badge.color)}>
-                  <span className={cn('size-1.5 rounded-full', badge.dot)} />
-                  {badge.label}
-                </span>
-              </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-[14px] font-semibold text-foreground leading-relaxed line-clamp-2 flex-1">
+              {directive.title}
+            </h3>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleCopy}
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                title="نسخ المحتوى"
+              >
+                {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+              </button>
+              <span className={cn('inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-medium', badge.color)}>
+                <span className={cn('size-1.5 rounded-full', badge.dot)} />
+                {badge.label}
+              </span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {format(new Date(directive.created_at), 'dd MMM yyyy')}
-            </p>
           </div>
-        </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {format(new Date(directive.created_at), 'dd MMM yyyy')}
+          </p>
 
-        {/* Voice */}
-        {hasVoice && (
-          <div className="mt-3 mr-12 rounded-lg bg-muted/30 px-3 py-2">
-            <VoicePlayer url={directive.voice_play_url!} compact />
-          </div>
-        )}
-
-        {/* Tags */}
-        <div className="mt-3 mr-12 flex flex-wrap items-center gap-1.5">
-          {directive.directive_type && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              <FileText className="size-3" />
-              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
-            </span>
-          )}
-          {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
-              <AlertTriangle className="size-3" />
-              {PRIORITY_LABELS[directive.priority!]}
-            </span>
-          )}
-          {isImportant && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-              <Zap className="size-3" />
-              {IMPORTANCE_LABELS[directive.importance!]}
-            </span>
-          )}
-          {directive.due_duration_enabled && directive.due_duration_value && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
-              <Clock className="size-3" />
-              {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
-            </span>
-          )}
+          {/* Voice */}
           {hasVoice && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary font-medium">
-              <Volume2 className="size-3" />
-              صوتي
-            </span>
+            <div className="mt-3 rounded-lg bg-muted/30 px-3 py-2">
+              <VoicePlayer url={directive.voice_play_url!} compact />
+            </div>
           )}
+
+          {/* Tags */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {directive.directive_type && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <FileText className="size-3" />
+                {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
+              </span>
+            )}
+            {isUrgent && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                <AlertTriangle className="size-3" />
+                {PRIORITY_LABELS[directive.priority!]}
+              </span>
+            )}
+            {isImportant && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <Zap className="size-3" />
+                {IMPORTANCE_LABELS[directive.importance!]}
+              </span>
+            )}
+            {directive.due_duration_enabled && directive.due_duration_value && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Clock className="size-3" />
+                {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
+              </span>
+            )}
+            {hasVoice && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] text-primary font-medium">
+                <Volume2 className="size-3" />
+                صوتي
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Actions */}
+        {/* Actions on the left side */}
         {actions && actions.length > 0 && (
-          <div className="mt-3 mr-12 flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 mt-1">
             {actions.map((action) => (
               <button
                 key={action.id}
