@@ -179,10 +179,10 @@ function SectionCard({
               <div className={hasText ? 'pt-4 border-t border-border/30' : ''}>
                 {section.secondaryLabel && (
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-md bg-amber-50 flex items-center justify-center">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-amber-600" strokeWidth={2} />
+                <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
+                      <ClipboardCheck className="w-3.5 h-3.5 text-accent-foreground" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-semibold text-amber-800">{section.secondaryLabel}</span>
+                    <span className="text-sm font-semibold text-accent-foreground">{section.secondaryLabel}</span>
                   </div>
                 )}
                 <div className="w-full px-5 py-4 bg-amber-50/60 border border-amber-200/40 rounded-xl text-right text-amber-900 whitespace-pre-wrap text-sm leading-relaxed">
