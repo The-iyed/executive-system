@@ -135,8 +135,8 @@ export function DirectivesList({
               key={tab.value}
               onClick={() => onTypeChange?.(tab.value)}
               className={cn(
-                'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-colors rounded-t-lg',
-                activeType === tab.value ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-all rounded-t-lg',
+                activeType === tab.value ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
               )}
             >
               {tab.label}
@@ -154,8 +154,8 @@ export function DirectivesList({
                 key={tab.value}
                 onClick={() => onStatusChange?.(tab.value)}
                 className={cn(
-                  'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-colors rounded-t-lg',
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                  'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-all rounded-t-lg',
+                  isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
                 )}
               >
                 {tab.label}
