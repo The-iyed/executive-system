@@ -40,8 +40,8 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
   const statusInfo = STATUS_CONFIG[directive.scheduling_officer_status] || STATUS_CONFIG['OPEN'];
   const isCompleted = directive.scheduling_officer_status === 'CLOSED';
   const hasVoice = !!directive.voice_play_url;
-  const isUrgent = directive.priority === 'URGENT';
-  const isImportant = directive.importance === 'IMPORTANT';
+  const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
+  const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
 
   return (
     <div className="group bg-card border border-border/40 rounded-xl transition-all hover:shadow-sm hover:border-border/70 overflow-hidden">
