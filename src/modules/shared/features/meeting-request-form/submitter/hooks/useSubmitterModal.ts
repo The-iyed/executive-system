@@ -12,6 +12,7 @@ import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
 import { useToast } from "@/lib/ui";
+import { optimisticMergeMeeting, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 
 interface UseSubmitterModalOptions {
   editMeetingId?: string | null;
