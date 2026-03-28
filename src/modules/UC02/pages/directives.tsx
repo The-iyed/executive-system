@@ -82,8 +82,8 @@ function DirectiveAccordionCard({
         <span className={cn(
           'inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-[11px] font-bold shrink-0',
           directive.status === 'ADOPTED'
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-            : 'bg-amber-50 text-amber-700 border-amber-300',
+            ? 'bg-primary/10 text-primary border-primary/30'
+            : 'bg-accent text-accent-foreground border-accent',
         )}>
           {statusLabel}
         </span>
