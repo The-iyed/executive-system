@@ -29,3 +29,5 @@ export { PreviousMeetingField } from "./PreviousMeetingField";
 export { RequiresProtocolField } from "./RequiresProtocolField";
 export { DirectiveSection } from "./DirectiveSection";
 export { RelatedDirectiveField } from "./RelatedDirectiveField";
+export { ProposersSelect, type ProposerSelection } from "./ProposersSelect";
+export { ProposersField } from "./ProposersField";
