@@ -1,13 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FormTable, FormInput, FormField, OptionType, FormAsyncSelectV2, FormSelect } from '@/modules/shared';
+import { FormField as SharedFormField, FormInput, FormSelect, FormAsyncSelectV2 } from '@/modules/shared';
 import { DateTimePickerField } from '@/modules/shared/features/meeting-request-form/shared/fields/DateTimePickerField';
-import { createEmptyStep3InviteeRow } from '../features/MeetingForm/utils';
 import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
 import {
   MEETING_CHANNEL_OPTIONS,
   MEETING_LOCATION_OPTIONS,
   LOCATION_OPTIONS,
-  INVITEES_TABLE_COLUMNS,
   getLocationDropdownValue,
   showLocationOtherInput,
   isPresetLocation,
@@ -15,12 +13,10 @@ import {
 
 import { searchByEmail, type ADUserByEmail } from '../data/adIntegrationApi';
 import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
-import { X } from 'lucide-react';
-import { cn, toISOStringWithTimezone } from '@/lib/ui';
+import { X, Users } from 'lucide-react';
+import { cn, toISOStringWithTimezone, Button, Label } from '@/lib/ui';
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
-
-
 
 /** Build ISO in UTC so slot time (e.g. 13:00) is sent as 13:00 UTC; matches timeline. */
 function toISOStart(date: Date, time: string): string {
@@ -35,30 +31,22 @@ export interface CalendarSlotMeetingFormSubmitValues {
   end_date: string;
   meeting_channel: string;
   meeting_location?: string;
-  /** Full proposer payloads for API */
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
 }
 
 export interface CalendarSlotMeetingFormProps {
-  /** Initial slot start (HH:mm) */
   slotDate: Date;
   slotTime: string;
-  /** Initial slot end (HH:mm). If set, form shows exact range (e.g. 7:00–7:30). */
   slotEndTime?: string;
-  /** Optional initial values when editing an existing scheduled meeting from the calendar */
   initialTitle?: string;
   initialMeetingChannel?: string;
   initialMeetingLocation?: string;
-  /** Pre-fill invitees table when editing (e.g. from event.attendees) */
   initialInvitees?: Array<Record<string, unknown>>;
-  /** Form mode: 'create' for new meetings, 'edit' for existing ones */
   mode?: 'create' | 'edit';
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
-  /** When true, submit button is disabled (e.g. API in progress). */
   isSubmitting?: boolean;
-  /** Error message to show above actions (e.g. API error). */
   submitError?: string | null;
 }
 
@@ -97,13 +85,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     return d;
   }, []);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
-  /** Each selected proposer keeps full AD row for API */
   const [proposerSelections, setProposerSelections] = useState<
     (ADUserByEmail & { id: string; label: string })[]
   >([]);
 
   const proposerAdByIdRef = useRef<Record<string, ADUserByEmail>>({});
-  /** Cache from initial load on open; filtering when user types is client-side only (no API). */
   const proposerOptionsCacheRef = useRef<Array<{ value: string; label: string; email?: string }>>([]);
 
   const loadProposerAdOptions = useCallback(
@@ -129,14 +115,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           });
           proposerOptionsCacheRef.current = items;
           const out = excludeSelected(items).slice(0, limit);
-          return {
-            items: out,
-            total: out.length,
-            skip: 0,
-            limit,
-            has_next: false,
-            has_previous: false,
-          };
+          return { items: out, total: out.length, skip: 0, limit, has_next: false, has_previous: false };
         } catch {
           return { items: [], total: 0, skip: 0, limit, has_next: false, has_previous: false };
         }
@@ -150,14 +129,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           (o.email && o.email.toLowerCase().includes(term))
       );
       const items = filtered.slice(0, limit);
-      return {
-        items,
-        total: filtered.length,
-        skip: 0,
-        limit,
-        has_next: false,
-        has_previous: false,
-      };
+      return { items, total: filtered.length, skip: 0, limit, has_next: false, has_previous: false };
     },
     [proposerSelections]
   );
@@ -205,7 +177,6 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     setMeetingLocationOption(value);
     setMeetingLocation(isPresetLocation(value) ? value : '');
   }, []);
-
 
   const getMeetingLocationForSubmit = useCallback((): string | undefined => {
     if (!showLocation) return undefined;
@@ -265,100 +236,123 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   };
 
   return (
-    <div className="flex flex-col gap-6 p-2 pb-48" dir="rtl">
-      <h2 className="text-xl font-bold text-foreground text-right">
-        {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
-      </h2>
+    <div className="flex flex-col gap-0 pb-32" dir="rtl">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border/60 px-1 py-4 -mx-1">
+        <h2 className="text-lg font-bold text-foreground">
+          {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع من الموعد'}
+        </h2>
+      </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="calendar-slot-title" className="text-sm font-medium text-gray-900 text-right">
-            عنوان الاجتماع <span className="text-red-500">*</span>
-          </label>
-          <FormInput
-            id="calendar-slot-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => setTitleTouched(true)}
-            placeholder="عنوان الاجتماع"
-            fullWidth
-            error={showTitleError}
-          />
-          {showTitleError && (
-            <p className="text-right text-sm text-red-600">عنوان الاجتماع مطلوب</p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-0 pt-5">
+        {/* Meeting Details Section */}
+        <div className="flex flex-col gap-5">
+          {/* عنوان الاجتماع */}
+          <div className="space-y-1.5">
+            <Label className={cn(showTitleError && "text-destructive")}>
+              عنوان الاجتماع
+              <span className="mr-0.5 text-destructive">*</span>
+            </Label>
+            <FormInput
+              id="calendar-slot-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => setTitleTouched(true)}
+              placeholder="عنوان الاجتماع"
+              fullWidth
+              error={showTitleError}
+            />
+            {showTitleError && (
+              <p className="text-xs text-destructive animate-in slide-in-from-top-1">عنوان الاجتماع مطلوب</p>
+            )}
+          </div>
+
+          {/* موعد الاجتماع المقترح */}
+          <div className="space-y-1.5">
+            <Label>
+              موعد الاجتماع المقترح
+              <span className="mr-0.5 text-destructive">*</span>
+            </Label>
+            <DateTimePickerField
+              value={startDate}
+              endValue={endDate}
+              onChange={(v) => {
+                setPastDateError(null);
+                setStartDate(v);
+              }}
+              onChangeEnd={(v) => setEndDate(v)}
+              minDate={minStartDate}
+              placeholder="اختر التاريخ والوقت"
+            />
+            {pastDateError && (
+              <p className="text-xs text-destructive animate-in slide-in-from-top-1">{pastDateError}</p>
+            )}
+          </div>
+
+          {/* آلية انعقاد الاجتماع */}
+          <div className="space-y-1.5">
+            <Label>
+              آلية انعقاد الاجتماع
+              <span className="mr-0.5 text-destructive">*</span>
+            </Label>
+            <FormSelect
+              value={meetingChannel}
+              onValueChange={handleMeetingChannelChange}
+              options={MEETING_CHANNEL_OPTIONS}
+              placeholder="حضوري / افتراضي / مختلط"
+              error={false}
+            />
+          </div>
+
+          {/* Location fields */}
+          {showLocation && (
+            <>
+              <div className="space-y-1.5">
+                <Label className={cn(showLocationError && "text-destructive")}>
+                  الموقع
+                  <span className="mr-0.5 text-destructive">*</span>
+                </Label>
+                <FormSelect
+                  value={locationDropdownValue || undefined}
+                  onValueChange={(v) => handleLocationOptionChange(v ?? '')}
+                  options={MEETING_LOCATION_OPTIONS}
+                  placeholder="اختر الموقع"
+                  error={showLocationError}
+                />
+                {showLocationError && (
+                  <p className="text-xs text-destructive animate-in slide-in-from-top-1">الموقع مطلوب</p>
+                )}
+              </div>
+              {showLocationOtherInputField && (
+                <div className="space-y-1.5">
+                  <Label className={cn(showLocationError && "text-destructive")}>
+                    تحديد الموقع (موقع آخر)
+                    <span className="mr-0.5 text-destructive">*</span>
+                  </Label>
+                  <FormInput
+                    value={meetingLocation}
+                    onChange={(e) => setMeetingLocation(e.target.value)}
+                    onBlur={() => setLocationTouched(true)}
+                    placeholder="أدخل الموقع"
+                    error={showLocationError}
+                    fullWidth
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <FormField className="w-full min-w-0" label="موعد الاجتماع المقترح" required>
-          <DateTimePickerField
-            value={startDate}
-            endValue={endDate}
-            onChange={(v) => {
-              setPastDateError(null);
-              setStartDate(v);
-            }}
-            onChangeEnd={(v) => {
-              setEndDate(v);
-            }}
-            minDate={minStartDate}
-            placeholder="اختر التاريخ والوقت"
-          />
-        </FormField>
-        {pastDateError && (
-          <p className="text-right text-sm text-red-600">{pastDateError}</p>
-        )}
+        {/* Divider */}
+        <div className="border-t border-border/60 my-6" />
 
-        <FormField className="w-full min-w-0" label="آلية انعقاد الاجتماع" required>
-          <FormSelect
-            value={meetingChannel}
-            onValueChange={handleMeetingChannelChange}
-            options={MEETING_CHANNEL_OPTIONS}
-            placeholder="حضوري / افتراضي / مختلط"
-            error={false}
-          />
-        </FormField>
-
-
-        {showLocation && (
-          <>
-            <FormField
-              className="w-full min-w-0"
-              label="الموقع"
-              required
-              error={showLocationError ? 'الموقع مطلوب' : undefined}
-            >
-              <FormSelect
-                value={locationDropdownValue || undefined}
-                onValueChange={(v) => handleLocationOptionChange(v ?? '')}
-                options={MEETING_LOCATION_OPTIONS}
-                placeholder="اختر الموقع"
-                error={showLocationError}
-              />
-            </FormField>
-            {showLocationOtherInputField && (
-              <FormField
-                className="w-full min-w-0"
-                label="تحديد الموقع (موقع آخر)"
-                required
-                error={showLocationError ? 'الموقع مطلوب' : undefined}
-              >
-                <FormInput
-                  value={meetingLocation}
-                  onChange={(e) => setMeetingLocation(e.target.value)}
-                  onBlur={() => setLocationTouched(true)}
-                  placeholder="أدخل الموقع"
-                  error={showLocationError}
-                  fullWidth
-                />
-              </FormField>
-            )}
-          </>
-        )}
-
-        {/* المقترحون — search by email (AD), same as invitees */}
-        <div className="w-full flex flex-col gap-3">
-          <h3 className="text-right text-[22px] font-bold text-[#101828]">المقترحون</h3>
-          <p className="text-right text-[14px] text-[#667085]">
+        {/* المقترحون Section */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="w-[18px] h-[18px] text-muted-foreground" />
+            <h3 className="text-sm font-bold text-foreground">المقترحون</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
             المستخدمون الذين يتلقون إشعاراً دون إضافتهم كمدعوين (اختياري).
           </p>
           <FormAsyncSelectV2
@@ -378,51 +372,36 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
             emptyMessage="لم يتم العثور على مستخدمين"
           />
           {proposerSelections.length > 0 && (
-            <div
-              className={cn(
-                'w-full border border-[#D0D5DD] rounded-lg overflow-hidden p-4',
-                'bg-white max-h-[200px] overflow-y-auto'
-              )}
-            >
-              <ul className="flex flex-col gap-2">
+            <div className="rounded-lg border border-border/60 bg-muted/30 overflow-hidden">
+              <ul className="divide-y divide-border/40">
                 {proposerSelections.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center gap-3 justify-end cursor-pointer hover:bg-[#F9FAFB] rounded px-2 py-1.5 -mx-2"
+                    className="flex items-center gap-3 justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors"
                   >
-                    <span className="text-[14px] text-[#344054]">
-                      {p.label}
-                      {p.mail ? ` (${p.mail})` : ''}
-                    </span>
                     <button
                       type="button"
                       aria-label="إزالة"
                       onClick={() => removeProposer(p.id)}
-                      className="flex items-center justify-center shrink-0 w-6 h-6 rounded border border-[#D0D5DD] hover:bg-red-50 hover:border-red-300 text-[#667085] hover:text-red-600"
+                      className="flex items-center justify-center shrink-0 w-6 h-6 rounded-md border border-border hover:bg-destructive/10 hover:border-destructive/40 text-muted-foreground hover:text-destructive transition-colors"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
+                    <span className="text-sm text-foreground truncate">
+                      {p.label}
+                      {p.mail ? ` (${p.mail})` : ''}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
         </div>
-{/* 
-        <FormTable
-          title="المدعوون (مقدم الطلب)"
-          columns={INVITEES_TABLE_COLUMNS}
-          rows={inviteeRows}
-          onAddRow={handleAddInvitee}
-          onDeleteRow={handleDeleteInvitee}
-          onUpdateRow={handleUpdateInvitee}
-          addButtonLabel="إضافة مدعو"
-          emptyStateMessage="لا يوجد مدعوون"
-          customCellRender={{
-            email: inviteeEmailCellRender,
-          }}
-        /> */}
 
+        {/* Divider */}
+        <div className="border-t border-border/60 my-6" />
+
+        {/* Invitees */}
         <InviteesTableForm
           tableRef={inviteesRef}
           initialInvitees={(initialInvitees ?? []) as any}
@@ -430,22 +409,24 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
           showAiSuggest={false}
         />
 
+        {/* Error */}
         {submitError && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-right text-sm text-red-600">{submitError}</p>
+          <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <p className="text-sm text-destructive">{submitError}</p>
           </div>
         )}
 
-        <div className="flex flex-row gap-3 justify-end pt-2">
-          <button
+        {/* Actions */}
+        <div className="flex flex-row gap-3 justify-end pt-6 mt-2 border-t border-border/60">
+          <Button
             type="button"
+            variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             إلغاء
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={
               isSubmitting ||
@@ -453,12 +434,11 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
               !meetingChannel.trim() ||
               (locationRequired && !locationValid)
             }
-            className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#1f4848] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting
               ? (mode === 'edit' ? 'جاري التحديث...' : 'جاري الحفظ...')
               : (mode === 'edit' ? 'تحديث' : 'حفظ')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
