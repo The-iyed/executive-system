@@ -172,12 +172,6 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         </div>
       </div>
 
-      {durationMismatch && fields.length > 0 && hasMeetingDuration && (
-        <p role="alert" className="text-xs text-destructive">
-          مجموع مدة عناصر الأجندة ({totalDuration} دقيقة) يجب أن يساوي مدة الاجتماع ({meetingDurationMinutes} دقيقة)
-        </p>
-      )}
-
       {rootError && !durationMismatch && (
         <p role="alert" className="text-xs text-destructive">{rootError}</p>
       )}
@@ -191,17 +185,22 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         )}
 
         {fields.length > 0 && hasMeetingDuration && (
-          <span className={cn(
-            "text-xs font-medium px-3 py-1.5 rounded-md",
-            durationMismatch ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+          <div className={cn(
+            "flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg border transition-colors",
+            durationMismatch
+              ? "bg-destructive/5 border-destructive/20 text-destructive"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
           )}>
-            إجمالي المدة: <span className="font-bold">{totalDuration}</span> / {meetingDurationMinutes} دقيقة
+            <span>إجمالي المدة:</span>
+            <span className="font-bold tabular-nums">{totalDuration}</span>
+            <span>/</span>
+            <span className="tabular-nums">{meetingDurationMinutes} دقيقة</span>
             {durationMismatch && (
-              <span className="mr-2">
-                ({totalDuration > meetingDurationMinutes ? `+${totalDuration - meetingDurationMinutes}` : `-${meetingDurationMinutes - totalDuration}`} دقيقة)
+              <span className="px-1.5 py-0.5 rounded bg-destructive/10 text-[11px] font-semibold tabular-nums">
+                {totalDuration > meetingDurationMinutes ? `+${totalDuration - meetingDurationMinutes}` : `-${meetingDurationMinutes - totalDuration}`} دقيقة
               </span>
             )}
-          </span>
+          </div>
         )}
       </div>
     </div>
