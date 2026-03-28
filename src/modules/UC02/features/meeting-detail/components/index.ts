@@ -1,5 +1,4 @@
 export { RejectDialog } from './RejectDialog';
-export { RejectDialog } from './RejectDialog';
 export { CancelDialog } from './CancelDialog';
 export { EditConfirmDialog } from './EditConfirmDialog';
 export { SendToContentDrawer } from './SendToContentDrawer';
