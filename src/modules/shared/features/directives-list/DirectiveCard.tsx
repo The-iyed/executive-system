@@ -148,7 +148,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
                 key={action.id}
                 onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
                 className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap',
+                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap shadow-sm hover:shadow',
                   action.className,
                 )}
               >
