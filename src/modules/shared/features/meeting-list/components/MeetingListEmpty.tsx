@@ -56,7 +56,7 @@ export const MeetingListEmpty: React.FC<MeetingListEmptyProps> = ({
 
   return (
     <div className="flex items-center justify-center py-12">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm px-10 py-10 max-w-sm w-full text-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm px-16 py-14 max-w-lg w-full text-center">
         <div className="mb-4">
           {isSearch ? <SearchEmptyIllustration /> : <EmptyIllustration />}
         </div>
