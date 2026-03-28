@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, FileText, Volume2, AlertTriangle, Zap, Copy, Check, ScrollText } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   listDirectives,
   type MinisterDirective,
