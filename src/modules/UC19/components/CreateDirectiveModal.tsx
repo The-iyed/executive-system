@@ -16,7 +16,6 @@ interface CreateDirectiveModalProps {
 }
 
 const DIRECTIVE_TYPES: { value: DirectiveType; label: string }[] = [
-  { value: 'SCHEDULING', label: 'الجدولة' },
   { value: 'GENERAL', label: 'عام' },
   { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
   { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
@@ -42,7 +41,7 @@ const DURATION_UNITS: { value: DurationUnit; label: string }[] = [
 export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProps) {
   const qc = useQueryClient();
 
-  const [directiveType, setDirectiveType] = useState<DirectiveType>('SCHEDULING');
+  const [directiveType, setDirectiveType] = useState<DirectiveType>('GENERAL');
   const [title, setTitle] = useState('');
   const [importance, setImportance] = useState<ImportanceLevel>('NORMAL');
   const [priority, setPriority] = useState<PriorityLevel>('NORMAL');
@@ -51,7 +50,7 @@ export function CreateDirectiveModal({ open, onClose }: CreateDirectiveModalProp
   const [dueDurationUnit, setDueDurationUnit] = useState<DurationUnit>('HOURS');
 
   const resetForm = () => {
-    setDirectiveType('SCHEDULING');
+    setDirectiveType('GENERAL');
     setTitle('');
     setImportance('NORMAL');
     setPriority('NORMAL');
