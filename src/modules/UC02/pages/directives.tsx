@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, XCircle } from 'lucide-react';
+import { CalendarDays, CheckSquare } from 'lucide-react';
 import {
   DirectivesList,
   type DirectiveCardAction,
@@ -8,6 +8,10 @@ import { useDirectivesList } from '@/modules/shared/hooks/useDirectivesList';
 import type { DirectiveStatus } from '@/modules/shared/types/minister-directive-enums';
 import type { MinisterDirective } from '@/modules/shared/api/directives';
 import { SchedulerModal } from '@/modules/shared/features/meeting-request-form';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/lib/ui/components/alert-dialog';
 
 const STATUS_TABS: { value: DirectiveStatus; label: string }[] = [
   { value: 'TAKEN', label: 'التوجيهات الحالية' },
@@ -17,6 +21,7 @@ const STATUS_TABS: { value: DirectiveStatus; label: string }[] = [
 const Directives: React.FC = () => {
   const [meetingFormOpen, setMeetingFormOpen] = useState(false);
   const [schedulerDirective, setSchedulerDirective] = useState<{ directiveId?: string; directiveText?: string }>({});
+  const [confirmDirective, setConfirmDirective] = useState<MinisterDirective | null>(null);
 
   const list = useDirectivesList({
     queryKeyPrefix: 'uc02-scheduling',
@@ -30,9 +35,9 @@ const Directives: React.FC = () => {
     {
       id: 'take',
       label: 'الأخذ بالتوجيه',
-      icon: <XCircle className="w-3.5 h-3.5" />,
-      className: 'border border-primary/30 text-primary hover:bg-primary/5 hover:shadow-sm',
-      onClick: (d: MinisterDirective) => list.handleTakeDirective(d),
+      icon: <CheckSquare className="w-3.5 h-3.5" />,
+      className: 'border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 hover:shadow-sm',
+      onClick: (d: MinisterDirective) => setConfirmDirective(d),
     },
     {
       id: 'meeting',
