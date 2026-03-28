@@ -1,4 +1,4 @@
-import React, { useMemo, memo, useCallback, useState } from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink } from 'lucide-react';
@@ -6,8 +6,6 @@ import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
 import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
 import { getMeetingById, type MeetingApiResponse } from '@/modules/UC02/data/meetingsApi';
-import { MeetingOwnerType } from '@/modules/shared';
-import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -40,14 +38,15 @@ function getInitials(name: string): string {
 interface EventDetailModalProps {
   event: CalendarEventData | null;
   onClose: () => void;
+  onEdit?: (meetingId: string) => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   event,
   onClose,
+  onEdit,
 }) => {
   const navigate = useNavigate();
-  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
 
   const isOptimistic = event?.id?.startsWith('optimistic-');
   const isOutlookId = event?.id?.startsWith('AAMk');
@@ -128,7 +127,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   );
 
   return (
-    <>
     <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className="max-w-[860px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-border shadow-xl [&>button]:hidden"
@@ -301,13 +299,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               >
                 عرض التفاصيل
               </button>
-              {display.meetingId && (
+              {display.meetingId && onEdit && (
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose();
-                    setEditMeetingId(display.meetingId!);
-                  }}
+                  onClick={() => onEdit(display.meetingId!)}
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-border text-xs font-semibold text-foreground bg-background hover:bg-muted transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -319,15 +314,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         )}
       </DialogContent>
     </Dialog>
-
-    <SubmitterModal
-      callerRole={MeetingOwnerType.SCHEDULING}
-      open={!!editMeetingId}
-      onOpenChange={(open) => { if (!open) setEditMeetingId(null); }}
-      editMeetingId={editMeetingId ?? undefined}
-      showAiSuggest
-    />
-    </>
   );
 });
 
