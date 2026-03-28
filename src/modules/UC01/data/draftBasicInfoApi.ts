@@ -1,6 +1,48 @@
 import axiosInstance from '@/modules/auth/utils/axios';
 import { toISOStringWithTimezone } from '@/lib/ui';
-import type { Step1BasicInfoFormData } from '../features/MeetingForm/schemas/step1BasicInfo.schema';
+/** Inline type replacing deleted MeetingForm schema */
+interface Step1BasicInfoFormData {
+  meetingSubject?: string;
+  meetingCategory?: string;
+  meetingConfidentiality?: string;
+  meetingType?: string;
+  meetingClassification1?: string;
+  meetingChannel?: string;
+  meetingLocation?: string;
+  meetingLocationOther?: string;
+  meeting_location?: string;
+  sector?: string;
+  relatedTopic?: string;
+  dueDate?: string;
+  meetingReason?: string;
+  meetingDescription?: string;
+  meetingAgenda?: Array<{
+    agenda_item?: string;
+    presentation_duration_minutes?: number;
+    minister_support_type?: string;
+    minister_support_other?: string;
+  }>;
+  directiveMethod?: string;
+  directiveId?: string;
+  directiveText?: string;
+  directive_method?: string;
+  directive_text?: string;
+  duration?: string;
+  expectedDuration?: string;
+  selectedTimeSlot?: { date?: Date; startTime?: string; endTime?: string };
+  alternativeTimeSlot1?: { date?: Date; startTime?: string; endTime?: string };
+  alternativeTimeSlot2?: { date?: Date; startTime?: string; endTime?: string };
+  voiceNote?: File | null;
+  is_urgent?: boolean;
+  urgent_reason?: string;
+  is_on_behalf_of?: boolean;
+  meeting_manager_id?: string;
+  is_based_on_directive?: boolean;
+  previous_meeting_minutes_file?: File | null;
+  meeting_start_date?: string;
+  meeting_end_date?: string;
+  notes?: string;
+}
 
 /** Payload for one time slot: create sends slot_start/slot_end; edit (from get-details) can include id. */
 export interface TimeSlotPayload {
