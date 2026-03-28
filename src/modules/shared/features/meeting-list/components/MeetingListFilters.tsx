@@ -35,7 +35,7 @@ export const MeetingListFilters: React.FC<MeetingListFiltersProps> = ({
   const overflowCount = allChips.length - MAX_VISIBLE_CHIPS;
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-row-reverse">
       {/* Filter trigger buttons */}
       {filtersConfig.map((config) => {
         const selected = filters[config.key] ?? [];
