@@ -76,40 +76,44 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogPortal>
-        <AlertDialogOverlay className="z-[220] bg-black/40 backdrop-blur-sm" />
+        <AlertDialogOverlay className="z-[220] !bg-black/40 backdrop-blur-sm" />
         <AlertDialogContent
           dir="rtl"
-          className="z-[221] w-full max-w-sm rounded-2xl border border-border/50 bg-card p-8 text-center shadow-2xl"
+          className="z-[221] !w-full !max-w-sm !rounded-2xl !border !border-border/50 !bg-card !p-8 !text-center !shadow-2xl !gap-0"
           onEscapeKeyDown={(event) => {
             if (isLoading) event.preventDefault();
           }}
         >
-          <AlertDialogHeader className="items-center gap-0 text-center">
-            <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
-              <Icon className={`size-6 ${config.iconColor}`} />
-            </div>
-            <AlertDialogTitle className="mb-2 text-center text-lg font-bold text-foreground">
+          {/* Icon */}
+          <div className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-full ${config.iconBg}`}>
+            <Icon className={`size-6 ${config.iconColor}`} />
+          </div>
+
+          {/* Title & Description */}
+          <AlertDialogHeader className="!space-y-0 !text-center">
+            <AlertDialogTitle className="!text-center text-lg font-bold text-foreground mb-2">
               {title}
             </AlertDialogTitle>
-            <AlertDialogDescription className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
+            <AlertDialogDescription className="!text-center text-sm leading-relaxed text-muted-foreground mb-6">
               {description}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="mt-0 flex items-center justify-center gap-3 sm:flex-row">
+          {/* Actions */}
+          <AlertDialogFooter className="!flex-row !justify-center !gap-3 !space-x-0 !mt-0">
             <AlertDialogAction
               onClick={(event) => {
                 event.preventDefault();
                 onConfirm();
               }}
               disabled={isLoading}
-              className={`m-0 rounded-xl px-5 ${config.btnClass}`}
+              className={`!m-0 rounded-xl px-6 py-2.5 h-auto text-sm font-medium ${config.btnClass}`}
             >
               {isLoading && loadingLabel ? loadingLabel : confirmLabel}
             </AlertDialogAction>
             <AlertDialogCancel
               disabled={isLoading}
-              className="m-0 rounded-xl px-5"
+              className="!m-0 rounded-xl px-6 py-2.5 h-auto text-sm font-medium border-border/60"
             >
               {cancelLabel}
             </AlertDialogCancel>
