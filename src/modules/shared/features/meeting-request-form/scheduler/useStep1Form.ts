@@ -39,6 +39,7 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
     deadline: "",
     meeting_classification_type: "",
     meeting_confidentiality: MeetingConfidentiality.NORMAL,
+    is_on_behalf_of: BOOL.TRUE,
     agenda_items: [],
     note: "",
     related_directive: "",

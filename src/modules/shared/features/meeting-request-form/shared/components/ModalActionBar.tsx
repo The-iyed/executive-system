@@ -7,6 +7,7 @@ interface ModalActionBarProps {
   saving?: boolean;
   showSaveAsDraft?: boolean;
   submitLabel?: string;
+  cancelLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onCancel: () => void;
@@ -20,6 +21,7 @@ export function ModalActionBar({
   saving = false,
   showSaveAsDraft = false,
   submitLabel = "إرسال الطلب",
+  cancelLabel = "إلغاء",
   onNext,
   onPrev,
   onCancel,
@@ -76,7 +78,7 @@ export function ModalActionBar({
       {/* Secondary action (left side in RTL) */}
       {isFirst ? (
         <Button type="button" variant="outline" className="px-8 h-11 rounded-xl" onClick={onCancel}>
-          إلغاء
+          {cancelLabel}
         </Button>
       ) : (
         <Button

@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
 import { type UseFormReturn, useFieldArray, Controller } from "react-hook-form";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, cn } from "@/lib/ui";
 import { Plus, Trash2 } from "lucide-react";
@@ -19,6 +21,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
 
   const [animatingNewId, setAnimatingNewId] = useState<string | null>(null);
   const [removingIndex, setRemovingIndex] = useState<number | null>(null);
+  const [confirmingDeleteIndex, setConfirmingDeleteIndex] = useState<number | null>(null);
   const removeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const agendaErrors = errors.agenda_items;
@@ -52,13 +55,19 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   }, [prepend]);
 
   const handleRemove = useCallback((index: number) => {
-    setRemovingIndex(index);
+    setConfirmingDeleteIndex(index);
+  }, []);
+
+  const confirmRemove = useCallback(() => {
+    if (confirmingDeleteIndex === null) return;
+    setConfirmingDeleteIndex(null);
+    setRemovingIndex(confirmingDeleteIndex);
     clearTimeout(removeTimeoutRef.current);
     removeTimeoutRef.current = setTimeout(() => {
-      remove(index);
+      remove(confirmingDeleteIndex);
       setRemovingIndex(null);
     }, 250);
-  }, [remove]);
+  }, [confirmingDeleteIndex, remove]);
 
   return (
     <div className="space-y-3">
@@ -170,32 +179,87 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         </div>
       </div>
 
-      {rootError && (
+      {rootError && !durationMismatch && (
         <p role="alert" className="text-xs text-destructive">{rootError}</p>
       )}
 
-      {agendaEditable && (
-        <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg" disabled={!hasMeetingDuration} onClick={handleAdd}>
-          <Plus className="h-3.5 w-3.5" />
-          إضافة عنصر
-        </Button>
-      )}
+      <div className="flex items-center justify-between">
+        {agendaEditable && (
+          <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg" disabled={!hasMeetingDuration} onClick={handleAdd}>
+            <Plus className="h-3.5 w-3.5" />
+            إضافة عنصر
+          </Button>
+        )}
 
-      {fields.length > 0 && hasMeetingDuration && (
-        <div className="flex justify-between items-center">
-          <span className={cn(
-            "text-xs font-medium px-3 py-1.5 rounded-md",
-            durationMismatch ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+        {fields.length > 0 && hasMeetingDuration && (
+          <div className={cn(
+            "flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg border transition-colors",
+            durationMismatch
+              ? "bg-destructive/5 border-destructive/20 text-destructive"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
           )}>
-            إجمالي المدة: <span className="font-bold">{totalDuration}</span> / {meetingDurationMinutes} دقيقة
+            <span>إجمالي المدة:</span>
+            <span className="font-bold tabular-nums">{totalDuration}</span>
+            <span>/</span>
+            <span className="tabular-nums">{meetingDurationMinutes} دقيقة</span>
             {durationMismatch && (
-              <span className="mr-2">
-                ({totalDuration > meetingDurationMinutes ? `+${totalDuration - meetingDurationMinutes}` : `-${meetingDurationMinutes - totalDuration}`} دقيقة)
+              <span className="px-1.5 py-0.5 rounded bg-destructive/10 text-[11px] font-semibold tabular-nums">
+                {totalDuration > meetingDurationMinutes ? `+${totalDuration - meetingDurationMinutes}` : `-${meetingDurationMinutes - totalDuration}`} دقيقة
               </span>
             )}
-          </span>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {confirmingDeleteIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setConfirmingDeleteIndex(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="bg-card border rounded-xl shadow-lg p-5 w-80 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center mb-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                </div>
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">حذف عنصر الأجندة</h3>
+              <p className="text-sm text-muted-foreground mb-4">هل أنت متأكد من حذف هذا العنصر من الأجندة؟</p>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingDeleteIndex(null)}
+                  className="min-w-20"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={confirmRemove}
+                  className="min-w-20"
+                >
+                  حذف
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Dialog, DialogContent, Button } from "@/lib/ui";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { StepIndicator, type StepDef } from "./StepIndicator";
 import { ModalActionBar } from "./ModalActionBar";
 
@@ -20,11 +20,20 @@ interface MeetingModalShellProps {
   saving?: boolean;
   showSaveAsDraft?: boolean;
   submitLabel?: string;
+  cancelLabel?: string;
   onNext: () => void;
   onPrev: () => void;
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
   children: ReactNode;
+  /** Hide the step indicator */
+  hideSteps?: boolean;
+  /** Custom title (defaults to "قم بإضافة معلومات الاجتماع") */
+  title?: string;
+  /** Custom subtitle */
+  subtitle?: string;
+  /** Custom steps array (defaults to MEETING_STEPS) */
+  steps?: StepDef[];
 }
 
 export function MeetingModalShell({
@@ -37,54 +46,77 @@ export function MeetingModalShell({
   saving = false,
   showSaveAsDraft = false,
   submitLabel,
+  cancelLabel,
   onNext,
   onPrev,
   onSubmit,
   onSaveAsDraft,
   children,
+  hideSteps = false,
+  title = "قم بإضافة معلومات الاجتماع",
+  subtitle = "يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع",
+  steps: customSteps,
 }: MeetingModalShellProps) {
+  const activeSteps = customSteps ?? MEETING_STEPS;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[calc(100vw-3rem)] w-[calc(100vw-3rem)] sm:max-w-[1450px] h-[calc(100vh-6rem)] overflow-hidden flex flex-col p-0 gap-0 rounded-2xl"
+        className="max-w-[calc(100vw-3rem)] w-[calc(100vw-3rem)] sm:max-w-[1450px] h-[calc(100vh-6rem)] overflow-hidden flex flex-col p-0 gap-0 rounded-2xl [&>button]:hidden"
         dir="rtl"
       >
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-8 pb-8">
-          <div className="pt-8 pb-6 shrink-0">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-foreground">قم بإضافة معلومات الاجتماع</h2>
-              <p className="text-base text-teal mt-2">
-                يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع
-              </p>
+        <div className="flex-1 overflow-y-auto">
+          <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </Button>
+              <div className="w-10 shrink-0" aria-hidden="true" />
             </div>
-            <StepIndicator steps={MEETING_STEPS} currentStep={currentStep} onStepClick={onStepClick} />
+
+            <div className="px-8 pb-6">
+              <div className="text-center mb-8 animate-fade-in">
+                <h2 className="text-2xl font-bold text-foreground">{title}</h2>
+                <p className="mt-2 text-base text-teal">{subtitle}</p>
+              </div>
+              {!hideSteps && (
+                <StepIndicator steps={activeSteps} currentStep={currentStep} onStepClick={onStepClick} />
+              )}
+            </div>
           </div>
 
-
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-teal mb-3" />
-              <p className="text-sm text-muted-foreground">جاري تحميل بيانات الاجتماع...</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-sm text-destructive mb-4">{error}</p>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>إغلاق</Button>
-            </div>
-          ) : (
-            children
-          )}
+          <div className="px-8 pb-8 pt-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="mb-3 h-8 w-8 animate-spin text-teal" />
+                <p className="text-sm text-muted-foreground">جاري تحميل بيانات الاجتماع...</p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="mb-4 text-sm text-destructive">{error}</p>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>إغلاق</Button>
+              </div>
+            ) : (
+              children
+            )}
+          </div>
         </div>
 
-        {/* Action bar */}
         {!loading && !error && (
           <ModalActionBar
             currentStep={currentStep}
-            totalSteps={MEETING_STEPS.length}
+            totalSteps={activeSteps.length}
             saving={saving}
             showSaveAsDraft={showSaveAsDraft}
             submitLabel={submitLabel}
+            cancelLabel={cancelLabel}
             onNext={onNext}
             onPrev={() => onStepClick(currentStep - 1)}
             onCancel={() => onOpenChange(false)}
