@@ -5,74 +5,39 @@ import { toast } from 'sonner';
 import {
   listDirectives,
   type MinisterDirective,
-  type DirectiveType,
-  type ImportanceLevel,
-  type PriorityLevel,
-  type DirectiveStatus,
-  type SchedulingOfficerStatus,
 } from '../api/directivesApi';
+import type { DirectiveType, ImportanceLevel, PriorityLevel, DirectiveStatus, SchedulingOfficerStatus } from '@/modules/shared/types/minister-directive-enums';
+import {
+  DIRECTIVE_TYPE_LABELS,
+  IMPORTANCE_LABELS,
+  PRIORITY_LABELS,
+  DURATION_UNIT_LABELS,
+  DIRECTIVE_STATUS_LABELS as STATUS_LABELS_ENUM,
+  SCHEDULING_OFFICER_STATUS_LABELS,
+  DIRECTIVE_TYPE_OPTIONS as TYPE_FILTER_OPTIONS,
+  IMPORTANCE_OPTIONS as IMPORTANCE_FILTER_OPTIONS,
+  PRIORITY_OPTIONS as PRIORITY_FILTER_OPTIONS,
+} from '@/modules/shared/types/minister-directive-enums';
 import { CreateDirectiveModal } from '../components/CreateDirectiveModal';
 import { VoicePlayer } from '../components/VoicePlayer';
 import { Pagination } from '@/modules/shared/components/pagination';
 import { format } from 'date-fns';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  OPEN: { label: 'قيد الانتظار', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-  CLOSED: { label: 'مكتمل', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  TAKEN: { label: 'تم الأخذ بالتوجيه', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  ADOPTED: { label: 'تم اعتماد التوجيه', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  OPEN: { label: SCHEDULING_OFFICER_STATUS_LABELS.OPEN, color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
+  CLOSED: { label: SCHEDULING_OFFICER_STATUS_LABELS.CLOSED, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  TAKEN: { label: STATUS_LABELS_ENUM.TAKEN, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  ADOPTED: { label: STATUS_LABELS_ENUM.ADOPTED, color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
 };
-
-const TYPE_LABELS: Record<string, string> = {
-  GENERAL: 'عام',
-  GOVERNMENT_CENTER: 'مركز الحكومة',
-  EXECUTIVE_OFFICE: 'المكتب التنفيذي',
-};
-
-const IMPORTANCE_LABELS: Record<string, string> = {
-  VERY_IMPORTANT: 'مهم جداً',
-  IMPORTANT: 'مهم',
-  NORMAL: 'عادي',
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  VERY_URGENT: 'عاجل جداً',
-  URGENT: 'عاجل',
-  NORMAL: 'عادي',
-};
-
-const DURATION_LABELS: Record<string, string> = {
-  HOUR: 'ساعة',
-  DAY: 'يوم',
-};
-
-// Filter options for dropdowns
-const TYPE_FILTER_OPTIONS: { value: DirectiveType; label: string }[] = [
-  { value: 'GENERAL', label: 'عام' },
-  { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
-  { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
-];
-
-const IMPORTANCE_FILTER_OPTIONS: { value: ImportanceLevel; label: string }[] = [
-  { value: 'NORMAL', label: 'عادي' },
-  { value: 'IMPORTANT', label: 'مهم' },
-  { value: 'VERY_IMPORTANT', label: 'مهم جداً' },
-];
-
-const PRIORITY_FILTER_OPTIONS: { value: PriorityLevel; label: string }[] = [
-  { value: 'NORMAL', label: 'عادي' },
-  { value: 'URGENT', label: 'عاجل' },
-  { value: 'VERY_URGENT', label: 'عاجل جداً' },
-];
 
 const STATUS_FILTER_OPTIONS: { value: DirectiveStatus; label: string }[] = [
-  { value: 'TAKEN', label: 'تم الأخذ بالتوجيه' },
-  { value: 'ADOPTED', label: 'تم اعتماد التوجيه' },
+  { value: 'TAKEN', label: STATUS_LABELS_ENUM.TAKEN },
+  { value: 'ADOPTED', label: STATUS_LABELS_ENUM.ADOPTED },
 ];
 
 const OFFICER_STATUS_FILTER_OPTIONS: { value: SchedulingOfficerStatus; label: string }[] = [
-  { value: 'OPEN', label: 'قيد الانتظار' },
-  { value: 'CLOSED', label: 'مكتمل' },
+  { value: 'OPEN', label: SCHEDULING_OFFICER_STATUS_LABELS.OPEN },
+  { value: 'CLOSED', label: SCHEDULING_OFFICER_STATUS_LABELS.CLOSED },
 ];
 
 const PAGE_SIZE = 10;
@@ -147,7 +112,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
-              {TYPE_LABELS[directive.directive_type] || directive.directive_type}
+              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
             </span>
           )}
           {isUrgent && (
@@ -165,7 +130,7 @@ function DirectiveCard({ directive }: { directive: MinisterDirective }) {
           {directive.due_duration_enabled && directive.due_duration_value && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
               <Clock className="size-3" />
-              {directive.due_duration_value} {DURATION_LABELS[directive.due_duration_unit || 'DAY'] || 'يوم'}
+              {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY'] || 'يوم'}
             </span>
           )}
           {hasVoice && (
