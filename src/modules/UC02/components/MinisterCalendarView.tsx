@@ -788,127 +788,118 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       </Dialog>
 
       {/* Create meeting from slot drawer */}
-      <FormMeetingModal
-        open={!!slotForNewMeeting}
-        onOpenChange={(open) => !open && setSlotForNewMeeting(null)}
-      >
-        {slotForNewMeeting && (
-          <CalendarSlotMeetingForm
-            key={
-              slotForNewMeeting.meetingId ??
-              `create-${slotForNewMeeting.date.getTime()}-${slotForNewMeeting.time}-${slotForNewMeeting.endTime ?? ''}`
-            }
-            slotDate={slotForNewMeeting.date}
-            slotTime={slotForNewMeeting.time}
-            slotEndTime={slotForNewMeeting.endTime}
-            initialTitle={slotForNewMeeting.title ?? ''}
-            initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
-            initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
-            initialInvitees={slotForNewMeeting.initialInvitees}
-            isSubmitting={slotFormSubmitting}
-            submitError={slotFormError}
-            onSubmit={async (values) => {
-              setSlotFormError(null);
-              setSlotFormSubmitting(true);
-              const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
-              const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
-              const isEdit = slotForNewMeeting?.mode === 'edit' && slotForNewMeeting.meetingId;
+      {slotForNewMeeting && (
+        <CalendarSlotMeetingForm
+          key={
+            slotForNewMeeting.meetingId ??
+            `create-${slotForNewMeeting.date.getTime()}-${slotForNewMeeting.time}-${slotForNewMeeting.endTime ?? ''}`
+          }
+          open={!!slotForNewMeeting}
+          onOpenChange={(open) => !open && setSlotForNewMeeting(null)}
+          slotDate={slotForNewMeeting.date}
+          slotTime={slotForNewMeeting.time}
+          slotEndTime={slotForNewMeeting.endTime}
+          initialTitle={slotForNewMeeting.title ?? ''}
+          initialMeetingLocation={slotForNewMeeting.meetingLocation ?? undefined}
+          initialMeetingChannel={slotForNewMeeting.meetingChannel ?? ''}
+          initialInvitees={slotForNewMeeting.initialInvitees}
+          isSubmitting={slotFormSubmitting}
+          submitError={slotFormError}
+          onSubmit={async (values) => {
+            setSlotFormError(null);
+            setSlotFormSubmitting(true);
+            const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
+            const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
+            const isEdit = slotForNewMeeting?.mode === 'edit' && slotForNewMeeting.meetingId;
 
-              try {
-                const invitees = values.invitees.map((m: Record<string, unknown>) => ({
-                  name: (m.name ?? m.full_name ?? m.position ?? '') as string,
-                  position: (m.position ?? m.position_title ?? '') as string,
-                  mobile: (m.mobile ?? m.mobile_number ?? '') as string,
-                  email: (m.email ?? '') as string,
-                }));
+            try {
+              const invitees = values.invitees.map((m: Record<string, unknown>) => ({
+                name: (m.name ?? m.full_name ?? m.position ?? '') as string,
+                position: (m.position ?? m.position_title ?? '') as string,
+                mobile: (m.mobile ?? m.mobile_number ?? '') as string,
+                email: (m.email ?? '') as string,
+              }));
 
-                if (isEdit) {
-                  await updateScheduledMeeting(slotForNewMeeting!.meetingId!, {
-                    meeting_title: values.title,
-                    scheduled_start,
-                    scheduled_end,
-                    meeting_channel: values.meeting_channel,
-                    meeting_location: values.meeting_location,
-                    proposers: values.proposers,
-                    invitees,
-                  });
-                  trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
-                    meeting_id: slotForNewMeeting!.meetingId,
-                    meeting_title: values.title,
-                  });
-                } else {
-                  const optimisticId = `optimistic-${Date.now()}`;
-                  const optimisticEvent = buildOptimisticOutlookEvent(
-                    values.title,
-                    scheduled_start,
-                    scheduled_end,
-                    optimisticId
-                  );
+              if (isEdit) {
+                await updateScheduledMeeting(slotForNewMeeting!.meetingId!, {
+                  meeting_title: values.title,
+                  scheduled_start,
+                  scheduled_end,
+                  meeting_channel: values.meeting_channel,
+                  meeting_location: values.meeting_location,
+                  proposers: values.proposers,
+                  invitees,
+                });
+                trackEvent('UC-02', 'uc02_meeting_updated_from_calendar', {
+                  meeting_id: slotForNewMeeting!.meetingId,
+                  meeting_title: values.title,
+                });
+              } else {
+                const optimisticId = `optimistic-${Date.now()}`;
+                const optimisticEvent = buildOptimisticOutlookEvent(
+                  values.title,
+                  scheduled_start,
+                  scheduled_end,
+                  optimisticId
+                );
 
-                  // Optimistic update: add the new meeting to the calendar cache immediately
-                  queryClient.setQueryData<OutlookTimelineEvent[]>(
-                    ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                    (old) => [...(old ?? []), optimisticEvent]
-                  );
+                queryClient.setQueryData<OutlookTimelineEvent[]>(
+                  ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                  (old) => [...(old ?? []), optimisticEvent]
+                );
 
-                  const result = await createScheduledMeeting({
-                    meeting_title: values.title,
-                    scheduled_start,
-                    scheduled_end,
-                    meeting_channel: values.meeting_channel,
-                    meeting_location: values.meeting_location,
-                    proposers: values.proposers,
-                    invitees,
-                  });
-                  const meetingId = result?.id;
-                  trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
-                    meeting_id: meetingId,
-                    meeting_title: values.title,
-                  });
-                  // Replace optimistic event with real meeting so opening it shows full details (title, date, location, invitees)
-                  const eventFromApi = mapCreatedMeetingToOutlookEvent(result);
-                  queryClient.setQueryData<OutlookTimelineEvent[]>(
-                    ['outlook-timeline', 'uc02', startDateISO, endDateISO],
-                    (old) =>
-                      (old ?? []).map((e) =>
-                        e.item_id === optimisticId ? eventFromApi : e
-                      )
-                  );
-                  // Seed meeting cache so the details modal shows the same MeetingCard as work basket (no extra fetch, same data)
-                  const meetingForCache = normalizedMeetingFromCreateResponse(result);
-                  queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
-                  // If the user had the optimistic event details open, switch to the API event so the modal shows the full MeetingCard (fetch by meeting_id)
-                  if (selectedEventForDetails?.id === optimisticId) {
-                    setSelectedEventForDetails(mapOutlookEventToCalendarEvent(eventFromApi));
-                  }
-                  // Do not invalidate timeline after create: keep the replaced event (with meeting_id) so clicking it always shows the same MeetingCard as API. Timeline will refresh on week change or refocus.
+                const result = await createScheduledMeeting({
+                  meeting_title: values.title,
+                  scheduled_start,
+                  scheduled_end,
+                  meeting_channel: values.meeting_channel,
+                  meeting_location: values.meeting_location,
+                  proposers: values.proposers,
+                  invitees,
+                });
+                const meetingId = result?.id;
+                trackEvent('UC-02', 'uc02_meeting_created_from_calendar', {
+                  meeting_id: meetingId,
+                  meeting_title: values.title,
+                });
+                const eventFromApi = mapCreatedMeetingToOutlookEvent(result);
+                queryClient.setQueryData<OutlookTimelineEvent[]>(
+                  ['outlook-timeline', 'uc02', startDateISO, endDateISO],
+                  (old) =>
+                    (old ?? []).map((e) =>
+                      e.item_id === optimisticId ? eventFromApi : e
+                    )
+                );
+                const meetingForCache = normalizedMeetingFromCreateResponse(result);
+                queryClient.setQueryData<MeetingApiResponse>(['meeting', result.id], meetingForCache);
+                if (selectedEventForDetails?.id === optimisticId) {
+                  setSelectedEventForDetails(mapOutlookEventToCalendarEvent(eventFromApi));
                 }
-
-                setSlotForNewMeeting(null);
-                if (isEdit) {
-                  queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
-                }
-              } catch (err: unknown) {
-                if (!isEdit) {
-                  // For create we may have added an optimistic event – roll it back
-                  queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
-                }
-                const message =
-                  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                  (err as Error)?.message ||
-                  (isEdit ? 'حدث خطأ أثناء تحديث الاجتماع' : 'حدث خطأ أثناء إنشاء الاجتماع');
-                setSlotFormError(message);
-              } finally {
-                setSlotFormSubmitting(false);
               }
-            }}
-            onCancel={() => {
-              setSlotFormError(null);
+
               setSlotForNewMeeting(null);
-            }}
-          />
-        )}
-      </FormMeetingModal>
+              if (isEdit) {
+                queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+              }
+            } catch (err: unknown) {
+              if (!isEdit) {
+                queryClient.invalidateQueries({ queryKey: ['outlook-timeline'] });
+              }
+              const message =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                (err as Error)?.message ||
+                (isEdit ? 'حدث خطأ أثناء تحديث الاجتماع' : 'حدث خطأ أثناء إنشاء الاجتماع');
+              setSlotFormError(message);
+            } finally {
+              setSlotFormSubmitting(false);
+            }
+          }}
+          onCancel={() => {
+            setSlotFormError(null);
+            setSlotForNewMeeting(null);
+          }}
+        />
+      )}
     </div>
   );
 };
