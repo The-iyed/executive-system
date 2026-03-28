@@ -159,7 +159,7 @@ const Meeting: React.FC = () => {
         confirmLabel={confirmVariant === 'danger' ? 'تأكيد الحذف' : 'تأكيد'}
         cancelLabel="إلغاء"
         variant={confirmVariant}
-        loading={confirmLoading}
+        isLoading={confirmLoading}
         onConfirm={handleConfirm}
         icon={confirmVariant === 'danger' ? undefined : <Send className="h-6 w-6 text-teal-600" strokeWidth={1.5} />}
       />
