@@ -61,6 +61,7 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
         {/* Search + Filters + headerRight */}
         <div className="flex items-center gap-2">
           {headerRight}
+          {filtersSlot}
           <div className="relative">
             <Search
               className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -78,7 +79,6 @@ export const MeetingListHeader: React.FC<MeetingListHeaderProps> = ({
               }}
             />
           </div>
-          {filtersSlot}
         </div>
       </div>
     </div>
