@@ -146,7 +146,7 @@ function MeetingListLayoutInner<T extends { id: string }>({
         ) : isError ? (
           <MeetingListError message={errorMessage} onRetry={refetch} />
         ) : items.length === 0 ? (
-          <MeetingListEmpty message={emptyMessage} />
+          <MeetingListEmpty message={emptyMessage} isSearch={!!searchQuery} />
         ) : (
           <>
             <CardsGrid
