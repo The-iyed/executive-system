@@ -65,6 +65,16 @@ interface FormValues {
   proposers: ProposerSelection[];
 }
 
+const calendarMeetingSchema = z.object({
+  meeting_title: z.string().trim().min(1, "عنوان الاجتماع مطلوب"),
+  meeting_start_date: z.string().min(1, "موعد البداية مطلوب"),
+  meeting_end_date: z.string().min(1, "موعد النهاية مطلوب"),
+  meeting_channel: z.string().min(1, "آلية انعقاد الاجتماع مطلوب"),
+  meeting_location: z.string().optional().default(""),
+  meeting_location_custom: z.string().optional().default(""),
+  proposers: z.array(z.any()).optional().default([]),
+});
+
 export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = ({
   open,
   onOpenChange,
@@ -90,6 +100,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   }, [slotDate, slotTime, slotEndTime]);
 
   const methods = useForm<FormValues>({
+    resolver: zodResolver(calendarMeetingSchema),
     defaultValues: {
       meeting_title: initialTitle ?? '',
       meeting_start_date: startDefault,
