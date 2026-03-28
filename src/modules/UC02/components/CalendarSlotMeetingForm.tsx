@@ -17,7 +17,15 @@ import { MeetingModalShell } from '@/modules/shared/features/meeting-request-for
 
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
-import type { InviteeFormRow } from '../features/MeetingForm/schemas/step3.schema';
+/** Inline type replacing deleted MeetingForm schema */
+interface InviteeFormRow {
+  id?: string;
+  name?: string;
+  entity?: string;
+  job_title?: string;
+  attendance_mechanism?: string;
+  [key: string]: unknown;
+}
 import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import type { ProposerSelection } from '@/modules/shared/features/meeting-request-form/shared/fields/ProposersSelect';
 
