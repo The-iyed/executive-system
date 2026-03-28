@@ -63,6 +63,14 @@ const calendarMeetingSchema = z.object({
   meeting_location: z.string().default(""),
   meeting_location_custom: z.string().default(""),
   proposers: z.array(z.any()).default([]),
+}).superRefine((data, ctx) => {
+  const needsLocation = data.meeting_channel === 'PHYSICAL' || data.meeting_channel === 'HYBRID';
+  if (needsLocation && (!data.meeting_location || data.meeting_location.trim() === '')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['meeting_location'], message: 'الموقع مطلوب' });
+  }
+  if (needsLocation && data.meeting_location === 'OTHER' && (!data.meeting_location_custom || data.meeting_location_custom.trim() === '')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['meeting_location_custom'], message: 'يرجى تحديد الموقع' });
+  }
 });
 
 type FormValues = z.infer<typeof calendarMeetingSchema>;
@@ -235,6 +243,7 @@ function CalendarFormInner({
       onSubmit={handleModalSubmit}
       onSaveAsDraft={() => {}}
       hideSteps
+      steps={[{ number: 1, label: "معلومات الاجتماع" }]}
       title={mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
       subtitle="يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع"
     >
