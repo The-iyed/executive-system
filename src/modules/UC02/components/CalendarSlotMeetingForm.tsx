@@ -9,6 +9,7 @@ import {
   MeetingDateField,
   MeetingChannelField,
   LocationField,
+  LocationCustomField,
   ProposersField,
 } from '@/modules/shared/features/meeting-request-form/shared/fields';
 import { MeetingLocation } from '@/modules/shared/features/meeting-request-form/shared/types/enums';
