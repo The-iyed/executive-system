@@ -43,7 +43,6 @@ interface EventDetailModalProps {
 export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
   event,
   onClose,
-  onEdit,
 }) => {
   const navigate = useNavigate();
 
