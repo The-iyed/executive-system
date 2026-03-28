@@ -30,10 +30,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const DURATION_LABELS: Record<string, string> = {
-  HOUR: 'ساعة', HOURS: 'ساعة',
-  DAY: 'يوم', DAYS: 'يوم',
-  WEEK: 'أسبوع', WEEKS: 'أسبوع',
-  MONTH: 'شهر', MONTHS: 'شهر',
+  HOUR: 'ساعة',
+  DAY: 'يوم',
 };
 
 const PAGE_SIZE = 10;
