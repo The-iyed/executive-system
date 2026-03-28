@@ -303,7 +303,7 @@ function CalendarFormInner({
         {showLocation && (
           <>
             <LocationField />
-            {isOther && <LocationCustomField />}
+            {isOther && <CalendarLocationCustomField />}
           </>
         )}
 
