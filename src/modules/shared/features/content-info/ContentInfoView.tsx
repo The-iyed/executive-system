@@ -1,6 +1,6 @@
 /**
- * Shared ContentInfoView – card-based layout with compact width.
- * Each section has a header + body card. Tight padding, narrower layout.
+ * Shared ContentInfoView – compact card layout with improved file UX.
+ * File cards show info on top row, actions on bottom row for clarity.
  */
 import React from 'react';
 import { cn } from '@/lib/ui';
@@ -23,12 +23,13 @@ function FileIcon({ fileType, fileName }: { fileType?: string; fileName?: string
   const isPdf = ext === 'pdf' || ext === 'application/pdf' || nameExt === 'pdf';
 
   if (isPdf) {
-    return <img src={pdfIcon} alt="pdf" className="h-10 w-10 object-contain flex-shrink-0" />;
+    return <img src={pdfIcon} alt="pdf" className="h-11 w-11 object-contain flex-shrink-0" />;
   }
 
+  const label = (ext || nameExt || 'FILE').toUpperCase().slice(0, 4);
   return (
-    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted/60 flex-shrink-0">
-      <File className="h-4.5 w-4.5 text-muted-foreground" strokeWidth={1.5} />
+    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-muted/60 flex-shrink-0">
+      <span className="text-[10px] font-bold text-muted-foreground tracking-wide">{label}</span>
     </div>
   );
 }
@@ -51,41 +52,68 @@ function FileCard({
     ? `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`
     : `${Math.round((file.file_size || 0) / 1024)} KB`;
 
+  const hasActions = onView || onDownload || extraActions;
+
   return (
     <div className={cn(
-      'group flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all duration-200',
-      'bg-background hover:shadow-sm',
+      'group rounded-xl border transition-all duration-200 bg-background',
+      'hover:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]',
       showAccent
         ? 'border-primary/20 hover:border-primary/35'
-        : 'border-border/70 hover:border-primary/25',
+        : 'border-border/70 hover:border-border',
     )}>
-      <FileIcon fileType={file.file_type} fileName={file.file_name} />
-
-      <div className="flex flex-col items-end min-w-0 flex-1 gap-0.5">
-        <div className="flex items-center gap-2 w-full justify-end flex-wrap">
-          {file.badge && (
-            <span className="text-[10px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-full flex-shrink-0">
-              {file.badge}
-            </span>
-          )}
-          <span className="text-sm font-medium text-foreground truncate">{file.file_name}</span>
+      {/* Top: file info */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <FileIcon fileType={file.file_type} fileName={file.file_name} />
+        <div className="flex flex-col items-end min-w-0 flex-1">
+          <div className="flex items-center gap-2 w-full justify-end flex-wrap">
+            {file.badge && (
+              <span className="text-[10px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-full flex-shrink-0">
+                {file.badge}
+              </span>
+            )}
+            <span className="text-[13px] font-semibold text-foreground truncate">{file.file_name}</span>
+          </div>
+          <span className="text-[11px] text-muted-foreground mt-0.5">{sizeLabel}</span>
         </div>
-        <span className="text-xs text-muted-foreground">{sizeLabel}</span>
       </div>
 
-      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        {extraActions}
-        {onDownload && file.blob_url && (
-          <a href={file.blob_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="تحميل">
-            <Download className="w-4 h-4" />
-          </a>
-        )}
-        {onView && file.blob_url && (
-          <button type="button" onClick={onView} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="معاينة">
-            <Eye className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+      {/* Bottom: actions bar */}
+      {hasActions && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-border/30 bg-muted/15 rounded-b-xl">
+          {/* Extra actions (AI buttons) on the right */}
+          <div className="flex items-center gap-2 flex-1 justify-end">
+            {extraActions}
+          </div>
+
+          {/* Standard actions on the left */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {onView && file.blob_url && (
+              <button
+                type="button"
+                onClick={onView}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="معاينة"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>معاينة</span>
+              </button>
+            )}
+            {onDownload && file.blob_url && (
+              <a
+                href={file.blob_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/8 transition-colors"
+                title="تحميل"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>تحميل</span>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
