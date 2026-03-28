@@ -43,12 +43,11 @@ export const SCHEDULING_OFFICER_STATUS_LABELS: Record<SchedulingOfficerStatus, s
   CLOSED: 'مكتمل',
 };
 
-/** Filter option helpers */
+/** Filter option helpers (excludes SCHEDULING — that's handled in UC-02) */
 export const DIRECTIVE_TYPE_OPTIONS: { value: DirectiveType; label: string }[] = [
   { value: 'GENERAL', label: 'عام' },
   { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
   { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
-  { value: 'SCHEDULING', label: 'جدولة' },
 ];
 
 export const IMPORTANCE_OPTIONS: { value: ImportanceLevel; label: string }[] = [
