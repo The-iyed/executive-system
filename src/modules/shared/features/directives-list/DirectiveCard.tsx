@@ -109,19 +109,19 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
         {/* Tags */}
         <div className="flex flex-wrap items-center gap-1.5">
           {directive.directive_type && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] font-medium text-slate-500">
               <FileText className="size-3" />
               {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
             </span>
           )}
           {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
+            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
               <AlertTriangle className="size-3" />
               {PRIORITY_LABELS[directive.priority!]}
             </span>
           )}
           {isImportant && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+            <span className="inline-flex items-center gap-1 rounded-md bg-orange-50/80 border border-orange-200/50 px-2 py-0.5 text-[10px] font-semibold text-orange-500">
               <Zap className="size-3" />
               {IMPORTANCE_LABELS[directive.importance!]}
             </span>
