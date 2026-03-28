@@ -31,9 +31,7 @@ import { deleteDraft } from '../../../data/draftApi';
 import { PATH as UC02_PATH } from '../../../routes/paths';
 import { PATH as UC01_PATH } from '../../../../UC01/routes/paths';
 import { trackEvent } from '@/lib/analytics';
-import {
-  getMeetingLocationDropdownValue,
-} from '../../../../UC01/features/MeetingForm/utils/constants';
+import { getMeetingLocationDropdownValue } from '@/modules/shared';
 import { getGeneralNotesList } from '../utils/meetingDetailHelpers';
 import { fieldLabels, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
 
