@@ -211,46 +211,55 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         )}
       </div>
 
-      {confirmingDeleteIndex !== null && createPortal(
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
-          onClick={() => setConfirmingDeleteIndex(null)}
-        >
-          <div
-            className="bg-background rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 text-center"
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {confirmingDeleteIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setConfirmingDeleteIndex(null)}
           >
-            <div className="flex justify-center mb-3">
-              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <Trash2 className="h-5 w-5 text-destructive" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="bg-card border rounded-xl shadow-lg p-5 w-80 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center mb-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                </div>
               </div>
-            </div>
-            <h3 className="text-base font-semibold text-foreground mb-1">حذف عنصر الأجندة</h3>
-            <p className="text-sm text-muted-foreground mb-4">هل أنت متأكد من حذف هذا العنصر من الأجندة؟</p>
-            <div className="flex gap-2 justify-center">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmingDeleteIndex(null)}
-                className="min-w-20"
-              >
-                إلغاء
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={confirmRemove}
-                className="min-w-20"
-              >
-                حذف
-              </Button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+              <h3 className="text-base font-semibold text-foreground mb-1">حذف عنصر الأجندة</h3>
+              <p className="text-sm text-muted-foreground mb-4">هل أنت متأكد من حذف هذا العنصر من الأجندة؟</p>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingDeleteIndex(null)}
+                  className="min-w-20"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={confirmRemove}
+                  className="min-w-20"
+                >
+                  حذف
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
