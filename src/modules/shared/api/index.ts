@@ -4,3 +4,4 @@
 export * from './guidance';
 export * from './consultations';
 export * from './meetings';
+export * from './directives';
