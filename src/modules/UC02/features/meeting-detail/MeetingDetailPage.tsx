@@ -87,7 +87,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'request-notes':
         return <div className="w-full max-w-4xl mx-auto" dir="rtl"><NotesTab meeting={meeting} /></div>;
       case 'meeting-info':
-        return <MeetingInfoTab data={h.meetingInfoData} canEdit={false} extraGridSpecs={h.extraGridSpecs} />;
+        return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} />;
       case 'content':
         return <ContentTab meeting={meeting} onPreviewAttachment={(att) => h.setPreviewAttachment(att)} />;
       case 'schedule':
