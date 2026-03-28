@@ -29,9 +29,9 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 
 // Types
 export type DirectiveType = 'SCHEDULING' | 'GENERAL' | 'EXECUTIVE_OFFICE' | 'GOVERNMENT_CENTER';
-export type ImportanceLevel = 'IMPORTANT' | 'NORMAL';
-export type PriorityLevel = 'URGENT' | 'NORMAL';
-export type DurationUnit = 'HOUR' | 'HOURS' | 'DAY' | 'DAYS' | 'WEEK' | 'WEEKS' | 'MONTH' | 'MONTHS';
+export type ImportanceLevel = 'VERY_IMPORTANT' | 'IMPORTANT' | 'NORMAL';
+export type PriorityLevel = 'VERY_URGENT' | 'URGENT' | 'NORMAL';
+export type DurationUnit = 'HOUR' | 'DAY';
 export type DirectiveStatus = 'TAKEN' | 'ADOPTED';
 export type SchedulingOfficerStatus = 'OPEN' | 'CLOSED';
 
