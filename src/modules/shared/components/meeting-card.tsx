@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge, StatusType } from './status-badge';
-import { CalendarDays, MapPin, User, Layers } from 'lucide-react';
+import { CalendarDays, MapPin, User, Layers, Tag, Shield } from 'lucide-react';
 import { MeetingStatus, MeetingChannelLabels } from '../types';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
 import { cn } from '@/lib/ui';
@@ -32,6 +32,8 @@ export interface MeetingCardData {
   statusLabel: string;
   location?: string;
   meetingCategory?: string;
+  meetingType?: string;
+  meetingClassificationType?: string;
   meetingDate?: string;
   isDataComplete?: boolean | null;
 }
@@ -43,7 +45,6 @@ export interface MeetingCardProps {
   onAction?: () => void;
   actionLabel?: string;
   actionLoading?: boolean;
-  /** Optional secondary action (e.g. "حذف" for draft) */
   onSecondaryAction?: () => void;
   secondaryActionLabel?: string;
   secondaryActionLoading?: boolean;
@@ -82,7 +83,6 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
     >
       {/* ── Row 1: Request number + Status ── */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
-        {/* Request number */}
         {meeting.requestNumber ? (
           <span
             className="text-xs font-medium tracking-wide"
@@ -94,32 +94,9 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           <span />
         )}
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {onSecondaryAction && secondaryActionLabel && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onSecondaryAction(); }}
-              disabled={secondaryActionLoading}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-medium disabled:opacity-50 transition-colors"
-            >
-              {secondaryActionLabel}
-            </button>
-          )}
-          {onAction && actionLabel && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onAction(); }}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-white text-xs font-medium disabled:opacity-50 transition-colors"
-              style={{ background: 'var(--color-primary-500)' }}
-            >
-              {actionLabel}
-            </button>
-          )}
-          {!hideStatus && meeting.statusLabel && meeting.status && (
-            <StatusBadge status={meeting.status} label={meeting.statusLabel} />
-          )}
-        </div>
+        {!hideStatus && meeting.statusLabel && meeting.status && (
+          <StatusBadge status={meeting.status} label={meeting.statusLabel} />
+        )}
       </div>
 
       {/* ── Row 2: Title ── */}
@@ -134,72 +111,122 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         </CardTooltip>
       </div>
 
-      {/* ── Row 3: Date + Category tag ── */}
-      <div className="flex items-center gap-3 px-5 py-2 flex-wrap">
-        {/* Date chip */}
+      {/* ── Row 3: Dates ── */}
+      <div className="flex items-center gap-3 px-5 py-1.5 flex-wrap">
         <div className="flex items-center gap-1.5">
           <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-text-gray-500)' }} strokeWidth={1.6} />
           <span className="text-xs" style={{ color: 'var(--color-text-gray-600)' }}>{meeting.date}</span>
         </div>
-
-        {/* Meeting date if different */}
         {meeting.meetingDate && (
           <div className="flex items-center gap-1.5">
             <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--color-primary-500)' }} strokeWidth={1.6} />
             <span className="text-xs font-medium" style={{ color: 'var(--color-primary-500)' }}>{meeting.meetingDate}</span>
           </div>
         )}
+      </div>
 
-        {/* Category as tag */}
-        {meeting.meetingCategory && (
-          <div
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full"
-            style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-500)' }}
+      {/* ── Row 4: Tags (Type, Category, Classification, Location) ── */}
+      <div className="flex items-center gap-1.5 px-5 py-1.5 flex-wrap">
+        {meeting.meetingType && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium"
+            style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)' }}
           >
-            <Layers className="w-3 h-3" strokeWidth={1.6} />
-            <span className="text-[11px] font-medium">{meeting.meetingCategory}</span>
-          </div>
+            <Tag className="w-2.5 h-2.5" strokeWidth={1.8} />
+            {meeting.meetingType}
+          </span>
         )}
-
-        {/* Location as tag */}
-        {meeting.location && (
-          <div
-            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full"
+        {meeting.meetingCategory && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium"
             style={{ background: 'var(--color-base-gray-100)', color: 'var(--color-text-gray-600)' }}
           >
-            <MapPin className="w-3 h-3" strokeWidth={1.6} />
-            <span className="text-[11px] font-medium">{getLocationLabel(meeting.location)}</span>
-          </div>
+            <Layers className="w-2.5 h-2.5" strokeWidth={1.8} />
+            {meeting.meetingCategory}
+          </span>
+        )}
+        {meeting.meetingClassificationType && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium"
+            style={{ background: 'hsl(210 40% 96%)', color: 'hsl(210 40% 40%)' }}
+          >
+            <Shield className="w-2.5 h-2.5" strokeWidth={1.8} />
+            {meeting.meetingClassificationType}
+          </span>
+        )}
+        {meeting.location && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium"
+            style={{ background: 'var(--color-base-gray-100)', color: 'var(--color-text-gray-600)' }}
+          >
+            <MapPin className="w-2.5 h-2.5" strokeWidth={1.8} />
+            {getLocationLabel(meeting.location)}
+          </span>
         )}
       </div>
 
-      {/* ── Row 4: Submitter — clear section ── */}
+      {/* ── Row 5: Submitter + Actions ── */}
       <div
-        className="flex items-center gap-3 px-5 py-3 mt-auto"
+        className="flex items-center justify-between gap-3 px-5 py-3 mt-auto"
         style={{
           background: 'var(--color-base-gray-50)',
           borderTop: '1px solid var(--color-base-gray-100)',
         }}
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-          style={{
-            background: 'var(--color-base-gray-200)',
-            border: '1.5px solid var(--color-base-gray-300)',
-          }}
-        >
-          {meeting.coordinatorAvatar ? (
-            <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="w-full h-full object-cover" />
-          ) : (
-            <User className="w-4 h-4" style={{ color: 'var(--color-base-gray-500)' }} strokeWidth={1.5} />
-          )}
+        {/* Submitter info */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+            style={{
+              background: 'var(--color-base-gray-200)',
+              border: '1.5px solid var(--color-base-gray-300)',
+            }}
+          >
+            {meeting.coordinatorAvatar ? (
+              <img src={meeting.coordinatorAvatar} alt={meeting.coordinator} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-3.5 h-3.5" style={{ color: 'var(--color-base-gray-500)' }} strokeWidth={1.5} />
+            )}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] leading-3" style={{ color: 'var(--color-text-gray-500)' }}>مقدم الطلب</span>
+            <span className="text-xs font-medium truncate max-w-[180px]" style={{ color: 'var(--color-text-gray-700)' }}>
+              {meeting.coordinator || '-'}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[10px] leading-3" style={{ color: 'var(--color-text-gray-500)' }}>مقدم الطلب</span>
-          <span className="text-xs font-medium truncate" style={{ color: 'var(--color-text-gray-700)' }}>
-            {meeting.coordinator ?? '-'}
-          </span>
-        </div>
+
+        {/* Action buttons */}
+        {(onAction || onSecondaryAction) && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {onSecondaryAction && secondaryActionLabel && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSecondaryAction(); }}
+                disabled={secondaryActionLoading}
+                className="px-3 py-1 rounded-lg border text-[11px] font-medium disabled:opacity-50 transition-colors"
+                style={{
+                  borderColor: 'hsl(0 60% 85%)',
+                  color: 'hsl(0 60% 45%)',
+                  background: 'hsl(0 60% 97%)',
+                }}
+              >
+                {secondaryActionLabel}
+              </button>
+            )}
+            {onAction && actionLabel && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAction(); }}
+                disabled={actionLoading}
+                className="px-3 py-1 rounded-lg text-white text-[11px] font-medium disabled:opacity-50 transition-colors"
+                style={{ background: 'var(--color-primary-500)' }}
+              >
+                {actionLabel}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,166 @@
+import { useState } from 'react';
+import {
+  Clock, CheckCircle2, FileText, Volume2, AlertTriangle,
+  Zap, Copy, Check, Calendar,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { cn } from '@/lib/ui';
+import type { MinisterDirective } from '@/modules/shared/api/directives';
+import {
+  DIRECTIVE_TYPE_LABELS,
+  IMPORTANCE_LABELS,
+  PRIORITY_LABELS,
+  DURATION_UNIT_LABELS,
+  DIRECTIVE_STATUS_LABELS,
+  SCHEDULING_OFFICER_STATUS_LABELS,
+} from '@/modules/shared/types/minister-directive-enums';
+import { formatDateArabic } from '@/modules/shared/utils/format';
+import { VoicePlayer } from './VoicePlayer';
+
+export interface DirectiveCardAction {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  className?: string;
+  onClick: (directive: MinisterDirective) => void;
+  hidden?: (directive: MinisterDirective) => boolean;
+}
+
+interface DirectiveCardProps {
+  directive: MinisterDirective;
+  statusField?: 'status' | 'scheduling_officer_status';
+  actions?: DirectiveCardAction[];
+}
+
+const STATUS_BADGE: Record<string, { color: string; dot: string; label: string }> = {
+  TAKEN: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', label: DIRECTIVE_STATUS_LABELS.TAKEN },
+  ADOPTED: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: DIRECTIVE_STATUS_LABELS.ADOPTED },
+  OPEN: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', label: SCHEDULING_OFFICER_STATUS_LABELS.OPEN },
+  CLOSED: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: SCHEDULING_OFFICER_STATUS_LABELS.CLOSED },
+};
+
+export function DirectiveCard({ directive, statusField = 'scheduling_officer_status', actions }: DirectiveCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const statusValue = statusField === 'status' ? directive.status : directive.scheduling_officer_status;
+  const badge = STATUS_BADGE[statusValue] || STATUS_BADGE.OPEN;
+  const isCompleted = statusValue === 'CLOSED' || statusValue === 'ADOPTED';
+  const hasVoice = !!directive.voice_play_url;
+  const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
+  const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(directive.title);
+    setCopied(true);
+    toast.success('تم النسخ');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="group px-5 py-4 transition-colors hover:bg-muted/20">
+      {/* Row 1: icon + title + copy (right) — badge (left) */}
+      <div className="flex items-start justify-between gap-4">
+        {/* Right: icon + title + copy */}
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className={cn(
+            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
+            isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
+          )}>
+            {isCompleted ? <CheckCircle2 className="size-5" /> : <Clock className="size-5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[14px] font-bold text-foreground leading-relaxed line-clamp-2">
+                {directive.title}
+              </h3>
+              <button
+                onClick={handleCopy}
+                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                title="نسخ المحتوى"
+              >
+                {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+              </button>
+            </div>
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+              <Calendar className="size-3" />
+              {formatDateArabic(directive.created_at)}
+            </p>
+          </div>
+        </div>
+
+        {/* Left: badge */}
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+          badge.color,
+        )}>
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+          {badge.label}
+        </span>
+      </div>
+
+      {/* Voice */}
+      {hasVoice && (
+        <div className="mt-2 mr-11 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+          <VoicePlayer url={directive.voice_play_url!} compact />
+        </div>
+      )}
+
+      {/* Row 2: tags (right) — actions (left) */}
+      <div className="flex items-center justify-between gap-4 mt-2 mr-11">
+        {/* Tags */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {directive.directive_type && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+              <FileText className="size-3" />
+              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
+            </span>
+          )}
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
+              <AlertTriangle className="size-3" />
+              {PRIORITY_LABELS[directive.priority!]}
+            </span>
+          )}
+          {isImportant && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-orange-50/80 border border-orange-200/50 px-2 py-0.5 text-[10px] font-semibold text-orange-500">
+              <Zap className="size-3" />
+              {IMPORTANCE_LABELS[directive.importance!]}
+            </span>
+          )}
+          {directive.due_duration_enabled && directive.due_duration_value && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] text-slate-500">
+              <Clock className="size-3" />
+              {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
+            </span>
+          )}
+          {hasVoice && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50/80 border border-sky-200/50 px-2 py-0.5 text-[10px] text-sky-500 font-medium">
+              <Volume2 className="size-3" />
+              صوتي
+            </span>
+          )}
+        </div>
+
+        {/* Actions (bottom left) */}
+        {actions && actions.length > 0 && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+              <button
+                key={action.id}
+                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
+                  action.className,
+                )}
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

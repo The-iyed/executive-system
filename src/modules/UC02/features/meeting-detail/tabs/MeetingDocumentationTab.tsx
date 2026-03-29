@@ -1,14 +1,16 @@
 /**
  * Meeting documentation tab – توثيق الاجتماع (محضر من API، التوجيهات المرتبطة من API).
  * Uses GET /api/v1/adam-meetings/search/{title} for محضر الاجتماع (mom_pdf_base64) and actions.
+ * When meeting status is SCHEDULED and ADAM search returns found=true, auto-closes the meeting.
  */
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { AttachmentPreviewDrawer, formatDateArabic, type AttachmentPreviewItem } from '@/modules/shared';
-import { searchAdamMeetingByTitle, type AdamMeetingAction } from '../../../data/meetingsApi';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { AttachmentPreviewDrawer, formatDateArabic, type AttachmentPreviewItem, MeetingStatus } from '@/modules/shared';
+import { searchAdamMeetingByTitle, closeMeetingRequest, type AdamMeetingAction } from '../../../data/meetingsApi';
 import { translateDirectiveStatus } from '../utils/meetingDetailHelpers';
 import { Loader2, Download, Eye } from 'lucide-react';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
+import { useToast } from '@/lib/ui';
 
 /** Get assignees as string[] for المعينون column. API may send assignees as string[] (emails) or invitees as string[] | object[]. */
 function getAssigneesList(row: AdamMeetingAction): string[] {
@@ -24,10 +26,17 @@ function getAssigneesList(row: AdamMeetingAction): string[] {
 export interface MeetingDocumentationTabProps {
   /** Meeting title used to call GET /api/v1/adam-meetings/search/{title} for mom_pdf_base64 and actions */
   meetingTitle: string | undefined;
+  /** Meeting ID for the close API call */
+  meetingId?: string;
+  /** Current meeting status */
+  meetingStatus?: MeetingStatus;
 }
 
-export function MeetingDocumentationTab({ meetingTitle }: MeetingDocumentationTabProps) {
+export function MeetingDocumentationTab({ meetingTitle, meetingId, meetingStatus }: MeetingDocumentationTabProps) {
   const [previewAttachment, setPreviewAttachment] = useState<AttachmentPreviewItem | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const hasTriggeredClose = useRef(false);
 
   const {
     data: apiData,
@@ -39,6 +48,59 @@ export function MeetingDocumentationTab({ meetingTitle }: MeetingDocumentationTa
     queryFn: () => searchAdamMeetingByTitle(meetingTitle!),
     enabled: Boolean(meetingTitle?.trim()),
   });
+
+  const closeMutation = useMutation({
+    mutationFn: () => closeMeetingRequest(meetingId!),
+    onMutate: () => {
+      // Optimistic update: set status to CLOSED
+      if (meetingId) {
+        for (const prefix of ['meeting', 'meeting-draft'] as const) {
+          queryClient.setQueryData<Record<string, unknown>>(
+            [prefix, meetingId],
+            (old) => old ? { ...old, status: MeetingStatus.CLOSED } : old,
+          );
+        }
+      }
+    },
+    onSuccess: () => {
+      // Invalidate to get fresh data
+      if (meetingId) {
+        queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
+        queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
+      }
+      toast({ title: 'تم إغلاق الاجتماع بنجاح' });
+    },
+    onError: (err) => {
+      // Rollback optimistic update
+      if (meetingId) {
+        for (const prefix of ['meeting', 'meeting-draft'] as const) {
+          queryClient.setQueryData<Record<string, unknown>>(
+            [prefix, meetingId],
+            (old) => old ? { ...old, status: MeetingStatus.SCHEDULED } : old,
+          );
+        }
+      }
+      toast({
+        title: 'فشل إغلاق الاجتماع',
+        description: err instanceof Error ? err.message : 'حدث خطأ',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Auto-close: when status is SCHEDULED and ADAM returns found=true
+  useEffect(() => {
+    if (
+      !hasTriggeredClose.current &&
+      meetingStatus === MeetingStatus.SCHEDULED &&
+      meetingId &&
+      apiData?.found === true &&
+      !closeMutation.isPending
+    ) {
+      hasTriggeredClose.current = true;
+      closeMutation.mutate();
+    }
+  }, [meetingStatus, meetingId, apiData?.found, closeMutation.isPending]);
 
   const hasPdf = Boolean(apiData?.mom_pdf_base64?.trim());
   const actions = apiData?.actions ?? [];

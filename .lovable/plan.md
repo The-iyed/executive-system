@@ -1,26 +1,15 @@
 
 
-## Change Submit Button Label for Scheduler Officer
+## Plan: Hide "إرسال للمحتوى" when no presentation attachment
 
-### Problem
-When a scheduler officer edits a meeting, the submit button says "إرسال الطلب" (Send Request) — it should say "تحديث الطلب" (Update Request).
+### File 1: `src/modules/shared/components/MeetingActionsBar.tsx`
+- Add `hasPresentation?: boolean` prop to `MeetingActionsBarProps`
+- In `defaultUnderReviewActions`: update the "إرسال للمحتوى" entry to use `disabled: !hasContent || !hasPresentation` and set `disabledReason` to `'أضف عرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال'` when `!hasPresentation`
+- In `scheduledSchedulingActions`: same guard on the "إرسال للمحتوى" entry
 
-### Plan
+### File 2: `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`
+- Derive: `const hasPresentation = meeting?.attachments?.some(a => a.is_presentation) ?? false;`
+- Pass `hasPresentation={hasPresentation}` to `<MeetingActionsBar />`
 
-#### 1. Add `submitLabel` prop to `ModalActionBar`
-**File:** `src/modules/shared/features/meeting-request-form/shared/components/ModalActionBar.tsx`
-- Add optional `submitLabel?: string` prop (default: `"إرسال الطلب"`)
-- Use it in the submit button text on line 57
-
-#### 2. Pass `submitLabel` through `MeetingModalShell`
-**File:** `src/modules/shared/features/meeting-request-form/shared/components/MeetingModalShell.tsx`
-- Add optional `submitLabel?: string` prop
-- Forward it to `ModalActionBar`
-
-#### 3. Pass `submitLabel` from `SubmitterModal`
-**File:** `src/modules/shared/features/meeting-request-form/submitter/SubmitterModal.tsx`
-- When `callerRole === MeetingOwnerType.SCHEDULING`, pass `submitLabel="تحديث الطلب"` to `MeetingModalShell`
-
-### Technical Details
-**3 files edited**, no new dependencies. The label change is purely cosmetic and conditional on the caller role.
+Two files, minimal changes.
 

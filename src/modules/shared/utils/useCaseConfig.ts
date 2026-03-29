@@ -15,6 +15,7 @@ import { PATH as UC05_PATH } from '../../UC05/routes/paths';
 import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
 import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
+import { PATH as UC19_PATH } from '../../UC19/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
@@ -168,6 +169,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: 'solar:card-outline',
         label: 'البطاقات الوظيفية',
         path: uc13_PATH.BUSINESS_CARDS,
+      },
+    ],
+  },
+  'UC-19': {
+    code: 'UC-19',
+    defaultRoute: UC19_PATH.DIRECTIVES,
+    navigationItems: [
+      {
+        id: 'minister-directives',
+        icon: 'solar:document-text-outline',
+        label: 'التوجيهات',
+        path: UC19_PATH.DIRECTIVES,
       },
     ],
   },
