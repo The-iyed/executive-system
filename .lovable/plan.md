@@ -1,38 +1,28 @@
 
 
-## Plan: Fix `toISOStringWithTimezone` to emit local ISO with timezone offset
+## Plan: Support users without objectGUID by falling back to mail
 
 ### Problem
-`toISOStringWithTimezone` calls `date.toISOString()` which converts to UTC and appends `Z`. Selecting 3:00–4:00 in UTC+3 sends `02:00:00.000Z` and `03:00:00.000Z`.
+When a user returned by the search API has no `objectGUID`, the `toOption` function sets `value` to `undefined`/empty string. Clicking such a user in the dropdown does nothing meaningful because:
+1. `opt.value` is empty → `key` is empty, `selectedId` matching breaks
+2. The `selectedId` check (`value?.objectGUID`) returns empty → clear button hidden, display shows placeholder
+
+### Root cause
+`toOption` in `useManagerSearch.ts` uses `user.objectGUID` as the sole identifier. `ManagerSelect.tsx` also relies on `value?.objectGUID` for selection state.
 
 ### Fix
 
-**File: `src/lib/ui/lib/dateUtils.ts`**
+**File 1: `src/modules/shared/features/meeting-request-form/shared/hooks/useManagerSearch.ts`**
+- In `toOption`, change `value` to: `user.objectGUID || user.mail || user.cn || ''`
+- This ensures users without a GUID still get a usable unique identifier
 
-Replace both functions to output local time with the browser's timezone offset (e.g. `2026-03-30T03:00:00+03:00`):
+**File 2: `src/modules/shared/features/meeting-request-form/shared/fields/ManagerSelect.tsx`**
+- Change `selectedId` derivation (line 39) from `value?.objectGUID ?? ""` to `value?.objectGUID || value?.mail || ""`
+- Change the clear button condition (line 77) from `selectedId` to same pattern (already covered by the variable)
+- Filter out options with empty `value` to prevent edge cases with truly unidentifiable users
 
-```typescript
-function getTimezoneOffsetString(date: Date): string {
-  const offset = -date.getTimezoneOffset();
-  const sign = offset >= 0 ? '+' : '-';
-  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
-  return `${sign}${hours}:${minutes}`;
-}
+**File 3: `src/modules/shared/features/meeting-request-form/api/searchUsersByEmail.ts`**
+- Make `objectGUID` optional in the `UserSearchResult` interface (change to `objectGUID?: string`) since the API can return users without it
 
-export function toISOStringWithTimezone(date: Date): string {
-  if (Number.isNaN(date.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${getTimezoneOffsetString(date)}`;
-}
-
-export function toISOStringWithTimezoneFromString(isoOrEmpty: string): string {
-  if (!isoOrEmpty || typeof isoOrEmpty !== 'string') return isoOrEmpty;
-  const date = new Date(isoOrEmpty);
-  if (Number.isNaN(date.getTime())) return isoOrEmpty;
-  return toISOStringWithTimezone(date);
-}
-```
-
-Single file change. All call sites (calendar slot form, date-time picker, etc.) automatically send the correct local time with offset.
+Three files, minimal changes. All consumers (submitter form, edit form, /directives create) benefit automatically.
 
