@@ -28,11 +28,13 @@ interface InviteeFormRow {
 import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import type { ProposerSelection } from '@/modules/shared/features/meeting-request-form/shared/fields/ProposersSelect';
 
-/** Build ISO preserving timezone so slot time is sent correctly. */
+/** Build local ISO string so slot time is sent as-is (no UTC shift). */
 function toISOStart(date: Date, time: string): string {
   const [h = 0, m = 0] = time.split(':').map(Number);
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
-  return toISOStringWithTimezone(d);
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
 }
 
 export interface CalendarSlotMeetingFormSubmitValues {
