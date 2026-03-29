@@ -152,6 +152,32 @@ const MeetingDetailPage: React.FC = () => {
               ) : undefined
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
+            quickActions={h.isScheduleOfficer ? (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !prev.requires_protocol }))}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                    !h.scheduleForm.requires_protocol
+                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
+                      : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'
+                  }`}
+                >
+                  مبدئي
+                </button>
+                <button
+                  type="button"
+                  onClick={() => h.setScheduleForm(prev => ({ ...prev, is_data_complete: !prev.is_data_complete }))}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                    h.scheduleForm.is_data_complete
+                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
+                      : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'
+                  }`}
+                >
+                  البيانات مكتملة
+                </button>
+              </div>
+            ) : undefined}
             tabs={h.tabs}
             activeTab={h.activeTab}
             onTabChange={h.setActiveTab}
