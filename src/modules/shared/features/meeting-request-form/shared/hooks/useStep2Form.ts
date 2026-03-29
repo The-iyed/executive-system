@@ -22,13 +22,13 @@ export function useStep2Visibility(step1Data: Step1Context): Step2Visibility {
       MeetingClassification.WORKSHOP,
     ];
 
+    const isExemptCategory = exemptCategories.includes(step1Data.meeting_classification);
+    const isUrgent = step1Data.is_urgent === BOOL.TRUE;
+
     const presentationRequired =
       !hidePresentation &&
-      (
-        !exemptCategories.includes(step1Data.meeting_classification) ||
-        step1Data.meeting_confidentiality !== "CONFIDENTIAL" ||
-        step1Data.is_urgent !== BOOL.TRUE
-      );
+      !isExemptCategory &&
+      !isUrgent;
     return { showPresentation: !hidePresentation, presentationRequired };
   }, [step1Data.meeting_classification, step1Data.meeting_confidentiality, step1Data.is_urgent]);
 }
