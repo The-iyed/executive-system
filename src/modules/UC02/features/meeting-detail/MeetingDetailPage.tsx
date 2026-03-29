@@ -153,38 +153,46 @@ const MeetingDetailPage: React.FC = () => {
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
             quickActions={h.isScheduleOfficer && hasFloatingActionsBar ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-muted/40 rounded-2xl p-1.5 border border-border/40">
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !prev.requires_protocol }))}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border border-border/60 bg-muted/30 hover:bg-muted/60 text-foreground"
-                >
-                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border-2 transition-all duration-200 ${
+                  className={`group flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-250 cursor-pointer select-none ${
                     !h.scheduleForm.requires_protocol
-                      ? 'bg-primary border-primary'
-                      : 'bg-background border-muted-foreground/40'
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+                      : 'bg-background text-muted-foreground border border-transparent hover:border-border hover:bg-background/80'
+                  }`}
+                >
+                  مبدئي
+                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded-[5px] border-[1.5px] transition-all duration-250 ${
+                    !h.scheduleForm.requires_protocol
+                      ? 'bg-primary border-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.15)]'
+                      : 'bg-background border-muted-foreground/30 group-hover:border-muted-foreground/50'
                   }`}>
                     {!h.scheduleForm.requires_protocol && (
-                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
+                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
                     )}
                   </span>
-                  مبدئي
                 </button>
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, is_data_complete: !prev.is_data_complete }))}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border border-border/60 bg-muted/30 hover:bg-muted/60 text-foreground"
-                >
-                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border-2 transition-all duration-200 ${
+                  className={`group flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-250 cursor-pointer select-none ${
                     h.scheduleForm.is_data_complete
-                      ? 'bg-primary border-primary'
-                      : 'bg-background border-muted-foreground/40'
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+                      : 'bg-background text-muted-foreground border border-transparent hover:border-border hover:bg-background/80'
+                  }`}
+                >
+                  البيانات مكتملة
+                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded-[5px] border-[1.5px] transition-all duration-250 ${
+                    h.scheduleForm.is_data_complete
+                      ? 'bg-primary border-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.15)]'
+                      : 'bg-background border-muted-foreground/30 group-hover:border-muted-foreground/50'
                   }`}>
                     {h.scheduleForm.is_data_complete && (
-                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
+                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
                     )}
                   </span>
-                  البيانات مكتملة
                 </button>
               </div>
             ) : undefined}
