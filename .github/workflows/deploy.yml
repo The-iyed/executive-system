@@ -39,12 +39,12 @@ jobs:
           awk '{for(i=1;i<=NF;i++) if($i~/=/) print $i;}' $GITHUB_WORKSPACE/env.tmp >> $GITHUB_WORKSPACE/.env
           echo "=== .env file created ==="
 
-      - name: Upload .env as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: env-file-development
-          path: ${{ github.workspace }}/env.tmp
-          retention-days: 1
+      # - name: Upload .env as artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: env-file-development
+      #     path: ${{ github.workspace }}/env.tmp
+      #     retention-days: 1
 
       - name: Deploy and validate
         id: deploy_step
@@ -96,12 +96,12 @@ jobs:
           awk '{for(i=1;i<=NF;i++) if($i~/=/) print $i;}' $GITHUB_WORKSPACE/env.tmp >> $GITHUB_WORKSPACE/.env
           echo "=== .env file created ==="
 
-      - name: Upload .env as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: env-file-production
-          path: ${{ github.workspace }}/env.tmp
-          retention-days: 1
+      # - name: Upload .env as artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: env-file-production
+      #     path: ${{ github.workspace }}/env.tmp
+      #     retention-days: 1
 
       - name: Deploy and validate
         id: deploy_step
