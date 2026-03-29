@@ -116,7 +116,8 @@ const canUploadNewPresentation =
     !hasExistingPresentation ||
     meetingStatus === MeetingStatus.DRAFT ||
     meetingStatus === MeetingStatusUnCommitted.DRAFT_UNCOMMITTED ||
-    initialData?.can_upload_more_than_one
+    initialData?.can_upload_more_than_one ||
+    initialData?.hasExecutiveSummary
   );
 
   /** Only draft statuses allow deleting existing server presentations */
