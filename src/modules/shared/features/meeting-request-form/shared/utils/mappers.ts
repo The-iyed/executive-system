@@ -1,5 +1,4 @@
 import { TableRow } from "@/lib/dynamic-table-form";
-import { toISOStringWithTimezoneFromString } from "@/lib/ui";
 import type { ExistingAttachment, Step2ContentInitialData } from "../hooks/useStep2Content";
 import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality } from "../types/enums";
 import type { SubmitterStep1Values } from "../../submitter/schema";
@@ -9,7 +8,15 @@ import type { SubmitterStep1Values } from "../../submitter/schema";
 function formatDateStringToISO(value: string): string {
   if (!value) return "";
   try {
-    return toISOStringWithTimezoneFromString(value);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   } catch {
     return value;
   }
@@ -166,13 +173,13 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     is_on_behalf_of: meeting.is_on_behalf_of === true ? BOOL.TRUE : BOOL.FALSE,
     meeting_owner: meetingOwner,
     meeting_start_date:
-      (selectedSlot?.slot_start as string) ||
-      (meeting.meeting_start_date as string) ||
-      ((meeting.scheduled_start as string) || ""),
+      formatDateStringToISO((selectedSlot?.slot_start as string) || "") ||
+      formatDateStringToISO((meeting.meeting_start_date as string) || "") ||
+      formatDateStringToISO((meeting.scheduled_start as string) || ""),
     meeting_end_date:
-      (selectedSlot?.slot_end as string) ||
-      (meeting.meeting_end_date as string) ||
-      ((meeting.scheduled_end as string) || ""),
+      formatDateStringToISO((selectedSlot?.slot_end as string) || "") ||
+      formatDateStringToISO((meeting.meeting_end_date as string) || "") ||
+      formatDateStringToISO((meeting.scheduled_end as string) || ""),
     agenda_items: agendaItems,
     note: (meeting.note as string) || "",
     is_based_on_directive: meeting.is_based_on_directive === true ? BOOL.TRUE : BOOL.FALSE,
