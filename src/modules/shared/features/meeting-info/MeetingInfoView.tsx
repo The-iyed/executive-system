@@ -129,12 +129,16 @@ export function MeetingInfoView({
       })()}
 
       {/* Agenda — between basic info and directive fields */}
-      {data.agenda && data.agenda.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
+        {data.agenda && data.agenda.length > 0 ? (
           <AgendaTable items={data.agenda} />
-        </div>
-      )}
+        ) : (
+          <div className="px-4 py-3 rounded-2xl border bg-muted/40 border-border/40 text-sm text-muted-foreground text-right">
+            لا توجد أجندة
+          </div>
+        )}
+      </div>
 
       {/* Remaining sections (directive, etc.) — no titles */}
       {data.sections.slice(1).map((section, sIdx) => {
