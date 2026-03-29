@@ -183,7 +183,7 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
                   : "border-table-border"
               )}
             >
-              <div className="overflow-x-auto overflow-y-auto rounded-[15px]" style={maxHeight ? { maxHeight } : undefined}>
+              <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto rounded-[15px]" style={maxHeight ? { maxHeight } : undefined}>
                 <table className="w-full">
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-table-border sticky top-0 z-10">
