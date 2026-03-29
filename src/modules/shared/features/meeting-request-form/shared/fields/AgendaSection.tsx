@@ -50,10 +50,13 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   const durationMismatch = hasMeetingDuration && fields.length > 0 && totalDuration !== meetingDurationMinutes;
 
   const handleAdd = useCallback(() => {
-    prepend({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
+    append({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
     setAnimatingNewId("pending");
     setTimeout(() => setAnimatingNewId(null), 500);
-  }, [prepend]);
+    requestAnimationFrame(() => {
+      if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+    });
+  }, [append]);
 
   const handleRemove = useCallback((index: number) => {
     setConfirmingDeleteIndex(index);
