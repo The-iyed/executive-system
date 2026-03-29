@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { cn, toISOStringWithTimezone } from '@/lib/ui';
 
 import {
   MeetingTitleField,
@@ -29,11 +28,13 @@ interface InviteeFormRow {
 import type { CreateScheduledMeetingProposer } from '../data/calendarApi';
 import type { ProposerSelection } from '@/modules/shared/features/meeting-request-form/shared/fields/ProposersSelect';
 
-/** Build ISO preserving timezone so slot time is sent correctly. */
+/** Build local ISO string so slot time is sent as-is (no UTC shift). */
 function toISOStart(date: Date, time: string): string {
   const [h = 0, m = 0] = time.split(':').map(Number);
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
-  return toISOStringWithTimezone(d);
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
 }
 
 export interface CalendarSlotMeetingFormSubmitValues {
@@ -103,8 +104,10 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const endDefault = useMemo(() => {
     if (slotEndTime) return toISOStart(slotDate, slotEndTime);
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
-    const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
-    return toISOStringWithTimezone(d);
+    const y = slotDate.getFullYear();
+    const mo = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(slotDate.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${dd}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
   }, [slotDate, slotTime, slotEndTime]);
 
   const methods = useForm<FormValues>({
