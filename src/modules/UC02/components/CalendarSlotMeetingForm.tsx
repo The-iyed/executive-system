@@ -104,8 +104,10 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   const endDefault = useMemo(() => {
     if (slotEndTime) return toISOStart(slotDate, slotEndTime);
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
-    const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
-    return toISOStringWithTimezone(d);
+    const y = slotDate.getFullYear();
+    const mo = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(slotDate.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${dd}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
   }, [slotDate, slotTime, slotEndTime]);
 
   const methods = useForm<FormValues>({
