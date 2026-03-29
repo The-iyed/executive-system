@@ -157,25 +157,33 @@ const MeetingDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !prev.requires_protocol }))}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                    !h.scheduleForm.requires_protocol
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-muted/50 text-muted-foreground border-border/60 hover:bg-muted'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border border-border/60 bg-muted/30 hover:bg-muted/60 text-foreground"
                 >
-                  <span className={`w-2 h-2 rounded-full transition-colors ${!h.scheduleForm.requires_protocol ? 'bg-[#048F86]' : 'bg-muted-foreground/40'}`} />
+                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border-2 transition-all duration-200 ${
+                    !h.scheduleForm.requires_protocol
+                      ? 'bg-primary border-primary'
+                      : 'bg-background border-muted-foreground/40'
+                  }`}>
+                    {!h.scheduleForm.requires_protocol && (
+                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
+                    )}
+                  </span>
                   مبدئي
                 </button>
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, is_data_complete: !prev.is_data_complete }))}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                    h.scheduleForm.is_data_complete
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-muted/50 text-muted-foreground border-border/60 hover:bg-muted'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border border-border/60 bg-muted/30 hover:bg-muted/60 text-foreground"
                 >
-                  <span className={`w-2 h-2 rounded-full transition-colors ${h.scheduleForm.is_data_complete ? 'bg-[#048F86]' : 'bg-muted-foreground/40'}`} />
+                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border-2 transition-all duration-200 ${
+                    h.scheduleForm.is_data_complete
+                      ? 'bg-primary border-primary'
+                      : 'bg-background border-muted-foreground/40'
+                  }`}>
+                    {h.scheduleForm.is_data_complete && (
+                      <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>
+                    )}
+                  </span>
                   البيانات مكتملة
                 </button>
               </div>
