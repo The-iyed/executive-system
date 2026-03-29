@@ -229,12 +229,11 @@ export function DateTimePicker({
       const [h, m] = time.split(":").map(Number)
       const d = new Date(date)
       d.setHours(h, m, 0, 0)
-      // When user selects the first allowed day, default time (e.g. 09:00) may be before minDate (e.g. same day at 14:00). Clamp to minDate so we still emit a value and clear the required error.
       if (minDate != null && d < minDate) {
         d.setTime(minDate.getTime())
       }
       if (maxDate != null && d > maxDate) return
-      onChange?.(toISOStringWithTimezone(d))
+      onChange?.(toLocalISOString(d))
     },
     [onChange, minDate, maxDate]
   )
