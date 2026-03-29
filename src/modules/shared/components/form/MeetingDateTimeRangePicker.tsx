@@ -89,7 +89,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
       if (Number.isNaN(start.getTime())) return;
       const endDefault = new Date(start.getTime() + ONE_HOUR_MS);
       if (endDefault > endOfDay(start)) endDefault.setHours(23, 59, 0, 0);
-      onEndChange(toISOStringWithTimezone(endDefault));
+      onEndChange(toLocalISOString(endDefault));
     },
     [onStartChange, onEndChange, endValue]
   );
