@@ -91,7 +91,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
             <div className="col-span-1 px-3 py-2.5"></div>
           </div>
 
-          <div className="max-h-[320px] overflow-y-auto">
+          <div ref={listRef} className="max-h-[320px] overflow-y-auto">
             {fields.length === 0 && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 {!hasMeetingDuration
