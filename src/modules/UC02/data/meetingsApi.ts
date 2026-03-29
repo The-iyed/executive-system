@@ -1233,6 +1233,11 @@ export const searchAdamMeetingByTitle = async (
   return response.data;
 };
 
+/** إغلاق الاجتماع – POST /api/meeting-requests/{meeting_id}/close */
+export const closeMeetingRequest = async (meetingId: string): Promise<void> => {
+  await axiosInstance.post(`/api/meeting-requests/${meetingId}/close`);
+};
+
 // Evaluate Readiness API
 export interface EvaluateReadinessResponse {
   readiness: string;
