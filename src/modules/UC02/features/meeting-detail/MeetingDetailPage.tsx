@@ -32,7 +32,6 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 
 // Components (modals / drawers)
 import {
-  DeleteDraftDialog,
   RejectDialog,
   CancelDialog,
   EditConfirmDialog,
@@ -42,6 +41,7 @@ import {
   ScheduleDrawer,
   ScheduleConfirmDialog,
 } from './components';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
@@ -78,6 +78,15 @@ const MeetingDetailPage: React.FC = () => {
   }
 
   const { meeting } = h;
+  const hasFloatingActionsBar = !!(
+    meeting && (
+      meeting.status === MeetingStatus.UNDER_REVIEW ||
+      meeting.status === MeetingStatus.UNDER_GUIDANCE ||
+      meeting.status === MeetingStatus.WAITING ||
+      meeting.status === MeetingStatus.SCHEDULED ||
+      meeting.status === MeetingStatus.SCHEDULED_SCHEDULING
+    )
+  );
 
   /* ─── Tab content ─── */
   const renderTabContent = () => {
@@ -109,7 +118,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'directives':
         return h.meetingStatus === MeetingStatus.CLOSED ? <DirectivesTab meeting={meeting} /> : null;
       case 'meeting-documentation':
-        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />;
+        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} meetingId={h.id} meetingStatus={h.meetingStatus} />;
       default:
         return <RequestInfoTab meeting={meeting} statusLabel={h.statusLabel} />;
     }
@@ -151,14 +160,15 @@ const MeetingDetailPage: React.FC = () => {
         </div>
 
         {/* Content card */}
-        <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row overflow-y-auto overflow-x-hidden px-8 py-8 gap-6 rounded-2xl bg-background justify-center border border-border" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div className="w-full flex-1 min-h-0 min-w-0 flex flex-row justify-center">
-            {renderTabContent()}
+        <div className="w-full flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-background px-8 pt-8" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div className="mx-auto flex w-full min-w-0 flex-col items-center">
+            <div className="w-full">{renderTabContent()}</div>
+            <div aria-hidden="true" className={hasFloatingActionsBar ? 'h-28 md:h-32 flex-shrink-0' : 'h-8 flex-shrink-0'} />
           </div>
         </div>
 
         {/* Actions bar */}
-        {meeting && (meeting.status === MeetingStatus.UNDER_REVIEW || meeting.status === MeetingStatus.UNDER_GUIDANCE || meeting.status === MeetingStatus.WAITING || meeting.status === MeetingStatus.SCHEDULED || meeting.status === MeetingStatus.SCHEDULED_SCHEDULING) && (
+        {hasFloatingActionsBar && (
           <MeetingActionsBar
             meetingStatus={h.meetingStatus}
             open={h.actionsBarOpen}
@@ -174,6 +184,7 @@ const MeetingDetailPage: React.FC = () => {
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
+            hasPresentation={meeting?.attachments?.some(a => a.is_presentation) ?? false}
             hideEdit
           />
         )}
@@ -182,11 +193,16 @@ const MeetingDetailPage: React.FC = () => {
       {/* ─── Modals / Drawers ─── */}
       <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={h.meetingFormOpen} onOpenChange={h.setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
 
-      <DeleteDraftDialog
+      <ConfirmDialog
         open={h.isDeleteDraftModalOpen}
         onOpenChange={h.setIsDeleteDraftModalOpen}
+        title="حذف المسودة"
+        description="هل أنت متأكد من حذف هذه المسودة؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmLabel="تأكيد الحذف"
+        loadingLabel="جاري الحذف..."
         onConfirm={() => h.id && h.deleteDraftMutation.mutate(h.id)}
-        isPending={h.deleteDraftMutation.isPending}
+        isLoading={h.deleteDraftMutation.isPending}
+        variant="danger"
       />
 
       <QualityModal isOpen={h.isQualityModalOpen} onOpenChange={h.setIsQualityModalOpen} meetingId={h.id || ''} />
