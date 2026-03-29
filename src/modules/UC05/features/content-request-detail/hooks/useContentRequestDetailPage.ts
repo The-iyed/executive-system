@@ -447,7 +447,8 @@ export function useContentRequestDetailPage() {
   }, [selectedConsultantId, consultationNotes, consultants, submitConsultationMutation]);
 
   const handleSendToScheduling = useCallback(() => {
-    if (!executiveSummaryFile) { console.error('Executive summary file is required'); return; }
+    if (!executiveSummaryFile) { toast.error('يرجى إرفاق الملخص التنفيذي أولاً'); return; }
+    if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
     const existingObjs: DirectiveForApprove[] = relatedDirectives
       .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
@@ -479,6 +480,15 @@ export function useContentRequestDetailPage() {
   }, [executiveSummaryFile, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
   /* ── Computed ── */
+  const hasDirectives = useMemo(() => {
+    const existingCount = (contentRequest?.related_directives ?? [])
+      .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
+    const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
+    const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
+    const manualCount = manualAddedActions.length;
+    return (existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
   const schedulingContentNote = ((contentRequest as any)?.scheduling_officer_note_for_content ?? '').toString().trim();
@@ -541,6 +551,6 @@ export function useContentRequestDetailPage() {
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
     fileInputRef, handleDragOver, handleDragLeave, handleDrop, handleFileSelect, handleRemoveFile,
     // Send to scheduling
-    sendToSchedulingMutation, handleSendToScheduling,
+    sendToSchedulingMutation, handleSendToScheduling, hasDirectives,
   };
 }
