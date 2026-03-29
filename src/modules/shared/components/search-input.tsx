@@ -68,7 +68,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           onChange={handleChange}
           className="w-full h-6 text-base font-normal bg-transparent border-none outline-none text-white placeholder:text-white"
           style={{
-            fontFamily: "'Almarai', sans-serif",
+            fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
           }}
         />
       </div>
@@ -103,7 +103,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         onChange={handleChange}
         className="w-full min-w-0 h-[30px] text-[15px] font-normal bg-transparent border-none outline-none text-right placeholder:text-[#5E6977] text-gray-800"
         style={{
-          fontFamily: "'Almarai', 'Almarai', sans-serif",
+          fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
         }}
       />
     </div>
