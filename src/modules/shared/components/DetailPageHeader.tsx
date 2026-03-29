@@ -59,6 +59,7 @@ export function DetailPageHeader({
   tabs,
   activeTab,
   onTabChange,
+  quickActions,
   helpTooltip,
   className,
 }: DetailPageHeaderProps) {
