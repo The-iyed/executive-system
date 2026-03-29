@@ -479,6 +479,15 @@ export function useContentRequestDetailPage() {
   }, [executiveSummaryFile, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
   /* ── Computed ── */
+  const hasDirectives = useMemo(() => {
+    const existingCount = (contentRequest?.related_directives ?? [])
+      .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
+    const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
+    const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
+    const manualCount = manualAddedActions.length;
+    return (existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
   const schedulingContentNote = ((contentRequest as any)?.scheduling_officer_note_for_content ?? '').toString().trim();
