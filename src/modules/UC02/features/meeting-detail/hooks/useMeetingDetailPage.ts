@@ -379,7 +379,7 @@ export function useMeetingDetailPage() {
   const handleScheduleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
-    if (!startSource || !endSource) return;
+    if (!startSource || !endSource) { setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية'); return; }
     const scheduledAt = new Date(startSource);
     const scheduledEndAt = new Date(endSource);
     if (scheduledAt.getTime() <= Date.now()) { setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي'); return; }
