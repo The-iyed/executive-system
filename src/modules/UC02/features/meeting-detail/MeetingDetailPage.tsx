@@ -13,7 +13,7 @@ import {
   MeetingActionsBar,
   AttachmentPreviewDrawer,
 } from '@/modules/shared';
-import { Button } from '@/lib/ui';
+import { Button, Switch } from '@/lib/ui';
 import QualityModal from '../../components/qualityModal';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
 import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
@@ -153,31 +153,28 @@ const MeetingDetailPage: React.FC = () => {
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
             quickActions={h.isScheduleOfficer && hasFloatingActionsBar ? (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !prev.requires_protocol }))}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                    !h.scheduleForm.requires_protocol
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-muted/50 text-muted-foreground border-border/60 hover:bg-muted'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full transition-colors ${!h.scheduleForm.requires_protocol ? 'bg-[#048F86]' : 'bg-muted-foreground/40'}`} />
-                  مبدئي
-                </button>
-                <button
-                  type="button"
-                  onClick={() => h.setScheduleForm(prev => ({ ...prev, is_data_complete: !prev.is_data_complete }))}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                    h.scheduleForm.is_data_complete
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-muted/50 text-muted-foreground border-border/60 hover:bg-muted'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full transition-colors ${h.scheduleForm.is_data_complete ? 'bg-[#048F86]' : 'bg-muted-foreground/40'}`} />
-                  البيانات مكتملة
-                </button>
+              <div className="flex items-center gap-5 border border-border/60 rounded-2xl px-4 py-2 bg-background">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">مبدئي</span>
+                  <div className="flex items-center gap-1.5">
+                    <Switch
+                      checked={!h.scheduleForm.requires_protocol}
+                      onCheckedChange={(c) => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !c }))}
+                    />
+                    <span className="text-xs font-semibold text-foreground min-w-[20px]">{!h.scheduleForm.requires_protocol ? 'نعم' : 'لا'}</span>
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-border/60" />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">البيانات مكتملة</span>
+                  <div className="flex items-center gap-1.5">
+                    <Switch
+                      checked={h.scheduleForm.is_data_complete}
+                      onCheckedChange={(c) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: c }))}
+                    />
+                    <span className="text-xs font-semibold text-foreground min-w-[20px]">{h.scheduleForm.is_data_complete ? 'نعم' : 'لا'}</span>
+                  </div>
+                </div>
               </div>
             ) : undefined}
             tabs={h.tabs}
