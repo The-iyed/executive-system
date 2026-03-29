@@ -124,7 +124,7 @@ export function getMeetingInfoDirectiveSpecs(): MeetingInfoFieldSpec[] {
 
     if (name) {
       return (
-        <div className="flex items-center gap-3 bg-white border border-[#E4E7EC] rounded-lg px-4 py-3" dir="rtl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+        <div className="flex items-center gap-3 bg-white border border-[#E4E7EC] rounded-lg px-4 py-3" dir="rtl" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
           <FileIcon className="h-5 w-5 text-[#667085] flex-shrink-0" />
           <p className="text-sm font-medium text-[#344054] truncate flex-1 text-right">{name}</p>
         </div>
