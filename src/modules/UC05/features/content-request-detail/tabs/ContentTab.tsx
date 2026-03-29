@@ -482,7 +482,7 @@ export function ContentTab({ h }: ContentTabProps) {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)' }}>
+            <div className="px-6 py-5 flex-1 min-h-0 overflow-y-auto">
               {h.insightsMutation.isPending ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-4">
                   <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center"><Loader2 className="h-7 w-7 text-primary animate-spin" /></div>
