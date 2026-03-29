@@ -184,6 +184,7 @@ const MeetingDetailPage: React.FC = () => {
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
+            hasPresentation={meeting?.attachments?.some(a => a.is_presentation) ?? false}
             hideEdit
           />
         )}
