@@ -50,7 +50,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex">{btn}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
             {tooltipText}
           </TooltipContent>
         </Tooltip>
