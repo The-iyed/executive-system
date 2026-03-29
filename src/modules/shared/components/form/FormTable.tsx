@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/ui';
 import { FormInput } from './FormInput';
