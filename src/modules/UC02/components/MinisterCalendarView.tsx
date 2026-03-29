@@ -36,7 +36,7 @@ function buildOptimisticOutlookEvent(
   };
 }
 import { getMeetingById, type MeetingApiResponse } from '../data/meetingsApi';
-import { mapMeetingToCardData } from '../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import type { CreateScheduledMeetingResponse } from '../data/calendarApi';
 import { CalendarSlotMeetingForm } from './CalendarSlotMeetingForm';
 
