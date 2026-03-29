@@ -6,7 +6,15 @@ import { ar } from "date-fns/locale"
 import { cn } from "@/lib/ui/lib/utils"
 
 import { Button } from "@/lib/ui/components/button"
-import { Calendar } from "@/lib/ui/components/calendar"
+function toLocalISOString(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${year}-${month}-${day}T${hours}:${minutes}:00`
+}
+
 import {
   Popover,
   PopoverContent,
