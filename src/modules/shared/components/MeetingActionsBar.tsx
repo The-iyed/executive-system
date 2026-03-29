@@ -164,7 +164,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   const scheduledSchedulingActions: ActionBarItem[] = [
     { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
     ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
-    { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); onOpenSendToContent(); } },
+    { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasPresentation && onOpenSendToContent(); }, disabled: !hasPresentation, disabledReason: 'أضف عرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال' },
   ];
 
   const actions: ActionBarItem[] =
