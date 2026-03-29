@@ -50,7 +50,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex">{btn}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
             {tooltipText}
           </TooltipContent>
         </Tooltip>
@@ -67,7 +67,7 @@ function ActionBubble({
     >
       <span
         className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
-        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+        style={{ fontFamily: "'Almarai', 'Frutiger LT Arabic', sans-serif" }}
       >
         {label}
       </span>
@@ -82,7 +82,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex w-full min-w-0">{button}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
             {disabledReason}
           </TooltipContent>
         </Tooltip>
