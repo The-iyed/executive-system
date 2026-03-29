@@ -16,7 +16,8 @@ export interface ExistingAttachment {
 export interface Step2ContentInitialData {
   existingPresentations?: ExistingAttachment[];
   existingAdditionalFiles?: ExistingAttachment[];
-  can_upload_more_than_one: boolean
+  can_upload_more_than_one: boolean;
+  hasExecutiveSummary?: boolean;
 }
 
 /* ─── State ─── */
