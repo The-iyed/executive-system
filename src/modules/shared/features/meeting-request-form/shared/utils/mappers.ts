@@ -173,13 +173,13 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
     is_on_behalf_of: meeting.is_on_behalf_of === true ? BOOL.TRUE : BOOL.FALSE,
     meeting_owner: meetingOwner,
     meeting_start_date:
-      (selectedSlot?.slot_start as string) ||
-      (meeting.meeting_start_date as string) ||
-      ((meeting.scheduled_start as string) || ""),
+      formatDateStringToISO((selectedSlot?.slot_start as string) || "") ||
+      formatDateStringToISO((meeting.meeting_start_date as string) || "") ||
+      formatDateStringToISO((meeting.scheduled_start as string) || ""),
     meeting_end_date:
-      (selectedSlot?.slot_end as string) ||
-      (meeting.meeting_end_date as string) ||
-      ((meeting.scheduled_end as string) || ""),
+      formatDateStringToISO((selectedSlot?.slot_end as string) || "") ||
+      formatDateStringToISO((meeting.meeting_end_date as string) || "") ||
+      formatDateStringToISO((meeting.scheduled_end as string) || ""),
     agenda_items: agendaItems,
     note: (meeting.note as string) || "",
     is_based_on_directive: meeting.is_based_on_directive === true ? BOOL.TRUE : BOOL.FALSE,
