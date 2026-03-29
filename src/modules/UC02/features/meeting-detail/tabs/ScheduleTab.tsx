@@ -35,6 +35,28 @@ export function ScheduleTab({
             <CalendarMinus className="w-[18px] h-[18px] text-[#048F86]" strokeWidth={1.8} />
           </div>
           <h2 className="text-[15px] font-bold text-[#1F2937]">إعدادات الجدولة</h2>
+          <div className="mr-auto flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onScheduleFormChange({ requires_protocol: !scheduleForm.requires_protocol })}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors
+                ${!scheduleForm.requires_protocol
+                  ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
+                  : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'}`}
+            >
+              مبدئي
+            </button>
+            <button
+              type="button"
+              onClick={() => onScheduleFormChange({ is_data_complete: !scheduleForm.is_data_complete })}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors
+                ${scheduleForm.is_data_complete
+                  ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
+                  : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'}`}
+            >
+              البيانات مكتملة
+            </button>
+          </div>
         </div>
         <div className="p-6">
           {validationError && (
@@ -48,22 +70,6 @@ export function ScheduleTab({
             </div>
           )}
           <div className="flex flex-col gap-4">
-            <FormField label="مبدئي" className="w-full max-w-none h-auto">
-              <FormSwitch
-                checked={!scheduleForm.requires_protocol}
-                onCheckedChange={(checked) =>
-                  onScheduleFormChange({ requires_protocol: !checked })
-                }
-              />
-            </FormField>
-            <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto">
-              <FormSwitch
-                checked={scheduleForm.is_data_complete}
-                onCheckedChange={(checked) =>
-                  onScheduleFormChange({ is_data_complete: checked })
-                }
-              />
-            </FormField>
             <FormTextArea
               label="ملاحظات"
               value={scheduleForm.notes}
