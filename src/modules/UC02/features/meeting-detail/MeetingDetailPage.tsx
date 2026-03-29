@@ -292,6 +292,7 @@ const MeetingDetailPage: React.FC = () => {
         location={h.scheduleForm.location || h.scheduleForm.location_option || ''}
         onConfirm={() => h.handleScheduleSubmit({ preventDefault: () => {} } as any)}
         isPending={h.scheduleMutation.isPending}
+        validationError={h.validationError}
       />
 
       <AttachmentPreviewDrawer open={!!h.previewAttachment} onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }} attachment={h.previewAttachment} />
