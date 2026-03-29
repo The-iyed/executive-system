@@ -35,7 +35,7 @@ export const Tabs: React.FC<TabsProps> = ({
       <div
         className={`flex flex-row items-center justify-center gap-2.5 ${className}`}
         dir="rtl"
-        style={{ fontFamily: "var(--font-family-ping-ar)" }}
+        style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
       >
         {items.map((item) => {
           const isActive = defaultActive === item.id;
