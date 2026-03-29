@@ -66,8 +66,8 @@ export function useTableForm({
 
   const addRow = useCallback(() => {
     if (maxRows && rows.length >= maxRows) return;
-    const updated = [createEmptyRow(), ...rows];
-    setErrors((prev) => [{}, ...prev]);
+    const updated = [...rows, createEmptyRow()];
+    setErrors((prev) => [...prev, {}]);
     updateRows(updated);
   }, [rows, createEmptyRow, maxRows, updateRows]);
 
