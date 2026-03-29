@@ -30,7 +30,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function ScheduleConfirmDialog({
   open, onOpenChange, startDate, endDate, meetingChannel, scheduleFormChannel,
-  requiresProtocol, isDataComplete, location, onConfirm, isPending,
+  requiresProtocol, isDataComplete, location, onConfirm, isPending, validationError,
 }: ScheduleConfirmDialogProps) {
   const channelLabel = MeetingChannelLabels[meetingChannel] ?? MeetingChannelLabels[scheduleFormChannel] ?? '—';
 
