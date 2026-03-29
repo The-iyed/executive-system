@@ -119,6 +119,8 @@ export interface MeetingActionsBarProps {
   isAddToWaitingListPending: boolean;
   hasChanges: boolean;
   hasContent: boolean;
+  /** Whether the meeting has at least one presentation attachment */
+  hasPresentation?: boolean;
   /** When provided, use these actions instead of status-based ones (same FAB + arc UI). */
   customActions?: ActionBarItem[];
   /** When true, do not show the "تعديل" action in the FAB (e.g. when edit is moved to a separate button). */
