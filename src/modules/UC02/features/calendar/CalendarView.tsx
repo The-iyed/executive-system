@@ -131,8 +131,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     async (values: Record<string, unknown>) => {
       setSlotError(null);
       setSlotSubmitting(true);
-      const scheduled_start = toISOStringWithTimezone(new Date(values.start_date as string));
-      const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
+      const scheduled_start = values.start_date as string;
+      const scheduled_end = values.end_date as string;
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
       // Snapshot for rollback
