@@ -1,15 +1,23 @@
 
 
-## Plan: Hide "إرسال للمحتوى" when no presentation attachment
+## Plan: Fix meeting_owner cleanup when toggling off "on behalf of"
 
-### File 1: `src/modules/shared/components/MeetingActionsBar.tsx`
-- Add `hasPresentation?: boolean` prop to `MeetingActionsBarProps`
-- In `defaultUnderReviewActions`: update the "إرسال للمحتوى" entry to use `disabled: !hasContent || !hasPresentation` and set `disabledReason` to `'أضف عرضاً تقديمياً في تبويب المحتوى لتفعيل الإرسال'` when `!hasPresentation`
-- In `scheduledSchedulingActions`: same guard on the "إرسال للمحتوى" entry
+### Problem
+When `is_on_behalf_of` is toggled off, `useVisibilityCleanup` resets `meeting_owner` to `""` (empty string, the default for string entries). But the schema expects `meeting_owner` to be an **object or null** — an empty string fails the `meetingUserSchema` object validation silently, blocking form submission with no visible error.
 
-### File 2: `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`
-- Derive: `const hasPresentation = meeting?.attachments?.some(a => a.is_presentation) ?? false;`
-- Pass `hasPresentation={hasPresentation}` to `<MeetingActionsBar />`
+### Fix
 
-Two files, minimal changes.
+**File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useStep1Form.ts`**
+
+Change the `meeting_owner` entry in `SUBMITTER_FIELD_RESET_MAP` from a plain string to an object with `resetValue: null`:
+
+```
+// Before
+meeting_owner: ["meeting_owner"],
+
+// After
+meeting_owner: [{ name: "meeting_owner", resetValue: null }],
+```
+
+Single line change, one file. This ensures the field resets to `null` (matching the schema's `.nullable()`) so validation passes when the field is hidden.
 
