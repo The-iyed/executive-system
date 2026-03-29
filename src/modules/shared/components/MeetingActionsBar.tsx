@@ -145,6 +145,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   isAddToWaitingListPending,
   hasChanges,
   hasContent,
+  hasPresentation = true,
   customActions,
   hideEdit = false,
 }) => {
