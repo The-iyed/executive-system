@@ -118,6 +118,9 @@ export function DetailPageHeader({
             </div>
           </div>
 
+          {/* Quick actions (always visible) */}
+          {quickActions && <div className="flex items-center gap-2.5 flex-shrink-0">{quickActions}</div>}
+
           {/* Left side: actions (RTL: secondary, edit, primary from right to left) */}
           <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
             {secondaryAction && <div className="flex-shrink-0">{secondaryAction}</div>}
