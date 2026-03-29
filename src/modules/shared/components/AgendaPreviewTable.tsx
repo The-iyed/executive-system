@@ -73,13 +73,13 @@ export function AgendaPreviewTable({
     <div className={`flex flex-col gap-2 ${className}`} dir={dir}>
       <label
         className="text-md font-medium text-gray-700 text-right"
-        style={{ fontFamily: "'Almarai', sans-serif" }}
+        style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
       >
         {title}
       </label>
       {hasItems ? (
         <div className="w-full overflow-x-auto border border-gray-300 rounded-lg bg-[#F9FAFB]">
-          <table className="w-full text-sm text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <table className="w-full text-sm text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             <thead>
               <tr className="border-b border-gray-300 bg-[#F2F4F7]">
                 <th className="px-4 py-3 text-[#475467] font-semibold whitespace-nowrap w-24 text-center">#</th>
