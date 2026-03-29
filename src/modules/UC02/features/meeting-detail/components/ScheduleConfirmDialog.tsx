@@ -50,6 +50,10 @@ export function ScheduleConfirmDialog({
           {location && <InfoRow label="الموقع" value={location} />}
         </div>
 
+        {validationError && (
+          <p className="text-sm text-destructive text-right px-1">{validationError}</p>
+        )}
+
         <DialogFooter className="flex-row-reverse gap-2 pt-2">
           <button
             type="button"
