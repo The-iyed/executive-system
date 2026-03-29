@@ -103,7 +103,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
             {fields.map((field, index) => {
               const itemErrors = (errors.agenda_items as Record<string, unknown>)?.[index] as Record<string, { message?: string }> | undefined;
               const supportValue = form.watch(`agenda_items.${index}.minister_support_type`);
-              const isNew = animatingNewId === "pending" && index === 0;
+              const isNew = animatingNewId === "pending" && index === fields.length - 1;
               const isRemoving = removingIndex === index;
 
               return (
