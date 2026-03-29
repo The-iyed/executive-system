@@ -70,22 +70,6 @@ export function ScheduleTab({
             </div>
           )}
           <div className="flex flex-col gap-4">
-            <FormField label="مبدئي" className="w-full max-w-none h-auto">
-              <FormSwitch
-                checked={!scheduleForm.requires_protocol}
-                onCheckedChange={(checked) =>
-                  onScheduleFormChange({ requires_protocol: !checked })
-                }
-              />
-            </FormField>
-            <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto">
-              <FormSwitch
-                checked={scheduleForm.is_data_complete}
-                onCheckedChange={(checked) =>
-                  onScheduleFormChange({ is_data_complete: checked })
-                }
-              />
-            </FormField>
             <FormTextArea
               label="ملاحظات"
               value={scheduleForm.notes}
