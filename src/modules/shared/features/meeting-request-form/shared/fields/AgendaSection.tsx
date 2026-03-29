@@ -16,7 +16,8 @@ interface Props {
 
 export function AgendaSection({ form, agendaRequired = true }: Props) {
   const { register, control, formState: { errors } } = form;
-  const { fields, prepend, remove } = useFieldArray({ control, name: "agenda_items" });
+  const { fields, append, remove } = useFieldArray({ control, name: "agenda_items" });
+  const listRef = useRef<HTMLDivElement>(null);
   const agendaEditable = useIsFieldEditable("agenda_items");
 
   const [animatingNewId, setAnimatingNewId] = useState<string | null>(null);
