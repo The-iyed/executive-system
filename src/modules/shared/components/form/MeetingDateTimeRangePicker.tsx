@@ -1,17 +1,9 @@
 import React, { useCallback, useMemo } from 'react';
+import { toISOStringWithTimezone } from '@/lib/ui';
 import { FormField } from './FormField';
 import { FormDateTimePicker } from './FormDateTimePicker';
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
-
-function toLocalISOString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}:00`;
-}
 
 function formatDurationMs(ms: number): string {
   if (ms < 0) return '';
@@ -88,7 +80,7 @@ export const MeetingDateTimeRangePicker: React.FC<MeetingDateTimeRangePickerProp
       if (Number.isNaN(start.getTime())) return;
       const endDefault = new Date(start.getTime() + ONE_HOUR_MS);
       if (endDefault > endOfDay(start)) endDefault.setHours(23, 59, 0, 0);
-      onEndChange(toLocalISOString(endDefault));
+      onEndChange(toISOStringWithTimezone(endDefault));
     },
     [onStartChange, onEndChange, endValue]
   );
