@@ -4,18 +4,9 @@ import { Calendar as CalendarIcon, Clock } from "lucide-react"
 import { ar } from "date-fns/locale"
 
 import { cn } from "@/lib/ui/lib/utils"
-
+import { toISOStringWithTimezone } from "@/lib/ui/lib/dateUtils"
 import { Button } from "@/lib/ui/components/button"
 import { Calendar } from "@/lib/ui/components/calendar"
-function toLocalISOString(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  const hours = String(date.getHours()).padStart(2, "0")
-  const minutes = String(date.getMinutes()).padStart(2, "0")
-  return `${year}-${month}-${day}T${hours}:${minutes}:00`
-}
-
 import {
   Popover,
   PopoverContent,
@@ -230,11 +221,12 @@ export function DateTimePicker({
       const [h, m] = time.split(":").map(Number)
       const d = new Date(date)
       d.setHours(h, m, 0, 0)
+      // When user selects the first allowed day, default time (e.g. 09:00) may be before minDate (e.g. same day at 14:00). Clamp to minDate so we still emit a value and clear the required error.
       if (minDate != null && d < minDate) {
         d.setTime(minDate.getTime())
       }
       if (maxDate != null && d > maxDate) return
-      onChange?.(toLocalISOString(d))
+      onChange?.(toISOStringWithTimezone(d))
     },
     [onChange, minDate, maxDate]
   )
