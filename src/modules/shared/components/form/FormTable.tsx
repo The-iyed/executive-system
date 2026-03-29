@@ -81,6 +81,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   hideAddButton = false,
   customCellRender,
 }) => {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const nonDeletableSet = useMemo(
     () => new Set(nonDeletableRowIds),
     [nonDeletableRowIds]
