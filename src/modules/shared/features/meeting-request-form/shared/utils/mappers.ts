@@ -73,10 +73,13 @@ export function transformDraftToStep2ContentData(
       file_type: att.file_type,
     }));
 
+  const hasExecutiveSummary = attachments.some((a) => a.is_executive_summary);
+
   return {
     existingPresentations,
     existingAdditionalFiles,
-    can_upload_more_than_one: draft?.can_upload_more_than_one
+    can_upload_more_than_one: draft?.can_upload_more_than_one,
+    hasExecutiveSummary,
   };
 }
 

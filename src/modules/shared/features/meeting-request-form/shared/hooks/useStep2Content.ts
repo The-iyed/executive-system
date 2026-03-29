@@ -16,7 +16,8 @@ export interface ExistingAttachment {
 export interface Step2ContentInitialData {
   existingPresentations?: ExistingAttachment[];
   existingAdditionalFiles?: ExistingAttachment[];
-  can_upload_more_than_one: boolean
+  can_upload_more_than_one: boolean;
+  hasExecutiveSummary?: boolean;
 }
 
 /* ─── State ─── */
@@ -109,17 +110,22 @@ export function useStep2Content({
   // );
   const hasExistingPresentation = state.existingPresentations.length > 0;
 
-const canUploadNewPresentation =
-  !state.newPresentationFile &&
-  (
-    !hasExistingPresentation ||
-    meetingStatus === MeetingStatus.DRAFT ||
-    meetingStatus === MeetingStatusUnCommitted.DRAFT_UNCOMMITTED ||
-    initialData?.can_upload_more_than_one
-  );
+  const isScheduledContentOrScheduling =
+    meetingStatus === MeetingStatus.SCHEDULED_SCHEDULING ||
+    meetingStatus === MeetingStatus.SCHEDULED_CONTENT;
 
-  /** Only draft statuses allow deleting existing server presentations */
-  const canDeleteExistingPresentation = isDraftStatus;
+  const canUploadNewPresentation =
+    !state.newPresentationFile &&
+    (
+      !hasExistingPresentation ||
+      initialData?.hasExecutiveSummary ||
+      initialData?.can_upload_more_than_one ||
+      (!isScheduledContentOrScheduling && !initialData?.hasExecutiveSummary)
+    );
+
+  /** Allow deleting existing presentations when not in scheduled content/scheduling statuses */
+  const canDeleteExistingPresentation =
+    !isScheduledContentOrScheduling || isDraftStatus;
 
   /* ── Presentation actions ── */
 
