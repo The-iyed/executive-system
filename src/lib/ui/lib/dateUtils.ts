@@ -32,17 +32,26 @@ export const formatDateStringToISO = (dateString: string | null | undefined): st
  * (browser IANA zone) to interpret instants in the user’s locale when needed.
  * @deprecated Prefer `date.toISOString()`; kept for existing call sites.
  */
+function getTimezoneOffsetString(date: Date): string {
+  const offset = -date.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
+  return `${sign}${hours}:${minutes}`;
+}
+
 export function toISOStringWithTimezone(date: Date): string {
   if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${getTimezoneOffsetString(date)}`;
 }
 
 /**
- * Normalize a date string to ISO 8601 UTC for API payloads.
+ * Normalize a date string to local ISO with timezone offset.
  */
 export function toISOStringWithTimezoneFromString(isoOrEmpty: string): string {
   if (!isoOrEmpty || typeof isoOrEmpty !== 'string') return isoOrEmpty;
   const date = new Date(isoOrEmpty);
   if (Number.isNaN(date.getTime())) return isoOrEmpty;
-  return date.toISOString();
+  return toISOStringWithTimezone(date);
 }
