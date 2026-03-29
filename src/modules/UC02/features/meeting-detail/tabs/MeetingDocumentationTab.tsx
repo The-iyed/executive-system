@@ -105,7 +105,7 @@ export function MeetingDocumentationTab({ meetingTitle, meetingId, meetingStatus
   const hasPdf = Boolean(apiData?.mom_pdf_base64?.trim());
   const actions = apiData?.actions ?? [];
   const sectionHeadingClass = "text-right font-bold text-[#101828] text-[16px]";
-  const sectionHeadingStyle = { fontFamily: "'Almarai', sans-serif", fontSize: '18px' };
+  const sectionHeadingStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif", fontSize: '18px' };
 
   const momPdfDataUrl = hasPdf && apiData?.mom_pdf_base64
     ? `data:application/pdf;base64,${apiData.mom_pdf_base64}`
@@ -191,7 +191,7 @@ export function MeetingDocumentationTab({ meetingTitle, meetingId, meetingStatus
           </div>
         ) : (
           <div className="w-full overflow-x-auto border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full" style={{ fontFamily: "'Almarai', sans-serif" }}>
+            <table className="w-full" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-16">#</th>
