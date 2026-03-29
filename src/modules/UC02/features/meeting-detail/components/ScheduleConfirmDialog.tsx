@@ -16,6 +16,7 @@ interface ScheduleConfirmDialogProps {
   location: string;
   onConfirm: () => void;
   isPending: boolean;
+  validationError?: string | null;
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -29,7 +30,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function ScheduleConfirmDialog({
   open, onOpenChange, startDate, endDate, meetingChannel, scheduleFormChannel,
-  requiresProtocol, isDataComplete, location, onConfirm, isPending,
+  requiresProtocol, isDataComplete, location, onConfirm, isPending, validationError,
 }: ScheduleConfirmDialogProps) {
   const channelLabel = MeetingChannelLabels[meetingChannel] ?? MeetingChannelLabels[scheduleFormChannel] ?? '—';
 
@@ -48,6 +49,10 @@ export function ScheduleConfirmDialog({
           <InfoRow label="البيانات مكتملة" value={isDataComplete ? 'نعم' : 'لا'} />
           {location && <InfoRow label="الموقع" value={location} />}
         </div>
+
+        {validationError && (
+          <p className="text-sm text-destructive text-right px-1">{validationError}</p>
+        )}
 
         <DialogFooter className="flex-row-reverse gap-2 pt-2">
           <button
