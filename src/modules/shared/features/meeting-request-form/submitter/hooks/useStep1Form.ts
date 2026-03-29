@@ -102,7 +102,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     meeting_location: ["meeting_location", "meeting_location_custom"],
     meeting_location_custom: ["meeting_location_custom"],
     urgent_reason: ["urgent_reason"],
-    meeting_owner: ["meeting_owner"],
+    meeting_owner: [{ name: "meeting_owner", resetValue: null }],
     meeting_justification: ["meeting_justification"],
     related_topic: ["related_topic"],
     deadline: ["deadline"],
