@@ -152,15 +152,15 @@ const MeetingDetailPage: React.FC = () => {
               ) : undefined
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
-            quickActions={h.isScheduleOfficer ? (
-              <div className="flex items-center gap-3">
+            quickActions={h.isScheduleOfficer && hasFloatingActionsBar ? (
+              <div className="flex items-center gap-2 bg-[#F0FDFB] rounded-full p-1 border border-[#048F86]/15 shadow-sm">
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, requires_protocol: !prev.requires_protocol }))}
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                     !h.scheduleForm.requires_protocol
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'
+                      ? 'bg-white text-[#048F86] border border-[#048F86]/30 shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#374151] border border-transparent'
                   }`}
                 >
                   مبدئي
@@ -168,10 +168,10 @@ const MeetingDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => h.setScheduleForm(prev => ({ ...prev, is_data_complete: !prev.is_data_complete }))}
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                     h.scheduleForm.is_data_complete
-                      ? 'bg-[#048F86]/10 text-[#048F86] border-[#048F86]/30'
-                      : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-gray-50'
+                      ? 'bg-white text-[#048F86] border border-[#048F86]/30 shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#374151] border border-transparent'
                   }`}
                 >
                   البيانات مكتملة
