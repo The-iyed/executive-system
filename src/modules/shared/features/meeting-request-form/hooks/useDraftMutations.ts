@@ -19,7 +19,8 @@ export function useSaveDraftBasicInfo() {
 
 export function useCreateSchedulerStep1() {
   return useMutation({
-    mutationFn: (formData: FormData) => createSchedulerStep1(formData),
+    mutationFn: ({ formData, meetingId }: { formData: FormData; meetingId?: string | null }) =>
+      createSchedulerStep1(formData, meetingId),
   });
 }
 
