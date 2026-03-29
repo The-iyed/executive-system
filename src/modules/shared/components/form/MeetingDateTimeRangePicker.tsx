@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { FormField } from './FormField';
 import { FormDateTimePicker } from './FormDateTimePicker';
-import { FormDateTimePicker } from './FormDateTimePicker';
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
