@@ -551,6 +551,6 @@ export function useContentRequestDetailPage() {
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
     fileInputRef, handleDragOver, handleDragLeave, handleDrop, handleFileSelect, handleRemoveFile,
     // Send to scheduling
-    sendToSchedulingMutation, handleSendToScheduling,
+    sendToSchedulingMutation, handleSendToScheduling, hasDirectives,
   };
 }
