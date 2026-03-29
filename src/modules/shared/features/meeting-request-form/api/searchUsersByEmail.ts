@@ -2,7 +2,7 @@ import { PAGE_SIZE, axiosInstance, toError } from './config';
 
 /** Generic user result from the email search API — used by manager select, invitees table, etc. */
 export interface UserSearchResult {
-  objectGUID: string;
+  objectGUID?: string;
   displayName: string;
   displayNameAR: string | null;
   displayNameEN: string | null;
