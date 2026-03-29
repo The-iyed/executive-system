@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { toISOStringWithTimezone } from '@/lib/ui';
+
 import type { CalendarEventData } from '@/modules/shared';
 import { MeetingOwnerType } from '@/modules/shared';
 import { MinisterFullCalendar } from '@/modules/UC02/components/MinisterFullCalendar';
