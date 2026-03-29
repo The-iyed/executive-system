@@ -8,7 +8,7 @@ export function SSOLoader() {
         alignItems: 'center',
         height: '100vh',
         backgroundColor: '#f5f5f5',
-        fontFamily: "'Almarai', sans-serif",
+        fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
       }}
     >
       <style>
