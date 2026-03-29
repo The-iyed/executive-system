@@ -148,6 +148,7 @@ export const FormTable: React.FC<FormTableProps> = ({
 
             {/* Table Body */}
             <div
+              ref={bodyRef}
               className="flex flex-col bg-white overflow-y-auto"
               style={{ maxHeight }}
             >
