@@ -119,8 +119,7 @@ export function useStep2Content({
     (
       !hasExistingPresentation ||
       initialData?.hasExecutiveSummary ||
-      initialData?.can_upload_more_than_one ||
-      (!isScheduledContentOrScheduling && !initialData?.hasExecutiveSummary)
+      initialData?.can_upload_more_than_one
     );
 
   /** Allow deleting existing presentations when not in scheduled content/scheduling statuses */
