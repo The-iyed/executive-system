@@ -348,6 +348,11 @@ export const FormTable: React.FC<FormTableProps> = ({
           onClick={() => {
             if (disabled) return;
             onAddRow();
+            requestAnimationFrame(() => {
+              if (bodyRef.current) {
+                bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+              }
+            });
           }}
           disabled={disabled}
           className={cn(
