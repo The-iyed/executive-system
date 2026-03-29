@@ -779,8 +779,8 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
           onSubmit={async (values) => {
             setSlotFormError(null);
             setSlotFormSubmitting(true);
-            const scheduled_start = toISOStringWithTimezone(new Date(values.start_date));
-            const scheduled_end = toISOStringWithTimezone(new Date(values.end_date));
+            const scheduled_start = values.start_date;
+            const scheduled_end = values.end_date;
             const isEdit = slotForNewMeeting?.mode === 'edit' && slotForNewMeeting.meetingId;
 
             try {
