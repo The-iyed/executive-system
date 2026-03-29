@@ -8,7 +8,7 @@ export async function createSchedulerStep1(payload: FormData, meetingId?: string
 
   try {
     const { data } = await axiosInstance.request<{ id?: string | number; meeting_id?: string | number }>({
-      method: isEdit ? 'PATCH' : 'POST',
+      method: isEdit ? 'PUT' : 'POST',
       url,
       data: payload,
     });
