@@ -1,39 +1,56 @@
 
 
-## Plan: Always show agenda section in MeetingInfoView
+## Plan: Replace all hardcoded Almarai font references with IBM Plex Sans Arabic
 
 ### Problem
-Line 132 in `MeetingInfoView.tsx` conditionally renders the agenda section only when `data.agenda && data.agenda.length > 0`. When there are no agenda items, the entire section is hidden.
+34 files still have `fontFamily: "'Almarai', sans-serif"` or similar hardcoded references. The project font was changed to IBM Plex Sans Arabic but these inline styles were not updated.
 
-### Fix
+### Scope
+Every occurrence of `Almarai` in `fontFamily` or `font-family` across the codebase needs to be replaced with `'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif`.
 
-**File: `src/modules/shared/features/meeting-info/MeetingInfoView.tsx`** (line 132)
+### Files to update (34 files + 1 CSS)
 
-Remove the conditional check so the agenda section always renders. When empty, show an empty state message.
+**CSS file:**
+- `src/modules/UC02/components/minister-fullcalendar.css` — change `--fc-font-family: 'Almarai'` to `'IBM Plex Sans Arabic', 'Frutiger LT Arabic'`
 
-Change:
-```tsx
-{data.agenda && data.agenda.length > 0 && (
-  <div className="flex flex-col gap-3">
-    <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
-    <AgendaTable items={data.agenda} />
-  </div>
-)}
+**Component/utility files with `fontFamily: "'Almarai'..."` constants or inline styles (all 34 files from search results):**
+
+Replace every instance of:
+```ts
+fontFamily: "'Almarai', sans-serif"
+// or
+fontFamily: "Almarai, sans-serif"
+// or
+fontFamily: "'Almarai', 'Almarai', sans-serif"
+// or
+fontFamily: "'Almarai', 'Frutiger LT Arabic', sans-serif"
 ```
 
-To:
-```tsx
-<div className="flex flex-col gap-3">
-  <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
-  {data.agenda && data.agenda.length > 0 ? (
-    <AgendaTable items={data.agenda} />
-  ) : (
-    <div className="px-4 py-3 rounded-2xl border bg-muted/40 border-border/40 text-sm text-muted-foreground text-right">
-      لا توجد أجندة
-    </div>
-  )}
-</div>
+With:
+```ts
+fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif"
 ```
 
-Single file, 1 block changed.
+Key files include:
+1. `src/modules/UC05/components/content-request-card.tsx`
+2. `src/modules/UC02/features/calendar/components/CalendarHeader.tsx`
+3. `src/modules/UC01/features/PreviewMeeting/tabs/MeetingPreviewTab.tsx`
+4. `src/modules/guiding-light/components/meetings/DetailedMeetingCard.tsx`
+5. `src/modules/shared/components/AgendaPreviewTable.tsx`
+6. `src/modules/shared/components/Mou7tawaContentTab.tsx`
+7. `src/modules/UC02/components/MinisterCalendarView.tsx`
+8. `src/modules/shared/components/search-input.tsx`
+9. `src/modules/shared/components/MeetingInfo.tsx`
+10. `src/modules/auth/components/SSOLoader.tsx`
+11. `src/modules/shared/components/MeetingActionsBar.tsx`
+12. `src/modules/shared/utils/format.ts`
+13. All remaining 22 files from the search results
+
+### Approach
+- Global find-and-replace of `Almarai` → `IBM Plex Sans Arabic` in all fontFamily declarations
+- Ensure the fallback chain is consistently `'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif`
+- ~34 TypeScript/TSX files + 1 CSS file updated
+
+### Note
+Many of these inline `fontFamily` styles could eventually be removed entirely since the global CSS already sets `IBM Plex Sans Arabic` as the body font. But for now, the safest approach is to update them all to the correct font to ensure consistency everywhere, including portal-rendered components.
 
