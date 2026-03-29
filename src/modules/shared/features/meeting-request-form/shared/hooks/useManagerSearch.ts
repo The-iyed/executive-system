@@ -10,7 +10,7 @@ export interface ManagerOption {
 
 function toOption(user: UserSearchResult): ManagerOption {
   return {
-    value: user.objectGUID,
+    value: user.objectGUID || user.mail || user.cn || '',
     label: user.displayName || user.mail,
     subtitle: user.mail,
     user,
