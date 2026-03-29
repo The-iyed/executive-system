@@ -27,22 +27,31 @@ export const formatDateStringToISO = (dateString: string | null | undefined): st
   }
 };
 
-/**
- * ISO 8601 UTC for API payloads. Backend should use the `X-Timezone` request header
- * (browser IANA zone) to interpret instants in the user’s locale when needed.
- * @deprecated Prefer `date.toISOString()`; kept for existing call sites.
- */
-export function toISOStringWithTimezone(date: Date): string {
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString();
+function getTimezoneOffsetString(date: Date): string {
+  const offset = -date.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const absOffset = Math.abs(offset);
+  const hours = String(Math.floor(absOffset / 60)).padStart(2, '0');
+  const minutes = String(absOffset % 60).padStart(2, '0');
+  return `${sign}${hours}:${minutes}`;
 }
 
 /**
- * Normalize a date string to ISO 8601 UTC for API payloads.
+ * Formats a Date to local ISO 8601 with timezone offset (e.g. 2026-04-01T05:00:00+03:00).
+ * Ensures the exact user-selected time is sent to the API without UTC conversion.
+ */
+export function toISOStringWithTimezone(date: Date): string {
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${getTimezoneOffsetString(date)}`;
+}
+
+/**
+ * Normalize a date string to local ISO 8601 with timezone offset for API payloads.
  */
 export function toISOStringWithTimezoneFromString(isoOrEmpty: string): string {
   if (!isoOrEmpty || typeof isoOrEmpty !== 'string') return isoOrEmpty;
   const date = new Date(isoOrEmpty);
   if (Number.isNaN(date.getTime())) return isoOrEmpty;
-  return date.toISOString();
+  return toISOStringWithTimezone(date);
 }
