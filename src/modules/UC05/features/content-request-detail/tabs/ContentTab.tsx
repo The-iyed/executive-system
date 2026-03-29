@@ -464,7 +464,7 @@ export function ContentTab({ h }: ContentTabProps) {
             }
           }}
         >
-          <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-hidden p-0" dir="rtl">
+          <DialogContent className="sm:max-w-[620px] max-h-[85vh] flex flex-col overflow-hidden p-0" dir="rtl">
             <div className="relative px-6 pt-6 pb-4 border-b border-border">
               
               <div className="flex items-center gap-3">
