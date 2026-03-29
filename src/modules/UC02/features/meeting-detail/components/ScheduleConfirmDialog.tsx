@@ -16,6 +16,7 @@ interface ScheduleConfirmDialogProps {
   location: string;
   onConfirm: () => void;
   isPending: boolean;
+  validationError?: string | null;
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
