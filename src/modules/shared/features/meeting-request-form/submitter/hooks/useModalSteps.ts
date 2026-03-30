@@ -20,6 +20,10 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
 
+  useEffect(() => {
+    setDraftId(editMeetingId ?? null);
+  }, [editMeetingId]);
+
   const isEditMode = !!editMeetingId;
   const activeDraftId = editMeetingId || draftId;
 
