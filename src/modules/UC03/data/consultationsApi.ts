@@ -69,6 +69,7 @@ export interface ConsultationRequestApiResponse {
   } | null;
   submitter_id: string;
   submitter_name: string | null;
+  submitter?: Record<string, unknown> | string | null;
   submitter_job_title: string | null;
   submitter_sector: string | null;
   created_at: string;
