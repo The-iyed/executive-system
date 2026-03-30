@@ -16,7 +16,7 @@ import {
 import { Button } from '@/lib/ui';
 import QualityModal from '../../components/qualityModal';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
-import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
+import { RequestNotesView, mapMeetingToRequestNotes } from '@/modules/shared/features/request-notes';
 import { useMeetingDetailPage } from './hooks/useMeetingDetailPage';
 
 // Tabs
