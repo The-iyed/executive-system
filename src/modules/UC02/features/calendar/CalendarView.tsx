@@ -20,6 +20,7 @@ import {
   CalendarSkeleton,
   EventDetailModal,
   SyncIndicator,
+  DayMeetingsPanel,
 } from './components';
 import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent } from './utils';
 import type { SlotSelection } from './types';
