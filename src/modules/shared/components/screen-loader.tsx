@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/ui';
-import LogomarkSvg from '@/modules/shared/assets/Logomark.svg?url';
+import { AnimatedLogomark } from './AnimatedLogomark';
 
 interface ScreenLoaderProps {
   message?: string;
@@ -14,11 +14,7 @@ export const ScreenLoader: React.FC<ScreenLoaderProps> = ({
   return (
     <div className={cn('fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50', className)}>
       <div className="flex flex-col items-center gap-4">
-        <img
-          src={LogomarkSvg}
-          alt="Loading"
-          className="w-14 h-14 animate-pulse drop-shadow-lg"
-        />
+        <AnimatedLogomark size={56} />
         {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </div>
     </div>
@@ -31,11 +27,7 @@ export const Loader: React.FC<ScreenLoaderProps> = ({
 }) => {
   return (
     <div className="flex flex-col justify-center w-full h-full items-center gap-4">
-      <img
-        src={LogomarkSvg}
-        alt="Loading"
-        className="w-14 h-14 animate-pulse drop-shadow-lg"
-      />
+      <AnimatedLogomark size={56} />
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
