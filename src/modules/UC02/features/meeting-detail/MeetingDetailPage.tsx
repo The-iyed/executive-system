@@ -16,7 +16,7 @@ import {
 import { Button } from '@/lib/ui';
 import QualityModal from '../../components/qualityModal';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
-import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
+import { RequestNotesView, mapMeetingToRequestNotes } from '@/modules/shared/features/request-notes';
 import { useMeetingDetailPage } from './hooks/useMeetingDetailPage';
 
 // Tabs
@@ -94,7 +94,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'request-info':
         return <RequestInfoTab meeting={meeting} statusLabel={h.statusLabel} />;
       case 'request-notes':
-        return <div className="w-full max-w-4xl mx-auto" dir="rtl"><NotesTab meeting={meeting} /></div>;
+        return <div className="w-full max-w-4xl mx-auto" dir="rtl"><RequestNotesView data={mapMeetingToRequestNotes(meeting)} /></div>;
       case 'meeting-info':
         return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} />;
       case 'content':
