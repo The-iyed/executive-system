@@ -143,6 +143,8 @@ export interface MinisterFullCalendarProps {
   onEventClick: (ev: CalendarEventData) => void;
   /** endHHmm omitted → form defaults (e.g. single click). Pass end from drag selection. */
   onTimeSlotSelect: (date: Date, startHHmm: string, endHHmm?: string) => void;
+  /** Called when "+X more" is clicked — receives the date and all events for that day */
+  onMoreClick?: (date: Date, events: CalendarEventData[]) => void;
   className?: string;
 }
 
@@ -154,6 +156,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
   extraEvents,
   onEventClick,
   onTimeSlotSelect,
+  onMoreClick,
   className,
 }) => {
   const apiRef = useRef<FullCalendar | null>(null);
@@ -306,8 +309,35 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         slotMaxTime="24:00:00"
         allDaySlot={false}
         nowIndicator
-        dayMaxEvents={4}
-        moreLinkClick="popover"
+        dayMaxEvents={3}
+        eventMaxStack={3}
+        moreLinkClick={(info) => {
+          if (onMoreClick) {
+            const events = info.allSegs.map(
+              (seg) => seg.event.extendedProps.detail as CalendarEventData
+            ).filter(Boolean);
+            onMoreClick(info.date, events);
+            return 'none' as any;
+          }
+          return 'popover';
+        }}
+        moreLinkContent={(arg) => (
+          <span className="minister-more-pill">+{arg.num}</span>
+        )}
+        eventContent={(arg) => {
+          const start = arg.event.start;
+          const end = arg.event.end;
+          const timeStr =
+            start && end
+              ? `${pad2(start.getHours())}:${pad2(start.getMinutes())} - ${pad2(end.getHours())}:${pad2(end.getMinutes())}`
+              : '';
+          return (
+            <div className="minister-event-content">
+              <span className="minister-event-title">{arg.event.title}</span>
+              {timeStr && <span className="minister-event-time">{timeStr}</span>}
+            </div>
+          );
+        }}
         eventDisplay="block"
         slotDuration="00:30:00"
         snapDuration="00:15:00"
