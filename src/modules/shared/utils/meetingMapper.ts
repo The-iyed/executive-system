@@ -63,7 +63,7 @@ function getStatusLabel(status: MeetingStatus | string): string {
 }
 
 /** Extract display name from submitter (object or string) */
-function resolveSubmitterName(meeting: MeetingMapperInput): string {
+export function resolveSubmitterName(meeting: MeetingMapperInput): string {
   const sub = meeting.submitter;
   if (sub && typeof sub === 'object') {
     return sub.ar_name || sub.name || [sub.first_name, sub.last_name].filter(Boolean).join(' ') || sub.email || sub.username || '';
