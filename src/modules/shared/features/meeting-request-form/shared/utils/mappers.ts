@@ -104,6 +104,7 @@ export function transformDraftToInvitees(
   const invitees = Array.isArray(draft.invitees) ? draft.invitees as DraftInvitee[] : [];
 
   return invitees.map((inv, idx) => ({
+    id: inv.id || undefined,
     _id: inv.object_guid || `draft-inv-${idx}`,
     object_guid: inv.object_guid || "",
     email: inv.email || "",
