@@ -44,7 +44,7 @@ export function PreviousMeetingField({ disabled, initialLabel }: Props) {
             placeholder="ابحث عن اجتماع سابق..."
             hasError={!!errors.previous_meeting_id}
             disabled={isDisabled}
-            initialLabel={initialLabel}
+            initialLabel={displayLabel}
           />
         )}
       />
