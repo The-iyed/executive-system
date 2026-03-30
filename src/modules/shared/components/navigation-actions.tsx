@@ -62,38 +62,45 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
     return (
       <TooltipProvider>
         {items && items.length > 0 && (
-          <div
-            className={`flex items-center gap-1 ${className}`}
-            dir="rtl"
-          >
-            {items.map((item) => {
-              const isActive = activeId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleClick(item.id, item.path)}
-                  className={`
-                    flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-medium
-                    transition-all duration-200 whitespace-nowrap cursor-pointer
-                    ${isActive
-                      ? 'bg-[var(--color-primary-700)] text-white'
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                    }
-                  `}
-                  aria-label={item.label}
-                  aria-pressed={isActive}
-                >
-                  {item.icon && (
-                    <Icon
-                      icon={item.icon}
-                      width={16}
-                      height={16}
-                    />
-                  )}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="relative hidden md:block">
+            {/* Fade edges for scroll overflow */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white to-transparent z-10 xl:hidden" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white to-transparent z-10 xl:hidden" />
+            
+            <div
+              className={`flex items-center gap-1 overflow-x-auto scrollbar-hide ${className}`}
+              dir="rtl"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {items.map((item) => {
+                const isActive = activeId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleClick(item.id, item.path)}
+                    className={`
+                      flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-medium
+                      transition-all duration-200 whitespace-nowrap cursor-pointer flex-shrink-0
+                      ${isActive
+                        ? 'bg-[var(--color-primary-700)] text-white'
+                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                      }
+                    `}
+                    aria-label={item.label}
+                    aria-pressed={isActive}
+                  >
+                    {item.icon && (
+                      <Icon
+                        icon={item.icon}
+                        width={16}
+                        height={16}
+                      />
+                    )}
+                    <span className="lg:inline">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </TooltipProvider>
