@@ -32,7 +32,7 @@ const GuidanceRequests: React.FC = () => {
       headerIcon="solar:shield-check-bold"
       queryKey={['guidance-requests', 'uc04']}
       queryFn={queryFn}
-      mapToCard={mapGuidanceRequestToCardData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/guidance-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد بيانات"

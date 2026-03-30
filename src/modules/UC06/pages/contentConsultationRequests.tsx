@@ -27,7 +27,7 @@ const ContentConsultationRequests: React.FC = () => {
       headerIcon="solar:chat-round-check-bold"
       queryKey={['content-consultation-requests', 'uc06']}
       queryFn={queryFn}
-      mapToCard={mapContentConsultationRequestToCardData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/content-consultation-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد طلبات"
