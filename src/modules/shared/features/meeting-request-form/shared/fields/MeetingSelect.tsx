@@ -17,6 +17,7 @@ interface MeetingSelectProps {
 export function MeetingSelect({
   value,
   onChange,
+  onSelectMeeting,
   placeholder,
   disabled,
   hasError,
