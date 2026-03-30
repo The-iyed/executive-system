@@ -1,26 +1,28 @@
 
 
-## Plan: Replace CancelDialog with shared ConfirmDialog
+## Plan: Add configurable timezone env variable
 
 ### Problem
-The "إلغاء" (Cancel) action uses a custom `CancelDialog` with form fields (reason + notes), while the "إضافة إلى قائمة الانتظار" uses the shared `ConfirmDialog` — a simpler, cleaner confirmation modal. The user wants consistency.
-
-### Approach
-Replace the `CancelDialog` usage with the shared `ConfirmDialog` component (warning variant), removing the reason/notes form fields. The cancel mutation will fire without extra form data.
+The timezone header is always derived from the browser. The user wants an optional env variable override.
 
 ### Changes
 
-**1. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`**
-- Replace the `<CancelDialog>` block with a `<ConfirmDialog>` using variant `"danger"`, title "إلغاء الاجتماع", description "هل أنت متأكد من إلغاء هذا الاجتماع؟"
-- Remove `CancelDialog` import, add/reuse `ConfirmDialog` import
-- Call `h.cancelMutation.mutate({})` on confirm (no form data)
+**1. `.env`** — Add new variable
+```
+VITE_APP_TIMEZONE=Asia/Riyadh
+```
 
-**2. `src/modules/UC02/features/meeting-detail/hooks/useMeetingDetailPage.ts`**
-- Remove `cancelForm` and `setCancelForm` state (no longer needed)
-- Keep `isCancelModalOpen` / `setIsCancelModalOpen` as-is
+**2. `src/lib/env.ts`** — Export the new variable
+```ts
+export const APP_TIMEZONE = getEnv('VITE_APP_TIMEZONE', '');
+```
+
+**3. `src/lib/api/apiTimezone.ts`** — Use env value when set, fallback to browser
+- Import `APP_TIMEZONE` from `@/lib/env`
+- In `getBrowserTimezone()`: return `APP_TIMEZONE` if non-empty, otherwise return browser timezone as current default
 
 ### Result
-- Cancel action uses the same polished shared dialog as the waiting list action
-- Consistent UX across all action bar confirmations
-- 2 files changed
+- When `VITE_APP_TIMEZONE` is set (e.g. `Asia/Riyadh`), all API requests use that value in the `X-Timezone` header
+- When empty or unset, falls back to browser-detected timezone as before
+- 3 files changed
 
