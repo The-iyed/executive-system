@@ -87,11 +87,11 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   return (
     <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-card rounded-2xl shadow-sm border border-border/40">
       {/* Title */}
-      <div className="flex flex-row-reverse items-center gap-3">
+      <div className="flex flex-row items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <CalendarIcon className="w-4 h-4 text-primary" />
         </div>
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-start text-right">
           <h1 className="font-bold text-foreground text-[16px]" style={FONT}>
             التقويم
           </h1>
