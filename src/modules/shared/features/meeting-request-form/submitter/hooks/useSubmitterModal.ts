@@ -33,7 +33,7 @@ export function useSubmitterModal({
   const isEditMode = !!editMeetingId;
 
   // ── Sync helper: invalidate queries so each page refetches with its own API
-  const syncMeetingDetails = useCallback(async (meetingId: string) => {
+  const syncMeetingDetails = useCallback(async (meetingId: string, preservePatch?: Record<string, unknown> | null) => {
     // Use refetchQueries to wait for the refetch to complete before closing modal
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
@@ -43,6 +43,10 @@ export function useSubmitterModal({
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
     ]);
+    // Re-apply optimistic patch if the server may not yet reflect changes
+    if (preservePatch) {
+      optimisticMergeMeeting(queryClient, meetingId, preservePatch);
+    }
   }, [queryClient]);
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
