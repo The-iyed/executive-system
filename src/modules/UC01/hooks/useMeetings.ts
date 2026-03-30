@@ -92,7 +92,7 @@ export const useMeetings = ({
     enabled: true,
   });
 
-  const meetings: MeetingDisplayData[] = useMemo(() => {
+  const meetings: MeetingCardData[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);
