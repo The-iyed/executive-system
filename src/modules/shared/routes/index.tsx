@@ -30,6 +30,31 @@ type RouteConfig = {
 /** Paths handled by UC02 persistent layout (so we don't render them as separate routes). */
 const UC02_PATHS = new Set(uc02Routes.map((r) => r.path));
 
+/** Catch-all: authenticated users → home; unauthenticated → login with ?redirect= so deep links work after sign-in. */
+function CatchAllRedirect({
+  defaultRoute,
+  isAuthenticated,
+  ssoEnabled,
+}: {
+  defaultRoute: string;
+  isAuthenticated: boolean;
+  ssoEnabled: boolean;
+}) {
+  const location = useLocation();
+  if (isAuthenticated) {
+    return <Navigate to={defaultRoute} replace />;
+  }
+  if (ssoEnabled) {
+    return <Navigate to="/" replace />;
+  }
+  const attempted = `${location.pathname}${location.search ?? ''}`;
+  if (attempted === PATH.LOGIN || attempted.startsWith(`${PATH.LOGIN}?`)) {
+    return <Navigate to={PATH.LOGIN} replace />;
+  }
+  const redirectParam = encodeURIComponent(attempted);
+  return <Navigate to={`${PATH.LOGIN}?redirect=${redirectParam}`} replace />;
+}
+
 export const renderRoutes = (routes: RouteConfig[] = []) => {
   const location = useLocation();
   const pathname = location.pathname;
@@ -87,9 +112,6 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
     return <ScreenLoader />;
   }
 
-  // When SSO: unauthenticated → / (AuthProvider redirects to IdP). When basic auth: redirect to /login
-  const catchAllRedirect = isAuthenticated ? defaultRoute : ssoEnabled ? '/' : '/login';
-
   if (showOnboarding && user) {
     return (
       <Onboarding
@@ -146,10 +168,16 @@ export const renderRoutes = (routes: RouteConfig[] = []) => {
       {hasUC02Access && (
         <Route path="*" element={<UC02LayoutRouter />} />
       )}
-      {/* Catch-all route: redirect to login if not authenticated (or / when SSO for IdP redirect) */}
+      {/* Catch-all: login + ?redirect= for deep links (e.g. /uc13/business-cards/30) */}
       <Route
         path="*"
-        element={<Navigate to={catchAllRedirect} replace />}
+        element={
+          <CatchAllRedirect
+            defaultRoute={defaultRoute}
+            isAuthenticated={isAuthenticated}
+            ssoEnabled={ssoEnabled}
+          />
+        }
       />
     </Routes>
   );
