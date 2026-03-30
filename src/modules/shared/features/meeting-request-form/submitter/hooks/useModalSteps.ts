@@ -8,21 +8,27 @@ import { optimisticMergeMeeting, buildStep1Patch, buildStep2Patch } from "../../
 import type { SubmitterStep1Values } from "../schema";
 
 interface UseModalStepsOptions {
+  open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
   onStepSaved?: (draftId: string) => void;
 }
 
-export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalStepsOptions) {
+export function useModalSteps({ open, editMeetingId, onClose, onStepSaved }: UseModalStepsOptions) {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<SubmitterStep1Values | null>(null);
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
 
+  // Rehydrate state every time the modal opens (fixes stale draftId on reopen)
   useEffect(() => {
-    setDraftId(editMeetingId ?? null);
-  }, [editMeetingId]);
+    if (open) {
+      setCurrentStep(1);
+      setStep1Data(null);
+      setDraftId(editMeetingId ?? null);
+    }
+  }, [open, editMeetingId]);
 
   const isEditMode = !!editMeetingId;
   const activeDraftId = editMeetingId || draftId;
