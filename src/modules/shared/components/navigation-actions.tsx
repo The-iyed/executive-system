@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/lib/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ActionButton } from './welcome-section';
 
 export interface NavItem {
