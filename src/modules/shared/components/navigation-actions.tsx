@@ -74,8 +74,8 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
                       <motion.button
-                        layout
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                        layout="position"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
                         onClick={() => handleClick(item.id, item.path)}
                         className={`
                           relative flex items-center justify-center gap-2 h-9 rounded-xl text-[13px] font-medium
@@ -92,7 +92,7 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                           <motion.div
                             layoutId="nav-active-bg"
                             className="absolute inset-0 bg-[var(--color-primary-700)] rounded-xl"
-                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
                           />
                         )}
                         <span className="relative z-10 flex items-center gap-2">
@@ -104,14 +104,15 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                               className="flex-shrink-0"
                             />
                           )}
-                          <AnimatePresence mode="wait">
+                          <AnimatePresence mode="popLayout">
                             {isActive ? (
                               <motion.span
-                                key="active-label"
-                                initial={{ opacity: 0, width: 0 }}
-                                animate={{ opacity: 1, width: 'auto' }}
-                                exit={{ opacity: 0, width: 0 }}
-                                transition={{ duration: 0.2 }}
+                                key={`label-${item.id}`}
+                                initial={{ opacity: 0, width: 0, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, width: 'auto', filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, width: 0, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                                className="overflow-hidden"
                               >
                                 {item.label}
                               </motion.span>
