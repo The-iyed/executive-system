@@ -153,7 +153,7 @@ export function ContentTab({ meeting, onPreviewAttachment }: ContentTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full min-w-0 max-w-full self-stretch" dir="rtl" style={{ width: '100%', minWidth: 0, flex: '1 1 0%' }}>
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto" dir="rtl">
 
       {/* ─── Directives table (UC02-specific) ─── */}
       {contentApprovalDirectivesRows.length > 0 && (
