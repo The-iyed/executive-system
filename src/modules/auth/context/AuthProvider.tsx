@@ -230,7 +230,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     trackEvent('auth', 'auth_logout');
     clearTokens();
     setUser(null);
-    window.location.href = window.location.origin + PATH.LOGIN;
   };
 
   const setUserFromCallback = (oidcUser: OidcUser, appUser?: User | null): void => {
