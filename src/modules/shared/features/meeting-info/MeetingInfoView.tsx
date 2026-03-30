@@ -30,27 +30,46 @@ function LinkField({ value }: { value: string }) {
     toast.success('تم نسخ الرابط');
   };
 
+  // Extract a friendly domain label from the URL
+  let domainLabel = 'رابط الاجتماع';
+  try {
+    const host = new URL(value).hostname.replace('www.', '');
+    if (host.includes('webex')) domainLabel = 'Webex Meeting';
+    else if (host.includes('zoom')) domainLabel = 'Zoom Meeting';
+    else if (host.includes('teams')) domainLabel = 'Microsoft Teams';
+    else domainLabel = host;
+  } catch { /* keep default */ }
+
   return (
     <div className="sm:col-span-2 flex flex-col gap-1.5" dir="rtl">
       <p className="text-sm text-muted-foreground text-right">رابط الاجتماع</p>
       <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40">
-        <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <a
-          href={value}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 min-w-0 text-sm font-medium text-foreground truncate"
-          title="فتح الرابط"
-        >
-          ({value})
-        </a>
-        <button
-          onClick={handleCopy}
-          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-          title="نسخ الرابط"
-        >
-          <Copy className="w-4 h-4" />
-        </button>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-teal-600 flex-shrink-0" />
+          <span className="text-sm font-medium text-foreground truncate" title={value}>
+            {domainLabel}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-background text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            title="نسخ الرابط"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            نسخ
+          </button>
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors"
+            title="الانضمام للاجتماع"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            انضمام
+          </a>
+        </div>
       </div>
     </div>
   );
