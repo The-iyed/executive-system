@@ -14,7 +14,7 @@ interface UsePreviousMeetingsOptions {
 }
 
 interface UsePreviousMeetingsReturn {
-  meetings: MeetingDisplayData[];
+  meetings: MeetingCardData[];
   isLoading: boolean;
   error: unknown;
   totalItems: number;
