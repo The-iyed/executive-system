@@ -465,7 +465,7 @@ export function useMeetingDetailPage() {
 
     // Form states
     rejectForm, setRejectForm,
-    cancelForm, setCancelForm,
+    
     sendToContentForm, setSendToContentForm,
     approveUpdateForm, setApproveUpdateForm,
     returnForInfoNotes, setReturnForInfoNotes,
