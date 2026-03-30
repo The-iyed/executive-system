@@ -159,7 +159,6 @@ export function useSubmitterModal({
           await syncMeetingDetails(meetingId, inviteePatch);
         }
         toast({ title: "تم التحديث بنجاح" });
-        steps.resetModal();
         onClose();
         return;
       }
@@ -177,7 +176,6 @@ export function useSubmitterModal({
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
-      steps.resetModal();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
@@ -237,7 +235,6 @@ export function useSubmitterModal({
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
       toast({ title: "تم حفظ المسودة بنجاح" });
-      steps.resetModal();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant: 'destructive' });
