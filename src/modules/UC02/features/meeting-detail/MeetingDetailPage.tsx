@@ -293,6 +293,10 @@ const MeetingDetailPage: React.FC = () => {
         onConfirm={() => h.handleScheduleSubmit({ preventDefault: () => {} } as any)}
         isPending={h.scheduleMutation.isPending}
         validationError={h.validationError}
+        notes={h.scheduleForm.notes}
+        onNotesChange={(v) => h.setScheduleForm(prev => ({ ...prev, notes: v }))}
+        onRequiresProtocolChange={(v) => h.setScheduleForm(prev => ({ ...prev, requires_protocol: v }))}
+        onDataCompleteChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: v }))}
       />
 
       <AttachmentPreviewDrawer open={!!h.previewAttachment} onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }} attachment={h.previewAttachment} />
