@@ -235,7 +235,6 @@ export function useSubmitterModal({
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
       toast({ title: "تم حفظ المسودة بنجاح" });
-      steps.resetModal();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant: 'destructive' });
