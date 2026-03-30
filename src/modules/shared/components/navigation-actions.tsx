@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { TooltipProvider } from '@/lib/ui';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/lib/ui';
 import { ActionButton } from './welcome-section';
 
 export interface NavItem {
