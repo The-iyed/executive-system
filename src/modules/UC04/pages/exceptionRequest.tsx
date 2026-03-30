@@ -6,7 +6,7 @@ import {
   type GuidanceRequestApiResponse,
   type GetGuidanceRequestsParams,
 } from '../data/guidanceApi';
-import { mapGuidanceRequestToCardData } from '../utils/guidanceMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 
 const ExceptionRequest: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const ExceptionRequest: React.FC = () => {
       headerIcon="solar:shield-check-bold"
       queryKey={['exception-requests', 'uc04']}
       queryFn={queryFn}
-      mapToCard={mapGuidanceRequestToCardData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/exception-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد بيانات"
