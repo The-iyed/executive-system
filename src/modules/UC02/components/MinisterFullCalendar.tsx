@@ -143,6 +143,8 @@ export interface MinisterFullCalendarProps {
   onEventClick: (ev: CalendarEventData) => void;
   /** endHHmm omitted → form defaults (e.g. single click). Pass end from drag selection. */
   onTimeSlotSelect: (date: Date, startHHmm: string, endHHmm?: string) => void;
+  /** Called when "+X more" is clicked — receives the date and all events for that day */
+  onMoreClick?: (date: Date, events: CalendarEventData[]) => void;
   className?: string;
 }
 
