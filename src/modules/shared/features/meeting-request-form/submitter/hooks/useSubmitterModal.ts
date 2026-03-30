@@ -133,7 +133,7 @@ export function useSubmitterModal({
   
       if (isSchedulerEdit) {
         if (isEditMode) {
-          await syncMeetingDetails(meetingId);
+          await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
         }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
@@ -149,7 +149,7 @@ export function useSubmitterModal({
       }
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
+        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -169,7 +169,7 @@ export function useSubmitterModal({
       if (!saved) return;
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
+        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
