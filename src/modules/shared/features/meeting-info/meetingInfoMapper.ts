@@ -11,6 +11,7 @@ import {
   getDirectiveMethodLabel,
   getMeetingSubCategoryLabel,
   MeetingChannelLabels,
+  MeetingNatureLabels,
 } from '../../types';
 import { formatDateArabic } from '../../utils/format';
 
