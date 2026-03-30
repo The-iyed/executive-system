@@ -96,7 +96,7 @@ export function useMeetingDetailPage() {
 
   /* ── Form states ── */
   const [rejectForm, setRejectForm] = useState({ reason: '', notes: '' });
-  const [cancelForm, setCancelForm] = useState({ reason: '', notes: '' });
+  
   const [sendToContentForm, setSendToContentForm] = useState({ notes: '' });
   const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
   const [returnForInfoNotes, setReturnForInfoNotes] = useState('');
@@ -300,7 +300,7 @@ export function useMeetingDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsCancelModalOpen(false);
-      setCancelForm({ reason: '', notes: '' });
+      
       navigate(-1);
     },
   });
@@ -465,7 +465,7 @@ export function useMeetingDetailPage() {
 
     // Form states
     rejectForm, setRejectForm,
-    cancelForm, setCancelForm,
+    
     sendToContentForm, setSendToContentForm,
     approveUpdateForm, setApproveUpdateForm,
     returnForInfoNotes, setReturnForInfoNotes,
