@@ -101,9 +101,10 @@ export function useSubmitterModal({
       invitees: inviteesPayload,
     });
 
-    // Optimistic cache update for invitees
+    // Optimistic cache update using raw TableRow[] (not mapped payload) for correct data shape
     if (isEditMode) {
-      const patch = buildStep3Patch(inviteesPayload);
+      const rawRows = steps.inviteesRef.current?.getRows() ?? [];
+      const patch = buildStep3Patch(rawRows);
       optimisticMergeMeeting(queryClient, meetingId, patch);
     }
   
@@ -124,11 +125,6 @@ export function useSubmitterModal({
       if (isSchedulerEdit) {
         if (isEditMode) {
           await syncMeetingDetails(meetingId);
-          // Re-apply optimistic patch after refetch to guard against stale API data
-          const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-          if (inviteesPayload) {
-            optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-          }
         }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
@@ -145,11 +141,6 @@ export function useSubmitterModal({
   
       if (isEditMode) {
         await syncMeetingDetails(meetingId);
-        // Re-apply optimistic patch after refetch to guard against stale API data
-        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-        if (inviteesPayload) {
-          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-        }
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -170,11 +161,6 @@ export function useSubmitterModal({
   
       if (isEditMode) {
         await syncMeetingDetails(meetingId);
-        // Re-apply optimistic patch after refetch to guard against stale API data
-        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-        if (inviteesPayload) {
-          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-        }
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
