@@ -28,15 +28,6 @@ async function getHeaders(): Promise<HeadersInit> {
   return headers;
 }
 
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-  };
-  const token = await getAuthToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
-}
-
 export interface MinisterDirective {
   id: string;
   title: string;
@@ -68,7 +59,7 @@ export interface DirectivesListResponse {
 
 export interface CreateDirectivePayload {
   title: string;
-  status?: string;
+  status: string;
   scheduling_officer_status?: SchedulingOfficerStatus;
   directive_type?: DirectiveType;
   voice_note_path?: string;
@@ -143,27 +134,5 @@ export async function createDirective(
   return res.json();
 }
 
-/**
- * Upload a voice note file for a directive.
- */
-export async function uploadVoiceNote(
-  directiveId: string,
-  audioBlob: Blob,
-  fileName = 'voice.webm'
-): Promise<MinisterDirective> {
-  const formData = new FormData();
-  formData.append('file', audioBlob, fileName);
-
-  const res = await fetch(`${BASE}/minister-directives/${directiveId}/voice`, {
-    method: 'POST',
-    headers: await getAuthHeaders(),
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Upload voice error: ${res.status} ${text.slice(0, 200)}`);
-  }
-
-  return res.json();
-}
+/** POST /api/minister-directives/voice/upload — re-export shared client */
+export { uploadMinisterDirectiveVoice as uploadVoiceNote } from '@/modules/shared/api/directives';
