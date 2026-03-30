@@ -56,7 +56,7 @@ function LinkField({ value }: { value: string }) {
   );
 }
 
-function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?: boolean }) {
+function FieldCell({ label, value, fullWidth, icon }: MeetingInfoField & { fullWidth?: boolean }) {
   const displayValue = isEmptyValue(value) ? '—' : value;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
@@ -69,6 +69,7 @@ function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?:
         'flex items-center gap-2.5 px-4 py-3 rounded-2xl border bg-muted/40 border-border/40',
         fullWidth && 'min-h-[72px] items-start',
       )}>
+        {icon && <span className="flex-shrink-0 text-muted-foreground">{icon}</span>}
         <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{displayValue}</span>
       </div>
     </div>
