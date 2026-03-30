@@ -158,6 +158,7 @@ export const getAssignedConsultationRequests = async (
 };
 
 export interface ConsultationRequestDetailResponse {
+  id?: string;
   meeting_request: ConsultationRequestApiResponse;
   consultation_question: string;
 }
