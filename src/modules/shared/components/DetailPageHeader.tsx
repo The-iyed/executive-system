@@ -37,8 +37,6 @@ export interface DetailPageHeaderProps {
   onTabChange: (tabId: string) => void;
   /** Optional help tooltip next to tabs */
   helpTooltip?: { title: string; description: string };
-  /** Quick-action controls rendered in the header row (always visible) */
-  quickActions?: React.ReactNode;
   /** Optional class for the root card */
   className?: string;
 }
@@ -59,7 +57,7 @@ export function DetailPageHeader({
   tabs,
   activeTab,
   onTabChange,
-  quickActions,
+  
   helpTooltip,
   className,
 }: DetailPageHeaderProps) {
@@ -118,8 +116,6 @@ export function DetailPageHeader({
             </div>
           </div>
 
-          {/* Quick actions (always visible) */}
-          {quickActions && <div className="flex items-center gap-2.5 flex-shrink-0">{quickActions}</div>}
 
           {/* Left side: actions (RTL: secondary, edit, primary from right to left) */}
           <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
