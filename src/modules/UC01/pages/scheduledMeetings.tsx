@@ -6,7 +6,7 @@ import { MeetingStatus } from '@/modules/shared';
 import '@/modules/shared/styles';
 import { Eye, Calendar } from 'lucide-react';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
-import { mapMeetingToCardData } from '../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 
 const ITEMS_PER_PAGE = 10;
 
