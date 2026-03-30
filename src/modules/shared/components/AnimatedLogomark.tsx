@@ -43,7 +43,7 @@ export const AnimatedLogomark: React.FC<{ size?: number }> = ({ size = 56 }) => 
           50% { opacity: 0.35; }
           100% { opacity: 0.15; }
         }
-        .logo-float { animation: logoFloat 1.4s ease-in-out infinite; }
+        .logo-float { }
         .glass-overlay { animation: shimmer 1.5s ease-in-out infinite; }
       `}</style>
 
