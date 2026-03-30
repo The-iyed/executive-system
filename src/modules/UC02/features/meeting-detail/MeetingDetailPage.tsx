@@ -142,10 +142,10 @@ const MeetingDetailPage: React.FC = () => {
             }}
             secondaryAction={
               h.meetingStatus === MeetingStatus.DRAFT ? (
-                <Button type="button" variant="outline" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 rounded-xl border-red-300 text-red-600 bg-red-50/50 hover:bg-red-100 hover:text-red-700 hover:border-red-400 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] transition-all duration-200">
-                  <Trash2 className="w-4 h-4" />
+                <button type="button" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-[#DC2626] via-[#EF4444] to-[#F87171] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                  <Trash2 className="w-4 h-4" strokeWidth={2} />
                   {h.deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
-                </Button>
+                </button>
               ) : undefined
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
