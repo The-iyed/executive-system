@@ -15,6 +15,9 @@ const meetingUserSchema = z.object({
 export const schedulerStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
+  group_id: z.number().nullable().optional(),
+  prev_ext_original_title: z.string().nullable().optional(),
+  prev_ext_meeting_title: z.string().nullable().optional(),
   submitter: meetingUserSchema.nullable().superRefine((v, ctx) => {
     if (!v) ctx.addIssue({ code: "custom", message: "مقدّم الطلب مطلوب" });
   }),
