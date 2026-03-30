@@ -280,6 +280,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 extraEvents={extraEvents}
                 onEventClick={handleEventClick}
                 onTimeSlotSelect={handleSlotSelect}
+                onMoreClick={handleMoreClick}
               />
             </div>
             {isFetching && <SyncIndicator />}
