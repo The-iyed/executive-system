@@ -212,7 +212,7 @@ export function ContentInfoView({
   renderFileActions,
 }: ContentInfoViewProps) {
   return (
-    <div className={cn('w-full flex flex-col gap-4 max-w-3xl mx-auto', className)} dir="rtl">
+    <div className={cn('w-full flex flex-col gap-4 max-w-4xl mx-auto', className)} dir="rtl">
       {data.sections.map((section) => (
         <SectionCard
           key={section.key}
