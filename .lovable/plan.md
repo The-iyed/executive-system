@@ -1,45 +1,38 @@
 
 
-## Plan: Complete meeting info tab fields and hide empty fields
+## Plan: Replace calendar meeting modal with modern compact dialog + fix invitees bug
 
-### Problem
-The "معلومات الاجتماع" tab in the meeting detail view (`/meeting/:id`) is missing fields that exist in the Step 1 form, and currently shows "—" for empty fields instead of hiding them.
+### Problem 1 — Modal is too heavy
+The calendar "create meeting" form uses `MeetingModalShell` — a full-screen, near-viewport-sized modal (`1450px wide, calc(100vh-6rem) tall`) designed for the 3-step meeting request flow. For the calendar's simple single-step form (title, dates, channel, invitees), this is overkill. The user wants the cleaner, compact style used by `ScheduleConfirmDialog` — a `sm:max-w-[520px]` dialog with structured sections, muted header, and sticky footer.
 
-### Missing fields to add
+### Problem 2 — Invitees disappear on save
+**Root cause**: In `CalendarSlotMeetingForm.tsx` line 292, `initialInvitees` is passed as `(initialInvitees ?? []) as any`. This creates a **new array reference on every render**. The `InviteesTableForm` has a `useEffect` (line 37-39) that watches `initialInvitees` and calls `setInvitees(initialInvitees ?? [])` whenever it changes. Because the reference changes on each parent re-render (e.g. when the user types in a field), the effect fires and **resets the invitee list to the initial empty array**, wiping user-added rows.
 
-| Form field | Arabic label | API source | Action |
-|---|---|---|---|
-| `meeting_nature` | طبيعة الاجتماع | Derived: `is_sequential` → "إلحاقي", else "عادي" | Add to mapper |
-| `requires_protocol` | هل يتطلب بروتوكول؟ | `requires_protocol` (boolean) | Add to mapper |
+### Solution
 
-### Field display logic fix
-The `is_urgent` field currently only shows when `true`. It should show "لا" when `false` and hide when `null/undefined` — matching the form behavior where it's always a toggle.
+**File 1: `src/modules/UC02/components/CalendarSlotMeetingForm.tsx`** — Replace modal + fix bug
 
-### Changes
+1. **Replace `MeetingModalShell`** with a compact `Dialog/DialogContent` following the `ScheduleConfirmDialog` design pattern:
+   - `sm:max-w-[680px]` (slightly wider than ScheduleConfirmDialog to fit the invitees table)
+   - Muted header section with title + subtitle
+   - Scrollable body with form sections separated by subtle dividers
+   - Sticky footer with save/cancel buttons matching the ScheduleConfirmDialog style
+   - Remove the `MeetingModalShell` import entirely
 
-**File 1: `src/modules/shared/features/meeting-info/meetingInfoMapper.ts`**
+2. **Fix invitees bug**: Memoize the `initialInvitees` fallback so the reference stays stable:
+   ```ts
+   const stableInitialInvitees = useMemo(
+     () => initialInvitees ?? [],
+     [initialInvitees]
+   );
+   ```
+   Pass `stableInitialInvitees` to `InviteesTableForm` instead of `(initialInvitees ?? []) as any`.
 
-- Add `requires_protocol?: boolean` and `meeting_nature?: string` to `RawMeetingForInfo`
-- Add `meeting_nature` field at the top of `basicFields` — derive label from `MeetingNatureLabels` if present, otherwise infer from `is_sequential` (true → "إلحاقي", false → "عادي")
-- Add `requires_protocol` field after `meeting_channel` — display as yes/no toggle value
-- Fix `is_urgent` to always show yes/no (not only when true): `yesNo(meeting.is_urgent ?? false)`
-- Import `MeetingNatureLabels` from shared types
-
-**File 2: `src/modules/shared/features/meeting-info/MeetingInfoView.tsx`**
-
-- Change field rendering to **hide fields with null value** instead of showing "—":
-  - In the grid, filter out fields where `value` is `null` (mapper already returns `null` for empty fields)
-  - This means: `data.sections[0].fields.filter(f => f.value !== null)` before mapping
-  - Same for directive section fields
-
-This matches the user's request: "hide when has no data" — the mapper already returns `null` for missing data, we just need the view to skip those fields.
-
-### Summary
+### Files changed
 
 | File | Change |
 |---|---|
-| `meetingInfoMapper.ts` | Add `meeting_nature` + `requires_protocol` fields, fix `is_urgent` display, update interface |
-| `MeetingInfoView.tsx` | Filter out null-value fields instead of showing "—" |
+| `src/modules/UC02/components/CalendarSlotMeetingForm.tsx` | Replace `MeetingModalShell` with compact dialog layout; memoize `initialInvitees` |
 
-2 files edited. All fields from Step 1 form will be represented in the detail view, hidden when no data.
+1 file, 2 fixes.
 
