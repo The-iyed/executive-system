@@ -357,6 +357,7 @@ export function useMeetingDetailPage() {
       setIsScheduleModalOpen(false);
       setScheduleConfirmModalOpen(false);
       setScheduleForm(INITIAL_SCHEDULE_FORM);
+      toast({ title: "تم جدولة الاجتماع بنجاح", description: "تمت عملية الجدولة بنجاح" });
     },
   });
 
