@@ -37,8 +37,6 @@ export interface DetailPageHeaderProps {
   onTabChange: (tabId: string) => void;
   /** Optional help tooltip next to tabs */
   helpTooltip?: { title: string; description: string };
-  /** Quick-action controls rendered in the header row (always visible) */
-  quickActions?: React.ReactNode;
   /** Optional class for the root card */
   className?: string;
 }
