@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/lib/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ActionButton } from './welcome-section';
 
 export interface NavItem {
@@ -72,33 +73,54 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
                 return (
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
-                      <button
+                      <motion.button
+                        layout
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                         onClick={() => handleClick(item.id, item.path)}
                         className={`
-                          flex items-center justify-center gap-2 h-9 rounded-xl text-[13px] font-medium
-                          transition-all duration-200 whitespace-nowrap cursor-pointer flex-shrink-0
+                          relative flex items-center justify-center gap-2 h-9 rounded-xl text-[13px] font-medium
+                          whitespace-nowrap cursor-pointer flex-shrink-0 overflow-hidden
                           ${isActive
-                            ? 'bg-[var(--color-primary-700)] text-white px-4'
+                            ? 'text-white px-4'
                             : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 w-9 xl:w-auto xl:px-4'
                           }
                         `}
                         aria-label={item.label}
                         aria-pressed={isActive}
                       >
-                        {item.icon && (
-                          <Icon
-                            icon={item.icon}
-                            width={16}
-                            height={16}
-                            className="flex-shrink-0"
+                        {isActive && (
+                          <motion.div
+                            layoutId="nav-active-bg"
+                            className="absolute inset-0 bg-[var(--color-primary-700)] rounded-xl"
+                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                           />
                         )}
-                        {isActive ? (
-                          <span>{item.label}</span>
-                        ) : (
-                          <span className="hidden xl:inline">{item.label}</span>
-                        )}
-                      </button>
+                        <span className="relative z-10 flex items-center gap-2">
+                          {item.icon && (
+                            <Icon
+                              icon={item.icon}
+                              width={16}
+                              height={16}
+                              className="flex-shrink-0"
+                            />
+                          )}
+                          <AnimatePresence mode="wait">
+                            {isActive ? (
+                              <motion.span
+                                key="active-label"
+                                initial={{ opacity: 0, width: 0 }}
+                                animate={{ opacity: 1, width: 'auto' }}
+                                exit={{ opacity: 0, width: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {item.label}
+                              </motion.span>
+                            ) : (
+                              <span className="hidden xl:inline">{item.label}</span>
+                            )}
+                          </AnimatePresence>
+                        </span>
+                      </motion.button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="xl:hidden">
                       {item.label}
