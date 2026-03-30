@@ -177,7 +177,7 @@ const MeetingDetailPage: React.FC = () => {
             onOpenReturnForInfo={() => h.setIsReturnForInfoModalOpen(true)}
             onOpenSendToContent={() => h.setIsSendToContentModalOpen(true)}
             onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => h.setIsApproveUpdateModalOpen(true) : undefined}
-            onAddToWaitingList={() => h.moveToWaitingListMutation.mutate()}
+            onAddToWaitingList={() => h.setIsWaitingListConfirmOpen(true)}
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
