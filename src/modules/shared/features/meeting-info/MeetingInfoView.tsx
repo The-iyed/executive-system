@@ -45,7 +45,7 @@ function LinkField({ value }: { value: string }) {
       <p className="text-sm text-muted-foreground text-right">رابط الاجتماع</p>
       <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40">
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-teal-600 flex-shrink-0" />
+          <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-sm font-medium text-foreground truncate" title={value}>
             {domainLabel}
           </span>
