@@ -33,7 +33,7 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 // Components (modals / drawers)
 import {
   RejectDialog,
-  CancelDialog,
+  
   EditConfirmDialog,
   SendToContentDrawer,
   ApproveUpdateDrawer,
