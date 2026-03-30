@@ -6,7 +6,7 @@ import {
   type GuidanceRequestApiResponse,
   type GetGuidanceRequestsParams,
 } from '../data/guidanceApi';
-import { mapGuidanceRequestToCardData } from '../utils/guidanceMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const GuidanceRequests: React.FC = () => {
@@ -32,7 +32,7 @@ const GuidanceRequests: React.FC = () => {
       headerIcon="solar:shield-check-bold"
       queryKey={['guidance-requests', 'uc04']}
       queryFn={queryFn}
-      mapToCard={mapGuidanceRequestToCardData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/guidance-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد بيانات"

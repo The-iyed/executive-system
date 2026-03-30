@@ -6,7 +6,7 @@ import {
   type ContentRequestApiResponse,
   type GetContentRequestsParams,
 } from '../data/contentApi';
-import { mapContentRequestToCardViewData } from '../utils/contentMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const ContentRequests: React.FC = () => {
@@ -32,7 +32,7 @@ const ContentRequests: React.FC = () => {
       headerIcon="solar:document-text-bold"
       queryKey={['content-requests', 'uc05']}
       queryFn={queryFn}
-      mapToCard={mapContentRequestToCardViewData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/content-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد طلبات"
