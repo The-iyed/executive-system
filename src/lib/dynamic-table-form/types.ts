@@ -106,6 +106,8 @@ export interface RowErrors {
 export interface DynamicTableFormHandle {
   /** Validate all rows and return the payload if valid, or null if invalid */
   validateAndGetPayload: () => Record<string, unknown>[] | null;
+  /** Return the current raw TableRow[] without validation */
+  getRows: () => TableRow[];
 }
 
 // ─── AI Suggestions ──────────────────────────────────────────────
