@@ -6,6 +6,7 @@ import { cn } from "@/lib/ui";
 interface MeetingSelectProps {
   value: string;
   onChange: (value: string) => void;
+  onSelectMeeting?: (option: MeetingOption | null) => void;
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
