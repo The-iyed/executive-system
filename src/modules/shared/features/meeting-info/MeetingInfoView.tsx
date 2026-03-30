@@ -164,7 +164,7 @@ export function MeetingInfoView({
       {data.sections.slice(1).map((section, sIdx) => (
         <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           {section.fields.map(field => (
-            <FieldCell key={field.key} {...field} />
+            <FieldCell key={field.key} {...field} fieldKey={field.key} />
           ))}
         </div>
       ))}
