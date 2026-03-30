@@ -169,8 +169,12 @@ export function useSubmitterModal({
   
       if (isEditMode) {
         await syncMeetingDetails(meetingId);
+        // Re-apply optimistic patch after refetch to guard against stale API data
+        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
+        if (inviteesPayload) {
+          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
+        }
       } else {
-        // Create mode: invalidate meetings list so draft appears
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
       toast({title: "تم حفظ المسودة بنجاح"});
