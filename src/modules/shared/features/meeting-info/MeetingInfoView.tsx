@@ -31,30 +31,27 @@ function LinkField({ value }: { value: string }) {
   };
 
   return (
-    <div className="sm:col-span-2 flex flex-col gap-1.5">
+    <div className="sm:col-span-2 flex flex-col gap-1.5" dir="rtl">
       <p className="text-sm text-muted-foreground text-right">رابط الاجتماع (Webex)</p>
-      <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40" dir="ltr">
+      <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40">
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+          title="نسخ الرابط"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 flex-1 min-w-0"
+          title="فتح الرابط"
+        >
+          <span className="text-sm text-muted-foreground flex-shrink-0">رابط الاجتماع</span>
+          <span className="text-sm font-medium text-foreground truncate">({value})</span>
+        </a>
         <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <span className="text-sm text-muted-foreground flex-shrink-0">رابط الاجتماع</span>
-        <span className="text-sm font-medium text-foreground truncate flex-1 text-left">({value})</span>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={handleCopy}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="نسخ الرابط"
-          >
-            <Copy className="w-4 h-4" />
-          </button>
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="فتح الرابط"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
       </div>
     </div>
   );
