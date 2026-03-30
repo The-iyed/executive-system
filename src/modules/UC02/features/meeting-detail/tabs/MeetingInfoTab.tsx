@@ -28,9 +28,5 @@ export function MeetingInfoTab({
     [meeting, extraFields, channelOverride, locationOverride, notesOverride],
   );
 
-  return (
-    <div className="flex flex-col gap-6 w-full min-w-0 max-w-full self-stretch" dir="rtl" style={{ width: '100%', minWidth: 0, flex: '1 1 0%' }}>
-      <MeetingInfoView data={data} />
-    </div>
-  );
+  return <MeetingInfoView data={data} />;
 }
