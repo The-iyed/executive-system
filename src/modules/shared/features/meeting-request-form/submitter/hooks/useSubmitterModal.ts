@@ -15,6 +15,7 @@ import { useToast } from "@/lib/ui";
 import { optimisticMergeMeeting, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 
 interface UseSubmitterModalOptions {
+  open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
   callerRole?: MeetingOwnerType;
@@ -23,6 +24,7 @@ interface UseSubmitterModalOptions {
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useSubmitterModal({
+  open,
   editMeetingId,
   onClose,
   callerRole,
