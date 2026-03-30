@@ -93,18 +93,6 @@ export function DetailPageHeader({
                   {title}
                 </h1>
                 {statusBadge}
-                {hasChanges && (
-                  <span
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white flex-shrink-0 animate-pulse"
-                    style={{
-                      background: 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)',
-                      boxShadow: '0 1px 3px rgba(4, 143, 134, 0.3)',
-                    }}
-                  >
-                    تغييرات غير محفوظة
-                  </span>
-                )}
-              </div>
               {subtitle && (
                 <p className="text-[13px] text-[#667085] leading-snug mt-0.5 truncate max-w-full">
                   {subtitle}
