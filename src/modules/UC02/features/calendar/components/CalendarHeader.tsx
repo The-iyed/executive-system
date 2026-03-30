@@ -87,7 +87,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   return (
     <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-card rounded-2xl shadow-sm border border-border/40">
       {/* Title */}
-      <div className="flex flex-row items-center gap-3">
+      <div className="flex flex-row-reverse items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <CalendarIcon className="w-4 h-4 text-primary" />
         </div>
