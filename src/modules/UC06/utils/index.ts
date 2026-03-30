@@ -1,3 +1,1 @@
-export * from './contentConsultantMapper';
-
-
+// UC06 utilities
