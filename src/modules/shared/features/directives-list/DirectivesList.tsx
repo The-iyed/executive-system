@@ -12,8 +12,11 @@ import { Pagination } from '@/modules/shared/components/pagination';
 
 /* ── Tab types ── */
 
+/** `ALL` = no `directive_type` filter (list every type). */
+export type TypeTabValue = DirectiveType | 'ALL';
+
 export interface TypeTab {
-  value: DirectiveType;
+  value: TypeTabValue;
   label: string;
 }
 
@@ -36,8 +39,8 @@ export interface DirectivesListProps {
   tabMode: 'type' | 'status';
   /** Type tabs (for tabMode='type') */
   typeTabs?: TypeTab[];
-  activeType?: DirectiveType;
-  onTypeChange?: (type: DirectiveType) => void;
+  activeType?: DirectiveType | undefined;
+  onTypeChange?: (type: DirectiveType | undefined) => void;
   /** Status tabs (for tabMode='status') */
   statusTabs?: StatusTab[];
   activeStatus?: DirectiveStatus;
@@ -130,21 +133,28 @@ export function DirectivesList({
       <div className="rounded-2xl border border-border/30 bg-card shadow-sm overflow-hidden">
         {/* Tabs bar */}
         <div className="flex items-center gap-1 px-5 pt-4 pb-0">
-          {tabMode === 'type' && typeTabs?.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => onTypeChange?.(tab.value)}
-              className={cn(
-                'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-all rounded-t-lg',
-                activeType === tab.value ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
-              )}
-            >
-              {tab.label}
-              {activeType === tab.value && (
-                <span className="absolute bottom-0 inset-x-2 h-[2.5px] bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
+          {tabMode === 'type' && typeTabs?.map((tab) => {
+            const isAllTab = tab.value === 'ALL';
+            const isActive = isAllTab ? activeType === undefined : activeType === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() =>
+                  onTypeChange?.(isAllTab ? undefined : (tab.value as DirectiveType))
+                }
+                className={cn(
+                  'relative flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium transition-all rounded-t-lg',
+                  isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
+                )}
+              >
+                {tab.label}
+                {isActive && (
+                  <span className="absolute bottom-0 inset-x-2 h-[2.5px] bg-primary rounded-full" />
+                )}
+              </button>
+            );
+          })}
 
           {tabMode === 'status' && statusTabs?.map((tab) => {
             const count = statusCounts?.[tab.value] ?? 0;
