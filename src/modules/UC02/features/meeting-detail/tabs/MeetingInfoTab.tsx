@@ -28,5 +28,5 @@ export function MeetingInfoTab({
     [meeting, extraFields, channelOverride, locationOverride, notesOverride],
   );
 
-  return <MeetingInfoView data={data} className="px-4" />;
+  return <MeetingInfoView data={data} />;
 }
