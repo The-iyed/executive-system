@@ -12,9 +12,14 @@ export function optimisticMergeMeeting(
   meetingId: string,
   patch: Record<string, unknown>,
 ) {
-  for (const prefix of ["meeting", "meeting-draft"] as const) {
+  const keys: unknown[][] = [
+    ["meeting", meetingId],
+    ["meeting-draft", meetingId],
+    ["meeting", meetingId, "preview"],
+  ];
+  for (const key of keys) {
     queryClient.setQueryData<Record<string, unknown>>(
-      [prefix, meetingId],
+      key,
       (old) => {
         if (!old) return old;
         return { ...old, ...patch };
