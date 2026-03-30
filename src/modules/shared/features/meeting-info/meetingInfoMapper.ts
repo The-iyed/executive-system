@@ -9,6 +9,7 @@ import {
   getMeetingTypeLabel,
   getMeetingConfidentialityLabel,
   getDirectiveMethodLabel,
+  getMeetingSubCategoryLabel,
   MeetingChannelLabels,
 } from '../../types';
 import { formatDateArabic } from '../../utils/format';
