@@ -203,7 +203,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
           {open ? (
             <X className="w-5 h-5 text-gray-600" strokeWidth={2} />
           ) : (
-            <Zap className="w-5 h-5 text-white" strokeWidth={2} />
+            <Zap className="w-5 h-5 text-[#048F86]" strokeWidth={2} />
           )}
         </button>
       </div>
