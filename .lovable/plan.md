@@ -1,28 +1,41 @@
 
 
-## Plan: Improve DetailPageHeader UI/UX
+## Plan: Handle missing request number in detail page header
+
+### Problem
+When `request_number` is `null` or empty, the title renders as `"testtime (null)"` — ugly and confusing.
+
+### Approach
+Instead of fixing every consumer (6 files), add smart formatting inside `DetailPageHeader` itself. If the title contains `(null)`, `()`, or `( )`, strip that suffix automatically. This is the safest, DRY approach.
 
 ### Changes
 
-**`src/modules/shared/components/DetailPageHeader.tsx`**
+**1. `src/modules/shared/components/DetailPageHeader.tsx`**
+- Sanitize the `title` prop before rendering: strip trailing `(null)`, `(undefined)`, `()`, or empty parens
+- Simple regex: `title.replace(/\s*\((?:null|undefined|)\)\s*$/, '').trim()`
 
-1. **Remove "تغييرات غير محفوظة" badge** — delete the `hasChanges` rendering block (lines 99-109) and remove the prop from the interface (keep the prop in the type for backward compat but stop rendering it)
+**2. Optionally also fix at source in all 6 consumers** (belt-and-suspenders)
+- UC01 `PreviewMeeting/index.tsx` — already handles with `?? ''`, but still shows `()`
+- UC02 `MeetingDetailPage.tsx`
+- UC03 `consultationRequestDetail.tsx`
+- UC04 `guidanceRequestDetail.tsx`
+- UC05 `ContentRequestDetailPage.tsx`
+- UC06 `contentConsultationRequestDetail.tsx`
 
-2. **Improve Edit button styling** — replace inline `style` gradient with Tailwind classes using the project's teal theme. Add smooth hover animations:
-   - `transition-all duration-200`
-   - `hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]`
-   - Use `bg-gradient-to-l from-[#048F86] to-[#34C3BA]` instead of inline style
-   - Add `rounded-xl` pill shape with proper padding
+Change pattern in all from:
+```ts
+title={`${meeting.meeting_title} (${meeting.request_number})`}
+```
+to:
+```ts
+title={meeting.request_number ? `${meeting.meeting_title} (${meeting.request_number})` : meeting.meeting_title}
+```
 
-3. **Improve Back button** — add `transition-all duration-200` and `hover:scale-105 active:scale-95` for micro-interaction feedback
-
-4. **Improve primary/secondary action wrapper** — add `[&_button]:transition-all [&_button]:duration-200` so any button passed as `primaryAction` or `secondaryAction` inherits smooth transitions
-
-5. **Polish the overall card** — replace inline `boxShadow` style with Tailwind `shadow-sm hover:shadow-md transition-shadow` for consistency
+### Recommendation
+Do both: sanitize in the header component (defensive) AND fix all 6 consumers (correct). This ensures no `(null)` ever appears regardless of future consumers.
 
 ### Result
-- Cleaner header without the distracting unsaved-changes pulse badge
-- All buttons have consistent teal gradient theme with smooth hover/active animations
-- Better micro-interactions across back, edit, and action buttons
-- 1 file changed
+- Title shows just `"testtime"` when no request number exists
+- Shows `"testtime (12345)"` when request number is present
+- 7 files changed
 
