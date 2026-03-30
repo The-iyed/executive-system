@@ -339,6 +339,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           }}
         />
       )}
+
+      <DayMeetingsPanel
+        open={!!dayPanelDate}
+        date={dayPanelDate}
+        events={dayPanelEvents}
+        onClose={() => {
+          setDayPanelDate(null);
+          setDayPanelEvents([]);
+        }}
+        onEventClick={(ev) => {
+          setDayPanelDate(null);
+          setDayPanelEvents([]);
+          handleEventClick(ev);
+        }}
+      />
     </div>
   );
 };
