@@ -168,8 +168,11 @@ export function useSubmitterModal({
 
   // ── Save as draft ─────────────────────────────────────────────────────────
   const handleSaveAsDraft = async () => {
-    const meetingId = steps.draftId;
-    if (!meetingId) return;
+    const meetingId = steps.activeDraftId;
+    if (!meetingId) {
+      if (isEditMode) toast({ title: "لا يوجد معرف اجتماع", variant: "destructive" });
+      return;
+    }
   
     try {
       const result = await saveInvitees(meetingId);
