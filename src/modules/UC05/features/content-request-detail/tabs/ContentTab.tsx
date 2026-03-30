@@ -131,7 +131,7 @@ export function ContentTab({ h }: ContentTabProps) {
                 </svg>
                 <span>إضافة توجيه</span>
               </button>
-              {contentRequest?.ext_id != null && (
+              {(contentRequest as any)?.prev_ext_id != null && (
                 <button
                   type="button"
                   onClick={h.handleRequestAiDirectives}
