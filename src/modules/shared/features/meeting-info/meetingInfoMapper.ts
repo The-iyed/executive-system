@@ -55,6 +55,7 @@ export interface RawMeetingForInfo {
   meeting_subject?: string | null;
   sector?: string | null;
   meeting_type?: string | null;
+  meeting_nature?: string | null;
   is_urgent?: boolean;
   urgent_reason?: string | null;
   meeting_start_date?: string | null;
@@ -70,6 +71,7 @@ export interface RawMeetingForInfo {
   deadline?: string | null;
   meeting_classification_type?: string | null;
   meeting_confidentiality?: string | null;
+  requires_protocol?: boolean;
   agenda_items?: AgendaItem[];
   is_based_on_directive?: boolean;
   directive_method?: string | null;
