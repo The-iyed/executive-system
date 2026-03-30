@@ -3,96 +3,6 @@ import { CalendarMinus, CheckCircle, Plus, Pencil, RotateCcw, Send, X, Zap } fro
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/lib/ui';
 import { MeetingStatus } from '../types';
 
-function ActionBubble({
-  icon,
-  label,
-  onClick,
-  disabled,
-  variant,
-  disabledReason,
-  compact,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: 'danger';
-  disabledReason?: string;
-  compact?: boolean;
-}) {
-  const iconCircle = (
-    <span
-      className={`flex items-center justify-center w-11 h-11 rounded-full shadow-md border flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${
-        variant === 'danger'
-          ? 'bg-red-50 border-red-200 text-red-600'
-          : 'bg-white border-gray-200/80 text-gray-800'
-      }`}
-    >
-      {icon}
-    </span>
-  );
-
-  if (compact) {
-    const btn = (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {iconCircle}
-      </button>
-    );
-    const tooltipText = disabled && disabledReason ? disabledReason : label;
-    return (
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">{btn}</span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
-            {tooltipText}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  const button = (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
-    >
-      <span
-        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
-        style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
-      >
-        {label}
-      </span>
-      {iconCircle}
-    </button>
-  );
-
-  if (disabled && disabledReason) {
-    return (
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex w-full min-w-0">{button}</span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
-            {disabledReason}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return button;
-}
-
 export interface ActionBarItem {
   icon: React.ReactNode;
   label: string;
@@ -108,27 +18,19 @@ export interface MeetingActionsBarProps {
   onOpenChange: (open: boolean) => void;
   onOpenSchedule: () => void;
   onOpenReject: () => void;
-  /** When provided and status is SCHEDULED, "إلغاء" opens cancel modal and uses cancel API instead of reject. */
   onOpenCancel?: () => void;
   onOpenEditConfirm: () => void;
   onOpenReturnForInfo: () => void;
   onOpenSendToContent: () => void;
-  /** مجدول - الجدولة → إعتماد التحديث → مجدول */
   onOpenApproveUpdate?: () => void;
   onAddToWaitingList: () => void;
   isAddToWaitingListPending: boolean;
   hasChanges: boolean;
   hasContent: boolean;
-  /** Whether the meeting has at least one presentation attachment */
   hasPresentation?: boolean;
-  /** When provided, use these actions instead of status-based ones (same FAB + arc UI). */
   customActions?: ActionBarItem[];
-  /** When true, do not show the "تعديل" action in the FAB (e.g. when edit is moved to a separate button). */
   hideEdit?: boolean;
 }
-
-const R = 100;
-const ARC_SPAN = 200;
 
 export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   meetingStatus,
@@ -160,7 +62,6 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
     { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
   ];
 
-  /** مجدول - الجدولة (SCHEDULED_SCHEDULING): إعادة، إعتماد التحديث، إرسال للمحتوى */
   const scheduledSchedulingActions: ActionBarItem[] = [
     { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
     ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
@@ -185,58 +86,71 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
           ]
         : defaultUnderReviewActions;
 
-  const n = actions.length;
-
   return (
     <>
       {open && (
         <button
           type="button"
           aria-label="إغلاق"
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[3px] animate-in fade-in-0 duration-200"
           onClick={() => onOpenChange(false)}
         />
       )}
       <div
-        className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2 w-14 h-14"
-        dir="ltr"
+        className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2"
+        dir="rtl"
       >
         {open && (
-          <div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
-            style={{ width: R * 2, height: R + 28 }}
-          >
-            <div className="absolute inset-0">
-              {actions.map((action, i) => {
-                const angle = 170 + (i / Math.max(1, n - 1)) * ARC_SPAN;
-                const rad = (angle * Math.PI) / 180;
-                const x = R * Math.cos(rad);
-                const y = R * Math.sin(rad);
-                const leftPx = R + x;
-                const topPx = R + y;
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 flex flex-col items-center gap-2">
+            {actions.map((action, i) => {
+              const isDanger = action.variant === 'danger';
+              const pill = (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  className={`
+                    flex items-center gap-3 min-w-[180px] rounded-2xl px-4 py-2.5 shadow-md border
+                    backdrop-blur-md transition-all duration-200 touch-manipulation
+                    animate-in fade-in-0 slide-in-from-bottom-3
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    ${isDanger
+                      ? 'bg-red-50/90 border-red-200/60 text-red-600 hover:bg-red-100 hover:shadow-lg hover:scale-[1.03]'
+                      : 'bg-white/95 border-gray-200/60 text-gray-700 hover:bg-white hover:shadow-lg hover:scale-[1.03]'
+                    }
+                  `}
+                  style={{
+                    animationDelay: `${i * 50}ms`,
+                    animationFillMode: 'both',
+                  }}
+                >
+                  <span className={`flex-shrink-0 ${isDanger ? 'text-red-500' : 'text-[#048F86]'}`}>
+                    {action.icon}
+                  </span>
+                  <span className="text-sm font-semibold whitespace-nowrap">
+                    {action.label}
+                  </span>
+                </button>
+              );
+
+              if (action.disabled && action.disabledReason) {
                 return (
-                  <div
-                    key={i}
-                    className="absolute"
-                    style={{
-                      left: leftPx,
-                      top: topPx,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
-                    <ActionBubble
-                      compact
-                      icon={action.icon}
-                      label={action.label}
-                      onClick={action.onClick}
-                      disabled={action.disabled}
-                      variant={action.variant}
-                      disabledReason={action.disabledReason}
-                    />
-                  </div>
+                  <TooltipProvider key={i} delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">{pill}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+                        {action.disabledReason}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 );
-              })}
-            </div>
+              }
+
+              return pill;
+            })}
           </div>
         )}
         <button
@@ -244,15 +158,19 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
           aria-label={open ? 'إغلاق القائمة' : 'إجراءات سريعة'}
           aria-expanded={open}
           onClick={() => onOpenChange(!open)}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-          style={{
-            background: open ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.6)',
-            boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
-            backdropFilter: 'blur(12px)',
-          }}
+          className={`
+            flex items-center justify-center w-14 h-14 rounded-full shadow-lg
+            transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation
+            ${open
+              ? 'bg-gray-100 border border-gray-200'
+              : 'bg-gradient-to-br from-[#048F86] via-[#069E95] to-[#0BB5AA] border border-white/30'
+            }
+          `}
         >
-          <Zap className="w-6 h-6 text-[#048F86]" strokeWidth={2} />
+          <Zap
+            className={`w-6 h-6 transition-transform duration-300 ${open ? 'rotate-45 text-gray-600' : 'text-white'}`}
+            strokeWidth={2}
+          />
         </button>
       </div>
     </>
