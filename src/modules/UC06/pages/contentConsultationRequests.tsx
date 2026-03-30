@@ -6,7 +6,7 @@ import {
   type ContentConsultationRequestApiResponse,
   type GetContentConsultationRequestsParams,
 } from '../data/contentConsultantApi';
-import { mapContentConsultationRequestToCardData } from '../utils/contentConsultantMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 
 const ContentConsultationRequests: React.FC = () => {
   const navigate = useNavigate();
