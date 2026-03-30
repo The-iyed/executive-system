@@ -1,136 +1,107 @@
 
-Goal
 
-<<<<<<< HEAD
-## Plan: Remove loader on logout
+## Plan: Fix build errors, deduplicate enums, fix meeting detail field labels
 
-### Problem
-When the user clicks "تسجيل الخروج", a full-screen `ScreenLoader` flashes before the login page appears. This happens because:
-- **Non-SSO**: `logout()` sets `user = null`, then does `window.location.href` reload — on reload, `isInitialised` starts as `false`, showing the loader
-- **SSO**: `oidcLogout()` calls `signoutRedirect()` which navigates to IdP — while waiting, the app re-renders with no user and may flash the loader
+### Part 1 — Fix build errors (blocking)
 
-### Solution
-Skip the full-page reload for non-SSO logout. Instead, clear tokens and use React Router navigation so `isInitialised` stays `true` and the login page renders immediately with no loader.
-=======
-Make the Step 3 invitees optimistic update behave the same on the first edit and every later reopen of the same meeting modal.
-
-What I found
-
-- The Schedule/الجدولة tab is already reading from the correct shared cache path:
-  - `MeetingDetailPage` passes `meeting?.invitees` into `ScheduleTab`
-  - `useMeetingDetailPage` loads that from React Query key `['meeting', id]`
-  - `optimisticMergeMeeting(...)` writes to `['meeting', meetingId]`
-- So the display side is correct. The real bug is in the modal state lifecycle.
->>>>>>> a931e56b46f832c13d89fe5b6ccfd0b399c7f846
-
-Root cause
-
-<<<<<<< HEAD
-**File: `src/modules/auth/context/AuthProvider.tsx`**
-
-In the `logout` function (non-SSO branch ~line 230-233):
-- Remove `window.location.href` redirect
-- Keep `clearTokens()` and `setUser(null)` — this makes `isAuthenticated = false`
-- The existing route catch-all (`Navigate to /login`) handles the redirect without a loader since `isInitialised` remains `true`
-
+**1a. `src/modules/UC03/data/consultationsApi.ts`** — Add `id` to `ConsultationRequestDetailResponse`:
 ```ts
-// Before
-clearTokens();
-setUser(null);
-window.location.href = window.location.origin + PATH.LOGIN;
-
-// After
-clearTokens();
-setUser(null);
-// No reload — isInitialised stays true, router redirects to /login instantly
+export interface ConsultationRequestDetailResponse {
+  id?: string;
+  meeting_request: ConsultationRequestApiResponse;
+  consultation_question: string;
+}
 ```
 
-For SSO logout, the redirect is external (IdP) so we cannot avoid it, but we should not reset state before the redirect completes. The current SSO flow already avoids setting `isInitialised = false`, so no change needed there.
+**1b. `src/modules/UC04/data/guidanceApi.ts`** — Add `id` and `meeting_owner` to `GuidanceRequestDetailResponse` and `GuidanceRequestApiResponse`:
+```ts
+// GuidanceRequestDetailResponse
+export interface GuidanceRequestDetailResponse {
+  id?: string;
+  meeting_request: GuidanceRequestApiResponse;
+  guidance_question: string | null;
+}
 
-### Result
-- Non-SSO: logout instantly shows login page, no loader flash
-- SSO: no change (external redirect is unavoidable)
-- 1 file, ~1 line removed
-=======
-- In `useModalSteps`, `resetModal()` does `setDraftId(null)`.
-- That `draftId` is only restored by:
-  - `useEffect(() => setDraftId(editMeetingId ?? null), [editMeetingId])`
-- When you reopen the same meeting, `editMeetingId` did not change, so that effect does not run.
-- Result: after the first close, the modal can reopen with `draftId === null`.
-- But Step 3 submit currently uses `steps.draftId`, so on the second open it may skip the submit/refetch path entirely.
-- That exactly matches your symptom: first open after refresh works, second open does not trigger the same optimistic/refetch behavior.
+// GuidanceRequestApiResponse — add:
+meeting_owner?: { username?: string; name?: string } | null;
+```
 
-Implementation plan
+**1c. `src/modules/auth/context/AuthProvider.tsx`** — Fix `@analytics` import (alias not in tsconfig):
+```ts
+import { trackEvent } from '@/lib/analytics';
+```
 
-1. Rehydrate edit state every time the modal opens
-- File: `src/modules/shared/features/meeting-request-form/submitter/SubmitterModal.tsx`
-  - Pass `open` into `useSubmitterModal(...)`
-- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
-  - Accept `open` and forward it to `useModalSteps(...)`
-- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`
-  - Accept `open`
-  - Add an effect that runs when the dialog opens:
-    - `setCurrentStep(1)`
-    - `setStep1Data(null)`
-    - `setDraftId(editMeetingId ?? null)`
-- This guarantees every reopen starts with the correct meeting id, even when reopening the same record.
->>>>>>> a931e56b46f832c13d89fe5b6ccfd0b399c7f846
+### Part 2 — Add `ORGANIZATIONAL_STRUCTURING` to shared `meeting-types.ts`
 
-2. Use the stable meeting id for Step 3 actions
-- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
-- Change final Step 3 actions to use `steps.activeDraftId` (or `editMeetingId ?? steps.draftId`) instead of only `steps.draftId`
-- Apply this in:
-  - `handleFinalSubmit`
-  - `handleSaveAsDraft`
-- This makes edit mode consistent with how the hook already fetches detail data.
+In `MeetingClassificationType` enum and labels:
+```ts
+export enum MeetingClassificationType {
+  STRATEGIC = 'STRATEGIC',
+  OPERATIONAL = 'OPERATIONAL',
+  SPECIAL = 'SPECIAL',
+  ORGANIZATIONAL_STRUCTURING = 'ORGANIZATIONAL_STRUCTURING',
+}
+// Labels — add:
+[MeetingClassificationType.ORGANIZATIONAL_STRUCTURING]: 'بناء تنظيمي',
+```
 
-3. Keep the optimistic patch on the exact cache the page uses
-- Keep the current raw-row optimistic patch approach:
-  - read `getRows()`
-  - build `buildStep3Patch(rawRows)`
-  - write with `optimisticMergeMeeting(...)`
-- Keep `syncMeetingDetails(meetingId, patch)` so the same `['meeting', meetingId]` cache gets refetched and patched if the backend responds stale.
-- No separate local state should be introduced for ScheduleTab.
+### Part 3 — Move form-only constants to `meeting-types.ts`
 
-4. Add one defensive guard
-- If edit mode is active but no meeting id is available, show a destructive toast instead of silently returning.
-- That makes regressions obvious during testing.
+Add to `src/modules/shared/types/meeting-types.ts`:
+- `BOOL` constant
+- `DIRECTIVE_METHOD_OPTIONS` array
+- `MEETING_MANAGERS` placeholder
+- `MeetingNature` enum + labels + options
+- `MINISTER_SUPPORT_OTHER_VALUE` constant
+- `MEETING_CLASSIFICATION_TYPE_OPTIONS` (the `MEETING_CLASSIFICATION_OPTIONS` from form enums)
+- `getMeetingSubCategoryLabel` helper
 
-Why this should fix your exact case
+Note: The form's `AttendanceMechanism` uses English API values (`PHYSICAL`/`VIRTUAL`/`HYBRID`/`TBD`), which is the same concept as `Channel` already in `meeting-types.ts`. We'll re-export `Channel as AttendanceMechanism` so form imports don't break.
 
-Right now the optimistic update is not failing because ScheduleTab reads the wrong state.  
-It is failing because on reopen the modal loses the edit meeting id, so the second submission path is not operating against the same shared query state.
+### Part 4 — Replace form `enums.ts` with re-exports
 
-Once the modal re-initializes `draftId` on every open and Step 3 uses `activeDraftId`, the first edit and second edit will both target the same cache and the same refetch path.
+Replace the entire `src/modules/shared/features/meeting-request-form/shared/types/enums.ts` with re-exports from `@/modules/shared/types`:
+```ts
+export {
+  Sector, SectorLabels, SECTOR_OPTIONS,
+  MeetingType, MeetingTypeLabels, MEETING_TYPE_OPTIONS,
+  MeetingClassification, MeetingClassificationLabels, MEETING_CATEGORY_OPTIONS,
+  MeetingSubCategory, MeetingSubCategoryLabels, MEETING_SUB_CATEGORY_OPTIONS,
+  MeetingConfidentiality, MeetingConfidentialityLabels,
+  MeetingChannelLabels, MEETING_CHANNEL_OPTIONS,
+  MeetingLocation, MEETING_LOCATION_OPTIONS,
+  MINISTER_SUPPORT_TYPE_OPTIONS, MINISTER_SUPPORT_OTHER_VALUE,
+  DIRECTIVE_METHOD_OPTIONS, DirectiveMethodLabels,
+  BOOL,
+  MeetingNature, MeetingNatureLabels, MEETING_NATURE_OPTIONS,
+  Channel as AttendanceMechanism,
+  getMeetingCategoryOptions,
+  EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES as EXTERNAL_MEETING_EXCLUDED_CATEGORIES,
+  MEETING_CLASSIFICATION_TYPE_OPTIONS as MEETING_CLASSIFICATION_OPTIONS,
+  MEETING_MANAGERS,
+} from '../../../../types';
+```
 
-Validation I would run after implementation
+No import changes needed in 19+ consumer files — they still import from `../types/enums`.
 
-- Refresh page
-- Open edit modal for the meeting
-- Go to Step 3 and update invitees
-- Confirm Schedule/الجدولة updates immediately
-- Close modal
-- Reopen the same meeting modal
-- Edit invitees again
-- Confirm:
-  - optimistic update happens again
-  - refetch runs again
-  - ScheduleTab still reflects the latest list
-- Repeat one more time without refreshing the page
+### Part 5 — Add `meeting_sub_category` to meeting info mapper
 
-Technical details
+**`src/modules/shared/features/meeting-info/meetingInfoMapper.ts`**:
+- Add `meeting_sub_category?: string | null` to `RawMeetingForInfo`
+- Add field to `basicFields` array:
+  ```ts
+  { key: 'meeting_sub_category', label: 'التصنيف الفرعي',
+    value: getMeetingSubCategoryLabel(meeting.meeting_sub_category) ?? null },
+  ```
 
-Files to change:
-- `src/modules/shared/features/meeting-request-form/submitter/SubmitterModal.tsx`
-- `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
-- `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`
+### Summary of files changed
 
-Data flow being preserved:
-- edit modal optimistic patch -> `optimisticMergeMeeting`
-- query key updated -> `['meeting', meetingId]`
-- detail page reads same key -> `useMeetingDetailPage`
-- ScheduleTab receives updated `meeting.invitees`
+| File | Action |
+|------|--------|
+| `src/modules/shared/types/meeting-types.ts` | Add `ORGANIZATIONAL_STRUCTURING`, `BOOL`, `DIRECTIVE_METHOD_OPTIONS`, `MeetingNature`, `MEETING_MANAGERS`, `MINISTER_SUPPORT_OTHER_VALUE`, `MEETING_CLASSIFICATION_TYPE_OPTIONS`, `getMeetingSubCategoryLabel` |
+| `src/modules/shared/features/meeting-request-form/shared/types/enums.ts` | Replace with re-exports |
+| `src/modules/shared/features/meeting-info/meetingInfoMapper.ts` | Add `meeting_sub_category` field |
+| `src/modules/UC03/data/consultationsApi.ts` | Add `id` to detail response |
+| `src/modules/UC04/data/guidanceApi.ts` | Add `id` to detail response, `meeting_owner` to API response |
+| `src/modules/auth/context/AuthProvider.tsx` | Fix `@analytics` → `@/lib/analytics` |
 
-Build note
-
-There are also separate existing TypeScript/build errors in UC03, UC04, auth, guiding-light, and Supabase function files. Those are unrelated to this reopen bug, but they still need a separate cleanup pass before the project typecheck will be fully green.
