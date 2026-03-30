@@ -56,7 +56,7 @@ export const usePreviousMeetings = ({
     enabled: true,
   });
 
-  const meetings: MeetingDisplayData[] = meetingsResponse?.items
+  const meetings: MeetingCardData[] = meetingsResponse?.items
     ? meetingsResponse.items.map(mapMeetingToCardData)
     : [];
   const totalItems = meetingsResponse?.total ?? 0;
