@@ -1,38 +1,53 @@
 
 
-## Plan: Replace calendar meeting modal with modern compact dialog + fix invitees bug
+## Plan: Defer all API calls to final submit
 
-### Problem 1 — Modal is too heavy
-The calendar "create meeting" form uses `MeetingModalShell` — a full-screen, near-viewport-sized modal (`1450px wide, calc(100vh-6rem) tall`) designed for the 3-step meeting request flow. For the calendar's simple single-step form (title, dates, channel, invitees), this is overkill. The user wants the cleaner, compact style used by `ScheduleConfirmDialog` — a `sm:max-w-[520px]` dialog with structured sections, muted header, and sticky footer.
+### Current behavior (problem)
+Each step hits the API immediately when the user clicks "Next":
+- Step 1 → `PATCH /drafts/{id}/basic-info` → waits → goes to step 2
+- Step 2 → `PATCH /drafts/{id}/content` → waits → goes to step 3
+- Step 3 → `PATCH /drafts/{id}/invitees` + `POST /submit`
 
-### Problem 2 — Invitees disappear on save
-**Root cause**: In `CalendarSlotMeetingForm.tsx` line 292, `initialInvitees` is passed as `(initialInvitees ?? []) as any`. This creates a **new array reference on every render**. The `InviteesTableForm` has a `useEffect` (line 37-39) that watches `initialInvitees` and calls `setInvitees(initialInvitees ?? [])` whenever it changes. Because the reference changes on each parent re-render (e.g. when the user types in a field), the effect fires and **resets the invitee list to the initial empty array**, wiping user-added rows.
+This means 3 round-trips during navigation, with loading spinners between steps.
 
-### Solution
+### New behavior
+- Steps 1→2→3: **no API calls** — just validate form, store data in memory, advance step instantly
+- Final button ("تحديث الطلب" / "إرسال"): fire all 3 API calls sequentially (step 1 must complete first for new drafts since it returns the `draftId` needed by steps 2 and 3)
 
-**File 1: `src/modules/UC02/components/CalendarSlotMeetingForm.tsx`** — Replace modal + fix bug
+### Important constraint
+For **new** meetings (no `editMeetingId`), step 1's `POST` returns the `draftId`. Steps 2 and 3 need that ID. So on final submit we must call them sequentially: step1 → get ID → step2 + step3 → submit. For **edit** mode, the ID already exists so steps 1-3 can run in parallel (but sequential is safer to avoid race conditions).
 
-1. **Replace `MeetingModalShell`** with a compact `Dialog/DialogContent` following the `ScheduleConfirmDialog` design pattern:
-   - `sm:max-w-[680px]` (slightly wider than ScheduleConfirmDialog to fit the invitees table)
-   - Muted header section with title + subtitle
-   - Scrollable body with form sections separated by subtle dividers
-   - Sticky footer with save/cancel buttons matching the ScheduleConfirmDialog style
-   - Remove the `MeetingModalShell` import entirely
+### Changes
 
-2. **Fix invitees bug**: Memoize the `initialInvitees` fallback so the reference stays stable:
-   ```ts
-   const stableInitialInvitees = useMemo(
-     () => initialInvitees ?? [],
-     [initialInvitees]
-   );
-   ```
-   Pass `stableInitialInvitees` to `InviteesTableForm` instead of `(initialInvitees ?? []) as any`.
+**File 1: `useModalSteps.ts`** — Remove API calls from step handlers
 
-### Files changed
+- `handleStep1Submit`: Remove `basicInfoMutation.mutate()`. Just store `step1Data` in state and `setCurrentStep(2)` immediately
+- `handleStep2Submit`: Remove `contentMutation.mutate()`. Store `step2FormData` in a new `useState<FormData | null>` and `setCurrentStep(3)` immediately
+- Add `step2Data` to the returned state so `useSubmitterModal` can access it
+- Remove `basicInfoMutation` and `contentMutation` imports — they move to `useSubmitterModal`
+- Remove `onStepSaved` callback (no longer needed per-step)
+- `isStepSaving` becomes always `false` (remove or keep as `false`)
+
+**File 2: `useSubmitterModal.ts`** — Consolidate all API calls into `handleFinalSubmit`
+
+- Import `useSaveDraftBasicInfo` and `useSaveDraftContent`
+- In `handleFinalSubmit`:
+  1. Build step 1 FormData from `steps.step1Data` via `buildStep1FormData`
+  2. Call `saveDraftBasicInfo(formData, draftId)` → get `meetingId`
+  3. If `steps.step2Data` exists, call `saveDraftContent(meetingId, step2Data)`
+  4. Call `saveDraftInvitees(meetingId, inviteesPayload)` (existing logic)
+  5. Call submit/resubmit action (existing logic)
+  6. Sync caches and close modal
+- Same pattern for `handleSaveAsDraft` (steps 1-3 without the submit action)
+- Remove `onStepSaved` from `useModalSteps` options
+- Update `saving` to include the new mutations' pending states
+
+### Summary
 
 | File | Change |
 |---|---|
-| `src/modules/UC02/components/CalendarSlotMeetingForm.tsx` | Replace `MeetingModalShell` with compact dialog layout; memoize `initialInvitees` |
+| `useModalSteps.ts` | Remove API calls from step handlers, add `step2Data` state, navigation-only |
+| `useSubmitterModal.ts` | Move all 3 API calls into `handleFinalSubmit` and `handleSaveAsDraft` |
 
-1 file, 2 fixes.
+2 files changed. Steps navigate instantly, all APIs fire on final button click.
 
