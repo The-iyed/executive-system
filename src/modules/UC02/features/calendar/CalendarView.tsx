@@ -97,6 +97,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
+  const [dayPanelDate, setDayPanelDate] = useState<Date | null>(null);
+  const [dayPanelEvents, setDayPanelEvents] = useState<CalendarEventData[]>([]);
 
   const showSkeleton = isLoading;
 
