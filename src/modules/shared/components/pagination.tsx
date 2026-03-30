@@ -94,7 +94,7 @@ export const Pagination: React.FC<PaginationProps> = ({
     <ShadcnPagination
       className={className}
       dir="rtl"
-      style={{ fontFamily: "'Almarai', sans-serif" }}
+      style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
     >
       <PaginationContent>
         <PaginationItem>

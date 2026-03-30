@@ -57,20 +57,20 @@ export function DetailPageHeader({
   tabs,
   activeTab,
   onTabChange,
+  
   helpTooltip,
   className,
 }: DetailPageHeaderProps) {
+  const sanitizedTitle = title.replace(/\s*\((?:null|undefined|)\)\s*$/, '').trim();
+
   return (
     <div
       className={cn(
         'w-full mt-[30px] flex flex-col rounded-2xl bg-white min-w-0 overflow-hidden',
-        'border border-[#E5E7EB]',
+        'border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow duration-300',
         className
       )}
       dir="rtl"
-      style={{
-        boxShadow: '0 4px 24px -4px rgba(4, 143, 134, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04)',
-      }}
     >
       {/* No top accent bar */}
 
@@ -83,7 +83,7 @@ export function DetailPageHeader({
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center justify-center w-9 h-9 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-all flex-shrink-0"
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] hover:scale-105 active:scale-95 transition-all duration-200 flex-shrink-0"
                 aria-label="رجوع"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -92,20 +92,9 @@ export function DetailPageHeader({
             <div className="flex flex-col min-w-0 flex-1 text-right">
               <div className="flex flex-row items-center gap-2.5 flex-wrap">
                 <h1 className="text-[18px] font-bold text-[#101828] leading-tight truncate max-w-full">
-                  {title}
+                  {sanitizedTitle}
                 </h1>
                 {statusBadge}
-                {hasChanges && (
-                  <span
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white flex-shrink-0 animate-pulse"
-                    style={{
-                      background: 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)',
-                      boxShadow: '0 1px 3px rgba(4, 143, 134, 0.3)',
-                    }}
-                  >
-                    تغييرات غير محفوظة
-                  </span>
-                )}
               </div>
               {subtitle && (
                 <p className="text-[13px] text-[#667085] leading-snug mt-0.5 truncate max-w-full">
@@ -115,49 +104,25 @@ export function DetailPageHeader({
             </div>
           </div>
 
-          {/* Left side: actions (RTL: secondary, edit, primary from right to left) */}
-          <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
+          {/* Left side: actions */}
+          <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap [&_button]:transition-all [&_button]:duration-200">
             {secondaryAction && <div className="flex-shrink-0">{secondaryAction}</div>}
             {editAction?.visible && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
-                      disabled={!editAction.opensForm && !editAction.hasChanges}
-                      className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all',
-                        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none',
-                        (editAction.opensForm || editAction.hasChanges)
-                          ? 'hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
-                          : ''
-                      )}
-                      style={{
-                        background: (editAction.opensForm || editAction.hasChanges)
-                          ? 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)'
-                          : 'linear-gradient(135deg, #9CA3AF 0%, #D1D5DB 100%)',
-                        boxShadow: (editAction.opensForm || editAction.hasChanges)
-                          ? '0 2px 8px rgba(4, 143, 134, 0.3)'
-                          : 'none',
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" strokeWidth={2} />
-                      <span>{editAction.label ?? 'تعديل'}</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                    <p>
-                      {editAction.tooltip ??
-                        (editAction.opensForm
-                          ? 'فتح نموذج التعديل'
-                          : editAction.hasChanges
-                            ? 'تأكيد التعديلات وإرسالها'
-                            : 'لا يوجد تغييرات لحفظها')}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <button
+                type="button"
+                onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
+                disabled={!editAction.opensForm && !editAction.hasChanges}
+                className={cn(
+                  'flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold transition-all duration-200',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  (editAction.opensForm || editAction.hasChanges)
+                    ? 'bg-gradient-to-r from-[#048F86] via-[#069E95] to-[#0BB5AA] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]'
+                    : 'bg-gradient-to-r from-[#B0B7C3] to-[#CDD3DC]'
+                )}
+              >
+                <Pencil className="w-4 h-4" strokeWidth={2} />
+                <span>{editAction.label ?? 'تعديل'}</span>
+              </button>
             )}
             {primaryAction && (
               <div className="flex-shrink-0">{primaryAction}</div>
