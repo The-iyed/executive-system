@@ -3,7 +3,7 @@
  * All fields always visible with "—" fallback for missing data.
  */
 import { cn } from '@/lib/ui';
-import { Info, Copy, MapPin, Building2 } from 'lucide-react';
+import { Info, Copy, MapPin, Building2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MeetingInfoViewProps, MeetingInfoField, AgendaItem } from './types';
 
