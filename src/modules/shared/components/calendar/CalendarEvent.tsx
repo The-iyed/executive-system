@@ -111,7 +111,7 @@ const CardContent: React.FC<{
     {isAvailable && !compact && (
       <div className="flex items-center gap-1 mb-0.5">
         <Plus className="w-3 h-3 shrink-0" style={{ color: accentColor }} />
-        <span className="text-[10px] font-semibold" style={{ color: accentColor, fontFamily: "'Almarai', sans-serif" }}>
+        <span className="text-[10px] font-semibold" style={{ color: accentColor, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
           متاح للحجز
         </span>
       </div>
@@ -120,7 +120,7 @@ const CardContent: React.FC<{
       className={compact ? 'truncate font-bold' : 'line-clamp-2 font-bold'}
       style={{
         color: textColor,
-        fontFamily: "'Almarai', sans-serif",
+        fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
         fontSize: compact ? '10px' : '12px',
         lineHeight: '140%',
       }}
@@ -130,7 +130,7 @@ const CardContent: React.FC<{
     {!compact && event.exactStartTime && event.exactEndTime && (
       <div className="flex items-center gap-1">
         <Clock className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.6 }} />
-        <span className="text-[10px] font-medium" style={{ color: accentColor, opacity: 0.7, fontFamily: "'Almarai', sans-serif" }}>
+        <span className="text-[10px] font-medium" style={{ color: accentColor, opacity: 0.7, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
           {event.exactStartTime} – {event.exactEndTime}
         </span>
       </div>
@@ -138,7 +138,7 @@ const CardContent: React.FC<{
     {!compact && event.location && (
       <div className="flex items-center gap-1">
         <MapPin className="w-3 h-3 shrink-0" style={{ color: accentColor, opacity: 0.5 }} />
-        <span className="truncate text-[10px] font-medium" style={{ color: accentColor, opacity: 0.65, fontFamily: "'Almarai', sans-serif" }}>
+        <span className="truncate text-[10px] font-medium" style={{ color: accentColor, opacity: 0.65, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
           {event.location}
         </span>
       </div>

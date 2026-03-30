@@ -124,7 +124,7 @@ const Login = () => {
                     <div>
               {/* Calendar section: icon + title (calendar.svg to left of title in RTL) */}
               <div className="flex items-center gap-2 sm:gap-3 justify-end flex-row-reverse mb-1">
-                <span className="text-black font-bold text-xl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                <span className="text-black font-bold text-xl" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                   المنصة الموحدة
                 </span>
                 <img
@@ -135,16 +135,16 @@ const Login = () => {
                   height={34}
                 />
               </div>
-              <p className="text-gray-600 text-sm mb-4 sm:mb-6" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <p className="text-gray-600 text-sm mb-4 sm:mb-6" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 للمكتب التنفيذي
               </p>
             </div>
           </div>
 
-          <h3 className="text-black font-bold text-xl sm:text-2xl mb-2" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <h3 className="text-black font-bold text-xl sm:text-2xl mb-2" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             مرحباً بك،
           </h3>
-          <p className="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <p className="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             قم بتسجيل الدخول للوصول إلى حسابك وإدارة اجتماعاتك بكل سهولة
           </p>
 
@@ -155,13 +155,13 @@ const Login = () => {
                 onClick={handleSsoLogin}
                 disabled={isLoading}
                 className="w-full h-12 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: TEAL_DARK, fontFamily: "'Almarai', sans-serif" }}
+                style={{ backgroundColor: TEAL_DARK, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 {isLoading ? 'جاري التحويل...' : 'تسجيل الدخول عبر SSO'}
               </button>
               {submitError && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                  <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  <p className="text-right text-sm text-red-600" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                     {submitError}
                   </p>
                 </div>
@@ -170,7 +170,7 @@ const Login = () => {
           ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
             <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <label htmlFor="email" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 البريد الإلكتروني
               </label>
               <input
@@ -194,7 +194,7 @@ const Login = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <label htmlFor="password" className="text-sm font-medium text-gray-900 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 كلمة المرور
               </label>
               <input
@@ -219,7 +219,7 @@ const Login = () => {
 
             {submitError && (
               <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-right text-sm text-red-600" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                <p className="text-right text-sm text-red-600" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                   {submitError}
                 </p>
               </div>
@@ -229,7 +229,7 @@ const Login = () => {
               type="submit"
               disabled={isLoading}
               className="w-full h-12 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: TEAL_DARK, fontFamily: "'Almarai', sans-serif" }}
+              style={{ backgroundColor: TEAL_DARK, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
             >
               {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>

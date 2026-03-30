@@ -7,3 +7,4 @@ export * from './content-info';
 export * from './directives-list';
 export * from './minister-directives';
 export * from './meeting-list';
+export * from './request-notes';

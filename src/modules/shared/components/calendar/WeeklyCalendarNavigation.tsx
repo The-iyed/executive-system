@@ -44,7 +44,7 @@ export const WeeklyCalendarNavigation: React.FC<WeeklyCalendarNavigationProps> =
                 ? 'bg-[#048F86] text-white shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             )}
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             يومي
           </button>
@@ -57,7 +57,7 @@ export const WeeklyCalendarNavigation: React.FC<WeeklyCalendarNavigationProps> =
                 ? 'bg-[#048F86] text-white shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             )}
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             أسبوعي
           </button>
@@ -70,7 +70,7 @@ export const WeeklyCalendarNavigation: React.FC<WeeklyCalendarNavigationProps> =
                 ? 'bg-[#048F86] text-white shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             )}
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             شهري
           </button>
@@ -90,7 +90,7 @@ export const WeeklyCalendarNavigation: React.FC<WeeklyCalendarNavigationProps> =
         <Calendar className="w-4 h-4 text-[#048F86]" />
         <span
           className="text-[14px] font-bold text-gray-800 tabular-nums"
-          style={{ fontFamily: "'Almarai', sans-serif" }}
+          style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
         >
           {month} {year}
         </span>
