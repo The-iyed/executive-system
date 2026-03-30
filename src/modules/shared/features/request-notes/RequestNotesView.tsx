@@ -36,6 +36,7 @@ function NoteBlock({ title, text, variant }: { title: string; text: string; vari
 export function RequestNotesView({
   data,
   title = 'الملاحظات على الطلب',
+  description = 'ملاحظات مسؤول المحتوى ومسؤول الجدولة على الطلب',
   emptyTitle = 'لا توجد ملاحظات',
   emptyDescription = 'لم يتم إضافة ملاحظات من مسؤول المحتوى أو مسؤول الجدولة بعد',
   className,
@@ -43,9 +44,16 @@ export function RequestNotesView({
   const hasNotes = data.notes.length > 0;
 
   return (
-    <div className={`flex flex-col gap-5 w-full ${className ?? ''}`} dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+    <div className={`flex flex-col gap-6 w-full max-w-4xl mx-auto ${className ?? ''}`} dir="rtl">
+      {/* Header with icon + title + description — same pattern as RequestInfo / MeetingInfoView */}
+      <div className="flex items-start justify-end gap-3" dir="ltr">
+        <div className="text-right">
+          <h2 className="text-base font-semibold text-foreground leading-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+        </div>
+        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+          <StickyNote className="w-4 h-4" />
+        </div>
       </div>
 
       {hasNotes ? (
