@@ -97,7 +97,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
 
   // Clean up hidden field values when visibility toggles off
   const SUBMITTER_FIELD_RESET_MAP = useMemo(() => ({
-    previous_meeting_id: ["previous_meeting_id"],
+    previous_meeting_id: ["previous_meeting_id", { name: "group_id", resetValue: null }, { name: "prev_ext_original_title", resetValue: null }, { name: "prev_ext_meeting_title", resetValue: null }],
     sector: ["sector"],
     meeting_location: ["meeting_location", "meeting_location_custom"],
     meeting_location_custom: ["meeting_location_custom"],
