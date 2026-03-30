@@ -3,7 +3,7 @@
  */
 import { DIRECTIVE_STATUS_LABELS } from '../types';
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+const fontStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 
 /** Gregorian date in Arabic (e.g. "6 مارس 2026"). Use for all user-facing dates. */
 const ARABIC_GREGORIAN_OPTIONS: Intl.DateTimeFormatOptions = {
