@@ -202,7 +202,18 @@ const MeetingDetailPage: React.FC = () => {
         variant="danger"
       />
 
-      <QualityModal isOpen={h.isQualityModalOpen} onOpenChange={h.setIsQualityModalOpen} meetingId={h.id || ''} />
+      <ConfirmDialog
+        open={h.isWaitingListConfirmOpen}
+        onOpenChange={h.setIsWaitingListConfirmOpen}
+        title="إضافة إلى قائمة الانتظار"
+        description="هل أنت متأكد من إضافة هذا الاجتماع إلى قائمة الانتظار؟"
+        confirmLabel="تأكيد الإضافة"
+        loadingLabel="جاري الإضافة..."
+        onConfirm={() => h.moveToWaitingListMutation.mutate()}
+        isLoading={h.moveToWaitingListMutation.isPending}
+        variant="warning"
+      />
+
 
       <RejectDialog
         open={h.isRejectModalOpen}
