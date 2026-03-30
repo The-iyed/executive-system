@@ -92,22 +92,27 @@ export function useSubmitterModal({
     [submitMutation, resubmitSchedulingMutation, resubmitContentMutation],
   );
 
+  // Keep a ref to the last invitees patch so we can re-apply after refetch
+  const lastInviteesPatchRef = useRef<Record<string, unknown> | null>(null);
+
   const saveInvitees = async (meetingId: string) => {
+    // Capture raw rows BEFORE validation/mutation (ref may be unmounted after modal closes)
+    const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
-  
+
+    // Apply optimistic update immediately (before API call) using raw TableRow[]
+    if (isEditMode && rawRows.length > 0) {
+      const patch = buildStep3Patch(rawRows);
+      lastInviteesPatchRef.current = patch;
+      optimisticMergeMeeting(queryClient, meetingId, patch);
+    }
+
     const response = await inviteesMutation.mutateAsync({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
 
-    // Optimistic cache update using raw TableRow[] (not mapped payload) for correct data shape
-    if (isEditMode) {
-      const rawRows = steps.inviteesRef.current?.getRows() ?? [];
-      const patch = buildStep3Patch(rawRows);
-      optimisticMergeMeeting(queryClient, meetingId, patch);
-    }
-  
     return response;
   };
 
