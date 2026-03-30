@@ -61,7 +61,7 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
   meeting_owner: <Building2 className="w-4 h-4" />,
 };
 
-function FieldCell({ label, value, fullWidth, icon, key: fieldKey }: MeetingInfoField & { fullWidth?: boolean }) {
+function FieldCell({ label, value, fullWidth, icon, fieldKey }: MeetingInfoField & { fullWidth?: boolean; fieldKey?: string }) {
   const displayValue = isEmptyValue(value) ? '—' : value;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
