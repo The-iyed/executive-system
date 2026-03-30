@@ -1,57 +1,69 @@
 
 
-## Plan: Production-grade MeetingActionsBar redesign
+## Plan: Radial circle action menu
 
-### Problems (from screenshots)
-- FAB looks flat and oversized with no depth or visual polish
-- Action pills have no icon color differentiation, weak shadows, and feel like plain HTML buttons
-- No visual grouping or hierarchy between actions
-- The open/close transition feels abrupt — no spring or easing refinement
-- Danger action (رفض) doesn't stand out enough from the rest
-- Overall aesthetic doesn't match a polished SaaS product
+### Design concept
+Replace the vertical card menu with a radial/arc layout where each action is a circular icon button that fans out from the FAB in a semicircle above it. Labels appear on hover as floating tooltips. This creates a compact, modern, visually striking interaction — similar to Path app or Pinterest's radial menus.
 
-### Design direction
-Inspired by Apple's iOS action sheets and Linear's command palette — a floating glass-morphism menu with depth, subtle gradients, and refined micro-interactions.
+### Layout
+
+```text
+        ○  ○  ○
+      ○          ○
+        ○  (danger)
+           ⚡ FAB
+```
+
+Actions are positioned in a semicircular arc (180 degrees) above the FAB. Each action is a 48px circle with an icon, positioned using trigonometric calculations based on index and total count. Radius ~120px from center of FAB.
 
 ### Changes — 1 file: `src/modules/shared/components/MeetingActionsBar.tsx`
 
-**1. FAB button**
-- Add `shadow-[0_4px_20px_rgba(4,143,134,0.35)]` for a colored glow effect when closed
-- Increase border to `border-2 border-white/40` for definition
-- Use `X` icon (from lucide) when open instead of rotated Zap — cleaner close affordance
-- Smooth spring: `transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]`
+**1. Arc positioning logic**
+- Calculate angle for each action: spread evenly across 180° arc (from left to right above FAB)
+- Use `Math.cos` / `Math.sin` to compute `left` and `bottom` offsets relative to FAB center
+- Radius: 120px for normal actions, danger actions at a slightly closer radius (90px) directly below the arc
+- RTL-aware: arc opens upward so direction doesn't matter
 
-**2. Actions container**
-- Wrap pills in a single glass card: `bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/60 p-2`
-- This groups all actions visually as one cohesive panel instead of floating separate pills
-- Add container entrance animation: scale from 0.9 + fade in with spring easing
+**2. Action circles**
+- Each action: `w-12 h-12 rounded-full` with `bg-white shadow-lg border border-gray-100/80`
+- Icon centered inside, color `text-[#048F86]` (normal) or `text-red-500` (danger)
+- Hover: `hover:scale-110 hover:shadow-xl hover:bg-[#048F86]/5` with `transition-all duration-200`
+- Danger: `bg-red-50 border-red-100 hover:bg-red-100`
+- Disabled: `opacity-40 cursor-not-allowed`
 
-**3. Action items (inside the card)**
-- Remove individual `shadow-md` and `border` — items live inside the card now
-- Style as clean rows: `rounded-xl px-4 py-3 hover:bg-gray-50/80 transition-colors duration-150`
-- Icon gets a subtle circular background: `w-8 h-8 rounded-lg bg-[#048F86]/10 flex items-center justify-center` for normal, `bg-red-50` for danger
-- Icon color: `text-[#048F86]` normal, `text-red-500` danger
-- Label: `text-[13px] font-medium text-gray-800` — not too bold
-- Add thin `border-b border-gray-100/80` separator between items (except last)
-- Danger item: no separator above, instead a `mt-1` gap + `bg-red-50/50 rounded-xl` to visually isolate it
+**3. Labels**
+- Each circle has a label positioned below it: `text-[11px] font-medium text-gray-600 mt-1.5`
+- Always visible (no tooltip needed for non-disabled), centered under the circle
+- For long labels, use `max-w-[70px] text-center leading-tight`
 
-**4. Stagger animation**
-- Keep per-item stagger but reduce to 30ms intervals for snappier feel
-- Use `opacity-0` initial state with `animate-in fade-in-0 slide-in-from-bottom-2` (smaller slide distance)
+**4. Staggered spring animation**
+- Each circle starts from the FAB center position (scale 0, opacity 0)
+- Animates outward to its arc position with staggered delay: `40ms * index`
+- Use CSS transform + transition: `transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`
+- When `open` changes to true, each item transitions from `scale-0 opacity-0` at FAB center to `scale-100 opacity-100` at its arc position
 
-**5. Backdrop**
-- Upgrade to `bg-black/20 backdrop-blur-[6px]` — more blur, less darkness for elegance
+**5. FAB button**
+- Keep current white/teal styling
+- Smooth rotation: `transition-transform duration-300`, rotate 90° when open
+- Icon: `Zap` when closed, `X` when open (keep current)
 
-**6. Disabled state**
-- `opacity-40` instead of `opacity-50` — more clearly disabled
-- Tooltip behavior unchanged
+**6. Backdrop**
+- Keep `bg-black/15 backdrop-blur-[4px]` — lighter than current for the airy radial feel
+
+**7. Disabled tooltips**
+- Wrap disabled circles in `TooltipProvider` / `Tooltip` with `disabledReason` — same as current
+
+### Technical details
+- Arc angle calculation: `const angle = Math.PI - (Math.PI * (i + 0.5)) / totalNormalActions`
+- Position: `left: R * Math.cos(angle)`, `bottom: R * Math.sin(angle)` (relative to FAB center)
+- Container: `position: relative` on the FAB wrapper, circles use `position: absolute`
+- All actions rendered inside a single container div with `pointer-events: none` when closed, `pointer-events: auto` when open
 
 ### Result
-- Cohesive glass-morphism panel that looks like a native OS action sheet
-- FAB with colored glow shadow for visual weight
-- Clean icon containers with subtle tinted backgrounds
-- Smooth spring animations on open/close
-- Clear visual separation for the danger action
-- Production-ready SaaS quality
+- Compact radial menu that feels like a native mobile FAB pattern
+- Each action is a recognizable circle icon with label underneath
+- Smooth spring-out animation from FAB center
+- Danger action visually separated with red tint
+- Modern, production-ready SaaS aesthetic
 - 1 file changed
 
