@@ -61,6 +61,8 @@ export function DetailPageHeader({
   helpTooltip,
   className,
 }: DetailPageHeaderProps) {
+  const sanitizedTitle = title.replace(/\s*\((?:null|undefined|)\)\s*$/, '').trim();
+
   return (
     <div
       className={cn(
