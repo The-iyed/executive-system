@@ -6,6 +6,7 @@ import { cn } from "@/lib/ui";
 interface MeetingSelectProps {
   value: string;
   onChange: (value: string) => void;
+  onSelectMeeting?: (option: MeetingOption | null) => void;
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
@@ -16,6 +17,7 @@ interface MeetingSelectProps {
 export function MeetingSelect({
   value,
   onChange,
+  onSelectMeeting,
   placeholder,
   disabled,
   hasError,
@@ -80,6 +82,7 @@ export function MeetingSelect({
               onClick={(e) => {
                 e.stopPropagation();
                 onChange("");
+                onSelectMeeting?.(null);
               }}
             />
           )}
@@ -114,6 +117,7 @@ export function MeetingSelect({
                 )}
                 onClick={() => {
                   onChange(opt.value);
+                  onSelectMeeting?.(opt);
                   setOpen(false);
                 }}
               >
