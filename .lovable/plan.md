@@ -1,29 +1,27 @@
 
 
-## Plan: Improve معلومات الاجتماع tab display
+## Plan: Fix `editMeetingId` to use API-returned meeting ID
 
 ### Problem
-1. Fields with no data are hidden — user wants ALL fields always visible with "-" as fallback
-2. Agenda empty state shows a plain text box instead of an empty table structure
-3. Link field style needs to match the reference image (icon + label + URL + copy/open buttons in a row)
+Line 112 in `EventDetailModal.tsx` sets `meetingId: event.meeting_id`, which comes from the calendar event object and can be null. The API response (`meetingDetail`) contains the authoritative `meeting.id`, but it's ignored. This means the edit button either doesn't appear or passes the wrong ID.
 
-### Changes
+### Change
 
-**1. `src/modules/shared/features/meeting-info/MeetingInfoView.tsx`**
+**`src/modules/UC02/features/calendar/components/EventDetailModal.tsx`** — Line 112
 
-- **Show all fields always**: Remove the `isEmptyValue` filter from all sections — render every field, displaying "—" when value is empty
-- **Update `FieldCell`**: Remove the early return for empty values — always render the field with `value ?? '—'`
-- **Improve `LinkField`**: Redesign to match image — horizontal row with location icon on right, label text "رابط الاجتماع", truncated URL in parentheses, copy button and open-in-new-tab button on the left
-- **Agenda empty state**: Replace the plain placeholder div with an empty table that still shows column headers and a single row with "لا توجد بنود" message spanning all columns
+Replace:
+```ts
+meetingId: event.meeting_id,
+```
+With:
+```ts
+meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
+```
 
-**2. `src/modules/shared/features/meeting-info/meetingInfoMapper.ts`**
-
-- Remove `alwaysShow` usage since all fields will now always show
-- Ensure all field values fall through to `null` gracefully (the view will handle showing "—")
+This mirrors the pattern used in the meeting detail page (`meeting.id`), ensuring the correct UUID is passed to `SubmitterModal` for PATCH requests.
 
 ### Result
-- All meeting info fields are always visible with "—" for missing data
-- Agenda section always shows table headers even when empty
-- Link field matches the reference image design with copy + open buttons
-- 2 files changed
+- Edit always passes the correct API-sourced meeting ID to `SubmitterModal`
+- Matches the `/meeting/:id` detail page behavior exactly
+- 1 file changed
 
