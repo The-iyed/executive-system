@@ -130,7 +130,7 @@ export function mapMeetingToInfo(
     { key: 'time_slot', label: 'موعد الاجتماع المقترح', value: (startDate || endDate) ? formatIsoRange(startDate, endDate) : null },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', value: channel ? (MeetingChannelLabels[channel] ?? str(channel)) : null },
     { key: 'meeting_location', label: 'الموقع', value: str(location) },
-    { key: 'meeting_link', label: 'رابط الاجتماع (Webex)', value: link || null, fullWidth: true },
+    { key: 'meeting_link', label: 'رابط الاجتماع', value: (channel === 'PHYSICAL') ? null : (link || null), fullWidth: true },
     { key: 'meeting_classification', label: 'فئة الاجتماع', value: getMeetingClassificationLabel(meeting.meeting_classification) ?? null },
     { key: 'meeting_justification', label: 'مبرر اللقاء', value: str(meeting.meeting_justification) },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', value: str(meeting.related_topic) },
@@ -145,7 +145,7 @@ export function mapMeetingToInfo(
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', value: basedOnDirective ? yesNo(true) : null },
     { key: 'directive_method', label: 'طريقة التوجيه', value: getDirectiveMethodLabel(meeting.directive_method) ?? null },
     { key: 'related_guidance', label: 'التوجيه', value: str(meeting.related_guidance) },
-    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes) || 'لا توجد ملاحظات', fullWidth: true, alwaysShow: true },
+    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes), fullWidth: true },
   ];
 
   const sections: MeetingInfoSection[] = [
