@@ -115,7 +115,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'directives':
         return h.meetingStatus === MeetingStatus.CLOSED ? <DirectivesTab meeting={meeting} /> : null;
       case 'meeting-documentation':
-        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} meetingId={h.id} meetingStatus={h.meetingStatus} />;
+        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />;
       default:
         return <RequestInfoTab meeting={meeting} statusLabel={h.statusLabel} />;
     }
