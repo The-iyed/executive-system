@@ -6,7 +6,7 @@ import {
   type ContentRequestApiResponse,
   type GetContentRequestsParams,
 } from '../data/contentApi';
-import { mapContentRequestToCardViewData } from '../utils/contentMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const ContentRequests: React.FC = () => {
