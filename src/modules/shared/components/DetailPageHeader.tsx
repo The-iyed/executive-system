@@ -93,6 +93,7 @@ export function DetailPageHeader({
                   {title}
                 </h1>
                 {statusBadge}
+              </div>
               {subtitle && (
                 <p className="text-[13px] text-[#667085] leading-snug mt-0.5 truncate max-w-full">
                   {subtitle}
