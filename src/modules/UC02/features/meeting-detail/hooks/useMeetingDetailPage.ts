@@ -96,7 +96,7 @@ export function useMeetingDetailPage() {
 
   /* ── Form states ── */
   const [rejectForm, setRejectForm] = useState({ reason: '', notes: '' });
-  const [cancelForm, setCancelForm] = useState({ reason: '', notes: '' });
+  
   const [sendToContentForm, setSendToContentForm] = useState({ notes: '' });
   const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
   const [returnForInfoNotes, setReturnForInfoNotes] = useState('');
