@@ -8,7 +8,7 @@ import { ScreenLoader } from '@/modules/shared';
 import { User, LoginPayload, getCurrentUserApi } from '../data/authApi';
 import { PATH } from '../routes/paths';
 import { PostHogIdentify } from '../components/PostHogIdentify';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
 import {
   bootstrapAuth,
