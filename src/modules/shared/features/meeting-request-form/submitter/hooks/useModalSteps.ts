@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DynamicTableFormHandle } from "@/lib/dynamic-table-form";
@@ -19,6 +19,10 @@ export function useModalSteps({ editMeetingId, onClose, onStepSaved }: UseModalS
   const [step1Data, setStep1Data] = useState<SubmitterStep1Values | null>(null);
   const [draftId, setDraftId] = useState<string | null>(editMeetingId ?? null);
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
+
+  useEffect(() => {
+    setDraftId(editMeetingId ?? null);
+  }, [editMeetingId]);
 
   const isEditMode = !!editMeetingId;
   const activeDraftId = editMeetingId || draftId;
