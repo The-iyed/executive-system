@@ -122,6 +122,7 @@ export interface GuidanceRequestApiResponse {
   sector?: string;
   is_on_behalf_of?: boolean;
   urgent_reason?: string | null;
+  meeting_owner?: { username?: string; name?: string } | null;
 }
 
 export interface GuidanceRequestsListResponse {
