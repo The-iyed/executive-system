@@ -1,60 +1,40 @@
 
 
-## Plan: Unify all module mappers to use shared `mapMeetingToCardData` and remove dead code
+## Plan: Remove loader on logout
 
 ### Problem
-- UC01, UC03, UC04, UC05, UC06 each have their own mapper files with duplicate logic
-- UC02 correctly uses the shared `mapMeetingToCardData` from `src/modules/shared/utils/meetingMapper.ts`
-- The shared mapper already has `resolveSubmitterName` that extracts name from the `submitter` object (ar_name → name → first+last → email → username → submitter_name fallback)
-- Other modules read only `submitter_name` (often null), causing missing submitter names in lists
+When the user clicks "تسجيل الخروج", a full-screen `ScreenLoader` flashes before the login page appears. This happens because:
+- **Non-SSO**: `logout()` sets `user = null`, then does `window.location.href` reload — on reload, `isInitialised` starts as `false`, showing the loader
+- **SSO**: `oidcLogout()` calls `signoutRedirect()` which navigates to IdP — while waiting, the app re-renders with no user and may flash the loader
+
+### Solution
+Skip the full-page reload for non-SSO logout. Instead, clear tokens and use React Router navigation so `isInitialised` stays `true` and the login page renders immediately with no loader.
 
 ### Changes
 
-**1. Update API interfaces to include `submitter` object**
+**File: `src/modules/auth/context/AuthProvider.tsx`**
 
-Add `submitter?: SubmitterObject | string | null` to each module's API response interface so they satisfy `MeetingMapperInput`:
-- `src/modules/UC01/data/meetingsApi.ts`
-- `src/modules/UC03/data/consultationsApi.ts`
-- `src/modules/UC04/data/guidanceApi.ts`
-- `src/modules/UC05/data/contentApi.ts`
-- `src/modules/UC06/data/contentConsultantApi.ts`
+In the `logout` function (non-SSO branch ~line 230-233):
+- Remove `window.location.href` redirect
+- Keep `clearTokens()` and `setUser(null)` — this makes `isAuthenticated = false`
+- The existing route catch-all (`Navigate to /login`) handles the redirect without a loader since `isInitialised` remains `true`
 
-**2. Switch all list pages to use shared mapper**
+```ts
+// Before
+clearTokens();
+setUser(null);
+window.location.href = window.location.origin + PATH.LOGIN;
 
-Replace local mapper imports with the shared one:
+// After
+clearTokens();
+setUser(null);
+// No reload — isInitialised stays true, router redirects to /login instantly
+```
 
-| File | Old import | New import |
-|------|-----------|------------|
-| `src/modules/UC01/features/Meeting/index.tsx` | `from '../../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC01/features/PreviousMeeting/index.tsx` | `from '../../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC01/hooks/useMeetings.ts` | `from '../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC01/hooks/usePreviousMeetings.ts` | `from '../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC01/pages/workBasket.tsx` | `from '../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC01/pages/scheduledMeetings.tsx` | `from '../utils/meetingMapper'` | `from '@/modules/shared/utils/meetingMapper'` |
-| `src/modules/UC03/pages/consultationRequests.tsx` | `mapConsultationRequestToCardData` | `mapMeetingToCardData` from shared |
-| `src/modules/UC04/pages/guidanceRequests.tsx` | `mapGuidanceRequestToCardData` | `mapMeetingToCardData` from shared |
-| `src/modules/UC04/pages/exceptionRequest.tsx` | `mapGuidanceRequestToCardData` | `mapMeetingToCardData` from shared |
-| `src/modules/UC05/pages/contentRequests.tsx` | `mapContentRequestToCardViewData` | `mapMeetingToCardData` from shared |
-| `src/modules/UC06/pages/contentConsultationRequests.tsx` | `mapContentConsultationRequestToCardData` | `mapMeetingToCardData` from shared |
-
-For UC01 hooks that use `MeetingDisplayData`, change type to `MeetingCardData` (the shared mapper's return type already includes all the fields needed: `requestNumber`, `meetingCategory`, `meetingDate`, `isDataComplete`).
-
-**3. Delete dead mapper files and unused components**
-
-Remove entirely:
-- `src/modules/UC01/utils/meetingMapper.ts` — replaced by shared mapper
-- `src/modules/UC03/utils/consultationMapper.ts` — replaced by shared mapper
-- `src/modules/UC04/utils/guidanceMapper.ts` — replaced by shared mapper
-- `src/modules/UC05/utils/contentMapper.ts` — replaced by shared mapper
-- `src/modules/UC06/utils/contentConsultantMapper.ts` — replaced by shared mapper
-- `src/modules/UC03/components/consultation-request-card.tsx` — unused component
-- `src/modules/UC03/components/consultation-requests-grid.tsx` — unused component
-- `src/modules/UC04/components/guidance-request-card.tsx` — unused component
-- `src/modules/UC04/components/guidance-requests-grid.tsx` — unused component
+For SSO logout, the redirect is external (IdP) so we cannot avoid it, but we should not reset state before the redirect completes. The current SSO flow already avoids setting `isInitialised = false`, so no change needed there.
 
 ### Result
-- All modules use one shared mapper with proper submitter name resolution
-- Submitter names display correctly across all list pages (including `/meetings`)
-- ~300 lines of duplicate code removed
-- No behavioral change for UC02 (already using shared mapper)
+- Non-SSO: logout instantly shows login page, no loader flash
+- SSO: no change (external redirect is unavoidable)
+- 1 file, ~1 line removed
 
