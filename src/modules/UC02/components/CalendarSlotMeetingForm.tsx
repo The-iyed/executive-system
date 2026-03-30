@@ -3,6 +3,9 @@ import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/lib/ui';
 
 import {
   MeetingTitleField,
@@ -13,11 +16,10 @@ import {
   ProposersField,
 } from '@/modules/shared/features/meeting-request-form/shared/fields';
 import { MeetingLocation } from '@/modules/shared/features/meeting-request-form/shared/types/enums';
-import { MeetingModalShell } from '@/modules/shared/features/meeting-request-form/shared/components';
 
 import { InviteesTableForm } from '@/modules/shared/features/invitees-table-form';
 import { DynamicTableFormHandle } from '@/lib/dynamic-table-form';
-/** Inline type replacing deleted MeetingForm schema */
+
 interface InviteeFormRow {
   id?: string;
   name?: string;
@@ -120,6 +122,12 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
     },
   });
 
+  // Stabilize initialInvitees reference to prevent useEffect reset in InviteesTableForm
+  const stableInitialInvitees = useMemo(
+    () => initialInvitees ?? [],
+    [initialInvitees]
+  );
+
   const inviteesRef = useRef<DynamicTableFormHandle>(null);
   const formSubmitRef = useRef<(() => void) | null>(null);
 
@@ -131,7 +139,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         mode={mode}
         inviteesRef={inviteesRef}
         formSubmitRef={formSubmitRef}
-        initialInvitees={initialInvitees}
+        initialInvitees={stableInitialInvitees}
         isSubmitting={isSubmitting}
         submitError={submitError}
         onSubmit={onSubmit}
@@ -149,7 +157,7 @@ interface InnerProps {
   mode: 'create' | 'edit';
   inviteesRef: React.RefObject<DynamicTableFormHandle | null>;
   formSubmitRef: React.MutableRefObject<(() => void) | null>;
-  initialInvitees?: Array<Record<string, unknown>>;
+  initialInvitees: Array<Record<string, unknown>>;
   isSubmitting: boolean;
   submitError: string | null;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
@@ -245,62 +253,85 @@ function CalendarFormInner({
   }, [formSubmitRef]);
 
   return (
-    <MeetingModalShell
-      open={open}
-      onOpenChange={onOpenChange}
-      currentStep={1}
-      onStepClick={() => {}}
-      saving={isSubmitting}
-      submitLabel={mode === 'edit' ? 'تحديث' : 'حفظ'}
-      cancelLabel="إلغاء"
-      onNext={handleModalSubmit}
-      onPrev={() => {}}
-      onSubmit={handleModalSubmit}
-      onSaveAsDraft={() => {}}
-      hideSteps
-      steps={[{ number: 1, label: "معلومات الاجتماع" }]}
-      title={mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
-      subtitle="يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع"
-    >
-      <div className="flex flex-col gap-5">
-        <MeetingTitleField />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[680px] p-0 gap-0 overflow-hidden" dir="rtl">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-border/50 bg-muted/20">
+          <DialogHeader>
+            <DialogTitle className="text-right text-[17px] font-bold text-foreground">
+              {mode === 'edit' ? 'تعديل الاجتماع' : 'إنشاء اجتماع جديد'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] text-muted-foreground mt-1 text-right">
+            يرجى تعبئة جميع الحقول المطلوبة لإكمال إنشاء الاجتماع
+          </p>
+        </div>
 
-        <MeetingDateField
-          startName="meeting_start_date"
-          endName="meeting_end_date"
-          required
-          minDate={minStartDate}
-        />
+        {/* Scrollable body */}
+        <div className="px-6 py-5 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
+          {/* Basic info section */}
+          <div className="flex flex-col gap-4">
+            <MeetingTitleField />
 
-        <MeetingChannelField />
+            <MeetingDateField
+              startName="meeting_start_date"
+              endName="meeting_end_date"
+              required
+              minDate={minStartDate}
+            />
 
-        {showLocation && (
-          <>
-            <LocationField />
-            {isOther && <LocationCustomField />}
-          </>
-        )}
+            <MeetingChannelField />
 
-        <div className="border-t border-border/60 my-1" />
-
-        <ProposersField />
-
-        <div className="border-t border-border/60 my-1" />
-
-        <InviteesTableForm
-          tableRef={inviteesRef}
-          initialInvitees={(initialInvitees ?? []) as any}
-          meetingChannel={meetingChannel}
-          showAiSuggest={false}
-        />
-
-        {submitError && (
-          <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <p className="text-sm text-destructive">{submitError}</p>
+            {showLocation && (
+              <>
+                <LocationField />
+                {isOther && <LocationCustomField />}
+              </>
+            )}
           </div>
-        )}
-      </div>
-    </MeetingModalShell>
+
+          <div className="border-t border-border/40" />
+
+          {/* Proposers section */}
+          <ProposersField />
+
+          <div className="border-t border-border/40" />
+
+          {/* Invitees section */}
+          <InviteesTableForm
+            tableRef={inviteesRef}
+            initialInvitees={initialInvitees as any}
+            meetingChannel={meetingChannel}
+            showAiSuggest={false}
+          />
+
+          {submitError && (
+            <div className="p-3 rounded-xl bg-destructive/8 border border-destructive/20">
+              <p className="text-[13px] text-destructive text-right font-medium">{submitError}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Sticky footer */}
+        <div className="px-6 py-4 border-t border-border/50 bg-muted/20 flex flex-row-reverse items-center gap-2.5">
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleModalSubmit}
+            className="px-6 py-2.5 text-[13px] font-bold text-primary-foreground bg-primary rounded-xl hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+          >
+            {isSubmitting ? 'جاري الحفظ...' : mode === 'edit' ? 'تحديث' : 'حفظ'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="px-5 py-2.5 text-[13px] font-medium text-muted-foreground bg-background border border-border/60 rounded-xl hover:bg-muted/40 transition-colors"
+          >
+            إلغاء
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
