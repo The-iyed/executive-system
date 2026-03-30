@@ -122,6 +122,90 @@ const STATUS_COLORS: Record<string, string> = {
 
 const BAR_COLORS = ['#048F86', '#3C6FD1', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'];
 
+/* ─── Skeleton placeholders ───────────────────────────── */
+const SkeletonBox: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = '', style }) => (
+  <div className={`animate-pulse rounded-md bg-gray-200/70 ${className}`} style={style} />
+);
+
+const StatCardSkeleton: React.FC = () => (
+  <div className="flex items-center gap-4 rounded-[20px] bg-white p-5" style={{ border: '1px solid rgba(0,0,0,.06)' }} dir="rtl">
+    <SkeletonBox className="w-[52px] h-[52px] rounded-2xl flex-shrink-0" />
+    <div className="flex-1 space-y-2">
+      <SkeletonBox className="h-3 w-20" />
+      <SkeletonBox className="h-7 w-14" />
+      <SkeletonBox className="h-2.5 w-24" />
+    </div>
+  </div>
+);
+
+const ChartCardSkeleton: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
+  <div className={`rounded-[20px] bg-white p-6 pb-4 h-full flex flex-col ${className}`} style={{ border: '1px solid rgba(0,0,0,.06)' }}>
+    <SkeletonBox className="h-4 w-32 mb-4 mr-auto" />
+    <div className="flex-1 min-h-0">{children}</div>
+  </div>
+);
+
+const DashboardSkeleton: React.FC = () => (
+  <div className="flex flex-col gap-5 px-2 py-4 lg:px-4" dir="rtl">
+    {/* Stat cards */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+    </div>
+    {/* Row 1: Donut + Radial + Area */}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <ChartCardSkeleton className="lg:col-span-5">
+        <div className="flex items-center gap-4">
+          <SkeletonBox className="w-[180px] h-[180px] rounded-full flex-shrink-0" />
+          <div className="flex-1 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <SkeletonBox className="w-2.5 h-2.5 rounded-full" />
+                <SkeletonBox className="h-3 flex-1" />
+                <SkeletonBox className="h-3 w-6" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </ChartCardSkeleton>
+      <ChartCardSkeleton className="lg:col-span-3">
+        <div className="flex flex-col items-center gap-3">
+          <SkeletonBox className="w-[160px] h-[160px] rounded-full" />
+          <SkeletonBox className="h-4 w-16" />
+        </div>
+      </ChartCardSkeleton>
+      <ChartCardSkeleton className="lg:col-span-4">
+        <div className="flex items-end gap-3 justify-center h-[200px]">
+          {[55, 70, 40, 85, 50, 65].map((h, i) => (
+            <SkeletonBox key={i} className="w-8 rounded-t" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </ChartCardSkeleton>
+    </div>
+    {/* Row 2: Bar + Table */}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <ChartCardSkeleton className="lg:col-span-5">
+        <div className="flex items-end gap-4 justify-center h-[180px]">
+          {[60, 80, 45, 70, 35].map((h, i) => (
+            <SkeletonBox key={i} className="w-10 rounded-t" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </ChartCardSkeleton>
+      <ChartCardSkeleton className="lg:col-span-7">
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-1.5" style={{ borderBottom: '1px solid rgba(0,0,0,.04)' }}>
+              <SkeletonBox className="w-8 h-8 rounded-full flex-shrink-0" />
+              <SkeletonBox className="h-3 flex-1" />
+              <SkeletonBox className="h-5 w-16 rounded-full" />
+              <SkeletonBox className="h-3 w-20" />
+            </div>
+          ))}
+        </div>
+      </ChartCardSkeleton>
+    </div>
+  </div>
+);
+
 /* ─── Dashboard ───────────────────────────────────────── */
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -250,11 +334,7 @@ const Dashboard: React.FC = () => {
     .slice(0, 6);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 rounded-full border-[3px] border-[#048F86] border-t-transparent animate-spin" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
