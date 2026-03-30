@@ -81,7 +81,7 @@ export function DetailPageHeader({
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center justify-center w-9 h-9 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] transition-all flex-shrink-0"
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] text-[#6B7280] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] hover:text-[#374151] hover:scale-105 active:scale-95 transition-all duration-200 flex-shrink-0"
                 aria-label="رجوع"
               >
                 <ChevronRight className="w-5 h-5" />
