@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/ui';
+import { AnimatedLogomark } from './AnimatedLogomark';
 
 interface ScreenLoaderProps {
   message?: string;
@@ -7,27 +8,33 @@ interface ScreenLoaderProps {
 }
 
 export const ScreenLoader: React.FC<ScreenLoaderProps> = ({ 
-  message = 'جاري التحميل...',
+  message,
   className = ''
 }) => {
   return (
-    <div className={cn('fixed inset-0 flex items-center justify-center bg-white z-50', className)}>
+    <div className={cn('fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50', className)}>
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-600">{message}</p>
+        <div className="flex items-center gap-4">
+          <AnimatedLogomark size={56} />
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-lg font-bold text-foreground">المنصة الموحدة</h1>
+            <p className="text-sm text-muted-foreground">للشؤون التنفيذية بمكتب معالي الوزير</p>
+          </div>
+        </div>
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </div>
     </div>
   );
 };
 
 
-export const  Loader: React.FC<ScreenLoaderProps> = ({
-  message = 'جاري التحميل...'
+export const Loader: React.FC<ScreenLoaderProps> = ({
+  message
 }) => {
   return (
     <div className="flex flex-col justify-center w-full h-full items-center gap-4">
-      <div className="w-12 h-12 border-4 border-[#048F86] border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-sm text-gray-600">{message}</p>
+      <AnimatedLogomark size={56} />
+      {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
 };
