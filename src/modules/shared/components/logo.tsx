@@ -1,5 +1,5 @@
 import React from 'react';
-import LogomarkSvg from '@/modules/shared/assets/Logomark.svg';
+import LogomarkSvg from '@/modules/shared/assets/Logomark.svg?url';
 
 export interface LogoProps {
   className?: string;
