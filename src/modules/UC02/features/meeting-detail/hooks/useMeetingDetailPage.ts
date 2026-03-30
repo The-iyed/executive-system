@@ -451,6 +451,7 @@ export function useMeetingDetailPage() {
     meetingFormOpen, setMeetingFormOpen,
     isQualityModalOpen, setIsQualityModalOpen,
     isDeleteDraftModalOpen, setIsDeleteDraftModalOpen,
+    isWaitingListConfirmOpen, setIsWaitingListConfirmOpen,
     isRejectModalOpen, setIsRejectModalOpen,
     isCancelModalOpen, setIsCancelModalOpen,
     isSendToContentModalOpen, setIsSendToContentModalOpen,
