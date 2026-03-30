@@ -117,6 +117,7 @@ export function MeetingSelect({
                 )}
                 onClick={() => {
                   onChange(opt.value);
+                  onSelectMeeting?.(opt);
                   setOpen(false);
                 }}
               >
