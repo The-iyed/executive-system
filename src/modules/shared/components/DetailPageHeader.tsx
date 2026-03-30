@@ -106,37 +106,21 @@ export function DetailPageHeader({
           <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap [&_button]:transition-all [&_button]:duration-200">
             {secondaryAction && <div className="flex-shrink-0">{secondaryAction}</div>}
             {editAction?.visible && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
-                      disabled={!editAction.opensForm && !editAction.hasChanges}
-                      className={cn(
-                        'flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold transition-all duration-200',
-                        'disabled:opacity-50 disabled:cursor-not-allowed',
-                        (editAction.opensForm || editAction.hasChanges)
-                          ? 'bg-gradient-to-r from-[#048F86] via-[#069E95] to-[#0BB5AA] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]'
-                          : 'bg-gradient-to-r from-[#B0B7C3] to-[#CDD3DC]'
-                      )}
-                    >
-                      <Pencil className="w-4 h-4" strokeWidth={2} />
-                      <span>{editAction.label ?? 'تعديل'}</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[280px] text-right">
-                    <p>
-                      {editAction.tooltip ??
-                        (editAction.opensForm
-                          ? 'فتح نموذج التعديل'
-                          : editAction.hasChanges
-                            ? 'تأكيد التعديلات وإرسالها'
-                            : 'لا يوجد تغييرات لحفظها')}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <button
+                type="button"
+                onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
+                disabled={!editAction.opensForm && !editAction.hasChanges}
+                className={cn(
+                  'flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold transition-all duration-200',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  (editAction.opensForm || editAction.hasChanges)
+                    ? 'bg-gradient-to-r from-[#048F86] via-[#069E95] to-[#0BB5AA] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]'
+                    : 'bg-gradient-to-r from-[#B0B7C3] to-[#CDD3DC]'
+                )}
+              >
+                <Pencil className="w-4 h-4" strokeWidth={2} />
+                <span>{editAction.label ?? 'تعديل'}</span>
+              </button>
             )}
             {primaryAction && (
               <div className="flex-shrink-0">{primaryAction}</div>
