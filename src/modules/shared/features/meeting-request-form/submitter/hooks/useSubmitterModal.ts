@@ -231,13 +231,14 @@ export function useSubmitterModal({
         invitees: inviteesPayload,
       });
 
-      if (isEditMode) {
-        await syncMeetingDetails(meetingId, inviteePatch);
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-      }
       toast({ title: "تم حفظ المسودة بنجاح" });
       onClose();
+      // Sync AFTER close to prevent form re-render flicker
+      if (isEditMode) {
+        syncMeetingDetails(meetingId, inviteePatch);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      }
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant: 'destructive' });
     } finally {
