@@ -1,74 +1,32 @@
 
 
-## Plan: Fix SubmitterModal to sync `draftId` with `editMeetingId`
+## Plan: Preserve invitee `id` in Step 3 edit payload
 
-### Root Cause
-`useModalSteps` initializes `draftId` via `useState(editMeetingId ?? null)`. Since React's `useState` only uses the initial value, when the `SubmitterModal` stays mounted and `editMeetingId` changes (e.g. from `null` to a UUID), the internal `draftId` stays `null` — causing Step 1 to POST (create) instead of PATCH (update).
+### Problem
+When editing a meeting, each invitee returned from the API has a server-side `id`. This `id` is currently dropped in two places:
+1. **Mapper** (`transformDraftToInvitees`) — doesn't copy `inv.id` to the `TableRow`
+2. **Payload builder** (`mapRowToPayload`) — doesn't include `row.id` in the outgoing payload
 
-### Fix
+Without the `id`, the backend cannot match existing invitees for updates and may create duplicates or fail.
 
-**File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`**
+### Changes
 
-Add a `useEffect` to sync `draftId` whenever `editMeetingId` changes:
+**File 1: `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts`**
+- In `transformDraftToInvitees`, preserve the invitee's `id` field from the API response onto the `TableRow`:
+  ```
+  id: inv.id || undefined,
+  ```
 
-```ts
-import { useState, useRef, useCallback, useEffect } from "react";
-
-// Inside useModalSteps, after line 20:
-useEffect(() => {
-  setDraftId(editMeetingId ?? null);
-}, [editMeetingId]);
-```
-
-This ensures that when the calendar passes a new `editMeetingId`, the internal `draftId` updates accordingly, and `saveDraftBasicInfo` receives the correct `draftId` to trigger a PATCH request.
+**File 2: `src/lib/dynamic-table-form/payload-mapper.ts`**
+- In `mapRowToPayload`, include `row.id` in the payload when it exists:
+  ```
+  if (row.id) {
+    payload.id = row.id;
+  }
+  ```
 
 ### Result
-- 1 file changed, 4 lines added
-- Step 1 correctly uses PATCH when `editMeetingId` is provided
-- No impact on create flow (when `editMeetingId` is undefined, `draftId` stays null → POST)
-## Top Navigation Bar - Professional Redesign Plan
-
-### Current Issues
-1. **Responsive overflow**: With 6+ nav items (dashboard, directives, previous meetings, work basket, waiting list, calendar), the pill buttons overflow and get cramped on viewports under ~1200px
-2. **Logo text too long**: "المنصة الموحدة / للشؤون التنفيذية بمكتب معالي الوزير" takes significant horizontal space
-3. **No mobile menu**: No hamburger/drawer pattern for small screens
-4. **Fixed height constraint**: The `h-[60px]` header doesn't adapt well when content overflows
-5. **Nav items don't truncate or collapse** -- they just squeeze together
-
-### Plan
-
-#### 1. Responsive Logo Component
-- On large screens (>=1280px): show full logo with title + subtitle
-- On medium screens (>=768px): show logo icon + title only (hide subtitle)
-- On small screens (<768px): show logo icon only
-
-#### 2. Responsive Navigation with Overflow Handling
-- On large screens (>=1280px): show all nav items with icon + text as pill buttons
-- On medium screens (768px-1279px): show nav items with icon + text, but use horizontal scroll with fade edges if they overflow (CSS `overflow-x: auto` with gradient masks)
-- On small screens (<768px): collapse navigation into a hamburger menu that opens a slide-out drawer/sheet from the right (RTL-aware)
-
-#### 3. Mobile Drawer Menu
-- Create a `MobileNavDrawer` component using the existing shadcn Sheet component
-- Triggered by a hamburger icon button that replaces the nav on small screens
-- Full-height drawer with vertical nav items, user info at bottom, logout button
-- Smooth open/close animation
-
-#### 4. Header Polish
-- Increase header height slightly on desktop to `h-[64px]` for breathing room
-- Add `backdrop-blur-sm` for a frosted glass effect
-- Subtle `top-2 mx-3` margin for the floating nav card feel
-- Ensure bell icon and avatar stay visible at all breakpoints
-
-### Files to Edit
-- `src/modules/shared/components/logo.tsx` -- responsive logo breakpoints
-- `src/modules/shared/components/Layout/shared-layout.tsx` -- responsive header layout with mobile menu toggle
-- `src/modules/shared/components/navigation-actions.tsx` -- horizontal scroll with fade on medium screens, hide on mobile
-- **New**: `src/modules/shared/components/mobile-nav-drawer.tsx` -- mobile slide-out drawer
-
-### Technical Details
-- Use Tailwind responsive classes (`md:`, `lg:`, `xl:`) for breakpoint logic
-- Use `useState` for mobile drawer open/close state
-- Use shadcn `Sheet` component for the drawer
-- Add CSS gradient masks for the horizontal scroll fade effect on the nav
-- No new dependencies needed
+- Existing invitees sent back with their server `id` for proper update matching
+- New invitees (no `id`) unaffected — field simply absent from payload
+- Works for both submitter and scheduler edit flows
 
