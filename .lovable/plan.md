@@ -1,28 +1,27 @@
 
 
-## Plan: Add configurable timezone env variable
+## Plan: Fix `editMeetingId` to use API-returned meeting ID
 
 ### Problem
-The timezone header is always derived from the browser. The user wants an optional env variable override.
+Line 112 in `EventDetailModal.tsx` sets `meetingId: event.meeting_id`, which comes from the calendar event object and can be null. The API response (`meetingDetail`) contains the authoritative `meeting.id`, but it's ignored. This means the edit button either doesn't appear or passes the wrong ID.
 
-### Changes
+### Change
 
-**1. `.env`** — Add new variable
-```
-VITE_APP_TIMEZONE=Asia/Riyadh
-```
+**`src/modules/UC02/features/calendar/components/EventDetailModal.tsx`** — Line 112
 
-**2. `src/lib/env.ts`** — Export the new variable
+Replace:
 ```ts
-export const APP_TIMEZONE = getEnv('VITE_APP_TIMEZONE', '');
+meetingId: event.meeting_id,
+```
+With:
+```ts
+meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
 ```
 
-**3. `src/lib/api/apiTimezone.ts`** — Use env value when set, fallback to browser
-- Import `APP_TIMEZONE` from `@/lib/env`
-- In `getBrowserTimezone()`: return `APP_TIMEZONE` if non-empty, otherwise return browser timezone as current default
+This mirrors the pattern used in the meeting detail page (`meeting.id`), ensuring the correct UUID is passed to `SubmitterModal` for PATCH requests.
 
 ### Result
-- When `VITE_APP_TIMEZONE` is set (e.g. `Asia/Riyadh`), all API requests use that value in the `X-Timezone` header
-- When empty or unset, falls back to browser-detected timezone as before
-- 3 files changed
+- Edit always passes the correct API-sourced meeting ID to `SubmitterModal`
+- Matches the `/meeting/:id` detail page behavior exactly
+- 1 file changed
 
