@@ -40,6 +40,7 @@ const TableFormSection = forwardRef<DynamicTableFormHandle, TableFormSectionProp
 
     useImperativeHandle(ref, () => ({
       validateAndGetPayload: () => innerRef.current?.validateAndGetPayload() ?? null,
+      getRows: () => innerRef.current?.getRows() ?? [],
     }));
 
     return <DynamicTableForm {...tableProps} mode={mode} formRef={innerRef} />;

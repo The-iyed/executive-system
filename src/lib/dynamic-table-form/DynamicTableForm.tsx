@@ -136,7 +136,8 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
 
   useImperativeHandle(formRef, () => ({
     validateAndGetPayload: doValidateAndGetPayload,
-  }), [doValidateAndGetPayload]);
+    getRows: () => form.rows,
+  }), [doValidateAndGetPayload, form.rows]);
 
   return (
     <div className={cn("w-full space-y-4", className)} dir="rtl">
