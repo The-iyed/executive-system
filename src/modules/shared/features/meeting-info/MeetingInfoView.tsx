@@ -63,7 +63,7 @@ function LinkField({ value }: { value: string }) {
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
             title="الانضمام للاجتماع"
           >
             <ExternalLink className="w-3.5 h-3.5" />
