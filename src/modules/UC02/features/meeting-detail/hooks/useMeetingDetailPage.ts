@@ -82,6 +82,7 @@ export function useMeetingDetailPage() {
   const [meetingFormOpen, setMeetingFormOpen] = useState(false);
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isDeleteDraftModalOpen, setIsDeleteDraftModalOpen] = useState(false);
+  const [isWaitingListConfirmOpen, setIsWaitingListConfirmOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSendToContentModalOpen, setIsSendToContentModalOpen] = useState(false);
