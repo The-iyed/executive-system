@@ -1,33 +1,26 @@
 
 
-## Plan: Remove auto-close logic from توثيق الاجتماع tab
+## Plan: Replace CancelDialog with shared ConfirmDialog
+
+### Problem
+The "إلغاء" (Cancel) action uses a custom `CancelDialog` with form fields (reason + notes), while the "إضافة إلى قائمة الانتظار" uses the shared `ConfirmDialog` — a simpler, cleaner confirmation modal. The user wants consistency.
+
+### Approach
+Replace the `CancelDialog` usage with the shared `ConfirmDialog` component (warning variant), removing the reason/notes form fields. The cancel mutation will fire without extra form data.
 
 ### Changes
 
-**`src/modules/UC02/features/meeting-detail/tabs/MeetingDocumentationTab.tsx`**
+**1. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`**
+- Replace the `<CancelDialog>` block with a `<ConfirmDialog>` using variant `"danger"`, title "إلغاء الاجتماع", description "هل أنت متأكد من إلغاء هذا الاجتماع؟"
+- Remove `CancelDialog` import, add/reuse `ConfirmDialog` import
+- Call `h.cancelMutation.mutate({})` on confirm (no form data)
 
-1. **Remove auto-close imports and code**:
-   - Remove `useEffect`, `useRef` from imports
-   - Remove `useQueryClient`, `useMutation` from react-query imports
-   - Remove `closeMeetingRequest` from API imports
-   - Remove `MeetingStatus` from shared imports
-   - Remove `useToast` import
-   - Delete `hasTriggeredClose` ref
-   - Delete `queryClient` and `toast` declarations
-   - Delete the entire `closeMutation` block (~30 lines)
-   - Delete the `useEffect` auto-close block (~10 lines)
-
-2. **Simplify props interface**:
-   - Remove `meetingId` and `meetingStatus` props (no longer needed)
-   - Keep only `meetingTitle`
-
-3. **Update comment** at the top — remove mention of auto-close
-
-**`src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`**
-- Stop passing `meetingId` and `meetingStatus` to `MeetingDocumentationTab`
+**2. `src/modules/UC02/features/meeting-detail/hooks/useMeetingDetailPage.ts`**
+- Remove `cancelForm` and `setCancelForm` state (no longer needed)
+- Keep `isCancelModalOpen` / `setIsCancelModalOpen` as-is
 
 ### Result
-- Tab becomes a pure read-only view (PDF + directives) with no side effects
-- Visible in both SCHEDULED and CLOSED states as before
+- Cancel action uses the same polished shared dialog as the waiting list action
+- Consistent UX across all action bar confirmations
 - 2 files changed
 
