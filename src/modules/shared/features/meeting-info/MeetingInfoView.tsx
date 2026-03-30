@@ -44,32 +44,29 @@ function LinkField({ value }: { value: string }) {
     <div className="sm:col-span-2 flex flex-col gap-1.5" dir="rtl">
       <p className="text-sm text-muted-foreground text-right">رابط الاجتماع</p>
       <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40">
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-sm font-medium text-foreground truncate" title={value}>
-            {domainLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-background text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            title="نسخ الرابط"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            نسخ
-          </button>
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            title="الانضمام للاجتماع"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            انضمام
-          </a>
-        </div>
+        <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+        <span className="text-sm font-medium text-foreground" title={value}>
+          {domainLabel}
+        </span>
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          title="الانضمام للاجتماع"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          انضمام
+        </a>
+        <div className="flex-1" />
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-background text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          title="نسخ الرابط"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          نسخ
+        </button>
       </div>
     </div>
   );
