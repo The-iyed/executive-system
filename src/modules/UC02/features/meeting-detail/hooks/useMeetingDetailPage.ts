@@ -300,7 +300,7 @@ export function useMeetingDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsCancelModalOpen(false);
-      setCancelForm({ reason: '', notes: '' });
+      
       navigate(-1);
     },
   });
