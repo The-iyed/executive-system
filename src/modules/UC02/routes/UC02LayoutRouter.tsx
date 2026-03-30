@@ -1,20 +1,13 @@
 import React, { Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { prefetchUC02Routes } from './prefetchRoutes';
 import { useAuth } from '@/modules/auth';
 import { AuthGuard } from '@/modules/shared/guards';
-import { ScreenLoader, Loader } from '@/modules/shared';
+import { ScreenLoader } from '@/modules/shared';
 import { filterRoutesByUseCase } from '@/modules/shared/utils/routeFilter';
 import { getDefaultRouteForUser } from '@/modules/shared/utils/useCaseConfig';
 import { Layout } from '../Layout';
 import uc02Routes from './routes';
-
-/** Inline fallback for lazy route chunks: keeps layout visible, only content area shows loading */
-const ContentAreaFallback = () => (
-  <div className="flex-1 flex min-h-[320px] w-full">
-    <Loader />
-  </div>
-);
 
 /**
  * Renders UC-02 Layout once with an inner Routes so that when navigating
@@ -37,7 +30,7 @@ export const UC02LayoutRouter: React.FC = () => {
   return (
     <AuthGuard>
       <Layout>
-        <Suspense fallback={<ContentAreaFallback />}>
+        <Suspense fallback={null}>
           <Routes>
             {filtered.map((route) => (
               <Route
