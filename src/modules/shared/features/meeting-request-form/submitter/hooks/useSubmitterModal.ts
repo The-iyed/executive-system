@@ -96,19 +96,20 @@ export function useSubmitterModal({
     [submitMutation, resubmitSchedulingMutation, resubmitContentMutation],
   );
 
-  // Keep a ref to the last invitees patch so we can re-apply after refetch
-  const lastInviteesPatchRef = useRef<Record<string, unknown> | null>(null);
-
-  const saveInvitees = async (meetingId: string) => {
+  /**
+   * Save invitees and return both the API response and the optimistic patch.
+   * Returns `false` if validation fails.
+   */
+  const saveInvitees = useCallback(async (meetingId: string): Promise<{ response: any; patch: Record<string, unknown> | null } | false> => {
     // Capture raw rows BEFORE validation/mutation (ref may be unmounted after modal closes)
     const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
 
-    // Apply optimistic update immediately (before API call) using raw TableRow[]
+    // Build optimistic patch from raw TableRow[]
+    let patch: Record<string, unknown> | null = null;
     if (isEditMode && rawRows.length > 0) {
-      const patch = buildStep3Patch(rawRows);
-      lastInviteesPatchRef.current = patch;
+      patch = buildStep3Patch(rawRows);
       optimisticMergeMeeting(queryClient, meetingId, patch);
     }
 
@@ -117,8 +118,8 @@ export function useSubmitterModal({
       invitees: inviteesPayload,
     });
 
-    return response;
-  };
+    return { response, patch };
+  }, [steps.inviteesRef, isEditMode, queryClient, inviteesMutation]);
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
   const handleFinalSubmit = useCallback(async () => {
@@ -129,11 +130,12 @@ export function useSubmitterModal({
       const result = await saveInvitees(meetingId);
       if (!result) return;
 
-      const meetingStatus = result.status;
+      const { response, patch } = result;
+      const meetingStatus = response.status;
   
       if (isSchedulerEdit) {
         if (isEditMode) {
-          await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
+          await syncMeetingDetails(meetingId, patch);
         }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
@@ -149,7 +151,7 @@ export function useSubmitterModal({
       }
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
+        await syncMeetingDetails(meetingId, patch);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -157,7 +159,7 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
-  }, [steps, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, queryClient, toast]);
+  }, [steps, saveInvitees, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, queryClient, toast]);
 
   // ── Save as draft ─────────────────────────────────────────────────────────
   const handleSaveAsDraft = useCallback(async () => {
@@ -165,11 +167,13 @@ export function useSubmitterModal({
     if (!meetingId) return;
   
     try {
-      const saved = await saveInvitees(meetingId);
-      if (!saved) return;
+      const result = await saveInvitees(meetingId);
+      if (!result) return;
+
+      const { patch } = result;
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
+        await syncMeetingDetails(meetingId, patch);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -178,7 +182,7 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
-  }, [steps, isEditMode, syncMeetingDetails, queryClient, toast]);
+  }, [steps, saveInvitees, isEditMode, syncMeetingDetails, queryClient, toast]);
 
   // ── Public API ────────────────────────────────────────────────────────────
   return {
