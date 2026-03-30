@@ -18,7 +18,7 @@ interface UseMeetingsOptions {
   ownerType?: MeetingOwnerType;
 }
 interface UseMeetingsReturn {
-  meetings: MeetingDisplayData[];
+  meetings: MeetingCardData[];
   isLoading: boolean;
   error: unknown;
   totalItems: number;
