@@ -128,7 +128,7 @@ const MeetingDetailPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
-            title={`${meeting.meeting_title} (${meeting.request_number})`}
+            title={meeting.request_number ? `${meeting.meeting_title} (${meeting.request_number})` : meeting.meeting_title}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
             onBack={() => h.navigate(-1)}
             statusBadge={<StatusBadge status={h.meetingStatus} label={h.statusLabel} className="flex-shrink-0" />}
