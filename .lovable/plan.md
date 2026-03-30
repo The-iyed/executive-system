@@ -1,49 +1,57 @@
 
 
-## Plan: Modernize MeetingActionsBar UI/UX
+## Plan: Production-grade MeetingActionsBar redesign
 
-### Current state
-The FAB opens an arc of small icon-only circles (44px) with tooltips. Issues: icons are hard to identify without hovering, the arc layout feels dated, no labels visible, no staggered animation.
+### Problems (from screenshots)
+- FAB looks flat and oversized with no depth or visual polish
+- Action pills have no icon color differentiation, weak shadows, and feel like plain HTML buttons
+- No visual grouping or hierarchy between actions
+- The open/close transition feels abrupt — no spring or easing refinement
+- Danger action (رفض) doesn't stand out enough from the rest
+- Overall aesthetic doesn't match a polished SaaS product
 
-### Approach
-Replace the arc layout with a vertical stack of labeled pill buttons that fan out from the FAB with staggered spring animations. Each action shows icon + label inline. The FAB itself gets the branded teal gradient. The backdrop gets a smoother blur.
+### Design direction
+Inspired by Apple's iOS action sheets and Linear's command palette — a floating glass-morphism menu with depth, subtle gradients, and refined micro-interactions.
 
 ### Changes — 1 file: `src/modules/shared/components/MeetingActionsBar.tsx`
 
-1. **Replace arc layout with vertical stack** — actions render as a column of pill-shaped buttons above the FAB, each with icon + label side-by-side. Remove the `R`, `ARC_SPAN`, angle math, and `compact` mode entirely.
+**1. FAB button**
+- Add `shadow-[0_4px_20px_rgba(4,143,134,0.35)]` for a colored glow effect when closed
+- Increase border to `border-2 border-white/40` for definition
+- Use `X` icon (from lucide) when open instead of rotated Zap — cleaner close affordance
+- Smooth spring: `transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]`
 
-2. **Staggered entrance animation** — each action pill gets an inline `animationDelay` based on its index (50ms increments), using `animate-in fade-in-0 slide-in-from-bottom-3` from Tailwind animate. Actions cascade upward smoothly.
+**2. Actions container**
+- Wrap pills in a single glass card: `bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/60 p-2`
+- This groups all actions visually as one cohesive panel instead of floating separate pills
+- Add container entrance animation: scale from 0.9 + fade in with spring easing
 
-3. **Action pill styling**:
-   - Default: `bg-white/95 backdrop-blur-md border border-gray-200/60 shadow-md rounded-2xl px-4 py-2.5`
-   - Hover: `hover:shadow-lg hover:scale-[1.03] hover:bg-white transition-all duration-200`
-   - Danger variant: `bg-red-50/90 border-red-200/60 text-red-600 hover:bg-red-100`
-   - Disabled: `opacity-50 cursor-not-allowed`
-   - Icon + label in a row with `gap-3`, label uses `text-sm font-semibold text-gray-700`
+**3. Action items (inside the card)**
+- Remove individual `shadow-md` and `border` — items live inside the card now
+- Style as clean rows: `rounded-xl px-4 py-3 hover:bg-gray-50/80 transition-colors duration-150`
+- Icon gets a subtle circular background: `w-8 h-8 rounded-lg bg-[#048F86]/10 flex items-center justify-center` for normal, `bg-red-50` for danger
+- Icon color: `text-[#048F86]` normal, `text-red-500` danger
+- Label: `text-[13px] font-medium text-gray-800` — not too bold
+- Add thin `border-b border-gray-100/80` separator between items (except last)
+- Danger item: no separator above, instead a `mt-1` gap + `bg-red-50/50 rounded-xl` to visually isolate it
 
-4. **FAB button upgrade**:
-   - Closed: branded teal gradient (`from-[#048F86] via-[#069E95] to-[#0BB5AA]`), white icon, `shadow-lg`
-   - Open: rotate icon 45deg to form an "X" shape, switch to `bg-gray-100` with gray icon
-   - Add `transition-all duration-300` for smooth morph
-   - Size stays 56px (w-14 h-14)
+**4. Stagger animation**
+- Keep per-item stagger but reduce to 30ms intervals for snappier feel
+- Use `opacity-0` initial state with `animate-in fade-in-0 slide-in-from-bottom-2` (smaller slide distance)
 
-5. **Backdrop** — upgrade to `bg-black/25 backdrop-blur-[3px]` with `animate-in fade-in-0 duration-200`
+**5. Backdrop**
+- Upgrade to `bg-black/20 backdrop-blur-[6px]` — more blur, less darkness for elegance
 
-6. **Remove `ActionBubble` component** — replace with inline pill rendering since the arc/compact mode is gone
-
-### Technical details
-- The vertical stack container: `flex flex-col-reverse items-center gap-2` positioned above the FAB
-- Each pill: `min-w-[180px]` to keep labels readable, RTL-friendly with `text-right`
-- Stagger: `style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}`
-- Tooltips kept only for disabled items with `disabledReason`
-
-### Note on build errors
-The listed build errors are all pre-existing in UC03, UC04, guiding-light, and auth modules — none relate to this component. They will not be addressed in this change.
+**6. Disabled state**
+- `opacity-40` instead of `opacity-50` — more clearly disabled
+- Tooltip behavior unchanged
 
 ### Result
-- Modern vertical pill menu with icon + label visible at a glance
-- Smooth staggered cascade animation on open
-- Branded teal FAB with rotate-to-close transition
-- Better backdrop blur
+- Cohesive glass-morphism panel that looks like a native OS action sheet
+- FAB with colored glow shadow for visual weight
+- Clean icon containers with subtle tinted backgrounds
+- Smooth spring animations on open/close
+- Clear visual separation for the danger action
+- Production-ready SaaS quality
 - 1 file changed
 
