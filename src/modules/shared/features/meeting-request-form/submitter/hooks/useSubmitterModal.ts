@@ -176,7 +176,6 @@ export function useSubmitterModal({
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
-      steps.resetModal();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
