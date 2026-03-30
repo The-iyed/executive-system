@@ -61,6 +61,8 @@ export function DetailPageHeader({
   helpTooltip,
   className,
 }: DetailPageHeaderProps) {
+  const sanitizedTitle = title.replace(/\s*\((?:null|undefined|)\)\s*$/, '').trim();
+
   return (
     <div
       className={cn(
@@ -90,7 +92,7 @@ export function DetailPageHeader({
             <div className="flex flex-col min-w-0 flex-1 text-right">
               <div className="flex flex-row items-center gap-2.5 flex-wrap">
                 <h1 className="text-[18px] font-bold text-[#101828] leading-tight truncate max-w-full">
-                  {title}
+                  {sanitizedTitle}
                 </h1>
                 {statusBadge}
               </div>
