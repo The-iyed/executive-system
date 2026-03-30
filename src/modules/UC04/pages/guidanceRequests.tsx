@@ -6,7 +6,7 @@ import {
   type GuidanceRequestApiResponse,
   type GetGuidanceRequestsParams,
 } from '../data/guidanceApi';
-import { mapGuidanceRequestToCardData } from '../utils/guidanceMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const GuidanceRequests: React.FC = () => {
