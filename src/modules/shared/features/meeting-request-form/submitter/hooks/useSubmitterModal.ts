@@ -15,6 +15,7 @@ import { useToast } from "@/lib/ui";
 import { optimisticMergeMeeting, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 
 interface UseSubmitterModalOptions {
+  open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
   callerRole?: MeetingOwnerType;
@@ -23,6 +24,7 @@ interface UseSubmitterModalOptions {
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useSubmitterModal({
+  open,
   editMeetingId,
   onClose,
   callerRole,
@@ -51,6 +53,7 @@ export function useSubmitterModal({
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
   const steps = useModalSteps({
+    open,
     editMeetingId,
     onClose,
     onStepSaved: isEditMode
@@ -122,8 +125,11 @@ export function useSubmitterModal({
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
   const handleFinalSubmit = async () => {
-    const meetingId = steps.draftId;
-    if (!meetingId) return;
+    const meetingId = steps.activeDraftId;
+    if (!meetingId) {
+      if (isEditMode) toast({ title: "لا يوجد معرف اجتماع", variant: "destructive" });
+      return;
+    }
   
     try {
       const result = await saveInvitees(meetingId);
@@ -162,8 +168,11 @@ export function useSubmitterModal({
 
   // ── Save as draft ─────────────────────────────────────────────────────────
   const handleSaveAsDraft = async () => {
-    const meetingId = steps.draftId;
-    if (!meetingId) return;
+    const meetingId = steps.activeDraftId;
+    if (!meetingId) {
+      if (isEditMode) toast({ title: "لا يوجد معرف اجتماع", variant: "destructive" });
+      return;
+    }
   
     try {
       const result = await saveInvitees(meetingId);
