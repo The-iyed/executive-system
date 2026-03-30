@@ -98,10 +98,9 @@ export function useSubmitterModal({
 
   /**
    * Save invitees and return both the API response and the optimistic patch.
-   * Returns `false` if validation fails.
+   * No useCallback — avoids stale closure issues across modal open/close cycles.
    */
-  const saveInvitees = useCallback(async (meetingId: string): Promise<{ response: any; patch: Record<string, unknown> | null } | false> => {
-    // Capture raw rows BEFORE validation/mutation (ref may be unmounted after modal closes)
+  const saveInvitees = async (meetingId: string): Promise<{ response: any; patch: Record<string, unknown> | null } | false> => {
     const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
@@ -119,10 +118,10 @@ export function useSubmitterModal({
     });
 
     return { response, patch };
-  }, [steps.inviteesRef, isEditMode, queryClient, inviteesMutation]);
+  };
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
-  const handleFinalSubmit = useCallback(async () => {
+  const handleFinalSubmit = async () => {
     const meetingId = steps.draftId;
     if (!meetingId) return;
   
@@ -159,10 +158,10 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
-  }, [steps, saveInvitees, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, queryClient, toast]);
+  };
 
   // ── Save as draft ─────────────────────────────────────────────────────────
-  const handleSaveAsDraft = useCallback(async () => {
+  const handleSaveAsDraft = async () => {
     const meetingId = steps.draftId;
     if (!meetingId) return;
   
@@ -182,7 +181,7 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
-  }, [steps, saveInvitees, isEditMode, syncMeetingDetails, queryClient, toast]);
+  };
 
   // ── Public API ────────────────────────────────────────────────────────────
   return {
