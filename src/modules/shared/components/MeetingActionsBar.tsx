@@ -148,9 +148,10 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
         style={{
           left: `calc(50% + ${x}px - 26px)`,
           bottom: `calc(100% + ${y}px - 26px)`,
-          transition: `all 350ms cubic-bezier(0.34, 1.56, 0.64, 1)`,
-          transitionDelay: open ? `${index * 50}ms` : `${(total - index) * 25}ms`,
-          transform: open ? 'scale(1) translateY(0)' : 'scale(0) translateY(20px)',
+          transition: open
+            ? `transform 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 60}ms, opacity 300ms ease-out ${index * 60}ms`
+            : `transform 250ms cubic-bezier(0.6, -0.28, 0.735, 0.045) ${(total - index - 1) * 30}ms, opacity 200ms ease-in ${(total - index - 1) * 30}ms`,
+          transform: open ? 'scale(1)' : 'scale(0)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
         }}
