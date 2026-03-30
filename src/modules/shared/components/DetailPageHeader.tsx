@@ -65,13 +65,10 @@ export function DetailPageHeader({
     <div
       className={cn(
         'w-full mt-[30px] flex flex-col rounded-2xl bg-white min-w-0 overflow-hidden',
-        'border border-[#E5E7EB]',
+        'border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow duration-300',
         className
       )}
       dir="rtl"
-      style={{
-        boxShadow: '0 4px 24px -4px rgba(4, 143, 134, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04)',
-      }}
     >
       {/* No top accent bar */}
 
