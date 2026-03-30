@@ -129,6 +129,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [],
   );
 
+  const handleMoreClick = useCallback((date: Date, events: CalendarEventData[]) => {
+    setDayPanelDate(date);
+    setDayPanelEvents(events);
+  }, []);
 
   const handleSlotSubmit = useCallback(
     async (values: Record<string, unknown>) => {
