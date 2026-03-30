@@ -203,7 +203,7 @@ function DonutChart({
           </button>
           <span
             className="rounded-full bg-muted/60 px-3 py-1 text-[11px] font-semibold text-foreground select-none"
-            style={{ fontFamily: "Almarai, sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             {titleProp ?? displayLabel}
           </span>
@@ -285,7 +285,7 @@ function DonutChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fill-foreground font-bold"
-                  style={{ fontSize: 26, fontFamily: "Almarai, sans-serif" }}
+                  style={{ fontSize: 26, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {hoveredSeg.percent}%
                 </text>
@@ -295,7 +295,7 @@ function DonutChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fill-muted-foreground"
-                  style={{ fontSize: 11, fontFamily: "Almarai, sans-serif" }}
+                  style={{ fontSize: 11, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {hoveredSeg.label}
                 </text>
@@ -308,7 +308,7 @@ function DonutChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fill-foreground font-bold"
-                  style={{ fontSize: 28, fontFamily: "Almarai, sans-serif" }}
+                  style={{ fontSize: 28, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {total}
                 </text>
@@ -318,7 +318,7 @@ function DonutChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fill-muted-foreground"
-                  style={{ fontSize: 11, fontFamily: "Almarai, sans-serif" }}
+                  style={{ fontSize: 11, fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {total === 1 ? "اجتماع" : "اجتماعات"}
                 </text>

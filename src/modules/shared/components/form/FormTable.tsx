@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/ui';
 import { FormInput } from './FormInput';
@@ -81,6 +81,7 @@ export const FormTable: React.FC<FormTableProps> = ({
   hideAddButton = false,
   customCellRender,
 }) => {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const nonDeletableSet = useMemo(
     () => new Set(nonDeletableRowIds),
     [nonDeletableRowIds]
@@ -148,6 +149,7 @@ export const FormTable: React.FC<FormTableProps> = ({
 
             {/* Table Body */}
             <div
+              ref={bodyRef}
               className="flex flex-col bg-white overflow-y-auto"
               style={{ maxHeight }}
             >
@@ -347,6 +349,11 @@ export const FormTable: React.FC<FormTableProps> = ({
           onClick={() => {
             if (disabled) return;
             onAddRow();
+            requestAnimationFrame(() => {
+              if (bodyRef.current) {
+                bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+              }
+            });
           }}
           disabled={disabled}
           className={cn(
