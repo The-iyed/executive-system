@@ -1,107 +1,45 @@
 
 
-## Plan: Fix build errors, deduplicate enums, fix meeting detail field labels
+## Plan: Complete meeting info tab fields and hide empty fields
 
-### Part 1 — Fix build errors (blocking)
+### Problem
+The "معلومات الاجتماع" tab in the meeting detail view (`/meeting/:id`) is missing fields that exist in the Step 1 form, and currently shows "—" for empty fields instead of hiding them.
 
-**1a. `src/modules/UC03/data/consultationsApi.ts`** — Add `id` to `ConsultationRequestDetailResponse`:
-```ts
-export interface ConsultationRequestDetailResponse {
-  id?: string;
-  meeting_request: ConsultationRequestApiResponse;
-  consultation_question: string;
-}
-```
+### Missing fields to add
 
-**1b. `src/modules/UC04/data/guidanceApi.ts`** — Add `id` and `meeting_owner` to `GuidanceRequestDetailResponse` and `GuidanceRequestApiResponse`:
-```ts
-// GuidanceRequestDetailResponse
-export interface GuidanceRequestDetailResponse {
-  id?: string;
-  meeting_request: GuidanceRequestApiResponse;
-  guidance_question: string | null;
-}
+| Form field | Arabic label | API source | Action |
+|---|---|---|---|
+| `meeting_nature` | طبيعة الاجتماع | Derived: `is_sequential` → "إلحاقي", else "عادي" | Add to mapper |
+| `requires_protocol` | هل يتطلب بروتوكول؟ | `requires_protocol` (boolean) | Add to mapper |
 
-// GuidanceRequestApiResponse — add:
-meeting_owner?: { username?: string; name?: string } | null;
-```
+### Field display logic fix
+The `is_urgent` field currently only shows when `true`. It should show "لا" when `false` and hide when `null/undefined` — matching the form behavior where it's always a toggle.
 
-**1c. `src/modules/auth/context/AuthProvider.tsx`** — Fix `@analytics` import (alias not in tsconfig):
-```ts
-import { trackEvent } from '@/lib/analytics';
-```
+### Changes
 
-### Part 2 — Add `ORGANIZATIONAL_STRUCTURING` to shared `meeting-types.ts`
+**File 1: `src/modules/shared/features/meeting-info/meetingInfoMapper.ts`**
 
-In `MeetingClassificationType` enum and labels:
-```ts
-export enum MeetingClassificationType {
-  STRATEGIC = 'STRATEGIC',
-  OPERATIONAL = 'OPERATIONAL',
-  SPECIAL = 'SPECIAL',
-  ORGANIZATIONAL_STRUCTURING = 'ORGANIZATIONAL_STRUCTURING',
-}
-// Labels — add:
-[MeetingClassificationType.ORGANIZATIONAL_STRUCTURING]: 'بناء تنظيمي',
-```
+- Add `requires_protocol?: boolean` and `meeting_nature?: string` to `RawMeetingForInfo`
+- Add `meeting_nature` field at the top of `basicFields` — derive label from `MeetingNatureLabels` if present, otherwise infer from `is_sequential` (true → "إلحاقي", false → "عادي")
+- Add `requires_protocol` field after `meeting_channel` — display as yes/no toggle value
+- Fix `is_urgent` to always show yes/no (not only when true): `yesNo(meeting.is_urgent ?? false)`
+- Import `MeetingNatureLabels` from shared types
 
-### Part 3 — Move form-only constants to `meeting-types.ts`
+**File 2: `src/modules/shared/features/meeting-info/MeetingInfoView.tsx`**
 
-Add to `src/modules/shared/types/meeting-types.ts`:
-- `BOOL` constant
-- `DIRECTIVE_METHOD_OPTIONS` array
-- `MEETING_MANAGERS` placeholder
-- `MeetingNature` enum + labels + options
-- `MINISTER_SUPPORT_OTHER_VALUE` constant
-- `MEETING_CLASSIFICATION_TYPE_OPTIONS` (the `MEETING_CLASSIFICATION_OPTIONS` from form enums)
-- `getMeetingSubCategoryLabel` helper
+- Change field rendering to **hide fields with null value** instead of showing "—":
+  - In the grid, filter out fields where `value` is `null` (mapper already returns `null` for empty fields)
+  - This means: `data.sections[0].fields.filter(f => f.value !== null)` before mapping
+  - Same for directive section fields
 
-Note: The form's `AttendanceMechanism` uses English API values (`PHYSICAL`/`VIRTUAL`/`HYBRID`/`TBD`), which is the same concept as `Channel` already in `meeting-types.ts`. We'll re-export `Channel as AttendanceMechanism` so form imports don't break.
+This matches the user's request: "hide when has no data" — the mapper already returns `null` for missing data, we just need the view to skip those fields.
 
-### Part 4 — Replace form `enums.ts` with re-exports
+### Summary
 
-Replace the entire `src/modules/shared/features/meeting-request-form/shared/types/enums.ts` with re-exports from `@/modules/shared/types`:
-```ts
-export {
-  Sector, SectorLabels, SECTOR_OPTIONS,
-  MeetingType, MeetingTypeLabels, MEETING_TYPE_OPTIONS,
-  MeetingClassification, MeetingClassificationLabels, MEETING_CATEGORY_OPTIONS,
-  MeetingSubCategory, MeetingSubCategoryLabels, MEETING_SUB_CATEGORY_OPTIONS,
-  MeetingConfidentiality, MeetingConfidentialityLabels,
-  MeetingChannelLabels, MEETING_CHANNEL_OPTIONS,
-  MeetingLocation, MEETING_LOCATION_OPTIONS,
-  MINISTER_SUPPORT_TYPE_OPTIONS, MINISTER_SUPPORT_OTHER_VALUE,
-  DIRECTIVE_METHOD_OPTIONS, DirectiveMethodLabels,
-  BOOL,
-  MeetingNature, MeetingNatureLabels, MEETING_NATURE_OPTIONS,
-  Channel as AttendanceMechanism,
-  getMeetingCategoryOptions,
-  EXTERNAL_MEETING_EXCLUDED_CATEGORY_VALUES as EXTERNAL_MEETING_EXCLUDED_CATEGORIES,
-  MEETING_CLASSIFICATION_TYPE_OPTIONS as MEETING_CLASSIFICATION_OPTIONS,
-  MEETING_MANAGERS,
-} from '../../../../types';
-```
+| File | Change |
+|---|---|
+| `meetingInfoMapper.ts` | Add `meeting_nature` + `requires_protocol` fields, fix `is_urgent` display, update interface |
+| `MeetingInfoView.tsx` | Filter out null-value fields instead of showing "—" |
 
-No import changes needed in 19+ consumer files — they still import from `../types/enums`.
-
-### Part 5 — Add `meeting_sub_category` to meeting info mapper
-
-**`src/modules/shared/features/meeting-info/meetingInfoMapper.ts`**:
-- Add `meeting_sub_category?: string | null` to `RawMeetingForInfo`
-- Add field to `basicFields` array:
-  ```ts
-  { key: 'meeting_sub_category', label: 'التصنيف الفرعي',
-    value: getMeetingSubCategoryLabel(meeting.meeting_sub_category) ?? null },
-  ```
-
-### Summary of files changed
-
-| File | Action |
-|------|--------|
-| `src/modules/shared/types/meeting-types.ts` | Add `ORGANIZATIONAL_STRUCTURING`, `BOOL`, `DIRECTIVE_METHOD_OPTIONS`, `MeetingNature`, `MEETING_MANAGERS`, `MINISTER_SUPPORT_OTHER_VALUE`, `MEETING_CLASSIFICATION_TYPE_OPTIONS`, `getMeetingSubCategoryLabel` |
-| `src/modules/shared/features/meeting-request-form/shared/types/enums.ts` | Replace with re-exports |
-| `src/modules/shared/features/meeting-info/meetingInfoMapper.ts` | Add `meeting_sub_category` field |
-| `src/modules/UC03/data/consultationsApi.ts` | Add `id` to detail response |
-| `src/modules/UC04/data/guidanceApi.ts` | Add `id` to detail response, `meeting_owner` to API response |
-| `src/modules/auth/context/AuthProvider.tsx` | Fix `@analytics` → `@/lib/analytics` |
+2 files edited. All fields from Step 1 form will be represented in the detail view, hidden when no data.
 
