@@ -1,7 +1,7 @@
 import { TableRow } from "@/lib/dynamic-table-form";
 import { toISOStringWithTimezoneFromString } from "@/lib/ui";
 import type { ExistingAttachment, Step2ContentInitialData } from "../hooks/useStep2Content";
-import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality } from "../types/enums";
+import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality, MeetingNature } from "../types/enums";
 import type { SubmitterStep1Values } from "../../submitter/schema";
 
 /* ─── Helpers ─── */
