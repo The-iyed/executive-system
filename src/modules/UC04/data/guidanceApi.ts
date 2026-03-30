@@ -180,6 +180,7 @@ export const getContentExceptions = async (
 };
 
 export interface GuidanceRequestDetailResponse {
+  id?: string;
   meeting_request: GuidanceRequestApiResponse;
   guidance_question: string | null;
 }
