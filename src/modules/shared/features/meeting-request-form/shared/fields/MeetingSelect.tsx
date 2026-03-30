@@ -82,6 +82,7 @@ export function MeetingSelect({
               onClick={(e) => {
                 e.stopPropagation();
                 onChange("");
+                onSelectMeeting?.(null);
               }}
             />
           )}
