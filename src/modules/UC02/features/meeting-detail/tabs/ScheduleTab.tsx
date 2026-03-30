@@ -48,16 +48,6 @@ export function ScheduleTab({
             </div>
           )}
           <div className="flex flex-col gap-4">
-            <FormTextArea
-              label="ملاحظات"
-              value={scheduleForm.notes}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                onScheduleFormChange({ notes: e.target.value })
-              }
-              placeholder="Meeting scheduled successfully"
-              containerClassName="!px-0 !mx-0"
-              fullWidth={false}
-            />
           </div>
         </div>
         <InviteesTableForm initialInvitees={invitees} mode="view" />
