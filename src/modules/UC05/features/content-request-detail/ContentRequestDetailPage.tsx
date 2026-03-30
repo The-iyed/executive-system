@@ -68,7 +68,7 @@ const ContentRequestDetailPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
-            title={`${contentRequest.meeting_title} (${contentRequest.request_number})`}
+            title={contentRequest.request_number ? `${contentRequest.meeting_title} (${contentRequest.request_number})` : contentRequest.meeting_title}
             onBack={() => h.navigate(-1)}
             statusBadge={<StatusBadge status={h.meetingStatus} label={h.statusLabel} className="flex-shrink-0" />}
             tabs={h.tabs}
