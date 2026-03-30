@@ -43,15 +43,15 @@ export const AnimatedLogomark: React.FC<{ size?: number }> = ({ size = 56 }) => 
           50% { opacity: 0.35; }
           100% { opacity: 0.15; }
         }
-        .logo-float { animation: logoFloat 2.4s ease-in-out infinite; }
-        .grid-line { animation: gridFadeIn 0.6s ease-out both; }
-        .ring-outer { animation: ringScale 0.7s ease-out 0.2s both; transform-origin: 50% 50%; }
-        .ring-mid { animation: ringScale 0.6s ease-out 0.4s both; transform-origin: 50% 50%; }
-        .ring-inner { animation: ringScale 0.5s ease-out 0.6s both; transform-origin: 50% 50%; }
-        .cal-top { animation: calSlideDown 0.5s ease-out 0.7s both; }
-        .cal-pins { animation: pinPop 0.4s ease-out 0.9s both; transform-origin: center; }
-        .cal-body { animation: calFadeUp 0.5s ease-out 1s both; }
-        .glass-overlay { animation: shimmer 2.5s ease-in-out infinite 1.2s; }
+        .logo-float { animation: logoFloat 1.4s ease-in-out infinite; }
+        .grid-line { animation: gridFadeIn 0.25s ease-out both; }
+        .ring-outer { animation: ringScale 0.3s ease-out 0.1s both; transform-origin: 50% 50%; }
+        .ring-mid { animation: ringScale 0.25s ease-out 0.15s both; transform-origin: 50% 50%; }
+        .ring-inner { animation: ringScale 0.2s ease-out 0.2s both; transform-origin: 50% 50%; }
+        .cal-top { animation: calSlideDown 0.2s ease-out 0.25s both; }
+        .cal-pins { animation: pinPop 0.2s ease-out 0.3s both; transform-origin: center; }
+        .cal-body { animation: calFadeUp 0.2s ease-out 0.35s both; }
+        .glass-overlay { animation: shimmer 1.5s ease-in-out infinite 0.5s; }
       `}</style>
 
       <svg
