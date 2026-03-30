@@ -38,6 +38,7 @@ export function useSubmitterModal({
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
       queryClient.refetchQueries({ queryKey: ['meeting-draft', meetingId] }),
+      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'] }),
       queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
