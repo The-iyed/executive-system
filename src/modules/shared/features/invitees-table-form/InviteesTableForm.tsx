@@ -32,7 +32,11 @@ const InviteesTableForm = ({
   viewLayout?: InviteesViewLayout;
   showAiSuggest?: boolean;
 }) => {
-  const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees);
+  const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees ?? []);
+
+  useEffect(() => {
+    setInvitees(initialInvitees ?? []);
+  }, [initialInvitees]);
 
   // Hide attendance_mechanism when channel is fixed (PHYSICAL or VIRTUAL)
   const isFixedChannel = meetingChannel === 'PHYSICAL' || meetingChannel === 'VIRTUAL'
