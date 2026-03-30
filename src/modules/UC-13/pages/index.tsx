@@ -163,7 +163,7 @@ const uc13Page = () => {
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <div className="text-center" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             <div className="text-lg text-gray-600 mb-2">جاري تحميل تطبيق uc13...</div>
             <div className="text-sm text-gray-500">يرجى الانتظار</div>
           </div>
@@ -175,7 +175,7 @@ const uc13Page = () => {
         <div className="absolute inset-0 flex items-center justify-center p-6 bg-white z-10">
           <div
             className="max-w-md rounded-lg border border-red-200 bg-red-50 px-6 py-4"
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             <h3 className="text-lg font-semibold text-red-800 mb-2">
               خطأ في تحميل التطبيق

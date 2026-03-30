@@ -160,9 +160,9 @@
     --spacing-3xl: 4rem; /* 64px */
 
     /* Typography - Using Frutiger LT Arabic from local assets */
-    --font-family-sans: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
-    --font-family-serif: 'Frutiger LT Arabic', 'Georgia', serif;
-    --font-family-mono: 'Frutiger LT Arabic', 'Fira Code', 'Courier New', monospace;
+    --font-family-sans: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-family-serif: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', 'Georgia', serif;
+    --font-family-mono: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', 'Fira Code', 'Courier New', monospace;
 
     --font-size-xs: 0.75rem; /* 12px */
     --font-size-sm: 0.875rem; /* 14px */
@@ -222,6 +222,6 @@
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', 'Cairo', 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
   }
 }

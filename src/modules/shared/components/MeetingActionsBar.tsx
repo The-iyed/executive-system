@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CalendarMinus, CheckCircle, Plus, Pencil, RotateCcw, Send, X, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/lib/ui';
 import { MeetingStatus } from '../types';
@@ -50,7 +50,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex">{btn}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
             {tooltipText}
           </TooltipContent>
         </Tooltip>
@@ -67,7 +67,7 @@ function ActionBubble({
     >
       <span
         className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
-        style={{ fontFamily: "'Ping AR + LT', sans-serif" }}
+        style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
       >
         {label}
       </span>
@@ -82,7 +82,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex w-full min-w-0">{button}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'Ping AR + LT', sans-serif" }}>
+          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
             {disabledReason}
           </TooltipContent>
         </Tooltip>
@@ -149,6 +149,24 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   customActions,
   hideEdit = false,
 }) => {
+  // Track visibility for staggered animation
+  const [visible, setVisible] = useState(false);
+  const [showArc, setShowArc] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setShowArc(true);
+      // Small delay to allow DOM mount before triggering CSS transition
+      const t = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(t);
+    } else {
+      setVisible(false);
+      // Keep mounted briefly for exit animation
+      const t = setTimeout(() => setShowArc(false), 350);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
   const close = () => onOpenChange(false);
 
   const defaultUnderReviewActions: ActionBarItem[] = [
@@ -160,7 +178,6 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
     { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
   ];
 
-  /** مجدول - الجدولة (SCHEDULED_SCHEDULING): إعادة، إعتماد التحديث، إرسال للمحتوى */
   const scheduledSchedulingActions: ActionBarItem[] = [
     { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
     ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.26} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
@@ -189,21 +206,29 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
 
   return (
     <>
-      {open && (
+      {/* Backdrop with smooth fade */}
+      <div
+        className={`fixed inset-0 z-40 transition-all duration-300 ease-out ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: open ? 'blur(2px)' : 'blur(0px)' }}
+      >
         <button
           type="button"
           aria-label="إغلاق"
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+          className="w-full h-full"
           onClick={() => onOpenChange(false)}
         />
-      )}
+      </div>
+
       <div
         className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2 w-14 h-14"
         dir="ltr"
       >
-        {open && (
+        {/* Arc container – stays mounted for exit animation */}
+        {showArc && (
           <div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3"
             style={{ width: R * 2, height: R + 28 }}
           >
             <div className="absolute inset-0">
@@ -214,14 +239,21 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
                 const y = R * Math.sin(rad);
                 const leftPx = R + x;
                 const topPx = R + y;
+                // Stagger: first item appears first, each next +60ms
+                const delay = i * 60;
                 return (
                   <div
                     key={i}
-                    className="absolute"
+                    className="absolute transition-all ease-out"
                     style={{
                       left: leftPx,
                       top: topPx,
-                      transform: 'translate(-50%, -50%)',
+                      transform: visible
+                        ? 'translate(-50%, -50%) scale(1)'
+                        : 'translate(-50%, 20px) scale(0.3)',
+                      opacity: visible ? 1 : 0,
+                      transitionDuration: '320ms',
+                      transitionDelay: visible ? `${delay}ms` : `${(n - 1 - i) * 40}ms`,
                     }}
                   >
                     <ActionBubble
@@ -239,20 +271,28 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
             </div>
           </div>
         )}
+
+        {/* FAB button with rotation */}
         <button
           type="button"
           aria-label={open ? 'إغلاق القائمة' : 'إجراءات سريعة'}
           aria-expanded={open}
           onClick={() => onOpenChange(!open)}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300 ease-out hover:scale-105 active:scale-95 touch-manipulation"
           style={{
             background: open ? 'rgb(229 231 235)' : 'rgba(255, 255, 255, 0.95)',
             border: '1px solid rgba(255, 255, 255, 0.6)',
-            boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+            boxShadow: open
+              ? '0 0 0 1px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'
+              : '0 0 0 1px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
             backdropFilter: 'blur(12px)',
           }}
         >
-          <Zap className="w-6 h-6 text-[#048F86]" strokeWidth={2} />
+          <Zap
+            className="w-6 h-6 text-[#048F86] transition-transform duration-300 ease-out"
+            strokeWidth={2}
+            style={{ transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}
+          />
         </button>
       </div>
     </>

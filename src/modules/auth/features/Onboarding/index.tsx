@@ -101,7 +101,7 @@ export default function Onboarding({ user, onSuccess }: OnboardingProps) {
     <div
       className="min-h-screen min-h-[100dvh] w-full flex flex-col justify-center items-center p-6 gap-8 bg-[#ECF0F1]"
       dir="rtl"
-      style={{ fontFamily: "'Almarai', sans-serif" }}
+      style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
     >
       {/* Main content: flex column, center, max-width 678px */}
       <div className="flex flex-col justify-center items-center w-full max-w-[678px] gap-8">

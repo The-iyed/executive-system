@@ -61,7 +61,7 @@ function normalizedMeetingFromCreateResponse(
 
 import { trackEvent } from '@/lib/analytics';
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+const fontStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 
 const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -503,10 +503,10 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
             <ChevronDown className="w-4 h-4 text-[#048F86]" />
           </div>
           <div className="flex flex-col items-end">
-            <h1 className="font-bold text-gray-800 text-[16px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+            <h1 className="font-bold text-gray-800 text-[16px]" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
               التقويم
             </h1>
-            <p className="text-gray-400 text-[11px]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+            <p className="text-gray-400 text-[11px]" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
               عرض الجدول الزمني للاجتماعات
             </p>
           </div>
@@ -568,7 +568,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       {/* Error message overlay if there's an error but we have previous data */}
       {error && (timelineEvents || previousEvents.length > 0) && (
         <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-20">
-          <p className="text-sm text-red-600 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+          <p className="text-sm text-red-600 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             حدث خطأ أثناء تحديث المواعيد. يرجى المحاولة مرة أخرى.
           </p>
         </div>

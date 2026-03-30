@@ -23,7 +23,7 @@ import { exportTableAsXlsx } from "@gl/utils/tableExport";
   }
 })();
 
-const FONT_FAMILY = "'Somar Sans', 'Almarai', Arial, sans-serif";
+const FONT_FAMILY = "'Somar Sans', 'IBM Plex Sans Arabic', Arial, sans-serif";
 
 function rtlLabelHtml(text: string): string {
   return `<span dir="rtl" lang="ar" style="display:inline-block;text-align:inherit">${String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")}</span>`;

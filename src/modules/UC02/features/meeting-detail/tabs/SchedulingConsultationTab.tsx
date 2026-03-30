@@ -40,7 +40,7 @@ export function SchedulingConsultationTab({
             type="button"
             onClick={onRequestConsultation}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Almarai', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif", background: 'linear-gradient(180deg, #3C6FD1 0%, #048F86 0.01%, #6DCDCD 100%)', boxShadow: '0px 1px 2px rgba(16,24,40,0.05)' }}
           >
             <ClipboardCheck className="w-5 h-5" strokeWidth={1.26} />
             طلب استشارة
@@ -82,7 +82,7 @@ export function SchedulingConsultationTab({
                 type="button"
                 onClick={() => onToggleExpand(isExpanded ? null : recordId)}
                 className={`w-full text-right z-[2] rounded-xl px-5 py-4 transition-colors border-2 ${isExpanded ? 'bg-white border-[#048F86] shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'bg-[#F5F6F7] border-gray-200 hover:border-gray-300'}`}
-                style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 <div className="flex flex-row items-start justify-between gap-4">
                   <div className="flex flex-col items-start flex-1 min-w-0">
@@ -116,7 +116,7 @@ export function SchedulingConsultationTab({
                     {flatItems.map((item) => {
                       const responseDate = item.respondedAt ? formatDateTimeArabic(item.respondedAt) : '—';
                       return (
-                        <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
+                        <div key={item.id} className="flex h-[44px] items-center rounded-xl border border-gray-200 bg-white px-4" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                           <div className="flex w-full flex-row items-center justify-between gap-4">
                             <p className="min-w-0 flex-1 truncate text-right text-sm text-gray-700">{item.text?.trim() || '—'}</p>
                             <StatusBadge status={item.status} label={STATUS_LABELS[item.status] || item.status} />
@@ -143,7 +143,7 @@ export function SchedulingConsultationTab({
                     <div className="w-[50px] -ml-[30px] min-h-[8px] flex-1 border-r-2 border-b-2 rounded-br-lg z-[1] -mt-[9px] max-h-[60%]" />
                     <div className="w-2 h-2 flex-shrink-0 -mt-[5.5px] -ml-[40px] z-[2] rounded-full bg-gray-400" />
                   </div>
-                  <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'Almarai', 'Almarai', sans-serif" }}>
+                  <div className="z-[2] mt-4 flex h-[44px] min-w-0 flex-1 items-center rounded-xl border border-gray-200 bg-white px-4 mb-4" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                     <p className="w-full text-right text-sm text-gray-500">لا يوجد رد بعد</p>
                   </div>
                 </div>

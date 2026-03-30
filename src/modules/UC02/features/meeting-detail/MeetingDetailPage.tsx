@@ -16,7 +16,7 @@ import {
 import { Button } from '@/lib/ui';
 import QualityModal from '../../components/qualityModal';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';
-import { NotesTab } from '@/modules/UC01/features/PreviewMeeting/tabs/NotesTab';
+import { RequestNotesView, mapMeetingToRequestNotes } from '@/modules/shared/features/request-notes';
 import { useMeetingDetailPage } from './hooks/useMeetingDetailPage';
 
 // Tabs
@@ -33,7 +33,7 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 // Components (modals / drawers)
 import {
   RejectDialog,
-  CancelDialog,
+  
   EditConfirmDialog,
   SendToContentDrawer,
   ApproveUpdateDrawer,
@@ -94,7 +94,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'request-info':
         return <RequestInfoTab meeting={meeting} statusLabel={h.statusLabel} />;
       case 'request-notes':
-        return <div className="w-full max-w-4xl mx-auto" dir="rtl"><NotesTab meeting={meeting} /></div>;
+        return <div className="w-full max-w-4xl mx-auto" dir="rtl"><RequestNotesView data={mapMeetingToRequestNotes(meeting)} /></div>;
       case 'meeting-info':
         return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} />;
       case 'content':
@@ -102,11 +102,8 @@ const MeetingDetailPage: React.FC = () => {
       case 'schedule':
         return h.isScheduleOfficer ? (
           <ScheduleTab
-            scheduleForm={{ requires_protocol: h.scheduleForm.requires_protocol, is_data_complete: h.scheduleForm.is_data_complete, notes: h.scheduleForm.notes }}
-            onScheduleFormChange={(updates) => h.setScheduleForm((prev) => ({ ...prev, ...updates }))}
             invitees={meeting?.invitees}
             validationError={h.validationError}
-            scheduleMutationSuccess={h.scheduleMutation.isSuccess}
           />
         ) : null;
       case 'attendees':
@@ -118,7 +115,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'directives':
         return h.meetingStatus === MeetingStatus.CLOSED ? <DirectivesTab meeting={meeting} /> : null;
       case 'meeting-documentation':
-        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} meetingId={h.id} meetingStatus={h.meetingStatus} />;
+        return <MeetingDocumentationTab meetingTitle={meeting?.meeting_title ?? undefined} />;
       default:
         return <RequestInfoTab meeting={meeting} statusLabel={h.statusLabel} />;
     }
@@ -131,7 +128,7 @@ const MeetingDetailPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col flex-shrink-0 min-w-0 gap-2">
           <DetailPageHeader
-            title={`${meeting.meeting_title} (${meeting.request_number})`}
+            title={meeting.request_number ? `${meeting.meeting_title} (${meeting.request_number})` : meeting.meeting_title}
             subtitle="مراجعة وإدارة الجدول الزمني للاجتماعات والأنشطة."
             onBack={() => h.navigate(-1)}
             statusBadge={<StatusBadge status={h.meetingStatus} label={h.statusLabel} className="flex-shrink-0" />}
@@ -145,10 +142,10 @@ const MeetingDetailPage: React.FC = () => {
             }}
             secondaryAction={
               h.meetingStatus === MeetingStatus.DRAFT ? (
-                <Button type="button" variant="outline" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
-                  <Trash2 className="w-4 h-4" />
+                <button type="button" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 px-5 py-2 rounded-xl text-red-500 text-sm font-semibold bg-white border border-red-300 hover:bg-red-50 hover:border-red-400 hover:text-red-600 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                  <Trash2 className="w-4 h-4" strokeWidth={2} />
                   {h.deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
-                </Button>
+                </button>
               ) : undefined
             }
             primaryAction={<AIGenerateButton label="تقييم جاهزية الاجتماع" onClick={() => h.setIsQualityModalOpen(true)} />}
@@ -180,7 +177,7 @@ const MeetingDetailPage: React.FC = () => {
             onOpenReturnForInfo={() => h.setIsReturnForInfoModalOpen(true)}
             onOpenSendToContent={() => h.setIsSendToContentModalOpen(true)}
             onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => h.setIsApproveUpdateModalOpen(true) : undefined}
-            onAddToWaitingList={() => h.moveToWaitingListMutation.mutate()}
+            onAddToWaitingList={() => h.setIsWaitingListConfirmOpen(true)}
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
@@ -205,7 +202,18 @@ const MeetingDetailPage: React.FC = () => {
         variant="danger"
       />
 
-      <QualityModal isOpen={h.isQualityModalOpen} onOpenChange={h.setIsQualityModalOpen} meetingId={h.id || ''} />
+      <ConfirmDialog
+        open={h.isWaitingListConfirmOpen}
+        onOpenChange={h.setIsWaitingListConfirmOpen}
+        title="إضافة إلى قائمة الانتظار"
+        description="هل أنت متأكد من إضافة هذا الاجتماع إلى قائمة الانتظار؟"
+        confirmLabel="تأكيد الإضافة"
+        loadingLabel="جاري الإضافة..."
+        onConfirm={() => h.moveToWaitingListMutation.mutate()}
+        isLoading={h.moveToWaitingListMutation.isPending}
+        variant="warning"
+      />
+
 
       <RejectDialog
         open={h.isRejectModalOpen}
@@ -216,13 +224,16 @@ const MeetingDetailPage: React.FC = () => {
         isPending={h.rejectMutation.isPending}
       />
 
-      <CancelDialog
+      <ConfirmDialog
         open={h.isCancelModalOpen}
         onOpenChange={h.setIsCancelModalOpen}
-        form={h.cancelForm}
-        onFormChange={h.setCancelForm}
-        onSubmit={(data) => h.cancelMutation.mutate(data)}
-        isPending={h.cancelMutation.isPending}
+        title="إلغاء الاجتماع"
+        description="هل أنت متأكد من إلغاء هذا الاجتماع؟"
+        confirmLabel="تأكيد الإلغاء"
+        loadingLabel="جاري الإلغاء..."
+        onConfirm={() => h.cancelMutation.mutate({})}
+        isLoading={h.cancelMutation.isPending}
+        variant="danger"
       />
 
       <EditConfirmDialog
@@ -292,6 +303,11 @@ const MeetingDetailPage: React.FC = () => {
         location={h.scheduleForm.location || h.scheduleForm.location_option || ''}
         onConfirm={() => h.handleScheduleSubmit({ preventDefault: () => {} } as any)}
         isPending={h.scheduleMutation.isPending}
+        validationError={h.validationError}
+        notes={h.scheduleForm.notes}
+        onNotesChange={(v) => h.setScheduleForm(prev => ({ ...prev, notes: v }))}
+        onRequiresProtocolChange={(v) => h.setScheduleForm(prev => ({ ...prev, requires_protocol: v }))}
+        onDataCompleteChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: v }))}
       />
 
       <AttachmentPreviewDrawer open={!!h.previewAttachment} onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }} attachment={h.previewAttachment} />
