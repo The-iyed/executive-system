@@ -50,7 +50,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex">{btn}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             {tooltipText}
           </TooltipContent>
         </Tooltip>
@@ -82,7 +82,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex w-full min-w-0">{button}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             {disabledReason}
           </TooltipContent>
         </Tooltip>
