@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useSaveDraftInvitees,
@@ -33,7 +33,7 @@ export function useSubmitterModal({
   const isEditMode = !!editMeetingId;
 
   // ── Sync helper: invalidate queries so each page refetches with its own API
-  const syncMeetingDetails = useCallback(async (meetingId: string) => {
+  const syncMeetingDetails = useCallback(async (meetingId: string, preservePatch?: Record<string, unknown> | null) => {
     // Use refetchQueries to wait for the refetch to complete before closing modal
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
@@ -43,6 +43,10 @@ export function useSubmitterModal({
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
     ]);
+    // Re-apply optimistic patch if the server may not yet reflect changes
+    if (preservePatch) {
+      optimisticMergeMeeting(queryClient, meetingId, preservePatch);
+    }
   }, [queryClient]);
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
@@ -92,22 +96,27 @@ export function useSubmitterModal({
     [submitMutation, resubmitSchedulingMutation, resubmitContentMutation],
   );
 
+  // Keep a ref to the last invitees patch so we can re-apply after refetch
+  const lastInviteesPatchRef = useRef<Record<string, unknown> | null>(null);
+
   const saveInvitees = async (meetingId: string) => {
+    // Capture raw rows BEFORE validation/mutation (ref may be unmounted after modal closes)
+    const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
-  
+
+    // Apply optimistic update immediately (before API call) using raw TableRow[]
+    if (isEditMode && rawRows.length > 0) {
+      const patch = buildStep3Patch(rawRows);
+      lastInviteesPatchRef.current = patch;
+      optimisticMergeMeeting(queryClient, meetingId, patch);
+    }
+
     const response = await inviteesMutation.mutateAsync({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
 
-    // Optimistic cache update using raw TableRow[] (not mapped payload) for correct data shape
-    if (isEditMode) {
-      const rawRows = steps.inviteesRef.current?.getRows() ?? [];
-      const patch = buildStep3Patch(rawRows);
-      optimisticMergeMeeting(queryClient, meetingId, patch);
-    }
-  
     return response;
   };
 
@@ -124,7 +133,7 @@ export function useSubmitterModal({
   
       if (isSchedulerEdit) {
         if (isEditMode) {
-          await syncMeetingDetails(meetingId);
+          await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
         }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
@@ -140,7 +149,7 @@ export function useSubmitterModal({
       }
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
+        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -160,7 +169,7 @@ export function useSubmitterModal({
       if (!saved) return;
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
+        await syncMeetingDetails(meetingId, lastInviteesPatchRef.current);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
