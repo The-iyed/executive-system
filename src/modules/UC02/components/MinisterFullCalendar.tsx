@@ -156,6 +156,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
   extraEvents,
   onEventClick,
   onTimeSlotSelect,
+  onMoreClick,
   className,
 }) => {
   const apiRef = useRef<FullCalendar | null>(null);
