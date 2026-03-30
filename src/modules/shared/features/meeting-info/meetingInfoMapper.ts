@@ -130,7 +130,7 @@ export function mapMeetingToInfo(
     { key: 'time_slot', label: 'موعد الاجتماع المقترح', value: (startDate || endDate) ? formatIsoRange(startDate, endDate) : null },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', value: channel ? (MeetingChannelLabels[channel] ?? str(channel)) : null },
     { key: 'meeting_location', label: 'الموقع', value: str(location) },
-    { key: 'meeting_link', label: 'رابط الاجتماع (Webex)', value: (channel === 'PHYSICAL') ? null : (link || null), fullWidth: true },
+    { key: 'meeting_link', label: 'رابط الاجتماع', value: (channel === 'PHYSICAL') ? null : (link || null), fullWidth: true },
     { key: 'meeting_classification', label: 'فئة الاجتماع', value: getMeetingClassificationLabel(meeting.meeting_classification) ?? null },
     { key: 'meeting_justification', label: 'مبرر اللقاء', value: str(meeting.meeting_justification) },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', value: str(meeting.related_topic) },
