@@ -6,3 +6,4 @@ export * from './meeting-info';
 export * from './content-info';
 export * from './directives-list';
 export * from './meeting-list';
+export * from './request-notes';
