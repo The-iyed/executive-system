@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { prefetchUC02Routes } from './prefetchRoutes';
 import { useAuth } from '@/modules/auth';
 import { AuthGuard } from '@/modules/shared/guards';
