@@ -1,2 +1,1 @@
-export * from './consultationMapper';
-
+// UC03 utilities

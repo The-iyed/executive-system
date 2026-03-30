@@ -22,6 +22,7 @@ export interface MeetingApiResponse {
   submitted_at: string;
   scheduled_at: string | null;
   submitter_name: string;
+  submitter?: Record<string, unknown> | string | null;
   meeting_channel: string;
   /** فئة الاجتماع (may be missing in some API responses) */
   meeting_classification?: string | null;
