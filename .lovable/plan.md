@@ -1,27 +1,29 @@
 
 
-## Plan: Fix `editMeetingId` to use API-returned meeting ID
+## Plan: Fix SubmitterModal to sync `draftId` with `editMeetingId`
 
-### Problem
-Line 112 in `EventDetailModal.tsx` sets `meetingId: event.meeting_id`, which comes from the calendar event object and can be null. The API response (`meetingDetail`) contains the authoritative `meeting.id`, but it's ignored. This means the edit button either doesn't appear or passes the wrong ID.
+### Root Cause
+`useModalSteps` initializes `draftId` via `useState(editMeetingId ?? null)`. Since React's `useState` only uses the initial value, when the `SubmitterModal` stays mounted and `editMeetingId` changes (e.g. from `null` to a UUID), the internal `draftId` stays `null` — causing Step 1 to POST (create) instead of PATCH (update).
 
-### Change
+### Fix
 
-**`src/modules/UC02/features/calendar/components/EventDetailModal.tsx`** — Line 112
+**File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`**
 
-Replace:
+Add a `useEffect` to sync `draftId` whenever `editMeetingId` changes:
+
 ```ts
-meetingId: event.meeting_id,
-```
-With:
-```ts
-meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
+import { useState, useRef, useCallback, useEffect } from "react";
+
+// Inside useModalSteps, after line 20:
+useEffect(() => {
+  setDraftId(editMeetingId ?? null);
+}, [editMeetingId]);
 ```
 
-This mirrors the pattern used in the meeting detail page (`meeting.id`), ensuring the correct UUID is passed to `SubmitterModal` for PATCH requests.
+This ensures that when the calendar passes a new `editMeetingId`, the internal `draftId` updates accordingly, and `saveDraftBasicInfo` receives the correct `draftId` to trigger a PATCH request.
 
 ### Result
-- Edit always passes the correct API-sourced meeting ID to `SubmitterModal`
-- Matches the `/meeting/:id` detail page behavior exactly
-- 1 file changed
+- 1 file changed, 4 lines added
+- Step 1 correctly uses PATCH when `editMeetingId` is provided
+- No impact on create flow (when `editMeetingId` is undefined, `draftId` stays null → POST)
 
