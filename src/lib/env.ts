@@ -63,6 +63,9 @@ export const SSO_AUTHORITY_URL = getEnv(
   'https://ssoappdev.momra.gov.sa'
 );
 
+/** App timezone override (IANA, e.g. "Asia/Riyadh"). Empty = use browser. */
+export const APP_TIMEZONE = getEnv('VITE_APP_TIMEZONE', '');
+
 /** SSO client id. */
 export const SSO_CLIENT_ID = getEnv(
   'VITE_SSO_CLIENT_ID',
