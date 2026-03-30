@@ -266,7 +266,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   'w-9 h-9 rounded-xl flex items-center justify-center text-[17px] font-bold mb-0.5',
                   today ? 'bg-[#048F86] text-white shadow-sm' : 'text-gray-800'
                 )}
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 {dayNumber}
               </div>
@@ -275,7 +275,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   'text-[11px] font-medium',
                   today ? 'text-[#048F86]' : 'text-gray-400'
                 )}
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 {dayName}
               </div>
@@ -284,7 +284,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
         })}
         {/* Time column header */}
         <div className="border-l border-gray-100 flex items-center justify-center">
-          <span className="text-[10px] text-gray-300 font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>الوقت</span>
+          <span className="text-[10px] text-gray-300 font-medium" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>الوقت</span>
         </div>
       </div>
 
@@ -420,7 +420,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                           top: Math.max(0, topPx - 1),
                           height: Math.max(hPx + 2, minHitPx),
                           padding: '0 2px',
-                          fontFamily: "'Almarai', sans-serif",
+                          fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
                           right: `${columnIndex * pct}%`,
                           width: `calc(${pct}% - 3px)`,
                         }}
@@ -447,7 +447,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
             >
               <span
                 className="text-[11px] font-medium text-gray-400 tabular-nums"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 {formatTimeLabelArabic(time)}
               </span>

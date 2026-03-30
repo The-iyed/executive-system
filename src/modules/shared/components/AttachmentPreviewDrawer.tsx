@@ -124,19 +124,19 @@ export function AttachmentPreviewDrawer({
           {isPdf ? (
             <>
               {pdfLoading && (
-                <div className="flex flex-1 items-center justify-center py-12 text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                <div className="flex flex-1 items-center justify-center py-12 text-[#667085]" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                   جاري تحميل المعاينة...
                 </div>
               )}
               {pdfError && (
                 <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12 px-4">
-                  <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>{pdfError}</p>
+                  <p className="text-[#475467] text-center" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>{pdfError}</p>
                   <a
                     href={attachment.blob_url}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                   >
                     <Download className="w-4 h-4" />
                     تحميل الملف
@@ -153,7 +153,7 @@ export function AttachmentPreviewDrawer({
             </>
           ) : (
             <div className="flex flex-col flex-1 items-center justify-center gap-4 py-12 px-4">
-              <p className="text-[#475467] text-center" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <p className="text-[#475467] text-center" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 معاينة غير متاحة لهذا النوع من الملفات. يمكنك تحميله من الرابط أدناه.
               </p>
               <a
@@ -161,7 +161,7 @@ export function AttachmentPreviewDrawer({
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#009883] text-white hover:bg-[#008774] transition-colors"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 <Download className="w-4 h-4" />
                 تحميل الملف
