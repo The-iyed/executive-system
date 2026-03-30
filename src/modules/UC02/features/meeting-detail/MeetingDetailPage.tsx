@@ -33,7 +33,7 @@ import { MeetingDocumentationTab } from './tabs/MeetingDocumentationTab';
 // Components (modals / drawers)
 import {
   RejectDialog,
-  CancelDialog,
+  
   EditConfirmDialog,
   SendToContentDrawer,
   ApproveUpdateDrawer,
@@ -224,13 +224,16 @@ const MeetingDetailPage: React.FC = () => {
         isPending={h.rejectMutation.isPending}
       />
 
-      <CancelDialog
+      <ConfirmDialog
         open={h.isCancelModalOpen}
         onOpenChange={h.setIsCancelModalOpen}
-        form={h.cancelForm}
-        onFormChange={h.setCancelForm}
-        onSubmit={(data) => h.cancelMutation.mutate(data)}
-        isPending={h.cancelMutation.isPending}
+        title="إلغاء الاجتماع"
+        description="هل أنت متأكد من إلغاء هذا الاجتماع؟"
+        confirmLabel="تأكيد الإلغاء"
+        loadingLabel="جاري الإلغاء..."
+        onConfirm={() => h.cancelMutation.mutate({})}
+        isLoading={h.cancelMutation.isPending}
+        variant="danger"
       />
 
       <EditConfirmDialog
