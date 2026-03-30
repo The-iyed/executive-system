@@ -31,6 +31,7 @@ import { deleteDraft } from '../../../data/draftApi';
 import { PATH as UC02_PATH } from '../../../routes/paths';
 import { PATH as UC01_PATH } from '../../../../UC01/routes/paths';
 import { trackEvent } from '@/lib/analytics';
+import { toast } from '@/lib/ui/components/use-toast';
 import { getMeetingLocationDropdownValue } from '@/modules/shared';
 import { getGeneralNotesList } from '../utils/meetingDetailHelpers';
 import { fieldLabels, TABS_HIDDEN_WHEN_SCHEDULED } from '../constants';
@@ -81,6 +82,7 @@ export function useMeetingDetailPage() {
   const [meetingFormOpen, setMeetingFormOpen] = useState(false);
   const [isQualityModalOpen, setIsQualityModalOpen] = useState(false);
   const [isDeleteDraftModalOpen, setIsDeleteDraftModalOpen] = useState(false);
+  const [isWaitingListConfirmOpen, setIsWaitingListConfirmOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSendToContentModalOpen, setIsSendToContentModalOpen] = useState(false);
@@ -94,7 +96,7 @@ export function useMeetingDetailPage() {
 
   /* ── Form states ── */
   const [rejectForm, setRejectForm] = useState({ reason: '', notes: '' });
-  const [cancelForm, setCancelForm] = useState({ reason: '', notes: '' });
+  
   const [sendToContentForm, setSendToContentForm] = useState({ notes: '' });
   const [approveUpdateForm, setApproveUpdateForm] = useState({ notes: '' });
   const [returnForInfoNotes, setReturnForInfoNotes] = useState('');
@@ -298,7 +300,7 @@ export function useMeetingDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting', id] });
       setIsCancelModalOpen(false);
-      setCancelForm({ reason: '', notes: '' });
+      
       navigate(-1);
     },
   });
@@ -357,6 +359,7 @@ export function useMeetingDetailPage() {
       setIsScheduleModalOpen(false);
       setScheduleConfirmModalOpen(false);
       setScheduleForm(INITIAL_SCHEDULE_FORM);
+      toast({ title: "تم جدولة الاجتماع بنجاح", description: "تمت عملية الجدولة بنجاح" });
     },
   });
 
@@ -379,7 +382,7 @@ export function useMeetingDetailPage() {
   const handleScheduleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
-    if (!startSource || !endSource) return;
+    if (!startSource || !endSource) { setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية'); return; }
     const scheduledAt = new Date(startSource);
     const scheduledEndAt = new Date(endSource);
     if (scheduledAt.getTime() <= Date.now()) { setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي'); return; }
@@ -448,6 +451,7 @@ export function useMeetingDetailPage() {
     meetingFormOpen, setMeetingFormOpen,
     isQualityModalOpen, setIsQualityModalOpen,
     isDeleteDraftModalOpen, setIsDeleteDraftModalOpen,
+    isWaitingListConfirmOpen, setIsWaitingListConfirmOpen,
     isRejectModalOpen, setIsRejectModalOpen,
     isCancelModalOpen, setIsCancelModalOpen,
     isSendToContentModalOpen, setIsSendToContentModalOpen,
@@ -461,7 +465,7 @@ export function useMeetingDetailPage() {
 
     // Form states
     rejectForm, setRejectForm,
-    cancelForm, setCancelForm,
+    
     sendToContentForm, setSendToContentForm,
     approveUpdateForm, setApproveUpdateForm,
     returnForInfoNotes, setReturnForInfoNotes,

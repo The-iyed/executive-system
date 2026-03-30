@@ -205,7 +205,7 @@
   body {
     background-color: #F3F4F6;
     color: rgb(var(--color-foreground));
-    font-family: 'Almarai', 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', var(--font-family-ping-ar), 'Cairo', 'Tajawal', sans-serif;
   }
 }
 

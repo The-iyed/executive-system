@@ -16,7 +16,8 @@ interface Props {
 
 export function AgendaSection({ form, agendaRequired = true }: Props) {
   const { register, control, formState: { errors } } = form;
-  const { fields, prepend, remove } = useFieldArray({ control, name: "agenda_items" });
+  const { fields, append, remove } = useFieldArray({ control, name: "agenda_items" });
+  const listRef = useRef<HTMLDivElement>(null);
   const agendaEditable = useIsFieldEditable("agenda_items");
 
   const [animatingNewId, setAnimatingNewId] = useState<string | null>(null);
@@ -49,10 +50,13 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   const durationMismatch = hasMeetingDuration && fields.length > 0 && totalDuration !== meetingDurationMinutes;
 
   const handleAdd = useCallback(() => {
-    prepend({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
+    append({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
     setAnimatingNewId("pending");
     setTimeout(() => setAnimatingNewId(null), 500);
-  }, [prepend]);
+    requestAnimationFrame(() => {
+      if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+    });
+  }, [append]);
 
   const handleRemove = useCallback((index: number) => {
     setConfirmingDeleteIndex(index);
@@ -87,7 +91,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
             <div className="col-span-1 px-3 py-2.5"></div>
           </div>
 
-          <div className="max-h-[320px] overflow-y-auto">
+          <div ref={listRef} className="max-h-[320px] overflow-y-auto">
             {fields.length === 0 && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 {!hasMeetingDuration
@@ -99,7 +103,7 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
             {fields.map((field, index) => {
               const itemErrors = (errors.agenda_items as Record<string, unknown>)?.[index] as Record<string, { message?: string }> | undefined;
               const supportValue = form.watch(`agenda_items.${index}.minister_support_type`);
-              const isNew = animatingNewId === "pending" && index === 0;
+              const isNew = animatingNewId === "pending" && index === fields.length - 1;
               const isRemoving = removingIndex === index;
 
               return (

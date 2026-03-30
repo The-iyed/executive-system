@@ -45,7 +45,7 @@
   --fc-event-border-color: #99f6e4;
   --fc-event-text-color: #115e59;
   --fc-small-font-size: 0.6875rem;
-  --fc-font-family: 'Almarai', system-ui, sans-serif;
+  --fc-font-family: 'IBM Plex Sans Arabic', 'Frutiger LT Arabic', system-ui, sans-serif;
   border-radius: 14px;
   overflow: hidden;
   background: #fff;

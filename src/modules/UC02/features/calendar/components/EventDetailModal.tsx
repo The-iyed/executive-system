@@ -9,7 +9,7 @@ import { getMeetingById, type MeetingApiResponse } from '@/modules/UC02/data/mee
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-const FONT = { fontFamily: "'Almarai', sans-serif" } as const;
+const FONT = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 const MAX_VISIBLE_INVITEES = 5;
 
 function formatDetailDate(date: Date): string {

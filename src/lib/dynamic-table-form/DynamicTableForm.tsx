@@ -56,9 +56,11 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (form.rowCount > prevRowCountRef.current && form.rows.length > 0) {
-      const newId = form.rows[0]._id;
+      const newId = form.rows[form.rows.length - 1]._id;
       setNewRowIds((prev) => new Set(prev).add(newId));
       setTimeout(() => {
         setNewRowIds((prev) => {
@@ -67,6 +69,12 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
           return next;
         });
       }, 1500);
+      // Auto-scroll to the new row at the bottom
+      requestAnimationFrame(() => {
+        if (tableContainerRef.current) {
+          tableContainerRef.current.scrollTop = tableContainerRef.current.scrollHeight;
+        }
+      });
     }
     prevRowCountRef.current = form.rowCount;
   }, [form.rowCount, form.rows]);
@@ -175,7 +183,7 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
                   : "border-table-border"
               )}
             >
-              <div className="overflow-x-auto overflow-y-auto rounded-[15px]" style={maxHeight ? { maxHeight } : undefined}>
+              <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto rounded-[15px]" style={maxHeight ? { maxHeight } : undefined}>
                 <table className="w-full">
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-table-border sticky top-0 z-10">

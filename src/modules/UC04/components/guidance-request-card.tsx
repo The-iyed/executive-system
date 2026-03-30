@@ -5,7 +5,7 @@ import { MeetingStatus } from '@/modules/shared/types';
 import { Eye, CalendarDays, User, Hash, Layers, CheckCircle2, XCircle } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+const fontStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 
 const pillStyle = {
   borderRadius: '12px',

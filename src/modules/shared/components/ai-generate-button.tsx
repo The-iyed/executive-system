@@ -26,17 +26,13 @@ export const AIGenerateButton: React.FC<AIGenerateButtonProps> = ({
       className={cn(
         'relative flex items-center justify-center gap-2 overflow-hidden transition-all duration-200',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'hover:scale-[1.02] active:scale-[0.98]',
-        !isSecondary && 'h-[38px] px-4 rounded-xl',
-        isSecondary && 'h-[38px] px-4 rounded-xl',
+        'hover:scale-[1.03] active:scale-[0.97] hover:shadow-lg',
+        'h-[38px] px-5 rounded-xl shadow-md',
+        isSecondary
+          ? 'bg-gradient-to-l from-[#048F86] to-[#0BA89E] text-white'
+          : 'bg-gradient-to-r from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white',
         className
       )}
-      style={{
-        background: isSecondary
-          ? 'linear-gradient(135deg, #34C3BA 0%, #048F86 100%)'
-          : 'linear-gradient(135deg, #048F86 0%, #34C3BA 100%)',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-      }}
     >
       <Sparkles className="w-4 h-4 text-white/90" />
       <span className="text-[13px] font-semibold text-white whitespace-nowrap">
