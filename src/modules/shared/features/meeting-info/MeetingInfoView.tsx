@@ -180,13 +180,17 @@ export function MeetingInfoView({
       </div>
 
       {/* Remaining sections — show all fields */}
-      {data.sections.slice(1).map((section, sIdx) => (
-        <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-          {section.fields.map(field => (
-            <FieldCell key={field.key} {...field} fieldKey={field.key} />
-          ))}
-        </div>
-      ))}
+      {data.sections.slice(1).map((section, sIdx) => {
+        const visibleFields = section.fields.filter(f => f.value !== null);
+        if (visibleFields.length === 0) return null;
+        return (
+          <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            {visibleFields.map(field => (
+              <FieldCell key={field.key} {...field} fieldKey={field.key} />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
