@@ -1,8 +1,11 @@
+import { APP_TIMEZONE } from '@/lib/env';
+
 /**
- * IANA timezone from the browser (e.g. "Africa/Tunis", "Europe/Paris").
- * Sent on API requests so the backend can interpret dates; not hardcoded.
+ * Returns the IANA timezone to send with API requests.
+ * Uses VITE_APP_TIMEZONE env variable when set, otherwise falls back to the browser timezone.
  */
 export function getBrowserTimezone(): string {
+  if (APP_TIMEZONE) return APP_TIMEZONE;
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
