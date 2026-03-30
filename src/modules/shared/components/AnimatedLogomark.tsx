@@ -12,6 +12,10 @@ export const AnimatedLogomark: React.FC<{ size?: number }> = ({ size = 56 }) => 
       style={{ width: size, height: size }}
     >
       <style>{`
+        @keyframes logoPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.06); opacity: 0.75; }
+        }
         @keyframes logoFloat {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-6px); }
