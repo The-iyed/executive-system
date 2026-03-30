@@ -53,6 +53,7 @@ export function useSubmitterModal({
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
   const steps = useModalSteps({
+    open,
     editMeetingId,
     onClose,
     onStepSaved: isEditMode
