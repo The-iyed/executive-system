@@ -18,6 +18,7 @@ export interface RequestNotesViewData {
 export interface RequestNotesViewProps {
   data: RequestNotesViewData;
   title?: string;
+  description?: string;
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
