@@ -142,7 +142,7 @@ const MeetingDetailPage: React.FC = () => {
             }}
             secondaryAction={
               h.meetingStatus === MeetingStatus.DRAFT ? (
-                <Button type="button" variant="outline" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
+                <Button type="button" variant="outline" onClick={() => h.setIsDeleteDraftModalOpen(true)} disabled={h.deleteDraftMutation.isPending} className="flex items-center gap-2 rounded-xl border-red-300 text-red-600 bg-red-50/50 hover:bg-red-100 hover:text-red-700 hover:border-red-400 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] transition-all duration-200">
                   <Trash2 className="w-4 h-4" />
                   {h.deleteDraftMutation.isPending ? 'جاري الحذف...' : 'حذف'}
                 </Button>
