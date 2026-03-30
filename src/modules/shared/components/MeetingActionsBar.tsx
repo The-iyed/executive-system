@@ -54,18 +54,18 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   const close = () => onOpenChange(false);
 
   const defaultUnderReviewActions: ActionBarItem[] = [
-    { icon: <CalendarMinus className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
-    ...(hideEdit ? [] : [{ icon: <Pencil className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'تعديل', onClick: () => { close(); onOpenEditConfirm(); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' }]),
-    { icon: <RotateCcw className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إعادة للطلب', onClick: () => { close(); onOpenReturnForInfo(); } },
-    { icon: <Send className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && hasPresentation && onOpenSendToContent(); }, disabled: !hasContent || !hasPresentation, disabledReason: !hasPresentation ? 'لإرسال المحتوى، يرجى تعديل الاجتماع وإرفاق عرض تقديمي في تبويب المحتوى أولاً' : 'أضف أهدافاً أو بنود أجندة في تبويب المحتوى لتفعيل الإرسال' },
-    { icon: <Plus className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-    { icon: <X className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
+    { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.8} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
+    ...(hideEdit ? [] : [{ icon: <Pencil className="w-5 h-5" strokeWidth={1.8} />, label: 'تعديل', onClick: () => { close(); onOpenEditConfirm(); }, disabled: !hasChanges, disabledReason: 'لا يوجد تغييرات لحفظها' }]),
+    { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.8} />, label: 'إعادة للطلب', onClick: () => { close(); onOpenReturnForInfo(); } },
+    { icon: <Send className="w-5 h-5" strokeWidth={1.8} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasContent && hasPresentation && onOpenSendToContent(); }, disabled: !hasContent || !hasPresentation, disabledReason: !hasPresentation ? 'يرجى إرفاق عرض تقديمي أولاً' : 'أضف أهدافاً أو بنود أجندة أولاً' },
+    { icon: <Plus className="w-5 h-5" strokeWidth={1.8} />, label: isAddToWaitingListPending ? 'جاري...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة' },
+    { icon: <X className="w-5 h-5" strokeWidth={1.8} />, label: 'رفض', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
   ];
 
   const scheduledSchedulingActions: ActionBarItem[] = [
-    { icon: <RotateCcw className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
-    ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
-    { icon: <Send className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasPresentation && onOpenSendToContent(); }, disabled: !hasPresentation, disabledReason: 'لإرسال المحتوى، يرجى تعديل الاجتماع وإرفاق عرض تقديمي في تبويب المحتوى أولاً' },
+    { icon: <RotateCcw className="w-5 h-5" strokeWidth={1.8} />, label: 'إعادة', onClick: () => { close(); onOpenReturnForInfo(); } },
+    ...(onOpenApproveUpdate ? [{ icon: <CheckCircle className="w-5 h-5" strokeWidth={1.8} />, label: 'إعتماد التحديث', onClick: () => { close(); onOpenApproveUpdate(); } }] : []),
+    { icon: <Send className="w-5 h-5" strokeWidth={1.8} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasPresentation && onOpenSendToContent(); }, disabled: !hasPresentation, disabledReason: 'يرجى إرفاق عرض تقديمي أولاً' },
   ];
 
   const actions: ActionBarItem[] =
@@ -75,14 +75,14 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
       ? scheduledSchedulingActions
       : meetingStatus === MeetingStatus.SCHEDULED
       ? [
-          { icon: <CalendarMinus className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
-          { icon: <Plus className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
-          { icon: <X className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
+          { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.8} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
+          { icon: <Plus className="w-5 h-5" strokeWidth={1.8} />, label: isAddToWaitingListPending ? 'جاري...' : 'قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة' },
+          { icon: <X className="w-5 h-5" strokeWidth={1.8} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
         ]
       : meetingStatus === MeetingStatus.WAITING
         ? [
-            { icon: <X className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
-            { icon: <CalendarMinus className="w-[18px] h-[18px]" strokeWidth={1.5} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
+            { icon: <X className="w-5 h-5" strokeWidth={1.8} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenReject(); } },
+            { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.8} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
           ]
         : defaultUnderReviewActions;
 
@@ -90,7 +90,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   const dangerActions = actions.filter(a => a.variant === 'danger');
   const allOrdered = [...normalActions, ...dangerActions];
   const total = allOrdered.length;
-  const RADIUS = 120;
+  const RADIUS = 140;
 
   const getArcPosition = (index: number) => {
     const angle = Math.PI - (Math.PI * (index + 0.5)) / total;
@@ -103,44 +103,59 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
     const isDanger = action.variant === 'danger';
     const { x, y } = getArcPosition(index);
 
-    const circle = (
+    const circleButton = (
+      <button
+        type="button"
+        onClick={action.onClick}
+        disabled={action.disabled}
+        className={`
+          group relative w-[52px] h-[52px] rounded-full flex items-center justify-center
+          transition-all duration-200 touch-manipulation
+          disabled:opacity-40 disabled:cursor-not-allowed
+          ${isDanger
+            ? 'bg-gradient-to-br from-red-50 to-red-100 border border-red-200/60 shadow-[0_4px_16px_rgba(239,68,68,0.15)] hover:shadow-[0_6px_24px_rgba(239,68,68,0.25)] hover:scale-110'
+            : 'bg-gradient-to-br from-white to-gray-50/80 border border-gray-200/50 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_24px_rgba(4,143,134,0.2)] hover:scale-110 hover:border-[#048F86]/30'
+          }
+        `}
+      >
+        <span className={isDanger ? 'text-red-500' : 'text-[#048F86]'}>
+          {action.icon}
+        </span>
+        {/* Tooltip label on hover */}
+        <span className={`
+          pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2
+          px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap
+          opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100
+          transition-all duration-200 ease-out
+          ${isDanger
+            ? 'bg-red-600 text-white shadow-lg'
+            : 'bg-gray-800 text-white shadow-lg'
+          }
+        `}>
+          {action.label}
+          <span className={`
+            absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45
+            ${isDanger ? 'bg-red-600' : 'bg-gray-800'}
+          `} />
+        </span>
+      </button>
+    );
+
+    const wrapper = (
       <div
         key={index}
-        className="absolute flex flex-col items-center"
+        className="absolute"
         style={{
-          left: `calc(50% + ${x}px - 24px)`,
-          bottom: `calc(100% + ${y}px - 24px)`,
-          transition: `all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)`,
-          transitionDelay: open ? `${index * 40}ms` : `${(total - index) * 20}ms`,
-          transform: open ? 'scale(1)' : 'scale(0)',
+          left: `calc(50% + ${x}px - 26px)`,
+          bottom: `calc(100% + ${y}px - 26px)`,
+          transition: `all 350ms cubic-bezier(0.34, 1.56, 0.64, 1)`,
+          transitionDelay: open ? `${index * 50}ms` : `${(total - index) * 25}ms`,
+          transform: open ? 'scale(1) translateY(0)' : 'scale(0) translateY(20px)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        <button
-          type="button"
-          onClick={action.onClick}
-          disabled={action.disabled}
-          className={`
-            w-12 h-12 rounded-full flex items-center justify-center
-            transition-all duration-200 touch-manipulation
-            disabled:opacity-40 disabled:cursor-not-allowed
-            ${isDanger
-              ? 'bg-red-50 border border-red-200 shadow-lg hover:scale-110 hover:shadow-xl hover:bg-red-100'
-              : 'bg-white border border-gray-100/80 shadow-lg hover:scale-110 hover:shadow-xl hover:bg-[#048F86]/5'
-            }
-          `}
-        >
-          <span className={isDanger ? 'text-red-500' : 'text-[#048F86]'}>
-            {action.icon}
-          </span>
-        </button>
-        <span className={`
-          text-[11px] font-medium mt-1.5 max-w-[70px] text-center leading-tight
-          ${isDanger ? 'text-red-500' : 'text-gray-600'}
-        `}>
-          {action.label}
-        </span>
+        {circleButton}
       </div>
     );
 
@@ -149,9 +164,9 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
         <TooltipProvider key={index} delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              {circle}
+              {wrapper}
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+            <TooltipContent side="top" className="max-w-[240px] text-right font-sans text-[12px]">
               {action.disabledReason}
             </TooltipContent>
           </Tooltip>
@@ -159,7 +174,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
       );
     }
 
-    return circle;
+    return wrapper;
   };
 
   return (
@@ -176,12 +191,10 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
         className="fixed bottom-6 z-50 left-1/2 -translate-x-1/2"
         dir="rtl"
       >
-        {/* Radial action circles */}
         <div className="relative w-14 h-14">
           {allOrdered.map((action, i) => renderCircleAction(action, i))}
         </div>
 
-        {/* FAB */}
         <button
           type="button"
           aria-label={open ? 'إغلاق القائمة' : 'إجراءات سريعة'}
@@ -193,15 +206,15 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
             transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
             hover:scale-105 active:scale-95 touch-manipulation
             ${open
-              ? 'bg-white/90 backdrop-blur-xl border-2 border-gray-200/60 shadow-lg'
-              : 'bg-white border-2 border-[#048F86]/20 shadow-[0_2px_16px_rgba(4,143,134,0.15)]'
+              ? 'bg-white/95 backdrop-blur-xl border border-gray-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.1)] rotate-90'
+              : 'bg-gradient-to-br from-[#048F86] via-[#069E95] to-[#0BB5AA] border border-white/20 shadow-[0_4px_20px_rgba(4,143,134,0.35)]'
             }
           `}
         >
           {open ? (
-            <X className="w-5 h-5 text-gray-600 transition-transform duration-300" strokeWidth={2} />
+            <X className="w-5 h-5 text-gray-600" strokeWidth={2} />
           ) : (
-            <Zap className="w-5 h-5 text-[#048F86] transition-transform duration-300" strokeWidth={2} />
+            <Zap className="w-5 h-5 text-white" strokeWidth={2} />
           )}
         </button>
       </div>
