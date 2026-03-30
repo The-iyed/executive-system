@@ -4,7 +4,7 @@ import { toISOStringWithTimezone } from '@/lib/ui';
 import { MeetingListLayout } from '@/modules/shared/features/meeting-list';
 import { MeetingStatus } from '@/modules/shared/types';
 import { getMeetings, type MeetingApiResponse, type GetMeetingsParams } from '../../data/meetingsApi';
-import { mapMeetingToCardData } from '../../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { PATH } from '../../routes/paths';
 
 const PreviousMeeting: React.FC = () => {

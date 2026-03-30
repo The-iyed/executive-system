@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@/modules/shared/types';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
-import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
+import type { MeetingCardData } from '@/modules/shared/components/meeting-card';
 import { PAGINATION, MeetingOwnerType } from '../utils/constants';
 
 /** Single status, 'all', or array of statuses for multi-select filter. */
