@@ -1,4 +1,5 @@
 import React from 'react';
+import LogomarkSvg from '@/modules/shared/assets/Logomark.svg';
 
 export interface LogoProps {
   className?: string;
@@ -10,7 +11,7 @@ export const Logo: React.FC<LogoProps> = ({ variant = 'row' }) => {
   return (
     <div className={`flex items-center gap-3 flex-shrink-0 ${variant === 'column' ? 'flex-col' : ''}`}>
      <img
-       src="/assets/Logomark.png"
+       src={LogomarkSvg}
        alt=""
        className="w-[40px] h-[40px] flex-shrink-0"
        width={40}
