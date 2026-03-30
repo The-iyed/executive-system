@@ -15,6 +15,7 @@ import { useToast } from "@/lib/ui";
 import { optimisticMergeMeeting, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 
 interface UseSubmitterModalOptions {
+  open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
   callerRole?: MeetingOwnerType;
@@ -23,6 +24,7 @@ interface UseSubmitterModalOptions {
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useSubmitterModal({
+  open,
   editMeetingId,
   onClose,
   callerRole,
@@ -33,7 +35,7 @@ export function useSubmitterModal({
   const isEditMode = !!editMeetingId;
 
   // ── Sync helper: invalidate queries so each page refetches with its own API
-  const syncMeetingDetails = useCallback(async (meetingId: string) => {
+  const syncMeetingDetails = useCallback(async (meetingId: string, preservePatch?: Record<string, unknown> | null) => {
     // Use refetchQueries to wait for the refetch to complete before closing modal
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
@@ -43,10 +45,15 @@ export function useSubmitterModal({
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
     ]);
+    // Re-apply optimistic patch if the server may not yet reflect changes
+    if (preservePatch) {
+      optimisticMergeMeeting(queryClient, meetingId, preservePatch);
+    }
   }, [queryClient]);
 
   // ── Step navigation & step 1/2 handlers ───────────────────────────────────
   const steps = useModalSteps({
+    open,
     editMeetingId,
     onClose,
     onStepSaved: isEditMode
@@ -92,43 +99,48 @@ export function useSubmitterModal({
     [submitMutation, resubmitSchedulingMutation, resubmitContentMutation],
   );
 
-  const saveInvitees = async (meetingId: string) => {
+  /**
+   * Save invitees and return both the API response and the optimistic patch.
+   * No useCallback — avoids stale closure issues across modal open/close cycles.
+   */
+  const saveInvitees = async (meetingId: string): Promise<{ response: any; patch: Record<string, unknown> | null } | false> => {
+    const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return false;
-  
+
+    // Build optimistic patch from raw TableRow[]
+    let patch: Record<string, unknown> | null = null;
+    if (isEditMode && rawRows.length > 0) {
+      patch = buildStep3Patch(rawRows);
+      optimisticMergeMeeting(queryClient, meetingId, patch);
+    }
+
     const response = await inviteesMutation.mutateAsync({
       draftId: meetingId,
       invitees: inviteesPayload,
     });
 
-    // Optimistic cache update for invitees
-    if (isEditMode) {
-      const patch = buildStep3Patch(inviteesPayload);
-      optimisticMergeMeeting(queryClient, meetingId, patch);
-    }
-  
-    return response;
+    return { response, patch };
   };
 
   // ── Final submit (step 3) ─────────────────────────────────────────────────
-  const handleFinalSubmit = useCallback(async () => {
-    const meetingId = steps.draftId;
-    if (!meetingId) return;
+  const handleFinalSubmit = async () => {
+    const meetingId = steps.activeDraftId;
+    if (!meetingId) {
+      if (isEditMode) toast({ title: "لا يوجد معرف اجتماع", variant: "destructive" });
+      return;
+    }
   
     try {
       const result = await saveInvitees(meetingId);
       if (!result) return;
 
-      const meetingStatus = result.status;
+      const { response, patch } = result;
+      const meetingStatus = response.status;
   
       if (isSchedulerEdit) {
         if (isEditMode) {
-          await syncMeetingDetails(meetingId);
-          // Re-apply optimistic patch after refetch to guard against stale API data
-          const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-          if (inviteesPayload) {
-            optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-          }
+          await syncMeetingDetails(meetingId, patch);
         }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
@@ -144,12 +156,7 @@ export function useSubmitterModal({
       }
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
-        // Re-apply optimistic patch after refetch to guard against stale API data
-        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-        if (inviteesPayload) {
-          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-        }
+        await syncMeetingDetails(meetingId, patch);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -157,24 +164,24 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant:'destructive'});
     }
-  }, [steps, isSchedulerEdit, isEditMode, resolveSubmitAction, syncMeetingDetails, queryClient, toast]);
+  };
 
   // ── Save as draft ─────────────────────────────────────────────────────────
-  const handleSaveAsDraft = useCallback(async () => {
-    const meetingId = steps.draftId;
-    if (!meetingId) return;
+  const handleSaveAsDraft = async () => {
+    const meetingId = steps.activeDraftId;
+    if (!meetingId) {
+      if (isEditMode) toast({ title: "لا يوجد معرف اجتماع", variant: "destructive" });
+      return;
+    }
   
     try {
-      const saved = await saveInvitees(meetingId);
-      if (!saved) return;
+      const result = await saveInvitees(meetingId);
+      if (!result) return;
+
+      const { patch } = result;
   
       if (isEditMode) {
-        await syncMeetingDetails(meetingId);
-        // Re-apply optimistic patch after refetch to guard against stale API data
-        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-        if (inviteesPayload) {
-          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
-        }
+        await syncMeetingDetails(meetingId, patch);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
@@ -183,7 +190,7 @@ export function useSubmitterModal({
     } catch (err) {
       toast({title: err instanceof Error ? err.message : "فشل حفظ المسودة", variant:'destructive'});
     }
-  }, [steps, isEditMode, syncMeetingDetails, queryClient, toast]);
+  };
 
   // ── Public API ────────────────────────────────────────────────────────────
   return {

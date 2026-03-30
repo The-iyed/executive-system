@@ -135,9 +135,10 @@ export function buildStep2Patch(
 
 /**
  * Build a patch from Step 3 invitees data.
+ * Accepts raw TableRow[] (or any array) to preserve the data shape expected by the UI.
  */
 export function buildStep3Patch(
-  invitees: Record<string, unknown>[],
+  invitees: unknown[],
 ): Record<string, unknown> {
   return { invitees };
 }
