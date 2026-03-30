@@ -1,47 +1,96 @@
 
+Goal
 
-## Analysis: Invitees Optimistic Update Issue
+Make the Step 3 invitees optimistic update behave the same on the first edit and every later reopen of the same meeting modal.
 
-### What happens now (the flow)
+What I found
 
-1. User edits invitees in Step 3 → hits "تحديث الطلب"
-2. `saveInvitees()` calls `validateAndGetPayload()` which returns **mapped payload** objects (via `mapRowToPayload` — containing `item_number`, raw field keys, etc.)
-3. `buildStep3Patch(inviteesPayload)` wraps this as `{ invitees: [...payloadObjects] }`
-4. `optimisticMergeMeeting()` writes this into the `['meeting', id]` cache
-5. `syncMeetingDetails()` then **refetches** `['meeting', id]` from the API
-6. After refetch completes, the code **re-applies** the optimistic patch again
+- The Schedule/الجدولة tab is already reading from the correct shared cache path:
+  - `MeetingDetailPage` passes `meeting?.invitees` into `ScheduleTab`
+  - `useMeetingDetailPage` loads that from React Query key `['meeting', id]`
+  - `optimisticMergeMeeting(...)` writes to `['meeting', meetingId]`
+- So the display side is correct. The real bug is in the modal state lifecycle.
 
-### The problems
+Root cause
 
-**1. Data shape mismatch (intermittent display issues)**
-- `validateAndGetPayload()` returns payload-formatted objects (e.g., `{ item_number: 0, email: "...", access_permission: false }`)
-- The API response returns invitees in a different shape (e.g., with `id`, `name`, `position`, etc. — full server-enriched objects)
-- The ScheduleTab/InviteesTab reads `meeting.invitees` and passes it to `InviteesTableForm` which expects `TableRow[]`
-- When the optimistic patch replaces the server data, the table may show incomplete/misformatted rows
+- In `useModalSteps`, `resetModal()` does `setDraftId(null)`.
+- That `draftId` is only restored by:
+  - `useEffect(() => setDraftId(editMeetingId ?? null), [editMeetingId])`
+- When you reopen the same meeting, `editMeetingId` did not change, so that effect does not run.
+- Result: after the first close, the modal can reopen with `draftId === null`.
+- But Step 3 submit currently uses `steps.draftId`, so on the second open it may skip the submit/refetch path entirely.
+- That exactly matches your symptom: first open after refresh works, second open does not trigger the same optimistic/refetch behavior.
 
-**2. Race condition with refetch**
-- After saving, `syncMeetingDetails` refetches from the API. If the backend hasn't finished processing yet, the refetch returns stale data (old invitees)
-- The code tries to fix this by re-applying the optimistic patch after refetch — but this uses the wrong data shape (see problem 1)
-- Sometimes the backend is fast enough and returns correct data, sometimes not → **intermittent behavior**
+Implementation plan
 
-**3. Re-apply after refetch overwrites correct server data**
-- If the refetch DOES return updated data, the re-application of the optimistic patch **overwrites** the properly-formatted server response with the raw payload format
+1. Rehydrate edit state every time the modal opens
+- File: `src/modules/shared/features/meeting-request-form/submitter/SubmitterModal.tsx`
+  - Pass `open` into `useSubmitterModal(...)`
+- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
+  - Accept `open` and forward it to `useModalSteps(...)`
+- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`
+  - Accept `open`
+  - Add an effect that runs when the dialog opens:
+    - `setCurrentStep(1)`
+    - `setStep1Data(null)`
+    - `setDraftId(editMeetingId ?? null)`
+- This guarantees every reopen starts with the correct meeting id, even when reopening the same record.
 
-### Proposed fix
+2. Use the stable meeting id for Step 3 actions
+- File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
+- Change final Step 3 actions to use `steps.activeDraftId` (or `editMeetingId ?? steps.draftId`) instead of only `steps.draftId`
+- Apply this in:
+  - `handleFinalSubmit`
+  - `handleSaveAsDraft`
+- This makes edit mode consistent with how the hook already fetches detail data.
 
-**File: `src/modules/shared/features/meeting-request-form/shared/utils/optimisticCacheUpdate.ts`**
-- Update `buildStep3Patch` to accept both the payload (for API) and the original `TableRow[]` (for cache), or transform the payload back to `TableRow` format
+3. Keep the optimistic patch on the exact cache the page uses
+- Keep the current raw-row optimistic patch approach:
+  - read `getRows()`
+  - build `buildStep3Patch(rawRows)`
+  - write with `optimisticMergeMeeting(...)`
+- Keep `syncMeetingDetails(meetingId, patch)` so the same `['meeting', meetingId]` cache gets refetched and patched if the backend responds stale.
+- No separate local state should be introduced for ScheduleTab.
 
-**File: `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`**
-- Capture the original `TableRow[]` from `inviteesRef.current` (the raw form state) before mapping to payload
-- Use the original `TableRow[]` for the optimistic patch instead of the mapped payload
-- Remove the re-application of the optimistic patch after refetch — instead, add a short delay before refetching, or trust the refetch to return correct data
+4. Add one defensive guard
+- If edit mode is active but no meeting id is available, show a destructive toast instead of silently returning.
+- That makes regressions obvious during testing.
 
-### Specific changes
+Why this should fix your exact case
 
-1. **`useSubmitterModal.ts` — `saveInvitees` function**: Get raw invitees from the form ref (`inviteesRef.current` rows) separately from the payload, and pass the raw rows to `buildStep3Patch`
+Right now the optimistic update is not failing because ScheduleTab reads the wrong state.  
+It is failing because on reopen the modal loses the edit meeting id, so the second submission path is not operating against the same shared query state.
 
-2. **`useSubmitterModal.ts` — `handleFinalSubmit`**: Remove the post-refetch re-application of optimistic patch (lines 128-131, 149-152, 174-177). The refetch should be the source of truth. If stale data is a concern, add a 500ms delay before refetching.
+Once the modal re-initializes `draftId` on every open and Step 3 uses `activeDraftId`, the first edit and second edit will both target the same cache and the same refetch path.
 
-3. **Get raw rows from the table ref**: Need to check if the `DynamicTableFormHandle` exposes the raw `TableRow[]` — if not, add a `getRows()` method alongside `validateAndGetPayload()`
+Validation I would run after implementation
 
+- Refresh page
+- Open edit modal for the meeting
+- Go to Step 3 and update invitees
+- Confirm Schedule/الجدولة updates immediately
+- Close modal
+- Reopen the same meeting modal
+- Edit invitees again
+- Confirm:
+  - optimistic update happens again
+  - refetch runs again
+  - ScheduleTab still reflects the latest list
+- Repeat one more time without refreshing the page
+
+Technical details
+
+Files to change:
+- `src/modules/shared/features/meeting-request-form/submitter/SubmitterModal.tsx`
+- `src/modules/shared/features/meeting-request-form/submitter/hooks/useSubmitterModal.ts`
+- `src/modules/shared/features/meeting-request-form/submitter/hooks/useModalSteps.ts`
+
+Data flow being preserved:
+- edit modal optimistic patch -> `optimisticMergeMeeting`
+- query key updated -> `['meeting', meetingId]`
+- detail page reads same key -> `useMeetingDetailPage`
+- ScheduleTab receives updated `meeting.invitees`
+
+Build note
+
+There are also separate existing TypeScript/build errors in UC03, UC04, auth, guiding-light, and Supabase function files. Those are unrelated to this reopen bug, but they still need a separate cleanup pass before the project typecheck will be fully green.
