@@ -15,6 +15,10 @@ export function mapRowToPayload(
     payload.object_guid = row.object_guid;
   }
 
+  if (row.id) {
+    payload.id = row.id;
+  }
+
   return payload;
 }
 
