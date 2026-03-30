@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/modules/auth';
-import { getDefaultRouteForUser } from '@/modules/shared';
+import { getDefaultRouteForUser, getSafeInternalRedirectPath } from '@/modules/shared';
 
 const loginSchema = z.object({
   email: z
@@ -22,6 +22,7 @@ const TEAL_DARK = '#1f4848';
 const Login = () => {
   const { login, isLoading, isSsoEnabled } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
@@ -81,7 +82,9 @@ const Login = () => {
     try {
       const userData = await login(result.data);
       if (userData) {
-        navigate(getDefaultRouteForUser(userData.use_cases, userData.roles), { replace: true });
+        const fromQuery = getSafeInternalRedirectPath(searchParams.get('redirect'));
+        const fallback = getDefaultRouteForUser(userData.use_cases, userData.roles);
+        navigate(fromQuery ?? fallback, { replace: true });
       }
     } catch (error: any) {
       setSubmitError(
