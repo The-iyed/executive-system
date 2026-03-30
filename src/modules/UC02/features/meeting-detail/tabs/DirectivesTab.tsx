@@ -23,7 +23,7 @@ export function DirectivesTab({ meeting, onAddDirective }: DirectivesTabProps) {
   return (
     <div className="flex flex-col gap-4 w-full" dir="rtl">
       <div className="flex flex-row items-center justify-between gap-4">
-        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'Almarai', sans-serif", fontSize: '18px' }}>
+        <h2 className="text-right font-bold text-[#101828] text-[16px]" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif", fontSize: '18px' }}>
           التوجيهات المرتبطة
         </h2>
         <button
