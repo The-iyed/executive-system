@@ -9,19 +9,19 @@ export interface LogoProps {
 
 export const Logo: React.FC<LogoProps> = ({ variant = 'row' }) => {
   return (
-    <div className={`flex items-center gap-3 flex-shrink-0 ${variant === 'column' ? 'flex-col' : ''}`}>
+    <div className={`flex items-center gap-2 md:gap-3 flex-shrink-0 ${variant === 'column' ? 'flex-col' : ''}`}>
      <img
        src={LogomarkSvg}
        alt=""
-       className="w-[40px] h-[40px] flex-shrink-0"
+       className="w-[32px] h-[32px] md:w-[40px] md:h-[40px] flex-shrink-0"
        width={40}
        height={40}
      />
-     <div className={`flex flex-col ${variant === 'column' ? 'items-center text-center' : 'items-start'}`}>
-       <h1 className="text-lg font-bold text-gray-800 leading-tight">
+     <div className={`hidden md:flex flex-col ${variant === 'column' ? 'items-center text-center' : 'items-start'}`}>
+       <h1 className="text-sm lg:text-lg font-bold text-gray-800 leading-tight">
          المنصة الموحدة
        </h1>
-       <p className="text-sm text-gray-500 leading-tight">
+       <p className="text-[10px] lg:text-sm text-gray-500 leading-tight">
        للشؤون التنفيذية بمكتب معالي الوزير
        </p>
      </div>
