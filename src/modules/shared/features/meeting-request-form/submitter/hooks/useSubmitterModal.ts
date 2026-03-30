@@ -155,11 +155,12 @@ export function useSubmitterModal({
 
       // ── Submit / resubmit ────────────────────────────────────────────────
       if (isSchedulerEdit) {
-        if (isEditMode) {
-          await syncMeetingDetails(meetingId, inviteePatch);
-        }
         toast({ title: "تم التحديث بنجاح" });
         onClose();
+        // Sync AFTER close to avoid re-rendering forms while modal is visible
+        if (isEditMode) {
+          syncMeetingDetails(meetingId, inviteePatch);
+        }
         return;
       }
 
@@ -171,12 +172,13 @@ export function useSubmitterModal({
         toast({ title: "تم التحديث بنجاح" });
       }
 
-      if (isEditMode) {
-        await syncMeetingDetails(meetingId, inviteePatch);
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-      }
+      // Close first, then sync to prevent form re-render flicker
       onClose();
+      if (isEditMode) {
+        syncMeetingDetails(meetingId, inviteePatch);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      }
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
     } finally {
