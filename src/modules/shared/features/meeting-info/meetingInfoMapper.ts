@@ -145,7 +145,7 @@ export function mapMeetingToInfo(
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', value: basedOnDirective ? yesNo(true) : null },
     { key: 'directive_method', label: 'طريقة التوجيه', value: getDirectiveMethodLabel(meeting.directive_method) ?? null },
     { key: 'related_guidance', label: 'التوجيه', value: str(meeting.related_guidance) },
-    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes) || 'لا توجد ملاحظات', fullWidth: true, alwaysShow: true },
+    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes), fullWidth: true },
   ];
 
   const sections: MeetingInfoSection[] = [
