@@ -116,7 +116,7 @@ function isMeetingOwner(attendee: Attendee) {
 }
 
 const consultantLabelStyle: CSSProperties = {
-  fontFamily: "Almarai, sans-serif",
+  fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif",
   fontWeight: 500,
   fontSize: "11px",
   lineHeight: "1.3",

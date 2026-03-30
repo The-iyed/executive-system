@@ -75,7 +75,7 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
               'py-3 text-center text-[12px] font-semibold text-gray-500',
               i < 6 && 'border-l border-gray-100'
             )}
-            style={{ fontFamily: "'Almarai', sans-serif" }}
+            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
           >
             {name}
           </div>
@@ -111,7 +111,7 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                     'w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold',
                     today ? 'bg-[#048F86] text-white' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'
                   )}
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {date.getDate()}
                 </span>
@@ -140,7 +140,7 @@ export const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                       onDayOverflowClick?.(date, dayEvents);
                     }}
                     className="text-[10px] text-[#048F86] font-semibold text-center hover:underline cursor-pointer py-0.5"
-                    style={{ fontFamily: "'Almarai', sans-serif" }}
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                   >
                     +{dayEvents.length - 3} المزيد
                   </button>

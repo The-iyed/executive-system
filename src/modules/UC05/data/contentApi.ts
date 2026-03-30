@@ -512,7 +512,8 @@ export interface AttachmentInsightsResponse {
 export const getAttachmentInsights = async (
   attachmentId: string
 ): Promise<AttachmentInsightsResponse> => {
-  const url = `${INSIGHTS_API_BASE}api/presentations/by-attachment/${attachmentId}/insights`;
+  const base = INSIGHTS_API_BASE.endsWith('/') ? INSIGHTS_API_BASE : `${INSIGHTS_API_BASE}/`;
+  const url = `${base}api/presentations/by-attachment/${attachmentId}/insights`;
   const response = await axiosInstance.get<AttachmentInsightsResponse>(url);
   return response.data;
 };
