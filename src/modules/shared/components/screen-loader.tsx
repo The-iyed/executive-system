@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/ui';
-import LogomarkSvg from '@/modules/shared/assets/Logomark.svg';
+import LogomarkSvg from '@/modules/shared/assets/Logomark.svg?url';
 
 interface ScreenLoaderProps {
   message?: string;
