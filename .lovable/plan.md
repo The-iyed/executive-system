@@ -1,38 +1,28 @@
 
 
-## Plan: Fix `toISOStringWithTimezone` to emit local ISO with timezone offset
+## Plan: Add configurable timezone env variable
 
 ### Problem
-`toISOStringWithTimezone` calls `date.toISOString()` which converts to UTC and appends `Z`. Selecting 3:00–4:00 in UTC+3 sends `02:00:00.000Z` and `03:00:00.000Z`.
+The timezone header is always derived from the browser. The user wants an optional env variable override.
 
-### Fix
+### Changes
 
-**File: `src/lib/ui/lib/dateUtils.ts`**
-
-Replace both functions to output local time with the browser's timezone offset (e.g. `2026-03-30T03:00:00+03:00`):
-
-```typescript
-function getTimezoneOffsetString(date: Date): string {
-  const offset = -date.getTimezoneOffset();
-  const sign = offset >= 0 ? '+' : '-';
-  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
-  return `${sign}${hours}:${minutes}`;
-}
-
-export function toISOStringWithTimezone(date: Date): string {
-  if (Number.isNaN(date.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${getTimezoneOffsetString(date)}`;
-}
-
-export function toISOStringWithTimezoneFromString(isoOrEmpty: string): string {
-  if (!isoOrEmpty || typeof isoOrEmpty !== 'string') return isoOrEmpty;
-  const date = new Date(isoOrEmpty);
-  if (Number.isNaN(date.getTime())) return isoOrEmpty;
-  return toISOStringWithTimezone(date);
-}
+**1. `.env`** — Add new variable
+```
+VITE_APP_TIMEZONE=Asia/Riyadh
 ```
 
-Single file change. All call sites (calendar slot form, date-time picker, etc.) automatically send the correct local time with offset.
+**2. `src/lib/env.ts`** — Export the new variable
+```ts
+export const APP_TIMEZONE = getEnv('VITE_APP_TIMEZONE', '');
+```
+
+**3. `src/lib/api/apiTimezone.ts`** — Use env value when set, fallback to browser
+- Import `APP_TIMEZONE` from `@/lib/env`
+- In `getBrowserTimezone()`: return `APP_TIMEZONE` if non-empty, otherwise return browser timezone as current default
+
+### Result
+- When `VITE_APP_TIMEZONE` is set (e.g. `Asia/Riyadh`), all API requests use that value in the `X-Timezone` header
+- When empty or unset, falls back to browser-detected timezone as before
+- 3 files changed
 

@@ -296,7 +296,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" dir="rtl">
       <div className="p-6">
         <DetailPageHeader
-          title={`${meetingRequest.meeting_title} (${meetingRequest.request_number})`}
+          title={meetingRequest.request_number ? `${meetingRequest.meeting_title} (${meetingRequest.request_number})` : meetingRequest.meeting_title}
           onBack={() => navigate(-1)}
           statusBadge={<StatusBadge status={meetingStatus} label={statusLabel} />}
           tabs={tabs}
@@ -392,7 +392,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     ? "text-[#009883] border-b-2 border-[#009883]"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 العرض التقديمي
               </button>
@@ -404,7 +404,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       ? "text-[#009883] border-b-2 border-[#009883]"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {additionalAttachments.length} مرفقات إضافية
                 </button>
@@ -431,13 +431,13 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         <div className="flex flex-col items-end">
                           <span
                             className="text-sm font-medium text-[#344054] text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             {att.file_name}
                           </span>
                           <span
                             className="text-xs text-[#475467] text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             {formatFileSize(att.file_size || 0)}
                           </span>
@@ -493,13 +493,13 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         <div className="flex flex-col items-end">
                           <span
                             className="text-sm font-medium text-[#344054] text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             {att.file_name}
                           </span>
                           <span
                             className="text-xs text-[#475467] text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             {formatFileSize(att.file_size || 0)}
                           </span>
@@ -550,14 +550,14 @@ const ContentConsultationRequestDetail: React.FC = () => {
             <div className="flex flex-col gap-4">
               <h3
                 className="text-lg font-semibold text-gray-900 text-right"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 ملاحظات مسؤول المحتوى
               </h3>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[100px]">
                 <p
                   className="text-sm text-gray-700 text-right whitespace-pre-wrap"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {getNotesText(meetingRequest.content_officer_notes) || "لا توجد ملاحظات"}
                 </p>
@@ -569,12 +569,12 @@ const ContentConsultationRequestDetail: React.FC = () => {
               <div className="flex flex-col gap-4">
                 <h3
                   className="text-lg font-semibold text-gray-900 text-right"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   سؤال الاستشارة
                 </h3>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-gray-700 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  <p className="text-sm text-gray-700 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                     {consultationQuestion}
                   </p>
                 </div>
@@ -825,7 +825,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
         <Dialog open={isConsultationModalOpen} onOpenChange={setIsConsultationModalOpen}>
           <DialogContent className="sm:max-w-[650px]" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <DialogTitle className="text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 إضافة الاستشارة
               </DialogTitle>
             </DialogHeader>
@@ -843,12 +843,12 @@ const ContentConsultationRequestDetail: React.FC = () => {
               <div className="flex flex-row justify-between items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <span
                   className="text-sm font-medium text-gray-900 text-right"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   هل الطلب مناسب للجدولة؟
                 </span>
                 <div className="flex flex-row items-center gap-3">
-                  <span className="text-base text-[#667085]" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  <span className="text-base text-[#667085]" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                     {isSuitableForScheduling ? "نعم" : "لا"}
                   </span>
                   <button
@@ -871,7 +871,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 type="button"
                 onClick={() => setIsConsultationModalOpen(false)}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 disabled={submitMutation.isPending}
               >
                 إلغاء
@@ -882,7 +882,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   onClick={() => handleSubmitConsultation("draft")}
                   disabled={submitMutation.isPending || !consultationNotes.trim() || !consultationId}
                   className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {submitMutation.isPending ? "جاري الحفظ..." : "حفظ"}
                 </button>
@@ -891,7 +891,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                   onClick={() => handleSubmitConsultation("submit")}
                   disabled={submitMutation.isPending || !consultationNotes.trim() || !consultationId}
                   className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "'Almarai', sans-serif" }}
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                 >
                   {submitMutation.isPending ? "جاري الإرسال..." : "إرسال"}
                 </button>
@@ -904,7 +904,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
         <Dialog open={isDraftsModalOpen} onOpenChange={setIsDraftsModalOpen}>
           <DialogContent className="sm:max-w-[700px]" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              <DialogTitle className="text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                 مسودات الاستشارات
               </DialogTitle>
             </DialogHeader>
@@ -927,15 +927,15 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         <div className="flex flex-row items-center justify-between">
                           <span
                             className="text-sm font-medium text-gray-700 text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             سؤال الاستشارة:
                           </span>
-                          <span className="text-xs text-gray-500" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          <span className="text-xs text-gray-500" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                             {formatDateArabic(draft.requested_at)}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-900 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                        <p className="text-sm text-gray-900 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                           {draftQuestion}
                         </p>
                       </div>
@@ -944,13 +944,13 @@ const ContentConsultationRequestDetail: React.FC = () => {
                         <div className="flex flex-col gap-2">
                           <span
                             className="text-sm font-medium text-gray-700 text-right"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             الإجابة:
                           </span>
                           <p
                             className="text-sm text-gray-900 text-right whitespace-pre-wrap bg-white p-3 rounded border border-gray-200"
-                            style={{ fontFamily: "'Almarai', sans-serif" }}
+                            style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                           >
                             {answerText}
                           </p>
@@ -963,7 +963,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                           onClick={() => handlePublishDraft(draftId!)}
                           disabled={publishDraftMutation.isPending}
                           className="flex flex-row justify-center items-center px-4 py-2 gap-2 h-9 bg-gradient-to-b from-[#3C6FD1] via-[#048F86] to-[#6DCDCD] text-white rounded-lg shadow-[0px_1px_2px_rgba(16,24,40,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={{ fontFamily: "'Almarai', sans-serif" }}
+                          style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
                         >
                           {publishDraftMutation.isPending ? "جاري النشر..." : "نشر"}
                         </button>
@@ -973,7 +973,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 })
               ) : (
                 <div className="flex items-center justify-center py-8">
-                  <p className="text-gray-500 text-right" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                  <p className="text-gray-500 text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
                     لا توجد مسودات
                   </p>
                 </div>
@@ -985,7 +985,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                 type="button"
                 onClick={() => setIsDraftsModalOpen(false)}
                 className="flex flex-row justify-center items-center px-[18px] py-[10px] gap-2 h-11 bg-white text-[#344054] rounded-lg border border-[#D0D5DD] shadow-[0px_1px_2px_rgba(16,24,40,0.05)] hover:bg-gray-50 transition-colors"
-                style={{ fontFamily: "'Almarai', sans-serif" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
               >
                 إغلاق
               </button>
