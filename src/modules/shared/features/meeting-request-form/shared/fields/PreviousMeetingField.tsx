@@ -11,9 +11,13 @@ interface Props {
 }
 
 export function PreviousMeetingField({ disabled, initialLabel }: Props) {
-  const { control, setValue, formState: { errors } } = useFormContext();
+  const { control, setValue, watch, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("previous_meeting_id");
   const isDisabled = disabled || !editable;
+
+  // Use prev_ext_meeting_title from form as fallback label for edit mode
+  const prevExtMeetingTitle = watch("prev_ext_meeting_title");
+  const displayLabel = initialLabel || prevExtMeetingTitle || undefined;
 
   const handleSelectMeeting = (option: MeetingOption | null) => {
     if (option) {
