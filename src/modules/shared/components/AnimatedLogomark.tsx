@@ -8,7 +8,7 @@ import React from 'react';
 export const AnimatedLogomark: React.FC<{ size?: number }> = ({ size = 56 }) => {
   return (
     <div
-      className="inline-flex items-center justify-center"
+      className="inline-flex items-center justify-center animate-[logoPulse_2s_ease-in-out_infinite]"
       style={{ width: size, height: size }}
     >
       <style>{`
