@@ -114,11 +114,11 @@ export function DetailPageHeader({
                       onClick={() => (editAction.opensForm || editAction.hasChanges) && editAction.onClick()}
                       disabled={!editAction.opensForm && !editAction.hasChanges}
                       className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all duration-200',
+                        'flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold transition-all duration-200',
                         'disabled:opacity-50 disabled:cursor-not-allowed',
                         (editAction.opensForm || editAction.hasChanges)
-                          ? 'bg-gradient-to-l from-[#048F86] to-[#34C3BA] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]'
-                          : 'bg-gradient-to-l from-[#9CA3AF] to-[#D1D5DB]'
+                          ? 'bg-gradient-to-r from-[#048F86] via-[#069E95] to-[#0BB5AA] shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97]'
+                          : 'bg-gradient-to-r from-[#B0B7C3] to-[#CDD3DC]'
                       )}
                     >
                       <Pencil className="w-4 h-4" strokeWidth={2} />
