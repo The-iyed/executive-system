@@ -159,7 +159,6 @@ export function useSubmitterModal({
           await syncMeetingDetails(meetingId, inviteePatch);
         }
         toast({ title: "تم التحديث بنجاح" });
-        steps.resetModal();
         onClose();
         return;
       }
