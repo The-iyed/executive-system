@@ -63,6 +63,7 @@ export interface RawMeetingForInfo {
   meeting_url?: string | null;
   meeting_link?: string | null;
   meeting_classification?: string | null;
+  meeting_sub_category?: string | null;
   meeting_justification?: string | null;
   related_topic?: string | null;
   deadline?: string | null;
