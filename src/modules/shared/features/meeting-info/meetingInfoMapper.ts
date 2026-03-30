@@ -9,6 +9,7 @@ import {
   getMeetingTypeLabel,
   getMeetingConfidentialityLabel,
   getDirectiveMethodLabel,
+  getMeetingSubCategoryLabel,
   MeetingChannelLabels,
 } from '../../types';
 import { formatDateArabic } from '../../utils/format';
@@ -62,6 +63,7 @@ export interface RawMeetingForInfo {
   meeting_url?: string | null;
   meeting_link?: string | null;
   meeting_classification?: string | null;
+  meeting_sub_category?: string | null;
   meeting_justification?: string | null;
   related_topic?: string | null;
   deadline?: string | null;
@@ -132,6 +134,7 @@ export function mapMeetingToInfo(
     { key: 'meeting_location', label: 'الموقع', value: str(location) },
     { key: 'meeting_link', label: 'رابط الاجتماع', value: (channel === 'PHYSICAL') ? null : (link || null), fullWidth: true },
     { key: 'meeting_classification', label: 'فئة الاجتماع', value: getMeetingClassificationLabel(meeting.meeting_classification) ?? null },
+    { key: 'meeting_sub_category', label: 'التصنيف الفرعي', value: getMeetingSubCategoryLabel(meeting.meeting_sub_category) ?? null },
     { key: 'meeting_justification', label: 'مبرر اللقاء', value: str(meeting.meeting_justification) },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', value: str(meeting.related_topic) },
     { key: 'deadline', label: 'تاريخ الاستحقاق', value: meeting.deadline ? formatDateOnly(meeting.deadline) : null },
