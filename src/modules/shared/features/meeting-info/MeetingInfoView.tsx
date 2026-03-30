@@ -167,7 +167,7 @@ export function MeetingInfoView({
       {/* First section (basic info) — show all fields */}
       {data.sections[0] && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-          {data.sections[0].fields.map(field => (
+          {data.sections[0].fields.filter(f => f.value !== null).map(field => (
             <FieldCell key={field.key} {...field} fieldKey={field.key} />
           ))}
         </div>
