@@ -3,7 +3,7 @@
  * All fields always visible with "—" fallback for missing data.
  */
 import { cn } from '@/lib/ui';
-import { Info, Copy, MapPin } from 'lucide-react';
+import { Info, Copy, MapPin, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MeetingInfoViewProps, MeetingInfoField, AgendaItem } from './types';
 
@@ -56,11 +56,18 @@ function LinkField({ value }: { value: string }) {
   );
 }
 
-function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?: boolean }) {
+/* Icon lookup for specific field keys */
+const FIELD_ICONS: Record<string, React.ReactNode> = {
+  meeting_owner: <Building2 className="w-4 h-4" />,
+};
+
+function FieldCell({ label, value, fullWidth, icon, fieldKey }: MeetingInfoField & { fullWidth?: boolean; fieldKey?: string }) {
   const displayValue = isEmptyValue(value) ? '—' : value;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
   if (isLink) return <LinkField value={value as string} />;
+
+  const resolvedIcon = icon ?? (fieldKey ? FIELD_ICONS[fieldKey] : undefined);
 
   return (
     <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')} dir="rtl">
@@ -69,6 +76,7 @@ function FieldCell({ label, value, fullWidth }: MeetingInfoField & { fullWidth?:
         'flex items-center gap-2.5 px-4 py-3 rounded-2xl border bg-muted/40 border-border/40',
         fullWidth && 'min-h-[72px] items-start',
       )}>
+        {resolvedIcon && <span className="flex-shrink-0 text-muted-foreground">{resolvedIcon}</span>}
         <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{displayValue}</span>
       </div>
     </div>
@@ -141,7 +149,7 @@ export function MeetingInfoView({
       {data.sections[0] && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           {data.sections[0].fields.map(field => (
-            <FieldCell key={field.key} {...field} />
+            <FieldCell key={field.key} {...field} fieldKey={field.key} />
           ))}
         </div>
       )}
@@ -156,7 +164,7 @@ export function MeetingInfoView({
       {data.sections.slice(1).map((section, sIdx) => (
         <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           {section.fields.map(field => (
-            <FieldCell key={field.key} {...field} />
+            <FieldCell key={field.key} {...field} fieldKey={field.key} />
           ))}
         </div>
       ))}
