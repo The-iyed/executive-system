@@ -121,7 +121,14 @@ export function useSubmitterModal({
       const meetingStatus = result.status;
   
       if (isSchedulerEdit) {
-        if (isEditMode) await syncMeetingDetails(meetingId);
+        if (isEditMode) {
+          await syncMeetingDetails(meetingId);
+          // Re-apply optimistic patch after refetch to guard against stale API data
+          const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
+          if (inviteesPayload) {
+            optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
+          }
+        }
         toast({title: "تم التحديث بنجاح"});
         steps.resetModal();
         return;
@@ -137,8 +144,12 @@ export function useSubmitterModal({
   
       if (isEditMode) {
         await syncMeetingDetails(meetingId);
+        // Re-apply optimistic patch after refetch to guard against stale API data
+        const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
+        if (inviteesPayload) {
+          optimisticMergeMeeting(queryClient, meetingId, buildStep3Patch(inviteesPayload));
+        }
       } else {
-        // Create mode: invalidate meetings list so new meeting appears
         await queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
       steps.resetModal();
