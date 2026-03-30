@@ -20,7 +20,6 @@ import {
   CalendarSkeleton,
   EventDetailModal,
   SyncIndicator,
-  DayMeetingsPanel,
 } from './components';
 import { mapTimelineToOutlookEvent, mapTimelineToCalendarEvent } from './utils';
 import type { SlotSelection } from './types';
@@ -97,8 +96,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
-  const [dayPanelDate, setDayPanelDate] = useState<Date | null>(null);
-  const [dayPanelEvents, setDayPanelEvents] = useState<CalendarEventData[]>([]);
 
   const showSkeleton = isLoading;
 
@@ -129,10 +126,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [],
   );
 
-  const handleMoreClick = useCallback((date: Date, events: CalendarEventData[]) => {
-    setDayPanelDate(date);
-    setDayPanelEvents(events);
-  }, []);
 
   const handleSlotSubmit = useCallback(
     async (values: Record<string, unknown>) => {
@@ -284,7 +277,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 extraEvents={extraEvents}
                 onEventClick={handleEventClick}
                 onTimeSlotSelect={handleSlotSelect}
-                onMoreClick={handleMoreClick}
               />
             </div>
             {isFetching && <SyncIndicator />}
@@ -339,21 +331,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           }}
         />
       )}
-
-      <DayMeetingsPanel
-        open={!!dayPanelDate}
-        date={dayPanelDate}
-        events={dayPanelEvents}
-        onClose={() => {
-          setDayPanelDate(null);
-          setDayPanelEvents([]);
-        }}
-        onEventClick={(ev) => {
-          setDayPanelDate(null);
-          setDayPanelEvents([]);
-          handleEventClick(ev);
-        }}
-      />
     </div>
   );
 };
