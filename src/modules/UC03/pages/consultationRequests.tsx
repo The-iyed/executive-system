@@ -7,7 +7,7 @@ import {
   type ConsultationRequestApiResponse,
   type GetConsultationRequestsParams,
 } from '../data/consultationsApi';
-import { mapConsultationRequestToCardData } from '../utils/consultationMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const ConsultationRequests: React.FC = () => {
