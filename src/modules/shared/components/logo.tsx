@@ -13,15 +13,15 @@ export const Logo: React.FC<LogoProps> = ({ variant = 'row' }) => {
      <img
        src={LogomarkSvg}
        alt=""
-       className="w-[40px] h-[40px] flex-shrink-0"
+       className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] flex-shrink-0"
        width={40}
        height={40}
      />
-     <div className={`flex flex-col ${variant === 'column' ? 'items-center text-center' : 'items-start'}`}>
-       <h1 className="text-lg font-bold text-gray-800 leading-tight">
+     <div className={`hidden md:flex flex-col ${variant === 'column' ? 'items-center text-center' : 'items-start'}`}>
+       <h1 className="text-base lg:text-lg font-bold text-gray-800 leading-tight">
          المنصة الموحدة
        </h1>
-       <p className="text-sm text-gray-500 leading-tight">
+       <p className="hidden xl:block text-sm text-gray-500 leading-tight">
        للشؤون التنفيذية بمكتب معالي الوزير
        </p>
      </div>
