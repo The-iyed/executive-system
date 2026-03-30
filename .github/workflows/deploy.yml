@@ -65,7 +65,7 @@ jobs:
           echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
-          echo "$VM_PASSWORD" | sudo -S rsync -av --delete --exclude='.git' --exclude='.env' . "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
           cd "$DEST_DIR"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
@@ -122,7 +122,7 @@ jobs:
           echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
-          echo "$VM_PASSWORD" | sudo -S rsync -av --delete --exclude='.git' --exclude='.env' . "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
           cd "$DEST_DIR"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
