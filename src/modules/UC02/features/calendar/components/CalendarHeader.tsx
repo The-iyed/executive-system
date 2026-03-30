@@ -11,7 +11,7 @@ const VIEW_MODES: { key: CalendarViewMode; label: string }[] = [
   { key: 'monthly', label: 'شهري' },
 ];
 
-const FONT = { fontFamily: "'Almarai', sans-serif" } as const;
+const FONT = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

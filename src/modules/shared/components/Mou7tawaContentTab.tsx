@@ -7,7 +7,7 @@ import { Plus, Trash2, Eye, Download, FileText, Calendar } from 'lucide-react';
 import { Input, Textarea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/lib/ui';
 import pdfIcon from '../assets/pdf.svg';
 
-const fontStyle = { fontFamily: "'Almarai', sans-serif" } as const;
+const fontStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 
 export interface ContentTabFileItem {
   id: string;
