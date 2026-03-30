@@ -196,7 +196,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
             hover:scale-105 active:scale-95 touch-manipulation
             ${open
               ? 'bg-white/90 backdrop-blur-xl border-2 border-gray-200/60 shadow-lg'
-              : 'bg-gradient-to-br from-[#1A6B64] via-[#238C83] to-[#2BA89E] border-2 border-white/25 shadow-[0_4px_24px_rgba(26,107,100,0.4)]'
+              : 'bg-white border-2 border-[#048F86]/20 shadow-[0_2px_16px_rgba(4,143,134,0.15)]'
             }
           `}
         >
