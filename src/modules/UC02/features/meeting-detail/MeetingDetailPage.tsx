@@ -102,11 +102,8 @@ const MeetingDetailPage: React.FC = () => {
       case 'schedule':
         return h.isScheduleOfficer ? (
           <ScheduleTab
-            scheduleForm={{ requires_protocol: h.scheduleForm.requires_protocol, is_data_complete: h.scheduleForm.is_data_complete, notes: h.scheduleForm.notes }}
-            onScheduleFormChange={(updates) => h.setScheduleForm((prev) => ({ ...prev, ...updates }))}
             invitees={meeting?.invitees}
             validationError={h.validationError}
-            scheduleMutationSuccess={h.scheduleMutation.isSuccess}
           />
         ) : null;
       case 'attendees':
