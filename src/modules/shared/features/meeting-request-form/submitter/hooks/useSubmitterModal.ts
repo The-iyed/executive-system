@@ -206,12 +206,6 @@ export function useSubmitterModal({
       }
 
       // Step 3
-      let inviteePatch: Record<string, unknown> | null = null;
-      if (isEditMode && rawRows.length > 0) {
-        inviteePatch = buildStep3Patch(rawRows);
-        optimisticMergeMeeting(queryClient, meetingId, inviteePatch);
-      }
-
       await inviteesMutation.mutateAsync({
         draftId: meetingId,
         invitees: inviteesPayload,
