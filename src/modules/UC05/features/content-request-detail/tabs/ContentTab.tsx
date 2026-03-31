@@ -16,7 +16,7 @@ import { formatDateArabic } from '@/modules/shared/utils';
 import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
 import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
-import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse } from '../../../data/contentApi';
+import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
 import { ACTION_STATUS_OPTIONS, COMPARE_STATUS, COMPARE_LEVEL, COMPARE_RECOMMENDATION } from '../constants';
 import { getNotesText, formatFileSize, startOfLocalDay, translateCompareErrorDetail, translateCompareValue, normalizeAssignees } from '../utils';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
@@ -86,15 +86,19 @@ export function ContentTab({ h }: ContentTabProps) {
   // Directives data
   const suggestedActionsItems = h.suggestedActionsItems;
   const suggestedActionsFiltered = suggestedActionsItems.filter((s) => !h.deletedSuggestedActionIds.has(String(s.id)));
+  const apiDirectives: ContentDirective[] = h.contentDirectives ?? [];
   const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
   const directivesFiltered = directives.filter((d) => !h.deletedExistingDirectiveIds.has(String(d.id)));
-  const hasDirectives = directivesFiltered.length > 0;
+  const hasDirectives = directivesFiltered.length > 0 || apiDirectives.length > 0;
   const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
   const hasAiSuggestions = h.aiDirectivesSuggestions.length > 0;
   const hasSuggestedActionsFromApi = suggestedActionsFiltered.length > 0;
   const hasManualActions = h.manualAddedActions.length > 0;
 
   const allDirectives = useMemo(() => [
+    // API-backed directives (editable via PATCH/DELETE)
+    ...apiDirectives.map((d) => ({ ...d, isApiDirective: true, isAi: false, isSuggestedAction: false })),
+    // Legacy related_directives from content request
     ...directivesFiltered.map((d) => ({ ...d, isAi: false, isSuggestedAction: false })),
     ...h.aiDirectivesSuggestions.map((d) => ({
       ...d, isAi: true, isSuggestedAction: false,
@@ -111,7 +115,7 @@ export function ContentTab({ h }: ContentTabProps) {
       id: `manual-${a.id}`, isAi: false, isSuggestedAction: false, isManualAction: true,
       directive: a.title ?? '-', due_date: a.due_date ?? undefined, status: a.status ?? undefined, manualAction: a,
     })),
-  ], [directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
+  ], [apiDirectives, directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
 
   /* ─── Render AI actions for presentation files ─── */
   const renderFileActions = (file: ContentFileItem, sectionKey: string) => {
@@ -224,7 +228,48 @@ export function ContentTab({ h }: ContentTabProps) {
                     const isAi = directive.isAi;
                     const isSuggestedAction = directive.isSuggestedAction;
                     const isManualAction = directive.isManualAction;
+                    const isApiDirective = directive.isApiDirective;
                     const directiveId = directive.id;
+
+                    if (isApiDirective) {
+                      const d = directive as ContentDirective & { isApiDirective: boolean };
+                      return (
+                        <tr key={`api-${d.id}`} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm text-foreground" dir="rtl">{d.title || '—'}</td>
+                          <td className="px-4 py-3">
+                            <FormDatePicker
+                              value={d.due_date ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { due_date: v || null } });
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Select value={d.status} onValueChange={(v) => h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { status: v } })} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
+                            {d.assignees?.length ? d.assignees.join('، ') : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.deleteDirectiveMutation.mutate(d.id)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
 
                     if (isManualAction && directive.manualAction) {
                       const a = directive.manualAction as ActionItem;
