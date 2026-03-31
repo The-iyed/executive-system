@@ -2,8 +2,11 @@
  * UC02 Meeting Detail Page – feature entry point.
  * Thin shell: delegates to useMeetingDetailPage hook + tab components + modal components.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash2, AlertCircle } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { submitDraft } from '@/modules/shared/features/meeting-request-form/api/submitDraft';
+import { useToast } from '@/lib/ui';
 import {
   MeetingStatus,
   MeetingOwnerType,
@@ -74,6 +77,24 @@ const MeetingDetailSkeleton: React.FC = () => (
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Submit draft mutation
+  const [isSubmitDraftConfirmOpen, setIsSubmitDraftConfirmOpen] = useState(false);
+  const submitDraftMutation = useMutation({
+    mutationFn: () => submitDraft(h.id!),
+    onSuccess: () => {
+      toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
+      queryClient.invalidateQueries({ queryKey: ['meeting', h.id] });
+      queryClient.invalidateQueries({ queryKey: ['meeting-draft', h.id] });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      setIsSubmitDraftConfirmOpen(false);
+    },
+    onError: (err) => {
+      toast({ title: err instanceof Error ? err.message : 'فشل إرسال الطلب', variant: 'destructive' });
+    },
+  });
 
   const handleSubmitSuccess = React.useCallback(() => {
     h.setActiveTab('meeting-info');
@@ -215,6 +236,8 @@ const MeetingDetailPage: React.FC = () => {
             onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => h.setIsApproveUpdateModalOpen(true) : undefined}
             onAddToWaitingList={() => h.setIsWaitingListConfirmOpen(true)}
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
+            onSubmitDraft={meeting.status === MeetingStatus.DRAFT ? () => setIsSubmitDraftConfirmOpen(true) : undefined}
+            isSubmitDraftPending={submitDraftMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
             hasPresentation={meeting?.attachments?.some(a => a.is_presentation) ?? false}
@@ -345,6 +368,18 @@ const MeetingDetailPage: React.FC = () => {
         onNotesChange={(v) => h.setScheduleForm(prev => ({ ...prev, notes: v }))}
         onRequiresProtocolChange={(v) => h.setScheduleForm(prev => ({ ...prev, requires_protocol: v }))}
         onDataCompleteChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: v }))}
+      />
+
+      <ConfirmDialog
+        open={isSubmitDraftConfirmOpen}
+        onOpenChange={setIsSubmitDraftConfirmOpen}
+        title="إرسال للمراجعة"
+        description="هل أنت متأكد من إرسال هذا الطلب للمراجعة؟"
+        confirmLabel="تأكيد الإرسال"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={() => submitDraftMutation.mutate()}
+        isLoading={submitDraftMutation.isPending}
+        variant="primary"
       />
 
       <AttachmentPreviewDrawer open={!!h.previewAttachment} onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }} attachment={h.previewAttachment} />
