@@ -279,7 +279,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
       is_internal: ev.is_internal,
       organizerName: fromApi ? meeting.submitter_name : ev.organizer?.name ?? '',
       organizerEmail: fromApi ? (meeting.current_owner_user?.email ?? '') : (ev.organizer?.email ?? ''),
-      date: scheduledStart,
+      date: scheduledStartDate,
       startTime,
       endTime,
       locationOrLink: locationText,
