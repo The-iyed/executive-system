@@ -128,7 +128,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_location_custom: '',
       proposers: [],
       requires_protocol: false,
-      is_data_complete: true,
+      is_data_complete: false,
     },
   });
 
