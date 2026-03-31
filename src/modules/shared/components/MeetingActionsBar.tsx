@@ -119,6 +119,8 @@ export interface MeetingActionsBarProps {
   onOpenApproveUpdate?: () => void;
   onAddToWaitingList: () => void;
   isAddToWaitingListPending: boolean;
+  onSubmitDraft?: () => void;
+  isSubmitDraftPending?: boolean;
   hasChanges: boolean;
   hasContent: boolean;
   /** Whether the meeting has at least one presentation attachment */
