@@ -65,6 +65,15 @@ const WorkBasketFeature: React.FC = () => {
 
   const cardActions: MeetingCardAction<MeetingApiResponse>[] = [
     {
+      id: 'submit-draft',
+      label: (item) =>
+        submitDraftMutation.isPending && submitTargetId === item.id ? 'جاري الإرسال...' : 'إرسال للمراجعة',
+      variant: 'default' as any,
+      onClick: (item) => { setSubmitTargetId(item.id); setSubmitConfirmOpen(true); },
+      hidden: (item) => item.status !== MeetingStatus.DRAFT,
+      loading: (item) => submitDraftMutation.isPending && submitTargetId === item.id,
+    },
+    {
       id: 'delete-draft',
       label: (item) =>
         isPending && targetId === item.id ? 'جاري الحذف...' : 'حذف',
