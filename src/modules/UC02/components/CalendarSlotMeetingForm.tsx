@@ -253,6 +253,8 @@ function CalendarFormInner({
         meeting_location,
         proposers,
         invitees: inviteesPayload,
+        requires_protocol: data.requires_protocol,
+        is_data_complete: data.is_data_complete,
       });
     },
     [onSubmit, showLocation, inviteesRef]
