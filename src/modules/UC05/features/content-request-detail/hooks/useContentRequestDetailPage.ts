@@ -20,12 +20,19 @@ import {
   analyzeContradictions,
   getAttachmentInsightsWithPolling,
   runCompareByAttachment,
+  getContentDirectives,
+  createContentDirective,
+  updateContentDirective,
+  deleteContentDirective,
   type ActionItem,
   type ConsultantUser,
   type DirectiveForApprove,
   type AnalyzeResponse,
   type ComparePresentationsResponse,
   type ContentRequestDetailResponse,
+  type ContentDirective,
+  type CreateContentDirectivePayload,
+  type UpdateContentDirectivePayload,
 } from '../../../data/contentApi';
 import {
   getConsultationRecordsWithParams,
@@ -121,6 +128,66 @@ export function useContentRequestDetailPage() {
 
   const rawMeetingId = contentRequest?.meeting_id ?? contentRequest?.meeting?.meeting_id ?? contentRequest?.meeting?.id ?? id;
   const suggestedActionsMeetingId = rawMeetingId != null && String(rawMeetingId).trim() !== '' ? String(rawMeetingId).trim() : null;
+
+  /* ── Content Directives CRUD query + mutations ── */
+  const { data: contentDirectives = [], isLoading: isLoadingContentDirectives } = useQuery({
+    queryKey: ['content-directives', id],
+    queryFn: () => getContentDirectives(id!),
+    enabled: !!id,
+  });
+
+  const createDirectiveMutation = useMutation({
+    mutationFn: (data: CreateContentDirectivePayload) => createContentDirective(id!, data),
+    onMutate: async (newDirective) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      const optimistic: ContentDirective = { id: newDirective.id ?? -(Date.now()), title: newDirective.title, due_date: newDirective.due_date, assignees: newDirective.assignees, status: newDirective.status };
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) => [...(old ?? []), optimistic]);
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم إضافة التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل إضافة التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const updateDirectiveMutation = useMutation({
+    mutationFn: ({ directiveId, data }: { directiveId: number; data: UpdateContentDirectivePayload }) =>
+      updateContentDirective(id!, directiveId, data),
+    onMutate: async ({ directiveId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).map((d) => d.id === directiveId ? { ...d, ...data } : d)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل تحديث التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const deleteDirectiveMutation = useMutation({
+    mutationFn: (directiveId: number) => deleteContentDirective(id!, directiveId),
+    onMutate: async (directiveId) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).filter((d) => d.id !== directiveId)
+      );
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم حذف التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل حذف التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
 
   const { data: suggestedActionsData } = useQuery({
     queryKey: ['business-cards-suggested-actions', suggestedActionsMeetingId],
@@ -387,11 +454,18 @@ export function useContentRequestDetailPage() {
     if (!opt?.value) return;
     const action = addDirectiveActionMapRef.current.get(opt.value);
     if (action) {
-      setManualAddedActions((prev) => { if (prev.some((a) => a.id === action.id)) return prev; return [...prev, action]; });
+      // POST to API instead of local state
+      createDirectiveMutation.mutate({
+        id: action.id,
+        title: action.title,
+        due_date: action.due_date ?? null,
+        assignees: action.assignees ?? [],
+        status: action.status ?? 'CURRENT',
+      });
       setShowAddDirectiveRow(false);
     }
     setAddDirectiveSelectValue(null);
-  }, []);
+  }, [createDirectiveMutation]);
 
   const handleDeleteManualAction = useCallback((actionId: number) => {
     setManualAddedActions((prev) => prev.filter((a) => a.id !== actionId));
@@ -474,19 +548,24 @@ export function useContentRequestDetailPage() {
       const edits = manualActionEdits[a.id];
       return { id: a.id, title: (a.title ?? '').trim() || '—', due_date: edits?.due_date !== undefined ? edits.due_date : (a.due_date ?? null), assignees: edits?.assignees ?? a.assignees ?? [], status: edits?.status ?? a.status ?? 'PENDING' };
     });
-    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
+    // API-backed directives
+    const apiObjs: DirectiveForApprove[] = contentDirectives.map((d) => ({
+      id: d.id, title: d.title, due_date: d.due_date, assignees: d.assignees, status: d.status,
+    }));
+    const directivesToSend: DirectiveForApprove[] = [...apiObjs, ...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
     sendToSchedulingMutation.mutate({ file: executiveSummaryFile, notes: guidanceNotes.trim(), directives: directivesToSend.length > 0 ? directivesToSend : undefined });
-  }, [executiveSummaryFile, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
+  }, [executiveSummaryFile, contentRequest, contentDirectives, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
   /* ── Computed ── */
   const hasDirectives = useMemo(() => {
+    const apiCount = contentDirectives.length;
     const existingCount = (contentRequest?.related_directives ?? [])
       .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
     const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
     const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
     const manualCount = manualAddedActions.length;
-    return (existingCount + aiCount + suggestedCount + manualCount) > 0;
-  }, [contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+    return (apiCount + existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentDirectives, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
 
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
@@ -533,7 +612,10 @@ export function useContentRequestDetailPage() {
     insightsMutation, insightsModalAttachment, setInsightsModalAttachment, insightsAbortControllerRef,
     compareByAttachmentMutation, isCompareModalOpen, setIsCompareModalOpen,
     compareResult, setCompareResult, compareErrorDetail, setCompareErrorDetail,
-    // Content tab: directives
+    // Content tab: directives (API-backed CRUD)
+    contentDirectives, isLoadingContentDirectives,
+    createDirectiveMutation, updateDirectiveMutation, deleteDirectiveMutation,
+    // Content tab: directives (legacy local state)
     aiDirectivesSuggestions, editableAiDirectives, aiDirectiveActions,
     deletedExistingDirectiveIds, deletedSuggestedActionIds,
     manualAddedActions, manualActionEdits, assigneeInputByActionId,
