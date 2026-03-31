@@ -28,6 +28,7 @@ export function ModalActionBar({
   onCancel,
   onSubmit,
   onSaveAsDraft,
+  extraFooterActions,
 }: ModalActionBarProps) {
   const isFirst = currentStep === 1;
   const isLast = currentStep === totalSteps;
