@@ -76,7 +76,6 @@ const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
 
   const handleSubmitSuccess = React.useCallback(() => {
-    h.setIsRefreshingAfterEdit(true);
     h.setActiveTab('meeting-info');
   }, [h]);
 
