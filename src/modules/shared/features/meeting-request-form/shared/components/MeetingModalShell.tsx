@@ -25,6 +25,7 @@ interface MeetingModalShellProps {
   onPrev: () => void;
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
+  extraFooterActions?: ReactNode;
   children: ReactNode;
   /** Hide the step indicator */
   hideSteps?: boolean;
