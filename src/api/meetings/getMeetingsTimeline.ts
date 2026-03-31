@@ -134,9 +134,20 @@ export function getMonthRange(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+/** Serialize range using local offset (not UTC) so day/week/month boundaries
+ *  align with the wall-clock times displayed in the calendar. */
 export function toISORange(range: { start: Date; end: Date }): { startISO: string; endISO: string } {
   return {
-    startISO: range.start.toISOString(),
-    endISO: range.end.toISOString(),
+    startISO: toLocalISO(range.start),
+    endISO: toLocalISO(range.end),
   };
+}
+
+function toLocalISO(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const oh = pad(Math.floor(Math.abs(offset) / 60));
+  const om = pad(Math.abs(offset) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${oh}:${om}`;
 }
