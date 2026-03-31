@@ -236,6 +236,8 @@ const MeetingDetailPage: React.FC = () => {
             onOpenApproveUpdate={meeting.status === MeetingStatus.SCHEDULED_SCHEDULING ? () => h.setIsApproveUpdateModalOpen(true) : undefined}
             onAddToWaitingList={() => h.setIsWaitingListConfirmOpen(true)}
             isAddToWaitingListPending={h.moveToWaitingListMutation.isPending}
+            onSubmitDraft={meeting.status === MeetingStatus.DRAFT ? () => setIsSubmitDraftConfirmOpen(true) : undefined}
+            isSubmitDraftPending={submitDraftMutation.isPending}
             hasChanges={h.hasChanges}
             hasContent={true}
             hasPresentation={meeting?.attachments?.some(a => a.is_presentation) ?? false}
