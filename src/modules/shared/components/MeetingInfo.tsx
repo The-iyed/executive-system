@@ -14,25 +14,27 @@ import {
 import { FileIcon } from 'lucide-react';
 import { ContentTabFileCard, type ContentTabFileItem } from './Mou7tawaContentTab';
 
+/**
+ * Parse date/time components directly from an ISO string without timezone conversion.
+ * e.g. "2026-04-07T09:00:00+03:00" → { date: "07/04/2026", time: "09:00" }
+ */
+function parseIsoRaw(iso: string): { date: string; time: string } | null {
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day, hour, minute] = match;
+  return { date: `${day}/${month}/${year}`, time: `${hour}:${minute}` };
+}
+
 function formatIsoRange(startISO: string | null | undefined, endISO: string | null | undefined): string {
   if (!startISO && !endISO) return '—';
-  const start = startISO ? new Date(startISO) : null;
-  const end = endISO ? new Date(endISO) : null;
-  if (start && Number.isNaN(start.getTime())) return startISO ?? '—';
-  if (end && Number.isNaN(end.getTime())) return endISO ?? '—';
-  const fmt = (d: Date) =>
-    d.toLocaleString('ar', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      calendar: 'gregory',
-      numberingSystem: 'latn',
-    });
-  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
-  if (start) return fmt(start);
-  if (end) return fmt(end);
+  const start = startISO ? parseIsoRaw(startISO) : null;
+  const end = endISO ? parseIsoRaw(endISO) : null;
+  if (start && end) {
+    if (start.date === end.date) return `${start.date}، ${start.time} – ${end.time}`;
+    return `${start.date}، ${start.time} – ${end.date}، ${end.time}`;
+  }
+  if (start) return `${start.date}، ${start.time}`;
+  if (end) return `${end.date}، ${end.time}`;
   return '—';
 }
 
