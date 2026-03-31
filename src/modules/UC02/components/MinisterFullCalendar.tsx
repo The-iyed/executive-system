@@ -181,19 +181,23 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
       extendedProps: { detail: CalendarEventData };
     }[] = [];
     for (const e of outlookEvents) {
-      const start = new Date(e.start_datetime);
-      const end = new Date(e.end_datetime);
-      if (Number.isNaN(start.getTime())) continue;
-      let endT = end;
-      if (Number.isNaN(end.getTime()) || end <= start) {
-        endT = new Date(start.getTime() + 60 * 60 * 1000);
+      const parsedS = parseIsoLocal(e.start_datetime);
+      const parsedE = parseIsoLocal(e.end_datetime);
+      if (!parsedS) continue;
+      const start = new Date(parsedS.date.getFullYear(), parsedS.date.getMonth(), parsedS.date.getDate(), parsedS.hour, parsedS.minute, 0, 0);
+      let end: Date;
+      if (parsedE) {
+        end = new Date(parsedE.date.getFullYear(), parsedE.date.getMonth(), parsedE.date.getDate(), parsedE.hour, parsedE.minute, 0, 0);
+        if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
+      } else {
+        end = new Date(start.getTime() + 60 * 60 * 1000);
       }
       const sty = styleForOutlook(e);
       out.push({
         id: e.item_id,
         title: e.subject || 'اجتماع',
         start,
-        end: endT,
+        end,
         backgroundColor: sty.backgroundColor,
         textColor: sty.textColor,
         borderColor: sty.borderColor,
