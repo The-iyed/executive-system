@@ -242,7 +242,7 @@ export function ContentTab({ h }: ContentTabProps) {
                                 value={d.title ? { value: String(d.id), label: d.title } : null}
                                 onValueChange={(opt) => {
                                   if (opt && opt.label !== d.title) {
-                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label, id: Number(opt.value) } });
+                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
                                   }
                                 }}
                                 loadOptions={h.loadActionsForAddDirective}
