@@ -1,18 +1,39 @@
 
 
-## Plan: Improve past-meeting validation message
+## Plan: Add confidentiality check to presentation required logic
+
+### Current state
+
+The `useStep2Visibility` hook in `useStep2Form.ts` already correctly:
+- Hides presentation when category = `DISCUSSION_WITHOUT_PRESENTATION`
+- Makes it optional for `PRIVATE_MEETING`, `BILATERAL_MEETING`, `WORKSHOP`
+- Makes it optional when `is_urgent = true`
+
+**Missing**: It does not check `meeting_confidentiality === 'CONFIDENTIAL'` (سرّي). When confidentiality is Secret, the presentation should also be optional.
 
 ### Change
 
-Update the validation error message in `useMeetingDetailPage.ts` from the current generic "لا يمكن اختيار تاريخ أو وقت البداية في الماضي" to a clearer message indicating the meeting time has already passed:
+**File: `src/modules/shared/features/meeting-request-form/shared/hooks/useStep2Form.ts`**
 
-**New message:** `"لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً"`
+Add one condition to the `presentationRequired` logic:
 
-(Translation: "This meeting's time has passed. Please update the start time to reschedule it.")
+```ts
+const isSecret = step1Data.meeting_confidentiality === MeetingConfidentiality.CONFIDENTIAL;
+
+const presentationRequired =
+  !hidePresentation &&
+  !isExemptCategory &&
+  !isUrgent &&
+  !isSecret;
+```
+
+Also import `MeetingConfidentiality` from the enums file alongside the existing imports.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useMeetingDetailPage.ts` | Update the 3 occurrences of the old message to the new improved one |
+| `useStep2Form.ts` | Import `MeetingConfidentiality`, add `isSecret` check to `presentationRequired` |
+
+1 file, ~3 lines changed.
 
