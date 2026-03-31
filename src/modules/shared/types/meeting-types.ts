@@ -228,7 +228,7 @@ export const MEETING_MANAGERS = [
 
 /* ═══ Meeting Nature (Scheduler) ═══ */
 export enum MeetingNature {
-  NORMAL = 'NORMAL',
+  NORMAL = 'NEW',
   SEQUENTIAL = 'SEQUENTIAL',
   PERIODIC = 'PERIODIC',
 }
