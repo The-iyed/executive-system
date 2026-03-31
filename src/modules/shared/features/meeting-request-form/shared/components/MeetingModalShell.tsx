@@ -52,6 +52,7 @@ export function MeetingModalShell({
   onPrev,
   onSubmit,
   onSaveAsDraft,
+  extraFooterActions,
   children,
   hideSteps = false,
   title = "قم بإضافة معلومات الاجتماع",
