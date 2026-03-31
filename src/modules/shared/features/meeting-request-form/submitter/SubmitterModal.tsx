@@ -16,7 +16,7 @@ interface SubmitterModalProps {
   onSubmitSuccess?: () => void;
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns, onSubmitSuccess }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
