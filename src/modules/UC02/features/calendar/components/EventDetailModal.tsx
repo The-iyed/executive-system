@@ -110,7 +110,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       organizerEmail: fromApi
         ? ((meeting as any).submitter?.email || meeting.current_owner_user?.email || '')
         : (event.organizer?.email ?? ''),
-      date: scheduledStart,
+      date: scheduledStartDate,
       startTime,
       endTime,
       locationOrLink: locationText,
