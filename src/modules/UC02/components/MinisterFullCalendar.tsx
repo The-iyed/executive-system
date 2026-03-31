@@ -296,9 +296,10 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     const slot = openSlotFromDate(arg.date, arg.allDay);
     if (!slot) return;
     const [h, m] = slot.time.split(':').map(Number);
-    const endD = new Date(slot.day);
-    endD.setHours(h || 0, (m || 0) + 30, 0, 0);
-    const endTime = `${pad2(endD.getHours())}:${pad2(endD.getMinutes())}`;
+    // Build end time purely from parsed integers — no Date timezone shift
+    const endH = m + 30 >= 60 ? h + 1 : h;
+    const endM = (m + 30) % 60;
+    const endTime = `${pad2(endH)}:${pad2(endM)}`;
     fireSlot(slot.day, slot.time, endTime);
   };
 
