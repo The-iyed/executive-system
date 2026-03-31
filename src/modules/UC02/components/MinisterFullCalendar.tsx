@@ -303,6 +303,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         headerToolbar={false}
         height="auto"
         contentHeight="auto"
+        timeZone="local"
         events={fcEvents}
         eventClick={handleEventClick}
         dateClick={handleDateClick}
@@ -324,6 +325,8 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         slotDuration="00:30:00"
         snapDuration="00:15:00"
         slotLabelInterval="01:00:00"
+        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+        slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
         buttonText={{ today: 'اليوم' }}
         dayHeaderContent={(arg) => {
           if (viewMode === 'daily') {
