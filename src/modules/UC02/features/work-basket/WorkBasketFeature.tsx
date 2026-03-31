@@ -98,6 +98,18 @@ const WorkBasketFeature: React.FC = () => {
         variant="danger"
       />
 
+      <ConfirmDialog
+        open={submitConfirmOpen}
+        onOpenChange={setSubmitConfirmOpen}
+        title="إرسال للمراجعة"
+        description="هل أنت متأكد من إرسال هذا الطلب للمراجعة؟"
+        confirmLabel="تأكيد الإرسال"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={() => submitTargetId && submitDraftMutation.mutate(submitTargetId)}
+        isLoading={submitDraftMutation.isPending}
+        variant="primary"
+      />
+
       <MeetingListLayout<MeetingApiResponse>
         title="سلة العمل"
         description="إدارة ومتابعة الطلبات المسندة إليك"

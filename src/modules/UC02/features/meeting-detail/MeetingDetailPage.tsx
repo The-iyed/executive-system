@@ -370,6 +370,18 @@ const MeetingDetailPage: React.FC = () => {
         onDataCompleteChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: v }))}
       />
 
+      <ConfirmDialog
+        open={isSubmitDraftConfirmOpen}
+        onOpenChange={setIsSubmitDraftConfirmOpen}
+        title="إرسال للمراجعة"
+        description="هل أنت متأكد من إرسال هذا الطلب للمراجعة؟"
+        confirmLabel="تأكيد الإرسال"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={() => submitDraftMutation.mutate()}
+        isLoading={submitDraftMutation.isPending}
+        variant="primary"
+      />
+
       <AttachmentPreviewDrawer open={!!h.previewAttachment} onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }} attachment={h.previewAttachment} />
     </div>
   );
