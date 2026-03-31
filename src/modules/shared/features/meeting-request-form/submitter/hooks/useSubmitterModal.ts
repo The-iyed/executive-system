@@ -37,18 +37,21 @@ export function useSubmitterModal({
   const [isFinalizing, setIsFinalizing] = useState(false);
 
   // ── Sync helper ───────────────────────────────────────────────────────────
-  const syncMeetingDetails = useCallback(async (meetingId: string, preservePatch?: Record<string, unknown> | null) => {
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId] }),
-      queryClient.refetchQueries({ queryKey: ['meeting-draft', meetingId] }),
-      queryClient.refetchQueries({ queryKey: ['meeting', meetingId, 'preview'] }),
-      queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] }),
-      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] }),
-      queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] }),
-    ]);
-    if (preservePatch) {
-      optimisticMergeMeeting(queryClient, meetingId, preservePatch);
-    }
+  // Invalidate list queries immediately, but delay meeting detail refetch
+  // to allow the backend to propagate changes. Optimistic patches already
+  // keep the UI correct in the meantime.
+  const syncMeetingDetails = useCallback((meetingId: string, _preservePatch?: Record<string, unknown> | null) => {
+    // List queries — invalidate immediately (they re-fetch on next render)
+    queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+    queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+    queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
+
+    // Meeting detail — delay refetch so server has time to persist
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
+      queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
+      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
+    }, 1500);
   }, [queryClient]);
 
   // ── Step navigation (no API calls) ────────────────────────────────────────
