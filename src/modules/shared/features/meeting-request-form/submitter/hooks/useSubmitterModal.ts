@@ -136,19 +136,9 @@ export function useSubmitterModal({
             draftId: meetingId,
             payload: step2Data,
           });
-
-          if (isEditMode) {
-            const patch = buildStep2Patch(step2Data);
-            optimisticMergeMeeting(queryClient, meetingId, patch);
-          }
         }
 
         // ── Step 3: Save invitees ────────────────────────────────────────
-        if (isEditMode && rawRows.length > 0) {
-          const inviteePatch = buildStep3Patch(rawRows);
-          optimisticMergeMeeting(queryClient, meetingId, inviteePatch);
-        }
-
         const response = await inviteesMutation.mutateAsync({
           draftId: meetingId,
           invitees: inviteesPayload,
