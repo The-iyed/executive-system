@@ -13,6 +13,7 @@ interface SubmitterModalProps {
   callerRole?: MeetingOwnerType;
   showAiSuggest?: boolean;
   excludeColumns?: string[];
+  onSubmitSuccess?: () => void;
 }
 
 export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns }: SubmitterModalProps) {
