@@ -149,7 +149,8 @@ function extraEventToDetail(ev: CalendarEventData): CalendarEventData {
 
 function openSlotFromDate(clicked: Date, allDay: boolean): { day: Date; time: string } | null {
   const now = Date.now();
-  const day = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
+  // FC is in UTC mode, so use UTC accessors to get the displayed wall-clock time
+  const day = new Date(clicked.getUTCFullYear(), clicked.getUTCMonth(), clicked.getUTCDate(), 0, 0, 0, 0);
   if (allDay) {
     const slot = new Date(day);
     slot.setHours(9, 0, 0, 0);
@@ -159,7 +160,7 @@ function openSlotFromDate(clicked: Date, allDay: boolean): { day: Date; time: st
   if (clicked.getTime() < now - 60000) return null;
   return {
     day,
-    time: `${pad2(clicked.getHours())}:${pad2(clicked.getMinutes())}`,
+    time: `${pad2(clicked.getUTCHours())}:${pad2(clicked.getUTCMinutes())}`,
   };
 }
 
