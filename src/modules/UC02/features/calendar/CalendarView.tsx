@@ -337,6 +337,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           initialMeetingChannel={slot.meetingChannel ?? ''}
           initialInvitees={slot.initialInvitees}
           mode={slot.mode}
+          hideProposedTime={!!slot.isQuickMeeting}
           isSubmitting={slotSubmitting}
           submitError={slotError}
           onSubmit={handleSlotSubmit as any}
