@@ -624,7 +624,7 @@ export function useContentRequestDetailPage() {
     directiveDueDateFromDate, isLoadingAiSuggestions, suggestedActionsItems, hasSuggestedActions,
     handleRequestAiDirectives, handleUpdateAiDirective, handleDeleteAiDirective,
     handleDeleteExistingDirective, handleDeleteSuggestedAction,
-    loadActionsForAddDirective, handleAddDirectiveSelectChange,
+    loadActionsForAddDirective, handleAddDirectiveSelectChange, addDirectiveActionMapRef,
     handleDeleteManualAction, updateManualActionDueDate, updateManualActionStatus,
     getManualActionAssignees, addManualActionAssignee, removeManualActionAssignee,
     setAssigneeInputByActionId,
