@@ -598,9 +598,15 @@ export interface ContentDirective {
 export type CreateContentDirectivePayload = Omit<ContentDirective, 'id'> & { id?: number };
 export type UpdateContentDirectivePayload = Partial<Omit<ContentDirective, 'id'>>;
 
+export interface ContentDirectivesResponse {
+  meeting_request_id: string;
+  directives: ContentDirective[];
+  total: number;
+}
+
 export const getContentDirectives = async (meetingId: string): Promise<ContentDirective[]> => {
-  const response = await axiosInstance.get<ContentDirective[]>(`/api/content/${meetingId}/directives`);
-  return Array.isArray(response.data) ? response.data : [];
+  const response = await axiosInstance.get<ContentDirectivesResponse>(`/api/content/${meetingId}/directives`);
+  return Array.isArray(response.data?.directives) ? response.data.directives : [];
 };
 
 export const createContentDirective = async (
