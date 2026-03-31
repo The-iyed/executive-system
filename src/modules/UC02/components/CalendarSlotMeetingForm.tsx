@@ -63,6 +63,8 @@ export interface CalendarSlotMeetingFormProps {
   onCancel: () => void;
   isSubmitting?: boolean;
   submitError?: string | null;
+  /** Hide the proposed meeting date/time fields (used for quick meeting) */
+  hideProposedTime?: boolean;
 }
 
 const calendarMeetingSchema = z.object({
