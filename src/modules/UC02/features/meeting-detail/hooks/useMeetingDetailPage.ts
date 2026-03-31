@@ -385,7 +385,7 @@ export function useMeetingDetailPage() {
     if (!startSource || !endSource) { setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية'); return; }
     const scheduledAt = new Date(startSource);
     const scheduledEndAt = new Date(endSource);
-    if (scheduledAt.getTime() <= Date.now()) { setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي'); return; }
+    if (scheduledAt.getTime() <= Date.now()) { setValidationError('لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً'); return; }
     if (scheduledEndAt.getTime() <= scheduledAt.getTime()) { setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية'); return; }
     setValidationError(null);
     const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
@@ -428,7 +428,7 @@ export function useMeetingDetailPage() {
     const scheduledAt = new Date(startSource);
     const scheduledEndAt = new Date(endSource);
     if (scheduledAt.getTime() <= Date.now()) {
-      setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي');
+      setValidationError('لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً');
       return;
     }
     if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
