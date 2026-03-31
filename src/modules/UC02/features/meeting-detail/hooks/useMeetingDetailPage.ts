@@ -109,12 +109,22 @@ export function useMeetingDetailPage() {
   const scheduleFormInitRef = useRef<ScheduleFormState | null>(null);
   const lastInitializedMeetingIdRef = useRef<string | null>(null);
 
+  /* ── Refreshing-after-edit flag ── */
+  const [isRefreshingAfterEdit, setIsRefreshingAfterEdit] = useState(false);
+
   /* ── Data fetching ── */
   const { data: meeting, isLoading, isFetching, error } = useQuery({
     queryKey: ['meeting', id],
     queryFn: () => getMeetingRequestById(id!),
     enabled: !!id,
   });
+
+  // Auto-reset refreshing flag once refetch completes
+  useEffect(() => {
+    if (isRefreshingAfterEdit && !isFetching) {
+      setIsRefreshingAfterEdit(false);
+    }
+  }, [isFetching, isRefreshingAfterEdit]);
 
   useEffect(() => {
     if (meeting?.id) {
