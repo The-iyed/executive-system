@@ -13,10 +13,7 @@ const meetingUserSchema = z.object({
 }).passthrough();
 
 export const schedulerStep1Schema = z.object({
-  meeting_nature: z.enum(
-    [MeetingNature.NORMAL, MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC],
-    { required_error: "طبيعة الاجتماع مطلوبة", invalid_type_error: "طبيعة الاجتماع غير صالحة" }
-  ),
+  meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
   group_id: z.number().nullable().optional(),
   prev_ext_original_title: z.string().nullable().optional(),
