@@ -1,5 +1,5 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw, Plus } from 'lucide-react';
 import { cn } from '@/lib/ui';
 import { Calendar } from '@/lib/ui/components/calendar';
 import { ARABIC_MONTHS, ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
