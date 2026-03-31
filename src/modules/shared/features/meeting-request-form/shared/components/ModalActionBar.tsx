@@ -13,6 +13,7 @@ interface ModalActionBarProps {
   onCancel: () => void;
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
+  extraFooterActions?: React.ReactNode;
 }
 
 export function ModalActionBar({
