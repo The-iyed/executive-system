@@ -101,6 +101,18 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             عرض الجدول الزمني للاجتماعات
           </p>
         </div>
+
+        {onQuickMeeting && (
+          <button
+            type="button"
+            onClick={onQuickMeeting}
+            className="flex items-center gap-1.5 mr-3 px-4 py-2 rounded-xl text-[12px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all hover:scale-[1.03] active:scale-[0.97] shadow-sm"
+            style={FONT}
+          >
+            <Plus className="w-4 h-4" />
+            اجتماع سريع
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
