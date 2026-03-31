@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider, useFormContext, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, Settings } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
