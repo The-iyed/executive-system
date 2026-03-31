@@ -1,37 +1,33 @@
 
 
-## Plan: Production-ready agenda duration fixes
+## Plan: Fix طبيعة الاجتماع error message
 
-### Changes
+### Problem
+`z.nativeEnum(MeetingNature)` produces an English error like `"Invalid enum value. Expected 'NORMAL' | 'SEQUENTIAL' | 'PERIODIC', received '...'"` because Zod lists the enum **keys**. The `required_error` only covers the "missing" case, not the "invalid value" case.
 
-#### 1. `AgendaSection.tsx` — Remove stale rootError display + fix min input
-- **Remove lines 186-188** (`rootError && !durationMismatch` paragraph) — the duration status badge already communicates mismatch clearly
-- Change `min={0}` to `min={5}` and placeholder from `"0"` to `"5"` on the duration input (line 162-165)
-- Add `useEffect` to `clearErrors("agenda_items")` when durations match — this prevents stale Zod errors from persisting in `formState.errors` after submission (even though we removed the display, clearing errors keeps form state clean for submit-gate logic)
+### Fix
 
-#### 2. `schema.ts` — Fix NaN error + min 5
+In **both** schema files, replace `z.nativeEnum(MeetingNature, ...)` with `z.enum(...)` using actual enum values + Arabic messages:
+
+**`scheduler/schema.ts` (line 16) and `submitter/schema.ts` (line 27)**
+
 Replace:
 ```ts
-presentation_duration_minutes: z.coerce.number().int().min(0, "المدة يجب أن تكون 0 أو أكثر"),
+meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
 ```
+
 With:
 ```ts
-presentation_duration_minutes: z.preprocess(
-  (val) => {
-    if (val === "" || val === undefined || val === null) return undefined;
-    const n = Number(val);
-    return Number.isNaN(n) ? undefined : n;
-  },
-  z.number({ required_error: "المدة مطلوبة", invalid_type_error: "يرجى إدخال رقم صحيح" })
-    .int("يرجى إدخال رقم صحيح")
-    .min(5, "المدة يجب أن تكون 5 دقائق أو أكثر")
-),
+meeting_nature: z.enum(
+  [MeetingNature.NORMAL, MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC] as [string, ...string[]],
+  { required_error: "طبيعة الاجتماع مطلوبة", invalid_type_error: "طبيعة الاجتماع غير صالحة" }
+) as z.ZodType<MeetingNature>,
 ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `AgendaSection.tsx` | Remove `rootError` paragraph; fix min=5 + placeholder; add clearErrors effect |
-| `schema.ts` | Replace `z.coerce.number()` with `z.preprocess` + Arabic messages + `.min(5)` |
+| `scheduler/schema.ts` | Replace `z.nativeEnum` with `z.enum` + Arabic error messages |
+| `submitter/schema.ts` | Same change for consistency |
 
