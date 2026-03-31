@@ -1,55 +1,35 @@
 
 
-## Plan: Restructure meeting detail modal with label-value layout
+## Plan: Remove all optimistic updates & refetch with skeleton on edit
 
-### What changes
+### Problem
+After editing a meeting, the app patches the React Query cache optimistically (steps 1, 2, 3 including invitees). This can show stale data. The user wants to remove all optimistic logic and instead do a clean refetch with a proper skeleton.
 
-Replace the current icon-only detail card with a clear **label → value** pattern for each field, making the information more readable and structured.
+### Changes
 
-### New layout structure
+#### 1. `useSubmitterModal.ts` — Remove all optimistic logic
+- Remove import of `optimisticMergeMeeting`, `buildStep1Patch`, `buildStep2Patch`, `buildStep3Patch`
+- Remove all 4 `optimisticMergeMeeting()` calls (lines 137-139, 149-151, 156-158, 229-231)
+- In `syncMeetingDetails`: remove the `setTimeout` — invalidate meeting detail queries immediately (the background async block ensures server has data by then)
 
-```text
-┌─ Title + Badge ──────────────── [X] ─┐
-│                                       │
-│  ┌─────────────────────────────────┐  │
-│  │  المنظم      Scheduling Officer │  │
-│  │              scheduling@...     │  │
-│  ├─────────────────────────────────┤  │
-│  │  التاريخ     الخميس 2 أبريل    │  │
-│  ├─────────────────────────────────┤  │
-│  │  الوقت       01:00 – 00:00     │  │
-│  ├─────────────────────────────────┤  │
-│  │  الموقع      الغدير             │  │
-│  └─────────────────────────────────┘  │
-│                                       │
-│  المدعوون (1)                         │
-│  ┌─ [M] monem@gmail.com ──────────┐  │
-│                                       │
-│  إعدادات الجدولة                      │
-│  ┌─ مبدئي ─┐  ┌─ البيانات ────────┐  │
-│                                       │
-├───────────────────────────────────────┤
-│           عرض التفاصيل   تعديل       │
-└───────────────────────────────────────┘
-```
+#### 2. `useMeetingDetailPage.ts` — Expose `isFetching`
+- Destructure `isFetching` from the `useQuery` call (line 113) and include it in the hook's return value
+- This signals when React Query is doing a background refetch after invalidation
 
-### Detail card rows — each row becomes:
-- **Right side**: icon + Arabic label (e.g. `المنظم`, `التاريخ`, `الوقت`, `الموقع`)
-- **Left side**: the value, right-aligned
+#### 3. `MeetingDetailPage.tsx` — Use `isFetching` for full-page skeleton
+- Remove the manual `isRefreshingInfo` state and `setTimeout(2000)` logic
+- Use `h.isFetching` to show a skeleton overlay across **all tabs** (not just meeting-info), so invitees, content, etc. all show skeleton during refetch
+- Create a generic `MeetingDetailSkeleton` component inline that covers the tab content area
 
-This gives a consistent two-column feel: label on the right, value on the left, separated by dividers.
-
-### Specific changes in `EventDetailModal.tsx`
-
-1. **Organizer row**: Add label "المنظم" next to icon, value = name + email
-2. **Date row**: Add label "التاريخ", value = formatted date
-3. **Time row**: Separate from date — label "الوقت", value = start – end  
-4. **Location row**: Add label "الموقع", value = location text or link
-5. Keep scheduling settings and invitees sections as-is (already good)
+#### 4. `MeetingInfoTab.tsx` — Remove `isRefreshing` prop
+- The skeleton is now handled at the page level, so remove the `isRefreshing` prop and the `MeetingInfoSkeleton` conditional rendering (keep the skeleton component for the page-level use)
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Restructure detail card rows to label-value pattern |
+| `useSubmitterModal.ts` | Remove optimistic imports/calls; immediate invalidation |
+| `useMeetingDetailPage.ts` | Expose `isFetching` from useQuery |
+| `MeetingDetailPage.tsx` | Replace `isRefreshingInfo` with `isFetching` skeleton overlay for all tabs |
+| `MeetingInfoTab.tsx` | Remove `isRefreshing` prop usage |
 
