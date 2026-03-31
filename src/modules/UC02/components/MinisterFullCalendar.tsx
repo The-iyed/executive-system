@@ -194,8 +194,8 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     const out: {
       id: string;
       title: string;
-      start: Date;
-      end: Date;
+      start: string;
+      end: string;
       backgroundColor: string;
       textColor: string;
       borderColor: string;
@@ -206,13 +206,15 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
       const parsedS = parseIsoLocal(startISO);
       const parsedE = parseIsoLocal(endISO);
       if (!parsedS) continue;
-      const start = new Date(parsedS.date.getFullYear(), parsedS.date.getMonth(), parsedS.date.getDate(), parsedS.hour, parsedS.minute, 0, 0);
-      let end: Date;
+      const start = toNaiveISO(parsedS);
+      let end: string;
       if (parsedE) {
-        end = new Date(parsedE.date.getFullYear(), parsedE.date.getMonth(), parsedE.date.getDate(), parsedE.hour, parsedE.minute, 0, 0);
-        if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
+        end = toNaiveISO(parsedE);
+        if (end <= start) {
+          end = toNaiveISO({ ...parsedS, hour: Math.min(23, parsedS.hour + 1), minute: parsedS.minute });
+        }
       } else {
-        end = new Date(start.getTime() + 60 * 60 * 1000);
+        end = toNaiveISO({ ...parsedS, hour: Math.min(23, parsedS.hour + 1), minute: parsedS.minute });
       }
       const sty = styleForOutlook(e);
       const detailSource: OutlookTimelineEvent =
@@ -235,9 +237,12 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
       const d = new Date(detail.date);
       const [sh, sm] = (detail.exactStartTime || detail.startTime).split(':').map(Number);
       const [eh, em] = (detail.exactEndTime || detail.endTime).split(':').map(Number);
-      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh || 0, sm || 0, 0, 0);
-      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh || 0, em || 0, 0, 0);
-      if (end <= start) end.setTime(start.getTime() + 3600000);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const start = toNaiveISO({ year, month, day, hour: sh || 0, minute: sm || 0 });
+      let end = toNaiveISO({ year, month, day, hour: eh || 0, minute: em || 0 });
+      if (end <= start) end = toNaiveISO({ year, month, day, hour: Math.min(23, (sh || 0) + 1), minute: sm || 0 });
       const v = detail.variant && EVENT_STYLE[detail.variant] ? detail.variant : variantFromId(ev.id);
       const sty = EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
       out.push({
