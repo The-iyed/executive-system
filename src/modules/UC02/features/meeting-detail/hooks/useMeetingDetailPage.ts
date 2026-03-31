@@ -110,7 +110,7 @@ export function useMeetingDetailPage() {
   const lastInitializedMeetingIdRef = useRef<string | null>(null);
 
   /* ── Data fetching ── */
-  const { data: meeting, isLoading, error } = useQuery({
+  const { data: meeting, isLoading, isFetching, error } = useQuery({
     queryKey: ['meeting', id],
     queryFn: () => getMeetingRequestById(id!),
     enabled: !!id,
@@ -447,6 +447,7 @@ export function useMeetingDetailPage() {
     // Data
     meeting,
     isLoading,
+    isFetching,
     error,
     previousMeeting,
     meetingStatus,
