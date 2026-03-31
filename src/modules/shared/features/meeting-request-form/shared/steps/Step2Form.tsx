@@ -225,6 +225,7 @@ export function Step2Form({
   initialContentData,
   isEditMode = false,
   meetingStatus,
+  callerRole,
 }: Step2FormProps) {
   const { showPresentation, presentationRequired } = useStep2Visibility(step1Data);
 
