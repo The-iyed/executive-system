@@ -237,21 +237,21 @@ export function ContentTab({ h }: ContentTabProps) {
                         <tr key={`api-${d.id}`} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
                           <td className="px-4 py-3" dir="rtl">
-                            <input
-                              type="text"
-                              defaultValue={d.title || ''}
-                              className="w-full text-sm text-foreground bg-transparent border border-transparent hover:border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-2 py-1 outline-none transition-colors"
-                              dir="rtl"
-                              onBlur={(e) => {
-                                const newTitle = e.target.value.trim();
-                                if (newTitle && newTitle !== d.title) {
-                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: newTitle } });
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                              }}
-                            />
+                            <div className="min-w-[200px] max-w-full">
+                              <FormAsyncSelectV2
+                                value={d.title ? { value: String(d.id), label: d.title } : null}
+                                onValueChange={(opt) => {
+                                  if (opt && opt.label !== d.title) {
+                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
+                                  }
+                                }}
+                                loadOptions={h.loadActionsForAddDirective}
+                                placeholder="ابحث واختر التوجيه..."
+                                searchPlaceholder="ابحث في التوجيهات..."
+                                emptyMessage="لا توجد نتائج"
+                                fullWidth limit={20} defaultOptions={false} className="text-right"
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <FormDatePicker
