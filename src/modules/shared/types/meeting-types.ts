@@ -189,12 +189,67 @@ export enum MeetingClassificationType {
   STRATEGIC = 'STRATEGIC',
   OPERATIONAL = 'OPERATIONAL',
   SPECIAL = 'SPECIAL',
+  ORGANIZATIONAL_STRUCTURING = 'ORGANIZATIONAL_STRUCTURING',
 }
 
 export const MeetingClassificationTypeLabels: Record<MeetingClassificationType, string> = {
   [MeetingClassificationType.STRATEGIC]: 'استراتيجي',
   [MeetingClassificationType.OPERATIONAL]: 'تشغيلي',
   [MeetingClassificationType.SPECIAL]: 'خاص',
+  [MeetingClassificationType.ORGANIZATIONAL_STRUCTURING]: 'بناء تنظيمي',
+};
+
+export const MEETING_CLASSIFICATION_TYPE_OPTIONS = [
+  { value: MeetingClassificationType.STRATEGIC, label: MeetingClassificationTypeLabels[MeetingClassificationType.STRATEGIC] },
+  { value: MeetingClassificationType.OPERATIONAL, label: MeetingClassificationTypeLabels[MeetingClassificationType.OPERATIONAL] },
+  { value: MeetingClassificationType.ORGANIZATIONAL_STRUCTURING, label: MeetingClassificationTypeLabels[MeetingClassificationType.ORGANIZATIONAL_STRUCTURING] },
+] as const;
+
+/* ═══ Boolean Options ═══ */
+export const BOOL = { TRUE: 'true', FALSE: 'false' } as const;
+
+/* ═══ Minister Support Other Value ═══ */
+export const MINISTER_SUPPORT_OTHER_VALUE = 'أخرى';
+
+/* ═══ Directive Method Options ═══ */
+export const DIRECTIVE_METHOD_OPTIONS = [
+  { value: 'DIRECT_DIRECTIVE', label: 'توجيه مباشر' },
+  { value: 'PREVIOUS_MEETING', label: 'اجتماع سابق' },
+] as const;
+
+/* ═══ Meeting Managers (placeholder) ═══ */
+export const MEETING_MANAGERS = [
+  { label: 'tabukm.gov.sa@1002410024', value: 'mgr-1' },
+  { label: 'أحمد محمد', value: 'mgr-2' },
+  { label: 'فاطمة علي', value: 'mgr-3' },
+  { label: 'خالد إبراهيم', value: 'mgr-4' },
+  { label: 'نورة عبدالله', value: 'mgr-5' },
+] as const;
+
+/* ═══ Meeting Nature (Scheduler) ═══ */
+export enum MeetingNature {
+  NORMAL = 'NEW',
+  SEQUENTIAL = 'SEQUENTIAL',
+  PERIODIC = 'PERIODIC',
+}
+
+export const MeetingNatureLabels: Record<MeetingNature, string> = {
+  [MeetingNature.NORMAL]: 'عادي',
+  [MeetingNature.SEQUENTIAL]: 'إلحاقي',
+  [MeetingNature.PERIODIC]: 'دوري',
+};
+
+export const MEETING_NATURE_OPTIONS = Object.values(MeetingNature).map((v) => ({
+  value: v,
+  label: MeetingNatureLabels[v],
+}));
+
+/**
+ * Helper: get meeting sub-category label
+ */
+export const getMeetingSubCategoryLabel = (subCategory: MeetingSubCategory | string | null | undefined): string => {
+  if (subCategory == null || subCategory === '') return '-';
+  return MeetingSubCategoryLabels[subCategory as MeetingSubCategory] ?? subCategory;
 };
 
 export enum MeetingConfidentiality {
@@ -307,8 +362,8 @@ export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
  * Meeting Location (موقع الاجتماع) — shared options for UC01 & UC02.
  */
 export const MeetingLocation = {
-  ALIYA: 'العليا',
-  GHADEER: 'الغدير',
+  ALIYA: 'مبنى العليا',
+  GHADEER: 'مبنى الغدير',
   REAL_ESTATE_DEV_FUND: 'صندوق التنمية العقاري',
   REAL_ESTATE_AUTHORITY: 'الهيئة العامة للعقار',
   OTHER: 'موقع آخر',
