@@ -43,13 +43,20 @@ function styleForOutlook(e: OutlookTimelineEvent): { backgroundColor: string; te
   return EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
 }
 
-/** Build CalendarEventData using local wall time (matches how users see the calendar). */
+/** Parse ISO string without timezone conversion */
+function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number } | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]) };
+}
+
+/** Build CalendarEventData using raw ISO time (no timezone conversion). */
 export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): CalendarEventData {
-  const start = new Date(event.start_datetime);
-  const end = new Date(event.end_datetime);
+  const parsedStart = parseIsoLocal(event.start_datetime);
+  const parsedEnd = parseIsoLocal(event.end_datetime);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
-  if (Number.isNaN(start.getTime())) {
+  if (!parsedStart) {
     return {
       id,
       type: 'reserved',
@@ -63,12 +70,13 @@ export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): Calen
       is_internal: event.is_internal,
     };
   }
-  const exactStart = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
-  const exactEnd = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
-  let startHour = start.getHours();
-  let endHour = end.getHours();
-  if (end.getMinutes() > 0 || end.getSeconds() > 0) endHour = Math.min(23, endHour + 1);
-  if (endHour <= startHour && end > start) endHour = Math.min(23, startHour + 1);
+  const exactStart = `${pad2(parsedStart.hour)}:${pad2(parsedStart.minute)}`;
+  const exactEnd = parsedEnd ? `${pad2(parsedEnd.hour)}:${pad2(parsedEnd.minute)}` : exactStart;
+  let startHour = parsedStart.hour;
+  let endHour = parsedEnd?.hour ?? startHour + 1;
+  const endMin = parsedEnd?.minute ?? 0;
+  if (endMin > 0) endHour = Math.min(23, endHour + 1);
+  if (endHour <= startHour) endHour = Math.min(23, startHour + 1);
   const variant = variantFromId(id);
   return {
     id,
@@ -97,7 +105,7 @@ export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): Calen
     meeting_link: event.meeting_link ?? undefined,
     startTime: `${pad2(startHour)}:00`,
     endTime: `${pad2(endHour)}:00`,
-    date: new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0),
+    date: parsedStart.date,
     exactStartTime: exactStart,
     exactEndTime: exactEnd,
   };
