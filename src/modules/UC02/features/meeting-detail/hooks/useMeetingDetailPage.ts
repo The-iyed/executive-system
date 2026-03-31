@@ -109,12 +109,22 @@ export function useMeetingDetailPage() {
   const scheduleFormInitRef = useRef<ScheduleFormState | null>(null);
   const lastInitializedMeetingIdRef = useRef<string | null>(null);
 
+  /* ── Refreshing-after-edit flag ── */
+  const [isRefreshingAfterEdit, setIsRefreshingAfterEdit] = useState(false);
+
   /* ── Data fetching ── */
-  const { data: meeting, isLoading, error } = useQuery({
+  const { data: meeting, isLoading, isFetching, error } = useQuery({
     queryKey: ['meeting', id],
     queryFn: () => getMeetingRequestById(id!),
     enabled: !!id,
   });
+
+  // Auto-reset refreshing flag once refetch completes
+  useEffect(() => {
+    if (isRefreshingAfterEdit && !isFetching) {
+      setIsRefreshingAfterEdit(false);
+    }
+  }, [isFetching, isRefreshingAfterEdit]);
 
   useEffect(() => {
     if (meeting?.id) {
@@ -385,7 +395,7 @@ export function useMeetingDetailPage() {
     if (!startSource || !endSource) { setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية'); return; }
     const scheduledAt = new Date(startSource);
     const scheduledEndAt = new Date(endSource);
-    if (scheduledAt.getTime() <= Date.now()) { setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي'); return; }
+    if (scheduledAt.getTime() <= Date.now()) { setValidationError('لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً'); return; }
     if (scheduledEndAt.getTime() <= scheduledAt.getTime()) { setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية'); return; }
     setValidationError(null);
     const meetingChannel = (meeting?.meeting_channel && ['PHYSICAL', 'PHYSICAL_LOCATION_1', 'PHYSICAL_LOCATION_2', 'PHYSICAL_LOCATION_3', 'VIRTUAL', 'HYBRID'].includes(meeting.meeting_channel)) ? meeting.meeting_channel : scheduleForm.meeting_channel;
@@ -417,6 +427,27 @@ export function useMeetingDetailPage() {
     setScheduleForm((prev) => ({ ...prev, scheduled_at: startLocal, scheduled_end_at: endLocal }));
   }, [scheduleConfirmModalOpen, meeting, scheduleForm.scheduled_at, scheduleForm.selected_time_slot_id]);
 
+  /* ── Pre-validate dates when confirm modal opens ── */
+  useEffect(() => {
+    if (!scheduleConfirmModalOpen) return;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
+    if (!startSource || !endSource) {
+      setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية');
+      return;
+    }
+    const scheduledAt = new Date(startSource);
+    const scheduledEndAt = new Date(endSource);
+    if (scheduledAt.getTime() <= Date.now()) {
+      setValidationError('لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً');
+      return;
+    }
+    if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
+      setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية');
+      return;
+    }
+    setValidationError(null);
+  }, [scheduleConfirmModalOpen, meeting, scheduleForm, getEffectiveScheduleDates]);
+
   return {
     // IDs & navigation
     id,
@@ -426,6 +457,7 @@ export function useMeetingDetailPage() {
     // Data
     meeting,
     isLoading,
+    isFetching,
     error,
     previousMeeting,
     meetingStatus,
@@ -486,5 +518,9 @@ export function useMeetingDetailPage() {
 
     // Permission
     permissionTooltip,
+
+    // Refresh-after-edit
+    isRefreshingAfterEdit,
+    setIsRefreshingAfterEdit,
   };
 }

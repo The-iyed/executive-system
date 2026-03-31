@@ -43,15 +43,40 @@ import {
 } from './components';
 import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
+const MeetingDetailSkeleton: React.FC = () => (
+  <div className="w-full flex flex-col gap-6 max-w-4xl mx-auto pb-16 animate-pulse" dir="rtl">
+    {/* Header skeleton */}
+    <div className="flex items-start justify-end gap-3" dir="ltr">
+      <div className="text-right space-y-2">
+        <div className="h-5 w-40 bg-muted rounded-lg" />
+        <div className="h-4 w-56 bg-muted/60 rounded-lg" />
+      </div>
+      <div className="w-11 h-11 rounded-xl bg-muted" />
+    </div>
+
+    {/* Fields grid skeleton */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex flex-col gap-1.5">
+          <div className="h-4 w-24 bg-muted/60 rounded" />
+          <div className="h-12 w-full bg-muted/40 rounded-2xl border border-border/20" />
+        </div>
+      ))}
+    </div>
+
+    {/* Content skeleton */}
+    <div className="flex flex-col gap-3">
+      <div className="h-5 w-32 bg-muted rounded-lg" />
+      <div className="h-32 w-full bg-muted/30 rounded-xl border border-border/20" />
+    </div>
+  </div>
+);
+
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
-  const [isRefreshingInfo, setIsRefreshingInfo] = React.useState(false);
 
   const handleSubmitSuccess = React.useCallback(() => {
     h.setActiveTab('meeting-info');
-    setIsRefreshingInfo(true);
-    // Clear skeleton after the delayed invalidation settles (matches 1.5s sync delay + buffer)
-    setTimeout(() => setIsRefreshingInfo(false), 2000);
   }, [h]);
 
   /* ─── Loading / Error ─── */
@@ -88,6 +113,7 @@ const MeetingDetailPage: React.FC = () => {
   const { meeting } = h;
   const hasFloatingActionsBar = !!(
     meeting && (
+      meeting.status === MeetingStatus.DRAFT ||
       meeting.status === MeetingStatus.UNDER_REVIEW ||
       meeting.status === MeetingStatus.UNDER_GUIDANCE ||
       meeting.status === MeetingStatus.WAITING ||
@@ -104,7 +130,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'request-notes':
         return <div className="w-full max-w-4xl mx-auto" dir="rtl"><RequestNotesView data={mapMeetingToRequestNotes(meeting)} /></div>;
       case 'meeting-info':
-        return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} isRefreshing={isRefreshingInfo} />;
+        return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} />;
       case 'content':
         return <ContentTab meeting={meeting} onPreviewAttachment={(att) => h.setPreviewAttachment(att)} />;
       case 'schedule':
@@ -167,7 +193,9 @@ const MeetingDetailPage: React.FC = () => {
         {/* Content card */}
         <div className="w-full flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-background px-8 pt-8" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div className="mx-auto flex w-full min-w-0 flex-col items-center">
-            <div className="w-full">{renderTabContent()}</div>
+            <div className="w-full">
+              {(h.isFetching || h.isRefreshingAfterEdit) && !h.isLoading ? <MeetingDetailSkeleton /> : renderTabContent()}
+            </div>
             <div aria-hidden="true" className={hasFloatingActionsBar ? 'h-28 md:h-32 flex-shrink-0' : 'h-8 flex-shrink-0'} />
           </div>
         </div>
