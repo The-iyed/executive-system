@@ -89,6 +89,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
   ) : undefined;
 
   return (
+    <>
     <MeetingModalShell
       open={open}
       onOpenChange={onOpenChange}
@@ -96,13 +97,14 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
       onStepClick={setCurrentStep}
       loading={loading}
       error={fetchError}
-      saving={saving}
+      saving={saving || submitDraftMutation.isPending}
       showSaveAsDraft={canSaveAsDraft}
       submitLabel={callerRole === MeetingOwnerType.SCHEDULING ? "تحديث الطلب" : undefined}
       onNext={triggerActiveFormSubmit}
       onPrev={goToPrevStep}
       onSubmit={handleFinalSubmit}
       onSaveAsDraft={handleSaveAsDraft}
+      extraFooterActions={extraFooterActions}
     >
       {/* Step 1: Basic Info */}
       <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
