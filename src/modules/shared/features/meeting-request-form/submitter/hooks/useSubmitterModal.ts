@@ -178,6 +178,7 @@ export function useSubmitterModal({
       }
 
       // Close first, then sync to prevent form re-render flicker
+      onSubmitSuccess?.();
       onClose();
       if (isEditMode) {
         syncMeetingDetails(meetingId, inviteePatch);
