@@ -86,15 +86,19 @@ export function ContentTab({ h }: ContentTabProps) {
   // Directives data
   const suggestedActionsItems = h.suggestedActionsItems;
   const suggestedActionsFiltered = suggestedActionsItems.filter((s) => !h.deletedSuggestedActionIds.has(String(s.id)));
+  const apiDirectives: ContentDirective[] = h.contentDirectives ?? [];
   const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
   const directivesFiltered = directives.filter((d) => !h.deletedExistingDirectiveIds.has(String(d.id)));
-  const hasDirectives = directivesFiltered.length > 0;
+  const hasDirectives = directivesFiltered.length > 0 || apiDirectives.length > 0;
   const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
   const hasAiSuggestions = h.aiDirectivesSuggestions.length > 0;
   const hasSuggestedActionsFromApi = suggestedActionsFiltered.length > 0;
   const hasManualActions = h.manualAddedActions.length > 0;
 
   const allDirectives = useMemo(() => [
+    // API-backed directives (editable via PATCH/DELETE)
+    ...apiDirectives.map((d) => ({ ...d, isApiDirective: true, isAi: false, isSuggestedAction: false })),
+    // Legacy related_directives from content request
     ...directivesFiltered.map((d) => ({ ...d, isAi: false, isSuggestedAction: false })),
     ...h.aiDirectivesSuggestions.map((d) => ({
       ...d, isAi: true, isSuggestedAction: false,
@@ -111,7 +115,7 @@ export function ContentTab({ h }: ContentTabProps) {
       id: `manual-${a.id}`, isAi: false, isSuggestedAction: false, isManualAction: true,
       directive: a.title ?? '-', due_date: a.due_date ?? undefined, status: a.status ?? undefined, manualAction: a,
     })),
-  ], [directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
+  ], [apiDirectives, directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
 
   /* ─── Render AI actions for presentation files ─── */
   const renderFileActions = (file: ContentFileItem, sectionKey: string) => {
