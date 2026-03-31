@@ -13,9 +13,10 @@ interface SubmitterModalProps {
   callerRole?: MeetingOwnerType;
   showAiSuggest?: boolean;
   excludeColumns?: string[];
+  onSubmitSuccess?: () => void;
 }
 
-export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns }: SubmitterModalProps) {
+export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns, onSubmitSuccess }: SubmitterModalProps) {
   const {
     currentStep,
     step1Data,
@@ -38,7 +39,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
     goToPrevStep,
     triggerActiveFormSubmit,
     setCurrentStep,
-  } = useSubmitterModal({ open, editMeetingId, onClose: () => onOpenChange(false), callerRole });
+  } = useSubmitterModal({ open, editMeetingId, onClose: () => onOpenChange(false), onSubmitSuccess, callerRole });
 
   return (
     <MeetingModalShell
