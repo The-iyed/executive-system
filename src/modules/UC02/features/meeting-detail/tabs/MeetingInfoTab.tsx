@@ -53,16 +53,11 @@ export function MeetingInfoTab({
   channelOverride,
   locationOverride,
   notesOverride,
-  isRefreshing = false,
 }: MeetingInfoTabProps) {
   const data = useMemo(
     () => mapMeetingToInfo(meeting, { extraFields, channelOverride, locationOverride, notesOverride }),
     [meeting, extraFields, channelOverride, locationOverride, notesOverride],
   );
-
-  if (isRefreshing) {
-    return <MeetingInfoSkeleton />;
-  }
 
   return <MeetingInfoView data={data} />;
 }
