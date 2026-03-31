@@ -585,3 +585,48 @@ export const analyzeContradictions = async (sentences: string[]): Promise<Analyz
   return response.data;
 };
 
+// ── Content Directives CRUD ──
+
+export interface ContentDirective {
+  id: number;
+  title: string;
+  due_date: string | null;
+  assignees: string[];
+  status: string;
+}
+
+export type CreateContentDirectivePayload = Omit<ContentDirective, 'id'> & { id?: number };
+export type UpdateContentDirectivePayload = Partial<Omit<ContentDirective, 'id'>>;
+
+export const getContentDirectives = async (meetingId: string): Promise<ContentDirective[]> => {
+  const response = await axiosInstance.get<ContentDirective[]>(`/api/content/${meetingId}/directives`);
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+export const createContentDirective = async (
+  meetingId: string,
+  data: CreateContentDirectivePayload
+): Promise<ContentDirective> => {
+  const response = await axiosInstance.post<ContentDirective>(`/api/content/${meetingId}/directives`, data);
+  return response.data;
+};
+
+export const updateContentDirective = async (
+  meetingId: string,
+  directiveId: number,
+  data: UpdateContentDirectivePayload
+): Promise<ContentDirective> => {
+  const response = await axiosInstance.patch<ContentDirective>(
+    `/api/content/${meetingId}/directives/${directiveId}`,
+    data
+  );
+  return response.data;
+};
+
+export const deleteContentDirective = async (
+  meetingId: string,
+  directiveId: number
+): Promise<void> => {
+  await axiosInstance.delete(`/api/content/${meetingId}/directives/${directiveId}`);
+};
+
