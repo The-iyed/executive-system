@@ -8,7 +8,7 @@ import { MeetingStatus, getMeetingTabsByRole, MeetingOwnerType } from '@/modules
 import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 import { getMeetings, type MeetingApiResponse, type GetMeetingsParams } from '../../data/meetingsApi';
 import { deleteDraft } from '../../data/draftApi';
-import { mapMeetingToCardData } from '../../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { useSubmitMeeting } from '../../hooks';
 import { PATH } from '../../routes/paths';
 import { SubmitterModal } from '@/modules/shared/features/meeting-request-form';

@@ -50,7 +50,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex">{btn}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+          <TooltipContent side="top" className={`max-w-[260px] text-right ${variant === 'danger' ? 'text-red-600' : ''}`} style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             {tooltipText}
           </TooltipContent>
         </Tooltip>
@@ -66,7 +66,9 @@ function ActionBubble({
       className="flex items-center justify-end gap-2 rtl:flex-row-reverse rtl:justify-start w-full touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-1 pr-1 pl-0"
     >
       <span
-        className="min-w-[11rem] text-end text-sm font-medium text-gray-800 whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80"
+        className={`min-w-[11rem] text-end text-sm font-medium whitespace-nowrap rounded-lg px-2 py-1 bg-white/90 shadow-sm border border-gray-200/80 ${
+          variant === 'danger' ? 'text-red-600' : 'text-gray-800'
+        }`}
         style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}
       >
         {label}
@@ -82,7 +84,7 @@ function ActionBubble({
           <TooltipTrigger asChild>
             <span className="inline-flex w-full min-w-0">{button}</span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-[260px] text-right font-sans">
+          <TooltipContent side="top" className="max-w-[260px] text-right" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
             {disabledReason}
           </TooltipContent>
         </Tooltip>
@@ -192,6 +194,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
       : meetingStatus === MeetingStatus.SCHEDULED
       ? [
           { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة مجدداً', onClick: () => { close(); onOpenSchedule(); } },
+          { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasPresentation && onOpenSendToContent(); }, disabled: !hasPresentation, disabledReason: 'لإرسال المحتوى، يرجى تعديل الاجتماع وإرفاق عرض تقديمي في تبويب المحتوى أولاً' },
           { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
           { icon: <X className="w-5 h-5" strokeWidth={1.26} />, label: 'إلغاء', variant: 'danger' as const, onClick: () => { close(); onOpenCancel ? onOpenCancel() : onOpenReject(); } },
         ]

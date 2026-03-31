@@ -139,7 +139,7 @@ export const useSuggestMeetingAttendees = () => {
 
       return { ...data, suggestions };
     } catch (err: any) {
-      const errorMessage = err?.message || 'حدث خطأ أثناء اقتراح المدعوين';
+      const errorMessage = err?.message || 'حدث خطأ أثناء توليد قائمة المدعوين. يرجى المحاولة مرة أخرى لاحقاً';
       setError(errorMessage);
       setIsLoading(false);
       return null;
