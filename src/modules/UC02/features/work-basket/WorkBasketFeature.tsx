@@ -34,7 +34,24 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
 
 const WorkBasketFeature: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { confirmOpen, targetId, isPending, requestDelete, confirmDelete, setConfirmOpen } = useDeleteDraft();
+
+  // Submit draft state
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [submitTargetId, setSubmitTargetId] = useState<string | null>(null);
+  const submitDraftMutation = useMutation({
+    mutationFn: (id: string) => submitDraft(id),
+    onSuccess: () => {
+      toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      setSubmitConfirmOpen(false);
+    },
+    onError: (err) => {
+      toast({ title: err instanceof Error ? err.message : 'فشل إرسال الطلب', variant: 'destructive' });
+    },
+  });
 
   const queryFn = useCallback((params: Record<string, any>) => {
     const apiParams: GetMeetingsParams = {
