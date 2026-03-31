@@ -79,7 +79,7 @@ const Login = () => {
     }
     setErrors({});
     try {
-      const userData = await login(result.data);
+      const userData = await login(result.data as { email: string; password: string });
       if (userData) {
         navigate(getDefaultRouteForUser(userData.use_cases, userData.roles), { replace: true });
       }
