@@ -225,8 +225,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </div>
                     <span className="text-[12px] font-semibold text-muted-foreground">الوقت</span>
                   </div>
-                  <span className="text-[13px] font-medium text-foreground">
-                    {display.startTime} – {display.endTime}
+                  <span className="inline-flex items-center gap-1 text-[13px] font-medium text-foreground" dir="ltr">
+                    <span>{display.startTime}</span>
+                    <span className="text-muted-foreground">–</span>
+                    <span>{display.endTime}</span>
                   </span>
                 </div>
 
