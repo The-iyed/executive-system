@@ -46,6 +46,8 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_location?: string;
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
+  requires_protocol?: boolean;
+  is_data_complete?: boolean;
 }
 
 export interface CalendarSlotMeetingFormProps {
