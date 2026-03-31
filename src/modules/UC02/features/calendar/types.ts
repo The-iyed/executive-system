@@ -12,4 +12,5 @@ export interface SlotSelection {
   meetingId?: string;
   mode: 'create' | 'edit';
   initialInvitees?: Array<Record<string, unknown>>;
+  isQuickMeeting?: boolean;
 }
