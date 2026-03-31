@@ -198,6 +198,12 @@ export const createScheduledMeeting = async (
   if (payload.webex_meeting_unique_identifier) {
     body.webex_meeting_unique_identifier = payload.webex_meeting_unique_identifier;
   }
+  if (payload.requires_protocol !== undefined) {
+    body.requires_protocol = payload.requires_protocol;
+  }
+  if (payload.is_data_complete !== undefined) {
+    body.is_data_complete = payload.is_data_complete;
+  }
   if (payload.proposers && payload.proposers.length > 0) {
     body.proposers = payload.proposers;
     body.proposer_user_ids = payload.proposers.map((p) => p.object_guid).filter(Boolean);
