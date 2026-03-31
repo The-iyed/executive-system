@@ -63,6 +63,8 @@ export interface CalendarSlotMeetingFormProps {
   onCancel: () => void;
   isSubmitting?: boolean;
   submitError?: string | null;
+  /** Hide the proposed meeting date/time fields (used for quick meeting) */
+  hideProposedTime?: boolean;
 }
 
 const calendarMeetingSchema = z.object({
@@ -100,6 +102,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   onCancel,
   isSubmitting = false,
   submitError = null,
+  hideProposedTime = false,
 }) => {
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
@@ -144,6 +147,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         submitError={submitError}
         onSubmit={onSubmit}
         onCancel={onCancel}
+        hideProposedTime={hideProposedTime}
       />
     </FormProvider>
   );
@@ -162,6 +166,7 @@ interface InnerProps {
   submitError: string | null;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
+  hideProposedTime?: boolean;
 }
 
 function CalendarFormInner({
@@ -175,6 +180,7 @@ function CalendarFormInner({
   submitError,
   onSubmit,
   onCancel,
+  hideProposedTime = false,
 }: InnerProps) {
   const { handleSubmit, watch, trigger, formState: { isSubmitted } } = useFormContext<FormValues>();
   const meetingChannel = watch('meeting_channel');
@@ -199,7 +205,7 @@ function CalendarFormInner({
   const doSubmit = useCallback(
     (data: FormValues) => {
       const start = data.meeting_start_date ? new Date(data.meeting_start_date).getTime() : 0;
-      if (start <= Date.now()) return;
+      if (!hideProposedTime && start <= Date.now()) return;
 
       const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
       if (!inviteesPayload) return;
@@ -273,12 +279,14 @@ function CalendarFormInner({
           <div className="flex flex-col gap-4">
             <MeetingTitleField />
 
-            <MeetingDateField
-              startName="meeting_start_date"
-              endName="meeting_end_date"
-              required
-              minDate={minStartDate}
-            />
+            {!hideProposedTime && (
+              <MeetingDateField
+                startName="meeting_start_date"
+                endName="meeting_end_date"
+                required
+                minDate={minStartDate}
+              />
+            )}
 
             <MeetingChannelField />
 
