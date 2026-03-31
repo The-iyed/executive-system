@@ -14,8 +14,6 @@ export interface MeetingInfoTabProps {
   channelOverride?: string;
   locationOverride?: string;
   notesOverride?: string;
-  /** Show skeleton overlay while data is refreshing */
-  isRefreshing?: boolean;
 }
 
 function MeetingInfoSkeleton() {
@@ -55,16 +53,11 @@ export function MeetingInfoTab({
   channelOverride,
   locationOverride,
   notesOverride,
-  isRefreshing = false,
 }: MeetingInfoTabProps) {
   const data = useMemo(
     () => mapMeetingToInfo(meeting, { extraFields, channelOverride, locationOverride, notesOverride }),
     [meeting, extraFields, channelOverride, locationOverride, notesOverride],
   );
-
-  if (isRefreshing) {
-    return <MeetingInfoSkeleton />;
-  }
 
   return <MeetingInfoView data={data} />;
 }
