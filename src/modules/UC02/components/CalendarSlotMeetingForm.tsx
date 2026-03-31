@@ -79,7 +79,7 @@ const calendarMeetingSchema = z.object({
   meeting_location_custom: z.string().default(""),
   proposers: z.array(z.any()).default([]),
   requires_protocol: z.boolean().default(false),
-  is_data_complete: z.boolean().default(true),
+  is_data_complete: z.boolean().default(false),
 }).superRefine((data, ctx) => {
   const needsLocation = data.meeting_channel === 'PHYSICAL' || data.meeting_channel === 'HYBRID';
   if (needsLocation && (!data.meeting_location || data.meeting_location.trim() === '')) {
