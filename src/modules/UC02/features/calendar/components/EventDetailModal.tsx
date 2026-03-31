@@ -71,14 +71,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     if (!event) return null;
     const meeting = meetingDetail as (MeetingApiResponse & { meeting_link?: string | null; meeting_url?: string; meeting_location?: string | null }) | undefined;
     const fromApi = meeting && !isLoading;
-    const scheduledStart = fromApi && meeting.scheduled_start ? new Date(meeting.scheduled_start) : event.date;
-    const scheduledEnd = fromApi && meeting.scheduled_end ? new Date(meeting.scheduled_end) : event.date;
+
+    // Parse dates without timezone conversion
+    const scheduledStartDate = fromApi && meeting.scheduled_start
+      ? (parseDateFromIso(meeting.scheduled_start) ?? event.date)
+      : event.date;
 
     const startTime = fromApi && meeting.scheduled_start
-      ? formatExactTime(scheduledStart)
+      ? (formatExactTimeFromIso(meeting.scheduled_start) ?? (event.exactStartTime || event.startTime))
       : (event.exactStartTime || event.startTime);
     const endTime = fromApi && meeting.scheduled_end
-      ? formatExactTime(scheduledEnd)
+      ? (formatExactTimeFromIso(meeting.scheduled_end) ?? (event.exactEndTime || event.endTime))
       : (event.exactEndTime || event.endTime);
 
     const locationText =
