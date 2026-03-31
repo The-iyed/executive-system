@@ -119,7 +119,7 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
       const newRows = await aiGenerateFn(count);
       if (!newRows || newRows.length === 0) {
         toast({
-          title: "لا توجد توصيات متاحة حالياً بناءً على بيانات الاجتماع",
+          title: "لم نتمكن من اقتراح قائمة مدعوين بناءً على بيانات الاجتماع",
           description: "يرجى التأكد من إدخال تفاصيل الاجتماع بشكل كافٍ والمحاولة مرة أخرى",
         });
         return;
