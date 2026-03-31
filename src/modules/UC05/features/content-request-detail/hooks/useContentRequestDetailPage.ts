@@ -454,11 +454,18 @@ export function useContentRequestDetailPage() {
     if (!opt?.value) return;
     const action = addDirectiveActionMapRef.current.get(opt.value);
     if (action) {
-      setManualAddedActions((prev) => { if (prev.some((a) => a.id === action.id)) return prev; return [...prev, action]; });
+      // POST to API instead of local state
+      createDirectiveMutation.mutate({
+        id: action.id,
+        title: action.title,
+        due_date: action.due_date ?? null,
+        assignees: action.assignees ?? [],
+        status: action.status ?? 'CURRENT',
+      });
       setShowAddDirectiveRow(false);
     }
     setAddDirectiveSelectValue(null);
-  }, []);
+  }, [createDirectiveMutation]);
 
   const handleDeleteManualAction = useCallback((actionId: number) => {
     setManualAddedActions((prev) => prev.filter((a) => a.id !== actionId));
