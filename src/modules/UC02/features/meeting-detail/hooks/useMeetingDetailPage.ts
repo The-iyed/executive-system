@@ -120,7 +120,7 @@ export function useMeetingDetailPage() {
   }, [isRefreshingAfterEdit]);
 
   /* ── Data fetching ── */
-  const { data: meeting, isLoading, isFetching } = useQuery({
+  const { data: meeting, isLoading, isFetching, error } = useQuery({
     queryKey: ['meeting', id],
     queryFn: () => getMeetingById(id!),
     enabled: !!id,
