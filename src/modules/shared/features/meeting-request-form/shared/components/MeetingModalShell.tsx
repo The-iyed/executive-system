@@ -124,6 +124,7 @@ export function MeetingModalShell({
             onCancel={() => onOpenChange(false)}
             onSubmit={onSubmit}
             onSaveAsDraft={onSaveAsDraft}
+            extraFooterActions={extraFooterActions}
           />
         )}
       </DialogContent>

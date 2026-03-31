@@ -193,6 +193,7 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   const draftActions: ActionBarItem[] = [
     { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
     { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+    ...(onSubmitDraft ? [{ icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: isSubmitDraftPending ? 'جاري الإرسال...' : 'إرسال للمراجعة', onClick: () => { close(); onSubmitDraft(); }, disabled: isSubmitDraftPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' }] : []),
   ];
 
   const actions: ActionBarItem[] =
