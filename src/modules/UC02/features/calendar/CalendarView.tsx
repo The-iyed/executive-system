@@ -176,6 +176,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           webex_meeting_unique_identifier: values.webex_meeting_unique_identifier as string | undefined,
           proposers: values.proposers as unknown,
           invitees,
+          requires_protocol: values.requires_protocol as boolean | undefined,
+          is_data_complete: values.is_data_complete as boolean | undefined,
         };
 
         if (isEdit) {
