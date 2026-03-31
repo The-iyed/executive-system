@@ -292,7 +292,7 @@ export function Step2Form({
           <FormField
             label="العرض التقديمي (PDF)"
             name="presentation_files"
-            required={presentationRequired}
+            required={presentationRequired && callerRole !== "SCHEDULING"}
             errors={buildFieldError("presentation_files", errors.presentation_files)}
             colSpan={12}
           >
