@@ -1,29 +1,28 @@
 
 
-## Plan: Remove presentation validation for scheduling officers
+## Plan: Pass `callerRole` to Step2Form in SchedulerModal
 
 ### Problem
-When a scheduling officer creates or edits a meeting, the العرض التقديمي (PDF) field still requires upload. It should be optional for scheduling officers, while preserving all existing logic around status checks and executive summary for upload-more-than-one behavior.
+The `SchedulerModal` (create flow for scheduling officers) renders `Step2Form` without passing `callerRole`. The validation skip logic (`callerRole !== "SCHEDULING"`) already exists in `Step2Form`, but it never receives the role, so presentation validation still applies.
 
 ### Fix
 
-#### 1. `Step2Form.tsx` — Add `callerRole` prop, skip validation for schedulers
+**File: `SchedulerModal.tsx` (line 153)**
 
-- Add `callerRole?: string` to `Step2FormProps`
-- In `validate()`, skip the presentation requirement when `callerRole === MeetingOwnerType.SCHEDULING`:
-  ```ts
-  if (presentationRequired && !hasPresentationFile && callerRole !== MeetingOwnerType.SCHEDULING) {
-  ```
-- Update `required` prop on the FormField: `required={presentationRequired && callerRole !== MeetingOwnerType.SCHEDULING}`
+Add `callerRole="SCHEDULING"` to the `<Step2Form>` component. Since the `SchedulerModal` is exclusively used by scheduling officers, hardcode the value:
 
-#### 2. `SubmitterModal.tsx` — Pass `callerRole` to Step2Form
-
-- Pass `callerRole={callerRole}` prop to `<Step2Form>`
+```tsx
+<Step2Form
+  key="step2"
+  callerRole="SCHEDULING"
+  step1Data={{...}}
+  onSubmit={handleStep2Submit}
+/>
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `Step2Form.tsx` | Add `callerRole` prop; skip presentation validation for scheduling officers |
-| `SubmitterModal.tsx` | Pass `callerRole` to `Step2Form` |
+| `SchedulerModal.tsx` | Add `callerRole="SCHEDULING"` to `Step2Form` |
 
