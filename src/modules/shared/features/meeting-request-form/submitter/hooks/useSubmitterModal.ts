@@ -47,12 +47,10 @@ export function useSubmitterModal({
     queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
     queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
 
-    // Meeting detail — delay refetch so server has time to persist
-    setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
-      queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
-    }, 1500);
+    // Meeting detail — invalidate immediately (server has data by the time this is called)
+    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
+    queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
+    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
   }, [queryClient]);
 
   // ── Step navigation (no API calls) ────────────────────────────────────────
