@@ -38,6 +38,11 @@ interface OutlookTimelineEventResponse {
   meeting_channel?: string | null;
   meeting_location?: string | null;
   meeting_link?: string | null;
+  /** Preferred scheduled fields (when provided by backend). */
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
   invitees?: unknown[] | null;
 }
 
@@ -72,11 +77,14 @@ export interface CalendarTimelineEvent {
 // ── Mapper ──
 
 function mapResponseToEvent(raw: OutlookTimelineEventResponse): CalendarTimelineEvent {
+  const start = raw.meeting_start_date ?? raw.scheduled_start ?? raw.start_datetime;
+  const end = raw.meeting_end_date ?? raw.scheduled_end ?? raw.end_datetime;
+
   return {
     id: raw.item_id,
     title: raw.subject || 'اجتماع',
-    start: raw.start_datetime,
-    end: raw.end_datetime,
+    start,
+    end,
     location: raw.location ?? null,
     organizer: raw.organizer?.name ?? '',
     organizerEmail: raw.organizer?.email ?? '',
