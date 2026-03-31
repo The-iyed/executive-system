@@ -39,7 +39,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
     goToPrevStep,
     triggerActiveFormSubmit,
     setCurrentStep,
-  } = useSubmitterModal({ open, editMeetingId, onClose: () => onOpenChange(false), callerRole });
+  } = useSubmitterModal({ open, editMeetingId, onClose: () => onOpenChange(false), onSubmitSuccess, callerRole });
 
   return (
     <MeetingModalShell
