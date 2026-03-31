@@ -108,7 +108,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     endDate.setHours(endDate.getHours() + 1);
     const endHours = endDate.getHours().toString().padStart(2, '0');
     const endMins = endDate.getMinutes().toString().padStart(2, '0');
-    setSlot({ date: now, time: `${hours}:${mins}`, endTime: `${endHours}:${endMins}`, mode: 'create' });
+    setSlot({ date: now, time: `${hours}:${mins}`, endTime: `${endHours}:${endMins}`, mode: 'create', isQuickMeeting: true });
   }, []);
 
   const showSkeleton = isLoading;
@@ -337,6 +337,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           initialMeetingChannel={slot.meetingChannel ?? ''}
           initialInvitees={slot.initialInvitees}
           mode={slot.mode}
+          hideProposedTime={!!slot.isQuickMeeting}
           isSubmitting={slotSubmitting}
           submitError={slotError}
           onSubmit={handleSlotSubmit as any}
