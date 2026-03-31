@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '@/modules/auth';
 import { useContainerScroll, useUserNavigation } from '@/modules/shared/hooks';
@@ -8,6 +8,7 @@ import { WelcomeSectionProps } from '../welcome-section';
 import { type ContentBarFilterTab } from '../content-bar';
 import { Logo } from '../logo';
 import { Bell } from 'lucide-react';
+import { MobileNavDrawer, MobileMenuTrigger } from '../mobile-nav-drawer';
 
 export interface SharedLayoutProps {
   children: React.ReactNode;
@@ -30,10 +31,10 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 }) => {
   const { isAuthenticated, user } = useAuth();
   const { navigationItems: dynamicNavItems } = useUserNavigation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const contentRef = useRef<HTMLDivElement | null>(null);
   useContainerScroll(contentRef, 30);
-  const isScrolled = true;
 
   const finalNavigationItems = useMemo(() => {
     if (useDynamicNavigation || !navigationItems) {
@@ -54,11 +55,11 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
         {/* ─── Navbar ─── */}
         <header
           className="
-            sticky top-3 z-50 mx-4
+            sticky top-2 z-50 mx-3 md:mx-4
             flex items-center justify-between
-            h-[60px] px-5
-            rounded-3xl
-            bg-white
+            h-[56px] md:h-[64px] px-4 md:px-5
+            rounded-2xl md:rounded-3xl
+            bg-white/95 backdrop-blur-sm
             shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]
             border border-gray-100
           "
@@ -68,8 +69,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             <Logo />
           </div>
 
-          {/* Center: Navigation — no wrapper bg, no border-radius on container */}
-          <nav className="flex-1 flex justify-center min-w-0">
+          {/* Center: Navigation (hidden on mobile) */}
+          <nav className="flex-1 flex justify-center min-w-0 mx-2">
             {isAuthenticated && (
               <NavigationActions
                 items={finalNavigationItems}
@@ -80,7 +81,10 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
           {/* Left: Actions */}
           {isAuthenticated && (
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+              {/* Mobile menu trigger */}
+              <MobileMenuTrigger onClick={() => setMobileMenuOpen(true)} />
+
               {/* Notification bell */}
               <button
                 className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
@@ -90,8 +94,8 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
                 <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
               </button>
 
-              {/* Divider */}
-              <div className="w-px h-7 bg-gray-200" />
+              {/* Divider - hidden on mobile */}
+              <div className="hidden md:block w-px h-7 bg-gray-200" />
 
               {/* User avatar */}
               <UserAvatar compact />
@@ -99,11 +103,20 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
           )}
         </header>
 
+        {/* Mobile drawer */}
+        {isAuthenticated && (
+          <MobileNavDrawer
+            items={finalNavigationItems ?? []}
+            open={mobileMenuOpen}
+            onOpenChange={setMobileMenuOpen}
+          />
+        )}
+
         {/* ─── Content ─── */}
         <div
           ref={contentRef}
           className={twMerge(
-            'flex-1 min-h-0 flex flex-col px-6 pb-6 pt-4 overflow-auto',
+            'flex-1 min-h-0 flex flex-col px-3 md:px-6 pb-6 pt-4 overflow-auto',
             contentContainerClassName
           )}
         >

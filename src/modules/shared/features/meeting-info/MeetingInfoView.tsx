@@ -1,9 +1,10 @@
 /**
  * Shared MeetingInfoView – production-ready read-only meeting info display.
- * Modern, clean, minimal UI with proper RTL support.
+ * All fields always visible with "—" fallback for missing data.
  */
 import { cn } from '@/lib/ui';
-import { Info, ExternalLink } from 'lucide-react';
+import { Info, Copy, MapPin, Building2, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 import type { MeetingInfoViewProps, MeetingInfoField, AgendaItem } from './types';
 
 /* ─── Duration / Minister support labels ─── */
@@ -24,28 +25,68 @@ function isEmptyValue(value: React.ReactNode): boolean {
 }
 
 function LinkField({ value }: { value: string }) {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    toast.success('تم نسخ الرابط');
+  };
+
+  // Extract a friendly domain label from the URL
+  let domainLabel = 'رابط الاجتماع';
+  try {
+    const host = new URL(value).hostname.replace('www.', '');
+    if (host.includes('webex')) domainLabel = 'Webex Meeting';
+    else if (host.includes('zoom')) domainLabel = 'Zoom Meeting';
+    else if (host.includes('teams')) domainLabel = 'Microsoft Teams';
+    else domainLabel = host;
+  } catch { /* keep default */ }
+
   return (
-    <div className="sm:col-span-2 flex flex-col gap-1.5">
-      <p className="text-[13px] font-semibold text-muted-foreground">رابط الاجتماع (Webex)</p>
-      <a
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
-        dir="ltr"
-      >
-        <ExternalLink className="w-4 h-4 text-primary flex-shrink-0" />
-        <span className="text-sm font-medium text-primary truncate flex-1 text-left">{value}</span>
-      </a>
+    <div className="sm:col-span-2 flex flex-col gap-1.5" dir="rtl">
+      <p className="text-sm text-muted-foreground text-right">رابط الاجتماع</p>
+      <div className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl border bg-muted/40 border-border/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="text-sm font-medium text-foreground truncate" title={value}>
+            {domainLabel}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-background text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            title="نسخ الرابط"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            نسخ
+          </button>
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            title="الانضمام للاجتماع"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            انضمام
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
 
-function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & { fullWidth?: boolean; alwaysShow?: boolean }) {
-  if (!alwaysShow && isEmptyValue(value)) return null;
+/* Icon lookup for specific field keys */
+const FIELD_ICONS: Record<string, React.ReactNode> = {
+  meeting_owner: <Building2 className="w-4 h-4" />,
+};
+
+function FieldCell({ label, value, fullWidth, icon, fieldKey }: MeetingInfoField & { fullWidth?: boolean; fieldKey?: string }) {
+  const displayValue = isEmptyValue(value) ? '—' : value;
 
   const isLink = typeof value === 'string' && value.startsWith('http');
   if (isLink) return <LinkField value={value as string} />;
+
+  const resolvedIcon = icon ?? (fieldKey ? FIELD_ICONS[fieldKey] : undefined);
 
   return (
     <div className={cn('flex flex-col gap-1.5', fullWidth && 'sm:col-span-2')} dir="rtl">
@@ -54,15 +95,14 @@ function FieldCell({ label, value, fullWidth, alwaysShow }: MeetingInfoField & {
         'flex items-center gap-2.5 px-4 py-3 rounded-2xl border bg-muted/40 border-border/40',
         fullWidth && 'min-h-[72px] items-start',
       )}>
-        <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{value ?? '—'}</span>
+        {resolvedIcon && <span className="flex-shrink-0 text-muted-foreground">{resolvedIcon}</span>}
+        <span className="flex-1 text-sm font-medium text-foreground text-right whitespace-pre-wrap">{displayValue}</span>
       </div>
     </div>
   );
 }
 
 function AgendaTable({ items }: { items: AgendaItem[] }) {
-  if (!items.length) return null;
-
   const hasOtherText = items.some(i => i.minister_support_other && i.minister_support_other.trim() !== '');
 
   return (
@@ -78,19 +118,27 @@ function AgendaTable({ items }: { items: AgendaItem[] }) {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, idx) => (
-            <tr key={item.id ?? idx} className={idx < items.length - 1 ? 'border-b border-border/30' : ''}>
-              <td className="px-4 py-3 text-muted-foreground text-center">{idx + 1}</td>
-              <td className="px-4 py-3 text-foreground">{item.agenda_item ?? '-'}</td>
-              <td className="px-4 py-3 text-muted-foreground text-center">
-                {MINISTER_SUPPORT_LABELS[item.minister_support_type ?? ''] ?? item.minister_support_type ?? '-'}
+          {items.length > 0 ? (
+            items.map((item, idx) => (
+              <tr key={item.id ?? idx} className={idx < items.length - 1 ? 'border-b border-border/30' : ''}>
+                <td className="px-4 py-3 text-muted-foreground text-center">{idx + 1}</td>
+                <td className="px-4 py-3 text-foreground">{item.agenda_item ?? '-'}</td>
+                <td className="px-4 py-3 text-muted-foreground text-center">
+                  {MINISTER_SUPPORT_LABELS[item.minister_support_type ?? ''] ?? item.minister_support_type ?? '-'}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground text-center">
+                  {DURATION_LABELS[String(item.presentation_duration_minutes ?? '')] ?? (item.presentation_duration_minutes ? `${item.presentation_duration_minutes} دقيقة` : '-')}
+                </td>
+                {hasOtherText && <td className="px-4 py-3 text-foreground">{item.minister_support_other ?? '-'}</td>}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={hasOtherText ? 5 : 4} className="px-4 py-6 text-center text-muted-foreground">
+                لا توجد بنود
               </td>
-              <td className="px-4 py-3 text-muted-foreground text-center">
-                {DURATION_LABELS[String(item.presentation_duration_minutes ?? '')] ?? (item.presentation_duration_minutes ? `${item.presentation_duration_minutes} دقيقة` : '-')}
-              </td>
-              {hasOtherText && <td className="px-4 py-3 text-foreground">{item.minister_support_other ?? '-'}</td>}
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
@@ -116,38 +164,29 @@ export function MeetingInfoView({
         </div>
       </div>
 
-      {/* First section (basic info) */}
-      {data.sections[0] && (() => {
-        const visibleFields = data.sections[0].fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
-        return visibleFields.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-            {visibleFields.map(field => (
-              <FieldCell key={field.key} {...field} />
-            ))}
-          </div>
-        ) : null;
-      })()}
+      {/* First section (basic info) — show all fields */}
+      {data.sections[0] && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+          {data.sections[0].fields.filter(f => f.value !== null).map(field => (
+            <FieldCell key={field.key} {...field} fieldKey={field.key} />
+          ))}
+        </div>
+      )}
 
-      {/* Agenda — between basic info and directive fields */}
+      {/* Agenda — always show table with headers */}
       <div className="flex flex-col gap-3">
         <h3 className="text-base font-semibold text-foreground">أجندة الاجتماع</h3>
-        {data.agenda && data.agenda.length > 0 ? (
-          <AgendaTable items={data.agenda} />
-        ) : (
-          <div className="px-4 py-3 rounded-2xl border bg-muted/40 border-border/40 text-sm text-muted-foreground text-right">
-            لا توجد أجندة
-          </div>
-        )}
+        <AgendaTable items={data.agenda ?? []} />
       </div>
 
-      {/* Remaining sections (directive, etc.) — no titles */}
+      {/* Remaining sections — show all fields */}
       {data.sections.slice(1).map((section, sIdx) => {
-        const visibleFields = section.fields.filter(f => f.alwaysShow || !isEmptyValue(f.value));
-        if (!visibleFields.length) return null;
+        const visibleFields = section.fields.filter(f => f.value !== null);
+        if (visibleFields.length === 0) return null;
         return (
           <div key={sIdx + 1} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             {visibleFields.map(field => (
-              <FieldCell key={field.key} {...field} />
+              <FieldCell key={field.key} {...field} fieldKey={field.key} />
             ))}
           </div>
         );

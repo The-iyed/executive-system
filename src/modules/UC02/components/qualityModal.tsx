@@ -103,9 +103,11 @@ function CircularGauge({ percentage, color, label }: { percentage: number; color
 
 const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) => {
   const { data: readinessData, isLoading } = useQuery({
-    queryKey: ['meeting-readiness', meetingId],
+    queryKey: ['meeting-readiness', meetingId, isOpen],
     queryFn: () => evaluateReadiness(meetingId),
     enabled: isOpen && !!meetingId,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const hasStatus = hasReadinessStatus(readinessData?.readiness);

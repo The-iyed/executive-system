@@ -1,3 +1,1 @@
-export * from './consultation-request-card';
-export * from './consultation-requests-grid';
-
+// UC03 components

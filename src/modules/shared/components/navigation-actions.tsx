@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { TooltipProvider } from '@/lib/ui';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/lib/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ActionButton } from './welcome-section';
 
 export interface NavItem {
@@ -62,38 +63,73 @@ export const NavigationActions: React.FC<NavigationActionsProps> = ({
     return (
       <TooltipProvider>
         {items && items.length > 0 && (
-          <div
-            className={`flex items-center gap-1 ${className}`}
-            dir="rtl"
-          >
-            {items.map((item) => {
-              const isActive = activeId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleClick(item.id, item.path)}
-                  className={`
-                    flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-medium
-                    transition-all duration-200 whitespace-nowrap cursor-pointer
-                    ${isActive
-                      ? 'bg-[var(--color-primary-700)] text-white'
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                    }
-                  `}
-                  aria-label={item.label}
-                  aria-pressed={isActive}
-                >
-                  {item.icon && (
-                    <Icon
-                      icon={item.icon}
-                      width={16}
-                      height={16}
-                    />
-                  )}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="relative hidden md:block">
+            <div
+              className={`flex items-center gap-1 ${className}`}
+              dir="rtl"
+            >
+              {items.map((item) => {
+                const isActive = activeId === item.id;
+                return (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <motion.button
+                        layout="position"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+                        onClick={() => handleClick(item.id, item.path)}
+                        className={`
+                          relative flex items-center justify-center gap-2 h-9 rounded-xl text-[13px] font-medium
+                          whitespace-nowrap cursor-pointer flex-shrink-0 overflow-hidden
+                          ${isActive
+                            ? 'text-white px-4'
+                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 w-9 xl:w-auto xl:px-4'
+                          }
+                        `}
+                        aria-label={item.label}
+                        aria-pressed={isActive}
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="nav-active-bg"
+                            className="absolute inset-0 bg-[var(--color-primary-700)] rounded-xl"
+                            transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+                          />
+                        )}
+                        <span className="relative z-10 flex items-center gap-2">
+                          {item.icon && (
+                            <Icon
+                              icon={item.icon}
+                              width={16}
+                              height={16}
+                              className="flex-shrink-0"
+                            />
+                          )}
+                          <AnimatePresence mode="popLayout">
+                            {isActive ? (
+                              <motion.span
+                                key={`label-${item.id}`}
+                                initial={{ opacity: 0, width: 0, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, width: 'auto', filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, width: 0, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                                className="overflow-hidden"
+                              >
+                                {item.label}
+                              </motion.span>
+                            ) : (
+                              <span className="hidden xl:inline">{item.label}</span>
+                            )}
+                          </AnimatePresence>
+                        </span>
+                      </motion.button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="xl:hidden">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
           </div>
         )}
       </TooltipProvider>
