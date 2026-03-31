@@ -168,8 +168,8 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
                   <div className="col-span-3 px-2 py-2 space-y-1">
                     <Input
                       type="number"
-                      min={0}
-                      placeholder="0"
+                      min={5}
+                      placeholder="5"
                       disabled={!agendaEditable}
                       className={cn(inputClass(!!itemErrors?.presentation_duration_minutes), "h-9 text-sm")}
                       {...register(`agenda_items.${index}.presentation_duration_minutes`, { valueAsNumber: true })}
