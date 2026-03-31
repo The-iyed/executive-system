@@ -14,8 +14,6 @@ export interface MeetingInfoTabProps {
   channelOverride?: string;
   locationOverride?: string;
   notesOverride?: string;
-  /** Show skeleton overlay while data is refreshing */
-  isRefreshing?: boolean;
 }
 
 function MeetingInfoSkeleton() {
