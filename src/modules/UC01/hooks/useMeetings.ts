@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@/modules/shared/types';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
-import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
+import type { MeetingCardData } from '@/modules/shared/components/meeting-card';
 import { PAGINATION, MeetingOwnerType } from '../utils/constants';
 
 /** Single status, 'all', or array of statuses for multi-select filter. */
@@ -17,7 +18,7 @@ interface UseMeetingsOptions {
   ownerType?: MeetingOwnerType;
 }
 interface UseMeetingsReturn {
-  meetings: MeetingDisplayData[];
+  meetings: MeetingCardData[];
   isLoading: boolean;
   error: unknown;
   totalItems: number;
@@ -91,7 +92,7 @@ export const useMeetings = ({
     enabled: true,
   });
 
-  const meetings: MeetingDisplayData[] = useMemo(() => {
+  const meetings: MeetingCardData[] = useMemo(() => {
     if (!meetingsResponse?.items) return [];
     return meetingsResponse.items.map(mapMeetingToCardData);
   }, [meetingsResponse]);

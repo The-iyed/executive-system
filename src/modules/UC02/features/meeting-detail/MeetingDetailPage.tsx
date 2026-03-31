@@ -45,6 +45,14 @@ import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
+  const [isRefreshingInfo, setIsRefreshingInfo] = React.useState(false);
+
+  const handleSubmitSuccess = React.useCallback(() => {
+    h.setActiveTab('meeting-info');
+    setIsRefreshingInfo(true);
+    // Clear skeleton after the delayed invalidation settles (matches 1.5s sync delay + buffer)
+    setTimeout(() => setIsRefreshingInfo(false), 2000);
+  }, [h]);
 
   /* ─── Loading / Error ─── */
   if (h.isLoading) {
@@ -96,7 +104,7 @@ const MeetingDetailPage: React.FC = () => {
       case 'request-notes':
         return <div className="w-full max-w-4xl mx-auto" dir="rtl"><RequestNotesView data={mapMeetingToRequestNotes(meeting)} /></div>;
       case 'meeting-info':
-        return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} />;
+        return <MeetingInfoTab meeting={meeting} extraFields={h.meetingInfoExtraFields} channelOverride={h.scheduleForm.meeting_channel} locationOverride={h.scheduleForm.location} notesOverride={h.meetingInfoNotes} isRefreshing={isRefreshingInfo} />;
       case 'content':
         return <ContentTab meeting={meeting} onPreviewAttachment={(att) => h.setPreviewAttachment(att)} />;
       case 'schedule':
@@ -188,7 +196,7 @@ const MeetingDetailPage: React.FC = () => {
       </div>
 
       {/* ─── Modals / Drawers ─── */}
-      <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={h.meetingFormOpen} onOpenChange={h.setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest />
+      <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={h.meetingFormOpen} onOpenChange={h.setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest onSubmitSuccess={handleSubmitSuccess} />
 
       <ConfirmDialog
         open={h.isDeleteDraftModalOpen}

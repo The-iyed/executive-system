@@ -1,28 +1,35 @@
 
 
-## Plan: Add configurable timezone env variable
+## Plan: Fix weird animation on submit by removing premature `resetModal()` calls
 
-### Problem
-The timezone header is always derived from the browser. The user wants an optional env variable override.
+### Root cause
 
-### Changes
+When the user clicks "تحديث الطلب", `handleFinalSubmit` completes the API calls then runs:
 
-**1. `.env`** — Add new variable
-```
-VITE_APP_TIMEZONE=Asia/Riyadh
-```
-
-**2. `src/lib/env.ts`** — Export the new variable
 ```ts
-export const APP_TIMEZONE = getEnv('VITE_APP_TIMEZONE', '');
+steps.resetModal();  // currentStep → 1, step1Data → null, step2Data → null
+onClose();           // triggers dialog close animation
 ```
 
-**3. `src/lib/api/apiTimezone.ts`** — Use env value when set, fallback to browser
-- Import `APP_TIMEZONE` from `@/lib/env`
-- In `getBrowserTimezone()`: return `APP_TIMEZONE` if non-empty, otherwise return browser timezone as current default
+`resetModal()` fires **before** the dialog's close animation starts. This causes the modal content to jump from step 3 back to step 1 (and unmount step 2/3 content) while the modal is still visually open. The close animation then plays on this already-changed content — producing the "weird animation."
 
-### Result
-- When `VITE_APP_TIMEZONE` is set (e.g. `Asia/Riyadh`), all API requests use that value in the `X-Timezone` header
-- When empty or unset, falls back to browser-detected timezone as before
-- 3 files changed
+The reset is **redundant** because `useModalSteps.ts` already has a `useEffect` that resets all state when `open` becomes `false`.
+
+### Fix
+
+Remove `steps.resetModal()` on 3 lines in `useSubmitterModal.ts`:
+
+| Line | Context |
+|---|---|
+| 162 | Scheduler-edit branch in `handleFinalSubmit` |
+| 180 | Normal submit branch in `handleFinalSubmit` |
+| 240 | `handleSaveAsDraft` |
+
+Just call `onClose()` directly — the `useEffect` handles the cleanup after the dialog finishes closing.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `useSubmitterModal.ts` | Remove 3 `steps.resetModal()` lines |
 

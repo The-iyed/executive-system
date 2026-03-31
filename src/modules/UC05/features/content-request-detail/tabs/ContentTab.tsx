@@ -131,26 +131,19 @@ export function ContentTab({ h }: ContentTabProps) {
                 </svg>
                 <span>إضافة توجيه</span>
               </button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={contentRequest?.ext_id == null ? 'inline-flex' : undefined}>
-                    <button
-                      type="button"
-                      onClick={h.handleRequestAiDirectives}
-                      className="flex items-center gap-2 px-4 py-2 bg-background border border-border hover:bg-muted text-foreground rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                    >
-                      {h.isLoadingAiSuggestions ? (
-                        <><Loader2 className="w-4 h-4 animate-spin text-primary" /><span>جاري التحميل...</span></>
-                      ) : (
-                        <><Sparkles className="w-4 h-4 text-primary" /><span>اقتراح بالذكاء الاصطناعي</span></>
-                      )}
-                    </button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[260px] text-right">
-                  {contentRequest?.ext_id == null ? 'لا يوجد اجتماع سابق' : 'اقتراح بالذكاء الاصطناعي'}
-                </TooltipContent>
-              </Tooltip>
+              {(contentRequest as any)?.prev_ext_id != null && (
+                <button
+                  type="button"
+                  onClick={h.handleRequestAiDirectives}
+                  className="flex items-center gap-2 px-4 py-2 bg-background border border-border hover:bg-muted text-foreground rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  {h.isLoadingAiSuggestions ? (
+                    <><Loader2 className="w-4 h-4 animate-spin text-primary" /><span>جاري التحميل...</span></>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 text-primary" /><span>اقتراح بالذكاء الاصطناعي</span></>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
