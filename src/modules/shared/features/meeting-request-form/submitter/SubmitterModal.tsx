@@ -133,6 +133,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
             initialContentData={initialStep2Values}
             isEditMode={!!draftId}
             meetingStatus={meetingStatus}
+            callerRole={callerRole}
           />
         )}
       </div>
