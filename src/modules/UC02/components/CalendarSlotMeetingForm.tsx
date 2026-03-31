@@ -166,6 +166,7 @@ interface InnerProps {
   submitError: string | null;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
+  hideProposedTime?: boolean;
 }
 
 function CalendarFormInner({
