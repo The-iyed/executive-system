@@ -1,27 +1,55 @@
 
 
-## Plan: Improve إعدادات الجدولة in detail modal + fix form defaults
+## Plan: Restructure meeting detail modal with label-value layout
 
-### Two changes
+### What changes
 
-#### 1. EventDetailModal — Better styling for scheduling settings
+Replace the current icon-only detail card with a clear **label → value** pattern for each field, making the information more readable and structured.
 
-Current: small checkbox-style cards without descriptions, tight spacing.
+### New layout structure
 
-**Improve to**: larger cards matching the form style — each card shows the label + a sub-description, with a proper checkmark icon, consistent with the creation form's ToggleCard pattern.
+```text
+┌─ Title + Badge ──────────────── [X] ─┐
+│                                       │
+│  ┌─────────────────────────────────┐  │
+│  │  المنظم      Scheduling Officer │  │
+│  │              scheduling@...     │  │
+│  ├─────────────────────────────────┤  │
+│  │  التاريخ     الخميس 2 أبريل    │  │
+│  ├─────────────────────────────────┤  │
+│  │  الوقت       01:00 – 00:00     │  │
+│  ├─────────────────────────────────┤  │
+│  │  الموقع      الغدير             │  │
+│  └─────────────────────────────────┘  │
+│                                       │
+│  المدعوون (1)                         │
+│  ┌─ [M] monem@gmail.com ──────────┐  │
+│                                       │
+│  إعدادات الجدولة                      │
+│  ┌─ مبدئي ─┐  ┌─ البيانات ────────┐  │
+│                                       │
+├───────────────────────────────────────┤
+│           عرض التفاصيل   تعديل       │
+└───────────────────────────────────────┘
+```
 
-- "مبدئي" → sub-text "يتطلب بروتوكول"
-- "البيانات مكتملة" → sub-text "جميع البيانات جاهزة"
-- Larger padding, rounded-xl, RTL-friendly layout matching the form toggles
+### Detail card rows — each row becomes:
+- **Right side**: icon + Arabic label (e.g. `المنظم`, `التاريخ`, `الوقت`, `الموقع`)
+- **Left side**: the value, right-aligned
 
-#### 2. CalendarSlotMeetingForm — Both defaults to `false` (not selected)
+This gives a consistent two-column feel: label on the right, value on the left, separated by dividers.
 
-Change `is_data_complete` default from `true` to `false` so both toggles start unselected when creating a quick meeting.
+### Specific changes in `EventDetailModal.tsx`
+
+1. **Organizer row**: Add label "المنظم" next to icon, value = name + email
+2. **Date row**: Add label "التاريخ", value = formatted date
+3. **Time row**: Separate from date — label "الوقت", value = start – end  
+4. **Location row**: Add label "الموقع", value = location text or link
+5. Keep scheduling settings and invitees sections as-is (already good)
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Restyle scheduling settings cards — bigger, add sub-descriptions |
-| `CalendarSlotMeetingForm.tsx` | Change `is_data_complete` default from `true` to `false` (line 82 + line 125) |
+| `EventDetailModal.tsx` | Restructure detail card rows to label-value pattern |
 
