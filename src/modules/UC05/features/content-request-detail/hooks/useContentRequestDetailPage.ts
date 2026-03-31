@@ -129,6 +129,66 @@ export function useContentRequestDetailPage() {
   const rawMeetingId = contentRequest?.meeting_id ?? contentRequest?.meeting?.meeting_id ?? contentRequest?.meeting?.id ?? id;
   const suggestedActionsMeetingId = rawMeetingId != null && String(rawMeetingId).trim() !== '' ? String(rawMeetingId).trim() : null;
 
+  /* ── Content Directives CRUD query + mutations ── */
+  const { data: contentDirectives = [], isLoading: isLoadingContentDirectives } = useQuery({
+    queryKey: ['content-directives', id],
+    queryFn: () => getContentDirectives(id!),
+    enabled: !!id,
+  });
+
+  const createDirectiveMutation = useMutation({
+    mutationFn: (data: CreateContentDirectivePayload) => createContentDirective(id!, data),
+    onMutate: async (newDirective) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      const optimistic: ContentDirective = { id: newDirective.id ?? -(Date.now()), title: newDirective.title, due_date: newDirective.due_date, assignees: newDirective.assignees, status: newDirective.status };
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) => [...(old ?? []), optimistic]);
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم إضافة التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل إضافة التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const updateDirectiveMutation = useMutation({
+    mutationFn: ({ directiveId, data }: { directiveId: number; data: UpdateContentDirectivePayload }) =>
+      updateContentDirective(id!, directiveId, data),
+    onMutate: async ({ directiveId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).map((d) => d.id === directiveId ? { ...d, ...data } : d)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل تحديث التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const deleteDirectiveMutation = useMutation({
+    mutationFn: (directiveId: number) => deleteContentDirective(id!, directiveId),
+    onMutate: async (directiveId) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).filter((d) => d.id !== directiveId)
+      );
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم حذف التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل حذف التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
   const { data: suggestedActionsData } = useQuery({
     queryKey: ['business-cards-suggested-actions', suggestedActionsMeetingId],
     queryFn: () => getSuggestedActions(suggestedActionsMeetingId!, { skip: 0, limit: 100 }),
