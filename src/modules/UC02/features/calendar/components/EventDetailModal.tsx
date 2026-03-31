@@ -181,52 +181,85 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               {/* Details card */}
               <div className="rounded-xl border border-border/40 bg-muted/15 divide-y divide-border/20">
                 {/* Organizer */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-muted-foreground">المنظم</span>
                   </div>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="text-[13px] font-semibold text-foreground truncate">
+                  <div className="flex flex-col items-end min-w-0">
+                    <span className="text-[13px] font-semibold text-foreground truncate max-w-[260px]">
                       {display.organizerName || display.organizerEmail || '—'}
                     </span>
-                    {display.organizerEmail && (
-                      <span className="text-[11px] text-muted-foreground truncate">
+                    {display.organizerEmail && display.organizerName && (
+                      <span className="text-[11px] text-muted-foreground truncate max-w-[260px]">
                         {display.organizerEmail}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Date & Time */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <Calendar className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                {/* Date */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-muted-foreground">التاريخ</span>
                   </div>
-                  <span className="text-[13px] font-medium text-foreground flex-1">
+                  <span className="text-[13px] font-medium text-foreground">
                     {formatDetailDate(display.date)}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
-                    <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    <span>{display.startTime} – {display.endTime}</span>
+                </div>
+
+                {/* Time */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-muted-foreground">الوقت</span>
                   </div>
+                  <span className="text-[13px] font-medium text-foreground">
+                    {display.startTime} – {display.endTime}
+                  </span>
                 </div>
 
                 {/* Location / Link */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-muted-foreground">الموقع</span>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     {display.locationOrLink ? (
                       display.isLink ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-medium text-foreground">رابط الاجتماع</span>
-                          <span className="text-[11px] text-muted-foreground truncate max-w-[160px]">
-                            ({extractDomain(display.locationOrLink)})
+                        <>
+                          <span className="text-[13px] font-medium text-foreground truncate max-w-[180px]">
+                            {extractDomain(display.locationOrLink)}
                           </span>
-                        </div>
+                          <button
+                            onClick={() => handleCopyLink(display.locationOrLink)}
+                            className="w-6 h-6 rounded-md hover:bg-accent flex items-center justify-center transition-colors shrink-0"
+                            title="نسخ الرابط"
+                          >
+                            <Copy className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <a
+                            href={display.locationOrLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-6 h-6 rounded-md hover:bg-accent flex items-center justify-center transition-colors shrink-0"
+                            title="فتح الرابط"
+                          >
+                            <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                          </a>
+                        </>
                       ) : (
-                        <span className="text-[13px] font-medium text-foreground truncate block">
+                        <span className="text-[13px] font-medium text-foreground truncate max-w-[260px]">
                           {display.locationOrLink}
                         </span>
                       )
@@ -234,26 +267,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                       <span className="text-[13px] font-medium text-muted-foreground">—</span>
                     )}
                   </div>
-                  {display.isLink && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => handleCopyLink(display.locationOrLink)}
-                        className="w-7 h-7 rounded-lg hover:bg-accent flex items-center justify-center transition-colors"
-                        title="نسخ الرابط"
-                      >
-                        <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                      <a
-                        href={display.locationOrLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-7 h-7 rounded-lg hover:bg-accent flex items-center justify-center transition-colors"
-                        title="فتح الرابط"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-                      </a>
-                    </div>
-                  )}
                 </div>
               </div>
 
