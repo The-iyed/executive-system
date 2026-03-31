@@ -50,10 +50,26 @@ function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number 
   return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]) };
 }
 
+type TimelineEventWithFixedTimes = OutlookTimelineEvent & {
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+};
+
+function resolveTimelineEventTimes(event: OutlookTimelineEvent): { startISO: string; endISO: string } {
+  const raw = event as TimelineEventWithFixedTimes;
+  return {
+    startISO: raw.meeting_start_date ?? raw.scheduled_start ?? event.start_datetime,
+    endISO: raw.meeting_end_date ?? raw.scheduled_end ?? event.end_datetime,
+  };
+}
+
 /** Build CalendarEventData using raw ISO time (no timezone conversion). */
 export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): CalendarEventData {
-  const parsedStart = parseIsoLocal(event.start_datetime);
-  const parsedEnd = parseIsoLocal(event.end_datetime);
+  const { startISO, endISO } = resolveTimelineEventTimes(event);
+  const parsedStart = parseIsoLocal(startISO);
+  const parsedEnd = parseIsoLocal(endISO);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
   if (!parsedStart) {
@@ -181,8 +197,9 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
       extendedProps: { detail: CalendarEventData };
     }[] = [];
     for (const e of outlookEvents) {
-      const parsedS = parseIsoLocal(e.start_datetime);
-      const parsedE = parseIsoLocal(e.end_datetime);
+      const { startISO, endISO } = resolveTimelineEventTimes(e);
+      const parsedS = parseIsoLocal(startISO);
+      const parsedE = parseIsoLocal(endISO);
       if (!parsedS) continue;
       const start = new Date(parsedS.date.getFullYear(), parsedS.date.getMonth(), parsedS.date.getDate(), parsedS.hour, parsedS.minute, 0, 0);
       let end: Date;
@@ -193,6 +210,10 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         end = new Date(start.getTime() + 60 * 60 * 1000);
       }
       const sty = styleForOutlook(e);
+      const detailSource: OutlookTimelineEvent =
+        startISO === e.start_datetime && endISO === e.end_datetime
+          ? e
+          : { ...e, start_datetime: startISO, end_datetime: endISO };
       out.push({
         id: e.item_id,
         title: e.subject || 'اجتماع',
@@ -201,7 +222,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         backgroundColor: sty.backgroundColor,
         textColor: sty.textColor,
         borderColor: sty.borderColor,
-        extendedProps: { detail: outlookEventToCalendarDetail(e) },
+        extendedProps: { detail: outlookEventToCalendarDetail(detailSource) },
       });
     }
     for (const ev of extraEvents) {
