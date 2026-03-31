@@ -94,6 +94,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         })
       : (event.attendees ?? []);
 
+    const requiresProtocol = fromApi ? Boolean((meeting as any).requires_protocol) : false;
+    const isDataComplete = fromApi ? Boolean((meeting as any).is_data_complete ?? true) : true;
+
     return {
       title: (fromApi ? meeting.meeting_title : event.title) || event.meeting_title || 'اجتماع',
       is_internal: event.is_internal,
@@ -110,6 +113,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       isLink: typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
       meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
+      requiresProtocol,
+      isDataComplete,
     };
   }, [event, meetingDetail, isLoading]);
 
