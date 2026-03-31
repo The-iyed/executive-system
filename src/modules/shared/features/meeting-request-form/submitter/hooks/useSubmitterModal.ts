@@ -21,6 +21,7 @@ interface UseSubmitterModalOptions {
   open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
+  onSubmitSuccess?: () => void;
   callerRole?: MeetingOwnerType;
 }
 
@@ -28,6 +29,7 @@ export function useSubmitterModal({
   open,
   editMeetingId,
   onClose,
+  onSubmitSuccess,
   callerRole,
 }: UseSubmitterModalOptions) {
   const { toast } = useToast();
@@ -159,8 +161,8 @@ export function useSubmitterModal({
       // ── Submit / resubmit ────────────────────────────────────────────────
       if (isSchedulerEdit) {
         toast({ title: "تم التحديث بنجاح" });
+        onSubmitSuccess?.();
         onClose();
-        // Sync AFTER close to avoid re-rendering forms while modal is visible
         if (isEditMode) {
           syncMeetingDetails(meetingId, inviteePatch);
         }
@@ -176,6 +178,7 @@ export function useSubmitterModal({
       }
 
       // Close first, then sync to prevent form re-render flicker
+      onSubmitSuccess?.();
       onClose();
       if (isEditMode) {
         syncMeetingDetails(meetingId, inviteePatch);
