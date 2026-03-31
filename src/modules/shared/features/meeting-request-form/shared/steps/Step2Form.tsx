@@ -258,7 +258,7 @@ export function Step2Form({
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [presentationRequired, hasPresentationFile]);
+  }, [presentationRequired, hasPresentationFile, callerRole]);
 
   /* ── Submit ── */
 
