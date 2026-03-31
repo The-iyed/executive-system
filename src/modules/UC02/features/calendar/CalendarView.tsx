@@ -97,6 +97,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
 
+  const handleQuickMeeting = useCallback(() => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes, 0, 0);
+    const hours = now.getHours().toString().padStart(2, '0');
+    const mins = now.getMinutes().toString().padStart(2, '0');
+    const endDate = new Date(now);
+    endDate.setHours(endDate.getHours() + 1);
+    const endHours = endDate.getHours().toString().padStart(2, '0');
+    const endMins = endDate.getMinutes().toString().padStart(2, '0');
+    setSlot({ date: now, time: `${hours}:${mins}`, endTime: `${endHours}:${endMins}`, mode: 'create' });
+  }, []);
+
   const showSkeleton = isLoading;
 
   // Map to OutlookTimelineEvent for MinisterFullCalendar compatibility
@@ -261,6 +275,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onToday={goToday}
         onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
+        onQuickMeeting={handleQuickMeeting}
       />
 
       <div className="relative flex-1 min-h-0 bg-card overflow-auto rounded-2xl shadow-sm border border-border/40">
