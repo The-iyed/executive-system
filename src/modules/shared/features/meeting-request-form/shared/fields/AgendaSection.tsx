@@ -49,6 +49,13 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
   const hasMeetingDuration = meetingDurationMinutes > 0;
   const durationMismatch = hasMeetingDuration && fields.length > 0 && totalDuration !== meetingDurationMinutes;
 
+  const { clearErrors } = form;
+  useEffect(() => {
+    if (hasMeetingDuration && fields.length > 0 && totalDuration === meetingDurationMinutes) {
+      clearErrors("agenda_items");
+    }
+  }, [totalDuration, meetingDurationMinutes, hasMeetingDuration, fields.length, clearErrors]);
+
   const handleAdd = useCallback(() => {
     append({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
     setAnimatingNewId("pending");
