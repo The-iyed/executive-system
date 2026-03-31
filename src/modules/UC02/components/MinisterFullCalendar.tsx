@@ -311,7 +311,8 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     if (end.getTime() <= arg.start.getTime()) {
       end = new Date(arg.start.getTime() + 30 * 60 * 1000);
     }
-    const endTime = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+    // FC is in UTC mode, so use UTC accessors for the displayed time
+    const endTime = `${pad2(end.getUTCHours())}:${pad2(end.getUTCMinutes())}`;
     fireSlot(slot.day, slot.time, endTime);
   };
 
