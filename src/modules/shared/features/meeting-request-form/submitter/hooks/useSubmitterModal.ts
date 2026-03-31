@@ -29,6 +29,7 @@ export function useSubmitterModal({
   open,
   editMeetingId,
   onClose,
+  onSubmitSuccess,
   callerRole,
 }: UseSubmitterModalOptions) {
   const { toast } = useToast();
