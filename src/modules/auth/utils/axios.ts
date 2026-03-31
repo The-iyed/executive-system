@@ -1,9 +1,9 @@
 import axios from "axios";
-import { clearAllBrowserStorage, clearTokens } from "./token";
+import { clearAllBrowserStorage } from "./token";
 import { getAuthToken } from "./tokenGetter";
 import { EXECUTION_SYSTEM_BASE_URL } from "@/lib/env";
 import { getBrowserTimezone } from "@/lib/api/apiTimezone";
-import { isSsoEnabled } from "@/lib/auth/ssoOrigin";
+import { isSsoEnabled, initiateLogin } from "@/lib/auth";
 import { userManager } from "@/lib/auth/oidcConfig";
 
 const baseURL = EXECUTION_SYSTEM_BASE_URL;
@@ -19,6 +19,16 @@ const axiosInstance = axios.create({
 });
 
 let silentRenewPromise: Promise<unknown> | null = null;
+let ssoReloginPromise: Promise<void> | null = null;
+
+function ensureSsoRelogin(): void {
+  if (ssoReloginPromise) return;
+  ssoReloginPromise = initiateLogin()
+    .catch(() => {})
+    .finally(() => {
+      ssoReloginPromise = null;
+    });
+}
 
 axiosInstance.interceptors.request.use(
   async (config) => {
@@ -46,6 +56,7 @@ axiosInstance.interceptors.response.use(
     if (error?.response?.status === 401) {
       if (isSsoEnabled()) {
         if (originalRequest?._retry) {
+          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         }
 
@@ -58,7 +69,10 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
             return axiosInstance(originalRequest);
           }
+          ensureSsoRelogin();
+          return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } catch {
+          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } finally {
           silentRenewPromise = null;

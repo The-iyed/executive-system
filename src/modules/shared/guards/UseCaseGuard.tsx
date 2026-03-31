@@ -18,10 +18,10 @@ export const UseCaseGuard: React.FC<UseCaseGuardProps> = ({
   requiredUseCase,
   fallbackRoute,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isSsoEnabled: ssoEnabled } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={ssoEnabled ? '/' : '/login'} replace />;
   }
 
   const hasAccess = hasUseCaseAccess(user?.use_cases, requiredUseCase);
