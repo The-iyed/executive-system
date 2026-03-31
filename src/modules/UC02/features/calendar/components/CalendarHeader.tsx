@@ -49,6 +49,7 @@ interface CalendarHeaderProps {
   onToday: () => void;
   onDateSelect: (date: Date) => void;
   onViewModeChange: (mode: CalendarViewMode) => void;
+  onQuickMeeting?: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
