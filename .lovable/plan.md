@@ -1,33 +1,29 @@
 
 
-## Plan: Fix طبيعة الاجتماع error message
+## Plan: Remove presentation validation for scheduling officers
 
 ### Problem
-`z.nativeEnum(MeetingNature)` produces an English error like `"Invalid enum value. Expected 'NORMAL' | 'SEQUENTIAL' | 'PERIODIC', received '...'"` because Zod lists the enum **keys**. The `required_error` only covers the "missing" case, not the "invalid value" case.
+When a scheduling officer creates or edits a meeting, the العرض التقديمي (PDF) field still requires upload. It should be optional for scheduling officers, while preserving all existing logic around status checks and executive summary for upload-more-than-one behavior.
 
 ### Fix
 
-In **both** schema files, replace `z.nativeEnum(MeetingNature, ...)` with `z.enum(...)` using actual enum values + Arabic messages:
+#### 1. `Step2Form.tsx` — Add `callerRole` prop, skip validation for schedulers
 
-**`scheduler/schema.ts` (line 16) and `submitter/schema.ts` (line 27)**
+- Add `callerRole?: string` to `Step2FormProps`
+- In `validate()`, skip the presentation requirement when `callerRole === MeetingOwnerType.SCHEDULING`:
+  ```ts
+  if (presentationRequired && !hasPresentationFile && callerRole !== MeetingOwnerType.SCHEDULING) {
+  ```
+- Update `required` prop on the FormField: `required={presentationRequired && callerRole !== MeetingOwnerType.SCHEDULING}`
 
-Replace:
-```ts
-meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
-```
+#### 2. `SubmitterModal.tsx` — Pass `callerRole` to Step2Form
 
-With:
-```ts
-meeting_nature: z.enum(
-  [MeetingNature.NORMAL, MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC] as [string, ...string[]],
-  { required_error: "طبيعة الاجتماع مطلوبة", invalid_type_error: "طبيعة الاجتماع غير صالحة" }
-) as z.ZodType<MeetingNature>,
-```
+- Pass `callerRole={callerRole}` prop to `<Step2Form>`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `scheduler/schema.ts` | Replace `z.nativeEnum` with `z.enum` + Arabic error messages |
-| `submitter/schema.ts` | Same change for consistency |
+| `Step2Form.tsx` | Add `callerRole` prop; skip presentation validation for scheduling officers |
+| `SubmitterModal.tsx` | Pass `callerRole` to `Step2Form` |
 
