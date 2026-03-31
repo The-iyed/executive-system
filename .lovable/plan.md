@@ -1,36 +1,30 @@
 
 
-## Plan: Fix meeting_channel not updating on refetch
+## Plan: Fix meeting_channel display on detail page
 
-### Root cause
+### Problem
 
-In `useMeetingDetailPage.ts` (line 145), the schedule form initialization is guarded by:
-```ts
-if (lastInitializedMeetingIdRef.current === meeting.id) return;
-```
-
-This prevents re-initialization when the meeting data is refetched (same ID). So `scheduleForm.meeting_channel` keeps its original value even after the API returns updated data.
-
-The `MeetingInfoTab` then receives `channelOverride={h.scheduleForm.meeting_channel}` which shows the stale local state instead of the fresh API value.
+On the detail page (`/meeting/{id}`), `MeetingInfoTab` receives `channelOverride={h.scheduleForm.meeting_channel}`. The schedule form initializes `meeting_channel` by checking against a hardcoded valid channels list — if the API returns a value not in that list (or the form hasn't re-initialized after edit), it defaults to `PHYSICAL`, showing the wrong value.
 
 ### Fix
 
-In `useMeetingDetailPage.ts`, remove the `lastInitializedMeetingIdRef` early-return guard and instead use a proper dependency that detects when meeting data has actually changed (e.g., use `meeting`'s `updated_at` or a data fingerprint, or simply always re-sync from the meeting object).
+**File: `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx`**
 
-Simplest approach: replace the ref guard with a comparison that allows re-initialization when `isRefreshingAfterEdit` transitions from `true` to `false`, or more robustly, always re-sync the schedule form from the meeting data whenever the meeting object reference changes — but only for fields the user hasn't manually modified in the schedule drawer.
+Remove the `channelOverride` from `MeetingInfoTab` so it reads `meeting_channel` directly from the meeting API response instead of the schedule form's local state:
 
-**Chosen approach**: Reset `lastInitializedMeetingIdRef.current` when `isRefreshingAfterEdit` is set (i.e., after an edit save), so the next time meeting data arrives, the form re-initializes with fresh values.
+```tsx
+// Before
+channelOverride={h.scheduleForm.meeting_channel}
 
-### Changes
+// After — remove channelOverride entirely, let MeetingInfoTab use meeting.meeting_channel directly
+// (remove the prop)
+```
 
-#### `useMeetingDetailPage.ts`
-- Add an effect: when `isRefreshingAfterEdit` becomes `true`, reset `lastInitializedMeetingIdRef.current = null` so the existing initialization effect re-runs with fresh data on the next render cycle
-
-This is a one-line addition — minimal and targeted.
+This way the detail page always shows the actual API value. The schedule form's local `meeting_channel` state is only relevant inside the `ScheduleDrawer` for scheduling actions — it should not override the display on the info tab.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useMeetingDetailPage.ts` | Reset `lastInitializedMeetingIdRef` when `isRefreshingAfterEdit` is set, allowing schedule form to re-sync from fresh API data |
+| `MeetingDetailPage.tsx` | Remove `channelOverride={h.scheduleForm.meeting_channel}` from `MeetingInfoTab` |
 
