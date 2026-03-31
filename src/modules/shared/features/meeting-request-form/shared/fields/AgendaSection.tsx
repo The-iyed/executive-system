@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 import { type UseFormReturn, useFieldArray, Controller } from "react-hook-form";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, cn } from "@/lib/ui";
@@ -48,6 +48,13 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
 
   const hasMeetingDuration = meetingDurationMinutes > 0;
   const durationMismatch = hasMeetingDuration && fields.length > 0 && totalDuration !== meetingDurationMinutes;
+
+  const { clearErrors } = form;
+  useEffect(() => {
+    if (hasMeetingDuration && fields.length > 0 && totalDuration === meetingDurationMinutes) {
+      clearErrors("agenda_items");
+    }
+  }, [totalDuration, meetingDurationMinutes, hasMeetingDuration, fields.length, clearErrors]);
 
   const handleAdd = useCallback(() => {
     append({ agenda_item: "", presentation_duration_minutes: 5, minister_support_type: "", minister_support_other: "" });
@@ -161,8 +168,8 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
                   <div className="col-span-3 px-2 py-2 space-y-1">
                     <Input
                       type="number"
-                      min={0}
-                      placeholder="0"
+                      min={5}
+                      placeholder="5"
                       disabled={!agendaEditable}
                       className={cn(inputClass(!!itemErrors?.presentation_duration_minutes), "h-9 text-sm")}
                       {...register(`agenda_items.${index}.presentation_duration_minutes`, { valueAsNumber: true })}
@@ -183,9 +190,6 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         </div>
       </div>
 
-      {rootError && !durationMismatch && (
-        <p role="alert" className="text-xs text-destructive">{rootError}</p>
-      )}
 
       <div className="flex items-center justify-between">
         {agendaEditable && (
