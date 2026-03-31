@@ -113,6 +113,7 @@ const MeetingDetailPage: React.FC = () => {
   const { meeting } = h;
   const hasFloatingActionsBar = !!(
     meeting && (
+      meeting.status === MeetingStatus.DRAFT ||
       meeting.status === MeetingStatus.UNDER_REVIEW ||
       meeting.status === MeetingStatus.UNDER_GUIDANCE ||
       meeting.status === MeetingStatus.WAITING ||
