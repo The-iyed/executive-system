@@ -14,13 +14,13 @@ export function ScheduleTab({
   validationError,
 }: ScheduleTabProps) {
   return (
-    <div className="flex flex-col gap-6 w-full" dir="rtl">
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto" dir="rtl">
       {validationError && (
         <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl">
           <p className="text-right text-sm text-destructive">{validationError}</p>
         </div>
       )}
-      <InviteesTableForm initialInvitees={invitees} mode="view" viewLayout="cards" showAiSuggest={false} />
+      <InviteesTableForm initialInvitees={invitees} mode="view" showAiSuggest={false} />
     </div>
   );
 }

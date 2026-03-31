@@ -218,7 +218,7 @@ export function DirectivesList({
         </div>
 
         {/* Pagination inside card */}
-        {totalPages > 1 && (
+        {totalPages > 1 && !error && (
           <div className="border-t border-border/20 px-5 py-3">
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
           </div>
