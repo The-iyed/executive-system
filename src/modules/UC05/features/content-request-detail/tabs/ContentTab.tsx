@@ -236,7 +236,23 @@ export function ContentTab({ h }: ContentTabProps) {
                       return (
                         <tr key={`api-${d.id}`} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                          <td className="px-4 py-3 text-sm text-foreground" dir="rtl">{d.title || '—'}</td>
+                          <td className="px-4 py-3" dir="rtl">
+                            <input
+                              type="text"
+                              defaultValue={d.title || ''}
+                              className="w-full text-sm text-foreground bg-transparent border border-transparent hover:border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-2 py-1 outline-none transition-colors"
+                              dir="rtl"
+                              onBlur={(e) => {
+                                const newTitle = e.target.value.trim();
+                                if (newTitle && newTitle !== d.title) {
+                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: newTitle } });
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                              }}
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <FormDatePicker
                               value={d.due_date ?? ''}
