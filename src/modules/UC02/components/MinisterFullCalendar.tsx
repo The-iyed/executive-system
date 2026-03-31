@@ -44,10 +44,15 @@ function styleForOutlook(e: OutlookTimelineEvent): { backgroundColor: string; te
 }
 
 /** Parse ISO string without timezone conversion */
-function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number } | null {
+function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number; year: number; month: number; day: number } | null {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!m) return null;
-  return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]) };
+  return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]), year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+}
+
+/** Build an offset-free ISO string that FullCalendar will treat as-is (no tz shift) */
+function toNaiveISO(p: { year: number; month: number; day: number; hour: number; minute: number }): string {
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}:00`;
 }
 
 type TimelineEventWithFixedTimes = OutlookTimelineEvent & {
