@@ -279,12 +279,14 @@ function CalendarFormInner({
           <div className="flex flex-col gap-4">
             <MeetingTitleField />
 
-            <MeetingDateField
-              startName="meeting_start_date"
-              endName="meeting_end_date"
-              required
-              minDate={minStartDate}
-            />
+            {!hideProposedTime && (
+              <MeetingDateField
+                startName="meeting_start_date"
+                endName="meeting_end_date"
+                required
+                minDate={minStartDate}
+              />
+            )}
 
             <MeetingChannelField />
 
