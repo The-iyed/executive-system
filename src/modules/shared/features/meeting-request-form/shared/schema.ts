@@ -19,16 +19,17 @@ export const docFile = fileValidator("PDF, Word, Excel", [".pdf", ".doc", ".docx
 
 export const agendaItemSchema = z.object({
   agenda_item: z.string().default(""),
-  presentation_duration_minutes: z.preprocess(
-    (val) => {
-      if (val === "" || val === undefined || val === null) return undefined;
+  presentation_duration_minutes: z.union([z.number(), z.string()])
+    .transform((val): number | undefined => {
+      if (val === "" || val == null) return undefined;
       const n = Number(val);
       return Number.isNaN(n) ? undefined : n;
-    },
-    z.number({ required_error: "المدة مطلوبة", invalid_type_error: "يرجى إدخال رقم صحيح" })
-      .int("يرجى إدخال رقم صحيح")
-      .min(5, "المدة يجب أن تكون 5 دقائق أو أكثر")
-  ),
+    })
+    .pipe(
+      z.number({ required_error: "المدة مطلوبة", invalid_type_error: "يرجى إدخال رقم صحيح" })
+        .int("يرجى إدخال رقم صحيح")
+        .min(5, "المدة يجب أن تكون 5 دقائق أو أكثر")
+    ),
   minister_support_type: z.string().default(""),
   minister_support_other: z.string().optional(),
 });
