@@ -75,7 +75,7 @@ export function ContentTab({ h }: ContentTabProps) {
         is_presentation: a.is_presentation,
         is_additional: a.is_additional,
         is_executive_summary: a.is_executive_summary,
-        presentation_sequence: a.presentation_sequence ?? null,
+        presentation_sequence: (a as any).presentation_sequence ?? null,
       })),
       previous_meeting_attachment: (contentRequest as any)?.previous_meeting_attachment ?? null,
       general_notes: contentRequest.general_notes,
