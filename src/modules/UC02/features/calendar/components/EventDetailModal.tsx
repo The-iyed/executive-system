@@ -278,6 +278,44 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   )}
                 </div>
               </div>
+
+              {/* Scheduling Settings */}
+              {display.meetingId && (
+                <div className="flex flex-col gap-1.5 py-2.5 border-b border-border/20">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Settings className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[13px] font-semibold text-foreground">إعدادات الجدولة</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div className={cn(
+                      'flex items-center gap-2.5 px-3 py-2 rounded-lg border',
+                      display.requiresProtocol ? 'border-primary/30 bg-primary/5' : 'border-border/40 bg-muted/30'
+                    )}>
+                      <div className={cn(
+                        'w-4 h-4 rounded border flex items-center justify-center shrink-0',
+                        display.requiresProtocol ? 'bg-primary border-primary' : 'border-border'
+                      )}>
+                        {display.requiresProtocol && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                      </div>
+                      <span className="text-[12px] font-medium text-foreground">مبدئي</span>
+                    </div>
+                    <div className={cn(
+                      'flex items-center gap-2.5 px-3 py-2 rounded-lg border',
+                      display.isDataComplete ? 'border-primary/30 bg-primary/5' : 'border-border/40 bg-muted/30'
+                    )}>
+                      <div className={cn(
+                        'w-4 h-4 rounded border flex items-center justify-center shrink-0',
+                        display.isDataComplete ? 'bg-primary border-primary' : 'border-border'
+                      )}>
+                        {display.isDataComplete && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                      </div>
+                      <span className="text-[12px] font-medium text-foreground">البيانات مكتملة</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
