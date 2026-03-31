@@ -118,7 +118,10 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
     try {
       const newRows = await aiGenerateFn(count);
       if (!newRows || newRows.length === 0) {
-        toast({title:"لا توجد توصيات متاحة حالياً بناءً على بيانات الاجتماع"});
+        toast({
+          title: "لا توجد توصيات متاحة حالياً بناءً على بيانات الاجتماع",
+          description: "يرجى التأكد من إدخال تفاصيل الاجتماع بشكل كافٍ والمحاولة مرة أخرى",
+        });
         return;
       }
       const normalized = normalizeRows(newRows);
@@ -128,8 +131,9 @@ export const DynamicTableForm: React.FC<DynamicTableFormProps> = ({
       toast({title:`تم إضافة ${newRows.length} مقترح بالذكاء الاصطناعي`});
     } catch {
       toast({
-        title: 'فشل توليد المقترحات',
-        variant: 'destructive',
+        title: "حدث خطأ أثناء توليد قائمة المدعوين",
+        description: "يرجى المحاولة مرة أخرى لاحقاً",
+        variant: "destructive",
       });
     }
   }, [aiGenerateFn, form, onChange]);
