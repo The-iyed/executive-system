@@ -252,7 +252,7 @@ export function Step2Form({
   const validate = useCallback((): boolean => {
     const errs: Record<string, string> = {};
 
-    if (presentationRequired && !hasPresentationFile) {
+    if (presentationRequired && !hasPresentationFile && callerRole !== "SCHEDULING") {
       errs.presentation_files = "يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)";
     }
 
