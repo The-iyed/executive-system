@@ -130,11 +130,6 @@ export function useSubmitterModal({
           steps.setDraftId(meetingId);
         }
 
-        if (isEditMode && meetingId) {
-          const patch = buildStep1Patch(step1Data as unknown as Record<string, unknown>);
-          optimisticMergeMeeting(queryClient, meetingId, patch);
-        }
-
         // ── Step 2: Save content ─────────────────────────────────────────
         if (step2Data) {
           await contentMutation.mutateAsync({
