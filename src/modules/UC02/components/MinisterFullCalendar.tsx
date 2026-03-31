@@ -149,7 +149,8 @@ function extraEventToDetail(ev: CalendarEventData): CalendarEventData {
 
 function openSlotFromDate(clicked: Date, allDay: boolean): { day: Date; time: string } | null {
   const now = Date.now();
-  const day = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
+  // FC is in UTC mode, so use UTC accessors to get the displayed wall-clock time
+  const day = new Date(clicked.getUTCFullYear(), clicked.getUTCMonth(), clicked.getUTCDate(), 0, 0, 0, 0);
   if (allDay) {
     const slot = new Date(day);
     slot.setHours(9, 0, 0, 0);
@@ -159,7 +160,7 @@ function openSlotFromDate(clicked: Date, allDay: boolean): { day: Date; time: st
   if (clicked.getTime() < now - 60000) return null;
   return {
     day,
-    time: `${pad2(clicked.getHours())}:${pad2(clicked.getMinutes())}`,
+    time: `${pad2(clicked.getUTCHours())}:${pad2(clicked.getUTCMinutes())}`,
   };
 }
 
@@ -295,9 +296,10 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     const slot = openSlotFromDate(arg.date, arg.allDay);
     if (!slot) return;
     const [h, m] = slot.time.split(':').map(Number);
-    const endD = new Date(slot.day);
-    endD.setHours(h || 0, (m || 0) + 30, 0, 0);
-    const endTime = `${pad2(endD.getHours())}:${pad2(endD.getMinutes())}`;
+    // Build end time purely from parsed integers — no Date timezone shift
+    const endH = m + 30 >= 60 ? h + 1 : h;
+    const endM = (m + 30) % 60;
+    const endTime = `${pad2(endH)}:${pad2(endM)}`;
     fireSlot(slot.day, slot.time, endTime);
   };
 
@@ -310,7 +312,8 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     if (end.getTime() <= arg.start.getTime()) {
       end = new Date(arg.start.getTime() + 30 * 60 * 1000);
     }
-    const endTime = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+    // FC is in UTC mode, so use UTC accessors for the displayed time
+    const endTime = `${pad2(end.getUTCHours())}:${pad2(end.getUTCMinutes())}`;
     fireSlot(slot.day, slot.time, endTime);
   };
 
