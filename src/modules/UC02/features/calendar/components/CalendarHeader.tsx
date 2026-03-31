@@ -60,6 +60,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   onToday,
   onDateSelect,
   onViewModeChange,
+  onQuickMeeting,
 }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
