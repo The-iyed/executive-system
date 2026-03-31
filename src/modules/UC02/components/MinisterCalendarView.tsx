@@ -107,19 +107,29 @@ const getRandomVariant = (id: string): string => {
   return variants[index];
 };
 
-/** Local wall time → hour slot (HH:00). Grid + FullCalendar use browser local TZ. */
-const formatTimeToSlot = (date: Date, roundUp: boolean = false): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  let slotHour = roundUp && minutes > 0 ? hours + 1 : hours;
+/** Parse ISO string without timezone conversion */
+function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number } | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]) };
+}
+
+/** Local wall time → hour slot (HH:00). */
+const formatTimeToSlot = (hour: number, minute: number, roundUp: boolean = false): string => {
+  let slotHour = roundUp && minute > 0 ? hour + 1 : hour;
   slotHour = Math.max(0, Math.min(23, slotHour));
   return `${slotHour.toString().padStart(2, '0')}:00`;
 };
 
-const formatExactTime = (date: Date): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+const formatExactTimeRaw = (hour: number, minute: number): string => {
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+};
+
+/** Extract exact time from ISO string without timezone conversion */
+const formatExactTimeFromIso = (iso: string): string | null => {
+  const parsed = parseIsoLocal(iso);
+  if (!parsed) return null;
+  return formatExactTimeRaw(parsed.hour, parsed.minute);
 };
 
 /** Map API attachment to calendar event attachment (no base64) */
@@ -135,8 +145,8 @@ function mapAttachments(attachments: OutlookTimelineEvent['attachments']): Calen
 }
 
 const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEventData => {
-  const startDate = new Date(event.start_datetime);
-  const endDate = new Date(event.end_datetime);
+  const parsedStart = parseIsoLocal(event.start_datetime);
+  const parsedEnd = parseIsoLocal(event.end_datetime);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
   const variantByInternal = getRandomVariant(id);
@@ -158,7 +168,7 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
     meeting_location: event.meeting_location ?? undefined,
     meeting_link: event.meeting_link ?? undefined,
   };
-  if (isNaN(startDate.getTime())) {
+  if (!parsedStart) {
     return {
       ...baseFields,
       startTime: '08:00',
@@ -166,19 +176,20 @@ const mapOutlookEventToCalendarEvent = (event: OutlookTimelineEvent): CalendarEv
       date: new Date(),
     };
   }
-  const startTime = formatTimeToSlot(startDate, false);
-  let endTime = formatTimeToSlot(endDate, true);
-  if (endTime === startTime && endDate > startDate) {
-    const startHour = parseInt(startTime.split(':')[0], 10);
-    endTime = `${Math.min(23, startHour + 1).toString().padStart(2, '0')}:00`;
+  const startTime = formatTimeToSlot(parsedStart.hour, parsedStart.minute, false);
+  const endHour = parsedEnd?.hour ?? parsedStart.hour + 1;
+  const endMinute = parsedEnd?.minute ?? 0;
+  let endTime = formatTimeToSlot(endHour, endMinute, true);
+  if (endTime === startTime) {
+    endTime = `${Math.min(23, parsedStart.hour + 1).toString().padStart(2, '0')}:00`;
   }
   return {
     ...baseFields,
     startTime,
     endTime,
-    date: startDate,
-    exactStartTime: formatExactTime(startDate),
-    exactEndTime: formatExactTime(endDate),
+    date: parsedStart.date,
+    exactStartTime: formatExactTimeRaw(parsedStart.hour, parsedStart.minute),
+    exactEndTime: parsedEnd ? formatExactTimeRaw(parsedEnd.hour, parsedEnd.minute) : formatExactTimeRaw(parsedStart.hour + 1, 0),
   };
 };
 
