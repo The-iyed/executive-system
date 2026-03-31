@@ -8,7 +8,7 @@ import { ScreenLoader } from '@/modules/shared';
 import { User, LoginPayload, getCurrentUserApi } from '../data/authApi';
 import { PATH } from '../routes/paths';
 import { PostHogIdentify } from '../components/PostHogIdentify';
-import { trackEvent } from '@analytics';
+import { trackEvent } from '@/lib/analytics';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
 import {
   bootstrapAuth,
@@ -230,7 +230,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     trackEvent('auth', 'auth_logout');
     clearTokens();
     setUser(null);
-    window.location.href = window.location.origin + PATH.LOGIN;
   };
 
   const setUserFromCallback = (oidcUser: OidcUser, appUser?: User | null): void => {

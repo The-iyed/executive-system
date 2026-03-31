@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { MeetingStatus } from '@/modules/shared/types';
 import { toISOStringWithTimezone } from '@/lib/ui';
 import { getMeetings, GetMeetingsParams } from '../data/meetingsApi';
-import { mapMeetingToCardData, MeetingDisplayData } from '../utils/meetingMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
+import type { MeetingCardData } from '@/modules/shared/components/meeting-card';
 import { PAGINATION } from '../utils/constants';
 
 interface UsePreviousMeetingsOptions {
@@ -13,7 +14,7 @@ interface UsePreviousMeetingsOptions {
 }
 
 interface UsePreviousMeetingsReturn {
-  meetings: MeetingDisplayData[];
+  meetings: MeetingCardData[];
   isLoading: boolean;
   error: unknown;
   totalItems: number;
@@ -55,7 +56,7 @@ export const usePreviousMeetings = ({
     enabled: true,
   });
 
-  const meetings: MeetingDisplayData[] = meetingsResponse?.items
+  const meetings: MeetingCardData[] = meetingsResponse?.items
     ? meetingsResponse.items.map(mapMeetingToCardData)
     : [];
   const totalItems = meetingsResponse?.total ?? 0;
