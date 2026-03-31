@@ -518,5 +518,9 @@ export function useMeetingDetailPage() {
 
     // Permission
     permissionTooltip,
+
+    // Refresh-after-edit
+    isRefreshingAfterEdit,
+    setIsRefreshingAfterEdit,
   };
 }
