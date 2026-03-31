@@ -241,7 +241,21 @@ export function ContentTab({ h }: ContentTabProps) {
                               <FormAsyncSelectV2
                                 value={d.title ? { value: String(d.id), label: d.title } : null}
                                 onValueChange={(opt) => {
-                                  if (opt && opt.label !== d.title) {
+                                  if (!opt) return;
+                                  const action = h.addDirectiveActionMapRef?.current?.get(opt.value);
+                                  if (action) {
+                                    h.deleteDirectiveMutation.mutate(d.id, {
+                                      onSuccess: () => {
+                                        h.createDirectiveMutation.mutate({
+                                          id: action.id,
+                                          title: action.title,
+                                          due_date: action.due_date ?? null,
+                                          assignees: action.assignees ?? [],
+                                          status: action.status ?? 'CURRENT',
+                                        });
+                                      },
+                                    });
+                                  } else if (opt.label !== d.title) {
                                     h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
                                   }
                                 }}
