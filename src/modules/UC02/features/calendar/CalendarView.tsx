@@ -275,6 +275,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onToday={goToday}
         onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
+        onQuickMeeting={handleQuickMeeting}
       />
 
       <div className="relative flex-1 min-h-0 bg-card overflow-auto rounded-2xl shadow-sm border border-border/40">
