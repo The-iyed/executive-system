@@ -31,6 +31,7 @@ export interface ContentRequestApiResponse {
   current_owner_role_id: string;
   submitter_id: string;
   submitter_name: string | null;
+  submitter?: Record<string, unknown> | string | null;
   created_at: string;
   updated_at: string;
   submitted_at: string;

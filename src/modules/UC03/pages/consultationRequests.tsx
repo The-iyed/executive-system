@@ -7,7 +7,7 @@ import {
   type ConsultationRequestApiResponse,
   type GetConsultationRequestsParams,
 } from '../data/consultationsApi';
-import { mapConsultationRequestToCardData } from '../utils/consultationMapper';
+import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { trackEvent } from '@/lib/analytics';
 
 const ConsultationRequests: React.FC = () => {
@@ -33,7 +33,7 @@ const ConsultationRequests: React.FC = () => {
       headerIcon="solar:chat-round-check-bold"
       queryKey={['consultation-requests', 'uc03']}
       queryFn={queryFn}
-      mapToCard={mapConsultationRequestToCardData}
+      mapToCard={mapMeetingToCardData}
       onCardClick={(item) => navigate(`/consultation-request/${item.id}`)}
       searchPlaceholder="بحث في الطلبات..."
       emptyMessage="لا توجد طلبات"

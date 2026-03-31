@@ -72,6 +72,7 @@ export interface GuidanceRequestApiResponse {
   } | null;
   submitter_id: string;
   submitter_name: string | null;
+  submitter?: Record<string, unknown> | string | null;
   submitter_job_title: string | null;
   submitter_sector: string | null;
   created_at: string;
@@ -121,6 +122,7 @@ export interface GuidanceRequestApiResponse {
   sector?: string;
   is_on_behalf_of?: boolean;
   urgent_reason?: string | null;
+  meeting_owner?: { username?: string; name?: string } | null;
 }
 
 export interface GuidanceRequestsListResponse {
@@ -179,6 +181,7 @@ export const getContentExceptions = async (
 };
 
 export interface GuidanceRequestDetailResponse {
+  id?: string;
   meeting_request: GuidanceRequestApiResponse;
   guidance_question: string | null;
 }
