@@ -247,15 +247,16 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
     const ev = selectedEventForDetails;
     const meeting = meetingDetail as (MeetingApiResponse & { meeting_link?: string | null; meeting_url?: string; meeting_location?: string | null }) | undefined;
     const fromApi = meeting && !isLoadingMeeting;
-    const scheduledStart = fromApi && meeting.scheduled_start ? new Date(meeting.scheduled_start) : ev.date;
-    const scheduledEnd = fromApi && meeting.scheduled_end ? new Date(meeting.scheduled_end) : ev.date;
+    const scheduledStartDate = fromApi && meeting.scheduled_start
+      ? (parseIsoLocal(meeting.scheduled_start)?.date ?? ev.date)
+      : ev.date;
     const startTime =
       fromApi && meeting.scheduled_start
-        ? formatExactTime(scheduledStart)
+        ? (formatExactTimeFromIso(meeting.scheduled_start) ?? (ev.exactStartTime || ev.startTime))
         : (ev.exactStartTime || ev.startTime);
     const endTime =
       fromApi && meeting.scheduled_end
-        ? formatExactTime(scheduledEnd)
+        ? (formatExactTimeFromIso(meeting.scheduled_end) ?? (ev.exactEndTime || ev.endTime))
         : (ev.exactEndTime || ev.endTime);
     const locationText =
       (fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
