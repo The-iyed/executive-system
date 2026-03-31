@@ -80,7 +80,7 @@ export function ContentTab({ h }: ContentTabProps) {
       previous_meeting_attachment: (contentRequest as any)?.previous_meeting_attachment ?? null,
       general_notes: contentRequest.general_notes,
       content_officer_notes: showContentOfficerNotes ? contentRequest.content_officer_notes : null,
-    }, { hideEmpty: true });
+    }, { hideEmpty: false });
   }, [attachments, contentRequest, showContentOfficerNotes]);
 
   // Directives data
