@@ -152,6 +152,7 @@ export function SchedulerModal({ open, onOpenChange, directiveId, directiveText 
         {step1Data && (
           <Step2Form
             key="step2"
+            callerRole="SCHEDULING"
             step1Data={{
               meeting_classification: step1Data.meeting_classification,
               meeting_confidentiality: step1Data.meeting_confidentiality,
