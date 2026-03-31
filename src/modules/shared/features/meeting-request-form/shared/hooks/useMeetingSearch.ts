@@ -22,12 +22,18 @@ export interface MeetingSearchResponse {
 export interface MeetingOption {
   value: string;
   label: string;
+  group_id?: number;
+  original_title?: string;
+  meeting_title?: string;
 }
 
 function toOption(meeting: MeetingSearchResult): MeetingOption {
   return {
     value: String(meeting?.id),
     label: meeting?.meeting_title || meeting?.original_title || '----',
+    group_id: meeting?.group_id,
+    original_title: meeting?.original_title,
+    meeting_title: meeting?.meeting_title,
   };
 }
 

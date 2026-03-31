@@ -9,7 +9,9 @@ import {
   getMeetingTypeLabel,
   getMeetingConfidentialityLabel,
   getDirectiveMethodLabel,
+  getMeetingSubCategoryLabel,
   MeetingChannelLabels,
+  MeetingNatureLabels,
 } from '../../types';
 import { formatDateArabic } from '../../utils/format';
 
@@ -53,6 +55,7 @@ export interface RawMeetingForInfo {
   meeting_subject?: string | null;
   sector?: string | null;
   meeting_type?: string | null;
+  meeting_nature?: string | null;
   is_urgent?: boolean;
   urgent_reason?: string | null;
   meeting_start_date?: string | null;
@@ -62,11 +65,13 @@ export interface RawMeetingForInfo {
   meeting_url?: string | null;
   meeting_link?: string | null;
   meeting_classification?: string | null;
+  meeting_sub_category?: string | null;
   meeting_justification?: string | null;
   related_topic?: string | null;
   deadline?: string | null;
   meeting_classification_type?: string | null;
   meeting_confidentiality?: string | null;
+  requires_protocol?: boolean;
   agenda_items?: AgendaItem[];
   is_based_on_directive?: boolean;
   directive_method?: string | null;
@@ -118,20 +123,28 @@ export function mapMeetingToInfo(
   const startDate = options.startDateOverride ?? (m.scheduled_start as string) ?? meeting.meeting_start_date ?? meeting.selected_time_slot?.slot_start ?? '';
   const endDate = options.endDateOverride ?? (m.scheduled_end as string) ?? meeting.selected_time_slot?.slot_end ?? '';
 
+  // Derive meeting nature label
+  const meetingNatureValue = meeting.meeting_nature
+    ? (MeetingNatureLabels[meeting.meeting_nature] ?? str(meeting.meeting_nature))
+    : (meeting.is_sequential === true ? 'إلحاقي' : meeting.is_sequential === false ? 'عادي' : null);
+
   const basicFields = [
-    { key: 'is_on_behalf_of', label: 'هل تطلب الاجتماع نيابة عن غيرك؟', value: yesNo(meeting.is_on_behalf_of) },
+    { key: 'meeting_nature', label: 'طبيعة الاجتماع', value: meetingNatureValue },
+    { key: 'is_on_behalf_of', label: 'هل تطلب الاجتماع نيابة عن غيرك؟', value: meeting.is_on_behalf_of != null ? yesNo(meeting.is_on_behalf_of) : null },
     { key: 'meeting_owner', label: 'مالك الاجتماع', value: str(meeting.meeting_owner_name) },
     { key: 'meeting_title', label: 'عنوان الاجتماع', value: str(meeting.meeting_title) },
     { key: 'description', label: 'وصف الاجتماع', value: str(meeting.description ?? meeting.meeting_subject) },
     { key: 'sector', label: 'القطاع', value: SECTOR_OPTIONS.find(o => o.value === meeting.sector)?.label ?? str(meeting.sector) },
     { key: 'meeting_type', label: 'نوع الاجتماع', value: getMeetingTypeLabel(meeting.meeting_type) ?? null },
-    { key: 'is_urgent', label: 'اجتماع عاجل؟', value: (meeting.urgent_reason || meeting.is_urgent) ? yesNo(true) : null },
+    { key: 'is_urgent', label: 'اجتماع عاجل؟', value: meeting.is_urgent != null ? yesNo(meeting.is_urgent) : null },
     { key: 'urgent_reason', label: 'السبب', value: str(meeting.urgent_reason ?? meeting.meeting_justification) },
     { key: 'time_slot', label: 'موعد الاجتماع المقترح', value: (startDate || endDate) ? formatIsoRange(startDate, endDate) : null },
     { key: 'meeting_channel', label: 'آلية انعقاد الاجتماع', value: channel ? (MeetingChannelLabels[channel] ?? str(channel)) : null },
+    { key: 'requires_protocol', label: 'هل يتطلب بروتوكول؟', value: meeting.requires_protocol != null ? yesNo(meeting.requires_protocol) : null },
     { key: 'meeting_location', label: 'الموقع', value: str(location) },
-    { key: 'meeting_link', label: 'رابط الاجتماع (Webex)', value: link || null, fullWidth: true },
+    { key: 'meeting_link', label: 'رابط الاجتماع', value: (channel === 'PHYSICAL') ? null : (link || null), fullWidth: true },
     { key: 'meeting_classification', label: 'فئة الاجتماع', value: getMeetingClassificationLabel(meeting.meeting_classification) ?? null },
+    { key: 'meeting_sub_category', label: 'التصنيف الفرعي', value: getMeetingSubCategoryLabel(meeting.meeting_sub_category) ?? null },
     { key: 'meeting_justification', label: 'مبرر اللقاء', value: str(meeting.meeting_justification) },
     { key: 'related_topic', label: 'موضوع التكليف المرتبط', value: str(meeting.related_topic) },
     { key: 'deadline', label: 'تاريخ الاستحقاق', value: meeting.deadline ? formatDateOnly(meeting.deadline) : null },
@@ -145,7 +158,7 @@ export function mapMeetingToInfo(
     { key: 'is_based_on_directive', label: 'هل طلب الاجتماع بناءً على توجيه من معالي الوزير', value: basedOnDirective ? yesNo(true) : null },
     { key: 'directive_method', label: 'طريقة التوجيه', value: getDirectiveMethodLabel(meeting.directive_method) ?? null },
     { key: 'related_guidance', label: 'التوجيه', value: str(meeting.related_guidance) },
-    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes) || 'لا توجد ملاحظات', fullWidth: true, alwaysShow: true },
+    { key: 'notes', label: 'ملاحظات', value: str(options.notesOverride ?? meeting.notes), fullWidth: true },
   ];
 
   const sections: MeetingInfoSection[] = [
