@@ -288,30 +288,40 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </div>
                     <span className="text-[13px] font-semibold text-foreground">إعدادات الجدولة</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="grid grid-cols-2 gap-3 mt-2">
                     <div className={cn(
-                      'flex items-center gap-2.5 px-3 py-2 rounded-lg border',
-                      display.requiresProtocol ? 'border-primary/30 bg-primary/5' : 'border-border/40 bg-muted/30'
+                      'flex items-center gap-3 p-3 rounded-xl border transition-all',
+                      display.requiresProtocol
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/60 bg-muted/20'
                     )}>
                       <div className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center shrink-0',
+                        'w-5 h-5 rounded-md border flex items-center justify-center shrink-0',
                         display.requiresProtocol ? 'bg-primary border-primary' : 'border-border'
                       )}>
-                        {display.requiresProtocol && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                        {display.requiresProtocol && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
                       </div>
-                      <span className="text-[12px] font-medium text-foreground">مبدئي</span>
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-semibold text-foreground">مبدئي</span>
+                        <span className="text-[11px] text-muted-foreground">يتطلب بروتوكول</span>
+                      </div>
                     </div>
                     <div className={cn(
-                      'flex items-center gap-2.5 px-3 py-2 rounded-lg border',
-                      display.isDataComplete ? 'border-primary/30 bg-primary/5' : 'border-border/40 bg-muted/30'
+                      'flex items-center gap-3 p-3 rounded-xl border transition-all',
+                      display.isDataComplete
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/60 bg-muted/20'
                     )}>
                       <div className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center shrink-0',
+                        'w-5 h-5 rounded-md border flex items-center justify-center shrink-0',
                         display.isDataComplete ? 'bg-primary border-primary' : 'border-border'
                       )}>
-                        {display.isDataComplete && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                        {display.isDataComplete && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
                       </div>
-                      <span className="text-[12px] font-medium text-foreground">البيانات مكتملة</span>
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-semibold text-foreground">البيانات مكتملة</span>
+                        <span className="text-[11px] text-muted-foreground">جميع البيانات جاهزة</span>
+                      </div>
                     </div>
                   </div>
                 </div>
