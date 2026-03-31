@@ -216,6 +216,7 @@ interface Step2FormProps {
   initialContentData?: Step2ContentInitialData;
   isEditMode?: boolean;
   meetingStatus?: string;
+  callerRole?: string;
 }
 
 export function Step2Form({
