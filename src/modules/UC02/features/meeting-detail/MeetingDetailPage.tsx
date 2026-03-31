@@ -45,6 +45,14 @@ import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog';
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
+  const [isRefreshingInfo, setIsRefreshingInfo] = React.useState(false);
+
+  const handleSubmitSuccess = React.useCallback(() => {
+    h.setActiveTab('meeting-info');
+    setIsRefreshingInfo(true);
+    // Clear skeleton after the delayed invalidation settles (matches 1.5s sync delay + buffer)
+    setTimeout(() => setIsRefreshingInfo(false), 2000);
+  }, [h]);
 
   /* ─── Loading / Error ─── */
   if (h.isLoading) {
