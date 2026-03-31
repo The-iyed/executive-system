@@ -447,6 +447,7 @@ export function useMeetingDetailPage() {
     // Data
     meeting,
     isLoading,
+    isFetching,
     error,
     previousMeeting,
     meetingStatus,
