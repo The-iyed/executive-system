@@ -1,35 +1,37 @@
 
 
-## Plan: Fix weird animation on submit by removing premature `resetModal()` calls
+## Plan: Keep modal open during save, close only after refetch completes
 
-### Root cause
+### Problem
+Currently `handleFinalSubmit` closes the modal immediately (line 116-117), then fires API calls in the background. The user sees stale data briefly before the skeleton/refetch kicks in — bad UX.
 
-When the user clicks "تحديث الطلب", `handleFinalSubmit` completes the API calls then runs:
+### Solution
+Keep the modal open with a loading/saving state while API calls run. Only close the modal after all saves + query invalidation complete.
 
-```ts
-steps.resetModal();  // currentStep → 1, step1Data → null, step2Data → null
-onClose();           // triggers dialog close animation
-```
+### Changes
 
-`resetModal()` fires **before** the dialog's close animation starts. This causes the modal content to jump from step 3 back to step 1 (and unmount step 2/3 content) while the modal is still visually open. The close animation then plays on this already-changed content — producing the "weird animation."
+#### 1. `useSubmitterModal.ts` — Remove instant-close, await everything inline
 
-The reset is **redundant** because `useModalSteps.ts` already has a `useEffect` that resets all state when `open` becomes `false`.
+- Set `isFinalizing = true` at the start of `handleFinalSubmit`
+- Remove the early `onSubmitSuccess()` + `onClose()` calls (lines 115-117)
+- Remove the background `(async () => { ... })()` wrapper — run everything inline with `await`
+- After all API calls + `syncMeetingDetails` complete, call `onSubmitSuccess()` then `onClose()`
+- Set `isFinalizing = false` in `finally` block
+- The `saving` state (derived from `isFinalizing`) will disable the submit button and show loading in the modal shell
 
-### Fix
+#### 2. `MeetingDetailPage.tsx` — Simplify `handleSubmitSuccess`
 
-Remove `steps.resetModal()` on 3 lines in `useSubmitterModal.ts`:
+- Remove `h.setIsRefreshingAfterEdit(true)` from `handleSubmitSuccess` since the modal now stays open until data is refreshed — no gap of stale data
+- Keep `h.setActiveTab('meeting-info')` so the user lands on the right tab after close
 
-| Line | Context |
-|---|---|
-| 162 | Scheduler-edit branch in `handleFinalSubmit` |
-| 180 | Normal submit branch in `handleFinalSubmit` |
-| 240 | `handleSaveAsDraft` |
+#### 3. `useMeetingDetailPage.ts` — Keep `isRefreshingAfterEdit` (optional safety net)
 
-Just call `onClose()` directly — the `useEffect` handles the cleanup after the dialog finishes closing.
+- No changes needed — the `isRefreshingAfterEdit` logic remains as a safety net but won't be triggered in the normal edit flow
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useSubmitterModal.ts` | Remove 3 `steps.resetModal()` lines |
+| `useSubmitterModal.ts` | Move `onClose` after all API calls complete; wrap in try/finally with `isFinalizing` |
+| `MeetingDetailPage.tsx` | Remove `setIsRefreshingAfterEdit(true)` from `handleSubmitSuccess` |
 
