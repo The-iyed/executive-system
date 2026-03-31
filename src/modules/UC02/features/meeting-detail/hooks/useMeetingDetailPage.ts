@@ -112,10 +112,17 @@ export function useMeetingDetailPage() {
   /* ── Refreshing-after-edit flag ── */
   const [isRefreshingAfterEdit, setIsRefreshingAfterEdit] = useState(false);
 
+  // Reset schedule form init ref when refreshing after edit so it re-syncs
+  useEffect(() => {
+    if (isRefreshingAfterEdit) {
+      lastInitializedMeetingIdRef.current = null;
+    }
+  }, [isRefreshingAfterEdit]);
+
   /* ── Data fetching ── */
   const { data: meeting, isLoading, isFetching, error } = useQuery({
     queryKey: ['meeting', id],
-    queryFn: () => getMeetingRequestById(id!),
+    queryFn: () => getMeetingById(id!),
     enabled: !!id,
   });
 
