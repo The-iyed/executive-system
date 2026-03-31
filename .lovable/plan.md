@@ -1,30 +1,37 @@
 
 
-## Plan: Show skeleton immediately after edit save, refetch details
+## Plan: Keep modal open during save, close only after refetch completes
 
 ### Problem
-After clicking "submit" in the edit modal, the modal closes instantly but API calls run in background. The skeleton only appears once React Query starts refetching (after `invalidateQueries`), leaving a gap where stale data is visible.
+Currently `handleFinalSubmit` closes the modal immediately (line 116-117), then fires API calls in the background. The user sees stale data briefly before the skeleton/refetch kicks in — bad UX.
 
 ### Solution
-Add a manual `isRefreshingAfterEdit` state in `useMeetingDetailPage` that turns on immediately when the edit modal submits (via `onSubmitSuccess` callback) and turns off when `isFetching` transitions from true to false (refetch complete).
+Keep the modal open with a loading/saving state while API calls run. Only close the modal after all saves + query invalidation complete.
 
 ### Changes
 
-#### 1. `useMeetingDetailPage.ts` — Add `isRefreshingAfterEdit` state
-- Add `const [isRefreshingAfterEdit, setIsRefreshingAfterEdit] = useState(false)`
-- Add a `useEffect` that watches `isFetching`: when it transitions to `false` while `isRefreshingAfterEdit` is `true`, set `isRefreshingAfterEdit` to `false`
-- Expose `isRefreshingAfterEdit` and `setIsRefreshingAfterEdit` in the return object
+#### 1. `useSubmitterModal.ts` — Remove instant-close, await everything inline
 
-#### 2. `MeetingDetailPage.tsx` — Trigger skeleton on submit + use combined condition
-- In `handleSubmitSuccess`, call `h.setIsRefreshingAfterEdit(true)` alongside `h.setActiveTab('meeting-info')`
-- Change skeleton condition from `h.isFetching && !h.isLoading` to `(h.isFetching || h.isRefreshingAfterEdit) && !h.isLoading`
+- Set `isFinalizing = true` at the start of `handleFinalSubmit`
+- Remove the early `onSubmitSuccess()` + `onClose()` calls (lines 115-117)
+- Remove the background `(async () => { ... })()` wrapper — run everything inline with `await`
+- After all API calls + `syncMeetingDetails` complete, call `onSubmitSuccess()` then `onClose()`
+- Set `isFinalizing = false` in `finally` block
+- The `saving` state (derived from `isFinalizing`) will disable the submit button and show loading in the modal shell
 
-This ensures the skeleton shows the instant the modal closes and stays visible until the refetch completes.
+#### 2. `MeetingDetailPage.tsx` — Simplify `handleSubmitSuccess`
+
+- Remove `h.setIsRefreshingAfterEdit(true)` from `handleSubmitSuccess` since the modal now stays open until data is refreshed — no gap of stale data
+- Keep `h.setActiveTab('meeting-info')` so the user lands on the right tab after close
+
+#### 3. `useMeetingDetailPage.ts` — Keep `isRefreshingAfterEdit` (optional safety net)
+
+- No changes needed — the `isRefreshingAfterEdit` logic remains as a safety net but won't be triggered in the normal edit flow
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useMeetingDetailPage.ts` | Add `isRefreshingAfterEdit` state + auto-reset effect |
-| `MeetingDetailPage.tsx` | Set flag in `handleSubmitSuccess`, update skeleton condition |
+| `useSubmitterModal.ts` | Move `onClose` after all API calls complete; wrap in try/finally with `isFinalizing` |
+| `MeetingDetailPage.tsx` | Remove `setIsRefreshingAfterEdit(true)` from `handleSubmitSuccess` |
 
