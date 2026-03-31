@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MeetingClassification, BOOL } from "../types/enums";
+import { MeetingClassification, MeetingConfidentiality, BOOL } from "../types/enums";
 
 export interface Step1Context {
   meeting_classification: string;
