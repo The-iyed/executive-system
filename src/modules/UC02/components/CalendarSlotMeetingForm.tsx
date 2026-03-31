@@ -205,7 +205,7 @@ function CalendarFormInner({
   const doSubmit = useCallback(
     (data: FormValues) => {
       const start = data.meeting_start_date ? new Date(data.meeting_start_date).getTime() : 0;
-      if (start <= Date.now()) return;
+      if (!hideProposedTime && start <= Date.now()) return;
 
       const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
       if (!inviteesPayload) return;
