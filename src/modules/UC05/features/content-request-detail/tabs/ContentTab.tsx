@@ -228,7 +228,48 @@ export function ContentTab({ h }: ContentTabProps) {
                     const isAi = directive.isAi;
                     const isSuggestedAction = directive.isSuggestedAction;
                     const isManualAction = directive.isManualAction;
+                    const isApiDirective = directive.isApiDirective;
                     const directiveId = directive.id;
+
+                    if (isApiDirective) {
+                      const d = directive as ContentDirective & { isApiDirective: boolean };
+                      return (
+                        <tr key={`api-${d.id}`} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm text-foreground" dir="rtl">{d.title || '—'}</td>
+                          <td className="px-4 py-3">
+                            <FormDatePicker
+                              value={d.due_date ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { due_date: v || null } });
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Select value={d.status} onValueChange={(v) => h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { status: v } })} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
+                            {d.assignees?.length ? d.assignees.join('، ') : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.deleteDirectiveMutation.mutate(d.id)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
 
                     if (isManualAction && directive.manualAction) {
                       const a = directive.manualAction as ActionItem;
