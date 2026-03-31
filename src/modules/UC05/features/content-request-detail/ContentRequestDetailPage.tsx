@@ -105,12 +105,10 @@ const ContentRequestDetailPage: React.FC = () => {
                 icon: h.sendToSchedulingMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.26} /> : <Send className="w-5 h-5" strokeWidth={1.26} />,
                 label: h.sendToSchedulingMutation.isPending ? 'جاري الإرسال...' : 'إرسال إلى مسؤول الجدولة',
                 onClick: h.handleSendToScheduling,
-                disabled: h.sendToSchedulingMutation.isPending || !h.executiveSummaryFile || !h.hasDirectives,
+                disabled: h.sendToSchedulingMutation.isPending || !h.hasDirectives,
                 disabledReason: !h.hasDirectives
                   ? 'يرجى إضافة توجيه واحد على الأقل أولاً'
-                  : !h.executiveSummaryFile
-                    ? 'يرجى إرفاق الملخص التنفيذي أولاً'
-                    : undefined,
+                  : undefined,
               },
               {
                 icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />,
