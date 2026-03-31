@@ -194,7 +194,7 @@ const MeetingDetailPage: React.FC = () => {
         <div className="w-full flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-background px-8 pt-8" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div className="mx-auto flex w-full min-w-0 flex-col items-center">
             <div className="w-full">
-              {h.isFetching && !h.isLoading ? <MeetingDetailSkeleton /> : renderTabContent()}
+              {(h.isFetching || h.isRefreshingAfterEdit) && !h.isLoading ? <MeetingDetailSkeleton /> : renderTabContent()}
             </div>
             <div aria-hidden="true" className={hasFloatingActionsBar ? 'h-28 md:h-32 flex-shrink-0' : 'h-8 flex-shrink-0'} />
           </div>
