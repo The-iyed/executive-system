@@ -14,7 +14,6 @@ import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
 import { useToast } from "@/lib/ui";
-import { optimisticMergeMeeting, buildStep1Patch, buildStep2Patch, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 import { buildStep1FormData } from "../../shared/utils/buildStep1FormData";
 
 interface UseSubmitterModalOptions {
