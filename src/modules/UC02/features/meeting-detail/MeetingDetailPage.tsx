@@ -196,6 +196,7 @@ const MeetingDetailPage: React.FC = () => {
       </div>
 
       {/* ─── Modals / Drawers ─── */}
+      <QualityModal isOpen={h.isQualityModalOpen} onOpenChange={h.setIsQualityModalOpen} meetingId={meeting.id} />
       <SubmitterModal callerRole={MeetingOwnerType.SCHEDULING} open={h.meetingFormOpen} onOpenChange={h.setMeetingFormOpen} editMeetingId={meeting.id} showAiSuggest onSubmitSuccess={handleSubmitSuccess} />
 
       <ConfirmDialog
