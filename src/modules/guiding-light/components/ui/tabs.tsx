@@ -10,9 +10,9 @@ function Tabs({
   className,
   orientation = "horizontal",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: React.ComponentProps<typeof TabsPrimitive> & { orientation?: "horizontal" | "vertical" }) {
   return (
-    <TabsPrimitive.Root
+    <TabsPrimitive
       data-slot="tabs"
       data-orientation={orientation}
       orientation={orientation}
