@@ -21,6 +21,7 @@ interface UseSubmitterModalOptions {
   open: boolean;
   editMeetingId?: string | null;
   onClose: () => void;
+  onSubmitSuccess?: () => void;
   callerRole?: MeetingOwnerType;
 }
 
