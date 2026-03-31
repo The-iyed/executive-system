@@ -1,33 +1,18 @@
 
 
-## Plan: Align MeetingNature enum with API values (NEW, SEQUENTIAL, PERIODIC)
+## Plan: Improve past-meeting validation message
 
-### Problem
-The API returns `NEW` for normal meetings, but the enum defines `NORMAL = 'NORMAL'`. So `MeetingNatureLabels['NEW']` returns `undefined`, and the raw value "NEW" is displayed instead of the Arabic label "عادي".
+### Change
 
-### Fix
+Update the validation error message in `useMeetingDetailPage.ts` from the current generic "لا يمكن اختيار تاريخ أو وقت البداية في الماضي" to a clearer message indicating the meeting time has already passed:
 
-**File: `src/modules/shared/types/meeting-types.ts`**
-- Change `MeetingNature.NORMAL` value from `'NORMAL'` to `'NEW'`
-- Labels and options auto-derive from enum values, so they'll update automatically
+**New message:** `"لقد انتهى وقت هذا الاجتماع. يرجى تحديث موعد البداية لجدولته مجدداً"`
 
-```ts
-export enum MeetingNature {
-  NORMAL = 'NEW',        // was 'NORMAL'
-  SEQUENTIAL = 'SEQUENTIAL',
-  PERIODIC = 'PERIODIC',
-}
-```
-
-That single change fixes both:
-1. **Meeting info display** — `MeetingNatureLabels['NEW']` → `'عادي'`
-2. **Form select** — sends `'NEW'` to API instead of `'NORMAL'`
+(Translation: "This meeting's time has passed. Please update the start time to reschedule it.")
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/shared/types/meeting-types.ts` | Change `NORMAL = 'NORMAL'` to `NORMAL = 'NEW'` |
-
-1 line change, 1 file.
+| `useMeetingDetailPage.ts` | Update the 3 occurrences of the old message to the new improved one |
 
