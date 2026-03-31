@@ -5,11 +5,12 @@
 import { useAuth as useMinisterAuth } from '@/modules/auth';
 
 export function useAuth() {
-  const { user, isAuthenticated, logout, isLoading } = useMinisterAuth();
+  const auth = useMinisterAuth();
   return {
-    user,
-    isAuthenticated: !!isAuthenticated,
-    isLoading: !!isLoading,
-    logout,
+    user: auth.user,
+    isAuthenticated: !!auth.isAuthenticated,
+    isLoading: !!(auth as any).isLoading,
+    login: (auth as any).login as ((...args: any[]) => Promise<any>) | undefined,
+    logout: auth.logout,
   };
 }
