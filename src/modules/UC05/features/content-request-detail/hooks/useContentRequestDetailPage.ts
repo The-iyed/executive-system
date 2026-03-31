@@ -541,9 +541,13 @@ export function useContentRequestDetailPage() {
       const edits = manualActionEdits[a.id];
       return { id: a.id, title: (a.title ?? '').trim() || '—', due_date: edits?.due_date !== undefined ? edits.due_date : (a.due_date ?? null), assignees: edits?.assignees ?? a.assignees ?? [], status: edits?.status ?? a.status ?? 'PENDING' };
     });
-    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
+    // API-backed directives
+    const apiObjs: DirectiveForApprove[] = contentDirectives.map((d) => ({
+      id: d.id, title: d.title, due_date: d.due_date, assignees: d.assignees, status: d.status,
+    }));
+    const directivesToSend: DirectiveForApprove[] = [...apiObjs, ...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
     sendToSchedulingMutation.mutate({ file: executiveSummaryFile, notes: guidanceNotes.trim(), directives: directivesToSend.length > 0 ? directivesToSend : undefined });
-  }, [executiveSummaryFile, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
+  }, [executiveSummaryFile, contentRequest, contentDirectives, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
   /* ── Computed ── */
   const hasDirectives = useMemo(() => {
