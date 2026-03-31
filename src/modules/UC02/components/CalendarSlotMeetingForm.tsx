@@ -102,6 +102,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   onCancel,
   isSubmitting = false,
   submitError = null,
+  hideProposedTime = false,
 }) => {
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
@@ -146,6 +147,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         submitError={submitError}
         onSubmit={onSubmit}
         onCancel={onCancel}
+        hideProposedTime={hideProposedTime}
       />
     </FormProvider>
   );
