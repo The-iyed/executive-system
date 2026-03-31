@@ -181,6 +181,7 @@ function CalendarFormInner({
   onSubmit,
   onCancel,
   hideProposedTime = false,
+}: InnerProps) {
   const { handleSubmit, watch, trigger, formState: { isSubmitted } } = useFormContext<FormValues>();
   const meetingChannel = watch('meeting_channel');
 
