@@ -1,38 +1,52 @@
 
-Goal: make `/calendar` display backend meeting times exactly as sent (e.g. `2026-04-07T09:00:00+03:00` must render at 09:00), with zero browser timezone shifting.
 
-Plan
+# CRUD Operations for Content Directives (إضافة التوجيهات)
 
-1) Confirm and lock the `/calendar` rendering path
-- Keep scope on `src/modules/UC02/features/calendar/CalendarView.tsx` → `src/modules/UC02/components/MinisterFullCalendar.tsx` → `EventDetailModal.tsx`.
-- Ensure every event shown in this route uses one parsing strategy only (no mixed `new Date(iso)` parsing).
+## Goal
+Replace the current client-side-only directive management in the المحتوى tab with real API-backed CRUD operations using the new `/api/content/{MEETING_ID}/directives` endpoints, with optimistic updates.
 
-2) Centralize “no-conversion” datetime parsing
-- Reuse/standardize helpers in `src/modules/UC02/features/calendar/utils.ts`:
-  - parse ISO by regex (extract raw `YYYY-MM-DD`, `HH:mm` directly).
-  - return local calendar date + raw time parts without timezone math.
-- Export one shared helper for calendar placement and one for display text (to prevent drift between grid and modal).
+## Current State
+- The directives table in ContentTab currently manages directives via local React state (`manualAddedActions`, `deletedExistingDirectiveIds`, `aiDirectivesSuggestions`, etc.)
+- No dedicated API calls to `/api/content/{MEETING_ID}/directives` exist yet
+- The meeting ID is available as `h.id` (the content request/meeting ID from URL params)
 
-3) Remove remaining UTC boundary drift in timeline fetch
-- Update range serialization used by `useCalendarEvents` (`toISORange` in `src/api/meetings/getMeetingsTimeline.ts`) so it does not force UTC conversion with `.toISOString()` for calendar windows.
-- Serialize with fixed/local-offset format (same approach used elsewhere) so requested day/week/month boundaries align with displayed wall-clock times.
+## New API Endpoints
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | `/api/content/{MEETING_ID}/directives` | List directives |
+| POST | `/api/content/{MEETING_ID}/directives` | Create directive |
+| PATCH | `/api/content/{MEETING_ID}/directives/{id}` | Update directive |
+| DELETE | `/api/content/{MEETING_ID}/directives/{id}` | Delete directive |
 
-4) Harden FullCalendar event placement
-- In `MinisterFullCalendar.tsx`, ensure `start`/`end` are built only from extracted raw components (09 stays 09).
-- Keep 24h display formatting and remove any fallback path that can reintroduce native ISO timezone parsing for timeline events.
+## Plan
 
-5) Keep details modal aligned with grid
-- In `EventDetailModal.tsx` and mapper (`outlookEventToCalendarDetail`), continue using the same raw ISO parser so modal time text and calendar slot position always match.
+### 1. Add API functions to `contentApi.ts`
+- Add `getContentDirectives(meetingId)` → GET
+- Add `createContentDirective(meetingId, data)` → POST (body: `{ title, due_date, assignees, status }`)
+- Add `updateContentDirective(meetingId, directiveId, data)` → PATCH (partial body)
+- Add `deleteContentDirective(meetingId, directiveId)` → DELETE
+- Define `ContentDirective` interface matching the POST body shape (`id`, `title`, `due_date`, `assignees`, `status`)
 
-Technical details (files to adapt)
-- `src/api/meetings/getMeetingsTimeline.ts` (range serialization)
-- `src/modules/UC02/features/calendar/utils.ts` (single source of truth parser/formatters)
-- `src/modules/UC02/components/MinisterFullCalendar.tsx` (event placement inputs)
-- `src/modules/UC02/features/calendar/components/EventDetailModal.tsx` (consistency check)
+### 2. Add query + mutations to `useContentRequestDetailPage.ts`
+- **Query**: `useQuery(['content-directives', id])` calling `getContentDirectives(id)` — replaces reliance on `contentRequest.related_directives`
+- **Create mutation**: optimistic insert into cache, rollback on error, toast feedback
+- **Update mutation**: optimistic patch in cache (for inline status/assignee/due_date edits), rollback on error
+- **Delete mutation**: optimistic removal from cache, rollback on error
+- Expose: `contentDirectives`, `createDirectiveMutation`, `updateDirectiveMutation`, `deleteDirectiveMutation`
+- Update `hasDirectives` computed to include content directives count
 
-Validation checklist
-- Weekly view: event `09:00+03:00` appears on 09:00 row.
-- Daily view: same event remains 09:00.
-- Monthly popover/details: shows `09:00 – 10:00`.
-- Open meeting details modal from calendar: same times as backend.
-- Regression check by changing browser timezone: displayed meeting time remains fixed (still 09:00).
+### 3. Update ContentTab.tsx table rendering
+- Use `contentDirectives` from API query as the primary data source for the "regular directive" rows (replacing `directivesFiltered` from `contentRequest.related_directives`)
+- Wire "إضافة توجيه" button → open inline add row → on select, call `createDirectiveMutation.mutate(...)` instead of pushing to local `manualAddedActions`
+- Wire delete button on each row → `deleteDirectiveMutation.mutate(directiveId)`
+- Wire inline edits (status select, due date picker, assignees) → `updateDirectiveMutation.mutate(...)` on change
+- Keep AI suggestions and suggested-actions rows as-is (they use different flows)
+
+### 4. Update send-to-scheduling flow
+- `handleSendToScheduling` should include API-fetched directives alongside AI/suggested/manual ones in the payload
+
+## Files Changed
+1. `src/modules/UC05/data/contentApi.ts` — new API functions + types
+2. `src/modules/UC05/features/content-request-detail/hooks/useContentRequestDetailPage.ts` — query + 3 mutations + expose
+3. `src/modules/UC05/features/content-request-detail/tabs/ContentTab.tsx` — wire table to API mutations
+
