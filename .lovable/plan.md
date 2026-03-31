@@ -1,20 +1,45 @@
 
 
-## Plan: Update MeetingLocation enum values to include "مبنى"
+## Plan: Add Scheduling Settings to Calendar Meeting Detail & Quick Meeting Form
 
-### Change
+### What
 
-**File: `src/modules/shared/types/meeting-types.ts`**
+Add the two "إعدادات الجدولة" toggle fields — **مبدئي** (Preliminary = `!requires_protocol`) and **البيانات مكتملة** (Data Complete = `is_data_complete`) — in two places:
 
-Update two location values:
-- `ALIYA: 'العليا'` → `ALIYA: 'مبنى العليا'`
-- `GHADEER: 'الغدير'` → `GHADEER: 'مبنى الغدير'`
+1. **EventDetailModal** (calendar meeting detail popup) — read-only display
+2. **CalendarSlotMeetingForm** (quick meeting creation form) — interactive toggles
 
-Since labels are derived from the values (`label: MeetingLocation.ALIYA`), both the stored value and display label update automatically. The preset array and helper functions all reference `MeetingLocation.ALIYA` / `MeetingLocation.GHADEER`, so no other changes needed.
+### Changes
+
+#### 1. EventDetailModal.tsx — Read-only scheduling settings display
+
+Add a new section after the invitees section showing two read-only status badges:
+- Fetch `requires_protocol` and `is_data_complete` from `meetingDetail` API response
+- Display as two styled cards (similar to the ToggleCard look but non-interactive)
+- Show checkmark icon when active, empty when not
+- Section title: "إعدادات الجدولة" with a calendar/settings icon
+
+#### 2. CalendarSlotMeetingForm.tsx — Add form fields for quick meeting
+
+- Add `requires_protocol` (boolean, default `false`) and `is_data_complete` (boolean, default `true`) to the Zod schema
+- Add a "إعدادات الجدولة" section with two `ToggleCard`-style buttons (reuse the pattern from `ScheduleConfirmDialog`)
+- Pass both values in `CalendarSlotMeetingFormSubmitValues`
+
+#### 3. CalendarView.tsx — Send values in API payload
+
+- Include `requires_protocol` and `is_data_complete` in the `handleSlotSubmit` payload sent to `createScheduledMeeting`
+
+#### 4. calendarApi.ts — Add fields to payload type
+
+- Add `requires_protocol?: boolean` and `is_data_complete?: boolean` to `CreateScheduledMeetingPayload`
+- Include them in the `createScheduledMeeting` request body
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/shared/types/meeting-types.ts` | Update 2 string values on lines 365-366 |
+| `EventDetailModal.tsx` | Add read-only scheduling settings section from API data |
+| `CalendarSlotMeetingForm.tsx` | Add schema fields + ToggleCard UI section |
+| `CalendarView.tsx` | Pass `requires_protocol` and `is_data_complete` in submit payload |
+| `calendarApi.ts` | Add fields to `CreateScheduledMeetingPayload` and request body |
 
