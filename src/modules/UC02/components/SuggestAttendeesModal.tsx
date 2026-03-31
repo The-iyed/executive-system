@@ -68,7 +68,7 @@ const SuggestAttendeesModal: React.FC<SuggestAttendeesModalProps> = ({
     if (result) {
       const suggestions = result.suggestions ?? [];
       if (suggestions.length === 0) {
-        setNoSuggestionsMessage('لا يوجد مستخدمون موصى بهم من الذكاء الاصطناعي في الوقت الحالي.');
+        setNoSuggestionsMessage('لم نتمكن من اقتراح قائمة مدعوين بناءً على بيانات الاجتماع. يرجى التأكد من إدخال تفاصيل الاجتماع بشكل كافٍ والمحاولة مرة أخرى.');
         return;
       }
       onSuccess?.(result);

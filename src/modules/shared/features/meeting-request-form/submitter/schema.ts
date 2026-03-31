@@ -26,6 +26,9 @@ const meetingUserSchema = z.object({
 export const submitterStep1Schema = z.object({
   meeting_nature: z.nativeEnum(MeetingNature, { required_error: "طبيعة الاجتماع مطلوبة" }),
   previous_meeting_id: z.string().optional(),
+  group_id: z.number().nullable().optional(),
+  prev_ext_original_title: z.string().nullable().optional(),
+  prev_ext_meeting_title: z.string().nullable().optional(),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),

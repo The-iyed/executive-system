@@ -447,7 +447,6 @@ export function useContentRequestDetailPage() {
   }, [selectedConsultantId, consultationNotes, consultants, submitConsultationMutation]);
 
   const handleSendToScheduling = useCallback(() => {
-    if (!executiveSummaryFile) { toast.error('يرجى إرفاق الملخص التنفيذي أولاً'); return; }
     if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
     const existingObjs: DirectiveForApprove[] = relatedDirectives

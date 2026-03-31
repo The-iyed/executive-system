@@ -11,6 +11,8 @@ export interface MeetingInfoField {
   fullWidth?: boolean;
   /** Always show even when value is empty */
   alwaysShow?: boolean;
+  /** Optional icon React node to display inside the field */
+  icon?: React.ReactNode;
 }
 
 export interface MeetingInfoSection {

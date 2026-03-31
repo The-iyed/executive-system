@@ -1,7 +1,7 @@
 import { TableRow } from "@/lib/dynamic-table-form";
 import { toISOStringWithTimezoneFromString } from "@/lib/ui";
 import type { ExistingAttachment, Step2ContentInitialData } from "../hooks/useStep2Content";
-import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality } from "../types/enums";
+import { BOOL, MeetingType, AttendanceMechanism, MeetingConfidentiality, MeetingNature } from "../types/enums";
 import type { SubmitterStep1Values } from "../../submitter/schema";
 
 /* ─── Helpers ─── */
@@ -104,6 +104,7 @@ export function transformDraftToInvitees(
   const invitees = Array.isArray(draft.invitees) ? draft.invitees as DraftInvitee[] : [];
 
   return invitees.map((inv, idx) => ({
+    id: inv.id || undefined,
     _id: inv.object_guid || `draft-inv-${idx}`,
     object_guid: inv.object_guid || "",
     email: inv.email || "",
@@ -145,7 +146,19 @@ export function mapMeetingToSubmitterStep1(meeting: Record<string, unknown>): Ma
       ? (rawMeetingOwner as SubmitterStep1Values["meeting_owner"])
       : null;
 
+  const meetingNature = (meeting.meeting_nature as string) || MeetingNature.NORMAL;
+
+  // Map prev_ext_id back to previous_meeting_id for form usage
+  const previousMeetingId = meeting.prev_ext_id != null
+    ? String(meeting.prev_ext_id)
+    : (meeting.previous_meeting_id != null ? String(meeting.previous_meeting_id) : "");
+
   const values: SubmitterStep1Values = {
+    meeting_nature: meetingNature as SubmitterStep1Values["meeting_nature"],
+    previous_meeting_id: previousMeetingId,
+    group_id: (meeting.group_id as number) ?? null,
+    prev_ext_original_title: (meeting.prev_ext_original_title as string) ?? null,
+    prev_ext_meeting_title: (meeting.prev_ext_meeting_title as string) ?? null,
     meeting_title: (meeting.meeting_title as string) || "",
     meeting_subject: (meeting.meeting_subject as string) || "",
     description: (meeting.description as string) || "",

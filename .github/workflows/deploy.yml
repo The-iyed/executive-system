@@ -66,7 +66,7 @@ jobs:
 <<<<<<< HEAD
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
-          echo "$VM_PASSWORD" | sudo -S rsync -av --delete --exclude='.git' --exclude='.env' . "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
 =======
           echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
@@ -128,7 +128,7 @@ jobs:
 <<<<<<< HEAD
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
-          echo "$VM_PASSWORD" | sudo -S rsync -av --delete --exclude='.git' --exclude='.env' . "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
 =======
           echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
