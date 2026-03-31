@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider, useFormContext, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, Settings } from 'lucide-react';
 import { cn, toISOStringWithTimezone } from '@/lib/ui';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -46,6 +47,8 @@ export interface CalendarSlotMeetingFormSubmitValues {
   meeting_location?: string;
   proposers?: CreateScheduledMeetingProposer[];
   invitees: InviteeFormRow[];
+  requires_protocol?: boolean;
+  is_data_complete?: boolean;
 }
 
 export interface CalendarSlotMeetingFormProps {
@@ -63,6 +66,8 @@ export interface CalendarSlotMeetingFormProps {
   onCancel: () => void;
   isSubmitting?: boolean;
   submitError?: string | null;
+  /** Hide the proposed meeting date/time fields (used for quick meeting) */
+  hideProposedTime?: boolean;
 }
 
 const calendarMeetingSchema = z.object({
@@ -73,6 +78,8 @@ const calendarMeetingSchema = z.object({
   meeting_location: z.string().default(""),
   meeting_location_custom: z.string().default(""),
   proposers: z.array(z.any()).default([]),
+  requires_protocol: z.boolean().default(false),
+  is_data_complete: z.boolean().default(false),
 }).superRefine((data, ctx) => {
   const needsLocation = data.meeting_channel === 'PHYSICAL' || data.meeting_channel === 'HYBRID';
   if (needsLocation && (!data.meeting_location || data.meeting_location.trim() === '')) {
@@ -100,6 +107,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   onCancel,
   isSubmitting = false,
   submitError = null,
+  hideProposedTime = false,
 }) => {
   const startDefault = toISOStart(slotDate, slotTime);
   const endDefault = useMemo(() => {
@@ -119,6 +127,8 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_location: initialMeetingLocation ?? '',
       meeting_location_custom: '',
       proposers: [],
+      requires_protocol: false,
+      is_data_complete: false,
     },
   });
 
@@ -144,6 +154,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
         submitError={submitError}
         onSubmit={onSubmit}
         onCancel={onCancel}
+        hideProposedTime={hideProposedTime}
       />
     </FormProvider>
   );
@@ -162,6 +173,7 @@ interface InnerProps {
   submitError: string | null;
   onSubmit: (values: CalendarSlotMeetingFormSubmitValues) => void;
   onCancel: () => void;
+  hideProposedTime?: boolean;
 }
 
 function CalendarFormInner({
@@ -175,6 +187,7 @@ function CalendarFormInner({
   submitError,
   onSubmit,
   onCancel,
+  hideProposedTime = false,
 }: InnerProps) {
   const { handleSubmit, watch, trigger, formState: { isSubmitted } } = useFormContext<FormValues>();
   const meetingChannel = watch('meeting_channel');
@@ -199,7 +212,7 @@ function CalendarFormInner({
   const doSubmit = useCallback(
     (data: FormValues) => {
       const start = data.meeting_start_date ? new Date(data.meeting_start_date).getTime() : 0;
-      if (start <= Date.now()) return;
+      if (!hideProposedTime && start <= Date.now()) return;
 
       const inviteesPayload = inviteesRef.current?.validateAndGetPayload();
       if (!inviteesPayload) return;
@@ -240,6 +253,8 @@ function CalendarFormInner({
         meeting_location,
         proposers,
         invitees: inviteesPayload,
+        requires_protocol: data.requires_protocol,
+        is_data_complete: data.is_data_complete,
       });
     },
     [onSubmit, showLocation, inviteesRef]
@@ -273,12 +288,14 @@ function CalendarFormInner({
           <div className="flex flex-col gap-4">
             <MeetingTitleField />
 
-            <MeetingDateField
-              startName="meeting_start_date"
-              endName="meeting_end_date"
-              required
-              minDate={minStartDate}
-            />
+            {!hideProposedTime && (
+              <MeetingDateField
+                startName="meeting_start_date"
+                endName="meeting_end_date"
+                required
+                minDate={minStartDate}
+              />
+            )}
 
             <MeetingChannelField />
 
@@ -294,6 +311,70 @@ function CalendarFormInner({
 
           {/* Proposers section */}
           <ProposersField />
+
+          <div className="border-t border-border/40" />
+
+          {/* Scheduling Settings */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              <span className="text-[14px] font-semibold text-foreground">إعدادات الجدولة</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Controller
+                name="requires_protocol"
+                render={({ field }) => (
+                  <button
+                    type="button"
+                    onClick={() => field.onChange(!field.value)}
+                    className={cn(
+                      'flex items-center gap-3 p-3 rounded-xl border transition-all text-right',
+                      !field.value
+                        ? 'border-border/60 bg-background hover:bg-muted/30'
+                        : 'border-primary/30 bg-primary/5'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors',
+                      field.value ? 'bg-primary border-primary' : 'border-border'
+                    )}>
+                      {field.value && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-semibold text-foreground">مبدئي</span>
+                      <span className="text-[11px] text-muted-foreground">يتطلب بروتوكول</span>
+                    </div>
+                  </button>
+                )}
+              />
+              <Controller
+                name="is_data_complete"
+                render={({ field }) => (
+                  <button
+                    type="button"
+                    onClick={() => field.onChange(!field.value)}
+                    className={cn(
+                      'flex items-center gap-3 p-3 rounded-xl border transition-all text-right',
+                      field.value
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/60 bg-background hover:bg-muted/30'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors',
+                      field.value ? 'bg-primary border-primary' : 'border-border'
+                    )}>
+                      {field.value && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-semibold text-foreground">البيانات مكتملة</span>
+                      <span className="text-[11px] text-muted-foreground">جميع البيانات جاهزة</span>
+                    </div>
+                  </button>
+                )}
+              />
+            </div>
+          </div>
 
           <div className="border-t border-border/40" />
 
