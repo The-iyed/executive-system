@@ -547,13 +547,14 @@ export function useContentRequestDetailPage() {
 
   /* ── Computed ── */
   const hasDirectives = useMemo(() => {
+    const apiCount = contentDirectives.length;
     const existingCount = (contentRequest?.related_directives ?? [])
       .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
     const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
     const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
     const manualCount = manualAddedActions.length;
-    return (existingCount + aiCount + suggestedCount + manualCount) > 0;
-  }, [contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+    return (apiCount + existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentDirectives, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
 
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
