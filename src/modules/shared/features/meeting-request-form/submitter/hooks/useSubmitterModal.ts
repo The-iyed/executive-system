@@ -161,8 +161,8 @@ export function useSubmitterModal({
       // ── Submit / resubmit ────────────────────────────────────────────────
       if (isSchedulerEdit) {
         toast({ title: "تم التحديث بنجاح" });
+        onSubmitSuccess?.();
         onClose();
-        // Sync AFTER close to avoid re-rendering forms while modal is visible
         if (isEditMode) {
           syncMeetingDetails(meetingId, inviteePatch);
         }
