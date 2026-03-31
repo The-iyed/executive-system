@@ -215,7 +215,7 @@ export function useSubmitterModal({
       onClose();
       // Sync AFTER close to prevent form re-render flicker
       if (isEditMode) {
-        syncMeetingDetails(meetingId, inviteePatch);
+        syncMeetingDetails(meetingId);
       } else {
         queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }
