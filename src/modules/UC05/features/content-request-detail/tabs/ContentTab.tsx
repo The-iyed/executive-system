@@ -16,7 +16,7 @@ import { formatDateArabic } from '@/modules/shared/utils';
 import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
 import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
-import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse } from '../../../data/contentApi';
+import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
 import { ACTION_STATUS_OPTIONS, COMPARE_STATUS, COMPARE_LEVEL, COMPARE_RECOMMENDATION } from '../constants';
 import { getNotesText, formatFileSize, startOfLocalDay, translateCompareErrorDetail, translateCompareValue, normalizeAssignees } from '../utils';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
