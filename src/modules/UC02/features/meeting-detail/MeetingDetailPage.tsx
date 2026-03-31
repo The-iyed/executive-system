@@ -77,6 +77,24 @@ const MeetingDetailSkeleton: React.FC = () => (
 
 const MeetingDetailPage: React.FC = () => {
   const h = useMeetingDetailPage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Submit draft mutation
+  const [isSubmitDraftConfirmOpen, setIsSubmitDraftConfirmOpen] = useState(false);
+  const submitDraftMutation = useMutation({
+    mutationFn: () => submitDraft(h.id!),
+    onSuccess: () => {
+      toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
+      queryClient.invalidateQueries({ queryKey: ['meeting', h.id] });
+      queryClient.invalidateQueries({ queryKey: ['meeting-draft', h.id] });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      setIsSubmitDraftConfirmOpen(false);
+    },
+    onError: (err) => {
+      toast({ title: err instanceof Error ? err.message : 'فشل إرسال الطلب', variant: 'destructive' });
+    },
+  });
 
   const handleSubmitSuccess = React.useCallback(() => {
     h.setActiveTab('meeting-info');
