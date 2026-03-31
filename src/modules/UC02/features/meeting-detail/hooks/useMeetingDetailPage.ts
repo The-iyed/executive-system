@@ -417,6 +417,27 @@ export function useMeetingDetailPage() {
     setScheduleForm((prev) => ({ ...prev, scheduled_at: startLocal, scheduled_end_at: endLocal }));
   }, [scheduleConfirmModalOpen, meeting, scheduleForm.scheduled_at, scheduleForm.selected_time_slot_id]);
 
+  /* ── Pre-validate dates when confirm modal opens ── */
+  useEffect(() => {
+    if (!scheduleConfirmModalOpen) return;
+    const { start: startSource, end: endSource } = getEffectiveScheduleDates(meeting ?? undefined, scheduleForm);
+    if (!startSource || !endSource) {
+      setValidationError('يرجى تحديد تاريخ ووقت البداية والنهاية');
+      return;
+    }
+    const scheduledAt = new Date(startSource);
+    const scheduledEndAt = new Date(endSource);
+    if (scheduledAt.getTime() <= Date.now()) {
+      setValidationError('لا يمكن اختيار تاريخ أو وقت البداية في الماضي');
+      return;
+    }
+    if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
+      setValidationError('وقت النهاية يجب أن يكون بعد وقت البداية');
+      return;
+    }
+    setValidationError(null);
+  }, [scheduleConfirmModalOpen, meeting, scheduleForm, getEffectiveScheduleDates]);
+
   return {
     // IDs & navigation
     id,
