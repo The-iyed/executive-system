@@ -25,6 +25,7 @@ interface MeetingModalShellProps {
   onPrev: () => void;
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
+  extraFooterActions?: ReactNode;
   children: ReactNode;
   /** Hide the step indicator */
   hideSteps?: boolean;
@@ -51,6 +52,7 @@ export function MeetingModalShell({
   onPrev,
   onSubmit,
   onSaveAsDraft,
+  extraFooterActions,
   children,
   hideSteps = false,
   title = "قم بإضافة معلومات الاجتماع",
@@ -122,6 +124,7 @@ export function MeetingModalShell({
             onCancel={() => onOpenChange(false)}
             onSubmit={onSubmit}
             onSaveAsDraft={onSaveAsDraft}
+            extraFooterActions={extraFooterActions}
           />
         )}
       </DialogContent>
