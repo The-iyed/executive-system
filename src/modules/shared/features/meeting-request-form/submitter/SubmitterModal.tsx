@@ -157,5 +157,18 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
         />
       </div>
     </MeetingModalShell>
+
+    <ConfirmDialog
+      open={isSubmitDraftConfirmOpen}
+      onOpenChange={setIsSubmitDraftConfirmOpen}
+      title="إرسال للمراجعة"
+      description="سيتم حفظ التعديلات وإرسال الطلب للمراجعة. هل أنت متأكد؟"
+      confirmLabel="تأكيد الإرسال"
+      loadingLabel="جاري الإرسال..."
+      onConfirm={() => submitDraftMutation.mutate()}
+      isLoading={submitDraftMutation.isPending}
+      variant="primary"
+    />
+    </>
   );
 }
