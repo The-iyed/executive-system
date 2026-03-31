@@ -147,6 +147,8 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   onOpenApproveUpdate,
   onAddToWaitingList,
   isAddToWaitingListPending,
+  onSubmitDraft,
+  isSubmitDraftPending = false,
   hasChanges,
   hasContent,
   hasPresentation = true,
