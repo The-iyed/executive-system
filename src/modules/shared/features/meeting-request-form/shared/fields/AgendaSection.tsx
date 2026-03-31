@@ -190,9 +190,6 @@ export function AgendaSection({ form, agendaRequired = true }: Props) {
         </div>
       </div>
 
-      {rootError && !durationMismatch && (
-        <p role="alert" className="text-xs text-destructive">{rootError}</p>
-      )}
 
       <div className="flex items-center justify-between">
         {agendaEditable && (
