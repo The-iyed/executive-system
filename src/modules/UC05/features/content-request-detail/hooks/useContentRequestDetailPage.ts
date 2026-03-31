@@ -601,7 +601,10 @@ export function useContentRequestDetailPage() {
     insightsMutation, insightsModalAttachment, setInsightsModalAttachment, insightsAbortControllerRef,
     compareByAttachmentMutation, isCompareModalOpen, setIsCompareModalOpen,
     compareResult, setCompareResult, compareErrorDetail, setCompareErrorDetail,
-    // Content tab: directives
+    // Content tab: directives (API-backed CRUD)
+    contentDirectives, isLoadingContentDirectives,
+    createDirectiveMutation, updateDirectiveMutation, deleteDirectiveMutation,
+    // Content tab: directives (legacy local state)
     aiDirectivesSuggestions, editableAiDirectives, aiDirectiveActions,
     deletedExistingDirectiveIds, deletedSuggestedActionIds,
     manualAddedActions, manualActionEdits, assigneeInputByActionId,
