@@ -465,7 +465,7 @@ export function ContentTab({ h }: ContentTabProps) {
                       const assigneeInput = h.assigneeInputByActionId[dId] ?? '';
                       const dueDate = h.existingDirectiveEdits[dId]?.due_date !== undefined ? h.existingDirectiveEdits[dId].due_date : (directive.deadline ?? '');
                       const status = h.existingDirectiveEdits[dId]?.status ?? directive.directive_status ?? 'PENDING';
-                      const titleLabel = h.existingDirectiveEdits[dId]?.title ?? directive.directive || directive.directive_text || '-';
+                      const titleLabel = h.existingDirectiveEdits[dId]?.title ?? (directive.directive || directive.directive_text || '-');
                       return (
                         <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
