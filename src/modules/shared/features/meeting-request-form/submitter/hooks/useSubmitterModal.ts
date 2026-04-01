@@ -137,6 +137,7 @@ export function useSubmitterModal({
       const response = await inviteesMutation.mutateAsync({
         draftId: meetingId,
         invitees: inviteesPayload,
+        ...(isSchedulerEdit && { is_content_updated: !!step2Data }),
       });
 
       const meetingStatus = response.status;
