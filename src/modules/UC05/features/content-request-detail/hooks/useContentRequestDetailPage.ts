@@ -607,7 +607,7 @@ export function useContentRequestDetailPage() {
         const fallbackAssignees = normalizeAssignees(s.assignees);
         return {
           id: Number(s.id),
-          title: edits?.title ?? (s.title ?? '').trim() || '—',
+          title: edits?.title ?? ((s.title ?? '').trim() || '—'),
           due_date: edits?.due_date !== undefined ? edits.due_date : (s.due_date ?? null),
           assignees: edits?.assignees ?? fallbackAssignees,
           status: edits?.status ?? s.status ?? 'PENDING',
