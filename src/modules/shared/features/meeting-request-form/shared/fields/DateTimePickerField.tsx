@@ -155,7 +155,7 @@ export function DateTimePickerField({
         align="start"
         dir="rtl"
         sideOffset={4}
-        side="bottom"
+        side="left"
         avoidCollisions={true}
         collisionPadding={8}
         sticky="always"
