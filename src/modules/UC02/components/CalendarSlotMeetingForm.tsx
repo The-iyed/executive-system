@@ -109,8 +109,9 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
   submitError = null,
   hideProposedTime = false,
 }) => {
-  const startDefault = toISOStart(slotDate, slotTime);
+  const startDefault = slotTime ? toISOStart(slotDate, slotTime) : '';
   const endDefault = useMemo(() => {
+    if (!slotTime) return '';
     if (slotEndTime) return toISOStart(slotDate, slotEndTime);
     const [h = 0, m = 0] = slotTime.split(':').map(Number);
     const d = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate(), h + 1, m, 0, 0);
