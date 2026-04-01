@@ -3,9 +3,9 @@ import { Input } from "@/lib/ui";
 import { FormField, inputClass } from "./FieldGroup";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
-interface Props { disabled?: boolean }
+interface Props { disabled?: boolean; required?: boolean }
 
-export function UrgentReasonField({ disabled }: Props) {
+export function UrgentReasonField({ disabled, required = true }: Props) {
   const { register, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("urgent_reason");
   const isDisabled = disabled || !editable;
