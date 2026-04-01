@@ -106,7 +106,23 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
       </div>
 
       {/* Navigation */}
-      <div className="flex flex-row items-center gap-3">
+      <div className="flex flex-row items-center gap-2">
+        {/* Quick meeting button */}
+        {onQuickMeeting && (
+          <button
+            type="button"
+            onClick={onQuickMeeting}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
+            style={FONT}
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            اجتماع سريع
+          </button>
+        )}
+
+        {/* Separator */}
+        {onQuickMeeting && <div className="w-px h-6 bg-border/60" />}
+
         {/* View mode toggle */}
         <div className="flex items-center bg-muted rounded-lg p-0.5 gap-0.5">
           {VIEW_MODES.map(({ key, label }) => (
