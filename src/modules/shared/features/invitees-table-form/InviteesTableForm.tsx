@@ -32,10 +32,18 @@ const InviteesTableForm = ({
   viewLayout?: InviteesViewLayout;
   showAiSuggest?: boolean;
 }) => {
-  const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees ?? []);
+  const normalizeInvitees = (rows: TableRow[]) => rows.map(r => {
+    const { is_required, ...rest } = r as any;
+    return {
+      ...rest,
+      is_presence_required: r.is_presence_required ?? is_required ?? false,
+    };
+  });
+
+  const [invitees, setInvitees] = useState<TableRow[]>(normalizeInvitees(initialInvitees ?? []));
 
   useEffect(() => {
-    setInvitees(initialInvitees ?? []);
+    setInvitees(normalizeInvitees(initialInvitees ?? []));
   }, [initialInvitees]);
 
   // Hide attendance_mechanism when channel is fixed (PHYSICAL or VIRTUAL)
@@ -73,7 +81,7 @@ const InviteesTableForm = ({
 
   const handleSearchResultToRow = useCallback((result: SearchApiUser): Partial<InputTableRow> => ({
     email: result.mail || "",
-    name: result.displayName || result.displayNameEN || result.givenName || "",
+    name: result.displayNameAR || result.displayName || result.displayNameEN || result.givenName || "",
     mobile: result.mobile || "",
     sector: result.department || "",
     position: result.title || "",
