@@ -359,17 +359,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
                           <td className="px-4 py-3 align-top" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={titleLabel ? { value: rawId, label: titleLabel } : null}
-                                onValueChange={(opt) => {
-                                  if (opt) h.updateSuggestedActionTitle(rawId, opt.label);
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateSuggestedActionTitle(rawId, action.title);
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                isClearable={false}
-                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
