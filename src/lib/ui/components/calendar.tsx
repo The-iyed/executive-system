@@ -11,6 +11,7 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  const currentYear = new Date().getFullYear();
 
   return (
     <>
