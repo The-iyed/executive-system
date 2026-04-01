@@ -158,7 +158,6 @@ const MeetingDetailPage: React.FC = () => {
         return h.isScheduleOfficer ? (
           <ScheduleTab
             invitees={meeting?.invitees}
-            validationError={h.validationError}
           />
         ) : null;
       case 'attendees':
