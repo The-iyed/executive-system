@@ -4,14 +4,14 @@ import { FormField, inputClass } from "./FieldGroup";
 import { MEETING_CLASSIFICATION_OPTIONS } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
-interface Props { disabled?: boolean }
+interface Props { disabled?: boolean; required?: boolean }
 
-export function ClassificationTypeField({ disabled }: Props) {
+export function ClassificationTypeField({ disabled, required = true }: Props) {
   const { control, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("meeting_classification_type");
   const isDisabled = disabled || !editable;
   return (
-    <FormField label="تصنيف الاجتماع" name="meeting_classification_type" required errors={errors} colSpan={4}>
+    <FormField label="تصنيف الاجتماع" name="meeting_classification_type" required={required} errors={errors} colSpan={4}>
       <Controller name="meeting_classification_type" control={control}
         render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange} disabled={isDisabled}>
