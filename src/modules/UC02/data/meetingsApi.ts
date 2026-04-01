@@ -323,7 +323,17 @@ export const getPreviousMeetingsFromExecutionSystem = async (params: { skip?: nu
 
 export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
   const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);
-  return response.data;
+  const data = response.data;
+  if (Array.isArray(data.invitees)) {
+    data.invitees = data.invitees.map((inv: any) => {
+      const { is_required, ...rest } = inv;
+      return {
+        ...rest,
+        is_presence_required: inv.is_presence_required ?? is_required ?? false,
+      };
+    });
+  }
+  return data;
 };
 
 /** Fetch meeting request by id (full payload including previous_meeting_attachment). Use for detail page when /api/meetings/:id omits it. */
