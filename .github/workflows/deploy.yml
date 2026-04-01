@@ -63,10 +63,15 @@ jobs:
           trap save_log EXIT
           echo ">>> [Dev] Deploying to $DEST_DIR using $COMPOSE_FILE..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+<<<<<<< HEAD
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
           echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+=======
+          echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+>>>>>>> d3397c6bfdd410f70d469bd7c5fb2bc479907d5a
           cd "$DEST_DIR"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" up -d --force-recreate 2>&1 | tee -a "$LOG_FILE"
@@ -120,10 +125,15 @@ jobs:
           trap save_log EXIT
           echo ">>> [Prod] Deploying to $DEST_DIR using $COMPOSE_FILE..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+<<<<<<< HEAD
           # Use rsync --delete to mirror source exactly, removing any stale files
           # --exclude='.env' protects the server .env from being deleted by --delete
           echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+=======
+          echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
+>>>>>>> d3397c6bfdd410f70d469bd7c5fb2bc479907d5a
           cd "$DEST_DIR"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" up -d --force-recreate 2>&1 | tee -a "$LOG_FILE"
