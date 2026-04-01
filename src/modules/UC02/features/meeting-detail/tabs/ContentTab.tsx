@@ -16,6 +16,7 @@ import {
   runCompareByAttachment, getAttachmentInsightsWithPolling,
   type ComparePresentationsResponse, type AttachmentInsightsResponse,
 } from '../../../data/meetingsApi';
+import { DIRECTIVE_STATUS_LABELS } from '@/modules/shared/types/minister-directive-enums';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { translateCompareValue, getGeneralNotesList } from '../utils/meetingDetailHelpers';
 import { COMPARE_STATUS, COMPARE_LEVEL, COMPARE_RECOMMENDATION } from '../constants';
@@ -186,7 +187,7 @@ export function ContentTab({ meeting, onPreviewAttachment }: ContentTabProps) {
                       <td className="px-4 py-3.5 text-muted-foreground">{d ? formatDateArabic(d) : '—'}</td>
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-muted text-foreground text-xs font-medium">
-                          {translateCompareValue(row.directive_status, { PENDING: 'قيد الانتظار', IN_PROGRESS: 'قيد التنفيذ', COMPLETED: 'مكتمل', CANCELLED: 'ملغى', CLOSED: 'مغلق', OPEN: 'مفتوح' })}
+                          {translateCompareValue(row.directive_status, { ...DIRECTIVE_STATUS_LABELS, PENDING: 'قيد الانتظار', IN_PROGRESS: 'قيد التنفيذ', COMPLETED: 'مكتمل', CANCELLED: 'ملغى', CLOSED: 'مغلق', OPEN: 'مفتوح' })}
                         </span>
                       </td>
                       <td className="px-4 py-3.5" dir="rtl">
