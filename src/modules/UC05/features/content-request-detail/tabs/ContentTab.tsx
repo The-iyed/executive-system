@@ -14,6 +14,7 @@ import {
 } from '@/lib/ui';
 import { formatDateArabic } from '@/modules/shared/utils';
 import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
+import { ActionTitleSelect } from '../components/ActionTitleSelect';
 import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
 import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
@@ -238,18 +239,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
                           <td className="px-4 py-3" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={d.title ? { value: String(d.id), label: d.title } : null}
-                                onValueChange={(opt) => {
-                                  if (opt && opt.label !== d.title) {
-                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
-                                  }
+                              <ActionTitleSelect
+                                value={d.title ?? ''}
+                                onChange={(action) => {
+                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: action.title } });
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                fullWidth limit={20} defaultOptions={false} className="text-right"
                               />
                             </div>
                           </td>
@@ -354,15 +348,70 @@ export function ContentTab({ h }: ContentTabProps) {
                     if (isSuggestedAction) {
                       const rawId = String(directiveId).replace(/^suggested-/, '');
                       const suggestedItem = suggestedActionsFiltered.find((s) => String(s.id) === rawId);
-                      const assignees = suggestedItem ? normalizeAssignees(suggestedItem.assignees) : [];
+                      const fallbackAssignees = suggestedItem ? normalizeAssignees(suggestedItem.assignees) : [];
+                      const assignees = h.getSuggestedActionAssignees(rawId, fallbackAssignees);
+                      const assigneeInput = h.assigneeInputByActionId[rawId] ?? '';
+                      const dueDate = h.suggestedActionEdits[rawId]?.due_date !== undefined ? h.suggestedActionEdits[rawId].due_date : (directive.due_date ?? '');
+                      const status = h.suggestedActionEdits[rawId]?.status ?? directive.status ?? 'PENDING';
+                      const titleLabel = h.suggestedActionEdits[rawId]?.title ?? directive.directive ?? '-';
                       return (
                         <tr key={directiveId} className="hover:bg-muted/30 transition-colors bg-muted/20">
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                          <td className="px-4 py-3 text-sm text-foreground" dir="rtl">{directive.directive ?? '-'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{directive.due_date ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{directive.status ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">{assignees.length ? assignees.join('، ') : '—'}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateSuggestedActionTitle(rawId, action.title);
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <FormDatePicker
+                              value={dueDate ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateSuggestedActionDueDate(rawId, v || null);
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Select value={status} onValueChange={(v) => h.updateSuggestedActionStatus(rawId, v)} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignees.map((email: string, i: number) => (
+                                <span key={`${email}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs">
+                                  {email}
+                                  <button type="button" onClick={() => h.removeSuggestedActionAssignee(rawId, i, assignees)} className="p-0.5 rounded hover:bg-primary/20" aria-label="حذف">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              <Input
+                                value={assigneeInput}
+                                onChange={(e) => h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); h.addSuggestedActionAssignee(rawId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: '' })); }
+                                }}
+                                placeholder="إضافة معين..." className="h-8 min-w-[80px] max-w-[120px] text-xs text-right" dir="rtl"
+                              />
+                              <button type="button" onClick={() => { h.addSuggestedActionAssignee(rawId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: '' })); }}
+                                className="p-1 rounded border border-border hover:bg-muted text-muted-foreground" title="إضافة">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             <div className="flex justify-center">
                               <button type="button" onClick={() => h.handleDeleteSuggestedAction(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
                                 <Trash2 className="w-4 h-4" />
@@ -397,25 +446,82 @@ export function ContentTab({ h }: ContentTabProps) {
                       );
                     }
 
-                    // Regular directive row
-                    return (
-                      <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{directive.directive || directive.directive_text || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.deadline ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.directive_status ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
-                          {(directive.responsible_persons ?? []).map((p: any) => p.name).filter(Boolean).join('، ') || '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center">
-                            <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
+                    // Regular directive row (editable)
+                    {
+                      const dId = String(directiveId);
+                      const fallbackAssignees = (directive.responsible_persons ?? []).map((p: any) => p.email ?? p.name).filter(Boolean) as string[];
+                      const assignees = h.getExistingDirectiveAssignees(dId, fallbackAssignees);
+                      const assigneeInput = h.assigneeInputByActionId[dId] ?? '';
+                      const dueDate = h.existingDirectiveEdits[dId]?.due_date !== undefined ? h.existingDirectiveEdits[dId].due_date : (directive.deadline ?? '');
+                      const status = h.existingDirectiveEdits[dId]?.status ?? directive.directive_status ?? 'PENDING';
+                      const titleLabel = h.existingDirectiveEdits[dId]?.title ?? (directive.directive || directive.directive_text || '-');
+                      return (
+                        <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateExistingDirectiveTitle(dId, action.title);
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <FormDatePicker
+                              value={dueDate ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateExistingDirectiveDueDate(dId, v || null);
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Select value={status} onValueChange={(v) => h.updateExistingDirectiveStatus(dId, v)} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignees.map((email: string, i: number) => (
+                                <span key={`${email}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs">
+                                  {email}
+                                  <button type="button" onClick={() => h.removeExistingDirectiveAssignee(dId, i, assignees)} className="p-0.5 rounded hover:bg-primary/20" aria-label="حذف">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              <Input
+                                value={assigneeInput}
+                                onChange={(e) => h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }
+                                }}
+                                placeholder="إضافة معين..." className="h-8 min-w-[80px] max-w-[120px] text-xs text-right" dir="rtl"
+                              />
+                              <button type="button" onClick={() => { h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }}
+                                className="p-1 rounded border border-border hover:bg-muted text-muted-foreground" title="إضافة">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
                   })}
                   {h.showAddDirectiveRow && (
                     <tr key="add-directive-row" className="bg-green-50/30 border-t-2 border-dashed border-primary/30">
@@ -429,7 +535,7 @@ export function ContentTab({ h }: ContentTabProps) {
                             placeholder="ابحث واختر التوجيه..."
                             searchPlaceholder="ابحث في التوجيهات..."
                             emptyMessage="لا توجد نتائج"
-                            fullWidth limit={20} defaultOptions={false} className="text-right"
+                            fullWidth limit={20} defaultOptions className="text-right"
                           />
                         </div>
                       </td>

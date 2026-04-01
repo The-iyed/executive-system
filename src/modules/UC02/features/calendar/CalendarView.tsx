@@ -98,17 +98,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slotError, setSlotError] = useState<string | null>(null);
 
   const handleQuickMeeting = useCallback(() => {
-    const now = new Date();
-    const minutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / 15) * 15;
-    now.setMinutes(roundedMinutes, 0, 0);
-    const hours = now.getHours().toString().padStart(2, '0');
-    const mins = now.getMinutes().toString().padStart(2, '0');
-    const endDate = new Date(now);
-    endDate.setHours(endDate.getHours() + 1);
-    const endHours = endDate.getHours().toString().padStart(2, '0');
-    const endMins = endDate.getMinutes().toString().padStart(2, '0');
-    setSlot({ date: now, time: `${hours}:${mins}`, endTime: `${endHours}:${endMins}`, mode: 'create', isQuickMeeting: true });
+    setSlot({ date: new Date(), time: '', endTime: '', mode: 'create', isQuickMeeting: true });
   }, []);
 
   const showSkeleton = isLoading;
@@ -145,8 +135,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     async (values: Record<string, unknown>) => {
       setSlotError(null);
       setSlotSubmitting(true);
-      const scheduled_start = toISOStringWithTimezone(new Date(values.start_date as string));
-      const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
+      // Strip timezone — send naive ISO like "2026-04-20T09:00:00"
+      const stripTz = (iso: string) => iso.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
+      const scheduled_start = stripTz(toISOStringWithTimezone(new Date(values.start_date as string)));
+      const scheduled_end = stripTz(toISOStringWithTimezone(new Date(values.end_date as string)));
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
       // Snapshot for rollback
@@ -339,7 +331,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           initialMeetingChannel={slot.meetingChannel ?? ''}
           initialInvitees={slot.initialInvitees}
           mode={slot.mode}
-          hideProposedTime={!!slot.isQuickMeeting}
+          hideProposedTime={false}
           isSubmitting={slotSubmitting}
           submitError={slotError}
           onSubmit={handleSlotSubmit as any}
