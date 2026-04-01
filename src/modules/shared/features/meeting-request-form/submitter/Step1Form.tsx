@@ -60,15 +60,15 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           <MeetingTitleField />
 
           <DescriptionField />
-          {visibility.sector && <SectorField />}
-          <MeetingTypeField />
+          {visibility.sector && <SectorField required={!isSchedulerEdit} />}
+          <MeetingTypeField required={!isSchedulerEdit} />
 
           <IsUrgentField />
           {visibility.urgent_reason && <UrgentReasonField />}
           <MeetingDateField
             startName="meeting_start_date"
             endName="meeting_end_date"
-            required
+            required={!isSchedulerEdit}
             minDate={isSchedulerEdit ? undefined : minDate}
             disabled={
               !isSchedulerEdit &&
@@ -87,13 +87,13 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             </>
           )}
 
-          <MeetingCategoryField meetingType={watched.meeting_type} />
+          <MeetingCategoryField meetingType={watched.meeting_type} required={!isSchedulerEdit} />
           {visibility.meeting_justification && <MeetingJustificationField />}
           {visibility.meeting_classification_type && <ClassificationTypeField />}
           {visibility.meetingSubCategory && <SubCategoryField />}
           {visibility.related_topic && <RelatedTopicField />}
           {visibility.deadline && <DeadlineField />}
-          <ConfidentialityField />
+          <ConfidentialityField required={!isSchedulerEdit} />
         </div>
 
         <div className="mt-6">
