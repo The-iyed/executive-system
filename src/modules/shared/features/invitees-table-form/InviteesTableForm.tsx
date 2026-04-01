@@ -32,10 +32,15 @@ const InviteesTableForm = ({
   viewLayout?: InviteesViewLayout;
   showAiSuggest?: boolean;
 }) => {
-  const [invitees, setInvitees] = useState<TableRow[]>(initialInvitees ?? []);
+  const normalizeInvitees = (rows: TableRow[]) => rows.map(r => ({
+    ...r,
+    is_presence_required: r.is_presence_required ?? (r as Record<string, unknown>).is_required ?? false,
+  }));
+
+  const [invitees, setInvitees] = useState<TableRow[]>(normalizeInvitees(initialInvitees ?? []));
 
   useEffect(() => {
-    setInvitees(initialInvitees ?? []);
+    setInvitees(normalizeInvitees(initialInvitees ?? []));
   }, [initialInvitees]);
 
   // Hide attendance_mechanism when channel is fixed (PHYSICAL or VIRTUAL)
