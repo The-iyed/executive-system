@@ -241,7 +241,7 @@ export function ContentTab({ h }: ContentTabProps) {
                               <FormAsyncSelectV2
                                 value={d.title ? { value: String(d.id), label: d.title } : null}
                                 onValueChange={(opt) => {
-                                  if (opt && opt.label !== d.title) {
+                                  if (opt) {
                                     h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
                                   }
                                 }}
@@ -249,7 +249,8 @@ export function ContentTab({ h }: ContentTabProps) {
                                 placeholder="ابحث واختر التوجيه..."
                                 searchPlaceholder="ابحث في التوجيهات..."
                                 emptyMessage="لا توجد نتائج"
-                                fullWidth limit={20} defaultOptions={false} className="text-right"
+                                isClearable={false}
+                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
