@@ -255,9 +255,9 @@ function CalendarFormInner({
         meeting_location,
         proposers,
         invitees: inviteesPayload,
-        requires_protocol: data.requires_protocol,
+        requires_protocol: !data.is_preliminary_booking,
         is_data_complete: data.is_data_complete,
-        is_preliminary_booking: data.requires_protocol !== undefined ? !data.requires_protocol : undefined,
+        is_preliminary_booking: data.is_preliminary_booking,
       });
     },
     [onSubmit, showLocation, inviteesRef]
