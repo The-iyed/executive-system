@@ -525,6 +525,9 @@ export function useContentRequestDetailPage() {
   }, [setSuggestedActionAssignees]);
 
   /* ── Existing Directive edit handlers ── */
+  const updateExistingDirectiveTitle = useCallback((id: string, title: string) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
   const updateExistingDirectiveDueDate = useCallback((id: string, due_date: string | null) => {
     setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
   }, []);
