@@ -68,7 +68,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           <MeetingDateField
             startName="meeting_start_date"
             endName="meeting_end_date"
-            required
+            required={!isSchedulerEdit}
             minDate={isSchedulerEdit ? undefined : minDate}
             disabled={
               !isSchedulerEdit &&
