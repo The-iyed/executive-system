@@ -51,15 +51,15 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           <DescriptionField />
 
           {/* Row 3 */}
-          <SectorField />
-          <MeetingTypeField />
+          <SectorField required={false} />
+          <MeetingTypeField required={false} />
           <IsUrgentField />
 
           {/* Conditional */}
-          {visibility.urgent_reason && <UrgentReasonField />}
+          {visibility.urgent_reason && <UrgentReasonField required={false} />}
 
           {/* Dates */}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required />
+          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required={false} />
 
           {/* Channel & location */}
           <MeetingChannelField />
@@ -72,13 +72,13 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           <RequiresProtocolField />
 
           {/* Category */}
-          <MeetingCategoryField meetingType={watched.meeting_type} />
-          {visibility.meeting_justification && <MeetingJustificationField />}
-          {visibility.meeting_classification_type && <ClassificationTypeField />}
+          <MeetingCategoryField meetingType={watched.meeting_type} required={false} />
+          {visibility.meeting_justification && <MeetingJustificationField required={false} />}
+          {visibility.meeting_classification_type && <ClassificationTypeField required={false} />}
           {visibility.meetingSubCategory && <SubCategoryField />}
-          {visibility.related_topic && <RelatedTopicField />}
-          {visibility.deadline && <DeadlineField />}
-          <ConfidentialityField />
+          {visibility.related_topic && <RelatedTopicField required={false} />}
+          {visibility.deadline && <DeadlineField required={false} />}
+          <ConfidentialityField required={false} />
         </div>
 
         {/* Agenda */}
