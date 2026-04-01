@@ -216,7 +216,10 @@ export function useMeetingDetailPage() {
     const payload: any = {};
     if (scheduleForm.meeting_channel !== orig.meeting_channel) payload.meeting_channel = scheduleForm.meeting_channel;
     payload.meeting_location = scheduleForm.location || null;
-    if (scheduleForm.requires_protocol !== orig.requires_protocol) payload.requires_protocol = scheduleForm.requires_protocol;
+    if (scheduleForm.is_preliminary_booking !== orig.is_preliminary_booking) {
+      payload.is_preliminary_booking = scheduleForm.is_preliminary_booking;
+      payload.requires_protocol = !scheduleForm.is_preliminary_booking;
+    }
     if (scheduleForm.protocol_type_text !== orig.protocol_type_text) payload.protocol_type = scheduleForm.protocol_type_text;
     if (scheduleForm.is_data_complete !== orig.is_data_complete) payload.is_data_complete = scheduleForm.is_data_complete;
     if ((scheduleForm.selected_time_slot_id || null) !== (orig.selected_time_slot_id || null)) payload.selected_time_slot_id = scheduleForm.selected_time_slot_id;
