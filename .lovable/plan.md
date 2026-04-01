@@ -1,37 +1,54 @@
 
 
-## Plan: Fix now-indicator to show local time instead of UTC
+## Plan: Improve EventDetailModal UI/UX
 
-### Problem
-The calendar uses `timeZone="UTC"` so events render without timezone shifts, but the built-in `nowIndicator` also uses UTC — placing the red line 1+ hours off from the user's actual local time (e.g., 7:30 instead of 8:30 in Riyadh).
+### Current Issues (from screenshots)
+- Date row shows truncated text ("الأربع" instead of full day name)
+- Time row shows only start time ("10:50") without end time range
+- Location row shows raw URL without friendly formatting
+- Invitees section lacks visual hierarchy — flat list with no clear separation
+- Scheduling settings cards look functional but lack polish
+- Footer buttons are plain and don't draw attention to the primary action
+- No visual separator between header title and body content
+- Empty fields (no organizer row visible in image 1) still take space
 
-### Solution
-Use FullCalendar's `now` prop to feed it the local time expressed as a UTC timestamp, tricking the UTC-mode calendar into drawing the indicator at the correct visual position.
+### Design Improvements
 
-### How it works
-FullCalendar's `now` prop accepts a function returning a `Date`. Since the calendar renders in UTC mode, we return a **fake UTC date** whose UTC hours/minutes match the user's **local** hours/minutes:
+#### 1. Header — Add subtle gradient accent bar + better spacing
+- Add a thin 3px gradient accent bar at the top (`from-[#048F86] to-[#0BB5AA]`) for brand identity
+- Increase title max-width handling — use `line-clamp-2` instead of `truncate` so long titles wrap to 2 lines
+- Move the internal/external badge inline next to the calendar icon header
 
-```ts
-now={() => {
-  const local = new Date();
-  return new Date(Date.UTC(
-    local.getFullYear(), local.getMonth(), local.getDate(),
-    local.getHours(), local.getMinutes(), local.getSeconds()
-  ));
-}}
-```
+#### 2. Details Card — Richer formatting
+- **Date**: Show full date with year: "الأربعاء 2 أبريل 2026م"
+- **Time**: Always show range with dash: "10:50 – 11:35" with a subtle duration pill (e.g., "45 دقيقة")
+- **Location**: For links, show a clickable chip-style button with Video icon + domain text; for physical locations show MapPin icon inline
+- **Organizer**: Show avatar initials circle (like invitees) for visual consistency
 
-This makes the UTC-mode calendar draw the now-indicator line at the user's actual local time. No custom CSS overlay needed — the built-in `nowIndicator` keeps working.
+#### 3. Invitees Section — Stacked avatars + expandable
+- Replace individual cards with a compact **avatar stack** (overlapping circles) for the first 5 invitees
+- Show names on hover via tooltip
+- Keep the "+N آخرين" counter as a pill badge
+- Add subtle section divider line above
 
-### Changes
+#### 4. Scheduling Settings — Chip-style badges
+- Convert from card grid to inline horizontal chips/badges
+- Active state: filled teal chip with checkmark icon
+- Inactive state: outlined muted chip
 
-#### `MinisterFullCalendar.tsx`
-- **Keep** `nowIndicator` (line 355)
-- **Add** `now` prop with the local-to-UTC conversion function above (next to `nowIndicator`)
+#### 5. Footer — Elevated primary CTA
+- "انضم للاجتماع" button: use branded gradient (`from-[#048F86] to-[#0BB5AA]`) with `hover:scale-[1.03]` micro-interaction
+- "عرض التفاصيل" button: subtle outlined style with arrow icon
+- "تعديل" button: ghost/icon-only style to reduce visual noise
+
+#### 6. Polish
+- Add `backdrop-blur-sm` to overlay for frosted glass effect
+- Smoother entry animation via `data-[state=open]:animate-in` scale + fade
+- Consistent 14px/12px/10px type scale throughout
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `MinisterFullCalendar.tsx` | Add `now` prop that returns local time as fake UTC date |
+| `EventDetailModal.tsx` | Redesign header with accent bar, improve date/time formatting with duration, avatar stack for invitees, chip-style scheduling badges, gradient primary CTA, polish animations and spacing |
 
