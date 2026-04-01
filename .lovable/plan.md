@@ -1,46 +1,38 @@
 
 
-## Plan: Map `is_presence_required` ↔ `is_required` across create, edit, and view modes
+## Plan: Ensure `is_presence_required` is always used when loading invitee data
 
 ### Problem
-The table form column uses key `is_presence_required`, but the API sends/receives `is_required`. Currently:
-- **Create/Submit**: `is_presence_required` is never mapped to `is_required` in the payload — the API never receives the mandatory attendance flag
-- **Edit/View**: When loading invitees from the API, `is_required` is never mapped to `is_presence_required` — the checkbox always shows unchecked
+The `normalizeRows` fix in `useTableForm.ts` maps `is_required` → `is_presence_required`, but two paths bypass it:
+1. **`transformDraftToInvitees`** in `mappers.ts` — never includes `is_presence_required` or `is_required` at all
+2. **`InviteesTableForm`** — stores `initialInvitees` directly in `useState`/`useEffect` without normalization, so raw API data with `is_required` never gets mapped
 
 ### Changes
 
-#### 1. `payload-mapper.ts` — Map `is_presence_required` → `is_required` on submit
-After building the payload, add:
+#### 1. `mappers.ts` — `transformDraftToInvitees` (line 106-120)
+Add `is_presence_required: inv.is_required ?? inv.is_presence_required ?? false` to the mapped invitee object (after line 117).
+
+#### 2. `InviteesTableForm.tsx` — Normalize on init and sync (lines 35-39)
+Add inline normalization so any `is_required` field is mapped to `is_presence_required`:
 ```ts
-if ('is_presence_required' in payload) {
-  payload.is_required = Boolean(payload.is_presence_required);
-}
+const normalize = (rows: TableRow[]) => rows.map(r => ({
+  ...r,
+  is_presence_required: r.is_presence_required ?? r.is_required ?? false,
+}));
+
+const [invitees, setInvitees] = useState<TableRow[]>(normalize(initialInvitees ?? []));
+
+useEffect(() => {
+  setInvitees(normalize(initialInvitees ?? []));
+}, [initialInvitees]);
 ```
 
-#### 2. `CalendarView.tsx` — Include `is_presence_required` → `is_required` in invitees mapper (line ~148-159)
-Add to the invitee mapping object:
-```ts
-is_required: Boolean(m.is_presence_required),
-```
-
-#### 3. `MinisterCalendarView.tsx` — Same fix in its invitees mapper (line ~799-804)
-Add `is_required: Boolean(m.is_presence_required)` to the mapping.
-
-#### 4. `normalizeRows` / loading from API — Map `is_required` → `is_presence_required`
-When invitees from the API are passed as `initialInvitees`, they contain `is_required` but not `is_presence_required`. In `useTableForm.ts` `normalizeRows`, add:
-```ts
-if ('is_required' in row && !('is_presence_required' in row)) {
-  normalized.is_presence_required = Boolean(row.is_required);
-}
-```
-This ensures edit and view modes display the correct checkbox state.
+This ensures every entry point — draft loading, view mode, edit mode — consistently uses `is_presence_required`.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/lib/dynamic-table-form/payload-mapper.ts` | Map `is_presence_required` → `is_required` in outgoing payload |
-| `src/lib/dynamic-table-form/hooks/useTableForm.ts` | Map `is_required` → `is_presence_required` in `normalizeRows` |
-| `src/modules/UC02/features/calendar/CalendarView.tsx` | Add `is_required` to invitees submit mapper |
-| `src/modules/UC02/components/MinisterCalendarView.tsx` | Add `is_required` to invitees submit mapper |
+| `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts` | Add `is_presence_required` mapping in `transformDraftToInvitees` |
+| `src/modules/shared/features/invitees-table-form/InviteesTableForm.tsx` | Normalize `initialInvitees` to map `is_required` → `is_presence_required` |
 
