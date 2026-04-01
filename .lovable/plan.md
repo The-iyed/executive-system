@@ -1,23 +1,37 @@
 
 
-## Plan: Fix directive filtering and button display logic on /directives
+## Plan: Use shared `DIRECTIVE_STATUS_LABELS` enum in Content tab directives table
 
 ### Problem
-Currently the directive card badge shows `status` (TAKEN/ADOPTED) but the user wants:
-1. **Tabs**: Keep filtering by `status` (TAKEN = التوجيهات الحالية, ADOPTED = التوجيهات السابقة) — already correct
-2. **Card badge**: Show `scheduling_officer_status` (OPEN/CLOSED) to indicate whether "تم الأخذ بالتوجيه"
-3. **Button visibility**: "الأخذ بالتوجيه" should only depend on `scheduling_officer_status` — show when OPEN, hide when CLOSED
+Line 189 of `ContentTab.tsx` uses an inline object to translate `directive_status` values to Arabic labels. This should use the shared `DIRECTIVE_STATUS_LABELS` from `directiveMapper.ts` (or combine both maps) for consistency.
 
 ### Changes
 
-#### 1. `DirectivesFeature.tsx` — Change `statusField` and simplify `hidden` logic
+#### 1. `src/modules/UC02/features/meeting-detail/tabs/ContentTab.tsx`
 
-- Line 118: Change `statusField="status"` to `statusField="scheduling_officer_status"` so the card badge reflects scheduling officer status
-- Line 41: Simplify `hidden` from `d.status === 'ADOPTED' || d.scheduling_officer_status === 'CLOSED'` to just `d.scheduling_officer_status === 'CLOSED'`
+**Import** the shared labels:
+```ts
+import { DIRECTIVE_STATUS_LABELS } from '@/modules/shared/types/minister-directive-enums';
+```
+
+**Replace line 189** — swap the inline map with one that merges the shared enum labels plus the content-approval-specific statuses:
+```tsx
+{translateCompareValue(row.directive_status, {
+  ...DIRECTIVE_STATUS_LABELS,
+  PENDING: 'قيد الانتظار',
+  IN_PROGRESS: 'قيد التنفيذ',
+  COMPLETED: 'مكتمل',
+  CANCELLED: 'ملغى',
+  CLOSED: 'مغلق',
+  OPEN: 'مفتوح',
+})}
+```
+
+This keeps the existing fallback values for statuses not in the shared enum (PENDING, IN_PROGRESS, etc.) while using the shared labels for TAKEN/ADOPTED via spread.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/UC02/features/directives/DirectivesFeature.tsx` | Change `statusField` to `scheduling_officer_status`; simplify button `hidden` to only check `scheduling_officer_status` |
+| `ContentTab.tsx` | Import `DIRECTIVE_STATUS_LABELS`; spread into the inline status map |
 
