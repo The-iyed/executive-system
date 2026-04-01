@@ -12,7 +12,7 @@ interface ScheduleConfirmDialogProps {
   endDate: string | null;
   meetingChannel: string;
   scheduleFormChannel: string;
-  requiresProtocol: boolean;
+  isPreliminaryBooking: boolean;
   isDataComplete: boolean;
   location: string;
   onConfirm: () => void;
@@ -20,7 +20,7 @@ interface ScheduleConfirmDialogProps {
   validationError?: string | null;
   notes: string;
   onNotesChange: (v: string) => void;
-  onRequiresProtocolChange: (v: boolean) => void;
+  onPreliminaryBookingChange: (v: boolean) => void;
   onDataCompleteChange: (v: boolean) => void;
 }
 
@@ -81,8 +81,8 @@ function ToggleCard({
 
 export function ScheduleConfirmDialog({
   open, onOpenChange, startDate, endDate, meetingChannel, scheduleFormChannel,
-  requiresProtocol, isDataComplete, location, onConfirm, isPending, validationError,
-  notes, onNotesChange, onRequiresProtocolChange, onDataCompleteChange,
+  isPreliminaryBooking, isDataComplete, location, onConfirm, isPending, validationError,
+  notes, onNotesChange, onPreliminaryBookingChange, onDataCompleteChange,
 }: ScheduleConfirmDialogProps) {
   const channelLabel = MeetingChannelLabels[meetingChannel] ?? MeetingChannelLabels[scheduleFormChannel] ?? '—';
 
@@ -117,8 +117,8 @@ export function ScheduleConfirmDialog({
               <ToggleCard
                 label="مبدئي"
                 description="اجتماع بدون محضر رسمي"
-                checked={!requiresProtocol}
-                onChange={(v) => onRequiresProtocolChange(!v)}
+                checked={isPreliminaryBooking}
+                onChange={onPreliminaryBookingChange}
               />
               <ToggleCard
                 label="البيانات مكتملة"
