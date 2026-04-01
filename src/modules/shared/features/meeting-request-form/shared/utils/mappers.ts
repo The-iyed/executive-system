@@ -115,7 +115,7 @@ export function transformDraftToInvitees(
     access_permission: inv.access_permission ?? false,
     is_consultant: inv.is_consultant ?? false,
     meeting_owner: inv.meeting_owner ?? false,
-    is_presence_required: (inv as Record<string, unknown>).is_required ?? (inv as Record<string, unknown>).is_presence_required ?? false,
+    is_presence_required: (inv as Record<string, unknown>).is_presence_required ?? false,
     isExternal: !inv.object_guid,
     _disabledFields: inv.object_guid ? ["email"] : [],
   }));
