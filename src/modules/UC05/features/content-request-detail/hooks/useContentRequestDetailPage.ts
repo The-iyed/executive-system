@@ -575,13 +575,17 @@ export function useContentRequestDetailPage() {
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
     const existingObjs: DirectiveForApprove[] = relatedDirectives
       .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
-      .map((d) => ({
-        id: Number(d.id),
-        title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
-        due_date: d.deadline ?? null,
-        assignees: (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[],
-        status: d.directive_status ?? 'PENDING',
-      }))
+      .map((d) => {
+        const edits = existingDirectiveEdits[String(d.id)];
+        const fallbackAssignees = (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[];
+        return {
+          id: Number(d.id),
+          title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
+          due_date: edits?.due_date !== undefined ? edits.due_date : (d.deadline ?? null),
+          assignees: edits?.assignees ?? fallbackAssignees,
+          status: edits?.status ?? d.directive_status ?? 'PENDING',
+        };
+      })
       .filter((d) => d.title !== '—');
     const aiObjs: DirectiveForApprove[] = aiDirectivesSuggestions
       .filter((d) => aiDirectiveActions[d.id])
@@ -592,7 +596,17 @@ export function useContentRequestDetailPage() {
       });
     const suggestedObjs: DirectiveForApprove[] = suggestedActionsItems
       .filter((s) => !deletedSuggestedActionIds.has(String(s.id)))
-      .map((s) => ({ id: Number(s.id), title: (s.title ?? '').trim() || '—', due_date: s.due_date ?? null, assignees: normalizeAssignees(s.assignees), status: s.status ?? 'PENDING' }))
+      .map((s) => {
+        const edits = suggestedActionEdits[String(s.id)];
+        const fallbackAssignees = normalizeAssignees(s.assignees);
+        return {
+          id: Number(s.id),
+          title: (s.title ?? '').trim() || '—',
+          due_date: edits?.due_date !== undefined ? edits.due_date : (s.due_date ?? null),
+          assignees: edits?.assignees ?? fallbackAssignees,
+          status: edits?.status ?? s.status ?? 'PENDING',
+        };
+      })
       .filter((d) => d.title !== '—');
     const manualObjs: DirectiveForApprove[] = manualAddedActions.map((a) => {
       const edits = manualActionEdits[a.id];
