@@ -28,8 +28,8 @@ export const schedulerStep1Schema = z.object({
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
-  sector: z.string().min(1, "القطاع مطلوب"),
-  meeting_type: z.nativeEnum(MeetingType, { required_error: "نوع الاجتماع مطلوب" }),
+  sector: z.string().optional(),
+  meeting_type: z.nativeEnum(MeetingType).optional(),
   is_urgent: z.enum([BOOL.TRUE, BOOL.FALSE]),
   urgent_reason: z.string().optional(),
   meeting_start_date: z.string().optional(),
@@ -38,7 +38,7 @@ export const schedulerStep1Schema = z.object({
   meeting_location: z.string().optional(),
   meeting_location_custom: z.string().optional(),
   requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]),
-  meeting_classification: z.string().min(1, "فئة الاجتماع مطلوبة"),
+  meeting_classification: z.string().optional(),
   meeting_sub_category: z.string().optional(),
   meeting_justification: z.string().optional(),
   related_topic: z.string().optional(),
@@ -57,26 +57,11 @@ export const schedulerStep1Schema = z.object({
   if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
     ctx.addIssue({ code: "custom", path: ["meeting_owner"], message: "يرجى تحديد مالك الاجتماع" });
   }
-  if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
-    ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });
-  }
-  if (!data.meeting_start_date) ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
-  if (!data.meeting_end_date) ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && !data.meeting_location) {
     ctx.addIssue({ code: "custom", path: ["meeting_location"], message: "الموقع مطلوب للاجتماع الحضوري" });
   }
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && data.meeting_location === MeetingLocation.OTHER && !data.meeting_location_custom) {
     ctx.addIssue({ code: "custom", path: ["meeting_location_custom"], message: "يرجى تحديد الموقع" });
-  }
-  if (data.meeting_classification === MeetingClassification.BUSINESS && !data.meeting_classification_type) {
-    ctx.addIssue({ code: "custom", path: ["meeting_classification_type"], message: "تصنيف الاجتماع مطلوب" });
-  }
-  if ([MeetingClassification.PRIVATE_MEETING, MeetingClassification.BILATERAL_MEETING].includes(data.meeting_classification as MeetingClassification) && !data.meeting_justification) {
-    ctx.addIssue({ code: "custom", path: ["meeting_justification"], message: "مبرر اللقاء مطلوب" });
-  }
-  if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS) {
-    if (!data.related_topic) ctx.addIssue({ code: "custom", path: ["related_topic"], message: "موضوع التكليف المرتبط مطلوب" });
-    if (!data.deadline) ctx.addIssue({ code: "custom", path: ["deadline"], message: "تاريخ الاستحقاق مطلوب" });
   }
   if (data.agenda_items?.length > 0) validateAgendaItems(data.agenda_items, ctx);
   validateAgendaDuration(data.agenda_items ?? [], data.meeting_start_date, data.meeting_end_date, ctx);
