@@ -18,12 +18,15 @@ const axiosInstance = axios.create({
   // withCredentials: true,
 });
 
+/** Single in-flight silent renew; many parallel 401s must await the same promise (no duplicate signinSilent). */
 let silentRenewPromise: Promise<unknown> | null = null;
+/** Waiters inside await silentRenewPromise; only clear the shared promise when the last one leaves (avoids a new 401 starting a second renew while others still retry). */
+let silentRenewWaiters = 0;
+
 let ssoReloginPromise: Promise<void> | null = null;
 
 function ensureSsoRelogin(): void {
-  if (ssoReloginPromise) return;
-  ssoReloginPromise = initiateLogin()
+  ssoReloginPromise ??= initiateLogin()
     .catch(() => {})
     .finally(() => {
       ssoReloginPromise = null;
@@ -60,10 +63,9 @@ axiosInstance.interceptors.response.use(
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         }
 
+        silentRenewWaiters += 1;
         try {
-          if (!silentRenewPromise) {
-            silentRenewPromise = userManager.signinSilent();
-          }
+          silentRenewPromise ??= userManager.signinSilent();
           await silentRenewPromise;
           if (originalRequest) {
             originalRequest._retry = true;
@@ -75,7 +77,10 @@ axiosInstance.interceptors.response.use(
           ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } finally {
-          silentRenewPromise = null;
+          silentRenewWaiters -= 1;
+          if (silentRenewWaiters === 0) {
+            silentRenewPromise = null;
+          }
         }
       }
       clearAllBrowserStorage();
