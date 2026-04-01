@@ -1,38 +1,40 @@
 
 
-## Plan: Ensure `is_presence_required` is always used when loading invitee data
+## Plan: Use `is_preliminary_booking` directly for مبدئي field
 
 ### Problem
-The `normalizeRows` fix in `useTableForm.ts` maps `is_required` → `is_presence_required`, but two paths bypass it:
-1. **`transformDraftToInvitees`** in `mappers.ts` — never includes `is_presence_required` or `is_required` at all
-2. **`InviteesTableForm`** — stores `initialInvitees` directly in `useState`/`useEffect` without normalization, so raw API data with `is_required` never gets mapped
+The "مبدئي" toggle currently uses `requires_protocol` internally and inverts it (`!requires_protocol`) everywhere. This is error-prone. Should use `is_preliminary_booking` as the canonical field.
 
 ### Changes
 
-#### 1. `mappers.ts` — `transformDraftToInvitees` (line 106-120)
-Add `is_presence_required: inv.is_required ?? inv.is_presence_required ?? false` to the mapped invitee object (after line 117).
+#### 1. `useMeetingDetailPage.ts`
+- In `ScheduleForm` interface: replace `requires_protocol` with `is_preliminary_booking: boolean`
+- Default: `is_preliminary_booking: false`
+- Init from meeting (line ~163): `is_preliminary_booking: meeting.is_preliminary_booking ?? !meeting.requires_protocol ?? false`
+- Submit payload (line ~411-415): send `is_preliminary_booking: scheduleForm.is_preliminary_booking` and derive `requires_protocol: !scheduleForm.is_preliminary_booking`
+- Rescheduling diff check (line ~219): use `is_preliminary_booking` instead of `requires_protocol`
 
-#### 2. `InviteesTableForm.tsx` — Normalize on init and sync (lines 35-39)
-Add inline normalization so any `is_required` field is mapped to `is_presence_required`:
-```ts
-const normalize = (rows: TableRow[]) => rows.map(r => ({
-  ...r,
-  is_presence_required: r.is_presence_required ?? r.is_required ?? false,
-}));
+#### 2. `ScheduleConfirmDialog.tsx`
+- Rename prop `requiresProtocol` → `isPreliminaryBooking`
+- Rename callback `onRequiresProtocolChange` → `onPreliminaryBookingChange`
+- ToggleCard "مبدئي" (line 120-121): `checked={isPreliminaryBooking}`, `onChange={onPreliminaryBookingChange}` — no inversion
 
-const [invitees, setInvitees] = useState<TableRow[]>(normalize(initialInvitees ?? []));
+#### 3. `MeetingDetailPage.tsx` (lines 361, 369)
+- Pass `isPreliminaryBooking={h.scheduleForm.is_preliminary_booking}`
+- Pass `onPreliminaryBookingChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_preliminary_booking: v }))}`
 
-useEffect(() => {
-  setInvitees(normalize(initialInvitees ?? []));
-}, [initialInvitees]);
-```
-
-This ensures every entry point — draft loading, view mode, edit mode — consistently uses `is_presence_required`.
+#### 4. `CalendarSlotMeetingForm.tsx`
+- In zod schema (line ~82): replace `requires_protocol` with `is_preliminary_booking: z.boolean().default(false)`
+- Default values (line ~132): `is_preliminary_booking: false`
+- Controller (line ~328): bind to `is_preliminary_booking` field directly, `checked={field.value}` (no inversion)
+- Submit (line ~258-260): send `is_preliminary_booking: data.is_preliminary_booking`, derive `requires_protocol: !data.is_preliminary_booking`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts` | Add `is_presence_required` mapping in `transformDraftToInvitees` |
-| `src/modules/shared/features/invitees-table-form/InviteesTableForm.tsx` | Normalize `initialInvitees` to map `is_required` → `is_presence_required` |
+| `useMeetingDetailPage.ts` | Replace `requires_protocol` with `is_preliminary_booking` in form state and submission |
+| `ScheduleConfirmDialog.tsx` | Rename props, remove boolean inversion on مبدئي toggle |
+| `MeetingDetailPage.tsx` | Update prop bindings |
+| `CalendarSlotMeetingForm.tsx` | Use `is_preliminary_booking` in schema, controller, and submit |
 
