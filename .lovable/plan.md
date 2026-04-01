@@ -1,29 +1,38 @@
 
 
-## Plan: Unify Invitees and Scheduling Settings into Details Card
+## Plan: Expand invitees list and move scheduling settings below
 
 ### Problem
-The "المدعوون" and "إعدادات الجدولة" sections use centered divider-style headers that look inconsistent with the clean row-based details card above (المنظم, التاريخ, الوقت, الموقع). The screenshot shows these sections floating separately with a different visual pattern.
+Currently the invitees section shows only a compact avatar stack. The user wants a full invitee list (like the uploaded screenshot) showing each invitee's name, email, and avatar initial — with a "+N آخرين" overflow indicator. The scheduling settings row should appear **after** the expanded invitees list.
 
 ### Changes
 
-#### `EventDetailModal.tsx` — Move both sections into the details card as rows
+#### `EventDetailModal.tsx`
 
-**1. Invitees row** (lines 305-355): Remove the centered divider header. Add a new `divide-y` row inside the details card (after Location) with:
-- Right side: User icon + "المدعوون" label + count badge (same icon-label pattern as other rows)
-- Left side: Avatar stack + names preview
+**1. Replace compact avatar stack with expanded invitee list**
+- Remove the current single-row invitees layout (lines 303-344)
+- Replace with a section that has the icon+label header row, followed by a vertical list of invitee cards
+- Each invitee card shows: colored avatar circle with initials (right), name in bold (center-right), email below in muted text
+- Show up to 5 invitees; if more, show a "+N آخرين" text link at the bottom
+- Layout matches the uploaded screenshot: right-aligned, each invitee in its own row with subtle bottom border
 
-**2. Scheduling Settings row** (lines 357-391): Remove the centered divider header. Add another row inside the card with:
-- Right side: Settings icon + "إعدادات الجدولة" label
-- Left side: Inline chips for "مبدئي" and "البيانات مكتملة"
+**2. Move scheduling settings row after the invitees list**
+- Keep the existing scheduling settings row (lines 346-376) but position it as the last row after the invitees list, still inside the card with `divide-y`
 
-**3. Chip styling improvement**: Keep active/inactive chip styling but align them horizontally in the value area (left side of the row), consistent with other row values.
-
-This merges everything into one unified card with `divide-y` rows, eliminating the floating divider sections.
+**3. Invitee row structure** (per invitee):
+```text
+┌──────────────────────────────────────────────────┐
+│  [Avatar]  Name (bold)                           │
+│            email@domain.com (muted, smaller)     │
+├──────────────────────────────────────────────────┤
+│  ...next invitee...                              │
+└──────────────────────────────────────────────────┘
+           +14 آخرين (if overflow)
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Move invitees and scheduling sections into the details card as standard rows matching the icon+label pattern |
+| `EventDetailModal.tsx` | Replace avatar-stack invitees row with expanded list showing name+email per invitee; keep scheduling settings as last row |
 
