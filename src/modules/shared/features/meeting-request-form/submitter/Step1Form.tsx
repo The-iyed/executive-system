@@ -87,13 +87,13 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             </>
           )}
 
-          <MeetingCategoryField meetingType={watched.meeting_type} />
+          <MeetingCategoryField meetingType={watched.meeting_type} required={!isSchedulerEdit} />
           {visibility.meeting_justification && <MeetingJustificationField />}
           {visibility.meeting_classification_type && <ClassificationTypeField />}
           {visibility.meetingSubCategory && <SubCategoryField />}
           {visibility.related_topic && <RelatedTopicField />}
           {visibility.deadline && <DeadlineField />}
-          <ConfidentialityField />
+          <ConfidentialityField required={!isSchedulerEdit} />
         </div>
 
         <div className="mt-6">
