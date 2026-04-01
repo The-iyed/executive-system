@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/ui';
+import { cn, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/lib/ui';
 import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import { listActions, type ActionItem } from '../../../data/contentApi';
 
