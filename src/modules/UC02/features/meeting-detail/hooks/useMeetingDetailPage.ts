@@ -55,7 +55,7 @@ const INITIAL_SCHEDULE_FORM: ScheduleFormState = {
   scheduled_at: '',
   scheduled_end_at: '',
   meeting_channel: 'PHYSICAL',
-  requires_protocol: false,
+  is_preliminary_booking: false,
   protocol_type: null,
   protocol_type_text: '',
   is_data_complete: true,
