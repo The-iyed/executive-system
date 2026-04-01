@@ -35,15 +35,15 @@ export const submitterStep1Schema = z.object({
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
-  meeting_type: z.nativeEnum(MeetingType, { required_error: "نوع الاجتماع مطلوب" }),
+  meeting_type: z.nativeEnum(MeetingType).optional(),
   sector: z.string().optional(),
-  meeting_classification: z.string().min(1, "فئة الاجتماع مطلوبة"),
+  meeting_classification: z.string().optional(),
   meeting_sub_category: z.string().optional(),
   meeting_justification: z.string().optional(),
   related_topic: z.string().optional(),
   deadline: z.string().optional(),
   meeting_classification_type: z.string().optional(),
-  meeting_confidentiality: z.nativeEnum(MeetingConfidentiality, { required_error: "مستوى السرية مطلوب" }),
+  meeting_confidentiality: z.nativeEnum(MeetingConfidentiality).optional(),
   meeting_channel: z.nativeEnum(AttendanceMechanism, { required_error: "آلية الانعقاد مطلوبة" }),
   meeting_location: z.string().optional(),
   meeting_location_custom: z.string().optional(),
@@ -66,6 +66,18 @@ export const submitterStep1Schema = z.object({
   is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
+  /* ── Fields required only for non-scheduler ── */
+  if (!data.is_scheduler_edit) {
+    if (!data.meeting_type) {
+      ctx.addIssue({ code: "custom", path: ["meeting_type"], message: "نوع الاجتماع مطلوب" });
+    }
+    if (!data.meeting_classification) {
+      ctx.addIssue({ code: "custom", path: ["meeting_classification"], message: "فئة الاجتماع مطلوبة" });
+    }
+    if (!data.meeting_confidentiality) {
+      ctx.addIssue({ code: "custom", path: ["meeting_confidentiality"], message: "مستوى السرية مطلوب" });
+    }
+  }
   if (!data.is_scheduler_edit && data.meeting_type === MeetingType.INTERNAL && !data.sector) {
     ctx.addIssue({ code: "custom", path: ["sector"], message: "القطاع مطلوب للاجتماع الداخلي" });
   }

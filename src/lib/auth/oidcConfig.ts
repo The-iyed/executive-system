@@ -115,12 +115,13 @@ const oidcConfig = {
     return getRedirectUri();
   },
   response_type: 'code',
-  scope: 'openid profile email',
-  automaticSilentRenew: true,
+  scope: 'openid profile email offline_access',
+  automaticSilentRenew: false,
   loadUserInfo: false,
   filterProtocolClaims: true,
-  silentRequestTimeout: 1000,
+  silentRequestTimeout: 10000,
   revokeAccessTokenOnSignout: true,
+  accessTokenExpiringNotificationTimeInSeconds: 120,
   stateStore: createStateStoreWithPkceBackup(),
   metadata,
 };
