@@ -500,6 +500,9 @@ export function useContentRequestDetailPage() {
   }, [setManualActionAssignees]);
 
   /* ── Suggested Action edit handlers ── */
+  const updateSuggestedActionTitle = useCallback((id: string, title: string) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
   const updateSuggestedActionDueDate = useCallback((id: string, due_date: string | null) => {
     setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
   }, []);
