@@ -11,7 +11,7 @@ export function ClassificationTypeField({ disabled }: Props) {
   const editable = useIsFieldEditable("meeting_classification_type");
   const isDisabled = disabled || !editable;
   return (
-    <FormField label="تصنيف الاجتماع" name="meeting_classification_type" required errors={errors} colSpan={4}>
+    <FormField label="تصنيف الاجتماع" name="meeting_classification_type" required={required} errors={errors} colSpan={4}>
       <Controller name="meeting_classification_type" control={control}
         render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange} disabled={isDisabled}>

@@ -10,7 +10,7 @@ export function RelatedTopicField({ disabled }: Props) {
   const editable = useIsFieldEditable("related_topic");
   const isDisabled = disabled || !editable;
   return (
-    <FormField label="موضوع التكليف المرتبط" name="related_topic" required errors={errors} colSpan={4}>
+    <FormField label="موضوع التكليف المرتبط" name="related_topic" required={required} errors={errors} colSpan={4}>
       <Input placeholder="أدخل الموضوع" disabled={isDisabled} className={inputClass(!!errors.related_topic)} {...register("related_topic")} />
     </FormField>
   );

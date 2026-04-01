@@ -88,11 +88,11 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           )}
 
           <MeetingCategoryField meetingType={watched.meeting_type} required={!isSchedulerEdit} />
-          {visibility.meeting_justification && <MeetingJustificationField />}
-          {visibility.meeting_classification_type && <ClassificationTypeField />}
+          {visibility.meeting_justification && <MeetingJustificationField required={!isSchedulerEdit} />}
+          {visibility.meeting_classification_type && <ClassificationTypeField required={!isSchedulerEdit} />}
           {visibility.meetingSubCategory && <SubCategoryField />}
-          {visibility.related_topic && <RelatedTopicField />}
-          {visibility.deadline && <DeadlineField />}
+          {visibility.related_topic && <RelatedTopicField required={!isSchedulerEdit} />}
+          {visibility.deadline && <DeadlineField required={!isSchedulerEdit} />}
           <ConfidentialityField required={!isSchedulerEdit} />
         </div>
 
