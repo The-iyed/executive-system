@@ -13,6 +13,14 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       searchable: true,
     },
     {
+      key: "name",
+      label: "الاسم",
+      type: "text",
+      placeholder: "الاسم",
+      minWidth: "min-w-[180px]",
+      autoFillFromSearch: true,
+    },
+    {
       key: "position",
       label: "المنصب",
       type: "text",
