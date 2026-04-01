@@ -60,8 +60,8 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           <MeetingTitleField />
 
           <DescriptionField />
-          {visibility.sector && <SectorField />}
-          <MeetingTypeField />
+          {visibility.sector && <SectorField required={!isSchedulerEdit} />}
+          <MeetingTypeField required={!isSchedulerEdit} />
 
           <IsUrgentField />
           {visibility.urgent_reason && <UrgentReasonField />}
