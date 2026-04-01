@@ -51,8 +51,8 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           <DescriptionField />
 
           {/* Row 3 */}
-          <SectorField />
-          <MeetingTypeField />
+          <SectorField required={false} />
+          <MeetingTypeField required={false} />
           <IsUrgentField />
 
           {/* Conditional */}
