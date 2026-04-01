@@ -89,7 +89,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   return (
     <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-card rounded-2xl shadow-sm border border-border/40">
       {/* Title + Quick meeting */}
-      <div className="flex flex-row items-center gap-4">
+      <div className="flex flex-row items-center gap-3">
         <div className="flex flex-row items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <CalendarIcon className="w-4 h-4 text-primary" />
@@ -103,27 +103,26 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             </p>
           </div>
         </div>
-
-        {onQuickMeeting && (
-          <>
-            <div className="w-px h-8 bg-border/40" />
-            <button
-              type="button"
-              onClick={onQuickMeeting}
-              className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
-              style={FONT}
-            >
-              <span className="flex items-center justify-center w-5 h-5 rounded-md bg-white/20 group-hover:bg-white/30 transition-colors">
-                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              </span>
-              اجتماع سريع
-            </button>
-          </>
-        )}
       </div>
 
       {/* Navigation */}
-      <div className="flex flex-row items-center gap-3">
+      <div className="flex flex-row items-center gap-2">
+        {/* Quick meeting button */}
+        {onQuickMeeting && (
+          <button
+            type="button"
+            onClick={onQuickMeeting}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
+            style={FONT}
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            اجتماع سريع
+          </button>
+        )}
+
+        {/* Separator */}
+        {onQuickMeeting && <div className="w-px h-6 bg-border/60" />}
+
         {/* View mode toggle */}
         <div className="flex items-center bg-muted rounded-lg p-0.5 gap-0.5">
           {VIEW_MODES.map(({ key, label }) => (

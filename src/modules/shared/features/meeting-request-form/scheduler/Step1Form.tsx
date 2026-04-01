@@ -1,6 +1,4 @@
-import { useMemo } from "react";
 import { FormProvider } from "react-hook-form";
-import { addDays, startOfDay } from "date-fns";
 import { useSchedulerStep1Form } from "./useStep1Form";
 import {
   MeetingTitleField, DescriptionField, SectorField, MeetingTypeField,
@@ -9,9 +7,8 @@ import {
   ConfidentialityField, ClassificationTypeField, SubCategoryField,
   RelatedTopicField, DeadlineField, NoteField, MeetingManagerField, MeetingOwnerField,
   MeetingNatureField, PreviousMeetingField, RequiresProtocolField,
-  RelatedDirectiveField, AgendaSection,
+  RelatedDirectiveField, AgendaSection, OnBehalfField,
 } from "../shared";
-import { BOOL } from "../shared/types/enums";
 import type { SchedulerStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
@@ -26,9 +23,6 @@ interface Props {
 export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, defaultDirectiveLabel }: Props) {
   const { form, visibility, watched } = useSchedulerStep1Form(initialValues);
 
-  const minDate = useMemo(() => {
-    return watched.is_urgent === BOOL.TRUE ? startOfDay(new Date()) : startOfDay(addDays(new Date(), 7));
-  }, [watched.is_urgent]);
 
   const handleSubmit = form.handleSubmit(
     (data) => {
@@ -50,13 +44,14 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           {visibility.previous_meeting_id && <PreviousMeetingField />}
           <MeetingManagerField name="submitter" label="مقدّم الطلب" placeholder="ابحث عن مقدّم الطلب..." />
 
-          {/* Row 2 */}
-          <MeetingOwnerField />
+          {/* On behalf */}
+          <OnBehalfField />
+          {visibility.meeting_owner && <MeetingOwnerField />}
           <MeetingTitleField />
           <DescriptionField />
 
           {/* Row 3 */}
-          <SectorField required />
+          <SectorField />
           <MeetingTypeField />
           <IsUrgentField />
 
@@ -64,7 +59,7 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           {visibility.urgent_reason && <UrgentReasonField />}
 
           {/* Dates */}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} />
+          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required />
 
           {/* Channel & location */}
           <MeetingChannelField />
