@@ -167,8 +167,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
         {!isLoading && display && (
           <div className="flex flex-col" style={FONT}>
-            {/* Gradient accent bar */}
-            <div className="h-[3px] w-full bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA]" />
 
             {/* Header */}
             <div className="flex items-start justify-between px-5 pt-4 pb-3">
