@@ -79,7 +79,7 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
       </button>
 
       {open && (
-        <div className="absolute z-[9999] mt-1 w-full min-w-[300px] rounded-lg border border-input bg-background shadow-lg animate-in fade-in-0 zoom-in-95" dir="rtl">
+        <div className="absolute z-[99999] mt-1 w-full min-w-[300px] rounded-lg border border-input bg-background shadow-xl animate-in fade-in-0 zoom-in-95" dir="rtl" style={{ position: 'fixed', width: containerRef.current?.getBoundingClientRect().width, top: containerRef.current?.getBoundingClientRect().bottom, right: window.innerWidth - (containerRef.current?.getBoundingClientRect().right ?? 0) }}>
           <div className="flex items-center border-b border-input px-3">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
