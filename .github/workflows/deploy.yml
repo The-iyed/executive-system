@@ -94,19 +94,19 @@ jobs:
           awk '{for(i=1;i<=NF;i++) if($i~/=/) print $i;}' $GITHUB_WORKSPACE/env.tmp >> $GITHUB_WORKSPACE/.env
           echo "=== .env file created ==="
 
-      # - name: Upload .env as artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: env-file-production
-      #     path: ${{ github.workspace }}/env.tmp
-      #     retention-days: 1
+      - name: Upload .env as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-file-production
+          path: ${{ github.workspace }}/env.tmp
+          retention-days: 1
 
       - name: Deploy and validate
         id: deploy_step
         env:
           VM_PASSWORD: ${{ secrets.VM_PROD_PASSWORD }}
-          COMPOSE_FILE: docker-prod-compose.yml
-          DEST_DIR: /var/www/stats-v2
+          COMPOSE_FILE: docker-compose.yml
+          DEST_DIR: /var/www/minister-mind-fe
         run: |
           set -eo pipefail
           LOG_FILE=$(mktemp)
@@ -118,12 +118,8 @@ jobs:
           trap save_log EXIT
           echo ">>> [Prod] Deploying to $DEST_DIR using $COMPOSE_FILE..." | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S mkdir -p "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
-
-          # Use rsync --delete to mirror source exactly, removing any stale files
-          # --exclude='.env' protects the server .env from being deleted by --delete
-          echo "$VM_PASSWORD" | sudo -S cp -rf ${{ github.workspace }}/* "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"
-          echo "$VM_PASSWORD" | sudo -S cp .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
-
+          echo "$VM_PASSWORD" | sudo -S cp -R . "$DEST_DIR" 2>&1 | tee -a "$LOG_FILE"
+          echo "$VM_PASSWORD" | sudo -S cp -R .env "$DEST_DIR/.env" 2>&1 | tee -a "$LOG_FILE"
           cd "$DEST_DIR"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee -a "$LOG_FILE"
           echo "$VM_PASSWORD" | sudo -S docker compose -f "$COMPOSE_FILE" up -d --force-recreate 2>&1 | tee -a "$LOG_FILE"
