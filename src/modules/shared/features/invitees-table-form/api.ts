@@ -31,6 +31,8 @@ export interface SuggestedAttendee {
   department_type: string;
   suggestion_reason: string;
   importance_level: string;
+  name_ar?: string;
+  name_en?: string;
   /** Optional scores from the API (camelCase). API may send snake_case; we normalize in the hook. */
   scores?: SuggestionScores;
 }

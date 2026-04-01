@@ -69,7 +69,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             startName="meeting_start_date"
             endName="meeting_end_date"
             required
-            minDate={minDate}
+            minDate={isSchedulerEdit ? undefined : minDate}
             disabled={
               !isSchedulerEdit &&
               meetingStatus === MeetingStatus.SCHEDULED &&
@@ -97,7 +97,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
         </div>
 
         <div className="mt-6">
-          <AgendaSection form={form} />
+          <AgendaSection form={form} agendaRequired={!isSchedulerEdit} />
         </div>
 
         <DirectiveSection

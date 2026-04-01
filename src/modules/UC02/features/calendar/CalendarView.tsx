@@ -97,6 +97,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [slotSubmitting, setSlotSubmitting] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
 
+  const handleQuickMeeting = useCallback(() => {
+    setSlot({ date: new Date(), time: '', endTime: '', mode: 'create', isQuickMeeting: true });
+  }, []);
+
   const showSkeleton = isLoading;
 
   // Map to OutlookTimelineEvent for MinisterFullCalendar compatibility
@@ -131,8 +135,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     async (values: Record<string, unknown>) => {
       setSlotError(null);
       setSlotSubmitting(true);
-      const scheduled_start = toISOStringWithTimezone(new Date(values.start_date as string));
-      const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
+      // Strip timezone — send naive ISO like "2026-04-20T09:00:00"
+      const stripTz = (iso: string) => iso.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
+      const scheduled_start = stripTz(toISOStringWithTimezone(new Date(values.start_date as string)));
+      const scheduled_end = stripTz(toISOStringWithTimezone(new Date(values.end_date as string)));
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
       // Snapshot for rollback
@@ -162,6 +168,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           webex_meeting_unique_identifier: values.webex_meeting_unique_identifier as string | undefined,
           proposers: values.proposers as unknown,
           invitees,
+          requires_protocol: values.requires_protocol as boolean | undefined,
+          is_data_complete: values.is_data_complete as boolean | undefined,
         };
 
         if (isEdit) {
@@ -261,6 +269,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onToday={goToday}
         onDateSelect={setCurrentDate}
         onViewModeChange={setViewMode}
+        onQuickMeeting={handleQuickMeeting}
       />
 
       <div className="relative flex-1 min-h-0 bg-card overflow-auto rounded-2xl shadow-sm border border-border/40">
@@ -322,6 +331,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           initialMeetingChannel={slot.meetingChannel ?? ''}
           initialInvitees={slot.initialInvitees}
           mode={slot.mode}
+          hideProposedTime={false}
           isSubmitting={slotSubmitting}
           submitError={slotError}
           onSubmit={handleSlotSubmit as any}

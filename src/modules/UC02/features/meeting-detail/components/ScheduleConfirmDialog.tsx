@@ -155,9 +155,9 @@ export function ScheduleConfirmDialog({
         <div className="px-6 py-4 border-t border-border/50 bg-muted/20 flex flex-row-reverse items-center gap-2.5">
           <button
             type="button"
-            disabled={isPending}
+            disabled={isPending || !!validationError}
             onClick={onConfirm}
-            className="px-6 py-2.5 text-[13px] font-bold text-primary-foreground bg-primary rounded-xl hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+            className="px-6 py-2.5 text-[13px] font-bold text-primary-foreground bg-primary rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isPending ? 'جاري الجدولة...' : 'تأكيد الجدولة'}
           </button>

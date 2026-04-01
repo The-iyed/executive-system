@@ -13,6 +13,7 @@ interface ModalActionBarProps {
   onCancel: () => void;
   onSubmit: () => void;
   onSaveAsDraft?: () => void;
+  extraFooterActions?: React.ReactNode;
 }
 
 export function ModalActionBar({
@@ -27,6 +28,7 @@ export function ModalActionBar({
   onCancel,
   onSubmit,
   onSaveAsDraft,
+  extraFooterActions,
 }: ModalActionBarProps) {
   const isFirst = currentStep === 1;
   const isLast = currentStep === totalSteps;
@@ -72,6 +74,7 @@ export function ModalActionBar({
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "حفظ كمسودة"}
             </Button>
           )}
+          {extraFooterActions}
         </div>
       )}
 

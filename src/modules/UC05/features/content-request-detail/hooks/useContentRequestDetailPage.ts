@@ -20,12 +20,19 @@ import {
   analyzeContradictions,
   getAttachmentInsightsWithPolling,
   runCompareByAttachment,
+  getContentDirectives,
+  createContentDirective,
+  updateContentDirective,
+  deleteContentDirective,
   type ActionItem,
   type ConsultantUser,
   type DirectiveForApprove,
   type AnalyzeResponse,
   type ComparePresentationsResponse,
   type ContentRequestDetailResponse,
+  type ContentDirective,
+  type CreateContentDirectivePayload,
+  type UpdateContentDirectivePayload,
 } from '../../../data/contentApi';
 import {
   getConsultationRecordsWithParams,
@@ -85,7 +92,13 @@ export function useContentRequestDetailPage() {
   const [manualActionEdits, setManualActionEdits] = useState<
     Record<number, { due_date?: string | null; status?: string; assignees?: string[] }>
   >({});
-  const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number, string>>({});
+  const [suggestedActionEdits, setSuggestedActionEdits] = useState<
+    Record<string, { title?: string; due_date?: string | null; status?: string; assignees?: string[] }>
+  >({});
+  const [existingDirectiveEdits, setExistingDirectiveEdits] = useState<
+    Record<string, { title?: string; due_date?: string | null; status?: string; assignees?: string[] }>
+  >({});
+  const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number | string, string>>({});
   const directiveDueDateFromDate = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -121,6 +134,66 @@ export function useContentRequestDetailPage() {
 
   const rawMeetingId = contentRequest?.meeting_id ?? contentRequest?.meeting?.meeting_id ?? contentRequest?.meeting?.id ?? id;
   const suggestedActionsMeetingId = rawMeetingId != null && String(rawMeetingId).trim() !== '' ? String(rawMeetingId).trim() : null;
+
+  /* ── Content Directives CRUD query + mutations ── */
+  const { data: contentDirectives = [], isLoading: isLoadingContentDirectives } = useQuery({
+    queryKey: ['content-directives', id],
+    queryFn: () => getContentDirectives(id!),
+    enabled: !!id,
+  });
+
+  const createDirectiveMutation = useMutation({
+    mutationFn: (data: CreateContentDirectivePayload) => createContentDirective(id!, data),
+    onMutate: async (newDirective) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      const optimistic: ContentDirective = { id: newDirective.id ?? -(Date.now()), title: newDirective.title, due_date: newDirective.due_date, assignees: newDirective.assignees, status: newDirective.status };
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) => [...(old ?? []), optimistic]);
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم إضافة التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل إضافة التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const updateDirectiveMutation = useMutation({
+    mutationFn: ({ directiveId, data }: { directiveId: number; data: UpdateContentDirectivePayload }) =>
+      updateContentDirective(id!, directiveId, data),
+    onMutate: async ({ directiveId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).map((d) => d.id === directiveId ? { ...d, ...data } : d)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل تحديث التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
+
+  const deleteDirectiveMutation = useMutation({
+    mutationFn: (directiveId: number) => deleteContentDirective(id!, directiveId),
+    onMutate: async (directiveId) => {
+      await queryClient.cancelQueries({ queryKey: ['content-directives', id] });
+      const prev = queryClient.getQueryData<ContentDirective[]>(['content-directives', id]);
+      queryClient.setQueryData<ContentDirective[]>(['content-directives', id], (old) =>
+        (old ?? []).filter((d) => d.id !== directiveId)
+      );
+      return { prev };
+    },
+    onSuccess: () => { toast.success('تم حذف التوجيه بنجاح'); },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(['content-directives', id], context.prev);
+      toast.error('فشل حذف التوجيه');
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['content-directives', id] }); },
+  });
 
   const { data: suggestedActionsData } = useQuery({
     queryKey: ['business-cards-suggested-actions', suggestedActionsMeetingId],
@@ -387,11 +460,18 @@ export function useContentRequestDetailPage() {
     if (!opt?.value) return;
     const action = addDirectiveActionMapRef.current.get(opt.value);
     if (action) {
-      setManualAddedActions((prev) => { if (prev.some((a) => a.id === action.id)) return prev; return [...prev, action]; });
+      // POST to API instead of local state
+      createDirectiveMutation.mutate({
+        id: action.id,
+        title: action.title,
+        due_date: action.due_date ?? null,
+        assignees: action.assignees ?? [],
+        status: action.status ?? 'CURRENT',
+      });
       setShowAddDirectiveRow(false);
     }
     setAddDirectiveSelectValue(null);
-  }, []);
+  }, [createDirectiveMutation]);
 
   const handleDeleteManualAction = useCallback((actionId: number) => {
     setManualAddedActions((prev) => prev.filter((a) => a.id !== actionId));
@@ -418,6 +498,56 @@ export function useContentRequestDetailPage() {
   const removeManualActionAssignee = useCallback((actionId: number, index: number, currentAssignees: string[]) => {
     setManualActionAssignees(actionId, currentAssignees.filter((_, i) => i !== index));
   }, [setManualActionAssignees]);
+
+  /* ── Suggested Action edit handlers ── */
+  const updateSuggestedActionTitle = useCallback((id: string, title: string) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
+  const updateSuggestedActionDueDate = useCallback((id: string, due_date: string | null) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
+  }, []);
+  const updateSuggestedActionStatus = useCallback((id: string, status: string) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], status } }));
+  }, []);
+  const getSuggestedActionAssignees = useCallback((id: string, fallback: string[]) => {
+    return suggestedActionEdits[id]?.assignees ?? fallback;
+  }, [suggestedActionEdits]);
+  const setSuggestedActionAssignees = useCallback((id: string, assignees: string[]) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], assignees } }));
+  }, []);
+  const addSuggestedActionAssignee = useCallback((id: string, email: string, currentAssignees: string[]) => {
+    const trimmed = email.trim();
+    if (!trimmed || currentAssignees.includes(trimmed)) return;
+    setSuggestedActionAssignees(id, [...currentAssignees, trimmed]);
+  }, [setSuggestedActionAssignees]);
+  const removeSuggestedActionAssignee = useCallback((id: string, index: number, currentAssignees: string[]) => {
+    setSuggestedActionAssignees(id, currentAssignees.filter((_, i) => i !== index));
+  }, [setSuggestedActionAssignees]);
+
+  /* ── Existing Directive edit handlers ── */
+  const updateExistingDirectiveTitle = useCallback((id: string, title: string) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
+  const updateExistingDirectiveDueDate = useCallback((id: string, due_date: string | null) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
+  }, []);
+  const updateExistingDirectiveStatus = useCallback((id: string, status: string) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], status } }));
+  }, []);
+  const getExistingDirectiveAssignees = useCallback((id: string, fallback: string[]) => {
+    return existingDirectiveEdits[id]?.assignees ?? fallback;
+  }, [existingDirectiveEdits]);
+  const setExistingDirectiveAssignees = useCallback((id: string, assignees: string[]) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], assignees } }));
+  }, []);
+  const addExistingDirectiveAssignee = useCallback((id: string, email: string, currentAssignees: string[]) => {
+    const trimmed = email.trim();
+    if (!trimmed || currentAssignees.includes(trimmed)) return;
+    setExistingDirectiveAssignees(id, [...currentAssignees, trimmed]);
+  }, [setExistingDirectiveAssignees]);
+  const removeExistingDirectiveAssignee = useCallback((id: string, index: number, currentAssignees: string[]) => {
+    setExistingDirectiveAssignees(id, currentAssignees.filter((_, i) => i !== index));
+  }, [setExistingDirectiveAssignees]);
 
   const handleDeleteExistingDirective = useCallback((directiveId: string) => {
     setDeletedExistingDirectiveIds((prev) => new Set(prev).add(directiveId));
@@ -447,18 +577,21 @@ export function useContentRequestDetailPage() {
   }, [selectedConsultantId, consultationNotes, consultants, submitConsultationMutation]);
 
   const handleSendToScheduling = useCallback(() => {
-    if (!executiveSummaryFile) { toast.error('يرجى إرفاق الملخص التنفيذي أولاً'); return; }
     if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
     const existingObjs: DirectiveForApprove[] = relatedDirectives
       .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
-      .map((d) => ({
-        id: Number(d.id),
-        title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
-        due_date: d.deadline ?? null,
-        assignees: (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[],
-        status: d.directive_status ?? 'PENDING',
-      }))
+      .map((d) => {
+        const edits = existingDirectiveEdits[String(d.id)];
+        const fallbackAssignees = (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[];
+        return {
+          id: Number(d.id),
+          title: edits?.title ?? ((d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—'),
+          due_date: edits?.due_date !== undefined ? edits.due_date : (d.deadline ?? null),
+          assignees: edits?.assignees ?? fallbackAssignees,
+          status: edits?.status ?? d.directive_status ?? 'PENDING',
+        };
+      })
       .filter((d) => d.title !== '—');
     const aiObjs: DirectiveForApprove[] = aiDirectivesSuggestions
       .filter((d) => aiDirectiveActions[d.id])
@@ -469,25 +602,40 @@ export function useContentRequestDetailPage() {
       });
     const suggestedObjs: DirectiveForApprove[] = suggestedActionsItems
       .filter((s) => !deletedSuggestedActionIds.has(String(s.id)))
-      .map((s) => ({ id: Number(s.id), title: (s.title ?? '').trim() || '—', due_date: s.due_date ?? null, assignees: normalizeAssignees(s.assignees), status: s.status ?? 'PENDING' }))
+      .map((s) => {
+        const edits = suggestedActionEdits[String(s.id)];
+        const fallbackAssignees = normalizeAssignees(s.assignees);
+        return {
+          id: Number(s.id),
+          title: edits?.title ?? ((s.title ?? '').trim() || '—'),
+          due_date: edits?.due_date !== undefined ? edits.due_date : (s.due_date ?? null),
+          assignees: edits?.assignees ?? fallbackAssignees,
+          status: edits?.status ?? s.status ?? 'PENDING',
+        };
+      })
       .filter((d) => d.title !== '—');
     const manualObjs: DirectiveForApprove[] = manualAddedActions.map((a) => {
       const edits = manualActionEdits[a.id];
       return { id: a.id, title: (a.title ?? '').trim() || '—', due_date: edits?.due_date !== undefined ? edits.due_date : (a.due_date ?? null), assignees: edits?.assignees ?? a.assignees ?? [], status: edits?.status ?? a.status ?? 'PENDING' };
     });
-    const directivesToSend: DirectiveForApprove[] = [...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
+    // API-backed directives
+    const apiObjs: DirectiveForApprove[] = contentDirectives.map((d) => ({
+      id: d.id, title: d.title, due_date: d.due_date, assignees: d.assignees, status: d.status,
+    }));
+    const directivesToSend: DirectiveForApprove[] = [...apiObjs, ...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
     sendToSchedulingMutation.mutate({ file: executiveSummaryFile, notes: guidanceNotes.trim(), directives: directivesToSend.length > 0 ? directivesToSend : undefined });
-  }, [executiveSummaryFile, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
+  }, [executiveSummaryFile, contentRequest, contentDirectives, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
   /* ── Computed ── */
   const hasDirectives = useMemo(() => {
+    const apiCount = contentDirectives.length;
     const existingCount = (contentRequest?.related_directives ?? [])
       .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
     const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
     const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
     const manualCount = manualAddedActions.length;
-    return (existingCount + aiCount + suggestedCount + manualCount) > 0;
-  }, [contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+    return (apiCount + existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentDirectives, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
 
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
@@ -534,7 +682,10 @@ export function useContentRequestDetailPage() {
     insightsMutation, insightsModalAttachment, setInsightsModalAttachment, insightsAbortControllerRef,
     compareByAttachmentMutation, isCompareModalOpen, setIsCompareModalOpen,
     compareResult, setCompareResult, compareErrorDetail, setCompareErrorDetail,
-    // Content tab: directives
+    // Content tab: directives (API-backed CRUD)
+    contentDirectives, isLoadingContentDirectives,
+    createDirectiveMutation, updateDirectiveMutation, deleteDirectiveMutation,
+    // Content tab: directives (legacy local state)
     aiDirectivesSuggestions, editableAiDirectives, aiDirectiveActions,
     deletedExistingDirectiveIds, deletedSuggestedActionIds,
     manualAddedActions, manualActionEdits, assigneeInputByActionId,
@@ -543,10 +694,16 @@ export function useContentRequestDetailPage() {
     directiveDueDateFromDate, isLoadingAiSuggestions, suggestedActionsItems, hasSuggestedActions,
     handleRequestAiDirectives, handleUpdateAiDirective, handleDeleteAiDirective,
     handleDeleteExistingDirective, handleDeleteSuggestedAction,
-    loadActionsForAddDirective, handleAddDirectiveSelectChange,
+    loadActionsForAddDirective, handleAddDirectiveSelectChange, addDirectiveActionMapRef,
     handleDeleteManualAction, updateManualActionDueDate, updateManualActionStatus,
     getManualActionAssignees, addManualActionAssignee, removeManualActionAssignee,
     setAssigneeInputByActionId,
+    // Content tab: suggested action edits
+    suggestedActionEdits, updateSuggestedActionTitle, updateSuggestedActionDueDate, updateSuggestedActionStatus,
+    getSuggestedActionAssignees, addSuggestedActionAssignee, removeSuggestedActionAssignee,
+    // Content tab: existing directive edits
+    existingDirectiveEdits, updateExistingDirectiveTitle, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
+    getExistingDirectiveAssignees, addExistingDirectiveAssignee, removeExistingDirectiveAssignee,
     // Content tab: executive summary
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
     fileInputRef, handleDragOver, handleDragLeave, handleDrop, handleFileSelect, handleRemoveFile,

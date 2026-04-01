@@ -46,6 +46,7 @@ export function useSubmitterStep1Form(initialValues?: Partial<SubmitterStep1Valu
     submitter: null,
     requires_protocol: BOOL.FALSE,
     related_directive: "",
+    is_scheduler_edit: options?.isSchedulerEdit ?? false,
     ...initialValues,
   };
 
