@@ -107,6 +107,7 @@ export interface CreateScheduledMeetingPayload {
   /** Scheduling settings */
   requires_protocol?: boolean;
   is_data_complete?: boolean;
+  is_preliminary_booking?: boolean;
   /** @deprecated Prefer proposers — kept for backends that only store ids */
   proposer_user_ids?: string[];
   /** Full proposer rows (AD) — preferred */
@@ -203,6 +204,9 @@ export const createScheduledMeeting = async (
   }
   if (payload.is_data_complete !== undefined) {
     body.is_data_complete = payload.is_data_complete;
+  }
+  if (payload.is_preliminary_booking !== undefined) {
+    body.is_preliminary_booking = payload.is_preliminary_booking;
   }
   if (payload.proposers && payload.proposers.length > 0) {
     body.proposers = payload.proposers;
