@@ -9,7 +9,7 @@ import {
   ConfidentialityField, ClassificationTypeField, SubCategoryField,
   RelatedTopicField, DeadlineField, NoteField, MeetingManagerField, MeetingOwnerField,
   MeetingNatureField, PreviousMeetingField, RequiresProtocolField,
-  RelatedDirectiveField, AgendaSection,
+  RelatedDirectiveField, AgendaSection, OnBehalfField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
 import type { SchedulerStep1Values } from "./schema";
@@ -50,8 +50,9 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           {visibility.previous_meeting_id && <PreviousMeetingField />}
           <MeetingManagerField name="submitter" label="مقدّم الطلب" placeholder="ابحث عن مقدّم الطلب..." />
 
-          {/* Row 2 */}
-          <MeetingOwnerField />
+          {/* On behalf */}
+          <OnBehalfField />
+          {visibility.meeting_owner && <MeetingOwnerField />}
           <MeetingTitleField />
           <DescriptionField />
 

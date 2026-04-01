@@ -24,9 +24,7 @@ export const schedulerStep1Schema = z.object({
   submitter: meetingUserSchema.nullable().superRefine((v, ctx) => {
     if (!v) ctx.addIssue({ code: "custom", message: "مقدّم الطلب مطلوب" });
   }),
-  meeting_owner: meetingUserSchema.nullable().superRefine((v, ctx) => {
-    if (!v) ctx.addIssue({ code: "custom", message: "مالك الاجتماع مطلوب" });
-  }),
+  meeting_owner: meetingUserSchema.nullable().optional(),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
@@ -55,6 +53,9 @@ export const schedulerStep1Schema = z.object({
 }).superRefine((data, ctx) => {
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
+  }
+  if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
+    ctx.addIssue({ code: "custom", path: ["meeting_owner"], message: "يرجى تحديد مالك الاجتماع" });
   }
   if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
     ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });

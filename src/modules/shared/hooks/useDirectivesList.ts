@@ -18,8 +18,8 @@ const PAGE_SIZE = 10;
 export interface UseDirectivesListOptions {
   /** Fixed directive_type filter (e.g. 'SCHEDULING' for UC-02) */
   fixedDirectiveType?: DirectiveType;
-  /** Initial active type tab (for UC-19 type tabs) */
-  defaultTypeTab?: DirectiveType;
+  /** Initial active type tab (for UC-19 type tabs). Omit or `undefined` = no type filter (“all”). */
+  defaultTypeTab?: DirectiveType | undefined;
   /** Whether to use type tabs (UC-19) or status tabs (UC-02) */
   tabMode: 'type' | 'status';
   /** Default status filter */
