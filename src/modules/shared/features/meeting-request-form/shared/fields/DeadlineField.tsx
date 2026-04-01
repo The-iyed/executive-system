@@ -13,7 +13,7 @@ export function DeadlineField({ disabled }: Props) {
   const editable = useIsFieldEditable("deadline");
   const isDisabled = disabled || !editable;
   return (
-    <FormField label="تاريخ الاستحقاق" name="deadline" required errors={errors} colSpan={4}>
+    <FormField label="تاريخ الاستحقاق" name="deadline" required={required} errors={errors} colSpan={4}>
       <Controller name="deadline" control={control}
         render={({ field }) => (
           <Popover>

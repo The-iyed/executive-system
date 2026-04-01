@@ -10,7 +10,7 @@ export function UrgentReasonField({ disabled }: Props) {
   const editable = useIsFieldEditable("urgent_reason");
   const isDisabled = disabled || !editable;
   return (
-    <FormField label="مبرر الاستعجال" name="urgent_reason" required errors={errors} colSpan={4}>
+    <FormField label="مبرر الاستعجال" name="urgent_reason" required={required} errors={errors} colSpan={4}>
       <Input placeholder="مبرر الاستعجال" disabled={isDisabled} className={inputClass(!!errors.urgent_reason)} {...register("urgent_reason")} />
     </FormField>
   );
