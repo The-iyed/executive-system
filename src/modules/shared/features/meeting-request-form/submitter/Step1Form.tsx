@@ -60,15 +60,15 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           <MeetingTitleField />
 
           <DescriptionField />
-          {visibility.sector && <SectorField />}
-          <MeetingTypeField />
+          {visibility.sector && <SectorField required={!isSchedulerEdit} />}
+          <MeetingTypeField required={!isSchedulerEdit} />
 
           <IsUrgentField />
-          {visibility.urgent_reason && <UrgentReasonField />}
+          {visibility.urgent_reason && <UrgentReasonField required={!isSchedulerEdit} />}
           <MeetingDateField
             startName="meeting_start_date"
             endName="meeting_end_date"
-            required
+            required={!isSchedulerEdit}
             minDate={isSchedulerEdit ? undefined : minDate}
             disabled={
               !isSchedulerEdit &&
@@ -87,13 +87,13 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
             </>
           )}
 
-          <MeetingCategoryField meetingType={watched.meeting_type} />
-          {visibility.meeting_justification && <MeetingJustificationField />}
-          {visibility.meeting_classification_type && <ClassificationTypeField />}
+          <MeetingCategoryField meetingType={watched.meeting_type} required={!isSchedulerEdit} />
+          {visibility.meeting_justification && <MeetingJustificationField required={!isSchedulerEdit} />}
+          {visibility.meeting_classification_type && <ClassificationTypeField required={!isSchedulerEdit} />}
           {visibility.meetingSubCategory && <SubCategoryField />}
-          {visibility.related_topic && <RelatedTopicField />}
-          {visibility.deadline && <DeadlineField />}
-          <ConfidentialityField />
+          {visibility.related_topic && <RelatedTopicField required={!isSchedulerEdit} />}
+          {visibility.deadline && <DeadlineField required={!isSchedulerEdit} />}
+          <ConfidentialityField required={!isSchedulerEdit} />
         </div>
 
         <div className="mt-6">
