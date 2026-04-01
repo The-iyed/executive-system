@@ -68,3 +68,11 @@ export const DIRECTIVE_TYPE_CREATE_OPTIONS: { value: DirectiveType; label: strin
   { value: 'EXECUTIVE_OFFICE', label: 'المكتب التنفيذي' },
   { value: 'GOVERNMENT_CENTER', label: 'مركز الحكومة' },
 ];
+
+/** Full type list for create modal (includes جدولة) */
+export const DIRECTIVE_TYPE_FORM_OPTIONS: { value: DirectiveType; label: string }[] = [
+  { value: 'SCHEDULING', label: DIRECTIVE_TYPE_LABELS.SCHEDULING },
+  { value: 'GENERAL', label: DIRECTIVE_TYPE_LABELS.GENERAL },
+  { value: 'EXECUTIVE_OFFICE', label: DIRECTIVE_TYPE_LABELS.EXECUTIVE_OFFICE },
+  { value: 'GOVERNMENT_CENTER', label: DIRECTIVE_TYPE_LABELS.GOVERNMENT_CENTER },
+];

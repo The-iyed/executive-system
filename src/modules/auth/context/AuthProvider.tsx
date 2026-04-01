@@ -205,9 +205,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       const response = await axiosInstance.post('/api/auth/login', payload);
       const { access_token } = response.data;
       setTokens(access_token);
-      const userResponse = await axiosInstance.get('/api/auth/me');
-      const userData =
-        userResponse.data?.data || userResponse.data?.payload || userResponse.data;
+      const userData = await getCurrentUserApi();
       setUser(userData);
       trackEvent('auth', 'auth_login_success', { user_id: userData.id });
       return userData;
