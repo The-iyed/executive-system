@@ -38,6 +38,11 @@ interface OutlookTimelineEventResponse {
   meeting_channel?: string | null;
   meeting_location?: string | null;
   meeting_link?: string | null;
+  /** Preferred scheduled fields (when provided by backend). */
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
   invitees?: unknown[] | null;
 }
 
@@ -72,11 +77,14 @@ export interface CalendarTimelineEvent {
 // ── Mapper ──
 
 function mapResponseToEvent(raw: OutlookTimelineEventResponse): CalendarTimelineEvent {
+  const start = raw.meeting_start_date ?? raw.scheduled_start ?? raw.start_datetime;
+  const end = raw.meeting_end_date ?? raw.scheduled_end ?? raw.end_datetime;
+
   return {
     id: raw.item_id,
     title: raw.subject || 'اجتماع',
-    start: raw.start_datetime,
-    end: raw.end_datetime,
+    start,
+    end,
     location: raw.location ?? null,
     organizer: raw.organizer?.name ?? '',
     organizerEmail: raw.organizer?.email ?? '',
@@ -134,9 +142,20 @@ export function getMonthRange(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+/** Serialize range using local offset (not UTC) so day/week/month boundaries
+ *  align with the wall-clock times displayed in the calendar. */
 export function toISORange(range: { start: Date; end: Date }): { startISO: string; endISO: string } {
   return {
-    startISO: range.start.toISOString(),
-    endISO: range.end.toISOString(),
+    startISO: toLocalISO(range.start),
+    endISO: toLocalISO(range.end),
   };
+}
+
+function toLocalISO(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const oh = pad(Math.floor(Math.abs(offset) / 60));
+  const om = pad(Math.abs(offset) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${oh}:${om}`;
 }

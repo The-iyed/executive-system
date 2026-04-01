@@ -1,35 +1,29 @@
 
 
-## Plan: Fix weird animation on submit by removing premature `resetModal()` calls
+## Plan: Fix directive status translation in Content tab
 
-### Root cause
+### Problem
+`translateCompareValue` converts the value to **lowercase** before looking it up (`map[String(value).toLowerCase()]`), but the map keys are **UPPERCASE** (`PENDING`, `TAKEN`, `IN_PROGRESS`, etc.). The lookup always misses and returns the raw English enum string.
 
-When the user clicks "تحديث الطلب", `handleFinalSubmit` completes the API calls then runs:
+### Changes
 
+#### `src/modules/UC02/features/meeting-detail/utils/meetingDetailHelpers.ts` — Fix key lookup
+
+Change line 23 from:
 ```ts
-steps.resetModal();  // currentStep → 1, step1Data → null, step2Data → null
-onClose();           // triggers dialog close animation
+return map[String(value).toLowerCase()] ?? value;
+```
+to:
+```ts
+const v = String(value);
+return map[v] ?? map[v.toUpperCase()] ?? map[v.toLowerCase()] ?? value;
 ```
 
-`resetModal()` fires **before** the dialog's close animation starts. This causes the modal content to jump from step 3 back to step 1 (and unmount step 2/3 content) while the modal is still visually open. The close animation then plays on this already-changed content — producing the "weird animation."
-
-The reset is **redundant** because `useModalSteps.ts` already has a `useEffect` that resets all state when `open` becomes `false`.
-
-### Fix
-
-Remove `steps.resetModal()` on 3 lines in `useSubmitterModal.ts`:
-
-| Line | Context |
-|---|---|
-| 162 | Scheduler-edit branch in `handleFinalSubmit` |
-| 180 | Normal submit branch in `handleFinalSubmit` |
-| 240 | `handleSaveAsDraft` |
-
-Just call `onClose()` directly — the `useEffect` handles the cleanup after the dialog finishes closing.
+This tries exact match first (UPPERCASE keys), then uppercase, then lowercase as fallback. Fixes the translation for all directive statuses without breaking existing compare-value usage.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useSubmitterModal.ts` | Remove 3 `steps.resetModal()` lines |
+| `meetingDetailHelpers.ts` | Fix `translateCompareValue` to match keys case-insensitively |
 

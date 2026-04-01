@@ -119,6 +119,8 @@ export interface MeetingActionsBarProps {
   onOpenApproveUpdate?: () => void;
   onAddToWaitingList: () => void;
   isAddToWaitingListPending: boolean;
+  onSubmitDraft?: () => void;
+  isSubmitDraftPending?: boolean;
   hasChanges: boolean;
   hasContent: boolean;
   /** Whether the meeting has at least one presentation attachment */
@@ -145,6 +147,8 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
   onOpenApproveUpdate,
   onAddToWaitingList,
   isAddToWaitingListPending,
+  onSubmitDraft,
+  isSubmitDraftPending = false,
   hasChanges,
   hasContent,
   hasPresentation = true,
@@ -186,9 +190,17 @@ export const MeetingActionsBar: React.FC<MeetingActionsBarProps> = ({
     { icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: 'إرسال للمحتوى', onClick: () => { close(); hasPresentation && onOpenSendToContent(); }, disabled: !hasPresentation, disabledReason: 'لإرسال المحتوى، يرجى تعديل الاجتماع وإرفاق عرض تقديمي في تبويب المحتوى أولاً' },
   ];
 
+  const draftActions: ActionBarItem[] = [
+    { icon: <CalendarMinus className="w-5 h-5" strokeWidth={1.26} />, label: 'جدولة', onClick: () => { close(); onOpenSchedule(); } },
+    { icon: <Plus className="w-5 h-5" strokeWidth={1.26} />, label: isAddToWaitingListPending ? 'جاري الإضافة...' : 'إضافة إلى قائمة الانتظار', onClick: () => { close(); onAddToWaitingList(); }, disabled: isAddToWaitingListPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' },
+    ...(onSubmitDraft ? [{ icon: <Send className="w-5 h-5" strokeWidth={1.26} />, label: isSubmitDraftPending ? 'جاري الإرسال...' : 'إرسال للمراجعة', onClick: () => { close(); onSubmitDraft(); }, disabled: isSubmitDraftPending, disabledReason: 'جاري المعالجة، انتظر قليلاً' }] : []),
+  ];
+
   const actions: ActionBarItem[] =
     customActions && customActions.length > 0
       ? customActions.map((a) => ({ ...a, onClick: () => { close(); a.onClick(); } }))
+      : meetingStatus === MeetingStatus.DRAFT
+      ? draftActions
       : meetingStatus === MeetingStatus.SCHEDULED_SCHEDULING
       ? scheduledSchedulingActions
       : meetingStatus === MeetingStatus.SCHEDULED

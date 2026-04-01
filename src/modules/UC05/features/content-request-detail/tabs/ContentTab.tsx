@@ -1,10 +1,11 @@
 /**
- * UC05 Content tab – shared Mou7tawaContentTab + UC05-specific directives, notes, executive summary.
- * Compare & insights modals are tab-local (same pattern as UC02 ContentTab).
+ * UC05 Content tab – shared ContentInfoView + UC05-specific directives, notes, executive summary.
+ * Compare & insights modals are tab-local.
  */
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import {
   Trash2, Sparkles, Loader2, Upload, FileText, AlertCircle, ClipboardCheck,
+  ListChecks, StickyNote, FileCheck, GitCompareArrows, Eye,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -12,12 +13,11 @@ import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider,
 } from '@/lib/ui';
 import { formatDateArabic } from '@/modules/shared/utils';
-import {
-  Mou7tawaContentTab, FormAsyncSelectV2, FormDatePicker,
-  type OptionType,
-} from '@/modules/shared/components';
+import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
+import { ActionTitleSelect } from '../components/ActionTitleSelect';
+import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
-import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse } from '../../../data/contentApi';
+import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
 import { ACTION_STATUS_OPTIONS, COMPARE_STATUS, COMPARE_LEVEL, COMPARE_RECOMMENDATION } from '../constants';
 import { getNotesText, formatFileSize, startOfLocalDay, translateCompareErrorDetail, translateCompareValue, normalizeAssignees } from '../utils';
 import pdfIcon from '../../../../shared/assets/pdf.svg';
@@ -29,35 +29,77 @@ export interface ContentTabProps {
   h: HookReturn;
 }
 
+/* ─── Reusable section card wrapper matching ContentInfoView style ─── */
+function SectionWrapper({
+  icon: Icon,
+  title,
+  children,
+  headerActions,
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+  headerActions?: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-border/60 bg-background overflow-hidden">
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-muted/20 border-b border-border/40">
+        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-3.5 h-3.5 text-primary" strokeWidth={1.8} />
+        </div>
+        <h3 className="text-[13px] font-bold text-foreground flex-1">{title}</h3>
+        {headerActions}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
 export function ContentTab({ h }: ContentTabProps) {
   const contentRequest = h.contentRequest!;
   const meetingStatus = h.meetingStatus;
   const attachments = contentRequest?.attachments ?? [];
   const prevId = (contentRequest as any)?.previous_meeting_attachment?.id ?? null;
   const presAttachments = attachments.filter((a: Attachment) => a.is_presentation);
-  const presFiles = presAttachments.map((a: Attachment) => ({
-    id: a.id, file_name: a.file_name, file_size: a.file_size ?? 0,
-    file_type: a.file_type ?? '', blob_url: a.blob_url ?? null,
-  }));
-  const optFiles = attachments
-    .filter((a: Attachment) => a.is_additional && (prevId == null || a.id !== prevId))
-    .map((a: Attachment) => ({
-      id: a.id, file_name: a.file_name, file_size: a.file_size ?? 0,
-      file_type: a.file_type ?? '', blob_url: a.blob_url ?? null,
-    }));
+
   const showContentOfficerNotes = meetingStatus === MeetingStatus.RETURNED_FROM_CONTENT && contentRequest.content_officer_notes;
 
+  // Build shared ContentInfoView data
+  const contentInfoData = useMemo(() => {
+    return mapMeetingToContentInfo({
+      attachments: attachments.map((a: Attachment) => ({
+        id: a.id,
+        file_name: a.file_name,
+        file_size: a.file_size ?? 0,
+        file_type: a.file_type ?? '',
+        blob_url: a.blob_url ?? null,
+        is_presentation: a.is_presentation,
+        is_additional: a.is_additional,
+        is_executive_summary: a.is_executive_summary,
+        presentation_sequence: (a as any).presentation_sequence ?? null,
+      })),
+      previous_meeting_attachment: (contentRequest as any)?.previous_meeting_attachment ?? null,
+      general_notes: contentRequest.general_notes,
+      content_officer_notes: showContentOfficerNotes ? contentRequest.content_officer_notes : null,
+    }, { hideEmpty: false });
+  }, [attachments, contentRequest, showContentOfficerNotes]);
+
+  // Directives data
   const suggestedActionsItems = h.suggestedActionsItems;
   const suggestedActionsFiltered = suggestedActionsItems.filter((s) => !h.deletedSuggestedActionIds.has(String(s.id)));
+  const apiDirectives: ContentDirective[] = h.contentDirectives ?? [];
   const directives = (contentRequest as ContentRequestDetailResponse).related_directives ?? [];
   const directivesFiltered = directives.filter((d) => !h.deletedExistingDirectiveIds.has(String(d.id)));
-  const hasDirectives = directivesFiltered.length > 0;
+  const hasDirectives = directivesFiltered.length > 0 || apiDirectives.length > 0;
   const hasOnlyIds = !hasDirectives && (contentRequest.related_directive_ids?.length ?? 0) > 0;
   const hasAiSuggestions = h.aiDirectivesSuggestions.length > 0;
   const hasSuggestedActionsFromApi = suggestedActionsFiltered.length > 0;
   const hasManualActions = h.manualAddedActions.length > 0;
 
   const allDirectives = useMemo(() => [
+    // API-backed directives (editable via PATCH/DELETE)
+    ...apiDirectives.map((d) => ({ ...d, isApiDirective: true, isAi: false, isSuggestedAction: false })),
+    // Legacy related_directives from content request
     ...directivesFiltered.map((d) => ({ ...d, isAi: false, isSuggestedAction: false })),
     ...h.aiDirectivesSuggestions.map((d) => ({
       ...d, isAi: true, isSuggestedAction: false,
@@ -74,59 +116,81 @@ export function ContentTab({ h }: ContentTabProps) {
       id: `manual-${a.id}`, isAi: false, isSuggestedAction: false, isManualAction: true,
       directive: a.title ?? '-', due_date: a.due_date ?? undefined, status: a.status ?? undefined, manualAction: a,
     })),
-  ], [directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
+  ], [apiDirectives, directivesFiltered, h.aiDirectivesSuggestions, h.editableAiDirectives, suggestedActionsFiltered, h.manualAddedActions]);
 
-  return (
-    <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col gap-6 w-full" dir="rtl">
-        {/* ─── Shared Content View ─── */}
-        <Mou7tawaContentTab
-          presentationFiles={presFiles}
-          optionalFiles={optFiles}
-          attachmentTimingValue=""
-          notesValue={getNotesText(contentRequest.general_notes, contentRequest.content_officer_notes)}
-          contentOfficerNotes={showContentOfficerNotes ? (contentRequest.content_officer_notes ?? null) : null}
-          readOnly
-          formatDate={formatDateArabic}
-          compareEnabledForPresentation={(file) => {
-            const att = presAttachments.find((a: Attachment) => a.id === file.id);
-            return att?.replaces_attachment_id != null;
-          }}
-          compareDisabledReason={(file, _, total) => {
-            if (total < 2) return 'يجب وجود عرضين تقديميين على الأقل للمقارنة';
-            return 'المقارنة متاحة فقط عند رفع نسخة جديدة تحل محل عرض سابق';
-          }}
-          onComparePresentation={(file) => {
-            h.setCompareResult(null); h.setCompareErrorDetail(null);
-            h.setIsCompareModalOpen(true);
-            h.compareByAttachmentMutation.mutate(file.id);
-          }}
-          onView={(file) => {
-            if (!file.blob_url) return;
-            h.setPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
-          }}
-          onDownload={(file) => file.blob_url && window.open(file.blob_url, '_blank')}
-          onAiNotesPresentation={(file) => {
+  /* ─── Render AI actions for presentation files ─── */
+  const renderFileActions = (file: ContentFileItem, sectionKey: string) => {
+    if (sectionKey !== 'presentation') return null;
+    const att = presAttachments.find((a: Attachment) => a.id === file.id);
+    const canCompare = att?.replaces_attachment_id != null;
+
+    return (
+      <div className="flex items-center gap-1">
+        {/* Compare button */}
+        {canCompare ? (
+          <button
+            type="button"
+            onClick={() => {
+              h.setCompareResult(null);
+              h.setCompareErrorDetail(null);
+              h.setIsCompareModalOpen(true);
+              h.compareByAttachmentMutation.mutate(file.id);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/8 transition-colors"
+            title="تقييم الاختلاف"
+          >
+            <GitCompareArrows className="w-3.5 h-3.5" />
+            <span>مقارنة</span>
+          </button>
+        ) : presAttachments.length >= 2 ? null : null}
+
+        {/* AI Insights button */}
+        <button
+          type="button"
+          onClick={() => {
             h.insightsAbortControllerRef.current?.abort();
             h.insightsAbortControllerRef.current = new AbortController();
             h.setInsightsModalAttachment({ id: file.id, file_name: file.file_name });
             h.insightsMutation.reset();
             h.insightsMutation.mutate({ attachmentId: file.id, signal: h.insightsAbortControllerRef.current.signal });
           }}
-          aiNotesPending={h.insightsMutation.isPending}
+          disabled={h.insightsMutation.isPending}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/8 transition-colors disabled:opacity-50"
+          title="تحليل بالذكاء الاصطناعي"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>تحليل</span>
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex flex-col gap-4 w-full max-w-4xl mx-auto" dir="rtl">
+        {/* ─── Shared Content View (presentation, optional files, notes) ─── */}
+        <ContentInfoView
+          data={contentInfoData}
+          onViewFile={(file) => {
+            if (!file.blob_url) return;
+            h.setPreviewAttachment({ blob_url: file.blob_url, file_name: file.file_name, file_type: file.file_type });
+          }}
+          onDownloadFile={(file) => file.blob_url && window.open(file.blob_url, '_blank')}
+          renderFileActions={renderFileActions}
         />
 
         {/* ─── إضافة التوجيهات ─── */}
-        <div className="flex flex-col gap-4 w-full mx-auto" dir="rtl">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-foreground text-right">إضافة التوجيهات</h3>
-            <div className="flex items-center gap-3 flex-wrap">
+        <SectionWrapper
+          icon={ListChecks}
+          title="إضافة التوجيهات"
+          headerActions={
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => h.setShowAddDirectiveRow(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-xs font-medium"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>إضافة توجيه</span>
@@ -135,18 +199,18 @@ export function ContentTab({ h }: ContentTabProps) {
                 <button
                   type="button"
                   onClick={h.handleRequestAiDirectives}
-                  className="flex items-center gap-2 px-4 py-2 bg-background border border-border hover:bg-muted text-foreground rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-background border border-border hover:bg-muted text-foreground rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                 >
                   {h.isLoadingAiSuggestions ? (
-                    <><Loader2 className="w-4 h-4 animate-spin text-primary" /><span>جاري التحميل...</span></>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /><span>جاري التحميل...</span></>
                   ) : (
-                    <><Sparkles className="w-4 h-4 text-primary" /><span>اقتراح بالذكاء الاصطناعي</span></>
+                    <><Sparkles className="w-3.5 h-3.5 text-primary" /><span>اقتراح بالذكاء الاصطناعي</span></>
                   )}
                 </button>
               )}
             </div>
-          </div>
-
+          }
+        >
           {(hasDirectives || hasAiSuggestions || hasSuggestedActionsFromApi || hasManualActions || h.showAddDirectiveRow) ? (
             <div className="w-full overflow-x-auto border border-border rounded-xl overflow-hidden">
               <table className="w-full">
@@ -165,7 +229,57 @@ export function ContentTab({ h }: ContentTabProps) {
                     const isAi = directive.isAi;
                     const isSuggestedAction = directive.isSuggestedAction;
                     const isManualAction = directive.isManualAction;
+                    const isApiDirective = directive.isApiDirective;
                     const directiveId = directive.id;
+
+                    if (isApiDirective) {
+                      const d = directive as ContentDirective & { isApiDirective: boolean };
+                      return (
+                        <tr key={`api-${d.id}`} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
+                          <td className="px-4 py-3" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <ActionTitleSelect
+                                value={d.title ?? ''}
+                                onChange={(action) => {
+                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: action.title } });
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <FormDatePicker
+                              value={d.due_date ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { due_date: v || null } });
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Select value={d.status} onValueChange={(v) => h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { status: v } })} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
+                            {d.assignees?.length ? d.assignees.join('، ') : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.deleteDirectiveMutation.mutate(d.id)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
 
                     if (isManualAction && directive.manualAction) {
                       const a = directive.manualAction as ActionItem;
@@ -234,15 +348,70 @@ export function ContentTab({ h }: ContentTabProps) {
                     if (isSuggestedAction) {
                       const rawId = String(directiveId).replace(/^suggested-/, '');
                       const suggestedItem = suggestedActionsFiltered.find((s) => String(s.id) === rawId);
-                      const assignees = suggestedItem ? normalizeAssignees(suggestedItem.assignees) : [];
+                      const fallbackAssignees = suggestedItem ? normalizeAssignees(suggestedItem.assignees) : [];
+                      const assignees = h.getSuggestedActionAssignees(rawId, fallbackAssignees);
+                      const assigneeInput = h.assigneeInputByActionId[rawId] ?? '';
+                      const dueDate = h.suggestedActionEdits[rawId]?.due_date !== undefined ? h.suggestedActionEdits[rawId].due_date : (directive.due_date ?? '');
+                      const status = h.suggestedActionEdits[rawId]?.status ?? directive.status ?? 'PENDING';
+                      const titleLabel = h.suggestedActionEdits[rawId]?.title ?? directive.directive ?? '-';
                       return (
                         <tr key={directiveId} className="hover:bg-muted/30 transition-colors bg-muted/20">
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                          <td className="px-4 py-3 text-sm text-foreground" dir="rtl">{directive.directive ?? '-'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{directive.due_date ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{directive.status ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">{assignees.length ? assignees.join('، ') : '—'}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateSuggestedActionTitle(rawId, action.title);
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <FormDatePicker
+                              value={dueDate ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateSuggestedActionDueDate(rawId, v || null);
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Select value={status} onValueChange={(v) => h.updateSuggestedActionStatus(rawId, v)} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignees.map((email: string, i: number) => (
+                                <span key={`${email}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs">
+                                  {email}
+                                  <button type="button" onClick={() => h.removeSuggestedActionAssignee(rawId, i, assignees)} className="p-0.5 rounded hover:bg-primary/20" aria-label="حذف">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              <Input
+                                value={assigneeInput}
+                                onChange={(e) => h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); h.addSuggestedActionAssignee(rawId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: '' })); }
+                                }}
+                                placeholder="إضافة معين..." className="h-8 min-w-[80px] max-w-[120px] text-xs text-right" dir="rtl"
+                              />
+                              <button type="button" onClick={() => { h.addSuggestedActionAssignee(rawId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [rawId]: '' })); }}
+                                className="p-1 rounded border border-border hover:bg-muted text-muted-foreground" title="إضافة">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             <div className="flex justify-center">
                               <button type="button" onClick={() => h.handleDeleteSuggestedAction(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
                                 <Trash2 className="w-4 h-4" />
@@ -277,25 +446,82 @@ export function ContentTab({ h }: ContentTabProps) {
                       );
                     }
 
-                    // Regular directive row
-                    return (
-                      <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{directive.directive || directive.directive_text || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.deadline ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.directive_status ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
-                          {(directive.responsible_persons ?? []).map((p: any) => p.name).filter(Boolean).join('، ') || '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center">
-                            <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
+                    // Regular directive row (editable)
+                    {
+                      const dId = String(directiveId);
+                      const fallbackAssignees = (directive.responsible_persons ?? []).map((p: any) => p.email ?? p.name).filter(Boolean) as string[];
+                      const assignees = h.getExistingDirectiveAssignees(dId, fallbackAssignees);
+                      const assigneeInput = h.assigneeInputByActionId[dId] ?? '';
+                      const dueDate = h.existingDirectiveEdits[dId]?.due_date !== undefined ? h.existingDirectiveEdits[dId].due_date : (directive.deadline ?? '');
+                      const status = h.existingDirectiveEdits[dId]?.status ?? directive.directive_status ?? 'PENDING';
+                      const titleLabel = h.existingDirectiveEdits[dId]?.title ?? (directive.directive || directive.directive_text || '-');
+                      return (
+                        <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateExistingDirectiveTitle(dId, action.title);
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <FormDatePicker
+                              value={dueDate ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateExistingDirectiveDueDate(dId, v || null);
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Select value={status} onValueChange={(v) => h.updateExistingDirectiveStatus(dId, v)} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignees.map((email: string, i: number) => (
+                                <span key={`${email}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs">
+                                  {email}
+                                  <button type="button" onClick={() => h.removeExistingDirectiveAssignee(dId, i, assignees)} className="p-0.5 rounded hover:bg-primary/20" aria-label="حذف">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              <Input
+                                value={assigneeInput}
+                                onChange={(e) => h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }
+                                }}
+                                placeholder="إضافة معين..." className="h-8 min-w-[80px] max-w-[120px] text-xs text-right" dir="rtl"
+                              />
+                              <button type="button" onClick={() => { h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }}
+                                className="p-1 rounded border border-border hover:bg-muted text-muted-foreground" title="إضافة">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
                   })}
                   {h.showAddDirectiveRow && (
                     <tr key="add-directive-row" className="bg-green-50/30 border-t-2 border-dashed border-primary/30">
@@ -309,7 +535,7 @@ export function ContentTab({ h }: ContentTabProps) {
                             placeholder="ابحث واختر التوجيه..."
                             searchPlaceholder="ابحث في التوجيهات..."
                             emptyMessage="لا توجد نتائج"
-                            fullWidth limit={20} defaultOptions={false} className="text-right"
+                            fullWidth limit={20} defaultOptions className="text-right"
                           />
                         </div>
                       </td>
@@ -332,32 +558,33 @@ export function ContentTab({ h }: ContentTabProps) {
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-12 rounded-xl border border-border bg-muted/30">
-              <div className="text-center">
-                <p className="text-foreground text-lg mb-2">إضافة التوجيهات</p>
-                <p className="text-muted-foreground text-sm">لا توجد توجيهات مرتبطة.</p>
-              </div>
+            <div className="flex flex-col items-center justify-center py-6 rounded-xl bg-muted/15 border border-dashed border-border/50">
+              <p className="text-sm text-muted-foreground">لا توجد توجيهات مرتبطة</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">اضغط على "إضافة توجيه" لإضافة توجيهات جديدة</p>
             </div>
           )}
+        </SectionWrapper>
 
-          {/* ─── إضافة ملاحظات ─── */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground text-right">إضافة ملاحظات</label>
-            <Textarea value={h.guidanceNotes} onChange={(e) => h.setGuidanceNotes(e.target.value)}
-              placeholder="أدخل محتوى التوجيهات...." className="min-h-[120px] resize-none" dir="rtl" />
-          </div>
-        </div>
+        {/* ─── إضافة ملاحظات ─── */}
+        <SectionWrapper icon={StickyNote} title="إضافة ملاحظات">
+          <Textarea
+            value={h.guidanceNotes}
+            onChange={(e) => h.setGuidanceNotes(e.target.value)}
+            placeholder="أدخل محتوى التوجيهات...."
+            className="min-h-[120px] resize-none"
+            dir="rtl"
+          />
+        </SectionWrapper>
 
         {/* ─── الملخص التنفيذي ─── */}
-        <div className="flex flex-col gap-4 w-full mx-auto">
-          <h3 className="text-lg font-semibold text-foreground text-right">الملخص التنفيذي</h3>
+        <SectionWrapper icon={FileCheck} title="الملخص التنفيذي">
           <div
             onDragOver={!h.sendToSchedulingMutation.isPending ? h.handleDragOver : undefined}
             onDragLeave={!h.sendToSchedulingMutation.isPending ? h.handleDragLeave : undefined}
             onDrop={!h.sendToSchedulingMutation.isPending ? h.handleDrop : undefined}
             onClick={!h.sendToSchedulingMutation.isPending && !h.executiveSummaryFile ? () => h.fileInputRef.current?.click() : undefined}
-            className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors
-              ${h.isDragging && !h.sendToSchedulingMutation.isPending ? 'border-primary bg-primary/5' : 'border-border bg-muted/30'}
+            className={`relative border-2 border-dashed rounded-xl p-10 text-center transition-colors
+              ${h.isDragging && !h.sendToSchedulingMutation.isPending ? 'border-primary bg-primary/5' : 'border-border bg-muted/15'}
               ${h.executiveSummaryFile ? 'border-primary bg-primary/5' : ''}
               ${h.sendToSchedulingMutation.isPending ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
             `}
@@ -388,13 +615,13 @@ export function ContentTab({ h }: ContentTabProps) {
               </div>
             ) : (
               <>
-                <div className="flex justify-center mb-4"><Upload className="w-10 h-10 text-muted-foreground" /></div>
-                <p className="text-base text-foreground mb-2">اضغط للرفع أو اسحب الملف هنا</p>
-                <p className="text-sm text-muted-foreground">PDF, WORD, EXCEL (max. 20MB)</p>
+                <div className="flex justify-center mb-3"><Upload className="w-8 h-8 text-muted-foreground" /></div>
+                <p className="text-sm text-foreground mb-1">اضغط للرفع أو اسحب الملف هنا</p>
+                <p className="text-xs text-muted-foreground">PDF, WORD, EXCEL (max. 20MB)</p>
               </>
             )}
           </div>
-        </div>
+        </SectionWrapper>
 
         {/* ─── Compare Modal ─── */}
         <Dialog open={h.isCompareModalOpen} onOpenChange={h.setIsCompareModalOpen}>
@@ -459,7 +686,6 @@ export function ContentTab({ h }: ContentTabProps) {
         >
           <DialogContent className="sm:max-w-[620px] max-h-[85vh] flex flex-col overflow-hidden p-0" dir="rtl">
             <div className="relative px-6 pt-6 pb-4 border-b border-border">
-              
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70">
                   <Sparkles className="h-5 w-5 text-primary-foreground" />
