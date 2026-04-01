@@ -66,7 +66,7 @@ export const submitterStep1Schema = z.object({
   is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
-  if (data.meeting_type === MeetingType.INTERNAL && !data.sector) {
+  if (!data.is_scheduler_edit && data.meeting_type === MeetingType.INTERNAL && !data.sector) {
     ctx.addIssue({ code: "custom", path: ["sector"], message: "القطاع مطلوب للاجتماع الداخلي" });
   }
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && !data.meeting_location) {
