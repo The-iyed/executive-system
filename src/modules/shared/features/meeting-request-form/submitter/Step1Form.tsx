@@ -97,7 +97,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
         </div>
 
         <div className="mt-6">
-          <AgendaSection form={form} />
+          <AgendaSection form={form} agendaRequired={!isSchedulerEdit} />
         </div>
 
         <DirectiveSection

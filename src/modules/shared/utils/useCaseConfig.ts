@@ -170,6 +170,12 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         label: 'البطاقات الوظيفية',
         path: uc13_PATH.BUSINESS_CARDS,
       },
+      {
+        id: 'uc13-directives',
+        icon: 'solar:document-text-outline',
+        label: 'التوجيهات',
+        path: uc13_PATH.DIRECTIVES,
+      },
     ],
   },
   'UC-19': {
