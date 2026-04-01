@@ -107,9 +107,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       ? (formatExactTimeFromIso(meeting.scheduled_end) ?? (event.exactEndTime || event.endTime))
       : (event.exactEndTime || event.endTime);
 
-    const locationText =
-      (fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
-      event.meeting_link || event.meeting_location || event.location || '';
+    const channel = (fromApi ? (meeting as any).meeting_channel : (event as any).meeting_channel) || '';
+    const isPhysical = channel === 'PHYSICAL';
+
+    const locationText = isPhysical
+      ? ((fromApi && meeting.meeting_location) || event.meeting_location || event.location || '')
+      : ((fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
+         event.meeting_link || event.meeting_location || event.location || '');
 
     const inviteesList = fromApi && Array.isArray(meeting.invitees) && meeting.invitees.length > 0
       ? meeting.invitees.map((inv) => {
@@ -140,7 +144,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       endTime,
       durationMin,
       locationOrLink: locationText,
-      isLink: typeof locationText === 'string' && locationText.startsWith('http'),
+      isPhysical,
+      isLink: !isPhysical && typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
       meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
       requiresProtocol,
@@ -402,7 +407,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                 عرض التفاصيل
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
-              {display.isLink && (
+              {display.isLink && !display.isPhysical && (
                 <a
                   href={display.locationOrLink}
                   target="_blank"
