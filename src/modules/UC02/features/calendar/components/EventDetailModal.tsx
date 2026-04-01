@@ -128,7 +128,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     const isPreliminary = fromApi
       ? Boolean((meeting as any).is_preliminary_booking ?? false)
       : false;
-    const requiresProtocol = !isPreliminary;
+    
     const isDataComplete = fromApi ? Boolean((meeting as any).is_data_complete ?? true) : true;
 
     const durationMin = startTime && endTime ? computeDurationMinutes(startTime, endTime) : null;
@@ -151,7 +151,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       isLink: !isPhysical && typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
       meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
-      requiresProtocol,
+      isPreliminary,
       isDataComplete,
     };
   }, [event, meetingDetail, isLoading]);
@@ -331,11 +331,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
-                          display.requiresProtocol
+                          display.isPreliminary
                             ? 'bg-primary/10 text-primary border border-primary/25'
                             : 'bg-muted/40 text-muted-foreground border border-border/40',
                         )}>
-                          {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                          {display.isPreliminary && <Check className="w-3 h-3" strokeWidth={2.5} />}
                           مبدئي
                         </div>
                         <div className={cn(
