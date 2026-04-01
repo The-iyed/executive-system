@@ -1,46 +1,39 @@
 
 
-## Plan: Add `name` and `is_presence_required` columns + update preview cards
+## Plan: Make agenda optional for scheduling officers in submitter form
+
+### Problem
+When a scheduling officer uses `SubmitterStep1Form` (with `isSchedulerEdit=true`), the agenda section still shows as required (`*`) and the schema validates that at least one agenda item exists. It should be optional for scheduling officers.
 
 ### Changes
 
-#### 1. `api.ts` — Add `name_ar`/`name_en` to `SuggestedAttendee` interface
-Add optional fields: `name_ar?: string`, `name_en?: string`
-
-#### 2. `columns.ts` — Add two new columns
-- Add `name` column (optional, type `text`, placeholder "الاسم") right after `email`, with `autoFillFromSearch: true`
-- Add `is_presence_required` column (type `checkbox`, label "الحضور إجباري", defaultValue `false`) after `meeting_owner`
-
-#### 3. `InviteesTableForm.tsx` — Map name from search & AI
-
-**Search mapping (line 72-79)** — update name priority order:
-```ts
-name: result.displayName || result.displayNameEN || result.givenName || "",
+#### 1. `submitter/Step1Form.tsx` — Pass `agendaRequired={!isSchedulerEdit}`
+Line 100: change `<AgendaSection form={form} />` to:
+```tsx
+<AgendaSection form={form} agendaRequired={!isSchedulerEdit} />
 ```
 
-**AI suggestion mapping (line 57-69)** — add name and is_presence_required:
+#### 2. `submitter/schema.ts` — Add `is_scheduler_edit` flag and skip mandatory agenda check
+- Add `is_scheduler_edit: z.boolean().optional()` to the schema object
+- Wrap the "must have at least one agenda item" check (line 95-96) with `!data.is_scheduler_edit`:
 ```ts
-name: (s as any).name_ar || (s as any).name_en || `${s.first_name} ${s.last_name}`.trim(),
-is_presence_required: false,
+if (!data.is_scheduler_edit && !isPrivate && (!data.agenda_items || data.agenda_items.length === 0)) {
+  ctx.addIssue({ code: "custom", path: ["agenda_items"], message: "يجب إضافة عنصر أجندة واحد على الأقل" });
+}
 ```
+- Keep item-level and duration validation as-is (only runs when items exist)
 
-#### 4. `InviteeCard.tsx` — Use `name` field instead of email prefix
-
-Replace the current logic that extracts name from email (`email.split('@')[0]`) with:
+#### 3. `submitter/hooks/useStep1Form.ts` — Set `is_scheduler_edit` default
+Add to defaults:
 ```ts
-const name = getDisplayValue(invitee.name) !== "-"
-  ? getDisplayValue(invitee.name)
-  : email.split('@')[0];
+is_scheduler_edit: options?.isSchedulerEdit ?? false,
 ```
-
-Also add `is_presence_required` badge in the badges section (red badge "الحضور إجباري") when true.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `api.ts` | Add `name_ar`, `name_en` optional fields to `SuggestedAttendee` |
-| `columns.ts` | Add `name` (text, optional) after email; add `is_presence_required` (checkbox) after `meeting_owner` |
-| `InviteesTableForm.tsx` | Map `name` with correct priority from search & AI; add `is_presence_required` default |
-| `InviteeCard.tsx` | Display real `name` field instead of email prefix; add `is_presence_required` badge |
+| `submitter/Step1Form.tsx` | Pass `agendaRequired={!isSchedulerEdit}` |
+| `submitter/schema.ts` | Add `is_scheduler_edit` field; skip mandatory agenda check when true |
+| `submitter/hooks/useStep1Form.ts` | Set `is_scheduler_edit` from options |
 
