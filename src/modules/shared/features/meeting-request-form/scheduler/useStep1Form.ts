@@ -62,6 +62,7 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
 
   const visibility = useMemo(() => ({
     previous_meeting_id: isFollowUp,
+    meeting_owner: watched.is_on_behalf_of === BOOL.TRUE,
     urgent_reason: watched.is_urgent === BOOL.TRUE,
     meeting_location: [AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(watched.meeting_channel),
     meeting_location_custom: watched.meeting_location === MeetingLocation.OTHER,
