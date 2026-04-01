@@ -15,6 +15,7 @@ import {
   initiateLogin,
   logout as oidcLogout,
   getAccessToken,
+  renewToken,
 } from '@/lib/auth';
 import { userManager } from '@/lib/auth/oidcConfig';
 import type { User as OidcUser } from 'oidc-client-ts';
@@ -141,19 +142,29 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(null);
       };
 
-      const handleAccessTokenExpired = async () => {
+      const handleTokenExpiring = async () => {
         try {
-          const renewedUser = await userManager.signinSilent();
-          if (renewedUser) {
-            handleUserLoaded(renewedUser);
-          } else {
-            await initiateLogin();
+          const renewed = await renewToken();
+          if (renewed) {
+            handleUserLoaded(renewed);
           }
         } catch {
-          await initiateLogin();
+          // renewToken handles redirect internally
         }
       };
 
+      const handleAccessTokenExpired = async () => {
+        try {
+          const renewed = await renewToken();
+          if (renewed) {
+            handleUserLoaded(renewed);
+          }
+        } catch {
+          // renewToken handles redirect internally
+        }
+      };
+
+      userManager.events.addAccessTokenExpiring(handleTokenExpiring);
       userManager.events.addUserLoaded(handleUserLoaded);
       userManager.events.addUserUnloaded(handleUserUnloaded);
       userManager.events.addAccessTokenExpired(handleAccessTokenExpired);
@@ -161,6 +172,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       initializeAuth();
 
       return () => {
+        userManager.events.removeAccessTokenExpiring(handleTokenExpiring);
         userManager.events.removeUserLoaded(handleUserLoaded);
         userManager.events.removeUserUnloaded(handleUserUnloaded);
         userManager.events.removeAccessTokenExpired(handleAccessTokenExpired);

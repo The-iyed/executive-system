@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { handleCallback, handleSilentRenew } from '@/lib/auth';
+import { handleCallback, handleSilentRenew, consumeSavedPath } from '@/lib/auth';
 import { isSsoEnabled } from '@/lib/auth/ssoOrigin';
 import { useAuth } from '@/modules/auth/context';
 import { setTokens } from '@/modules/auth/utils/token';
@@ -66,7 +66,8 @@ export default function RootCallback() {
               appUser = null;
             }
           }
-          const targetPath = getDefaultRouteForUser(appUser?.use_cases, appUser?.roles);
+          const savedPath = consumeSavedPath();
+          const targetPath = savedPath || getDefaultRouteForUser(appUser?.use_cases, appUser?.roles);
           pendingRedirectRef.current = targetPath;
           setUserFromCallback(oidcUser, appUser);
         } else {

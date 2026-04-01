@@ -9,5 +9,8 @@ export {
   logout,
   getStoredCodeVerifier,
   exchangeCodeForToken,
+  renewToken,
+  saveCurrentPath,
+  consumeSavedPath,
 } from './bootstrapAuth';
 export type { CallbackResult, AppUserFromMe } from './bootstrapAuth';
