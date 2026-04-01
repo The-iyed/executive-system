@@ -160,7 +160,7 @@ export function useMeetingDetailPage() {
       scheduled_at: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? '',
       scheduled_end_at: (meeting as any).scheduled_end ?? (meeting as any).scheduled_end_at ?? (meeting as any).meeting_end_date ?? '',
       meeting_channel: meetingChannel,
-      is_preliminary_booking: (meeting as any).is_preliminary_booking ?? !(meeting.requires_protocol) ?? false,
+      is_preliminary_booking: (meeting as any).is_preliminary_booking ?? !(meeting.requires_protocol),
       protocol_type: meeting.protocol_type || null,
       protocol_type_text: meeting.protocol_type || '',
       is_data_complete: meeting.is_data_complete ?? true,
