@@ -38,7 +38,7 @@ export const schedulerStep1Schema = z.object({
   meeting_location: z.string().optional(),
   meeting_location_custom: z.string().optional(),
   requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]),
-  meeting_classification: z.string().min(1, "فئة الاجتماع مطلوبة"),
+  meeting_classification: z.string().optional(),
   meeting_sub_category: z.string().optional(),
   meeting_justification: z.string().optional(),
   related_topic: z.string().optional(),
