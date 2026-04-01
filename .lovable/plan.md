@@ -1,34 +1,20 @@
 
 
-## Plan: Remove default date values only for quick meeting (header button)
+## Confirmation: All UC05 tabs match UC02
 
-### Problem
-When clicking "اجتماع سريع" from the calendar header, the proposed meeting date/time fields come pre-filled. The user wants them empty. Slot-click creation should keep pre-filling.
+After inspecting all tabs in both UC05 and UC02, here's the status:
 
-### Changes
+| Tab | Shared Component | UC05 matches UC02? |
+|---|---|---|
+| معلومات الطلب (RequestInfo) | `RequestInfo` + `mapMeetingToRequestInfo` | ✅ Yes |
+| معلومات الاجتماع (MeetingInfo) | `MeetingInfoView` + `mapMeetingToInfo` | ✅ Yes |
+| المحتوى (Content) | `ContentInfoView` + `mapMeetingToContentInfo` | ✅ Yes |
+| قائمة المدعوين (Invitees) | `InviteesTableForm` | ⚠️ Missing wrapper div |
+| الملاحظات (Notes) | `RequestNotesView` | ✅ Yes |
 
-#### 1. `CalendarView.tsx` — Pass empty time for quick meetings
-Change `handleQuickMeeting` to pass empty strings for `time` and `endTime`:
-```ts
-setSlot({ date: now, time: '', endTime: '', mode: 'create', isQuickMeeting: true });
-```
-Remove the time calculation logic (lines 101-110) since it's no longer needed.
+### Only change needed
 
-#### 2. `CalendarSlotMeetingForm.tsx` — Default to empty when time is empty
-Guard the date defaults: when `slotTime` is empty, default to `''` instead of computing a date:
-```ts
-const startDefault = slotTime ? toISOStart(slotDate, slotTime) : '';
-const endDefault = useMemo(() => {
-  if (!slotTime) return '';
-  if (slotEndTime) return toISOStart(slotDate, slotEndTime);
-  // ... existing calculation
-}, [slotDate, slotTime, slotEndTime]);
-```
+**`UC05/tabs/InviteesTab.tsx`** — Add `<div className="w-full max-w-4xl mx-auto" dir="rtl">` wrapper around `InviteesTableForm` to match UC02's layout.
 
-### Files changed
-
-| File | Change |
-|---|---|
-| `CalendarView.tsx` | Simplify `handleQuickMeeting` to pass empty time strings |
-| `CalendarSlotMeetingForm.tsx` | Guard date defaults — empty when `slotTime` is empty |
+This is the same single-file change from the previous plan.
 
