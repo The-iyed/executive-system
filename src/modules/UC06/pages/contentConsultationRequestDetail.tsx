@@ -406,7 +406,7 @@ const ContentConsultationRequestDetail: React.FC = () => {
                       التوجيهات
                     </h3>
                   </div>
-                  <div className="w-full overflow-x-auto border border-border rounded-xl overflow-hidden">
+                  <div className="w-full border border-border rounded-xl overflow-hidden">
                     <DataTable
                       columns={[
                         { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_row: typeof directives[0], index: number) => <span className="text-sm text-muted-foreground">{index + 1}</span> },
