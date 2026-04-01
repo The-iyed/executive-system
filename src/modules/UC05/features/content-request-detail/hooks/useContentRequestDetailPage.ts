@@ -699,10 +699,10 @@ export function useContentRequestDetailPage() {
     getManualActionAssignees, addManualActionAssignee, removeManualActionAssignee,
     setAssigneeInputByActionId,
     // Content tab: suggested action edits
-    suggestedActionEdits, updateSuggestedActionDueDate, updateSuggestedActionStatus,
+    suggestedActionEdits, updateSuggestedActionTitle, updateSuggestedActionDueDate, updateSuggestedActionStatus,
     getSuggestedActionAssignees, addSuggestedActionAssignee, removeSuggestedActionAssignee,
     // Content tab: existing directive edits
-    existingDirectiveEdits, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
+    existingDirectiveEdits, updateExistingDirectiveTitle, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
     getExistingDirectiveAssignees, addExistingDirectiveAssignee, removeExistingDirectiveAssignee,
     // Content tab: executive summary
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
