@@ -379,6 +379,49 @@ const ContentConsultationRequestDetail: React.FC = () => {
               }
               onDownload={(file) => file.blob_url && window.open(file.blob_url!, "_blank")}
             />
+
+            {/* التوجيهات - Directives Table */}
+            {(() => {
+              const directives = consultationData?.content_approval_directives
+                ?? consultationData?.meeting_request?.content_approval_directives
+                ?? [];
+              if (directives.length === 0) return null;
+
+              const DIRECTIVE_STATUS_MAP: Record<string, string> = {
+                PENDING: 'قيد الانتظار',
+                IN_PROGRESS: 'قيد التنفيذ',
+                COMPLETED: 'مكتمل',
+                CLOSED: 'مغلق',
+                CANCELLED: 'ملغي',
+                CURRENT: 'جاري',
+              };
+
+              return (
+                <div className="flex flex-col gap-4 w-full">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                      <ScrollText className="size-4 text-primary" />
+                    </div>
+                    <h3 className="text-[16px] font-bold text-foreground" style={{ fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" }}>
+                      التوجيهات
+                    </h3>
+                  </div>
+                  <div className="w-full overflow-x-auto border border-border rounded-xl overflow-hidden">
+                    <DataTable
+                      columns={[
+                        { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_row: typeof directives[0], index: number) => <span className="text-sm text-muted-foreground">{index + 1}</span> },
+                        { id: 'title', header: 'التوجيه', width: 'flex-1', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{row.title || '—'}</span> },
+                        { id: 'due_date', header: 'الموعد النهائي', width: 'w-36', align: 'end', render: (row: typeof directives[0]) => { const d = row.due_date ? new Date(row.due_date) : null; return <span className="text-sm text-muted-foreground">{d ? formatDateArabic(d) : '—'}</span>; } },
+                        { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{DIRECTIVE_STATUS_MAP[row.status] ?? row.status ?? '—'}</span> },
+                        { id: 'assignees', header: 'المعينون', width: 'w-48', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{row.assignees?.length ? row.assignees.join('، ') : '—'}</span> },
+                      ]}
+                      data={directives}
+                      rowPadding="py-3"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
