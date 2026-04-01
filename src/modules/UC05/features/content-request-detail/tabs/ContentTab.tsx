@@ -14,6 +14,7 @@ import {
 } from '@/lib/ui';
 import { formatDateArabic } from '@/modules/shared/utils';
 import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
+import { ActionTitleSelect } from '../components/ActionTitleSelect';
 import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
 import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
@@ -238,19 +239,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
                           <td className="px-4 py-3" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={d.title ? { value: String(d.id), label: d.title } : null}
-                                onValueChange={(opt) => {
-                                  if (opt) {
-                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
-                                  }
+                              <ActionTitleSelect
+                                value={d.title ?? ''}
+                                onChange={(action) => {
+                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: action.title } });
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                isClearable={false}
-                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
@@ -366,17 +359,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
                           <td className="px-4 py-3 align-top" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={titleLabel ? { value: rawId, label: titleLabel } : null}
-                                onValueChange={(opt) => {
-                                  if (opt) h.updateSuggestedActionTitle(rawId, opt.label);
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateSuggestedActionTitle(rawId, action.title);
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                isClearable={false}
-                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
@@ -473,17 +460,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
                           <td className="px-4 py-3 align-top" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={titleLabel ? { value: dId, label: titleLabel } : null}
-                                onValueChange={(opt) => {
-                                  if (opt) h.updateExistingDirectiveTitle(dId, opt.label);
+                              <ActionTitleSelect
+                                value={titleLabel}
+                                onChange={(action) => {
+                                  h.updateExistingDirectiveTitle(dId, action.title);
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                isClearable={false}
-                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
