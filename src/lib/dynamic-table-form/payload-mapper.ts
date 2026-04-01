@@ -23,6 +23,10 @@ export function mapRowToPayload(
     payload.is_presentation_required = false;
   }
 
+  if ('is_presence_required' in payload) {
+    payload.is_required = Boolean(payload.is_presence_required);
+  }
+
   return payload;
 }
 
