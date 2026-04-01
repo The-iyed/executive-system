@@ -3,8 +3,7 @@ import { clearAllBrowserStorage } from "./token";
 import { getAuthToken } from "./tokenGetter";
 import { EXECUTION_SYSTEM_BASE_URL } from "@/lib/env";
 import { getBrowserTimezone } from "@/lib/api/apiTimezone";
-import { isSsoEnabled, initiateLogin } from "@/lib/auth";
-import { userManager } from "@/lib/auth/oidcConfig";
+import { isSsoEnabled, renewToken } from "@/lib/auth";
 
 const baseURL = EXECUTION_SYSTEM_BASE_URL;
 const headers = {
@@ -18,20 +17,9 @@ const axiosInstance = axios.create({
   // withCredentials: true,
 });
 
-/** Single in-flight silent renew; many parallel 401s must await the same promise (no duplicate signinSilent). */
-let silentRenewPromise: Promise<unknown> | null = null;
-/** Waiters inside await silentRenewPromise; only clear the shared promise when the last one leaves (avoids a new 401 starting a second renew while others still retry). */
-let silentRenewWaiters = 0;
-
-let ssoReloginPromise: Promise<void> | null = null;
-
-function ensureSsoRelogin(): void {
-  ssoReloginPromise ??= initiateLogin()
-    .catch(() => {})
-    .finally(() => {
-      ssoReloginPromise = null;
-    });
-}
+/** Single in-flight renewal shared across all concurrent 401s. */
+let renewPromise: Promise<unknown> | null = null;
+let renewWaiters = 0;
 
 axiosInstance.interceptors.request.use(
   async (config) => {
@@ -59,27 +47,24 @@ axiosInstance.interceptors.response.use(
     if (error?.response?.status === 401) {
       if (isSsoEnabled()) {
         if (originalRequest?._retry) {
-          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         }
 
-        silentRenewWaiters += 1;
+        renewWaiters += 1;
         try {
-          silentRenewPromise ??= userManager.signinSilent();
-          await silentRenewPromise;
-          if (originalRequest) {
+          renewPromise ??= renewToken();
+          const renewed = await renewPromise;
+          if (renewed && originalRequest) {
             originalRequest._retry = true;
             return axiosInstance(originalRequest);
           }
-          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } catch {
-          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } finally {
-          silentRenewWaiters -= 1;
-          if (silentRenewWaiters === 0) {
-            silentRenewPromise = null;
+          renewWaiters -= 1;
+          if (renewWaiters === 0) {
+            renewPromise = null;
           }
         }
       }

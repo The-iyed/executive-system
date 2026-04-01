@@ -49,6 +49,7 @@ export interface CalendarSlotMeetingFormSubmitValues {
   invitees: InviteeFormRow[];
   requires_protocol?: boolean;
   is_data_complete?: boolean;
+  is_preliminary_booking?: boolean;
 }
 
 export interface CalendarSlotMeetingFormProps {
@@ -78,7 +79,7 @@ const calendarMeetingSchema = z.object({
   meeting_location: z.string().default(""),
   meeting_location_custom: z.string().default(""),
   proposers: z.array(z.any()).default([]),
-  requires_protocol: z.boolean().default(false),
+  is_preliminary_booking: z.boolean().default(false),
   is_data_complete: z.boolean().default(false),
 }).superRefine((data, ctx) => {
   const needsLocation = data.meeting_channel === 'PHYSICAL' || data.meeting_channel === 'HYBRID';
@@ -128,7 +129,7 @@ export const CalendarSlotMeetingForm: React.FC<CalendarSlotMeetingFormProps> = (
       meeting_location: initialMeetingLocation ?? '',
       meeting_location_custom: '',
       proposers: [],
-      requires_protocol: false,
+      is_preliminary_booking: false,
       is_data_complete: false,
     },
   });
@@ -254,8 +255,9 @@ function CalendarFormInner({
         meeting_location,
         proposers,
         invitees: inviteesPayload,
-        requires_protocol: data.requires_protocol,
+        requires_protocol: !data.is_preliminary_booking,
         is_data_complete: data.is_data_complete,
+        is_preliminary_booking: data.is_preliminary_booking,
       });
     },
     [onSubmit, showLocation, inviteesRef]
@@ -323,16 +325,16 @@ function CalendarFormInner({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Controller
-                name="requires_protocol"
+                name="is_preliminary_booking"
                 render={({ field }) => (
                   <button
                     type="button"
                     onClick={() => field.onChange(!field.value)}
                     className={cn(
                       'flex items-center gap-3 p-3 rounded-xl border transition-all text-right',
-                      !field.value
-                        ? 'border-border/60 bg-background hover:bg-muted/30'
-                        : 'border-primary/30 bg-primary/5'
+                      field.value
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/60 bg-background hover:bg-muted/30'
                     )}
                   >
                     <div className={cn(
