@@ -84,11 +84,13 @@ export const submitterStep1Schema = z.object({
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
   }
-  if (!data.meeting_start_date) {
-    ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
-  }
-  if (!data.meeting_end_date) {
-    ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+  if (!data.is_scheduler_edit) {
+    if (!data.meeting_start_date) {
+      ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+    }
+    if (!data.meeting_end_date) {
+      ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+    }
   }
 
   /* ── Agenda ── */
