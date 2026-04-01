@@ -145,8 +145,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     async (values: Record<string, unknown>) => {
       setSlotError(null);
       setSlotSubmitting(true);
-      const scheduled_start = toISOStringWithTimezone(new Date(values.start_date as string));
-      const scheduled_end = toISOStringWithTimezone(new Date(values.end_date as string));
+      // Strip timezone — send naive ISO like "2026-04-20T09:00:00"
+      const stripTz = (iso: string) => iso.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
+      const scheduled_start = stripTz(toISOStringWithTimezone(new Date(values.start_date as string)));
+      const scheduled_end = stripTz(toISOStringWithTimezone(new Date(values.end_date as string)));
       const isEdit = slot?.mode === 'edit' && slot.meetingId;
 
       // Snapshot for rollback
