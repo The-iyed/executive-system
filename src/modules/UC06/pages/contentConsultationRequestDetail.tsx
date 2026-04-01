@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Eye, Download, Clock, User, Hash } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, Download, Clock, User, Hash, ScrollText } from "lucide-react";
 import {
   DetailPageHeader,
   StatusBadge,
