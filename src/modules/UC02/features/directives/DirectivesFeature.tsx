@@ -115,7 +115,7 @@ export const DirectivesFeature = () => {
         currentPage={list.currentPage}
         totalPages={list.totalPages}
         onPageChange={list.handlePageChange}
-        statusField="status"
+        statusField="scheduling_officer_status"
         actions={actions}
         headerRight={
           <Button
