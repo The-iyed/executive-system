@@ -41,7 +41,7 @@ export interface ScheduleFormState {
   scheduled_at: string;
   scheduled_end_at: string;
   meeting_channel: 'PHYSICAL' | 'PHYSICAL_LOCATION_1' | 'PHYSICAL_LOCATION_2' | 'PHYSICAL_LOCATION_3' | 'VIRTUAL' | 'HYBRID';
-  requires_protocol: boolean;
+  is_preliminary_booking: boolean;
   protocol_type: string | null;
   protocol_type_text: string;
   is_data_complete: boolean;
@@ -55,7 +55,7 @@ const INITIAL_SCHEDULE_FORM: ScheduleFormState = {
   scheduled_at: '',
   scheduled_end_at: '',
   meeting_channel: 'PHYSICAL',
-  requires_protocol: false,
+  is_preliminary_booking: false,
   protocol_type: null,
   protocol_type_text: '',
   is_data_complete: true,
@@ -160,7 +160,7 @@ export function useMeetingDetailPage() {
       scheduled_at: (meeting as any).scheduled_start ?? meeting.meeting_start_date ?? '',
       scheduled_end_at: (meeting as any).scheduled_end ?? (meeting as any).scheduled_end_at ?? (meeting as any).meeting_end_date ?? '',
       meeting_channel: meetingChannel,
-      requires_protocol: meeting.requires_protocol ?? false,
+      is_preliminary_booking: (meeting as any).is_preliminary_booking ?? !(meeting.requires_protocol),
       protocol_type: meeting.protocol_type || null,
       protocol_type_text: meeting.protocol_type || '',
       is_data_complete: meeting.is_data_complete ?? true,
@@ -216,7 +216,10 @@ export function useMeetingDetailPage() {
     const payload: any = {};
     if (scheduleForm.meeting_channel !== orig.meeting_channel) payload.meeting_channel = scheduleForm.meeting_channel;
     payload.meeting_location = scheduleForm.location || null;
-    if (scheduleForm.requires_protocol !== orig.requires_protocol) payload.requires_protocol = scheduleForm.requires_protocol;
+    if (scheduleForm.is_preliminary_booking !== orig.is_preliminary_booking) {
+      payload.is_preliminary_booking = scheduleForm.is_preliminary_booking;
+      payload.requires_protocol = !scheduleForm.is_preliminary_booking;
+    }
     if (scheduleForm.protocol_type_text !== orig.protocol_type_text) payload.protocol_type = scheduleForm.protocol_type_text;
     if (scheduleForm.is_data_complete !== orig.is_data_complete) payload.is_data_complete = scheduleForm.is_data_complete;
     if ((scheduleForm.selected_time_slot_id || null) !== (orig.selected_time_slot_id || null)) payload.selected_time_slot_id = scheduleForm.selected_time_slot_id;
@@ -410,9 +413,9 @@ export function useMeetingDetailPage() {
       scheduled_start: toISOStringWithTimezone(scheduledAt),
       scheduled_end: toISOStringWithTimezone(scheduledEndAt),
       meeting_channel: meetingChannel,
-      requires_protocol: scheduleForm.requires_protocol,
-      is_preliminary_booking: !scheduleForm.requires_protocol,
-      protocol_type: scheduleForm.requires_protocol ? (scheduleForm.protocol_type || scheduleForm.protocol_type_text || null) : null,
+      requires_protocol: !scheduleForm.is_preliminary_booking,
+      is_preliminary_booking: scheduleForm.is_preliminary_booking,
+      protocol_type: !scheduleForm.is_preliminary_booking ? (scheduleForm.protocol_type || scheduleForm.protocol_type_text || null) : null,
       is_data_complete: scheduleForm.is_data_complete,
       notes: scheduleForm.notes || 'Meeting scheduled successfully',
       location: scheduleForm.location || undefined,
