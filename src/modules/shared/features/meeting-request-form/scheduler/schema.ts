@@ -54,6 +54,9 @@ export const schedulerStep1Schema = z.object({
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
   }
+  if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
+    ctx.addIssue({ code: "custom", path: ["meeting_owner"], message: "يرجى تحديد مالك الاجتماع" });
+  }
   if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
     ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });
   }
