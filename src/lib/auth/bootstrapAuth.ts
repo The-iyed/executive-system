@@ -50,8 +50,14 @@ export async function bootstrapAuth(): Promise<User | null> {
     if (existingUser && !existingUser.expired) {
       return existingUser;
     }
-    const user = await userManager.signinSilent();
-    if (user) return user;
+    if (existingUser?.refresh_token) {
+      try {
+        const user = await userManager.signinSilent();
+        if (user) return user;
+      } catch {
+        // refresh token expired or backend doesn't support it — fall through
+      }
+    }
     return null;
   } catch {
     return null;
@@ -65,6 +71,58 @@ export async function initiateLogin(): Promise<void> {
     console.error('Error initiating login:', error);
     throw error;
   }
+}
+
+const PRE_AUTH_PATH_KEY = 'sanad_pre_auth_path';
+
+export function saveCurrentPath(): void {
+  try {
+    const path = window.location.pathname + window.location.search;
+    if (path && path !== '/' && !path.startsWith('/callback') && !path.startsWith('/silent-renew')) {
+      sessionStorage.setItem(PRE_AUTH_PATH_KEY, path);
+    }
+  } catch { /* ignore */ }
+}
+
+export function consumeSavedPath(): string | null {
+  try {
+    const path = sessionStorage.getItem(PRE_AUTH_PATH_KEY);
+    sessionStorage.removeItem(PRE_AUTH_PATH_KEY);
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Renew token without iframe. Strategy:
+ * 1. If user has a refresh_token → signinSilent uses token endpoint (HTTP only, no iframe).
+ * 2. If no refresh_token or signinSilent fails → full redirect to IdP.
+ *    SSO session is still alive so IdP returns immediately with a new code (no login form).
+ */
+let renewPromise: Promise<User | null> | null = null;
+
+export async function renewToken(): Promise<User | null> {
+  if (renewPromise) return renewPromise;
+
+  renewPromise = (async () => {
+    const existing = await userManager.getUser();
+    if (existing?.refresh_token) {
+      try {
+        const renewed = await userManager.signinSilent();
+        return renewed;
+      } catch (e) {
+        console.warn('[Auth] Refresh token renewal failed, falling back to redirect:', e);
+      }
+    }
+    saveCurrentPath();
+    await userManager.signinRedirect();
+    return null;
+  })().finally(() => {
+    renewPromise = null;
+  });
+
+  return renewPromise;
 }
 
 export function getStoredCodeVerifier(state: string | null): string | undefined {

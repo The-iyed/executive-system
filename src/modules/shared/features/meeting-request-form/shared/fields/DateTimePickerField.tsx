@@ -152,15 +152,16 @@ export function DateTimePickerField({
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-0 shadow-lg border border-border rounded-xl overflow-hidden max-w-[calc(100vw-1rem)]"
-        align="start"
+        align="center"
         dir="rtl"
-        sideOffset={4}
-        side="left"
+        sideOffset={6}
+        side="bottom"
         avoidCollisions={true}
-        collisionPadding={8}
-        sticky="always"
+        collisionPadding={16}
+        sticky="partial"
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="flex flex-col max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain">
+        <div className="flex flex-col max-h-[min(480px,calc(100vh-2rem))] overflow-y-auto overscroll-contain">
           <div className="p-2 pb-1">
             <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate}
               locale={ar} disabled={disabledDays} className="p-0 pointer-events-auto" />
