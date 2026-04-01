@@ -9,7 +9,6 @@ import {
   MeetingNatureField, PreviousMeetingField, RequiresProtocolField,
   RelatedDirectiveField, AgendaSection, OnBehalfField,
 } from "../shared";
-import { BOOL } from "../shared/types/enums";
 import type { SchedulerStep1Values } from "./schema";
 import { scrollToFirstError } from "../shared/utils/scrollToFirstError";
 
@@ -24,9 +23,6 @@ interface Props {
 export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, defaultDirectiveLabel }: Props) {
   const { form, visibility, watched } = useSchedulerStep1Form(initialValues);
 
-  const minDate = useMemo(() => {
-    return watched.is_urgent === BOOL.TRUE ? startOfDay(new Date()) : startOfDay(addDays(new Date(), 7));
-  }, [watched.is_urgent]);
 
   const handleSubmit = form.handleSubmit(
     (data) => {
