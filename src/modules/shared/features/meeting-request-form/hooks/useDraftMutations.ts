@@ -57,12 +57,13 @@ export function useSaveSchedulerStep2Content() {
 interface SaveInviteesParams {
   draftId: string;
   invitees: Record<string, unknown>[];
+  is_content_updated?: boolean;
 }
 
 export function useSaveDraftInvitees() {
   return useMutation({
-    mutationFn: ({ draftId, invitees }: SaveInviteesParams) =>
-      saveDraftInvitees(draftId, invitees),
+    mutationFn: ({ draftId, invitees, is_content_updated }: SaveInviteesParams) =>
+      saveDraftInvitees(draftId, invitees, is_content_updated),
   });
 }
 
