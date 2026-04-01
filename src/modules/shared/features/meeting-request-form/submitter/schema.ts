@@ -103,15 +103,17 @@ export const submitterStep1Schema = z.object({
   }
   validateAgendaDuration(data.agenda_items ?? [], data.meeting_start_date, data.meeting_end_date, ctx);
 
-  /* ── Category-dependent ── */
-  if ([MeetingClassification.PRIVATE_MEETING, MeetingClassification.BILATERAL_MEETING].includes(data.meeting_classification as MeetingClassification) && !data.meeting_justification) {
-    ctx.addIssue({ code: "custom", path: ["meeting_justification"], message: "مبرر اللقاء مطلوب" });
-  }
-  if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.related_topic) {
-    ctx.addIssue({ code: "custom", path: ["related_topic"], message: "موضوع التكليف المرتبط مطلوب" });
-  }
-  if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.deadline) {
-    ctx.addIssue({ code: "custom", path: ["deadline"], message: "تاريخ الاستحقاق مطلوب" });
+  /* ── Category-dependent (skip for scheduler edit) ── */
+  if (!data.is_scheduler_edit) {
+    if ([MeetingClassification.PRIVATE_MEETING, MeetingClassification.BILATERAL_MEETING].includes(data.meeting_classification as MeetingClassification) && !data.meeting_justification) {
+      ctx.addIssue({ code: "custom", path: ["meeting_justification"], message: "مبرر اللقاء مطلوب" });
+    }
+    if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.related_topic) {
+      ctx.addIssue({ code: "custom", path: ["related_topic"], message: "موضوع التكليف المرتبط مطلوب" });
+    }
+    if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.deadline) {
+      ctx.addIssue({ code: "custom", path: ["deadline"], message: "تاريخ الاستحقاق مطلوب" });
+    }
   }
 
   /* ── Directive (only validate children when parent is active) ── */
