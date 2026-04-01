@@ -1,29 +1,48 @@
 
 
-## Plan: Fix directive status translation in Content tab
+## Plan: Hide required asterisk (`*`) on non-required fields for scheduler
 
 ### Problem
-`translateCompareValue` converts the value to **lowercase** before looking it up (`map[String(value).toLowerCase()]`), but the map keys are **UPPERCASE** (`PENDING`, `TAKEN`, `IN_PROGRESS`, etc.). The lookup always misses and returns the raw English enum string.
+Several conditionally-visible fields hardcode `required` on their `<FormField>`, showing a `*` asterisk even for scheduling officers — but the schema does NOT require them for schedulers. This is misleading.
+
+### Fields to fix
+
+These 5 fields hardcode `required` in their JSX but are skipped in the schema for schedulers:
+
+| Field | File | Schema enforces for scheduler? |
+|---|---|---|
+| مبرر الاستعجال (UrgentReasonField) | `UrgentReasonField.tsx` | No (line 90) |
+| مبرر اللقاء (MeetingJustificationField) | `MeetingJustificationField.tsx` | No (line 120) |
+| تصنيف الاجتماع (ClassificationTypeField) | `ClassificationTypeField.tsx` | No (not validated) |
+| موضوع التكليف المرتبط (RelatedTopicField) | `RelatedTopicField.tsx` | No (line 123) |
+| تاريخ الاستحقاق (DeadlineField) | `DeadlineField.tsx` | No (line 126) |
+
+**Note**: `LocationField` and `LocationCustomField` remain always required (schema enforces for all users) — no change needed.
 
 ### Changes
 
-#### `src/modules/UC02/features/meeting-detail/utils/meetingDetailHelpers.ts` — Fix key lookup
+#### 1. Each of the 5 field components — Accept optional `required` prop
 
-Change line 23 from:
-```ts
-return map[String(value).toLowerCase()] ?? value;
-```
-to:
-```ts
-const v = String(value);
-return map[v] ?? map[v.toUpperCase()] ?? map[v.toLowerCase()] ?? value;
-```
+Add `required?: boolean` to each component's Props interface, default to `true`, and pass it to `<FormField>`.
 
-This tries exact match first (UPPERCASE keys), then uppercase, then lowercase as fallback. Fixes the translation for all directive statuses without breaking existing compare-value usage.
+#### 2. `Step1Form.tsx` — Pass `required={!isSchedulerEdit}` to each
+
+```tsx
+{visibility.urgent_reason && <UrgentReasonField required={!isSchedulerEdit} />}
+{visibility.meeting_justification && <MeetingJustificationField required={!isSchedulerEdit} />}
+{visibility.meeting_classification_type && <ClassificationTypeField required={!isSchedulerEdit} />}
+{visibility.related_topic && <RelatedTopicField required={!isSchedulerEdit} />}
+{visibility.deadline && <DeadlineField required={!isSchedulerEdit} />}
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `meetingDetailHelpers.ts` | Fix `translateCompareValue` to match keys case-insensitively |
+| `UrgentReasonField.tsx` | Add `required` prop, pass to `<FormField>` |
+| `MeetingJustificationField.tsx` | Add `required` prop, pass to `<FormField>` |
+| `ClassificationTypeField.tsx` | Add `required` prop, pass to `<FormField>` |
+| `RelatedTopicField.tsx` | Add `required` prop, pass to `<FormField>` |
+| `DeadlineField.tsx` | Add `required` prop, pass to `<FormField>` |
+| `Step1Form.tsx` | Pass `required={!isSchedulerEdit}` to the 5 fields above |
 
