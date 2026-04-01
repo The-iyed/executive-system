@@ -6,11 +6,18 @@ let globalIdCounter = 0;
 
 /** Normalize input rows to internal TableRow with guaranteed _id */
 export function normalizeRows(rows: InputTableRow[]): TableRow[] {
-  return rows.map((row) => ({
-    ...row,
-    _id: typeof row._id === "string" && row._id ? row._id : `row_${Date.now()}_${globalIdCounter++}_${Math.random().toString(36).slice(2, 6)}`,
-    isExternal: typeof row.isExternal === "boolean" ? row.isExternal : true,
-  } as TableRow));
+  return rows.map((row) => {
+    const normalized: Record<string, unknown> = {
+      ...row,
+      _id: typeof row._id === "string" && row._id ? row._id : `row_${Date.now()}_${globalIdCounter++}_${Math.random().toString(36).slice(2, 6)}`,
+      isExternal: typeof row.isExternal === "boolean" ? row.isExternal : true,
+    };
+    // Map API field is_required → table column is_presence_required
+    if ('is_required' in row && !('is_presence_required' in row)) {
+      normalized.is_presence_required = Boolean(row.is_required);
+    }
+    return normalized as TableRow;
+  });
 }
 
 interface UseTableFormOptions {
