@@ -300,95 +300,80 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Invitees */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/25" />
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {/* Invitees */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
                     <span className="text-[12px] font-semibold text-muted-foreground">المدعوون</span>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 min-w-[20px] text-center">
                       {display.invitees.length}
                     </span>
                   </div>
-                  <div className="h-px flex-1 bg-border/25" />
+                  <div className="flex items-center gap-1 min-w-0">
+                    {display.invitees.length > 0 ? (
+                      <>
+                        <div className="flex -space-x-2 rtl:space-x-reverse">
+                          {display.invitees.slice(0, MAX_VISIBLE_INVITEES).map((a, idx) => (
+                            <div
+                              key={`${a.name}-${idx}`}
+                              className={cn(
+                                'w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-background shrink-0',
+                                AVATAR_COLORS[idx % AVATAR_COLORS.length],
+                              )}
+                              title={a.name || a.email || '—'}
+                            >
+                              <span className="text-[9px] font-bold">{getInitials(a.name || a.email || '?')}</span>
+                            </div>
+                          ))}
+                          {display.invitees.length > MAX_VISIBLE_INVITEES && (
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-background bg-muted text-muted-foreground shrink-0"
+                              title={`${display.invitees.length - MAX_VISIBLE_INVITEES} آخرين`}
+                            >
+                              <span className="text-[8px] font-bold">+{display.invitees.length - MAX_VISIBLE_INVITEES}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-[12px] text-muted-foreground">—</span>
+                    )}
+                  </div>
                 </div>
 
-                {display.invitees.length > 0 ? (
-                  <div className="flex items-center gap-1">
-                    {/* Avatar stack */}
-                    <div className="flex -space-x-2 rtl:space-x-reverse">
-                      {display.invitees.slice(0, MAX_VISIBLE_INVITEES).map((a, idx) => (
-                        <div
-                          key={`${a.name}-${idx}`}
-                          className={cn(
-                            'w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-background shrink-0',
-                            AVATAR_COLORS[idx % AVATAR_COLORS.length],
-                          )}
-                          title={a.name || a.email || '—'}
-                        >
-                          <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
-                        </div>
-                      ))}
-                      {display.invitees.length > MAX_VISIBLE_INVITEES && (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-background bg-muted text-muted-foreground shrink-0"
-                          title={`${display.invitees.length - MAX_VISIBLE_INVITEES} آخرين`}
-                        >
-                          <span className="text-[9px] font-bold">+{display.invitees.length - MAX_VISIBLE_INVITEES}</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Names preview */}
-                    <div className="flex flex-col mr-2 min-w-0">
-                      <span className="text-[11px] font-medium text-foreground truncate">
-                        {display.invitees.slice(0, 2).map(a => a.name || a.email).join('، ')}
-                        {display.invitees.length > 2 && ` و ${display.invitees.length - 2} آخرين`}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground py-1">لا يوجد مدعوون</span>
-                )}
-              </div>
-
-              {/* Scheduling Settings */}
-              {display.meetingId && (
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="h-px flex-1 bg-border/25" />
-                    <div className="flex items-center gap-1.5">
-                      <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {/* Scheduling Settings */}
+                {display.meetingId && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                        <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                      </div>
                       <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
                     </div>
-                    <div className="h-px flex-1 bg-border/25" />
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Preliminary chip */}
-                    <div className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors',
-                      display.requiresProtocol
-                        ? 'bg-primary/10 text-primary border border-primary/25'
-                        : 'bg-muted/40 text-muted-foreground border border-border/40',
-                    )}>
-                      {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                      مبدئي
-                    </div>
-                    {/* Data complete chip */}
-                    <div className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors',
-                      display.isDataComplete
-                        ? 'bg-primary/10 text-primary border border-primary/25'
-                        : 'bg-muted/40 text-muted-foreground border border-border/40',
-                    )}>
-                      {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                      البيانات مكتملة
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
+                        display.requiresProtocol
+                          ? 'bg-primary/10 text-primary border border-primary/25'
+                          : 'bg-muted/40 text-muted-foreground border border-border/40',
+                      )}>
+                        {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                        مبدئي
+                      </div>
+                      <div className={cn(
+                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
+                        display.isDataComplete
+                          ? 'bg-primary/10 text-primary border border-primary/25'
+                          : 'bg-muted/40 text-muted-foreground border border-border/40',
+                      )}>
+                        {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                        البيانات مكتملة
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             {/* Actions footer */}
