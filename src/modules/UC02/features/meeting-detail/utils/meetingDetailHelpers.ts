@@ -20,7 +20,8 @@ export function translateCompareValue(
   map: Record<string, string>
 ): string {
   if (value == null || value === '') return '—';
-  return map[String(value).toLowerCase()] ?? value;
+  const v = String(value);
+  return map[v] ?? map[v.toUpperCase()] ?? map[v.toLowerCase()] ?? value;
 }
 
 /** Normalize API general_notes (array of items or legacy string) to a list for display */
