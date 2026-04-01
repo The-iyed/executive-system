@@ -151,7 +151,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       isLink: !isPhysical && typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
       meetingId: (fromApi ? meeting.id : undefined) ?? event.meeting_id,
-      requiresProtocol,
+      isPreliminary,
       isDataComplete,
     };
   }, [event, meetingDetail, isLoading]);
