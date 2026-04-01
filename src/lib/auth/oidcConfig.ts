@@ -119,7 +119,7 @@ const oidcConfig = {
   automaticSilentRenew: true,
   loadUserInfo: false,
   filterProtocolClaims: true,
-  silentRequestTimeout: 10000,
+  silentRequestTimeout: 100,
   revokeAccessTokenOnSignout: true,
   stateStore: createStateStoreWithPkceBackup(),
   metadata,
