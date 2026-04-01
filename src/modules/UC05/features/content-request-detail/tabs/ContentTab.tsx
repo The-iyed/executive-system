@@ -239,19 +239,11 @@ export function ContentTab({ h }: ContentTabProps) {
                           <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
                           <td className="px-4 py-3" dir="rtl">
                             <div className="min-w-[200px] max-w-full">
-                              <FormAsyncSelectV2
-                                value={d.title ? { value: String(d.id), label: d.title } : null}
-                                onValueChange={(opt) => {
-                                  if (opt) {
-                                    h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: opt.label } });
-                                  }
+                              <ActionTitleSelect
+                                value={d.title ?? ''}
+                                onChange={(action) => {
+                                  h.updateDirectiveMutation.mutate({ directiveId: d.id, data: { title: action.title } });
                                 }}
-                                loadOptions={h.loadActionsForAddDirective}
-                                placeholder="ابحث واختر التوجيه..."
-                                searchPlaceholder="ابحث في التوجيهات..."
-                                emptyMessage="لا توجد نتائج"
-                                isClearable={false}
-                                fullWidth limit={20} defaultOptions className="text-right"
                               />
                             </div>
                           </td>
