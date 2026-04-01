@@ -11,6 +11,7 @@ import {
   ReadOnlyField,
   type MeetingInfoData,
 } from "@/modules/shared/components";
+import { DataTable } from "@/modules/shared";
 import { formatDateArabic, formatDateTimeArabic, formatTimeAgoArabic } from "@/modules/shared/utils";
 import { MeetingStatus, MeetingStatusLabels, SectorLabels } from "@/modules/shared/types";
 import {
