@@ -554,7 +554,7 @@ export function ContentTab({ h }: ContentTabProps) {
                             placeholder="ابحث واختر التوجيه..."
                             searchPlaceholder="ابحث في التوجيهات..."
                             emptyMessage="لا توجد نتائج"
-                            fullWidth limit={20} defaultOptions={false} className="text-right"
+                            fullWidth limit={20} defaultOptions className="text-right"
                           />
                         </div>
                       </td>
