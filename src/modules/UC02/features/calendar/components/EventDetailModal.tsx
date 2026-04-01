@@ -107,9 +107,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       ? (formatExactTimeFromIso(meeting.scheduled_end) ?? (event.exactEndTime || event.endTime))
       : (event.exactEndTime || event.endTime);
 
-    const locationText =
-      (fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
-      event.meeting_link || event.meeting_location || event.location || '';
+    const channel = (fromApi ? (meeting as any).meeting_channel : (event as any).meeting_channel) || '';
+    const isPhysical = channel === 'PHYSICAL';
+
+    const locationText = isPhysical
+      ? ((fromApi && meeting.meeting_location) || event.meeting_location || event.location || '')
+      : ((fromApi && (meeting.meeting_link ?? meeting.meeting_url ?? meeting.meeting_location)) ||
+         event.meeting_link || event.meeting_location || event.location || '');
 
     const inviteesList = fromApi && Array.isArray(meeting.invitees) && meeting.invitees.length > 0
       ? meeting.invitees.map((inv) => {
