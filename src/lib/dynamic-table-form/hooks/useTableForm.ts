@@ -6,11 +6,14 @@ let globalIdCounter = 0;
 
 /** Normalize input rows to internal TableRow with guaranteed _id */
 export function normalizeRows(rows: InputTableRow[]): TableRow[] {
-  return rows.map((row) => ({
-    ...row,
-    _id: typeof row._id === "string" && row._id ? row._id : `row_${Date.now()}_${globalIdCounter++}_${Math.random().toString(36).slice(2, 6)}`,
-    isExternal: typeof row.isExternal === "boolean" ? row.isExternal : true,
-  } as TableRow));
+  return rows.map((row) => {
+    const normalized: Record<string, unknown> = {
+      ...row,
+      _id: typeof row._id === "string" && row._id ? row._id : `row_${Date.now()}_${globalIdCounter++}_${Math.random().toString(36).slice(2, 6)}`,
+      isExternal: typeof row.isExternal === "boolean" ? row.isExternal : true,
+    };
+    return normalized as TableRow;
+  });
 }
 
 interface UseTableFormOptions {

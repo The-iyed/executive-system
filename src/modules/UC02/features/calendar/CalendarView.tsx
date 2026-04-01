@@ -155,6 +155,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           access_permission: Boolean(m.access_permission),
           is_consultant: Boolean(m.is_consultant),
           meeting_owner: Boolean(m.meeting_owner),
+          is_required: Boolean(m.is_presence_required),
           ...(m.object_guid ? { object_guid: m.object_guid as string } : {}),
         }));
 
@@ -170,6 +171,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           invitees,
           requires_protocol: values.requires_protocol as boolean | undefined,
           is_data_complete: values.is_data_complete as boolean | undefined,
+          is_preliminary_booking: values.is_preliminary_booking as boolean | undefined,
         };
 
         if (isEdit) {
