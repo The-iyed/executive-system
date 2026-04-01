@@ -93,7 +93,7 @@ export const submitterStep1Schema = z.object({
 
   /* ── Agenda ── */
   const isPrivate = data.meeting_classification === MeetingClassification.PRIVATE_MEETING;
-  if (!isPrivate && (!data.agenda_items || data.agenda_items.length === 0)) {
+  if (!data.is_scheduler_edit && !isPrivate && (!data.agenda_items || data.agenda_items.length === 0)) {
     ctx.addIssue({ code: "custom", path: ["agenda_items"], message: "يجب إضافة عنصر أجندة واحد على الأقل" });
   }
   if (data.agenda_items?.length > 0) {
