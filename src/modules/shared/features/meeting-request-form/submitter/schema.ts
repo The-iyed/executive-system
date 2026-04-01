@@ -63,6 +63,7 @@ export const submitterStep1Schema = z.object({
   submitter: meetingUserSchema.nullable().optional(),
   requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]).optional(),
   related_directive: z.string().optional(),
+  is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
   if (data.meeting_type === MeetingType.INTERNAL && !data.sector) {
@@ -92,7 +93,7 @@ export const submitterStep1Schema = z.object({
 
   /* ── Agenda ── */
   const isPrivate = data.meeting_classification === MeetingClassification.PRIVATE_MEETING;
-  if (!isPrivate && (!data.agenda_items || data.agenda_items.length === 0)) {
+  if (!data.is_scheduler_edit && !isPrivate && (!data.agenda_items || data.agenda_items.length === 0)) {
     ctx.addIssue({ code: "custom", path: ["agenda_items"], message: "يجب إضافة عنصر أجندة واحد على الأقل" });
   }
   if (data.agenda_items?.length > 0) {

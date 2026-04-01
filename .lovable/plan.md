@@ -1,46 +1,33 @@
 
 
-## Plan: Add `name` and `is_presence_required` columns + update preview cards
+## Plan: Add "هل تطلب الاجتماع نيابة عن غيرك؟" to Scheduler Form (matching submitter behavior)
 
 ### Changes
 
-#### 1. `api.ts` — Add `name_ar`/`name_en` to `SuggestedAttendee` interface
-Add optional fields: `name_ar?: string`, `name_en?: string`
+#### 1. `scheduler/Step1Form.tsx` — Add `OnBehalfField` + conditional `MeetingOwnerField`
+- Import `OnBehalfField`
+- Add `<OnBehalfField />` after the submitter field (line 51)
+- Wrap `<MeetingOwnerField />` with `{visibility.meeting_owner && ...}` (like submitter does)
 
-#### 2. `columns.ts` — Add two new columns
-- Add `name` column (optional, type `text`, placeholder "الاسم") right after `email`, with `autoFillFromSearch: true`
-- Add `is_presence_required` column (type `checkbox`, label "الحضور إجباري", defaultValue `false`) after `meeting_owner`
+#### 2. `scheduler/useStep1Form.ts` — Add visibility + cleanup for `meeting_owner`
+- Add `meeting_owner: watched.is_on_behalf_of === BOOL.TRUE` to the `visibility` object
+- Add `watched.is_on_behalf_of` to the `useMemo` deps
+- Add `meeting_owner: [{ name: "meeting_owner", resetValue: null }]` to `SCHEDULER_FIELD_RESET_MAP`
 
-#### 3. `InviteesTableForm.tsx` — Map name from search & AI
-
-**Search mapping (line 72-79)** — update name priority order:
-```ts
-name: result.displayName || result.displayNameEN || result.givenName || "",
-```
-
-**AI suggestion mapping (line 57-69)** — add name and is_presence_required:
-```ts
-name: (s as any).name_ar || (s as any).name_en || `${s.first_name} ${s.last_name}`.trim(),
-is_presence_required: false,
-```
-
-#### 4. `InviteeCard.tsx` — Use `name` field instead of email prefix
-
-Replace the current logic that extracts name from email (`email.split('@')[0]`) with:
-```ts
-const name = getDisplayValue(invitee.name) !== "-"
-  ? getDisplayValue(invitee.name)
-  : email.split('@')[0];
-```
-
-Also add `is_presence_required` badge in the badges section (red badge "الحضور إجباري") when true.
+#### 3. `scheduler/schema.ts` — Make `meeting_owner` conditionally required
+- Change `meeting_owner` from always-required (`superRefine` inline) to `meetingUserSchema.nullable().optional()`
+- Add conditional check in the main `superRefine` block:
+  ```ts
+  if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
+    ctx.addIssue({ code: "custom", path: ["meeting_owner"], message: "يرجى تحديد مالك الاجتماع" });
+  }
+  ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `api.ts` | Add `name_ar`, `name_en` optional fields to `SuggestedAttendee` |
-| `columns.ts` | Add `name` (text, optional) after email; add `is_presence_required` (checkbox) after `meeting_owner` |
-| `InviteesTableForm.tsx` | Map `name` with correct priority from search & AI; add `is_presence_required` default |
-| `InviteeCard.tsx` | Display real `name` field instead of email prefix; add `is_presence_required` badge |
+| `scheduler/Step1Form.tsx` | Import & render `OnBehalfField`; conditionally show `MeetingOwnerField` |
+| `scheduler/useStep1Form.ts` | Add `meeting_owner` visibility, cleanup map entry, deps |
+| `scheduler/schema.ts` | Make `meeting_owner` conditionally required based on `is_on_behalf_of` |
 
