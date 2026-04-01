@@ -63,7 +63,7 @@ export function SchedulerStep1Form({ onSubmit, renderActions, initialValues, def
           {visibility.urgent_reason && <UrgentReasonField />}
 
           {/* Dates */}
-          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required minDate={minDate} />
+          <MeetingDateField startName="meeting_start_date" endName="meeting_end_date" required />
 
           {/* Channel & location */}
           <MeetingChannelField />
