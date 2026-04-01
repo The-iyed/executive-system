@@ -1,37 +1,29 @@
 
 
-## Plan: Use shared `DIRECTIVE_STATUS_LABELS` enum in Content tab directives table
+## Plan: Fix directive status translation in Content tab
 
 ### Problem
-Line 189 of `ContentTab.tsx` uses an inline object to translate `directive_status` values to Arabic labels. This should use the shared `DIRECTIVE_STATUS_LABELS` from `directiveMapper.ts` (or combine both maps) for consistency.
+`translateCompareValue` converts the value to **lowercase** before looking it up (`map[String(value).toLowerCase()]`), but the map keys are **UPPERCASE** (`PENDING`, `TAKEN`, `IN_PROGRESS`, etc.). The lookup always misses and returns the raw English enum string.
 
 ### Changes
 
-#### 1. `src/modules/UC02/features/meeting-detail/tabs/ContentTab.tsx`
+#### `src/modules/UC02/features/meeting-detail/utils/meetingDetailHelpers.ts` — Fix key lookup
 
-**Import** the shared labels:
+Change line 23 from:
 ```ts
-import { DIRECTIVE_STATUS_LABELS } from '@/modules/shared/types/minister-directive-enums';
+return map[String(value).toLowerCase()] ?? value;
+```
+to:
+```ts
+const v = String(value);
+return map[v] ?? map[v.toUpperCase()] ?? map[v.toLowerCase()] ?? value;
 ```
 
-**Replace line 189** — swap the inline map with one that merges the shared enum labels plus the content-approval-specific statuses:
-```tsx
-{translateCompareValue(row.directive_status, {
-  ...DIRECTIVE_STATUS_LABELS,
-  PENDING: 'قيد الانتظار',
-  IN_PROGRESS: 'قيد التنفيذ',
-  COMPLETED: 'مكتمل',
-  CANCELLED: 'ملغى',
-  CLOSED: 'مغلق',
-  OPEN: 'مفتوح',
-})}
-```
-
-This keeps the existing fallback values for statuses not in the shared enum (PENDING, IN_PROGRESS, etc.) while using the shared labels for TAKEN/ADOPTED via spread.
+This tries exact match first (UPPERCASE keys), then uppercase, then lowercase as fallback. Fixes the translation for all directive statuses without breaking existing compare-value usage.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `ContentTab.tsx` | Import `DIRECTIVE_STATUS_LABELS`; spread into the inline status map |
+| `meetingDetailHelpers.ts` | Fix `translateCompareValue` to match keys case-insensitively |
 
