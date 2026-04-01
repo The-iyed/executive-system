@@ -12,7 +12,7 @@ interface ScheduleConfirmDialogProps {
   endDate: string | null;
   meetingChannel: string;
   scheduleFormChannel: string;
-  requiresProtocol: boolean;
+  isPreliminaryBooking: boolean;
   isDataComplete: boolean;
   location: string;
   onConfirm: () => void;
@@ -20,7 +20,7 @@ interface ScheduleConfirmDialogProps {
   validationError?: string | null;
   notes: string;
   onNotesChange: (v: string) => void;
-  onRequiresProtocolChange: (v: boolean) => void;
+  onPreliminaryBookingChange: (v: boolean) => void;
   onDataCompleteChange: (v: boolean) => void;
 }
 
