@@ -43,13 +43,41 @@ function styleForOutlook(e: OutlookTimelineEvent): { backgroundColor: string; te
   return EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
 }
 
-/** Build CalendarEventData using local wall time (matches how users see the calendar). */
+/** Parse ISO string without timezone conversion */
+function parseIsoLocal(iso: string): { date: Date; hour: number; minute: number; year: number; month: number; day: number } | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return { date: new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), hour: Number(m[4]), minute: Number(m[5]), year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+}
+
+/** Build an offset-free ISO string that FullCalendar will treat as-is (no tz shift) */
+function toNaiveISO(p: { year: number; month: number; day: number; hour: number; minute: number }): string {
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}:00`;
+}
+
+type TimelineEventWithFixedTimes = OutlookTimelineEvent & {
+  meeting_start_date?: string | null;
+  meeting_end_date?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+};
+
+function resolveTimelineEventTimes(event: OutlookTimelineEvent): { startISO: string; endISO: string } {
+  const raw = event as TimelineEventWithFixedTimes;
+  return {
+    startISO: raw.meeting_start_date ?? raw.scheduled_start ?? event.start_datetime,
+    endISO: raw.meeting_end_date ?? raw.scheduled_end ?? event.end_datetime,
+  };
+}
+
+/** Build CalendarEventData using raw ISO time (no timezone conversion). */
 export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): CalendarEventData {
-  const start = new Date(event.start_datetime);
-  const end = new Date(event.end_datetime);
+  const { startISO, endISO } = resolveTimelineEventTimes(event);
+  const parsedStart = parseIsoLocal(startISO);
+  const parsedEnd = parseIsoLocal(endISO);
   const id = event.item_id;
   const title = event.subject || 'اجتماع';
-  if (Number.isNaN(start.getTime())) {
+  if (!parsedStart) {
     return {
       id,
       type: 'reserved',
@@ -63,12 +91,13 @@ export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): Calen
       is_internal: event.is_internal,
     };
   }
-  const exactStart = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
-  const exactEnd = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
-  let startHour = start.getHours();
-  let endHour = end.getHours();
-  if (end.getMinutes() > 0 || end.getSeconds() > 0) endHour = Math.min(23, endHour + 1);
-  if (endHour <= startHour && end > start) endHour = Math.min(23, startHour + 1);
+  const exactStart = `${pad2(parsedStart.hour)}:${pad2(parsedStart.minute)}`;
+  const exactEnd = parsedEnd ? `${pad2(parsedEnd.hour)}:${pad2(parsedEnd.minute)}` : exactStart;
+  let startHour = parsedStart.hour;
+  let endHour = parsedEnd?.hour ?? startHour + 1;
+  const endMin = parsedEnd?.minute ?? 0;
+  if (endMin > 0) endHour = Math.min(23, endHour + 1);
+  if (endHour <= startHour) endHour = Math.min(23, startHour + 1);
   const variant = variantFromId(id);
   return {
     id,
@@ -97,7 +126,7 @@ export function outlookEventToCalendarDetail(event: OutlookTimelineEvent): Calen
     meeting_link: event.meeting_link ?? undefined,
     startTime: `${pad2(startHour)}:00`,
     endTime: `${pad2(endHour)}:00`,
-    date: new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0),
+    date: parsedStart.date,
     exactStartTime: exactStart,
     exactEndTime: exactEnd,
   };
@@ -165,31 +194,42 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
     const out: {
       id: string;
       title: string;
-      start: Date;
-      end: Date;
+      start: string;
+      end: string;
       backgroundColor: string;
       textColor: string;
       borderColor: string;
       extendedProps: { detail: CalendarEventData };
     }[] = [];
     for (const e of outlookEvents) {
-      const start = new Date(e.start_datetime);
-      const end = new Date(e.end_datetime);
-      if (Number.isNaN(start.getTime())) continue;
-      let endT = end;
-      if (Number.isNaN(end.getTime()) || end <= start) {
-        endT = new Date(start.getTime() + 60 * 60 * 1000);
+      const { startISO, endISO } = resolveTimelineEventTimes(e);
+      const parsedS = parseIsoLocal(startISO);
+      const parsedE = parseIsoLocal(endISO);
+      if (!parsedS) continue;
+      const start = toNaiveISO(parsedS);
+      let end: string;
+      if (parsedE) {
+        end = toNaiveISO(parsedE);
+        if (end <= start) {
+          end = toNaiveISO({ ...parsedS, hour: Math.min(23, parsedS.hour + 1), minute: parsedS.minute });
+        }
+      } else {
+        end = toNaiveISO({ ...parsedS, hour: Math.min(23, parsedS.hour + 1), minute: parsedS.minute });
       }
       const sty = styleForOutlook(e);
+      const detailSource: OutlookTimelineEvent =
+        startISO === e.start_datetime && endISO === e.end_datetime
+          ? e
+          : { ...e, start_datetime: startISO, end_datetime: endISO };
       out.push({
         id: e.item_id,
         title: e.subject || 'اجتماع',
         start,
-        end: endT,
+        end,
         backgroundColor: sty.backgroundColor,
         textColor: sty.textColor,
         borderColor: sty.borderColor,
-        extendedProps: { detail: outlookEventToCalendarDetail(e) },
+        extendedProps: { detail: outlookEventToCalendarDetail(detailSource) },
       });
     }
     for (const ev of extraEvents) {
@@ -197,9 +237,12 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
       const d = new Date(detail.date);
       const [sh, sm] = (detail.exactStartTime || detail.startTime).split(':').map(Number);
       const [eh, em] = (detail.exactEndTime || detail.endTime).split(':').map(Number);
-      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh || 0, sm || 0, 0, 0);
-      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh || 0, em || 0, 0, 0);
-      if (end <= start) end.setTime(start.getTime() + 3600000);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const start = toNaiveISO({ year, month, day, hour: sh || 0, minute: sm || 0 });
+      let end = toNaiveISO({ year, month, day, hour: eh || 0, minute: em || 0 });
+      if (end <= start) end = toNaiveISO({ year, month, day, hour: Math.min(23, (sh || 0) + 1), minute: sm || 0 });
       const v = detail.variant && EVENT_STYLE[detail.variant] ? detail.variant : variantFromId(ev.id);
       const sty = EVENT_STYLE[v] ?? EVENT_STYLE.variant1!;
       out.push({
@@ -291,6 +334,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         headerToolbar={false}
         height="auto"
         contentHeight="auto"
+        timeZone="UTC"
         events={fcEvents}
         eventClick={handleEventClick}
         dateClick={handleDateClick}
@@ -312,6 +356,8 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         slotDuration="00:30:00"
         snapDuration="00:15:00"
         slotLabelInterval="01:00:00"
+        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+        slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
         buttonText={{ today: 'اليوم' }}
         dayHeaderContent={(arg) => {
           if (viewMode === 'daily') {

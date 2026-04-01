@@ -216,6 +216,7 @@ interface Step2FormProps {
   initialContentData?: Step2ContentInitialData;
   isEditMode?: boolean;
   meetingStatus?: string;
+  callerRole?: string;
 }
 
 export function Step2Form({
@@ -224,6 +225,7 @@ export function Step2Form({
   initialContentData,
   isEditMode = false,
   meetingStatus,
+  callerRole,
 }: Step2FormProps) {
   const { showPresentation, presentationRequired } = useStep2Visibility(step1Data);
 
@@ -250,13 +252,13 @@ export function Step2Form({
   const validate = useCallback((): boolean => {
     const errs: Record<string, string> = {};
 
-    if (presentationRequired && !hasPresentationFile) {
+    if (presentationRequired && !hasPresentationFile && callerRole !== "SCHEDULING") {
       errs.presentation_files = "يجب رفع ملف عرض تقديمي واحد على الأقل (PDF)";
     }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [presentationRequired, hasPresentationFile]);
+  }, [presentationRequired, hasPresentationFile, callerRole]);
 
   /* ── Submit ── */
 
@@ -290,7 +292,7 @@ export function Step2Form({
           <FormField
             label="العرض التقديمي (PDF)"
             name="presentation_files"
-            required={presentationRequired}
+            required={presentationRequired && callerRole !== "SCHEDULING"}
             errors={buildFieldError("presentation_files", errors.presentation_files)}
             colSpan={12}
           >
