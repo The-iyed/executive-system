@@ -465,10 +465,25 @@ export function ContentTab({ h }: ContentTabProps) {
                       const assigneeInput = h.assigneeInputByActionId[dId] ?? '';
                       const dueDate = h.existingDirectiveEdits[dId]?.due_date !== undefined ? h.existingDirectiveEdits[dId].due_date : (directive.deadline ?? '');
                       const status = h.existingDirectiveEdits[dId]?.status ?? directive.directive_status ?? 'PENDING';
+                      const titleLabel = h.existingDirectiveEdits[dId]?.title ?? directive.directive || directive.directive_text || '-';
                       return (
                         <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
-                          <td className="px-4 py-3 text-sm text-foreground align-top" dir="rtl">{directive.directive || directive.directive_text || '-'}</td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="min-w-[200px] max-w-full">
+                              <FormAsyncSelectV2
+                                value={titleLabel ? { value: dId, label: titleLabel } : null}
+                                onValueChange={(opt) => {
+                                  if (opt) h.updateExistingDirectiveTitle(dId, opt.label);
+                                }}
+                                loadOptions={h.loadActionsForAddDirective}
+                                placeholder="ابحث واختر التوجيه..."
+                                searchPlaceholder="ابحث في التوجيهات..."
+                                emptyMessage="لا توجد نتائج"
+                                fullWidth limit={20} defaultOptions={false} className="text-right"
+                              />
+                            </div>
+                          </td>
                           <td className="px-4 py-3 align-top">
                             <FormDatePicker
                               value={dueDate ?? ''}
