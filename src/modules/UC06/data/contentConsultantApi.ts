@@ -130,9 +130,23 @@ export interface ContentConsultationRequestDetailResponse {
       id: string;
       name_ar: string;
     } | null;
+    content_approval_directives?: Array<{
+      id: number;
+      title: string;
+      due_date: string | null;
+      assignees: string[];
+      status: string;
+    }>;
   };
   consultation_question: string;
   consultation_id: string;
+  content_approval_directives?: Array<{
+    id: number;
+    title: string;
+    due_date: string | null;
+    assignees: string[];
+    status: string;
+  }>;
 }
 
 export const getContentConsultationRequestById = async (
