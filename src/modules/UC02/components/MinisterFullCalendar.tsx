@@ -353,6 +353,13 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         slotMaxTime="24:00:00"
         allDaySlot={false}
         nowIndicator
+        now={() => {
+          const local = new Date();
+          return new Date(Date.UTC(
+            local.getFullYear(), local.getMonth(), local.getDate(),
+            local.getHours(), local.getMinutes(), local.getSeconds()
+          ));
+        }}
         dayMaxEvents={4}
         moreLinkClick="popover"
         eventDisplay="block"
