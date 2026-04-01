@@ -499,6 +499,50 @@ export function useContentRequestDetailPage() {
     setManualActionAssignees(actionId, currentAssignees.filter((_, i) => i !== index));
   }, [setManualActionAssignees]);
 
+  /* ── Suggested Action edit handlers ── */
+  const updateSuggestedActionDueDate = useCallback((id: string, due_date: string | null) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
+  }, []);
+  const updateSuggestedActionStatus = useCallback((id: string, status: string) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], status } }));
+  }, []);
+  const getSuggestedActionAssignees = useCallback((id: string, fallback: string[]) => {
+    return suggestedActionEdits[id]?.assignees ?? fallback;
+  }, [suggestedActionEdits]);
+  const setSuggestedActionAssignees = useCallback((id: string, assignees: string[]) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], assignees } }));
+  }, []);
+  const addSuggestedActionAssignee = useCallback((id: string, email: string, currentAssignees: string[]) => {
+    const trimmed = email.trim();
+    if (!trimmed || currentAssignees.includes(trimmed)) return;
+    setSuggestedActionAssignees(id, [...currentAssignees, trimmed]);
+  }, [setSuggestedActionAssignees]);
+  const removeSuggestedActionAssignee = useCallback((id: string, index: number, currentAssignees: string[]) => {
+    setSuggestedActionAssignees(id, currentAssignees.filter((_, i) => i !== index));
+  }, [setSuggestedActionAssignees]);
+
+  /* ── Existing Directive edit handlers ── */
+  const updateExistingDirectiveDueDate = useCallback((id: string, due_date: string | null) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
+  }, []);
+  const updateExistingDirectiveStatus = useCallback((id: string, status: string) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], status } }));
+  }, []);
+  const getExistingDirectiveAssignees = useCallback((id: string, fallback: string[]) => {
+    return existingDirectiveEdits[id]?.assignees ?? fallback;
+  }, [existingDirectiveEdits]);
+  const setExistingDirectiveAssignees = useCallback((id: string, assignees: string[]) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], assignees } }));
+  }, []);
+  const addExistingDirectiveAssignee = useCallback((id: string, email: string, currentAssignees: string[]) => {
+    const trimmed = email.trim();
+    if (!trimmed || currentAssignees.includes(trimmed)) return;
+    setExistingDirectiveAssignees(id, [...currentAssignees, trimmed]);
+  }, [setExistingDirectiveAssignees]);
+  const removeExistingDirectiveAssignee = useCallback((id: string, index: number, currentAssignees: string[]) => {
+    setExistingDirectiveAssignees(id, currentAssignees.filter((_, i) => i !== index));
+  }, [setExistingDirectiveAssignees]);
+
   const handleDeleteExistingDirective = useCallback((directiveId: string) => {
     setDeletedExistingDirectiveIds((prev) => new Set(prev).add(directiveId));
   }, []);
