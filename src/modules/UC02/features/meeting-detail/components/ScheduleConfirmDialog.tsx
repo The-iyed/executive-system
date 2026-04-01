@@ -117,8 +117,8 @@ export function ScheduleConfirmDialog({
               <ToggleCard
                 label="مبدئي"
                 description="اجتماع بدون محضر رسمي"
-                checked={!requiresProtocol}
-                onChange={(v) => onRequiresProtocolChange(!v)}
+                checked={isPreliminaryBooking}
+                onChange={onPreliminaryBookingChange}
               />
               <ToggleCard
                 label="البيانات مكتملة"
