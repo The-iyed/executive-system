@@ -114,7 +114,8 @@ function InfoField({
 const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
   const position = getDisplayValue(invitee.position);
   const email = getDisplayValue(invitee.email);
-  const name = email.split('@')[0];
+  const rawName = getDisplayValue(invitee.name);
+  const name = rawName !== "-" ? rawName : email.split('@')[0];
   const mobile = getDisplayValue(invitee.mobile);
   const sector = getDisplayValue(invitee.sector);
   const channelLabel = getChannelLabel(invitee.attendance_mechanism);
