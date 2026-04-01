@@ -125,7 +125,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
         })
       : (event.attendees ?? []);
 
-    const requiresProtocol = fromApi ? Boolean((meeting as any).requires_protocol) : false;
+    const isPreliminary = fromApi
+      ? ((meeting as any).is_preliminary_booking != null
+          ? Boolean((meeting as any).is_preliminary_booking)
+          : !(meeting as any).requires_protocol)
+      : false;
+    const requiresProtocol = !isPreliminary;
     const isDataComplete = fromApi ? Boolean((meeting as any).is_data_complete ?? true) : true;
 
     const durationMin = startTime && endTime ? computeDurationMinutes(startTime, endTime) : null;
