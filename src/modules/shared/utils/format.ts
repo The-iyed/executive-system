@@ -1,9 +1,39 @@
 /**
  * Shared format helpers for dates and directive status.
+ *
+ * IMPORTANT: All date formatting parses ISO strings without timezone conversion.
+ * "2026-04-07T09:00:00+03:00" → displays as 7 أبريل 2026, 09:00
+ * regardless of the user's local timezone.
  */
 import { DIRECTIVE_STATUS_LABELS } from '../types';
 
 const fontStyle = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
+
+/** Parse an ISO string to a local Date without timezone conversion */
+function parseIsoLocal(iso: string): Date | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+/** Extract raw HH:MM from an ISO string without timezone conversion */
+function extractTimeFromIso(iso: string): string | null {
+  const m = iso.match(/T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}:${m[2]}`;
+}
+
+/** Convert a date input to a local Date without timezone shift */
+function toLocalDate(date: Date | string): Date | null {
+  if (typeof date === 'string') {
+    const parsed = parseIsoLocal(date);
+    if (parsed) return parsed;
+    // fallback for non-ISO strings
+    const d = new Date(date);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 /** Gregorian date in Arabic (e.g. "6 مارس 2026"). Use for all user-facing dates. */
 const ARABIC_GREGORIAN_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -17,8 +47,8 @@ const ARABIC_GREGORIAN_OPTIONS: Intl.DateTimeFormatOptions = {
 /** Format date as Arabic normal (Gregorian) e.g. "6 مارس 2026". */
 export function formatDateArabic(date: Date | string | null | undefined): string {
   if (date == null) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '';
+  const d = toLocalDate(date);
+  if (!d) return '';
   try {
     return new Intl.DateTimeFormat('ar', ARABIC_GREGORIAN_OPTIONS).format(d);
   } catch {
@@ -26,12 +56,19 @@ export function formatDateArabic(date: Date | string | null | undefined): string
   }
 }
 
-/** Format date and time in Arabic (Gregorian) e.g. "6 مارس 2026، 10:30 ص". */
+/** Format date and time in Arabic (Gregorian) e.g. "6 مارس 2026، 10:30". */
 export function formatDateTimeArabic(date: Date | string | null | undefined): string {
   if (date == null) return '';
+  const datePart = formatDateArabic(date);
+  if (!datePart) return '';
+  // Extract time directly from ISO string to avoid timezone conversion
+  if (typeof date === 'string') {
+    const time = extractTimeFromIso(date);
+    if (time) return `${datePart}، ${time}`;
+  }
+  // Fallback for Date objects
   const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '';
-  const datePart = formatDateArabic(d);
+  if (Number.isNaN(d.getTime())) return datePart;
   const timePart = d.toLocaleTimeString('ar', {
     hour: '2-digit',
     minute: '2-digit',
@@ -42,18 +79,15 @@ export function formatDateTimeArabic(date: Date | string | null | undefined): st
   return `${datePart}، ${timePart}`;
 }
 
-/** Format date for display – Gregorian, short (e.g. "٠٦/٠٣/٢٠٢٦" or with latn "06/03/2026"). */
+/** Format date for display – Gregorian, short (e.g. "06/03/2026"). */
 export function formatDateArSA(date: Date | string | null | undefined): string {
   if (date == null) return '—';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('ar', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    calendar: 'gregory',
-    numberingSystem: 'latn',
-  });
+  const d = toLocalDate(date);
+  if (!d) return '—';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 /** @deprecated Use formatDateArabic for display. Kept for compatibility – now returns Gregorian Arabic (e.g. "6 مارس 2026"). */

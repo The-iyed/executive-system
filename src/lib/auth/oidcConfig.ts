@@ -59,13 +59,29 @@ const SSO_CLIENT_ID = getEnv('VITE_SSO_CLIENT_ID', 'Outbalady.LegislationLibrary
 export function getRedirectUri(): string {
   const envUri = getEnv('VITE_REDIRECT_URI', '');
   if (envUri) {
-    return envUri;
+    return envUri.trim();
   }
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     const path = (window.location.pathname || '/').replace(/\/+$/, '') || '';
     const full = path ? `${origin}${path}` : origin;
     return full.replace(/\/+$/, '') || origin;
+  }
+  return '';
+}
+
+/**
+ * Redirect URI for OIDC silent renew (iframe). Must differ from the interactive callback
+ * when the latter is the site root, and must match an allowed redirect URI on the IdP client.
+ */
+export function getSilentRedirectUri(): string {
+  const envUri = getEnv('VITE_SILENT_REDIRECT_URI', '');
+  if (envUri) {
+    return envUri.trim();
+  }
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    return `${origin}/silent-renew`;
   }
   return '';
 }
@@ -93,7 +109,7 @@ const oidcConfig = {
     return getRedirectUri();
   },
   get silent_redirect_uri() {
-    return getRedirectUri();
+    return getSilentRedirectUri();
   },
   get post_logout_redirect_uri() {
     return getRedirectUri();
@@ -103,7 +119,7 @@ const oidcConfig = {
   automaticSilentRenew: true,
   loadUserInfo: false,
   filterProtocolClaims: true,
-  silentRequestTimeout: 3000,
+  silentRequestTimeout: 10000,
   revokeAccessTokenOnSignout: true,
   stateStore: createStateStoreWithPkceBackup(),
   metadata,

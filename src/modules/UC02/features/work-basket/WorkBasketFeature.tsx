@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MeetingListLayout } from '@/modules/shared/features/meeting-list';
 import type { MeetingCardAction } from '@/modules/shared/features/meeting-list';
 import { MeetingStatus, getMeetingStatusLabel } from '@/modules/shared';
@@ -8,6 +9,8 @@ import { getAssignedSchedulingRequests, type MeetingApiResponse, type GetMeeting
 import { mapMeetingToCardData } from '@/modules/shared/utils/meetingMapper';
 import { PATH } from '../../routes/paths';
 import { useDeleteDraft } from './useDeleteDraft';
+import { submitDraft } from '@/modules/shared/features/meeting-request-form/api/submitDraft';
+import { useToast } from '@/lib/ui';
 
 const WORK_BASKET_STATUS_OPTIONS: string[] = [
   MeetingStatus.DRAFT,
@@ -31,7 +34,24 @@ const WORK_BASKET_STATUS_OPTIONS: string[] = [
 
 const WorkBasketFeature: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { confirmOpen, targetId, isPending, requestDelete, confirmDelete, setConfirmOpen } = useDeleteDraft();
+
+  // Submit draft state
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [submitTargetId, setSubmitTargetId] = useState<string | null>(null);
+  const submitDraftMutation = useMutation({
+    mutationFn: (id: string) => submitDraft(id),
+    onSuccess: () => {
+      toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      setSubmitConfirmOpen(false);
+    },
+    onError: (err) => {
+      toast({ title: err instanceof Error ? err.message : 'فشل إرسال الطلب', variant: 'destructive' });
+    },
+  });
 
   const queryFn = useCallback((params: Record<string, any>) => {
     const apiParams: GetMeetingsParams = {
@@ -44,6 +64,15 @@ const WorkBasketFeature: React.FC = () => {
   }, []);
 
   const cardActions: MeetingCardAction<MeetingApiResponse>[] = [
+    {
+      id: 'submit-draft',
+      label: (item) =>
+        submitDraftMutation.isPending && submitTargetId === item.id ? 'جاري الإرسال...' : 'إرسال للمراجعة',
+      variant: 'default' as any,
+      onClick: (item) => { setSubmitTargetId(item.id); setSubmitConfirmOpen(true); },
+      hidden: (item) => item.status !== MeetingStatus.DRAFT,
+      loading: (item) => submitDraftMutation.isPending && submitTargetId === item.id,
+    },
     {
       id: 'delete-draft',
       label: (item) =>
@@ -67,6 +96,18 @@ const WorkBasketFeature: React.FC = () => {
         onConfirm={confirmDelete}
         isLoading={isPending}
         variant="danger"
+      />
+
+      <ConfirmDialog
+        open={submitConfirmOpen}
+        onOpenChange={setSubmitConfirmOpen}
+        title="إرسال للمراجعة"
+        description="هل أنت متأكد من إرسال هذا الطلب للمراجعة؟"
+        confirmLabel="تأكيد الإرسال"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={() => submitTargetId && submitDraftMutation.mutate(submitTargetId)}
+        isLoading={submitDraftMutation.isPending}
+        variant="primary"
       />
 
       <MeetingListLayout<MeetingApiResponse>

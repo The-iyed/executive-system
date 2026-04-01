@@ -1,5 +1,5 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw, Plus } from 'lucide-react';
 import { cn } from '@/lib/ui';
 import { Calendar } from '@/lib/ui/components/calendar';
 import { ARABIC_MONTHS, ARABIC_DAY_NAMES } from '@/modules/guiding-light/lib/calendar';
@@ -49,6 +49,7 @@ interface CalendarHeaderProps {
   onToday: () => void;
   onDateSelect: (date: Date) => void;
   onViewModeChange: (mode: CalendarViewMode) => void;
+  onQuickMeeting?: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
@@ -59,6 +60,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
   onToday,
   onDateSelect,
   onViewModeChange,
+  onQuickMeeting,
 }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -86,23 +88,41 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
 
   return (
     <div className="flex flex-row justify-between items-center flex-none px-5 py-4 bg-card rounded-2xl shadow-sm border border-border/40">
-      {/* Title */}
+      {/* Title + Quick meeting */}
       <div className="flex flex-row items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <CalendarIcon className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex flex-col items-start text-right">
-          <h1 className="font-bold text-foreground text-[16px]" style={FONT}>
-            التقويم
-          </h1>
-          <p className="text-muted-foreground text-[11px]" style={FONT}>
-            عرض الجدول الزمني للاجتماعات
-          </p>
+        <div className="flex flex-row items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <CalendarIcon className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex flex-col items-start text-right">
+            <h1 className="font-bold text-foreground text-[16px]" style={FONT}>
+              التقويم
+            </h1>
+            <p className="text-muted-foreground text-[11px]" style={FONT}>
+              عرض الجدول الزمني للاجتماعات
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex flex-row items-center gap-3">
+      <div className="flex flex-row items-center gap-2">
+        {/* Quick meeting button */}
+        {onQuickMeeting && (
+          <button
+            type="button"
+            onClick={onQuickMeeting}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
+            style={FONT}
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            اجتماع سريع
+          </button>
+        )}
+
+        {/* Separator */}
+        {onQuickMeeting && <div className="w-px h-6 bg-border/60" />}
+
         {/* View mode toggle */}
         <div className="flex items-center bg-muted rounded-lg p-0.5 gap-0.5">
           {VIEW_MODES.map(({ key, label }) => (
