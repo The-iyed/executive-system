@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Tabs as TabsPrimitive } from "@radix-ui/react-tabs"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@gl/lib/utils"
 
@@ -10,7 +10,7 @@ function Tabs({
   className,
   orientation = "horizontal",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: React.ComponentProps<typeof TabsPrimitive.Root> & { orientation?: "horizontal" | "vertical" }) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"

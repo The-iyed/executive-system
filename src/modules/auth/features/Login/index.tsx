@@ -80,7 +80,7 @@ const Login = () => {
     }
     setErrors({});
     try {
-      const userData = await login(result.data);
+      const userData = await login(result.data as { email: string; password: string });
       if (userData) {
         const fromQuery = getSafeInternalRedirectPath(searchParams.get('redirect'));
         const fallback = getDefaultRouteForUser(userData.use_cases, userData.roles);
