@@ -1,37 +1,23 @@
 
 
-## Plan: Fix now-indicator to show local time instead of UTC
+## Plan: Remove validation error from ScheduleTab, keep only in modal
 
 ### Problem
-The calendar uses `timeZone="UTC"` so events render without timezone shifts, but the built-in `nowIndicator` also uses UTC — placing the red line 1+ hours off from the user's actual local time (e.g., 7:30 instead of 8:30 in Riyadh).
-
-### Solution
-Use FullCalendar's `now` prop to feed it the local time expressed as a UTC timestamp, tricking the UTC-mode calendar into drawing the indicator at the correct visual position.
-
-### How it works
-FullCalendar's `now` prop accepts a function returning a `Date`. Since the calendar renders in UTC mode, we return a **fake UTC date** whose UTC hours/minutes match the user's **local** hours/minutes:
-
-```ts
-now={() => {
-  const local = new Date();
-  return new Date(Date.UTC(
-    local.getFullYear(), local.getMonth(), local.getDate(),
-    local.getHours(), local.getMinutes(), local.getSeconds()
-  ));
-}}
-```
-
-This makes the UTC-mode calendar draw the now-indicator line at the user's actual local time. No custom CSS overlay needed — the built-in `nowIndicator` keeps working.
+The `validationError` (e.g. "وقت النهاية يجب أن يكون بعد وقت البداية") is displayed inside the الجدولة tab via `ScheduleTab`. This error should only appear inside the scheduling confirmation modal (`ScheduleConfirmDialog`), not on the tab itself.
 
 ### Changes
 
-#### `MinisterFullCalendar.tsx`
-- **Keep** `nowIndicator` (line 355)
-- **Add** `now` prop with the local-to-UTC conversion function above (next to `nowIndicator`)
+#### 1. `src/modules/UC02/features/meeting-detail/tabs/ScheduleTab.tsx`
+- Remove `validationError` from the props interface
+- Remove the error banner rendering block (lines 18–22)
+
+#### 2. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx` (~line 161)
+- Remove `validationError={h.validationError}` prop from the `<ScheduleTab>` usage
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `MinisterFullCalendar.tsx` | Add `now` prop that returns local time as fake UTC date |
+| `ScheduleTab.tsx` | Remove `validationError` prop and error banner |
+| `MeetingDetailPage.tsx` | Stop passing `validationError` to `ScheduleTab` |
 
