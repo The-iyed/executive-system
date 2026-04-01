@@ -38,7 +38,7 @@ export const DirectivesFeature = () => {
       label: 'الأخذ بالتوجيه',
       icon: <CheckSquare className="w-3.5 h-3.5" />,
       className: 'border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 hover:shadow-sm',
-      hidden: (d: MinisterDirective) => d.status === 'ADOPTED' || d.scheduling_officer_status === 'CLOSED',
+      hidden: (d: MinisterDirective) => d.scheduling_officer_status === 'CLOSED',
       onClick: (d: MinisterDirective) => setConfirmDirective(d),
     },
     {
@@ -115,7 +115,7 @@ export const DirectivesFeature = () => {
         currentPage={list.currentPage}
         totalPages={list.totalPages}
         onPageChange={list.handlePageChange}
-        statusField="status"
+        statusField="scheduling_officer_status"
         actions={actions}
         headerRight={
           <Button
