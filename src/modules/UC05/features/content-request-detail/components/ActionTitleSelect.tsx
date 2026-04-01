@@ -1,0 +1,124 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { cn } from '@/lib/ui';
+import { ChevronDown, Search, Loader2 } from 'lucide-react';
+import { listActions, type ActionItem } from '../../../data/contentApi';
+
+interface ActionTitleSelectProps {
+  value: string;
+  onChange: (action: ActionItem) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث واختر التوجيه...', disabled }: ActionTitleSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [options, setOptions] = useState<ActionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Load options when open or search changes
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setIsLoading(true);
+    listActions({ search: debouncedSearch, limit: 20 })
+      .then((actions) => {
+        if (!cancelled) setOptions(actions);
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, debouncedSearch]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handle = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'flex min-h-[44px] w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-all',
+          'hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary',
+          disabled && 'opacity-50 cursor-not-allowed',
+        )}
+      >
+        <span className={cn('text-right flex-1 leading-relaxed', !value && 'text-muted-foreground')}>
+          {value || placeholder}
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ms-2" />
+      </button>
+
+      {open && (
+        <div className="absolute z-[9999] mt-1 w-full min-w-[300px] rounded-lg border border-input bg-background shadow-lg animate-in fade-in-0 zoom-in-95" dir="rtl">
+          <div className="flex items-center border-b border-input px-3">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <input
+              ref={inputRef}
+              className="flex-1 bg-transparent py-2.5 px-2 text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="ابحث في التوجيهات..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="max-h-60 overflow-auto p-1">
+            {options.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                className={cn(
+                  'w-full rounded-md px-3 py-2.5 text-right text-sm transition-colors hover:bg-accent',
+                  opt.title === value && 'bg-accent font-medium',
+                )}
+                onClick={() => {
+                  onChange(opt);
+                  setOpen(false);
+                  setSearch('');
+                }}
+              >
+                {opt.title}
+              </button>
+            ))}
+            {isLoading && (
+              <div className="flex justify-center py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!isLoading && options.length === 0 && (
+              <p className="py-3 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
