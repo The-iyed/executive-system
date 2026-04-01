@@ -407,17 +407,31 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     </h3>
                   </div>
                   <div className="w-full border border-border rounded-xl overflow-hidden">
-                    <DataTable
-                      columns={[
-                        { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_row: typeof directives[0], index: number) => <span className="text-sm text-muted-foreground">{index + 1}</span> },
-                        { id: 'title', header: 'التوجيه', width: 'flex-1', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">{row.title || '—'}</span> },
-                        { id: 'due_date', header: 'الموعد النهائي', width: 'w-36', align: 'end', render: (row: typeof directives[0]) => { const d = row.due_date ? new Date(row.due_date) : null; return <span className="text-sm text-muted-foreground whitespace-nowrap">{d ? formatDateArabic(d) : '—'}</span>; } },
-                        { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground whitespace-nowrap">{DIRECTIVE_STATUS_MAP[row.status] ?? row.status ?? '—'}</span> },
-                        { id: 'assignees', header: 'المعينون', width: 'w-48', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground break-words leading-relaxed">{row.assignees?.length ? row.assignees.join('، ') : '—'}</span> },
-                      ]}
-                      data={directives}
-                      rowPadding="py-3"
-                    />
+                    <table className="w-full table-auto" dir="rtl">
+                      <thead>
+                        <tr className="bg-muted/50 border-b border-border">
+                          <th className="px-4 py-3 text-center text-sm font-bold text-muted-foreground w-14">#</th>
+                          <th className="px-4 py-3 text-right text-sm font-bold text-muted-foreground">التوجيه</th>
+                          <th className="px-4 py-3 text-right text-sm font-bold text-muted-foreground whitespace-nowrap w-36">الموعد النهائي</th>
+                          <th className="px-4 py-3 text-center text-sm font-bold text-muted-foreground whitespace-nowrap w-28">الحالة</th>
+                          <th className="px-4 py-3 text-right text-sm font-bold text-muted-foreground w-48">المعينون</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {directives.map((row, index) => {
+                          const d = row.due_date ? new Date(row.due_date) : null;
+                          return (
+                            <tr key={row.id} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
+                              <td className="px-4 py-3 text-center text-sm text-muted-foreground align-top">{index + 1}</td>
+                              <td className="px-4 py-3 text-right text-sm text-muted-foreground leading-relaxed align-top">{row.title || '—'}</td>
+                              <td className="px-4 py-3 text-right text-sm text-muted-foreground whitespace-nowrap align-top">{d ? formatDateArabic(d) : '—'}</td>
+                              <td className="px-4 py-3 text-center text-sm text-muted-foreground whitespace-nowrap align-top">{DIRECTIVE_STATUS_MAP[row.status] ?? row.status ?? '—'}</td>
+                              <td className="px-4 py-3 text-right text-sm text-muted-foreground leading-relaxed align-top">{row.assignees?.length ? row.assignees.join('، ') : '—'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
