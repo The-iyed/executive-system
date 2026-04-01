@@ -1,54 +1,23 @@
 
 
-## Plan: Ensure only `is_presence_required` exists on normalized invitee objects
+## Plan: Remove validation error from ScheduleTab, keep only in modal
 
 ### Problem
-The API returns both `is_required: true` and `is_presence_required: false` on the same invitee. While `normalizeInvitees` sets `is_presence_required` correctly, the spread (`...r`) preserves the original `is_required` field on the object. This leftover field may cause unexpected behavior in rendering or downstream logic.
+The `validationError` (e.g. "وقت النهاية يجب أن يكون بعد وقت البداية") is displayed inside the الجدولة tab via `ScheduleTab`. This error should only appear inside the scheduling confirmation modal (`ScheduleConfirmDialog`), not on the tab itself.
 
-### Fix
+### Changes
 
-#### 1. `src/modules/shared/features/invitees-table-form/InviteesTableForm.tsx` — `normalizeInvitees`
-After mapping `is_presence_required`, explicitly delete `is_required` from the result so only one canonical field exists:
+#### 1. `src/modules/UC02/features/meeting-detail/tabs/ScheduleTab.tsx`
+- Remove `validationError` from the props interface
+- Remove the error banner rendering block (lines 18–22)
 
-```ts
-const normalizeInvitees = (rows: TableRow[]) => rows.map(r => {
-  const { is_required, ...rest } = r as any;
-  return {
-    ...rest,
-    is_presence_required: r.is_presence_required ?? is_required ?? false,
-  };
-});
-```
-
-#### 2. `src/modules/shared/features/meeting-request-form/shared/utils/mappers.ts` — `transformDraftToInvitees`
-Same approach — exclude `is_required` from spread and use only `is_presence_required`:
-
-```ts
-is_presence_required: (inv as Record<string, unknown>).is_presence_required ?? false,
-```
-Already correct. No change needed.
-
-#### 3. `src/modules/UC02/data/meetingsApi.ts` — `getMeetingById` response
-Add a normalization step to strip `is_required` from invitees at the API boundary, ensuring all downstream consumers receive clean data:
-
-```ts
-export const getMeetingById = async (meetingId: string): Promise<MeetingApiResponse> => {
-  const response = await axiosInstance.get<MeetingApiResponse>(`/api/meetings/${meetingId}`);
-  const data = response.data;
-  if (data.invitees) {
-    data.invitees = data.invitees.map(inv => ({
-      ...inv,
-      is_presence_required: inv.is_presence_required ?? (inv as any).is_required ?? false,
-    }));
-  }
-  return data;
-};
-```
+#### 2. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx` (~line 161)
+- Remove `validationError={h.validationError}` prop from the `<ScheduleTab>` usage
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `InviteesTableForm.tsx` | Destructure out `is_required` before spreading, use only `is_presence_required` |
-| `meetingsApi.ts` | Normalize invitees at API boundary to ensure `is_presence_required` is set |
+| `ScheduleTab.tsx` | Remove `validationError` prop and error banner |
+| `MeetingDetailPage.tsx` | Stop passing `validationError` to `ScheduleTab` |
 
