@@ -692,6 +692,12 @@ export function useContentRequestDetailPage() {
     handleDeleteManualAction, updateManualActionDueDate, updateManualActionStatus,
     getManualActionAssignees, addManualActionAssignee, removeManualActionAssignee,
     setAssigneeInputByActionId,
+    // Content tab: suggested action edits
+    suggestedActionEdits, updateSuggestedActionDueDate, updateSuggestedActionStatus,
+    getSuggestedActionAssignees, addSuggestedActionAssignee, removeSuggestedActionAssignee,
+    // Content tab: existing directive edits
+    existingDirectiveEdits, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
+    getExistingDirectiveAssignees, addExistingDirectiveAssignee, removeExistingDirectiveAssignee,
     // Content tab: executive summary
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
     fileInputRef, handleDragOver, handleDragLeave, handleDrop, handleFileSelect, handleRemoveFile,
