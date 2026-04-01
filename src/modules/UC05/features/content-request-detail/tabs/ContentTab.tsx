@@ -14,6 +14,7 @@ import {
 } from '@/lib/ui';
 import { formatDateArabic } from '@/modules/shared/utils';
 import { FormAsyncSelectV2, FormDatePicker, type OptionType } from '@/modules/shared/components';
+import { ActionTitleSelect } from '../components/ActionTitleSelect';
 import { ContentInfoView, mapMeetingToContentInfo, type ContentFileItem } from '@/modules/shared/features/content-info';
 import { MeetingStatus } from '@/modules/shared/types';
 import type { Attachment, ContentRequestDetailResponse, ActionItem, AttachmentInsightsResponse, ComparePresentationsResponse, ContentDirective } from '../../../data/contentApi';
