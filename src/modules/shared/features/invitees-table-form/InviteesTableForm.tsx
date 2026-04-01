@@ -56,6 +56,7 @@ const InviteesTableForm = ({
     const result = await suggestAttendees({ count, meeting: meetingParams });
     return result.suggestions.map((s) => ({
       _id: `ai-${s.employee_id.toString()}`,
+      name: s.name_ar || s.name_en || `${s.first_name} ${s.last_name}`.trim(),
       email: s.email,
       position: s.position_name,
       mobile: s.phone,
@@ -63,6 +64,7 @@ const InviteesTableForm = ({
       access_permission: false,
       is_consultant: false,
       meeting_owner: false,
+      is_presence_required: false,
       isExternal: false,
       _aiSuggestionReason: s.suggestion_reason,
       _aiImportanceLevel: s.importance_level,
@@ -71,7 +73,7 @@ const InviteesTableForm = ({
 
   const handleSearchResultToRow = useCallback((result: SearchApiUser): Partial<InputTableRow> => ({
     email: result.mail || "",
-    name: result.givenName || result.displayName || result.displayNameAR || result.displayNameEN || "",
+    name: result.displayName || result.displayNameEN || result.givenName || "",
     mobile: result.mobile || "",
     sector: result.department || "",
     position: result.title || "",
