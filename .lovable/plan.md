@@ -1,38 +1,32 @@
 
 
-## Plan: Expand invitees list and move scheduling settings below
+## Plan: Hide meeting link for حضوري (PHYSICAL) meetings
 
 ### Problem
-Currently the invitees section shows only a compact avatar stack. The user wants a full invitee list (like the uploaded screenshot) showing each invitee's name, email, and avatar initial — with a "+N آخرين" overflow indicator. The scheduling settings row should appear **after** the expanded invitees list.
+When a meeting's channel is "PHYSICAL" (حضوري), the modal still shows the meeting link with Video icon and the "انضم للاجتماع" (Join Meeting) button. These should be hidden for physical meetings.
 
 ### Changes
 
 #### `EventDetailModal.tsx`
 
-**1. Replace compact avatar stack with expanded invitee list**
-- Remove the current single-row invitees layout (lines 303-344)
-- Replace with a section that has the icon+label header row, followed by a vertical list of invitee cards
-- Each invitee card shows: colored avatar circle with initials (right), name in bold (center-right), email below in muted text
-- Show up to 5 invitees; if more, show a "+N آخرين" text link at the bottom
-- Layout matches the uploaded screenshot: right-aligned, each invitee in its own row with subtle bottom border
+**1. Extract `meeting_channel` in `display` useMemo** (around line 96-148):
+- Read `meeting_channel` from both API response (`meeting.meeting_channel`) and event object (`event.meeting_channel`)
+- Add `isPhysical` flag: `channel === 'PHYSICAL'`
+- Include in returned object
 
-**2. Move scheduling settings row after the invitees list**
-- Keep the existing scheduling settings row (lines 346-376) but position it as the last row after the invitees list, still inside the card with `divide-y`
+**2. Fix `locationText` logic** (line 110-112):
+- When `isPhysical`, use only `meeting_location` (not `meeting_link`/`meeting_url`)
+- When not physical, keep current logic
 
-**3. Invitee row structure** (per invitee):
-```text
-┌──────────────────────────────────────────────────┐
-│  [Avatar]  Name (bold)                           │
-│            email@domain.com (muted, smaller)     │
-├──────────────────────────────────────────────────┤
-│  ...next invitee...                              │
-└──────────────────────────────────────────────────┘
-           +14 آخرين (if overflow)
-```
+**3. Hide link UI for PHYSICAL** (lines 273-292):
+- When `isPhysical`, force `isLink: false` so the location row renders as plain text only (no Video icon, no copy button)
+
+**4. Hide "انضم للاجتماع" button** (lines 405-415):
+- Add `!display.isPhysical` condition to the join-meeting button wrapper
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Replace avatar-stack invitees row with expanded list showing name+email per invitee; keep scheduling settings as last row |
+| `EventDetailModal.tsx` | Add `isPhysical` from `meeting_channel`, use only location for physical, hide link UI and join button |
 
