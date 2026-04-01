@@ -9,13 +9,13 @@ interface Props {
   required?: boolean;
 }
 
-export function ConfidentialityField({ disabled }: Props) {
+export function ConfidentialityField({ disabled, required }: Props) {
   const { control, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("meeting_confidentiality");
   const isDisabled = disabled || !editable;
 
   return (
-    <FormField label="اجتماع سرّي؟" name="meeting_confidentiality" errors={errors} colSpan={4}>
+    <FormField label="اجتماع سرّي؟" name="meeting_confidentiality" required={required} errors={errors} colSpan={4}>
       <div className="pt-1.5">
         <Controller
           name="meeting_confidentiality"

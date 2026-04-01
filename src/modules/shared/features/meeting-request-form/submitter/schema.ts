@@ -66,6 +66,18 @@ export const submitterStep1Schema = z.object({
   is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
+  /* ── Fields required only for non-scheduler ── */
+  if (!data.is_scheduler_edit) {
+    if (!data.meeting_type) {
+      ctx.addIssue({ code: "custom", path: ["meeting_type"], message: "نوع الاجتماع مطلوب" });
+    }
+    if (!data.meeting_classification) {
+      ctx.addIssue({ code: "custom", path: ["meeting_classification"], message: "فئة الاجتماع مطلوبة" });
+    }
+    if (!data.meeting_confidentiality) {
+      ctx.addIssue({ code: "custom", path: ["meeting_confidentiality"], message: "مستوى السرية مطلوب" });
+    }
+  }
   if (!data.is_scheduler_edit && data.meeting_type === MeetingType.INTERNAL && !data.sector) {
     ctx.addIssue({ code: "custom", path: ["sector"], message: "القطاع مطلوب للاجتماع الداخلي" });
   }
