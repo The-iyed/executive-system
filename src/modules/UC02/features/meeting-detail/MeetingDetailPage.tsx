@@ -358,7 +358,7 @@ const MeetingDetailPage: React.FC = () => {
         endDate={(() => { const { end } = h.getEffectiveScheduleDates(meeting, h.scheduleForm); return end; })()}
         meetingChannel={meeting?.meeting_channel as string}
         scheduleFormChannel={h.scheduleForm.meeting_channel}
-        requiresProtocol={h.scheduleForm.requires_protocol}
+        isPreliminaryBooking={h.scheduleForm.is_preliminary_booking}
         isDataComplete={h.scheduleForm.is_data_complete}
         location={h.scheduleForm.location || h.scheduleForm.location_option || ''}
         onConfirm={() => h.handleScheduleSubmit({ preventDefault: () => {} } as any)}
@@ -366,7 +366,7 @@ const MeetingDetailPage: React.FC = () => {
         validationError={h.validationError}
         notes={h.scheduleForm.notes}
         onNotesChange={(v) => h.setScheduleForm(prev => ({ ...prev, notes: v }))}
-        onRequiresProtocolChange={(v) => h.setScheduleForm(prev => ({ ...prev, requires_protocol: v }))}
+        onPreliminaryBookingChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_preliminary_booking: v }))}
         onDataCompleteChange={(v) => h.setScheduleForm(prev => ({ ...prev, is_data_complete: v }))}
       />
 
