@@ -95,7 +95,7 @@ export function ScheduleDrawer({
           </Select>
         </div>
         <div className="rounded-2xl border border-border bg-background p-5 flex flex-col gap-4">
-          <FormField label="مبدئي" className="w-full max-w-none h-auto"><FormSwitch checked={!form.requires_protocol} onCheckedChange={(c) => onFormChange((p) => ({ ...p, requires_protocol: !c }))} /></FormField>
+          <FormField label="مبدئي" className="w-full max-w-none h-auto"><FormSwitch checked={form.is_preliminary_booking} onCheckedChange={(c) => onFormChange((p) => ({ ...p, is_preliminary_booking: c }))} /></FormField>
           <FormField label="البيانات مكتملة" className="w-full max-w-none h-auto"><FormSwitch checked={form.is_data_complete} onCheckedChange={(c) => onFormChange((p) => ({ ...p, is_data_complete: c }))} /></FormField>
         </div>
         <div className="rounded-2xl border border-border bg-background p-5">
