@@ -24,9 +24,7 @@ export const schedulerStep1Schema = z.object({
   submitter: meetingUserSchema.nullable().superRefine((v, ctx) => {
     if (!v) ctx.addIssue({ code: "custom", message: "مقدّم الطلب مطلوب" });
   }),
-  meeting_owner: meetingUserSchema.nullable().superRefine((v, ctx) => {
-    if (!v) ctx.addIssue({ code: "custom", message: "مالك الاجتماع مطلوب" });
-  }),
+  meeting_owner: meetingUserSchema.nullable().optional(),
   meeting_title: z.string().min(1, "عنوان الاجتماع مطلوب").max(200, "الحد الأقصى 200 حرف"),
   meeting_subject: z.string().optional(),
   description: z.string().max(2000, "الحد الأقصى 2000 حرف").optional(),
