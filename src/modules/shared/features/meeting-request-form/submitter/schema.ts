@@ -66,7 +66,7 @@ export const submitterStep1Schema = z.object({
   is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
-  if (data.meeting_type === MeetingType.INTERNAL && !data.sector) {
+  if (!data.is_scheduler_edit && data.meeting_type === MeetingType.INTERNAL && !data.sector) {
     ctx.addIssue({ code: "custom", path: ["sector"], message: "القطاع مطلوب للاجتماع الداخلي" });
   }
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && !data.meeting_location) {
@@ -75,7 +75,7 @@ export const submitterStep1Schema = z.object({
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && data.meeting_location === MeetingLocation.OTHER && !data.meeting_location_custom) {
     ctx.addIssue({ code: "custom", path: ["meeting_location_custom"], message: "يرجى تحديد الموقع" });
   }
-  if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
+  if (!data.is_scheduler_edit && data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
     ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });
   }
   if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
@@ -84,11 +84,13 @@ export const submitterStep1Schema = z.object({
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
   }
-  if (!data.meeting_start_date) {
-    ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
-  }
-  if (!data.meeting_end_date) {
-    ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+  if (!data.is_scheduler_edit) {
+    if (!data.meeting_start_date) {
+      ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+    }
+    if (!data.meeting_end_date) {
+      ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+    }
   }
 
   /* ── Agenda ── */
@@ -101,15 +103,17 @@ export const submitterStep1Schema = z.object({
   }
   validateAgendaDuration(data.agenda_items ?? [], data.meeting_start_date, data.meeting_end_date, ctx);
 
-  /* ── Category-dependent ── */
-  if ([MeetingClassification.PRIVATE_MEETING, MeetingClassification.BILATERAL_MEETING].includes(data.meeting_classification as MeetingClassification) && !data.meeting_justification) {
-    ctx.addIssue({ code: "custom", path: ["meeting_justification"], message: "مبرر اللقاء مطلوب" });
-  }
-  if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.related_topic) {
-    ctx.addIssue({ code: "custom", path: ["related_topic"], message: "موضوع التكليف المرتبط مطلوب" });
-  }
-  if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.deadline) {
-    ctx.addIssue({ code: "custom", path: ["deadline"], message: "تاريخ الاستحقاق مطلوب" });
+  /* ── Category-dependent (skip for scheduler edit) ── */
+  if (!data.is_scheduler_edit) {
+    if ([MeetingClassification.PRIVATE_MEETING, MeetingClassification.BILATERAL_MEETING].includes(data.meeting_classification as MeetingClassification) && !data.meeting_justification) {
+      ctx.addIssue({ code: "custom", path: ["meeting_justification"], message: "مبرر اللقاء مطلوب" });
+    }
+    if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.related_topic) {
+      ctx.addIssue({ code: "custom", path: ["related_topic"], message: "موضوع التكليف المرتبط مطلوب" });
+    }
+    if (data.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS && !data.deadline) {
+      ctx.addIssue({ code: "custom", path: ["deadline"], message: "تاريخ الاستحقاق مطلوب" });
+    }
   }
 
   /* ── Directive (only validate children when parent is active) ── */
