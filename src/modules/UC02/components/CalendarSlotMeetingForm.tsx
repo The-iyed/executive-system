@@ -325,16 +325,16 @@ function CalendarFormInner({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Controller
-                name="requires_protocol"
+                name="is_preliminary_booking"
                 render={({ field }) => (
                   <button
                     type="button"
                     onClick={() => field.onChange(!field.value)}
                     className={cn(
                       'flex items-center gap-3 p-3 rounded-xl border transition-all text-right',
-                      !field.value
-                        ? 'border-border/60 bg-background hover:bg-muted/30'
-                        : 'border-primary/30 bg-primary/5'
+                      field.value
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/60 bg-background hover:bg-muted/30'
                     )}
                   >
                     <div className={cn(
