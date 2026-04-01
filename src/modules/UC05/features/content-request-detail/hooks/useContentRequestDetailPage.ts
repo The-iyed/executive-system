@@ -586,7 +586,7 @@ export function useContentRequestDetailPage() {
         const fallbackAssignees = (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[];
         return {
           id: Number(d.id),
-          title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
+          title: edits?.title ?? (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
           due_date: edits?.due_date !== undefined ? edits.due_date : (d.deadline ?? null),
           assignees: edits?.assignees ?? fallbackAssignees,
           status: edits?.status ?? d.directive_status ?? 'PENDING',
