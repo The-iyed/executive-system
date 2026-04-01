@@ -73,7 +73,7 @@ const InviteesTableForm = ({
 
   const handleSearchResultToRow = useCallback((result: SearchApiUser): Partial<InputTableRow> => ({
     email: result.mail || "",
-    name: result.givenName || result.displayName || result.displayNameAR || result.displayNameEN || "",
+    name: result.displayName || result.displayNameEN || result.givenName || "",
     mobile: result.mobile || "",
     sector: result.department || "",
     position: result.title || "",
