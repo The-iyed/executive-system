@@ -16,6 +16,7 @@ import {
   runCompareByAttachment, getAttachmentInsightsWithPolling,
   type ComparePresentationsResponse, type AttachmentInsightsResponse,
 } from '../../../data/meetingsApi';
+import { DIRECTIVE_STATUS_LABELS } from '@/modules/shared/types/minister-directive-enums';
 import type { MeetingApiResponse } from '../../../data/meetingsApi';
 import { translateCompareValue, getGeneralNotesList } from '../utils/meetingDetailHelpers';
 import { COMPARE_STATUS, COMPARE_LEVEL, COMPARE_RECOMMENDATION } from '../constants';
