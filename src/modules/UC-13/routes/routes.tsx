@@ -21,6 +21,15 @@ const routes: RouteConfig[] = [
     layout: Fragment,
     useCase: 'UC-13',
   },
+  // Must be before wildcard so host renders directives (not the microremote only)
+  {
+    exact: true,
+    guard: AuthGuard,
+    path: PATH.DIRECTIVES,
+    component: lazy(() => import('../pages/DirectivesPage')),
+    layout: lazy(() => import('../Layout')),
+    useCase: 'UC-13',
+  },
   // Wildcard route to catch all sub-routes under /uc13
   {
     exact: false,
