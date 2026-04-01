@@ -316,6 +316,37 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                       {display.invitees.length}
                     </span>
                   </div>
+                  {/* Scheduling Settings - directly under المدعوون header */}
+                  {display.meetingId && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                          <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
+                          display.requiresProtocol
+                            ? 'bg-primary/10 text-primary border border-primary/25'
+                            : 'bg-muted/40 text-muted-foreground border border-border/40',
+                        )}>
+                          {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                          مبدئي
+                        </div>
+                        <div className={cn(
+                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
+                          display.isDataComplete
+                            ? 'bg-primary/10 text-primary border border-primary/25'
+                            : 'bg-muted/40 text-muted-foreground border border-border/40',
+                        )}>
+                          {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                          البيانات مكتملة
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {display.invitees.length > 0 ? (
                     <div className="flex flex-col divide-y divide-border/30">
                       {display.invitees.slice(0, 5).map((a, idx) => (
@@ -348,38 +379,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     <span className="text-[12px] text-muted-foreground">—</span>
                   )}
                 </div>
-
-                {/* Scheduling Settings */}
-                {display.meetingId && (
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
-                        <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-                      </div>
-                      <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
-                        display.requiresProtocol
-                          ? 'bg-primary/10 text-primary border border-primary/25'
-                          : 'bg-muted/40 text-muted-foreground border border-border/40',
-                      )}>
-                        {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                        مبدئي
-                      </div>
-                      <div className={cn(
-                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
-                        display.isDataComplete
-                          ? 'bg-primary/10 text-primary border border-primary/25'
-                          : 'bg-muted/40 text-muted-foreground border border-border/40',
-                      )}>
-                        {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                        البيانات مكتملة
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
