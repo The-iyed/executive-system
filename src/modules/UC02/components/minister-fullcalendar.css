@@ -158,6 +158,12 @@
   padding: 4px 6px;
 }
 
+.minister-fc .fc-event-time {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  display: inline-block;
+}
+
 .minister-fc .fc-timegrid-now-indicator-line {
   border-width: 2px;
 }
