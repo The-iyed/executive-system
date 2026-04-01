@@ -110,12 +110,10 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = memo(({
             <button
               type="button"
               onClick={onQuickMeeting}
-              className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary-foreground bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.97]"
               style={FONT}
             >
-              <span className="flex items-center justify-center w-5 h-5 rounded-md bg-white/20 group-hover:bg-white/30 transition-colors">
-                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              </span>
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
               اجتماع سريع
             </button>
           </>
