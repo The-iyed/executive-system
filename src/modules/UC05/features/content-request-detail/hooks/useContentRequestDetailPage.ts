@@ -92,7 +92,13 @@ export function useContentRequestDetailPage() {
   const [manualActionEdits, setManualActionEdits] = useState<
     Record<number, { due_date?: string | null; status?: string; assignees?: string[] }>
   >({});
-  const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number, string>>({});
+  const [suggestedActionEdits, setSuggestedActionEdits] = useState<
+    Record<string, { due_date?: string | null; status?: string; assignees?: string[] }>
+  >({});
+  const [existingDirectiveEdits, setExistingDirectiveEdits] = useState<
+    Record<string, { due_date?: string | null; status?: string; assignees?: string[] }>
+  >({});
+  const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number | string, string>>({});
   const directiveDueDateFromDate = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
