@@ -1,48 +1,42 @@
 
 
-## Plan: Hide required asterisk (`*`) on non-required fields for scheduler
+## Plan: Relax required indicators in scheduler CREATE form
 
 ### Problem
-Several conditionally-visible fields hardcode `required` on their `<FormField>`, showing a `*` asterisk even for scheduling officers — but the schema does NOT require them for schedulers. This is misleading.
+The scheduler's own `SchedulerStep1Form` (used for creating meetings) doesn't pass `required={false}` to fields that are optional in the schema. This means asterisks (`*`) appear on fields like Sector, Meeting Type, Confidentiality, Urgent Reason, etc. — misleading since the schema doesn't require them.
 
-### Fields to fix
+Additionally, `meeting_confidentiality` on line 47 of `scheduler/schema.ts` uses `z.nativeEnum(MeetingConfidentiality)` which is strict — it should be made optional to match the relaxed rules.
 
-These 5 fields hardcode `required` in their JSX but are skipped in the schema for schedulers:
-
-| Field | File | Schema enforces for scheduler? |
-|---|---|---|
-| مبرر الاستعجال (UrgentReasonField) | `UrgentReasonField.tsx` | No (line 90) |
-| مبرر اللقاء (MeetingJustificationField) | `MeetingJustificationField.tsx` | No (line 120) |
-| تصنيف الاجتماع (ClassificationTypeField) | `ClassificationTypeField.tsx` | No (not validated) |
-| موضوع التكليف المرتبط (RelatedTopicField) | `RelatedTopicField.tsx` | No (line 123) |
-| تاريخ الاستحقاق (DeadlineField) | `DeadlineField.tsx` | No (line 126) |
-
-**Note**: `LocationField` and `LocationCustomField` remain always required (schema enforces for all users) — no change needed.
+### Required fields (keep asterisk)
+1. طبيعة الاجتماع (`meeting_nature`) ✅
+2. مقدّم الطلب (`submitter`) ✅
+3. مالك الاجتماع (`meeting_owner` — when on-behalf) ✅
+4. عنوان الاجتماع (`meeting_title`) ✅
+5. آلية انعقاد الاجتماع (`meeting_channel`) ✅
+6. الموقع (`meeting_location` — when physical/hybrid) ✅
 
 ### Changes
 
-#### 1. Each of the 5 field components — Accept optional `required` prop
+#### 1. `scheduler/schema.ts` — Make `meeting_confidentiality` optional
+Change line 47 from `z.nativeEnum(MeetingConfidentiality)` to `z.nativeEnum(MeetingConfidentiality).optional()`.
 
-Add `required?: boolean` to each component's Props interface, default to `true`, and pass it to `<FormField>`.
-
-#### 2. `Step1Form.tsx` — Pass `required={!isSchedulerEdit}` to each
-
-```tsx
-{visibility.urgent_reason && <UrgentReasonField required={!isSchedulerEdit} />}
-{visibility.meeting_justification && <MeetingJustificationField required={!isSchedulerEdit} />}
-{visibility.meeting_classification_type && <ClassificationTypeField required={!isSchedulerEdit} />}
-{visibility.related_topic && <RelatedTopicField required={!isSchedulerEdit} />}
-{visibility.deadline && <DeadlineField required={!isSchedulerEdit} />}
-```
+#### 2. `scheduler/Step1Form.tsx` — Pass `required={false}` to optional fields
+Update the following field usages to include `required={false}`:
+- `<SectorField required={false} />`
+- `<MeetingTypeField required={false} />`
+- `<UrgentReasonField required={false} />`
+- `<MeetingDateField ... required={false} />`
+- `<MeetingCategoryField ... required={false} />`
+- `<MeetingJustificationField required={false} />`
+- `<ClassificationTypeField required={false} />`
+- `<RelatedTopicField required={false} />`
+- `<DeadlineField required={false} />`
+- `<ConfidentialityField required={false} />`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `UrgentReasonField.tsx` | Add `required` prop, pass to `<FormField>` |
-| `MeetingJustificationField.tsx` | Add `required` prop, pass to `<FormField>` |
-| `ClassificationTypeField.tsx` | Add `required` prop, pass to `<FormField>` |
-| `RelatedTopicField.tsx` | Add `required` prop, pass to `<FormField>` |
-| `DeadlineField.tsx` | Add `required` prop, pass to `<FormField>` |
-| `Step1Form.tsx` | Pass `required={!isSchedulerEdit}` to the 5 fields above |
+| `scheduler/schema.ts` | Make `meeting_confidentiality` optional |
+| `scheduler/Step1Form.tsx` | Pass `required={false}` to all non-required fields |
 
