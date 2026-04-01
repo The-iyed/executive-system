@@ -410,10 +410,10 @@ const ContentConsultationRequestDetail: React.FC = () => {
                     <DataTable
                       columns={[
                         { id: 'index', header: '#', width: 'w-16', align: 'center', render: (_row: typeof directives[0], index: number) => <span className="text-sm text-muted-foreground">{index + 1}</span> },
-                        { id: 'title', header: 'التوجيه', width: 'flex-1', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{row.title || '—'}</span> },
-                        { id: 'due_date', header: 'الموعد النهائي', width: 'w-36', align: 'end', render: (row: typeof directives[0]) => { const d = row.due_date ? new Date(row.due_date) : null; return <span className="text-sm text-muted-foreground">{d ? formatDateArabic(d) : '—'}</span>; } },
-                        { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{DIRECTIVE_STATUS_MAP[row.status] ?? row.status ?? '—'}</span> },
-                        { id: 'assignees', header: 'المعينون', width: 'w-48', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground">{row.assignees?.length ? row.assignees.join('، ') : '—'}</span> },
+                        { id: 'title', header: 'التوجيه', width: 'flex-1', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">{row.title || '—'}</span> },
+                        { id: 'due_date', header: 'الموعد النهائي', width: 'w-36', align: 'end', render: (row: typeof directives[0]) => { const d = row.due_date ? new Date(row.due_date) : null; return <span className="text-sm text-muted-foreground whitespace-nowrap">{d ? formatDateArabic(d) : '—'}</span>; } },
+                        { id: 'status', header: 'الحالة', width: 'w-28', align: 'center', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground whitespace-nowrap">{DIRECTIVE_STATUS_MAP[row.status] ?? row.status ?? '—'}</span> },
+                        { id: 'assignees', header: 'المعينون', width: 'w-48', align: 'end', render: (row: typeof directives[0]) => <span className="text-sm text-muted-foreground break-words leading-relaxed">{row.assignees?.length ? row.assignees.join('، ') : '—'}</span> },
                       ]}
                       data={directives}
                       rowPadding="py-3"
