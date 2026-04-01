@@ -1,28 +1,36 @@
 
 
-## Plan: Improve calendar popover positioning in meeting form
+## Plan: Fix calendar popover to flip top/bottom based on available space in modal
 
 ### Problem
-The date picker popover currently uses `side="left"` which can overflow when the dialog is near screen edges. The popover needs smarter positioning — showing on whichever side has space (top/bottom/right/center).
+The date picker popover opens at the bottom but when the form is scrolled down, the calendar overflows outside the modal's visible area. It should automatically flip to the top when there's no space below, and vice versa.
 
-### Analysis
-The `DateTimePickerField.tsx` already has `avoidCollisions={true}` and `collisionPadding={8}`, but hardcodes `side="left"`. Radix's `PopoverContent` supports automatic repositioning when collisions are detected — we just need to allow it.
+### Root Cause
+Radix Popover uses a Portal that renders at the document body level. The `avoidCollisions` works against the **viewport**, not the modal's scroll container. Since the popover portals outside the modal, it can visually overlap the modal boundaries.
+
+### Solution
+Add `collisionBoundary` prop to constrain the popover within the modal's dialog content element, so Radix flips the popover (bottom↔top) based on available space inside the modal — not the full viewport.
 
 ### Changes
 
-#### `DateTimePickerField.tsx` (lines 153-161)
+#### `DateTimePickerField.tsx`
 
-1. **Change `side` from `"left"` to `"bottom"`** — bottom is the natural default for dropdown-style pickers and works best inside a scrollable dialog
-2. **Add `sideOffset={6}`** — slight breathing room
-3. **Increase `collisionPadding` to `16`** — ensures the popover doesn't hug viewport edges
-4. **Add `onOpenAutoFocus` with `e.preventDefault()`** — prevents scroll jump when popover opens inside a scrollable container
-5. **Constrain max dimensions** — change `max-h-[calc(100vh-2rem)]` to `max-h-[min(480px,calc(100vh-2rem))]` so the inner content stays compact and the popover fits even in tight spaces
+1. Accept an optional `collisionBoundary` prop (`Element | Element[] | null`) and forward it to `PopoverContent`
+2. This lets the parent (the modal form) pass its scrollable container ref so Radix constrains flipping within it
 
-This leverages Radix's built-in collision detection: when `side="bottom"` doesn't fit, it flips to `"top"`. When neither vertical side fits, `avoidCollisions` shifts the popover horizontally. Combined with `align="center"` it centers relative to the trigger.
+#### `CalendarSlotMeetingForm.tsx` (or wherever DateTimePickerField is used in the calendar modal)
+
+1. Add a `ref` to the modal's scrollable content container
+2. Pass `collisionBoundary={ref.current}` to `DateTimePickerField`
+
+If passing a ref is too invasive, a simpler alternative: just ensure `sticky="partial"` (instead of `"always"`) so the popover hides when its trigger scrolls out of view, preventing the "floating detached calendar" problem.
+
+### Recommended simpler approach
+Change `sticky="always"` to `sticky="partial"` in `DateTimePickerField.tsx` line 161. This makes the popover dismiss/reposition when the trigger scrolls significantly, which is the standard UX pattern. Combined with the existing `avoidCollisions={true}` and `side="bottom"`, Radix will flip to top when bottom space is insufficient.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DateTimePickerField.tsx` | Change `side` to `"bottom"`, `align` to `"center"`, increase `collisionPadding`, add `onOpenAutoFocus` preventDefault, constrain max-height |
+| `DateTimePickerField.tsx` | Change `sticky="always"` to `sticky="partial"` on line 161 |
 
