@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/ui';
 import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import { listActions, type ActionItem } from '../../../data/contentApi';
@@ -16,8 +17,10 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [options, setOptions] = useState<ActionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number; width: number }>({ top: 0, right: 0, width: 300 });
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Debounce search
   useEffect(() => {
@@ -31,55 +34,67 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
     let cancelled = false;
     setIsLoading(true);
     listActions({ search: debouncedSearch, limit: 20 })
-      .then((actions) => {
-        if (!cancelled) setOptions(actions);
-      })
-      .catch(() => {
-        if (!cancelled) setOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+      .then((actions) => { if (!cancelled) setOptions(actions); })
+      .catch(() => { if (!cancelled) setOptions([]); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
   }, [open, debouncedSearch]);
 
-  // Close on outside click
+  // Position dropdown & close on outside click
   useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    if (!open) return;
+
+    const updatePos = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDropdownPos({
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right,
+          width: Math.max(rect.width, 300),
+        });
+      }
+    };
+    updatePos();
+
+    const handleClick = (e: MouseEvent) => {
+      if (
+        containerRef.current && !containerRef.current.contains(e.target as Node) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
         setSearch('');
       }
     };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, []);
+
+    document.addEventListener('mousedown', handleClick);
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [open]);
 
   // Focus input when opened
   useEffect(() => {
     if (open && inputRef.current) inputRef.current.focus();
   }, [open]);
 
-  return (
-    <div ref={containerRef} className="relative w-full">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(!open)}
-        className={cn(
-          'flex min-h-[44px] w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-all',
-          'hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary',
-          disabled && 'opacity-50 cursor-not-allowed',
-        )}
-      >
-        <span className={cn('text-right flex-1 leading-relaxed', !value && 'text-muted-foreground')}>
-          {value || placeholder}
-        </span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ms-2" />
-      </button>
-
-      {open && (
-        <div className="absolute z-[99999] mt-1 w-full min-w-[300px] rounded-lg border border-input bg-background shadow-xl animate-in fade-in-0 zoom-in-95" dir="rtl" style={{ position: 'fixed', width: containerRef.current?.getBoundingClientRect().width, top: containerRef.current?.getBoundingClientRect().bottom, right: window.innerWidth - (containerRef.current?.getBoundingClientRect().right ?? 0) }}>
+  const dropdown = open
+    ? createPortal(
+        <div
+          ref={dropdownRef}
+          className="rounded-lg border border-input bg-background shadow-xl animate-in fade-in-0 zoom-in-95"
+          dir="rtl"
+          style={{
+            position: 'fixed',
+            zIndex: 99999,
+            top: dropdownPos.top,
+            right: dropdownPos.right,
+            width: dropdownPos.width,
+          }}
+        >
           <div className="flex items-center border-b border-input px-3">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
@@ -117,8 +132,29 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
               <p className="py-3 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'flex min-h-[44px] w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-all',
+          'hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary',
+          disabled && 'opacity-50 cursor-not-allowed',
+        )}
+      >
+        <span className={cn('text-right flex-1 leading-relaxed', !value && 'text-muted-foreground')}>
+          {value || placeholder}
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ms-2" />
+      </button>
+      {dropdown}
     </div>
   );
 }
