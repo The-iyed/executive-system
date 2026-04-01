@@ -442,25 +442,72 @@ export function ContentTab({ h }: ContentTabProps) {
                       );
                     }
 
-                    // Regular directive row
-                    return (
-                      <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{directive.directive || directive.directive_text || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.deadline ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{directive.directive_status ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground" dir="rtl">
-                          {(directive.responsible_persons ?? []).map((p: any) => p.name).filter(Boolean).join('، ') || '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center">
-                            <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
+                    // Regular directive row (editable)
+                    {
+                      const dId = String(directiveId);
+                      const fallbackAssignees = (directive.responsible_persons ?? []).map((p: any) => p.email ?? p.name).filter(Boolean) as string[];
+                      const assignees = h.getExistingDirectiveAssignees(dId, fallbackAssignees);
+                      const assigneeInput = h.assigneeInputByActionId[dId] ?? '';
+                      const dueDate = h.existingDirectiveEdits[dId]?.due_date !== undefined ? h.existingDirectiveEdits[dId].due_date : (directive.deadline ?? '');
+                      const status = h.existingDirectiveEdits[dId]?.status ?? directive.directive_status ?? 'PENDING';
+                      return (
+                        <tr key={directiveId} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-sm text-muted-foreground align-top">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm text-foreground align-top" dir="rtl">{directive.directive || directive.directive_text || '-'}</td>
+                          <td className="px-4 py-3 align-top">
+                            <FormDatePicker
+                              value={dueDate ?? ''}
+                              onChange={(v) => {
+                                if (v && startOfLocalDay(new Date(v + 'T12:00:00')) < startOfLocalDay(new Date())) return;
+                                h.updateExistingDirectiveDueDate(dId, v || null);
+                              }}
+                              placeholder="dd/mm/yyyy" className="min-w-[120px] text-right" fromDate={h.directiveDueDateFromDate}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Select value={status} onValueChange={(v) => h.updateExistingDirectiveStatus(dId, v)} dir="rtl">
+                              <SelectTrigger className="min-w-[140px] text-right" dir="rtl"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                              <SelectContent>
+                                {ACTION_STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-right">{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 align-top" dir="rtl">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignees.map((email: string, i: number) => (
+                                <span key={`${email}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs">
+                                  {email}
+                                  <button type="button" onClick={() => h.removeExistingDirectiveAssignee(dId, i, assignees)} className="p-0.5 rounded hover:bg-primary/20" aria-label="حذف">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              <Input
+                                value={assigneeInput}
+                                onChange={(e) => h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }
+                                }}
+                                placeholder="إضافة معين..." className="h-8 min-w-[80px] max-w-[120px] text-xs text-right" dir="rtl"
+                              />
+                              <button type="button" onClick={() => { h.addExistingDirectiveAssignee(dId, assigneeInput, assignees); h.setAssigneeInputByActionId((p: any) => ({ ...p, [dId]: '' })); }}
+                                className="p-1 rounded border border-border hover:bg-muted text-muted-foreground" title="إضافة">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex justify-center">
+                              <button type="button" onClick={() => h.handleDeleteExistingDirective(directiveId)} className="flex items-center justify-center gap-1 p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="حذف">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
                   })}
                   {h.showAddDirectiveRow && (
                     <tr key="add-directive-row" className="bg-green-50/30 border-t-2 border-dashed border-primary/30">
