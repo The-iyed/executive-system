@@ -34,7 +34,7 @@ const InviteesTableForm = ({
 }) => {
   const normalizeInvitees = (rows: TableRow[]) => rows.map(r => ({
     ...r,
-    is_presence_required: r.is_presence_required ?? false,
+    is_presence_required: r.is_presence_required ?? (r as any).is_required ?? false,
   }));
 
   const [invitees, setInvitees] = useState<TableRow[]>(normalizeInvitees(initialInvitees ?? []));
