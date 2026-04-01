@@ -75,7 +75,7 @@ export const submitterStep1Schema = z.object({
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && data.meeting_location === MeetingLocation.OTHER && !data.meeting_location_custom) {
     ctx.addIssue({ code: "custom", path: ["meeting_location_custom"], message: "يرجى تحديد الموقع" });
   }
-  if (data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
+  if (!data.is_scheduler_edit && data.is_urgent === BOOL.TRUE && !data.urgent_reason) {
     ctx.addIssue({ code: "custom", path: ["urgent_reason"], message: "سبب الاستعجال مطلوب" });
   }
   if (data.is_on_behalf_of === BOOL.TRUE && !data.meeting_owner) {
