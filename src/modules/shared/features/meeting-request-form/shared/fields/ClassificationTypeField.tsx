@@ -4,9 +4,9 @@ import { FormField, inputClass } from "./FieldGroup";
 import { MEETING_CLASSIFICATION_OPTIONS } from "../types/enums";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
-interface Props { disabled?: boolean }
+interface Props { disabled?: boolean; required?: boolean }
 
-export function ClassificationTypeField({ disabled }: Props) {
+export function ClassificationTypeField({ disabled, required = true }: Props) {
   const { control, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("meeting_classification_type");
   const isDisabled = disabled || !editable;
