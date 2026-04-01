@@ -19,6 +19,10 @@ export function mapRowToPayload(
     payload.id = row.id;
   }
 
+  if (payload.is_presentation_required === undefined) {
+    payload.is_presentation_required = false;
+  }
+
   return payload;
 }
 
