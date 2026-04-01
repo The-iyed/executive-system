@@ -137,6 +137,7 @@ export function useSubmitterModal({
       const response = await inviteesMutation.mutateAsync({
         draftId: meetingId,
         invitees: inviteesPayload,
+        ...(isSchedulerEdit && { is_content_updated: !!step2Data }),
       });
 
       const meetingStatus = response.status;
@@ -210,6 +211,7 @@ export function useSubmitterModal({
       await inviteesMutation.mutateAsync({
         draftId: meetingId,
         invitees: inviteesPayload,
+        ...(isSchedulerEdit && { is_content_updated: !!steps.step2Data }),
       });
 
       toast({ title: "تم حفظ المسودة بنجاح" });
