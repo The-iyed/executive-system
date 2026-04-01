@@ -1,20 +1,25 @@
 
 
-## Confirmation: All UC05 tabs match UC02
+## Plan: Add `is_presentation_required: false` default to invitees payload
 
-After inspecting all tabs in both UC05 and UC02, here's the status:
+### Problem
+When saving invitees, the payload doesn't include `is_presentation_required`. It should default to `false` for every invitee row.
 
-| Tab | Shared Component | UC05 matches UC02? |
-|---|---|---|
-| معلومات الطلب (RequestInfo) | `RequestInfo` + `mapMeetingToRequestInfo` | ✅ Yes |
-| معلومات الاجتماع (MeetingInfo) | `MeetingInfoView` + `mapMeetingToInfo` | ✅ Yes |
-| المحتوى (Content) | `ContentInfoView` + `mapMeetingToContentInfo` | ✅ Yes |
-| قائمة المدعوين (Invitees) | `InviteesTableForm` | ⚠️ Missing wrapper div |
-| الملاحظات (Notes) | `RequestNotesView` | ✅ Yes |
+### Changes
 
-### Only change needed
+#### 1. `src/lib/dynamic-table-form/payload-mapper.ts` — Add default field
+In `mapRowToPayload`, after building the payload from columns, add:
+```ts
+if (payload.is_presentation_required === undefined) {
+  payload.is_presentation_required = false;
+}
+```
 
-**`UC05/tabs/InviteesTab.tsx`** — Add `<div className="w-full max-w-4xl mx-auto" dir="rtl">` wrapper around `InviteesTableForm` to match UC02's layout.
+This ensures every invitee row sent to the API includes `is_presentation_required: false` by default, without needing a visible column.
 
-This is the same single-file change from the previous plan.
+### Files changed
+
+| File | Change |
+|---|---|
+| `src/lib/dynamic-table-form/payload-mapper.ts` | Add `is_presentation_required: false` default to `mapRowToPayload` |
 
