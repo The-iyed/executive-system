@@ -63,6 +63,7 @@ export const submitterStep1Schema = z.object({
   submitter: meetingUserSchema.nullable().optional(),
   requires_protocol: z.enum([BOOL.TRUE, BOOL.FALSE]).optional(),
   related_directive: z.string().optional(),
+  is_scheduler_edit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   /* ── Conditional required ── */
   if (data.meeting_type === MeetingType.INTERNAL && !data.sector) {
