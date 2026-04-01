@@ -1,10 +1,16 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import InviteesTableForm from "@/modules/shared/features/invitees-table-form/InviteesTableForm";
 import { MeetingOwnerType } from "@/modules/shared/types";
+import { MeetingStatus } from "../shared/types/types";
 import { useSubmitterModal } from "./hooks/useSubmitterModal";
 import { MeetingModalShell } from "../shared/components";
 import { Step2Form } from "../shared/steps/Step2Form";
 import { SubmitterStep1Form } from "./Step1Form";
-import { cn } from "@/lib/ui";
+import { cn, Button, useToast } from "@/lib/ui";
+import { Send, Loader2 } from "lucide-react";
+import { submitDraft } from "../api/submitDraft";
+import { ConfirmDialog } from "@/modules/shared/components/confirm-dialog";
 
 interface SubmitterModalProps {
   open: boolean;
@@ -17,6 +23,10 @@ interface SubmitterModalProps {
 }
 
 export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, showAiSuggest = false, excludeColumns, onSubmitSuccess }: SubmitterModalProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isSubmitDraftConfirmOpen, setIsSubmitDraftConfirmOpen] = useState(false);
+
   const {
     currentStep,
     step1Data,
@@ -41,7 +51,45 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
     setCurrentStep,
   } = useSubmitterModal({ open, editMeetingId, onClose: () => onOpenChange(false), onSubmitSuccess, callerRole });
 
+  const isDraftSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING && meetingStatus === MeetingStatus.DRAFT;
+
+  const submitDraftMutation = useMutation({
+    mutationFn: async () => {
+      // First save, then submit
+      await handleFinalSubmit();
+      if (activeDraftId) {
+        await submitDraft(activeDraftId);
+      }
+    },
+    onSuccess: () => {
+      toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
+      queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
+      queryClient.invalidateQueries({ queryKey: ['meeting', activeDraftId] });
+      queryClient.invalidateQueries({ queryKey: ['meeting-draft', activeDraftId] });
+      setIsSubmitDraftConfirmOpen(false);
+    },
+    onError: (err) => {
+      toast({ title: err instanceof Error ? err.message : 'فشل إرسال الطلب', variant: 'destructive' });
+    },
+  });
+
+  const extraFooterActions = isDraftSchedulerEdit ? (
+    <Button
+      type="button"
+      disabled={saving || submitDraftMutation.isPending}
+      className="gap-2 px-8 h-11 rounded-xl shadow-md bg-blue-600 hover:bg-blue-700"
+      onClick={() => setIsSubmitDraftConfirmOpen(true)}
+    >
+      {submitDraftMutation.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <><Send className="h-4 w-4" /> إرسال للمراجعة</>
+      )}
+    </Button>
+  ) : undefined;
+
   return (
+    <>
     <MeetingModalShell
       open={open}
       onOpenChange={onOpenChange}
@@ -49,13 +97,14 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
       onStepClick={setCurrentStep}
       loading={loading}
       error={fetchError}
-      saving={saving}
+      saving={saving || submitDraftMutation.isPending}
       showSaveAsDraft={canSaveAsDraft}
       submitLabel={callerRole === MeetingOwnerType.SCHEDULING ? "تحديث الطلب" : undefined}
       onNext={triggerActiveFormSubmit}
       onPrev={goToPrevStep}
       onSubmit={handleFinalSubmit}
       onSaveAsDraft={handleSaveAsDraft}
+      extraFooterActions={extraFooterActions}
     >
       {/* Step 1: Basic Info */}
       <div data-step={1} className={cn(currentStep !== 1 && "hidden")}>
@@ -84,6 +133,7 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
             initialContentData={initialStep2Values}
             isEditMode={!!draftId}
             meetingStatus={meetingStatus}
+            callerRole={callerRole}
           />
         )}
       </div>
@@ -108,5 +158,18 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
         />
       </div>
     </MeetingModalShell>
+
+    <ConfirmDialog
+      open={isSubmitDraftConfirmOpen}
+      onOpenChange={setIsSubmitDraftConfirmOpen}
+      title="إرسال للمراجعة"
+      description="سيتم حفظ التعديلات وإرسال الطلب للمراجعة. هل أنت متأكد؟"
+      confirmLabel="تأكيد الإرسال"
+      loadingLabel="جاري الإرسال..."
+      onConfirm={() => submitDraftMutation.mutate()}
+      isLoading={submitDraftMutation.isPending}
+      variant="primary"
+    />
+    </>
   );
 }

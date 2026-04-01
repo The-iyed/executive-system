@@ -24,6 +24,14 @@ function pad2(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
+/** Parse ISO string without timezone conversion – extract raw components */
+function parseIsoLocal(iso: string): { date: Date; hour: string; minute: string } | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, year, month, day, hour, minute] = m;
+  return { date: new Date(Number(year), Number(month) - 1, Number(day)), hour: hour!, minute: minute! };
+}
+
 function formatTimeSlot(date: Date, roundUp = false): string {
   let hour = date.getHours();
   if (roundUp && date.getMinutes() > 0) hour = Math.min(23, hour + 1);
@@ -32,6 +40,19 @@ function formatTimeSlot(date: Date, roundUp = false): string {
 
 export function formatExactTime(date: Date): string {
   return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+/** Format exact time from an ISO string without timezone conversion */
+export function formatExactTimeFromIso(iso: string): string | null {
+  const parsed = parseIsoLocal(iso);
+  if (!parsed) return null;
+  return `${parsed.hour}:${parsed.minute}`;
+}
+
+/** Parse ISO to a local Date (day-only, no tz shift) */
+export function parseDateFromIso(iso: string): Date | null {
+  const parsed = parseIsoLocal(iso);
+  return parsed?.date ?? null;
 }
 
 // ── Past event check ──
@@ -43,11 +64,11 @@ export function isPastEvent(endDateStr: string): boolean {
 // ── Map CalendarTimelineEvent → CalendarEventData (for grid + detail modal) ──
 
 export function mapTimelineToCalendarEvent(event: CalendarTimelineEvent): CalendarEventData {
-  const startDate = new Date(event.start);
-  const endDate = new Date(event.end);
+  const parsedStart = parseIsoLocal(event.start);
+  const parsedEnd = parseIsoLocal(event.end);
   const variant = getVariant(event.id);
 
-  if (isNaN(startDate.getTime())) {
+  if (!parsedStart) {
     return {
       id: event.id,
       type: 'reserved',
@@ -62,11 +83,20 @@ export function mapTimelineToCalendarEvent(event: CalendarTimelineEvent): Calend
     };
   }
 
-  const startTime = formatTimeSlot(startDate);
-  let endTime = formatTimeSlot(endDate, true);
-  if (endTime === startTime && endDate > startDate) {
-    const h = parseInt(startTime.split(':')[0], 10);
-    endTime = `${pad2(Math.min(23, h + 1))}:00`;
+  const exactStart = `${parsedStart.hour}:${parsedStart.minute}`;
+  const exactEnd = parsedEnd ? `${parsedEnd.hour}:${parsedEnd.minute}` : exactStart;
+
+  // Slot-rounded times for grid display
+  const startHour = parseInt(parsedStart.hour, 10);
+  const startMin = parseInt(parsedStart.minute, 10);
+  const startTime = `${pad2(startHour)}:00`;
+
+  let endHour = parsedEnd ? parseInt(parsedEnd.hour, 10) : startHour + 1;
+  const endMin = parsedEnd ? parseInt(parsedEnd.minute, 10) : 0;
+  if (endMin > 0) endHour = Math.min(23, endHour + 1);
+  let endTime = `${pad2(endHour)}:00`;
+  if (endTime === startTime) {
+    endTime = `${pad2(Math.min(23, startHour + 1))}:00`;
   }
 
   return {
@@ -87,9 +117,9 @@ export function mapTimelineToCalendarEvent(event: CalendarTimelineEvent): Calend
     meeting_link: event.meetingLink,
     startTime,
     endTime,
-    date: startDate,
-    exactStartTime: formatExactTime(startDate),
-    exactEndTime: formatExactTime(endDate),
+    date: parsedStart.date,
+    exactStartTime: exactStart,
+    exactEndTime: exactEnd,
   };
 }
 
