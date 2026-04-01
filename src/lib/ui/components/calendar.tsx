@@ -116,6 +116,8 @@ function Calendar({
       navLayout="around"
       captionLayout="dropdown"
       fixedWeeks={true}
+      startMonth={props.startMonth ?? new Date(currentYear - 1, 0)}
+      endMonth={props.endMonth ?? new Date(currentYear + 3, 11)}
       {...props}
       />
   </>
