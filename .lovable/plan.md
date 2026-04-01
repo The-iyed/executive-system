@@ -1,52 +1,46 @@
 
 
-# CRUD Operations for Content Directives (إضافة التوجيهات)
+## Plan: Add `name` and `is_presence_required` columns + update preview cards
 
-## Goal
-Replace the current client-side-only directive management in the المحتوى tab with real API-backed CRUD operations using the new `/api/content/{MEETING_ID}/directives` endpoints, with optimistic updates.
+### Changes
 
-## Current State
-- The directives table in ContentTab currently manages directives via local React state (`manualAddedActions`, `deletedExistingDirectiveIds`, `aiDirectivesSuggestions`, etc.)
-- No dedicated API calls to `/api/content/{MEETING_ID}/directives` exist yet
-- The meeting ID is available as `h.id` (the content request/meeting ID from URL params)
+#### 1. `api.ts` — Add `name_ar`/`name_en` to `SuggestedAttendee` interface
+Add optional fields: `name_ar?: string`, `name_en?: string`
 
-## New API Endpoints
-| Method | Route | Purpose |
-|--------|-------|---------|
-| GET | `/api/content/{MEETING_ID}/directives` | List directives |
-| POST | `/api/content/{MEETING_ID}/directives` | Create directive |
-| PATCH | `/api/content/{MEETING_ID}/directives/{id}` | Update directive |
-| DELETE | `/api/content/{MEETING_ID}/directives/{id}` | Delete directive |
+#### 2. `columns.ts` — Add two new columns
+- Add `name` column (optional, type `text`, placeholder "الاسم") right after `email`, with `autoFillFromSearch: true`
+- Add `is_presence_required` column (type `checkbox`, label "الحضور إجباري", defaultValue `false`) after `meeting_owner`
 
-## Plan
+#### 3. `InviteesTableForm.tsx` — Map name from search & AI
 
-### 1. Add API functions to `contentApi.ts`
-- Add `getContentDirectives(meetingId)` → GET
-- Add `createContentDirective(meetingId, data)` → POST (body: `{ title, due_date, assignees, status }`)
-- Add `updateContentDirective(meetingId, directiveId, data)` → PATCH (partial body)
-- Add `deleteContentDirective(meetingId, directiveId)` → DELETE
-- Define `ContentDirective` interface matching the POST body shape (`id`, `title`, `due_date`, `assignees`, `status`)
+**Search mapping (line 72-79)** — update name priority order:
+```ts
+name: result.displayName || result.displayNameEN || result.givenName || "",
+```
 
-### 2. Add query + mutations to `useContentRequestDetailPage.ts`
-- **Query**: `useQuery(['content-directives', id])` calling `getContentDirectives(id)` — replaces reliance on `contentRequest.related_directives`
-- **Create mutation**: optimistic insert into cache, rollback on error, toast feedback
-- **Update mutation**: optimistic patch in cache (for inline status/assignee/due_date edits), rollback on error
-- **Delete mutation**: optimistic removal from cache, rollback on error
-- Expose: `contentDirectives`, `createDirectiveMutation`, `updateDirectiveMutation`, `deleteDirectiveMutation`
-- Update `hasDirectives` computed to include content directives count
+**AI suggestion mapping (line 57-69)** — add name and is_presence_required:
+```ts
+name: (s as any).name_ar || (s as any).name_en || `${s.first_name} ${s.last_name}`.trim(),
+is_presence_required: false,
+```
 
-### 3. Update ContentTab.tsx table rendering
-- Use `contentDirectives` from API query as the primary data source for the "regular directive" rows (replacing `directivesFiltered` from `contentRequest.related_directives`)
-- Wire "إضافة توجيه" button → open inline add row → on select, call `createDirectiveMutation.mutate(...)` instead of pushing to local `manualAddedActions`
-- Wire delete button on each row → `deleteDirectiveMutation.mutate(directiveId)`
-- Wire inline edits (status select, due date picker, assignees) → `updateDirectiveMutation.mutate(...)` on change
-- Keep AI suggestions and suggested-actions rows as-is (they use different flows)
+#### 4. `InviteeCard.tsx` — Use `name` field instead of email prefix
 
-### 4. Update send-to-scheduling flow
-- `handleSendToScheduling` should include API-fetched directives alongside AI/suggested/manual ones in the payload
+Replace the current logic that extracts name from email (`email.split('@')[0]`) with:
+```ts
+const name = getDisplayValue(invitee.name) !== "-"
+  ? getDisplayValue(invitee.name)
+  : email.split('@')[0];
+```
 
-## Files Changed
-1. `src/modules/UC05/data/contentApi.ts` — new API functions + types
-2. `src/modules/UC05/features/content-request-detail/hooks/useContentRequestDetailPage.ts` — query + 3 mutations + expose
-3. `src/modules/UC05/features/content-request-detail/tabs/ContentTab.tsx` — wire table to API mutations
+Also add `is_presence_required` badge in the badges section (red badge "الحضور إجباري") when true.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `api.ts` | Add `name_ar`, `name_en` optional fields to `SuggestedAttendee` |
+| `columns.ts` | Add `name` (text, optional) after email; add `is_presence_required` (checkbox) after `meeting_owner` |
+| `InviteesTableForm.tsx` | Map `name` with correct priority from search & AI; add `is_presence_required` default |
+| `InviteeCard.tsx` | Display real `name` field instead of email prefix; add `is_presence_required` badge |
 

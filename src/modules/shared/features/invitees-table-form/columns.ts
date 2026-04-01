@@ -13,6 +13,14 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       searchable: true,
     },
     {
+      key: "name",
+      label: "الاسم",
+      type: "text",
+      placeholder: "الاسم",
+      minWidth: "min-w-[180px]",
+      autoFillFromSearch: true,
+    },
+    {
       key: "position",
       label: "المنصب",
       type: "text",
@@ -61,6 +69,12 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
     {
       key: "meeting_owner",
       label: "مالك الاجتماع",
+      type: "checkbox",
+      defaultValue: false,
+    },
+    {
+      key: "is_presence_required",
+      label: "الحضور إجباري",
       type: "checkbox",
       defaultValue: false,
     },
