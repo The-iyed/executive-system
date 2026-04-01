@@ -6,6 +6,7 @@ import { FormField } from "./FieldGroup";
 
 interface Props {
   disabled?: boolean;
+  required?: boolean;
 }
 
 export function ConfidentialityField({ disabled }: Props) {
