@@ -107,6 +107,7 @@ export interface CreateScheduledMeetingPayload {
   /** Scheduling settings */
   requires_protocol?: boolean;
   is_data_complete?: boolean;
+  is_preliminary_booking?: boolean;
   /** @deprecated Prefer proposers — kept for backends that only store ids */
   proposer_user_ids?: string[];
   /** Full proposer rows (AD) — preferred */
