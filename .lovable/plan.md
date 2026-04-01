@@ -1,42 +1,37 @@
 
 
-## Plan: Relax required indicators in scheduler CREATE form
+## Plan: Fix now-indicator to show local time instead of UTC
 
 ### Problem
-The scheduler's own `SchedulerStep1Form` (used for creating meetings) doesn't pass `required={false}` to fields that are optional in the schema. This means asterisks (`*`) appear on fields like Sector, Meeting Type, Confidentiality, Urgent Reason, etc. — misleading since the schema doesn't require them.
+The calendar uses `timeZone="UTC"` so events render without timezone shifts, but the built-in `nowIndicator` also uses UTC — placing the red line 1+ hours off from the user's actual local time (e.g., 7:30 instead of 8:30 in Riyadh).
 
-Additionally, `meeting_confidentiality` on line 47 of `scheduler/schema.ts` uses `z.nativeEnum(MeetingConfidentiality)` which is strict — it should be made optional to match the relaxed rules.
+### Solution
+Use FullCalendar's `now` prop to feed it the local time expressed as a UTC timestamp, tricking the UTC-mode calendar into drawing the indicator at the correct visual position.
 
-### Required fields (keep asterisk)
-1. طبيعة الاجتماع (`meeting_nature`) ✅
-2. مقدّم الطلب (`submitter`) ✅
-3. مالك الاجتماع (`meeting_owner` — when on-behalf) ✅
-4. عنوان الاجتماع (`meeting_title`) ✅
-5. آلية انعقاد الاجتماع (`meeting_channel`) ✅
-6. الموقع (`meeting_location` — when physical/hybrid) ✅
+### How it works
+FullCalendar's `now` prop accepts a function returning a `Date`. Since the calendar renders in UTC mode, we return a **fake UTC date** whose UTC hours/minutes match the user's **local** hours/minutes:
+
+```ts
+now={() => {
+  const local = new Date();
+  return new Date(Date.UTC(
+    local.getFullYear(), local.getMonth(), local.getDate(),
+    local.getHours(), local.getMinutes(), local.getSeconds()
+  ));
+}}
+```
+
+This makes the UTC-mode calendar draw the now-indicator line at the user's actual local time. No custom CSS overlay needed — the built-in `nowIndicator` keeps working.
 
 ### Changes
 
-#### 1. `scheduler/schema.ts` — Make `meeting_confidentiality` optional
-Change line 47 from `z.nativeEnum(MeetingConfidentiality)` to `z.nativeEnum(MeetingConfidentiality).optional()`.
-
-#### 2. `scheduler/Step1Form.tsx` — Pass `required={false}` to optional fields
-Update the following field usages to include `required={false}`:
-- `<SectorField required={false} />`
-- `<MeetingTypeField required={false} />`
-- `<UrgentReasonField required={false} />`
-- `<MeetingDateField ... required={false} />`
-- `<MeetingCategoryField ... required={false} />`
-- `<MeetingJustificationField required={false} />`
-- `<ClassificationTypeField required={false} />`
-- `<RelatedTopicField required={false} />`
-- `<DeadlineField required={false} />`
-- `<ConfidentialityField required={false} />`
+#### `MinisterFullCalendar.tsx`
+- **Keep** `nowIndicator` (line 355)
+- **Add** `now` prop with the local-to-UTC conversion function above (next to `nowIndicator`)
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `scheduler/schema.ts` | Make `meeting_confidentiality` optional |
-| `scheduler/Step1Form.tsx` | Pass `required={false}` to all non-required fields |
+| `MinisterFullCalendar.tsx` | Add `now` prop that returns local time as fake UTC date |
 
