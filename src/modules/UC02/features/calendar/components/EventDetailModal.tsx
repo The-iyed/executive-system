@@ -301,8 +301,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   </div>
                 </div>
                 {/* Invitees */}
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2.5 shrink-0">
+                <div className="px-4 py-3">
+                  <div className="flex items-center gap-2.5 mb-3">
                     <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
                       <User className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
                     </div>
@@ -311,36 +311,37 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                       {display.invitees.length}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 min-w-0">
-                    {display.invitees.length > 0 ? (
-                      <>
-                        <div className="flex -space-x-2 rtl:space-x-reverse">
-                          {display.invitees.slice(0, MAX_VISIBLE_INVITEES).map((a, idx) => (
-                            <div
-                              key={`${a.name}-${idx}`}
-                              className={cn(
-                                'w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-background shrink-0',
-                                AVATAR_COLORS[idx % AVATAR_COLORS.length],
-                              )}
-                              title={a.name || a.email || '—'}
-                            >
-                              <span className="text-[9px] font-bold">{getInitials(a.name || a.email || '?')}</span>
-                            </div>
-                          ))}
-                          {display.invitees.length > MAX_VISIBLE_INVITEES && (
-                            <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-background bg-muted text-muted-foreground shrink-0"
-                              title={`${display.invitees.length - MAX_VISIBLE_INVITEES} آخرين`}
-                            >
-                              <span className="text-[8px] font-bold">+{display.invitees.length - MAX_VISIBLE_INVITEES}</span>
-                            </div>
-                          )}
+                  {display.invitees.length > 0 ? (
+                    <div className="flex flex-col divide-y divide-border/30">
+                      {display.invitees.slice(0, 5).map((a, idx) => (
+                        <div key={`${a.name}-${idx}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                          <div
+                            className={cn(
+                              'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                              AVATAR_COLORS[idx % AVATAR_COLORS.length],
+                            )}
+                          >
+                            <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[13px] font-semibold text-foreground truncate">{a.name || '—'}</span>
+                            {a.email && (
+                              <span className="text-[11px] text-muted-foreground truncate">{a.email}</span>
+                            )}
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <span className="text-[12px] text-muted-foreground">—</span>
-                    )}
-                  </div>
+                      ))}
+                      {display.invitees.length > 5 && (
+                        <div className="pt-2.5">
+                          <span className="text-[11px] font-semibold text-primary">
+                            +{display.invitees.length - 5} آخرين
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[12px] text-muted-foreground">—</span>
+                  )}
                 </div>
 
                 {/* Scheduling Settings */}
