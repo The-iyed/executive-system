@@ -114,13 +114,15 @@ function InfoField({
 const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
   const position = getDisplayValue(invitee.position);
   const email = getDisplayValue(invitee.email);
-  const name = email.split('@')[0];
+  const rawName = getDisplayValue(invitee.name);
+  const name = rawName !== "-" ? rawName : email.split('@')[0];
   const mobile = getDisplayValue(invitee.mobile);
   const sector = getDisplayValue(invitee.sector);
   const channelLabel = getChannelLabel(invitee.attendance_mechanism);
   const hasAccess = !!invitee.access_permission;
   const isConsultant = !!invitee.is_consultant;
   const isMeetingOwner = !!invitee.meeting_owner;
+  const isPresenceRequired = !!invitee.is_presence_required;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -157,6 +159,11 @@ const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
               {hasColumn(columns, "is_consultant") && isConsultant && (
                 <Badge className="text-[11px] font-normal rounded-full px-2.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-500/30">
                   مستشار
+                </Badge>
+              )}
+              {hasColumn(columns, "is_presence_required") && isPresenceRequired && (
+                <Badge className="text-[11px] font-normal rounded-full px-2.5 py-0.5 bg-red-50 text-red-600 border border-red-500/30">
+                  الحضور إجباري
                 </Badge>
               )}
               {hasColumn(columns, "attendance_mechanism") && channelLabel && (

@@ -45,6 +45,7 @@ export interface Attendee {
   avatar: string;
   role?: string;
   group?: string;
+  email?: string;
   is_meeting_owner?: boolean;
   consultant?: boolean;
 }

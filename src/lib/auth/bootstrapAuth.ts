@@ -1,5 +1,11 @@
 import { jwtDecode } from 'jwt-decode';
-import { userManager, PKCE_BACKUP_PREFIX, clearPkceBackup, getRedirectUri } from './oidcConfig';
+import {
+  userManager,
+  PKCE_BACKUP_PREFIX,
+  clearPkceBackup,
+  getRedirectUri,
+  getSilentRedirectUri,
+} from './oidcConfig';
 import { cookieStorage } from './cookieStorage';
 import { User } from 'oidc-client-ts';
 import { EXECUTION_SYSTEM_BASE_URL } from '@/lib/env';
@@ -224,7 +230,7 @@ export async function handleSilentRenew(): Promise<void> {
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes('code_verifier') || msg.includes('400')) {
         if (!codeFromUrl) return;
-        const redirectUri = getRedirectUri();
+        const redirectUri = getSilentRedirectUri();
         const tokenResponse = await exchangeCodeForToken(codeFromUrl, redirectUri, {
           state: stateFromUrl ?? undefined,
           code_verifier: codeVerifierFromStorage,

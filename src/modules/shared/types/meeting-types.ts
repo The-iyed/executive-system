@@ -228,7 +228,7 @@ export const MEETING_MANAGERS = [
 
 /* ═══ Meeting Nature (Scheduler) ═══ */
 export enum MeetingNature {
-  NORMAL = 'NORMAL',
+  NORMAL = 'NEW',
   SEQUENTIAL = 'SEQUENTIAL',
   PERIODIC = 'PERIODIC',
 }
@@ -362,8 +362,8 @@ export const MEETING_CHANNEL_OPTIONS: { value: string; label: string }[] = [
  * Meeting Location (موقع الاجتماع) — shared options for UC01 & UC02.
  */
 export const MeetingLocation = {
-  ALIYA: 'العليا',
-  GHADEER: 'الغدير',
+  ALIYA: 'مبنى العليا',
+  GHADEER: 'مبنى الغدير',
   REAL_ESTATE_DEV_FUND: 'صندوق التنمية العقاري',
   REAL_ESTATE_AUTHORITY: 'الهيئة العامة للعقار',
   OTHER: 'موقع آخر',
