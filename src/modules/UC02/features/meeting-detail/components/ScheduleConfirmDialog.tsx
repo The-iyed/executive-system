@@ -81,8 +81,8 @@ function ToggleCard({
 
 export function ScheduleConfirmDialog({
   open, onOpenChange, startDate, endDate, meetingChannel, scheduleFormChannel,
-  requiresProtocol, isDataComplete, location, onConfirm, isPending, validationError,
-  notes, onNotesChange, onRequiresProtocolChange, onDataCompleteChange,
+  isPreliminaryBooking, isDataComplete, location, onConfirm, isPending, validationError,
+  notes, onNotesChange, onPreliminaryBookingChange, onDataCompleteChange,
 }: ScheduleConfirmDialogProps) {
   const channelLabel = MeetingChannelLabels[meetingChannel] ?? MeetingChannelLabels[scheduleFormChannel] ?? '—';
 
