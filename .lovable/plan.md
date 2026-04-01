@@ -1,31 +1,33 @@
 
 
-## Plan: Move Scheduling Settings directly under المدعوون header
+## Plan: Use `is_preliminary_booking` for scheduling settings in calendar
 
 ### Problem
-Currently the "إعدادات الجدولة" row sits **after** the full invitees list. The user wants it repositioned to appear **directly below** the المدعوون header (between the header and the invitee list).
+The calendar meeting form sends `requires_protocol` to the API, but the backend also expects/returns `is_preliminary_booking` (the inverse: `is_preliminary_booking = !requires_protocol`). The detail modal reads `requires_protocol` but not `is_preliminary_booking`. These need to be aligned.
 
-### Change
+### Changes
 
-#### `EventDetailModal.tsx` (lines 308–382)
+#### 1. `calendarApi.ts` — Add `is_preliminary_booking` to payload and send it
+- Add `is_preliminary_booking?: boolean` to `CreateScheduledMeetingPayload`
+- In `createScheduledMeeting`, send `body.is_preliminary_booking` alongside `requires_protocol`
 
-Reorder the JSX so the scheduling settings chips appear right after the المدعوون label+count row, before the invitee list:
+#### 2. `CalendarSlotMeetingForm.tsx` — Submit `is_preliminary_booking`
+- Add `is_preliminary_booking` to `CalendarSlotMeetingFormSubmitValues`
+- In `doSubmit`, compute `is_preliminary_booking: !data.requires_protocol` and include it in the submitted values
 
-```
-المدعوون header (icon + label + count badge)
-↓
-إعدادات الجدولة row (icon + label + chips)
-↓
-Invitee list (avatar + name + email per row)
-```
+#### 3. `CalendarView.tsx` — Pass `is_preliminary_booking` to API payload
+- Map `values.is_preliminary_booking` into the payload sent to `createScheduledMeeting` / `updateScheduledMeeting`
 
-Concretely:
-1. Move the scheduling settings block (lines 352–382) to right after line 318 (after the المدعوون header `div`)
-2. Keep everything else unchanged
+#### 4. `EventDetailModal.tsx` — Read `is_preliminary_booking` for display
+- In `display` useMemo, read `is_preliminary_booking` from API response
+- Use it to determine the "مبدئي" chip state: `is_preliminary_booking ?? !requires_protocol`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Move scheduling settings block from after invitee list to after المدعوون header, before the invitee rows |
+| `calendarApi.ts` | Add `is_preliminary_booking` to payload type and send in request body |
+| `CalendarSlotMeetingForm.tsx` | Add `is_preliminary_booking` to submit values |
+| `CalendarView.tsx` | Pass `is_preliminary_booking` in API payload |
+| `EventDetailModal.tsx` | Read `is_preliminary_booking` from API for "مبدئي" chip |
 
