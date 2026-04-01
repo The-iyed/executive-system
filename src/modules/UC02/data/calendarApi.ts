@@ -205,6 +205,9 @@ export const createScheduledMeeting = async (
   if (payload.is_data_complete !== undefined) {
     body.is_data_complete = payload.is_data_complete;
   }
+  if (payload.is_preliminary_booking !== undefined) {
+    body.is_preliminary_booking = payload.is_preliminary_booking;
+  }
   if (payload.proposers && payload.proposers.length > 0) {
     body.proposers = payload.proposers;
     body.proposer_user_ids = payload.proposers.map((p) => p.object_guid).filter(Boolean);
