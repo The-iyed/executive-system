@@ -71,7 +71,7 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
     deadline: watched.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS,
     meeting_classification_type: watched.meeting_classification === MeetingClassification.BUSINESS,
     meetingSubCategory: [MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL, MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL].includes(watched.meeting_classification as MeetingClassification),
-  }), [watched.meeting_nature, watched.meeting_channel, watched.meeting_location, watched.is_urgent, watched.meeting_classification]);
+  }), [watched.meeting_nature, watched.meeting_channel, watched.meeting_location, watched.is_urgent, watched.meeting_classification, watched.is_on_behalf_of]);
 
   // Clean up hidden field values when visibility toggles off
   const SCHEDULER_FIELD_RESET_MAP = useMemo(() => ({
