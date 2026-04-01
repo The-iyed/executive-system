@@ -139,7 +139,7 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <TooltipProvider>
+      <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
