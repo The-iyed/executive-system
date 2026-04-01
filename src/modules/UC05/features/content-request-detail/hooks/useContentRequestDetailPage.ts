@@ -93,10 +93,10 @@ export function useContentRequestDetailPage() {
     Record<number, { due_date?: string | null; status?: string; assignees?: string[] }>
   >({});
   const [suggestedActionEdits, setSuggestedActionEdits] = useState<
-    Record<string, { due_date?: string | null; status?: string; assignees?: string[] }>
+    Record<string, { title?: string; due_date?: string | null; status?: string; assignees?: string[] }>
   >({});
   const [existingDirectiveEdits, setExistingDirectiveEdits] = useState<
-    Record<string, { due_date?: string | null; status?: string; assignees?: string[] }>
+    Record<string, { title?: string; due_date?: string | null; status?: string; assignees?: string[] }>
   >({});
   const [assigneeInputByActionId, setAssigneeInputByActionId] = useState<Record<number | string, string>>({});
   const directiveDueDateFromDate = useMemo(() => {
@@ -500,6 +500,9 @@ export function useContentRequestDetailPage() {
   }, [setManualActionAssignees]);
 
   /* ── Suggested Action edit handlers ── */
+  const updateSuggestedActionTitle = useCallback((id: string, title: string) => {
+    setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
   const updateSuggestedActionDueDate = useCallback((id: string, due_date: string | null) => {
     setSuggestedActionEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
   }, []);
@@ -522,6 +525,9 @@ export function useContentRequestDetailPage() {
   }, [setSuggestedActionAssignees]);
 
   /* ── Existing Directive edit handlers ── */
+  const updateExistingDirectiveTitle = useCallback((id: string, title: string) => {
+    setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], title } }));
+  }, []);
   const updateExistingDirectiveDueDate = useCallback((id: string, due_date: string | null) => {
     setExistingDirectiveEdits((prev) => ({ ...prev, [id]: { ...prev[id], due_date } }));
   }, []);
@@ -580,7 +586,7 @@ export function useContentRequestDetailPage() {
         const fallbackAssignees = (d.responsible_persons ?? []).map((p) => (p as { email?: string }).email ?? (p as { name?: string }).name).filter(Boolean) as string[];
         return {
           id: Number(d.id),
-          title: (d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—',
+          title: edits?.title ?? ((d.directive_text ?? (d as { directive?: string }).directive ?? '').trim() || '—'),
           due_date: edits?.due_date !== undefined ? edits.due_date : (d.deadline ?? null),
           assignees: edits?.assignees ?? fallbackAssignees,
           status: edits?.status ?? d.directive_status ?? 'PENDING',
@@ -601,7 +607,7 @@ export function useContentRequestDetailPage() {
         const fallbackAssignees = normalizeAssignees(s.assignees);
         return {
           id: Number(s.id),
-          title: (s.title ?? '').trim() || '—',
+          title: edits?.title ?? ((s.title ?? '').trim() || '—'),
           due_date: edits?.due_date !== undefined ? edits.due_date : (s.due_date ?? null),
           assignees: edits?.assignees ?? fallbackAssignees,
           status: edits?.status ?? s.status ?? 'PENDING',
@@ -693,10 +699,10 @@ export function useContentRequestDetailPage() {
     getManualActionAssignees, addManualActionAssignee, removeManualActionAssignee,
     setAssigneeInputByActionId,
     // Content tab: suggested action edits
-    suggestedActionEdits, updateSuggestedActionDueDate, updateSuggestedActionStatus,
+    suggestedActionEdits, updateSuggestedActionTitle, updateSuggestedActionDueDate, updateSuggestedActionStatus,
     getSuggestedActionAssignees, addSuggestedActionAssignee, removeSuggestedActionAssignee,
     // Content tab: existing directive edits
-    existingDirectiveEdits, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
+    existingDirectiveEdits, updateExistingDirectiveTitle, updateExistingDirectiveDueDate, updateExistingDirectiveStatus,
     getExistingDirectiveAssignees, addExistingDirectiveAssignee, removeExistingDirectiveAssignee,
     // Content tab: executive summary
     executiveSummaryFile, setExecutiveSummaryFile, isDragging, guidanceNotes, setGuidanceNotes,
