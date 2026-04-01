@@ -14,7 +14,6 @@ import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
 import { useToast } from "@/lib/ui";
-import { optimisticMergeMeeting, buildStep1Patch, buildStep2Patch, buildStep3Patch } from "../../shared/utils/optimisticCacheUpdate";
 import { buildStep1FormData } from "../../shared/utils/buildStep1FormData";
 
 interface UseSubmitterModalOptions {
@@ -48,12 +47,10 @@ export function useSubmitterModal({
     queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
     queryClient.invalidateQueries({ queryKey: ['calendar-timeline'] });
 
-    // Meeting detail — delay refetch so server has time to persist
-    setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
-      queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
-      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
-    }, 1500);
+    // Meeting detail — invalidate immediately (server has data by the time this is called)
+    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
+    queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
+    queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'preview'] });
   }, [queryClient]);
 
   // ── Step navigation (no API calls) ────────────────────────────────────────
@@ -110,84 +107,70 @@ export function useSubmitterModal({
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
 
-    // Capture form data before closing
     const step1Data = steps.step1Data;
     const step2Data = steps.step2Data;
     const draftId = steps.activeDraftId;
 
-    // Close modal immediately — don't wait for APIs
-    onSubmitSuccess?.();
-    onClose();
+    setIsFinalizing(true);
 
-    // Fire all API calls in the background
-    (async () => {
-      try {
-        // ── Step 1: Save basic info ──────────────────────────────────────
-        const formData = buildStep1FormData(step1Data);
-        const meetingId = await basicInfoMutation.mutateAsync({
-          formData,
-          draftId,
-        });
+    try {
+      // ── Step 1: Save basic info ──────────────────────────────────────
+      const formData = buildStep1FormData(step1Data);
+      const meetingId = await basicInfoMutation.mutateAsync({
+        formData,
+        draftId,
+      });
 
-        if (!draftId) {
-          steps.setDraftId(meetingId);
-        }
-
-        if (isEditMode && meetingId) {
-          const patch = buildStep1Patch(step1Data as unknown as Record<string, unknown>);
-          optimisticMergeMeeting(queryClient, meetingId, patch);
-        }
-
-        // ── Step 2: Save content ─────────────────────────────────────────
-        if (step2Data) {
-          await contentMutation.mutateAsync({
-            draftId: meetingId,
-            payload: step2Data,
-          });
-
-          if (isEditMode) {
-            const patch = buildStep2Patch(step2Data);
-            optimisticMergeMeeting(queryClient, meetingId, patch);
-          }
-        }
-
-        // ── Step 3: Save invitees ────────────────────────────────────────
-        if (isEditMode && rawRows.length > 0) {
-          const inviteePatch = buildStep3Patch(rawRows);
-          optimisticMergeMeeting(queryClient, meetingId, inviteePatch);
-        }
-
-        const response = await inviteesMutation.mutateAsync({
-          draftId: meetingId,
-          invitees: inviteesPayload,
-        });
-
-        const meetingStatus = response.status;
-
-        // ── Submit / resubmit ────────────────────────────────────────────
-        if (isSchedulerEdit) {
-          toast({ title: "تم التحديث بنجاح" });
-          if (isEditMode) syncMeetingDetails(meetingId);
-          return;
-        }
-
-        const submitAction = resolveSubmitAction(meetingStatus);
-        if (submitAction) {
-          await submitAction(meetingId);
-          toast({ title: "تم إرسال الطلب بنجاح" });
-        } else {
-          toast({ title: "تم التحديث بنجاح" });
-        }
-
-        if (isEditMode) {
-          syncMeetingDetails(meetingId);
-        } else {
-          queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
-        }
-      } catch (err) {
-        toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
+      if (!draftId) {
+        steps.setDraftId(meetingId);
       }
-    })();
+
+      // ── Step 2: Save content ─────────────────────────────────────────
+      if (step2Data) {
+        await contentMutation.mutateAsync({
+          draftId: meetingId,
+          payload: step2Data,
+        });
+      }
+
+      // ── Step 3: Save invitees ────────────────────────────────────────
+      const response = await inviteesMutation.mutateAsync({
+        draftId: meetingId,
+        invitees: inviteesPayload,
+      });
+
+      const meetingStatus = response.status;
+
+      // ── Submit / resubmit ────────────────────────────────────────────
+      if (isSchedulerEdit) {
+        toast({ title: "تم التحديث بنجاح" });
+        if (isEditMode) syncMeetingDetails(meetingId);
+        onSubmitSuccess?.();
+        onClose();
+        return;
+      }
+
+      const submitAction = resolveSubmitAction(meetingStatus);
+      if (submitAction) {
+        await submitAction(meetingId);
+        toast({ title: "تم إرسال الطلب بنجاح" });
+      } else {
+        toast({ title: "تم التحديث بنجاح" });
+      }
+
+      if (isEditMode) {
+        syncMeetingDetails(meetingId);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
+      }
+
+      onSubmitSuccess?.();
+      onClose();
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
+    } finally {
+      setIsFinalizing(false);
+    }
   };
 
   // ── Save as draft ─────────────────────────────────────────────────────────
@@ -224,12 +207,6 @@ export function useSubmitterModal({
       }
 
       // Step 3
-      let inviteePatch: Record<string, unknown> | null = null;
-      if (isEditMode && rawRows.length > 0) {
-        inviteePatch = buildStep3Patch(rawRows);
-        optimisticMergeMeeting(queryClient, meetingId, inviteePatch);
-      }
-
       await inviteesMutation.mutateAsync({
         draftId: meetingId,
         invitees: inviteesPayload,
@@ -239,7 +216,7 @@ export function useSubmitterModal({
       onClose();
       // Sync AFTER close to prevent form re-render flicker
       if (isEditMode) {
-        syncMeetingDetails(meetingId, inviteePatch);
+        syncMeetingDetails(meetingId);
       } else {
         queryClient.invalidateQueries({ queryKey: ['meetings', 'uc01'] });
       }

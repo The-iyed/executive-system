@@ -34,7 +34,7 @@ interface Step1BasicInfoFormData {
   alternativeTimeSlot2?: { date?: Date; startTime?: string; endTime?: string };
   voiceNote?: File | null;
   is_urgent?: boolean;
-  urgent_reason?: string;
+  urgent_reason?: string | null;
   is_on_behalf_of?: boolean;
   meeting_manager_id?: string;
   is_based_on_directive?: boolean;
@@ -126,7 +126,15 @@ export function buildDraftBasicInfoFormData(form: Partial<Step1BasicInfoFormData
 
   // Optional text / ids
   appendIf(form.notes, 'note', fd);
-  if (form.is_urgent && form.urgent_reason) fd.append('urgent_reason', form.urgent_reason);
+  // For PATCH updates, include urgent_reason even when cleared (null/empty)
+  // so the backend can overwrite existing value instead of keeping old data.
+  if (form.is_urgent) {
+    if (Object.prototype.hasOwnProperty.call(form, 'urgent_reason')) {
+      fd.append('urgent_reason', (form.urgent_reason ?? '').trim());
+    }
+  } else if (Object.prototype.hasOwnProperty.call(form, 'urgent_reason')) {
+    fd.append('urgent_reason', '');
+  }
   if (form.is_on_behalf_of && form.meeting_manager_id) fd.append('meeting_manager_id', form.meeting_manager_id);
 
   // Meeting date range: proposed meeting date (start/end)

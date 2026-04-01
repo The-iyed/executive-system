@@ -46,6 +46,19 @@ function TimeInput({ hour, minute, onHourChange, onMinuteChange, label }: {
   );
 }
 
+/**
+ * Parse date/time from ISO string without timezone conversion.
+ * "2026-04-07T09:00:00+03:00" → { year:2026, month:3, day:7, hour:"09", minute:"00" }
+ */
+function parseIsoLocal(iso: string): { date: Date; hour: string; minute: string } | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, year, month, day, hour, minute] = m;
+  // Create date using component parts to avoid timezone shift
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return { date, hour, minute };
+}
+
 export function DateTimePickerField({
   value, endValue, onChange, onChangeEnd,
   placeholder = "اختر التاريخ والوقت", hasError, disabled, minDate,
@@ -59,23 +72,19 @@ export function DateTimePickerField({
 
   useEffect(() => {
     if (value) {
-      try {
-        const d = new Date(value);
-        if (!isNaN(d.getTime())) {
-          setSelectedDate(d);
-          setStartHour(String(d.getHours()).padStart(2, "0"));
-          setStartMinute(String(d.getMinutes()).padStart(2, "0"));
-        }
-      } catch {}
+      const parsed = parseIsoLocal(value);
+      if (parsed) {
+        setSelectedDate(parsed.date);
+        setStartHour(parsed.hour);
+        setStartMinute(parsed.minute);
+      }
     }
     if (endValue) {
-      try {
-        const d = new Date(endValue);
-        if (!isNaN(d.getTime())) {
-          setEndHour(String(d.getHours()).padStart(2, "0"));
-          setEndMinute(String(d.getMinutes()).padStart(2, "0"));
-        }
-      } catch {}
+      const parsed = parseIsoLocal(endValue);
+      if (parsed) {
+        setEndHour(parsed.hour);
+        setEndMinute(parsed.minute);
+      }
     }
   }, []);
 
@@ -110,16 +119,15 @@ export function DateTimePickerField({
 
   const displayValue = value
     ? (() => {
-        try {
-          const d = new Date(value);
-          const dateStr = format(d, "yyyy/MM/dd", { locale: ar });
-          const timeStr = format(d, "HH:mm");
-          if (endValue) {
-            const ed = new Date(endValue);
-            return `${dateStr}  ${timeStr} → ${format(ed, "HH:mm")}`;
-          }
-          return `${dateStr} - ${timeStr}`;
-        } catch { return value; }
+        const parsed = parseIsoLocal(value);
+        if (!parsed) return value;
+        const dateStr = format(parsed.date, "yyyy/MM/dd", { locale: ar });
+        const timeStr = `${parsed.hour}:${parsed.minute}`;
+        if (endValue) {
+          const parsedEnd = parseIsoLocal(endValue);
+          if (parsedEnd) return `${dateStr}  ${timeStr} → ${parsedEnd.hour}:${parsedEnd.minute}`;
+        }
+        return `${dateStr} - ${timeStr}`;
       })()
     : null;
 
@@ -147,7 +155,7 @@ export function DateTimePickerField({
         align="start"
         dir="rtl"
         sideOffset={4}
-        side="bottom"
+        side="left"
         avoidCollisions={true}
         collisionPadding={8}
         sticky="always"

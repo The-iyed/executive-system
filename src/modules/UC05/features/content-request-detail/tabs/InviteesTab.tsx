@@ -9,5 +9,9 @@ export interface InviteesTabProps {
 }
 
 export function InviteesTab({ invitees }: InviteesTabProps) {
-  return <InviteesTableForm initialInvitees={invitees} mode="view" />;
+  return (
+    <div className="w-full max-w-4xl mx-auto" dir="rtl">
+      <InviteesTableForm initialInvitees={invitees} mode="view" />
+    </div>
+  );
 }
