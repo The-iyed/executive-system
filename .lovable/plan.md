@@ -1,32 +1,31 @@
 
 
-## Plan: Hide meeting link for حضوري (PHYSICAL) meetings
+## Plan: Move Scheduling Settings directly under المدعوون header
 
 ### Problem
-When a meeting's channel is "PHYSICAL" (حضوري), the modal still shows the meeting link with Video icon and the "انضم للاجتماع" (Join Meeting) button. These should be hidden for physical meetings.
+Currently the "إعدادات الجدولة" row sits **after** the full invitees list. The user wants it repositioned to appear **directly below** the المدعوون header (between the header and the invitee list).
 
-### Changes
+### Change
 
-#### `EventDetailModal.tsx`
+#### `EventDetailModal.tsx` (lines 308–382)
 
-**1. Extract `meeting_channel` in `display` useMemo** (around line 96-148):
-- Read `meeting_channel` from both API response (`meeting.meeting_channel`) and event object (`event.meeting_channel`)
-- Add `isPhysical` flag: `channel === 'PHYSICAL'`
-- Include in returned object
+Reorder the JSX so the scheduling settings chips appear right after the المدعوون label+count row, before the invitee list:
 
-**2. Fix `locationText` logic** (line 110-112):
-- When `isPhysical`, use only `meeting_location` (not `meeting_link`/`meeting_url`)
-- When not physical, keep current logic
+```
+المدعوون header (icon + label + count badge)
+↓
+إعدادات الجدولة row (icon + label + chips)
+↓
+Invitee list (avatar + name + email per row)
+```
 
-**3. Hide link UI for PHYSICAL** (lines 273-292):
-- When `isPhysical`, force `isLink: false` so the location row renders as plain text only (no Video icon, no copy button)
-
-**4. Hide "انضم للاجتماع" button** (lines 405-415):
-- Add `!display.isPhysical` condition to the join-meeting button wrapper
+Concretely:
+1. Move the scheduling settings block (lines 352–382) to right after line 318 (after the المدعوون header `div`)
+2. Keep everything else unchanged
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Add `isPhysical` from `meeting_channel`, use only location for physical, hide link UI and join button |
+| `EventDetailModal.tsx` | Move scheduling settings block from after invitee list to after المدعوون header, before the invitee rows |
 
