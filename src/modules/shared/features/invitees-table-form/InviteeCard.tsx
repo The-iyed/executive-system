@@ -161,6 +161,11 @@ const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
                   مستشار
                 </Badge>
               )}
+              {hasColumn(columns, "is_presence_required") && isPresenceRequired && (
+                <Badge className="text-[11px] font-normal rounded-full px-2.5 py-0.5 bg-red-50 text-red-600 border border-red-500/30">
+                  الحضور إجباري
+                </Badge>
+              )}
               {hasColumn(columns, "attendance_mechanism") && channelLabel && (
                 <Badge className="text-[11px] font-normal rounded-full px-2.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-500/30">
                   {channelLabel}
