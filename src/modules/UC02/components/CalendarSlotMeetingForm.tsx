@@ -49,6 +49,7 @@ export interface CalendarSlotMeetingFormSubmitValues {
   invitees: InviteeFormRow[];
   requires_protocol?: boolean;
   is_data_complete?: boolean;
+  is_preliminary_booking?: boolean;
 }
 
 export interface CalendarSlotMeetingFormProps {
@@ -256,6 +257,7 @@ function CalendarFormInner({
         invitees: inviteesPayload,
         requires_protocol: data.requires_protocol,
         is_data_complete: data.is_data_complete,
+        is_preliminary_booking: data.requires_protocol !== undefined ? !data.requires_protocol : undefined,
       });
     },
     [onSubmit, showLocation, inviteesRef]

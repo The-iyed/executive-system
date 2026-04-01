@@ -170,6 +170,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           invitees,
           requires_protocol: values.requires_protocol as boolean | undefined,
           is_data_complete: values.is_data_complete as boolean | undefined,
+          is_preliminary_booking: values.is_preliminary_booking as boolean | undefined,
         };
 
         if (isEdit) {
