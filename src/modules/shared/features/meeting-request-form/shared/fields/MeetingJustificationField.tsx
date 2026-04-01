@@ -3,9 +3,9 @@ import { Input } from "@/lib/ui";
 import { FormField, inputClass } from "./FieldGroup";
 import { useIsFieldEditable } from "../hooks/EditableFieldsContext";
 
-interface Props { disabled?: boolean }
+interface Props { disabled?: boolean; required?: boolean }
 
-export function MeetingJustificationField({ disabled }: Props) {
+export function MeetingJustificationField({ disabled, required = true }: Props) {
   const { register, formState: { errors } } = useFormContext();
   const editable = useIsFieldEditable("meeting_justification");
   const isDisabled = disabled || !editable;
